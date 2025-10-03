@@ -1,6 +1,7 @@
 import React, { useEffect, useCallback } from 'react';
 import { useValuationStore } from '../store/useValuationStore';
 import { debounce } from '../utils/debounce';
+import { TARGET_COUNTRIES, INDUSTRIES } from '../config/countries';
 
 /**
  * ValuationForm Component
@@ -91,15 +92,11 @@ export const ValuationForm: React.FC = () => {
               required
             >
               <option value="">Select industry...</option>
-              <option value="technology">Technology / SaaS</option>
-              <option value="manufacturing">Manufacturing</option>
-              <option value="retail">Retail / E-commerce</option>
-              <option value="services">Professional Services</option>
-              <option value="healthcare">Healthcare</option>
-              <option value="hospitality">Hospitality / Food</option>
-              <option value="real_estate">Real Estate</option>
-              <option value="construction">Construction</option>
-              <option value="other">Other</option>
+              {INDUSTRIES.map((industry) => (
+                <option key={industry} value={industry.toLowerCase().replace(/ & /g, '_').replace(/ /g, '_')}>
+                  {industry}
+                </option>
+              ))}
             </select>
           </div>
 
@@ -115,14 +112,11 @@ export const ValuationForm: React.FC = () => {
               required
             >
               <option value="">Select country...</option>
-              <option value="DE">🇩🇪 Germany</option>
-              <option value="FR">🇫🇷 France</option>
-              <option value="GB">🇬🇧 United Kingdom</option>
-              <option value="NL">🇳🇱 Netherlands</option>
-              <option value="BE">🇧🇪 Belgium</option>
-              <option value="ES">🇪🇸 Spain</option>
-              <option value="IT">🇮🇹 Italy</option>
-              <option value="US">🇺🇸 United States</option>
+              {TARGET_COUNTRIES.map((country) => (
+                <option key={country.code} value={country.code}>
+                  {country.flag} {country.name} ({country.currencySymbol})
+                </option>
+              ))}
             </select>
           </div>
 
