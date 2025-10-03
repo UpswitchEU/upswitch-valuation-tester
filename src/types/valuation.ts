@@ -1,0 +1,145 @@
+// Valuation Engine API Types
+
+export interface YearlyFinancialData {
+  year: number;
+  revenue: number;
+  operating_expenses?: number;
+  ebitda?: number;
+  depreciation_amortization?: number;
+  interest_expense?: number;
+  tax_expense?: number;
+  net_income?: number;
+  operating_cash_flow?: number;
+  capex?: number;
+  working_capital_change?: number;
+  total_assets?: number;
+  current_assets?: number;
+  current_liabilities?: number;
+  total_debt?: number;
+  total_equity?: number;
+  cash?: number;
+}
+
+export interface ValuationRequest {
+  company_name: string;
+  country_code: string;
+  industry: string;
+  founding_year?: number;
+  employees?: number;
+  business_model?: string;
+  
+  current_year_data: YearlyFinancialData;
+  historical_data?: YearlyFinancialData[];
+  
+  market_context?: {
+    risk_free_rate?: number;
+    market_risk_premium?: number;
+    sector_beta?: number;
+    gdp_growth?: number;
+    inflation_rate?: number;
+    terminal_growth_rate?: number;
+  };
+  
+  industry_benchmarks?: {
+    ev_ebitda_multiple?: number;
+    ev_revenue_multiple?: number;
+    pe_ratio?: number;
+    revenue_growth_rate?: number;
+    ebitda_margin?: number;
+  };
+  
+  dcf_assumptions?: {
+    projection_years?: number;
+    terminal_growth_rate?: number;
+    wacc_override?: number;
+  };
+}
+
+export interface QuickValuationRequest {
+  revenue: number;
+  ebitda: number;
+  industry: string;
+  country_code: string;
+}
+
+export interface ValuationResponse {
+  valuation_id: string;
+  company_name: string;
+  timestamp: string;
+  
+  // Final results
+  equity_value_low: number;
+  equity_value_mid: number;
+  equity_value_high: number;
+  recommended_asking_price: number;
+  
+  // Confidence
+  confidence_score: number;
+  overall_confidence: string;
+  
+  // Methodology breakdown
+  dcf_result: {
+    enterprise_value: number;
+    equity_value: number;
+    wacc: number;
+    terminal_value: number;
+    pv_fcf: number;
+    pv_terminal_value: number;
+    fcf_projections: Array<{
+      year: number;
+      revenue: number;
+      ebitda: number;
+      fcf: number;
+      discount_factor: number;
+      pv_fcf: number;
+    }>;
+  };
+  
+  multiples_result: {
+    ev_ebitda_valuation: number;
+    ev_revenue_valuation: number;
+    pe_valuation: number | null;
+    comparable_companies: Array<{
+      name: string;
+      ev_ebitda: number;
+      ev_revenue: number;
+      pe_ratio?: number;
+    }>;
+  };
+  
+  financial_metrics: {
+    ebitda_margin: number;
+    net_margin: number;
+    roa?: number;
+    roe?: number;
+    debt_to_equity?: number;
+    current_ratio?: number;
+    financial_health_score: number;
+  };
+  
+  // Weights
+  dcf_weight: number;
+  multiples_weight: number;
+  
+  // Insights
+  key_value_drivers: string[];
+  risk_factors: string[];
+}
+
+export interface CompanyLookupResult {
+  name: string;
+  industry: string;
+  country: string;
+  founding_year?: number;
+  employees?: number;
+  business_model?: string;
+  revenue?: number;
+  description?: string;
+}
+
+export interface DocumentParseResult {
+  extracted_data: Partial<ValuationRequest>;
+  confidence: number;
+  warnings: string[];
+}
+

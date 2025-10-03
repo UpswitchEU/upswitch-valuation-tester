@@ -1,0 +1,224 @@
+{
+  "scenarios": [
+    {
+      "name": "B2B SaaS - High Growth",
+      "description": "Fast-growing SaaS company with strong metrics",
+      "expected_valuation_range": "€10M - €15M",
+      "data": {
+        "company_name": "TechCo GmbH",
+        "country_code": "DE",
+        "industry": "technology",
+        "business_model": "b2b_saas",
+        "founding_year": 2018,
+        "number_of_employees": 25,
+        "recurring_revenue_percentage": 0.8,
+        "current_year_data": {
+          "year": 2024,
+          "revenue": 2500000,
+          "ebitda": 500000,
+          "cogs": 750000,
+          "gross_profit": 1750000,
+          "operating_expenses": 1250000,
+          "total_assets": 1500000,
+          "current_assets": 750000,
+          "cash": 200000,
+          "total_liabilities": 600000,
+          "current_liabilities": 300000,
+          "total_debt": 300000,
+          "total_equity": 900000
+        },
+        "historical_years_data": [
+          { "year": 2023, "revenue": 2000000, "ebitda": 400000 },
+          { "year": 2022, "revenue": 1600000, "ebitda": 320000 },
+          { "year": 2021, "revenue": 1200000, "ebitda": 240000 }
+        ]
+      }
+    },
+    {
+      "name": "Manufacturing - Stable",
+      "description": "Established manufacturing business with steady growth",
+      "expected_valuation_range": "€4M - €7M",
+      "data": {
+        "company_name": "Manufacturing Ltd",
+        "country_code": "DE",
+        "industry": "manufacturing",
+        "business_model": "manufacturing",
+        "founding_year": 2010,
+        "number_of_employees": 75,
+        "current_year_data": {
+          "year": 2024,
+          "revenue": 5000000,
+          "ebitda": 600000,
+          "cogs": 3000000,
+          "gross_profit": 2000000,
+          "operating_expenses": 1400000,
+          "total_assets": 3000000,
+          "current_assets": 1200000,
+          "cash": 300000,
+          "inventory": 500000,
+          "total_liabilities": 1500000,
+          "current_liabilities": 600000,
+          "total_debt": 800000,
+          "total_equity": 1500000
+        },
+        "historical_years_data": [
+          { "year": 2023, "revenue": 4800000, "ebitda": 576000 },
+          { "year": 2022, "revenue": 4600000, "ebitda": 552000 }
+        ]
+      }
+    },
+    {
+      "name": "Retail - E-commerce",
+      "description": "Online retail business with decent margins",
+      "expected_valuation_range": "€1.5M - €3M",
+      "data": {
+        "company_name": "Retail Shop GmbH",
+        "country_code": "DE",
+        "industry": "retail",
+        "business_model": "ecommerce",
+        "founding_year": 2019,
+        "number_of_employees": 15,
+        "current_year_data": {
+          "year": 2024,
+          "revenue": 3000000,
+          "ebitda": 240000,
+          "cogs": 1800000,
+          "gross_profit": 1200000,
+          "operating_expenses": 960000,
+          "total_assets": 800000,
+          "current_assets": 500000,
+          "cash": 150000,
+          "inventory": 250000,
+          "total_liabilities": 400000,
+          "current_liabilities": 250000,
+          "total_debt": 200000,
+          "total_equity": 400000
+        },
+        "historical_years_data": [
+          { "year": 2023, "revenue": 2700000, "ebitda": 216000 },
+          { "year": 2022, "revenue": 2400000, "ebitda": 192000 }
+        ]
+      }
+    },
+    {
+      "name": "Professional Services",
+      "description": "Consulting/services firm with high margins",
+      "expected_valuation_range": "€2M - €4M",
+      "data": {
+        "company_name": "Consulting Partners",
+        "country_code": "DE",
+        "industry": "services",
+        "business_model": "services",
+        "founding_year": 2017,
+        "number_of_employees": 12,
+        "recurring_revenue_percentage": 0.6,
+        "current_year_data": {
+          "year": 2024,
+          "revenue": 1500000,
+          "ebitda": 450000,
+          "cogs": 300000,
+          "gross_profit": 1200000,
+          "operating_expenses": 750000,
+          "total_assets": 500000,
+          "current_assets": 400000,
+          "cash": 250000,
+          "accounts_receivable": 150000,
+          "total_liabilities": 200000,
+          "current_liabilities": 150000,
+          "total_debt": 50000,
+          "total_equity": 300000
+        },
+        "historical_years_data": [
+          { "year": 2023, "revenue": 1350000, "ebitda": 405000 },
+          { "year": 2022, "revenue": 1200000, "ebitda": 360000 }
+        ]
+      }
+    },
+    {
+      "name": "Healthcare - Private Clinic",
+      "description": "Private healthcare facility with stable patient base",
+      "expected_valuation_range": "€5M - €8M",
+      "data": {
+        "company_name": "Health Clinic GmbH",
+        "country_code": "DE",
+        "industry": "healthcare",
+        "business_model": "services",
+        "founding_year": 2012,
+        "number_of_employees": 35,
+        "current_year_data": {
+          "year": 2024,
+          "revenue": 2800000,
+          "ebitda": 560000,
+          "cogs": 1120000,
+          "gross_profit": 1680000,
+          "operating_expenses": 1120000,
+          "total_assets": 2000000,
+          "current_assets": 600000,
+          "cash": 200000,
+          "total_liabilities": 800000,
+          "current_liabilities": 300000,
+          "total_debt": 500000,
+          "total_equity": 1200000
+        },
+        "historical_years_data": [
+          { "year": 2023, "revenue": 2700000, "ebitda": 540000 },
+          { "year": 2022, "revenue": 2600000, "ebitda": 520000 }
+        ]
+      }
+    }
+  ],
+  "test_cases": {
+    "edge_cases": [
+      {
+        "name": "Negative EBITDA (Loss-making startup)",
+        "data": {
+          "company_name": "Startup Inc",
+          "country_code": "DE",
+          "industry": "technology",
+          "business_model": "b2b_saas",
+          "founding_year": 2023,
+          "current_year_data": {
+            "year": 2024,
+            "revenue": 500000,
+            "ebitda": -200000
+          }
+        }
+      },
+      {
+        "name": "Very High Margins (>50%)",
+        "data": {
+          "company_name": "Software Co",
+          "country_code": "DE",
+          "industry": "technology",
+          "business_model": "b2b_saas",
+          "founding_year": 2015,
+          "current_year_data": {
+            "year": 2024,
+            "revenue": 1000000,
+            "ebitda": 600000
+          }
+        }
+      },
+      {
+        "name": "Declining Revenue",
+        "data": {
+          "company_name": "Declining Co",
+          "country_code": "DE",
+          "industry": "retail",
+          "business_model": "b2c",
+          "founding_year": 2018,
+          "current_year_data": {
+            "year": 2024,
+            "revenue": 2000000,
+            "ebitda": 200000
+          },
+          "historical_years_data": [
+            { "year": 2023, "revenue": 2500000, "ebitda": 300000 },
+            { "year": 2022, "revenue": 3000000, "ebitda": 400000 }
+          ]
+        }
+      }
+    ]
+  }
+}
+
