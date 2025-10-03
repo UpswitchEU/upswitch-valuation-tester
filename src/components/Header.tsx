@@ -51,8 +51,8 @@ export const Header: React.FC = () => {
           </div>
         </div>
 
-        {/* Disclaimer Banner */}
-        <div className="mt-4 bg-yellow-50 border-l-4 border-yellow-400 p-4 rounded">
+        {/* Unified Beta Disclaimer Banner */}
+        <div className="mt-4 bg-yellow-50 border-l-4 border-yellow-400 p-4 rounded-lg">
           <div className="flex">
             <div className="flex-shrink-0">
               <svg className="h-5 w-5 text-yellow-400" viewBox="0 0 20 20" fill="currentColor">
@@ -61,8 +61,8 @@ export const Header: React.FC = () => {
             </div>
             <div className="ml-3">
               <p className="text-sm text-yellow-700">
-                <strong className="font-semibold">Beta Testing Notice:</strong> This is a testing version of the Upswitch Valuation Engine. 
-                Results are for informational purposes only and should not be used as the sole basis for business decisions. 
+                <strong className="font-semibold">⚠️ Beta Testing Tool - Important Disclaimer:</strong> This is a beta testing version of the Upswitch Valuation Engine for evaluation purposes only. 
+                Valuations are estimates and should not be considered professional financial advice or used as the sole basis for business decisions. 
                 Always consult with qualified financial advisors for important transactions.
               </p>
             </div>
