@@ -28,11 +28,15 @@ export const ValuationChat: React.FC<ValuationChatProps> = ({ onValuationComplet
     {
       id: 'welcome',
       type: 'ai',
-      content: `Hi! I'm your AI valuation assistant. I'll help you value your business in 3 easy ways:
+      content: `Hi! I'm your AI valuation assistant 👋
+
+I'll help you value your business in 3 easy ways:
 
 📄 **Upload Documents** - Drop your P&L, balance sheet, or financials
 🔍 **Company Lookup** - I can search company registries automatically  
 💬 **Tell Me Directly** - Just describe your business and numbers
+
+💡 *Tip: This is a beta tool. Results are estimates for evaluation purposes.*
 
 How would you like to start?`,
       timestamp: new Date(),
