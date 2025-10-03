@@ -1,14 +1,13 @@
 import { useState } from 'react';
 import { Header } from './components/Header';
-import { DocumentUpload } from './components/DocumentUpload';
-import { CompanyLookup } from './components/CompanyLookup';
+import { SmartValuationFlow } from './components/SmartValuationFlow';
 import { ValuationForm } from './components/ValuationForm';
 import { LivePreview } from './components/LivePreview';
 import { Results } from './components/Results';
 import { useValuationStore } from './store/useValuationStore';
 
 function App() {
-  const [activeMethod, setActiveMethod] = useState<'upload' | 'lookup' | 'manual'>('upload');
+  const [useLegacyMode, setUseLegacyMode] = useState(false);
   const { result } = useValuationStore();
 
   return (
@@ -44,75 +43,35 @@ function App() {
           </div>
         </div>
 
-        {/* Method Selection */}
-        <div className="mb-8">
-          <h2 className="text-2xl font-display font-bold text-gray-900 mb-4">
-            How would you like to get started?
-          </h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <button
-              onClick={() => setActiveMethod('upload')}
-              className={`p-6 rounded-xl border-2 transition-all ${
-                activeMethod === 'upload'
-                  ? 'border-primary-500 bg-primary-50'
-                  : 'border-gray-200 bg-white hover:border-primary-300'
-              }`}
-            >
-              <div className="text-4xl mb-3">📄</div>
-              <h3 className="font-semibold text-lg mb-2">Upload Documents</h3>
-              <p className="text-sm text-gray-600">
-                Upload financial statements and let AI extract the data
-              </p>
-              <span className="inline-block mt-3 px-3 py-1 bg-yellow-100 text-yellow-800 text-xs font-semibold rounded-full">
-                Phase 2 - Coming Soon
-              </span>
-            </button>
-
-            <button
-              onClick={() => setActiveMethod('lookup')}
-              className={`p-6 rounded-xl border-2 transition-all ${
-                activeMethod === 'lookup'
-                  ? 'border-primary-500 bg-primary-50'
-                  : 'border-gray-200 bg-white hover:border-primary-300'
-              }`}
-            >
-              <div className="text-4xl mb-3">🔍</div>
-              <h3 className="font-semibold text-lg mb-2">Company Lookup</h3>
-              <p className="text-sm text-gray-600">
-                Search your company and auto-fill public data
-              </p>
-              <span className="inline-block mt-3 px-3 py-1 bg-yellow-100 text-yellow-800 text-xs font-semibold rounded-full">
-                Phase 2 - Coming Soon
-              </span>
-            </button>
-
-            <button
-              onClick={() => setActiveMethod('manual')}
-              className={`p-6 rounded-xl border-2 transition-all ${
-                activeMethod === 'manual'
-                  ? 'border-primary-500 bg-primary-50'
-                  : 'border-gray-200 bg-white hover:border-primary-300'
-              }`}
-            >
-              <div className="text-4xl mb-3">✏️</div>
-              <h3 className="font-semibold text-lg mb-2">Manual Entry</h3>
-              <p className="text-sm text-gray-600">
-                Enter your financial data manually
-              </p>
-              <span className="inline-block mt-3 px-3 py-1 bg-primary-100 text-primary-800 text-xs font-semibold rounded-full">
-                ✅ Available Now
-              </span>
-            </button>
+        {/* Mode Toggle */}
+        <div className="mb-8 flex items-center justify-between">
+          <div>
+            <h2 className="text-3xl font-display font-bold text-gray-900 mb-2">
+              {useLegacyMode ? 'Manual Valuation' : 'AI-Powered Valuation'}
+            </h2>
+            <p className="text-gray-600">
+              {useLegacyMode 
+                ? 'Enter your business data manually' 
+                : 'Upload documents and let AI do the work'}
+            </p>
           </div>
+          <button
+            onClick={() => setUseLegacyMode(!useLegacyMode)}
+            className="px-4 py-2 text-sm font-medium text-primary-600 hover:text-primary-700 border border-primary-200 rounded-lg hover:bg-primary-50 transition-colors"
+          >
+            {useLegacyMode ? '🤖 Try AI Mode' : '✏️ Use Manual Mode'}
+          </button>
         </div>
 
         {/* Content */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Main Content */}
           <div className="lg:col-span-2">
-            {activeMethod === 'upload' && <DocumentUpload />}
-            {activeMethod === 'lookup' && <CompanyLookup />}
-            {activeMethod === 'manual' && <ValuationForm />}
+            {useLegacyMode ? (
+              <ValuationForm />
+            ) : (
+              <SmartValuationFlow />
+            )}
 
             {/* Results */}
             {result && (
@@ -124,7 +83,36 @@ function App() {
 
           {/* Sidebar - Live Preview */}
           <div className="lg:col-span-1">
-            <LivePreview />
+            <div className="sticky top-8">
+              <LivePreview />
+              
+              {/* AI Flow Benefits */}
+              {!useLegacyMode && (
+                <div className="mt-6 bg-gradient-to-br from-primary-50 to-blue-50 rounded-lg p-6 border border-primary-200">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-3">
+                    ✨ AI-Powered Benefits
+                  </h3>
+                  <ul className="space-y-2 text-sm text-gray-700">
+                    <li className="flex items-start gap-2">
+                      <span className="text-primary-600 mt-0.5">✓</span>
+                      <span><strong>10x Faster:</strong> Upload docs instead of typing</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="text-primary-600 mt-0.5">✓</span>
+                      <span><strong>Auto-Fill:</strong> Company lookup from registries</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="text-primary-600 mt-0.5">✓</span>
+                      <span><strong>Smart AI:</strong> Clarifies ambiguous data</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="text-primary-600 mt-0.5">✓</span>
+                      <span><strong>Accurate:</strong> Reduces human error</span>
+                    </li>
+                  </ul>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </main>
