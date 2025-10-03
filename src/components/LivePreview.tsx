@@ -53,14 +53,15 @@ export const LivePreview: React.FC = () => {
     }).format(value);
   };
 
+  const confidence = liveEstimate.confidence || liveEstimate.confidence_score;
   const confidenceColor = 
-    liveEstimate.confidence >= 80 ? 'text-green-600' :
-    liveEstimate.confidence >= 60 ? 'text-yellow-600' :
+    confidence >= 80 ? 'text-green-600' :
+    confidence >= 60 ? 'text-yellow-600' :
     'text-orange-600';
 
   const confidenceLabel = 
-    liveEstimate.confidence >= 80 ? 'High' :
-    liveEstimate.confidence >= 60 ? 'Medium' :
+    confidence >= 80 ? 'High' :
+    confidence >= 60 ? 'Medium' :
     'Low';
 
   return (
@@ -74,7 +75,7 @@ export const LivePreview: React.FC = () => {
           <h3 className="text-lg font-semibold text-gray-900">Live Estimate</h3>
         </div>
         <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold ${confidenceColor} bg-white`}>
-          {confidenceLabel} Confidence ({liveEstimate.confidence}%)
+          {confidenceLabel} Confidence ({confidence}%)
         </span>
       </div>
 
@@ -104,7 +105,7 @@ export const LivePreview: React.FC = () => {
         {/* Method Used */}
         <div className="text-center pt-2 border-t border-primary-200">
           <p className="text-xs text-gray-500">
-            Based on: {liveEstimate.primary_method === 'multiples' ? 'Market Multiples' : 'DCF Model'}
+            Based on: {(liveEstimate.primary_method || liveEstimate.methodology) === 'multiples' ? 'Market Multiples' : 'DCF Model'}
           </p>
         </div>
       </div>
@@ -117,7 +118,7 @@ export const LivePreview: React.FC = () => {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
             </svg>
             <span className="text-sm font-medium text-gray-700">
-              Add more data for +{Math.round((95 - liveEstimate.confidence))}% accuracy
+              Add more data for +{Math.round((95 - confidence))}% accuracy
             </span>
           </div>
         </div>

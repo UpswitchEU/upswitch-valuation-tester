@@ -1,6 +1,5 @@
 import React from 'react';
 import { useValuationStore } from '../store/useValuationStore';
-import type { ValuationResponse } from '../types/valuation';
 
 /**
  * Results Component
@@ -38,7 +37,7 @@ export const Results: React.FC = () => {
       <div className="bg-gradient-to-r from-primary-600 to-blue-600 rounded-lg p-6 text-white">
         <h2 className="text-2xl font-bold mb-2">Valuation Results</h2>
         <p className="text-primary-100">
-          Comprehensive analysis using {result.methodology} methodology
+          Comprehensive analysis using {result.methodology || result.primary_method || 'synthesized'} methodology
         </p>
       </div>
 
@@ -81,10 +80,10 @@ export const Results: React.FC = () => {
             <div className="w-32 bg-gray-200 rounded-full h-2">
               <div 
                 className="bg-blue-600 h-2 rounded-full transition-all"
-                style={{ width: `${result.confidence}%` }}
+                style={{ width: `${result.confidence || result.confidence_score}%` }}
               ></div>
             </div>
-            <span className="text-lg font-bold text-blue-600">{result.confidence}%</span>
+            <span className="text-lg font-bold text-blue-600">{result.confidence || result.confidence_score}%</span>
           </div>
         </div>
       </div>
@@ -100,47 +99,32 @@ export const Results: React.FC = () => {
           </h3>
           
           <div className="grid grid-cols-2 gap-4">
-            {result.ownership_adjustment.revenue_cagr !== undefined && (
-              <div className="p-3 bg-blue-50 rounded">
-                <p className="text-sm text-gray-600">Revenue Growth (CAGR)</p>
-                <p className="text-xl font-bold text-blue-600">
-                  {formatPercent(result.ownership_adjustment.revenue_cagr)}
-                </p>
-              </div>
-            )}
+            <div className="p-3 bg-blue-50 rounded">
+              <p className="text-sm text-gray-600">Shares for Sale</p>
+              <p className="text-xl font-bold text-blue-600">
+                {result.ownership_adjustment.shares_for_sale}%
+              </p>
+            </div>
             
-            {result.ownership_adjustment.ebitda_cagr !== undefined && (
-              <div className="p-3 bg-green-50 rounded">
-                <p className="text-sm text-gray-600">EBITDA Growth (CAGR)</p>
-                <p className="text-xl font-bold text-green-600">
-                  {formatPercent(result.ownership_adjustment.ebitda_cagr)}
-                </p>
-              </div>
-            )}
+            <div className="p-3 bg-green-50 rounded">
+              <p className="text-sm text-gray-600">Control Premium</p>
+              <p className="text-xl font-bold text-green-600">
+                {formatPercent(result.ownership_adjustment.control_premium)}
+              </p>
+            </div>
             
-            {result.ownership_adjustment.growth_multiplier !== undefined && (
-              <div className="p-3 bg-purple-50 rounded">
-                <p className="text-sm text-gray-600">Growth Multiplier</p>
-                <p className="text-xl font-bold text-purple-600">
-                  {result.ownership_adjustment.growth_multiplier.toFixed(2)}x
-                </p>
-              </div>
-            )}
-            
-            {result.ownership_adjustment.ownership_percentage !== undefined && (
-              <div className="p-3 bg-yellow-50 rounded">
-                <p className="text-sm text-gray-600">Shares for Sale</p>
-                <p className="text-xl font-bold text-yellow-600">
-                  {result.ownership_adjustment.ownership_percentage}%
-                </p>
-              </div>
-            )}
+            <div className="col-span-2 p-3 bg-purple-50 rounded">
+              <p className="text-sm text-gray-600">Adjusted Value</p>
+              <p className="text-xl font-bold text-purple-600">
+                {formatCurrency(result.ownership_adjustment.adjusted_value)}
+              </p>
+            </div>
           </div>
         </div>
       )}
 
       {/* Value Drivers */}
-      {result.value_drivers && result.value_drivers.length > 0 && (
+      {result.key_value_drivers && result.key_value_drivers.length > 0 && (
         <div className="bg-white rounded-lg border border-gray-200 p-6">
           <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
             <svg className="h-5 w-5 text-green-600 mr-2" fill="currentColor" viewBox="0 0 20 20">
@@ -149,7 +133,7 @@ export const Results: React.FC = () => {
             Key Value Drivers
           </h3>
           <ul className="space-y-2">
-            {result.value_drivers.map((driver, index) => (
+            {result.key_value_drivers.map((driver: string, index: number) => (
               <li key={index} className="flex items-start">
                 <span className="flex-shrink-0 h-5 w-5 text-green-500 mr-2">✓</span>
                 <span className="text-gray-700">{driver}</span>
@@ -186,14 +170,17 @@ export const Results: React.FC = () => {
           <div className="p-4 bg-blue-50 rounded">
             <p className="text-sm text-gray-600 mb-1">Primary Method</p>
             <p className="text-lg font-bold text-blue-600">
-              {result.methodology === 'synthesized' ? 'DCF + Multiples' : 
-               result.methodology === 'dcf' ? 'Discounted Cash Flow' : 
+              {(result.methodology || result.primary_method) === 'synthesized' ? 'DCF + Multiples' : 
+               (result.methodology || result.primary_method) === 'dcf' ? 'Discounted Cash Flow' : 
                'Market Multiples'}
             </p>
           </div>
           <div className="p-4 bg-purple-50 rounded">
             <p className="text-sm text-gray-600 mb-1">Data Points Used</p>
-            <p className="text-lg font-bold text-purple-600">{result.confidence >= 80 ? '20+' : result.confidence >= 60 ? '10-15' : '5-10'}</p>
+            <p className="text-lg font-bold text-purple-600">
+              {(result.confidence || result.confidence_score) >= 80 ? '20+' : 
+               (result.confidence || result.confidence_score) >= 60 ? '10-15' : '5-10'}
+            </p>
           </div>
         </div>
       </div>

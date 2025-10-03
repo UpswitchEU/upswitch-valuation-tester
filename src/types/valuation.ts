@@ -55,6 +55,14 @@ export interface ValuationRequest {
   };
 }
 
+// Extended request type for frontend form state
+export interface ValuationFormData extends Partial<ValuationRequest> {
+  revenue?: number;
+  ebitda?: number;
+  business_type?: 'sole-trader' | 'company';
+  shares_for_sale?: number;
+}
+
 export interface QuickValuationRequest {
   revenue: number;
   ebitda: number;
@@ -73,9 +81,14 @@ export interface ValuationResponse {
   equity_value_high: number;
   recommended_asking_price: number;
   
-  // Confidence
+  // Confidence (multiple formats for compatibility)
   confidence_score: number;
   overall_confidence: string;
+  confidence?: number; // Alias for confidence_score
+  
+  // Methodology
+  primary_method?: string;
+  methodology?: string;
   
   // Methodology breakdown
   dcf_result: {
@@ -121,8 +134,16 @@ export interface ValuationResponse {
   dcf_weight: number;
   multiples_weight: number;
   
-  // Insights
+  // Ownership adjustment (optional)
+  ownership_adjustment?: {
+    shares_for_sale: number;
+    control_premium: number;
+    adjusted_value: number;
+  };
+  
+  // Insights (multiple formats for compatibility)
   key_value_drivers: string[];
+  value_drivers?: string[]; // Alias for key_value_drivers
   risk_factors: string[];
 }
 

@@ -1,19 +1,12 @@
 import { create } from 'zustand';
-import type { ValuationRequest, ValuationResponse, QuickValuationRequest } from '../types/valuation';
+import type { ValuationRequest, ValuationResponse, QuickValuationRequest, ValuationFormData } from '../types/valuation';
 import { api } from '../services/api';
 
 interface ValuationStore {
   // Form data
-  formData: Partial<ValuationRequest> & {
-    revenue?: number;
-    ebitda?: number;
-    industry?: string;
-    country_code?: string;
-    business_type?: 'sole-trader' | 'company';
-    shares_for_sale?: number;
-  };
+  formData: ValuationFormData;
   
-  updateFormData: (data: Partial<ValuationRequest>) => void;
+  updateFormData: (data: Partial<ValuationFormData>) => void;
   resetFormData: () => void;
 
   // Results
@@ -39,7 +32,7 @@ interface ValuationStore {
   quickValuation: () => Promise<void>;
 }
 
-const defaultFormData: Partial<ValuationRequest> = {
+const defaultFormData: ValuationFormData = {
   company_name: '',
   country_code: 'DE',
   industry: '',
@@ -99,7 +92,7 @@ export const useValuationStore = create<ValuationStore>((set, get) => ({
   },
   
   quickValuation: async () => {
-    const { formData, setIsCalculatingLive, setLiveEstimate, setError } = get();
+    const { formData, setIsCalculatingLive, setLiveEstimate } = get();
     
     if (!formData.revenue || !formData.ebitda || !formData.industry || !formData.country_code) {
       return;

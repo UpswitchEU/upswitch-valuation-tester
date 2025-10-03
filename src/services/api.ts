@@ -48,7 +48,7 @@ class ValuationAPI {
   }
 
   // Phase 2: Company lookup (to be implemented in backend)
-  async lookupCompany(name: string, country: string): Promise<CompanyLookupResult> {
+  async lookupCompany(_name: string, _country: string): Promise<CompanyLookupResult> {
     // TODO: Implement in backend
     // const response = await this.client.get('/api/v1/companies/lookup', {
     //   params: { name, country },
@@ -60,7 +60,7 @@ class ValuationAPI {
   }
 
   // Phase 2: Document parsing (to be implemented in backend)
-  async parseDocument(file: File): Promise<DocumentParseResult> {
+  async parseDocument(_file: File): Promise<DocumentParseResult> {
     // TODO: Implement in backend
     // const formData = new FormData();
     // formData.append('file', file);
@@ -75,4 +75,5 @@ class ValuationAPI {
 }
 
 export const valuationAPI = new ValuationAPI();
+export const api = valuationAPI;
 
