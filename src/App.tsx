@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Header } from './components/Header';
-import { SmartValuationFlow } from './components/SmartValuationFlow';
+import { ValuationChat } from './components/ValuationChat';
 import { ValuationForm } from './components/ValuationForm';
 import { LivePreview } from './components/LivePreview';
 import { Results } from './components/Results';
@@ -47,67 +47,72 @@ function App() {
         <div className="mb-8 flex items-center justify-between">
           <div>
             <h2 className="text-3xl font-display font-bold text-gray-900 mb-2">
-              {useLegacyMode ? 'Manual Valuation' : 'AI-Powered Valuation'}
+              {useLegacyMode ? 'Manual Valuation' : '💬 Chat with AI'}
             </h2>
             <p className="text-gray-600">
               {useLegacyMode 
                 ? 'Enter your business data manually' 
-                : 'Upload documents and let AI do the work'}
+                : 'Have a conversation with AI to value your business'}
             </p>
           </div>
           <button
             onClick={() => setUseLegacyMode(!useLegacyMode)}
             className="px-4 py-2 text-sm font-medium text-primary-600 hover:text-primary-700 border border-primary-200 rounded-lg hover:bg-primary-50 transition-colors"
           >
-            {useLegacyMode ? '🤖 Try AI Mode' : '✏️ Use Manual Mode'}
+            {useLegacyMode ? '🤖 Try AI Chat' : '✏️ Use Manual Form'}
           </button>
         </div>
 
         {/* Content */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Main Content */}
-          <div className="lg:col-span-2">
-            {useLegacyMode ? (
-              <ValuationForm />
-            ) : (
-              <SmartValuationFlow />
-            )}
+                {/* Main Content */}
+                <div className="lg:col-span-2">
+                  {useLegacyMode ? (
+                    <ValuationForm />
+                  ) : (
+                    <ValuationChat onValuationComplete={() => {
+                      // Scroll to results when calculation completes
+                      setTimeout(() => {
+                        document.getElementById('results')?.scrollIntoView({ behavior: 'smooth' });
+                      }, 500);
+                    }} />
+                  )}
 
-            {/* Results */}
-            {result && (
-              <div className="mt-8">
-                <Results />
-              </div>
-            )}
-          </div>
+                  {/* Results */}
+                  {result && (
+                    <div id="results" className="mt-8">
+                      <Results />
+                    </div>
+                  )}
+                </div>
 
           {/* Sidebar - Live Preview */}
           <div className="lg:col-span-1">
             <div className="sticky top-8">
               <LivePreview />
               
-              {/* AI Flow Benefits */}
+              {/* AI Chat Benefits */}
               {!useLegacyMode && (
                 <div className="mt-6 bg-gradient-to-br from-primary-50 to-blue-50 rounded-lg p-6 border border-primary-200">
                   <h3 className="text-lg font-semibold text-gray-900 mb-3">
-                    ✨ AI-Powered Benefits
+                    ✨ Why Chat with AI?
                   </h3>
                   <ul className="space-y-2 text-sm text-gray-700">
                     <li className="flex items-start gap-2">
-                      <span className="text-primary-600 mt-0.5">✓</span>
-                      <span><strong>10x Faster:</strong> Upload docs instead of typing</span>
+                      <span className="text-primary-600 mt-0.5">💬</span>
+                      <span><strong>Natural Conversation:</strong> Just talk like you would to an advisor</span>
                     </li>
                     <li className="flex items-start gap-2">
-                      <span className="text-primary-600 mt-0.5">✓</span>
-                      <span><strong>Auto-Fill:</strong> Company lookup from registries</span>
+                      <span className="text-primary-600 mt-0.5">📄</span>
+                      <span><strong>Upload Docs:</strong> Drop your financials, AI extracts everything</span>
                     </li>
                     <li className="flex items-start gap-2">
-                      <span className="text-primary-600 mt-0.5">✓</span>
-                      <span><strong>Smart AI:</strong> Clarifies ambiguous data</span>
+                      <span className="text-primary-600 mt-0.5">🔍</span>
+                      <span><strong>Auto-Lookup:</strong> Finds your company in registries</span>
                     </li>
                     <li className="flex items-start gap-2">
-                      <span className="text-primary-600 mt-0.5">✓</span>
-                      <span><strong>Accurate:</strong> Reduces human error</span>
+                      <span className="text-primary-600 mt-0.5">⚡</span>
+                      <span><strong>10x Faster:</strong> No forms, no tedious data entry</span>
                     </li>
                   </ul>
                 </div>
