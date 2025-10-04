@@ -3,6 +3,7 @@ import { Header } from './components/Header';
 import { TwoStepFlow } from './components/TwoStepFlow';
 import { ValuationForm } from './components/ValuationForm';
 import { AIAssistedValuation } from './components/registry/AIAssistedValuation';
+import { ValuationMethodSelector } from './components/ValuationMethodSelector';
 import { Results } from './components/Results';
 import { useValuationStore } from './store/useValuationStore';
 
@@ -12,98 +13,16 @@ function App() {
   const [viewMode, setViewMode] = useState<ViewMode>('ai-assisted');
   const { result } = useValuationStore();
 
-  const getModeInfo = () => {
-    switch (viewMode) {
-      case 'ai-assisted':
-        return {
-          icon: '🤖',
-          title: 'AI-Powered Registry Lookup',
-          subtitle: 'Get your valuation in 30 seconds - just tell us your company name',
-          badge: 'NEW'
-        };
-      case 'manual':
-        return {
-          icon: '📝',
-          title: 'Manual Entry',
-          subtitle: 'Enter your financial data directly - fast and accurate',
-          badge: null
-        };
-      case 'document-upload':
-        return {
-          icon: '📄',
-          title: 'Document Upload',
-          subtitle: 'Upload financial documents for automatic extraction (experimental)',
-          badge: 'BETA'
-        };
-    }
-  };
-
-  const modeInfo = getModeInfo();
-
   return (
     <div className="min-h-screen bg-gradient-hero">
       <Header />
 
       <main className="container mx-auto px-4 py-8 max-w-7xl">
-        {/* Mode Toggle */}
-        <div className="mb-8">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-3">
-              <h2 className="text-3xl font-display font-bold text-gray-900">
-                {modeInfo.icon} {modeInfo.title}
-              </h2>
-              {modeInfo.badge && (
-                <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
-                  modeInfo.badge === 'NEW' 
-                    ? 'bg-green-100 text-green-800 border border-green-300' 
-                    : 'bg-yellow-100 text-yellow-800 border border-yellow-300'
-                }`}>
-                  {modeInfo.badge}
-                </span>
-              )}
-            </div>
-          </div>
-          
-          <div className="flex items-center justify-between">
-            <p className="text-gray-600 max-w-2xl">
-              {modeInfo.subtitle}
-            </p>
-            
-            {/* Mode Switcher */}
-            <div className="flex gap-2">
-              <button
-                onClick={() => setViewMode('ai-assisted')}
-                className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
-                  viewMode === 'ai-assisted'
-                    ? 'bg-primary-600 text-white shadow-md'
-                    : 'text-gray-700 hover:bg-gray-100 border border-gray-300'
-                }`}
-              >
-                🤖 AI Lookup
-              </button>
-              <button
-                onClick={() => setViewMode('manual')}
-                className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
-                  viewMode === 'manual'
-                    ? 'bg-primary-600 text-white shadow-md'
-                    : 'text-gray-700 hover:bg-gray-100 border border-gray-300'
-                }`}
-              >
-                📝 Manual
-              </button>
-              <button
-                onClick={() => setViewMode('document-upload')}
-                className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
-                  viewMode === 'document-upload'
-                    ? 'bg-primary-600 text-white shadow-md'
-                    : 'text-gray-700 hover:bg-gray-100 border border-gray-300'
-                }`}
-              >
-                📄 Upload
-              </button>
-            </div>
-          </div>
-        </div>
+        {/* Clean 3-Tab Interface */}
+        <ValuationMethodSelector 
+          viewMode={viewMode} 
+          onModeChange={setViewMode} 
+        />
 
         {/* Content */}
         {viewMode === 'ai-assisted' && (

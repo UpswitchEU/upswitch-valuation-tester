@@ -34,7 +34,7 @@ export const PrivacyExplainer: React.FC = () => {
             How We Protect Your Financial Data
           </h1>
           <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-            Understanding our privacy-first approach: Why your sensitive business data never touches external AI services
+            Understanding our Registry-First approach: How we use AI safely while keeping your sensitive business data completely private
           </p>
         </div>
 
@@ -45,19 +45,23 @@ export const PrivacyExplainer: React.FC = () => {
               <AlertTriangle className="w-8 h-8 text-red-600 flex-shrink-0 mt-1" />
               <div>
                 <h2 className="text-2xl font-bold text-gray-900 mb-3">
-                  The Problem with Most AI Tools
+                  The Problem with Traditional Valuation Tools
                 </h2>
                 <p className="text-gray-700 mb-4">
-                  Many AI-powered valuation tools send your financial documents directly to external AI services like OpenAI's GPT-4. This means:
+                  Most business valuation tools require you to manually enter sensitive financial data or upload documents that get processed by external AI services. This creates several risks:
                 </p>
                 <ul className="space-y-2 text-gray-700">
                   <li className="flex items-start gap-2">
                     <EyeOff className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
-                    <span>Your revenue, EBITDA, and profit margins are visible to third-party servers</span>
+                    <span>Manual data entry is time-consuming and error-prone</span>
                   </li>
                   <li className="flex items-start gap-2">
                     <EyeOff className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
-                    <span>Sensitive financial documents leave your control</span>
+                    <span>Uploaded financial documents may be sent to external AI services</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <EyeOff className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
+                    <span>Your revenue, EBITDA, and profit margins could be exposed to third parties</span>
                   </li>
                   <li className="flex items-start gap-2">
                     <EyeOff className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
@@ -65,7 +69,7 @@ export const PrivacyExplainer: React.FC = () => {
                   </li>
                   <li className="flex items-start gap-2">
                     <EyeOff className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
-                    <span>Risk of data breaches or unauthorized access</span>
+                    <span>Risk of data breaches or unauthorized access to sensitive business information</span>
                   </li>
                 </ul>
               </div>
@@ -80,28 +84,28 @@ export const PrivacyExplainer: React.FC = () => {
               <Shield className="w-8 h-8 text-green-600 flex-shrink-0 mt-1" />
               <div>
                 <h2 className="text-2xl font-bold text-gray-900 mb-3">
-                  Our Privacy-First Solution
+                  Our Registry-First Privacy Solution
                 </h2>
                 <p className="text-gray-700 mb-4">
-                  We've designed a <strong>2-step architecture</strong> that separates private financial processing from public AI assistance:
+                  We've designed a <strong>Registry-First 2-step architecture</strong> that uses publicly available company registry data while keeping your sensitive information private:
                 </p>
                 <div className="grid md:grid-cols-2 gap-4 mt-6">
                   <div className="bg-white rounded-lg p-4 border border-green-200">
                     <div className="flex items-center gap-2 mb-3">
-                      <Lock className="w-5 h-5 text-green-600" />
-                      <h3 className="font-bold text-gray-900">Step 1: Private Processing</h3>
+                      <Eye className="w-5 h-5 text-blue-600" />
+                      <h3 className="font-bold text-gray-900">Step 1: AI Company Lookup</h3>
                     </div>
                     <p className="text-sm text-gray-600">
-                      Your financial documents are processed exclusively by our proprietary engine on secure servers. No external AI services see your data.
+                      AI assistant helps you find your company using natural language. Only public information (company name, country) is shared with external AI services.
                     </p>
                   </div>
                   <div className="bg-white rounded-lg p-4 border border-green-200">
                     <div className="flex items-center gap-2 mb-3">
-                      <Eye className="w-5 h-5 text-blue-600" />
-                      <h3 className="font-bold text-gray-900">Step 2: Public AI Chat</h3>
+                      <Lock className="w-5 h-5 text-green-600" />
+                      <h3 className="font-bold text-gray-900">Step 2: Secure Registry Processing</h3>
                     </div>
                     <p className="text-sm text-gray-600">
-                      AI assistant only processes publicly available information like company names and industry data. Your financial numbers stay private.
+                      Financial data is fetched directly from official company registries (Companies House, KVK, etc.) and processed on our secure servers. No external AI sees your financial numbers.
                     </p>
                   </div>
                 </div>
@@ -119,69 +123,12 @@ export const PrivacyExplainer: React.FC = () => {
           {/* Step 1 Explanation */}
           <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-8 mb-8">
             <div className="flex items-center gap-3 mb-6">
-              <div className="w-12 h-12 rounded-full bg-green-100 flex items-center justify-center">
-                <span className="text-2xl font-bold text-green-600">1</span>
-              </div>
-              <div>
-                <h3 className="text-2xl font-bold text-gray-900">Secure Document Upload</h3>
-                <p className="text-gray-600">Private financial data processing</p>
-              </div>
-            </div>
-
-            <div className="space-y-4">
-              <div className="flex items-start gap-4 p-4 bg-gray-50 rounded-lg">
-                <Server className="w-6 h-6 text-green-600 flex-shrink-0 mt-1" />
-                <div>
-                  <h4 className="font-semibold text-gray-900 mb-2">Your Documents → Our Secure Servers</h4>
-                  <p className="text-sm text-gray-600">
-                    When you upload your P&L statements, balance sheets, or financial reports, they're transmitted securely via HTTPS (TLS 1.3 encryption) directly to our servers.
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex items-start gap-4 p-4 bg-gray-50 rounded-lg">
-                <Lock className="w-6 h-6 text-green-600 flex-shrink-0 mt-1" />
-                <div>
-                  <h4 className="font-semibold text-gray-900 mb-2">Processed by Our Proprietary Engine</h4>
-                  <p className="text-sm text-gray-600">
-                    We use our own extraction engine (built with self-hosted ML models, OCR, and PDF parsing) to extract financial data. This happens entirely on our infrastructure - <strong>no external AI services are involved</strong>.
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex items-start gap-4 p-4 bg-gray-50 rounded-lg">
-                <Shield className="w-6 h-6 text-green-600 flex-shrink-0 mt-1" />
-                <div>
-                  <h4 className="font-semibold text-gray-900 mb-2">Encrypted Storage</h4>
-                  <p className="text-sm text-gray-600">
-                    Extracted data (revenue, EBITDA, margins) is stored in our encrypted database (AES-256 encryption at rest) and never leaves our secure infrastructure.
-                  </p>
-                </div>
-              </div>
-
-              <div className="mt-6 p-4 bg-green-50 border border-green-200 rounded-lg">
-                <div className="flex items-center gap-2 mb-2">
-                  <CheckCircle className="w-5 h-5 text-green-600" />
-                  <span className="font-semibold text-green-900">What This Means For You:</span>
-                </div>
-                <ul className="text-sm text-green-800 space-y-1 ml-7">
-                  <li>✓ Your financial numbers never touch OpenAI or any external AI</li>
-                  <li>✓ Data stays within our GDPR-compliant infrastructure</li>
-                  <li>✓ Full control over your sensitive business information</li>
-                </ul>
-              </div>
-            </div>
-          </div>
-
-          {/* Step 2 Explanation */}
-          <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-8">
-            <div className="flex items-center gap-3 mb-6">
               <div className="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center">
-                <span className="text-2xl font-bold text-blue-600">2</span>
+                <span className="text-2xl font-bold text-blue-600">1</span>
               </div>
               <div>
-                <h3 className="text-2xl font-bold text-gray-900">AI Conversation</h3>
-                <p className="text-gray-600">Public information only</p>
+                <h3 className="text-2xl font-bold text-gray-900">AI Company Lookup</h3>
+                <p className="text-gray-600">Natural language company search</p>
               </div>
             </div>
 
@@ -189,9 +136,9 @@ export const PrivacyExplainer: React.FC = () => {
               <div className="flex items-start gap-4 p-4 bg-gray-50 rounded-lg">
                 <Eye className="w-6 h-6 text-blue-600 flex-shrink-0 mt-1" />
                 <div>
-                  <h4 className="font-semibold text-gray-900 mb-2">Company Lookup (Public Data)</h4>
+                  <h4 className="font-semibold text-gray-900 mb-2">Natural Language Search</h4>
                   <p className="text-sm text-gray-600">
-                    The AI assistant looks up your company in public registries (Companies House, KVK, Handelsregister) to auto-fill details like founding year, employee count, and industry. This is all publicly available information.
+                    Simply tell our AI assistant your company name and country: "Tech Solutions Ltd in the UK" or "Acme Trading NV in Belgium". The AI understands natural language and helps you find your company.
                   </p>
                 </div>
               </div>
@@ -199,9 +146,19 @@ export const PrivacyExplainer: React.FC = () => {
               <div className="flex items-start gap-4 p-4 bg-gray-50 rounded-lg">
                 <Cloud className="w-6 h-6 text-blue-600 flex-shrink-0 mt-1" />
                 <div>
-                  <h4 className="font-semibold text-gray-900 mb-2">Safe AI Conversations</h4>
+                  <h4 className="font-semibold text-gray-900 mb-2">Safe AI Conversation</h4>
                   <p className="text-sm text-gray-600">
-                    The AI asks clarifying questions about non-financial aspects: "Do you have intellectual property?" "What's your growth trajectory?" "Any strategic partnerships?" These conversations can safely use external AI services because they don't contain sensitive financial data.
+                    The AI only sees publicly available information like your company name and country. No financial data, revenue numbers, or sensitive business information is shared with external AI services.
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-start gap-4 p-4 bg-gray-50 rounded-lg">
+                <Server className="w-6 h-6 text-blue-600 flex-shrink-0 mt-1" />
+                <div>
+                  <h4 className="font-semibold text-gray-900 mb-2">Company Registry Integration</h4>
+                  <p className="text-sm text-gray-600">
+                    Our system automatically connects to official company registries (Companies House UK, KVK Netherlands, Handelsregister Germany, etc.) to find your company's public registration details.
                   </p>
                 </div>
               </div>
@@ -212,18 +169,83 @@ export const PrivacyExplainer: React.FC = () => {
                   <span className="font-semibold text-blue-900">What AI Can See:</span>
                 </div>
                 <ul className="text-sm text-blue-800 space-y-1 ml-7">
-                  <li>✓ Your company name (e.g., "Acme Trading NV")</li>
-                  <li>✓ Industry and country (e.g., "Retail in Belgium")</li>
-                  <li>✓ Public registry data (founding year, employee count)</li>
-                  <li>✓ Qualitative responses (e.g., "We have 2 patents")</li>
+                  <li>✓ Company name (e.g., "Tech Solutions Ltd")</li>
+                  <li>✓ Country (e.g., "United Kingdom")</li>
+                  <li>✓ Public registry information</li>
                 </ul>
                 <div className="mt-3 pt-3 border-t border-blue-200">
                   <span className="font-semibold text-blue-900">What AI NEVER Sees:</span>
                   <ul className="text-sm text-blue-800 space-y-1 ml-7 mt-2">
-                    <li>✗ Revenue numbers (e.g., €2.5M)</li>
+                    <li>✗ Revenue numbers or financial data</li>
                     <li>✗ EBITDA or profit margins</li>
-                    <li>✗ Financial documents or statements</li>
-                    <li>✗ Contract values or sensitive deals</li>
+                    <li>✗ Any sensitive business information</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Step 2 Explanation */}
+          <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-8">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="w-12 h-12 rounded-full bg-green-100 flex items-center justify-center">
+                <span className="text-2xl font-bold text-green-600">2</span>
+              </div>
+              <div>
+                <h3 className="text-2xl font-bold text-gray-900">Secure Registry Data Processing</h3>
+                <p className="text-gray-600">Private financial data extraction</p>
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              <div className="flex items-start gap-4 p-4 bg-gray-50 rounded-lg">
+                <Server className="w-6 h-6 text-green-600 flex-shrink-0 mt-1" />
+                <div>
+                  <h4 className="font-semibold text-gray-900 mb-2">Direct Registry Access</h4>
+                  <p className="text-sm text-gray-600">
+                    Our secure backend directly accesses official company registries to fetch your company's filed financial data. This includes revenue, EBITDA, assets, and other financial metrics from your latest annual reports.
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-start gap-4 p-4 bg-gray-50 rounded-lg">
+                <Lock className="w-6 h-6 text-green-600 flex-shrink-0 mt-1" />
+                <div>
+                  <h4 className="font-semibold text-gray-900 mb-2">Private Data Processing</h4>
+                  <p className="text-sm text-gray-600">
+                    All financial data is processed exclusively on our secure servers using our proprietary extraction engine. No external AI services, including OpenAI, ever see your financial numbers or sensitive business data.
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-start gap-4 p-4 bg-gray-50 rounded-lg">
+                <Shield className="w-6 h-6 text-green-600 flex-shrink-0 mt-1" />
+                <div>
+                  <h4 className="font-semibold text-gray-900 mb-2">Encrypted Storage & Analysis</h4>
+                  <p className="text-sm text-gray-600">
+                    Your financial data is encrypted (AES-256) and stored securely on our infrastructure. We analyze multiple years of financial history to provide accurate valuations while maintaining complete privacy.
+                  </p>
+                </div>
+              </div>
+
+              <div className="mt-6 p-4 bg-green-50 border border-green-200 rounded-lg">
+                <div className="flex items-center gap-2 mb-2">
+                  <CheckCircle className="w-5 h-5 text-green-600" />
+                  <span className="font-semibold text-green-900">Privacy Guarantees:</span>
+                </div>
+                <ul className="text-sm text-green-800 space-y-1 ml-7">
+                  <li>✓ Financial data never leaves our secure infrastructure</li>
+                  <li>✓ No external AI services see your revenue or EBITDA</li>
+                  <li>✓ GDPR-compliant data handling</li>
+                  <li>✓ Bank-grade encryption (TLS 1.3 + AES-256)</li>
+                </ul>
+                <div className="mt-3 pt-3 border-t border-green-200">
+                  <span className="font-semibold text-green-900">What We Process:</span>
+                  <ul className="text-sm text-green-800 space-y-1 ml-7 mt-2">
+                    <li>✓ Revenue, EBITDA, profit margins (from public filings)</li>
+                    <li>✓ Assets, liabilities, equity (from balance sheets)</li>
+                    <li>✓ Historical financial trends (3+ years)</li>
+                    <li>✓ Industry benchmarks and comparisons</li>
                   </ul>
                 </div>
               </div>
@@ -234,47 +256,57 @@ export const PrivacyExplainer: React.FC = () => {
         {/* Comparison Table */}
         <section className="mb-16">
           <h2 className="text-3xl font-bold text-gray-900 mb-8 text-center">
-            Comparison: Traditional AI Tools vs. Upswitch
+            Comparison: Traditional Tools vs. Registry-First Approach
           </h2>
           <div className="bg-white rounded-2xl shadow-lg border border-gray-200 overflow-hidden">
             <table className="w-full">
               <thead className="bg-gray-50 border-b border-gray-200">
                 <tr>
                   <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">Feature</th>
-                  <th className="px-6 py-4 text-center text-sm font-semibold text-red-900">Traditional AI Tools</th>
-                  <th className="px-6 py-4 text-center text-sm font-semibold text-green-900">Upswitch</th>
+                  <th className="px-6 py-4 text-center text-sm font-semibold text-red-900">Traditional Tools</th>
+                  <th className="px-6 py-4 text-center text-sm font-semibold text-green-900">Registry-First</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200">
                 <tr>
-                  <td className="px-6 py-4 text-sm font-medium text-gray-900">Financial Documents</td>
-                  <td className="px-6 py-4 text-center text-sm text-red-600">Sent to OpenAI</td>
-                  <td className="px-6 py-4 text-center text-sm text-green-600 font-semibold">Private Servers</td>
+                  <td className="px-6 py-4 text-sm font-medium text-gray-900">Data Entry</td>
+                  <td className="px-6 py-4 text-center text-sm text-red-600">Manual typing</td>
+                  <td className="px-6 py-4 text-center text-sm text-green-600 font-semibold">AI + Registry lookup</td>
                 </tr>
                 <tr className="bg-gray-50">
-                  <td className="px-6 py-4 text-sm font-medium text-gray-900">Revenue/EBITDA Data</td>
-                  <td className="px-6 py-4 text-center text-sm text-red-600">Visible to LLM</td>
-                  <td className="px-6 py-4 text-center text-sm text-green-600 font-semibold">Hidden from LLM</td>
+                  <td className="px-6 py-4 text-sm font-medium text-gray-900">Financial Data Source</td>
+                  <td className="px-6 py-4 text-center text-sm text-red-600">User uploads/entry</td>
+                  <td className="px-6 py-4 text-center text-sm text-green-600 font-semibold">Official registries</td>
                 </tr>
                 <tr>
-                  <td className="px-6 py-4 text-sm font-medium text-gray-900">Data Extraction</td>
-                  <td className="px-6 py-4 text-center text-sm text-red-600">GPT-4 Vision (External)</td>
-                  <td className="px-6 py-4 text-center text-sm text-green-600 font-semibold">Proprietary Engine</td>
+                  <td className="px-6 py-4 text-sm font-medium text-gray-900">AI Usage</td>
+                  <td className="px-6 py-4 text-center text-sm text-red-600">Processes financial docs</td>
+                  <td className="px-6 py-4 text-center text-sm text-green-600 font-semibold">Company lookup only</td>
                 </tr>
                 <tr className="bg-gray-50">
+                  <td className="px-6 py-4 text-sm font-medium text-gray-900">Data Accuracy</td>
+                  <td className="px-6 py-4 text-center text-sm text-red-600">User-dependent</td>
+                  <td className="px-6 py-4 text-center text-sm text-green-600 font-semibold">Registry-verified</td>
+                </tr>
+                <tr>
+                  <td className="px-6 py-4 text-sm font-medium text-gray-900">Privacy Risk</td>
+                  <td className="px-6 py-4 text-center text-sm text-red-600">High (AI sees data)</td>
+                  <td className="px-6 py-4 text-center text-sm text-green-600 font-semibold">Minimal (public data only)</td>
+                </tr>
+                <tr className="bg-gray-50">
+                  <td className="px-6 py-4 text-sm font-medium text-gray-900">Setup Time</td>
+                  <td className="px-6 py-4 text-center text-sm text-red-600">30+ minutes</td>
+                  <td className="px-6 py-4 text-center text-sm text-green-600 font-semibold">2-3 minutes</td>
+                </tr>
+                <tr>
                   <td className="px-6 py-4 text-sm font-medium text-gray-900">GDPR Compliance</td>
                   <td className="px-6 py-4 text-center text-sm text-red-600">⚠️ Risk</td>
                   <td className="px-6 py-4 text-center text-sm text-green-600 font-semibold">✓ Compliant</td>
                 </tr>
-                <tr>
-                  <td className="px-6 py-4 text-sm font-medium text-gray-900">Data Breach Risk</td>
-                  <td className="px-6 py-4 text-center text-sm text-red-600">High</td>
-                  <td className="px-6 py-4 text-center text-sm text-green-600 font-semibold">Minimal</td>
-                </tr>
                 <tr className="bg-gray-50">
-                  <td className="px-6 py-4 text-sm font-medium text-gray-900">AI Benefits</td>
-                  <td className="px-6 py-4 text-center text-sm text-gray-600">Yes (but risky)</td>
-                  <td className="px-6 py-4 text-center text-sm text-green-600 font-semibold">Yes (safe & private)</td>
+                  <td className="px-6 py-4 text-sm font-medium text-gray-900">Historical Data</td>
+                  <td className="px-6 py-4 text-center text-sm text-red-600">Manual entry</td>
+                  <td className="px-6 py-4 text-center text-sm text-green-600 font-semibold">Auto-fetched (3+ years)</td>
                 </tr>
               </tbody>
             </table>
@@ -325,49 +357,61 @@ export const PrivacyExplainer: React.FC = () => {
           <div className="space-y-4">
             <details className="bg-white rounded-lg shadow-lg border border-gray-200 p-6 group">
               <summary className="font-semibold text-gray-900 cursor-pointer list-none flex items-center justify-between">
-                <span>Why can't you just use OpenAI for everything?</span>
+                <span>How does the Registry-First approach work?</span>
                 <svg className="w-5 h-5 text-gray-400 group-open:rotate-180 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                 </svg>
               </summary>
               <p className="mt-4 text-gray-600 text-sm">
-                While OpenAI's GPT-4 is powerful, sending your financial documents to their servers means your sensitive business data (revenue, EBITDA, profit margins) would be processed on their infrastructure. This creates privacy risks, potential GDPR violations, and compliance issues. By using our own extraction engine for financial data, we keep your sensitive information secure while still leveraging AI for non-sensitive tasks.
+                Our Registry-First approach uses two steps: (1) AI helps you find your company using natural language (only public info like company name and country), then (2) we securely fetch your financial data directly from official company registries (Companies House, KVK, etc.) and process it on our private servers. This eliminates manual data entry while keeping your financial data completely private.
               </p>
             </details>
 
             <details className="bg-white rounded-lg shadow-lg border border-gray-200 p-6 group">
               <summary className="font-semibold text-gray-900 cursor-pointer list-none flex items-center justify-between">
-                <span>How accurate is your proprietary extraction engine?</span>
+                <span>Is registry data accurate and up-to-date?</span>
                 <svg className="w-5 h-5 text-gray-400 group-open:rotate-180 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                 </svg>
               </summary>
               <p className="mt-4 text-gray-600 text-sm">
-                Our extraction engine uses a combination of custom ML models, OCR (optical character recognition), and intelligent parsing algorithms. We show you a confidence score with each extraction, and you can always review and correct the data before calculating your valuation. Accuracy typically ranges from 85-95% depending on document quality.
+                Yes! Registry data comes directly from official government sources (Companies House UK, KVK Netherlands, Handelsregister Germany, etc.) and represents the same financial information your company has filed with authorities. This data is typically more accurate than manual entry and includes multiple years of historical data. You can always review and edit the data before calculating your valuation.
               </p>
             </details>
 
             <details className="bg-white rounded-lg shadow-lg border border-gray-200 p-6 group">
               <summary className="font-semibold text-gray-900 cursor-pointer list-none flex items-center justify-between">
-                <span>What happens to my data after the valuation?</span>
+                <span>What if my company isn't found in the registries?</span>
                 <svg className="w-5 h-5 text-gray-400 group-open:rotate-180 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                 </svg>
               </summary>
               <p className="mt-4 text-gray-600 text-sm">
-                Your data is stored securely in our encrypted database for the duration of your session and for a limited time afterward (typically 30 days) to allow you to return to your valuation. You can request immediate deletion at any time, and we comply with GDPR's "right to be forgotten."
+                If your company isn't found in the registries, you can still use our manual entry option to input your financial data directly. The Registry-First approach is designed to make the process faster and more accurate for companies that are registered, but we support all business types and structures.
               </p>
             </details>
 
             <details className="bg-white rounded-lg shadow-lg border border-gray-200 p-6 group">
               <summary className="font-semibold text-gray-900 cursor-pointer list-none flex items-center justify-between">
-                <span>Can I still get AI help without risking my financial data?</span>
+                <span>Why is this more private than traditional tools?</span>
                 <svg className="w-5 h-5 text-gray-400 group-open:rotate-180 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                 </svg>
               </summary>
               <p className="mt-4 text-gray-600 text-sm">
-                Absolutely! In Step 2, our AI assistant helps with company lookups, qualitative questions, and clarifications. The AI only sees publicly available information (company name, industry, country) and your non-financial responses. This gives you the benefits of AI assistance without exposing sensitive financial data.
+                Traditional tools often send your financial documents to external AI services like OpenAI, exposing your revenue, EBITDA, and profit margins to third parties. Our Registry-First approach only uses AI for company lookup (public info only), then fetches financial data directly from official registries and processes it on our secure servers. Your sensitive financial numbers never touch external AI services.
+              </p>
+            </details>
+
+            <details className="bg-white rounded-lg shadow-lg border border-gray-200 p-6 group">
+              <summary className="font-semibold text-gray-900 cursor-pointer list-none flex items-center justify-between">
+                <span>What countries and registries do you support?</span>
+                <svg className="w-5 h-5 text-gray-400 group-open:rotate-180 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              </summary>
+              <p className="mt-4 text-gray-600 text-sm">
+                We currently support major European markets including the UK (Companies House), Netherlands (KVK), Germany (Handelsregister), Belgium (Crossroads Bank), France (INPI), and Luxembourg. We're continuously expanding to cover more countries and registries. If your country isn't supported yet, you can still use our manual entry option.
               </p>
             </details>
           </div>
@@ -378,10 +422,10 @@ export const PrivacyExplainer: React.FC = () => {
           <div className="bg-gradient-to-br from-primary-50 to-blue-50 rounded-2xl p-8 border border-primary-200">
             <Shield className="w-12 h-12 text-primary-600 mx-auto mb-4" />
             <h2 className="text-2xl font-bold text-gray-900 mb-3">
-              Ready to Try Our Privacy-First Valuation?
+              Ready to Try Our Registry-First Valuation?
             </h2>
             <p className="text-gray-600 mb-6 max-w-2xl mx-auto">
-              Experience the power of AI assistance without compromising your financial data security.
+              Experience the speed of AI-powered company lookup with the security of private financial data processing.
             </p>
             <Link
               to="/"
