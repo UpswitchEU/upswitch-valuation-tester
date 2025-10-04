@@ -12,7 +12,7 @@ class ValuationAPI {
 
   constructor() {
     this.client = axios.create({
-      baseURL: import.meta.env.VITE_VALUATION_API_URL || 'http://localhost:8000',
+      baseURL: import.meta.env.VITE_VALUATION_API_URL || 'https://upswitch-valuation-engine-production.up.railway.app',
       timeout: 30000,
       headers: {
         'Content-Type': 'application/json',

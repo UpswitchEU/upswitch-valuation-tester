@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Send, Bot, User, Loader2 } from 'lucide-react';
-import { mockCompanySearch, mockFetchFinancials } from '../../services/mockRegistry';
+import { searchCompanies, fetchCompanyFinancials } from '../../services/registryService';
 import type { CompanyFinancialData } from '../../types/registry';
 
 interface Message {
@@ -144,8 +144,8 @@ Just tell me your company name and country.
     try {
       const { companyName, country } = extractCompanyInfo(userMessage);
       
-      // Search company (mock)
-      const searchResults = await mockCompanySearch(companyName, country);
+      // Search company (real API)
+      const searchResults = await searchCompanies(companyName, country);
       
       if (searchResults.length > 0) {
         const bestMatch = searchResults[0];
@@ -162,8 +162,8 @@ Just tell me your company name and country.
           isLoading: true
         }]);
 
-        // Fetch financials (mock)
-        const financialData = await mockFetchFinancials(bestMatch.company_id, country);
+        // Fetch financials (real API)
+        const financialData = await fetchCompanyFinancials(bestMatch.company_id, country);
         
         const latest = financialData.filing_history[0];
         
