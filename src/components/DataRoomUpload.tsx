@@ -124,18 +124,87 @@ export const DataRoomUpload: React.FC<DataRoomUploadProps> = ({ onComplete }) =>
   return (
     <div className="min-h-[600px] flex flex-col">
       {/* Header */}
-      <div className="mb-8 text-center">
-        <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-primary-100 mb-4">
-          <Upload className="w-8 h-8 text-primary-600" />
+      <div className="mb-8">
+        <div className="text-center mb-6">
+          <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-primary-100 mb-4">
+            <Upload className="w-8 h-8 text-primary-600" />
+          </div>
+          <h2 className="text-3xl font-bold text-gray-900 mb-2">
+            Upload Your Financial Documents
+          </h2>
+          <p className="text-gray-600 max-w-2xl mx-auto">
+            Your financial data is processed securely on our servers and{' '}
+            <strong className="text-primary-600">never sent to external AI services</strong>.
+          </p>
         </div>
-        <h2 className="text-3xl font-bold text-gray-900 mb-2">
-          Upload Your Financial Documents
-        </h2>
-        <p className="text-gray-600 max-w-2xl mx-auto">
-          Your financial data is processed securely on our servers and{' '}
-          <strong className="text-primary-600">never sent to external AI services</strong>.
-          Upload P&L statements, balance sheets, or financial reports.
-        </p>
+
+        {/* What to Upload Guide */}
+        <div className="bg-blue-50 border border-blue-200 rounded-xl p-6 max-w-4xl mx-auto">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+            <FileText className="w-5 h-5 text-blue-600" />
+            Which documents should I upload?
+          </h3>
+          
+          <div className="grid md:grid-cols-2 gap-4 mb-4">
+            <div className="bg-white rounded-lg p-4 border border-blue-100">
+              <div className="flex items-start gap-3">
+                <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
+                <div>
+                  <h4 className="font-semibold text-gray-900 text-sm mb-1">✅ Best for Accuracy</h4>
+                  <ul className="text-sm text-gray-600 space-y-1">
+                    <li>• <strong>Annual Report</strong> (contains all financials)</li>
+                    <li>• <strong>Financial Statements</strong> (P&L + Balance Sheet)</li>
+                    <li>• <strong>Tax Returns</strong> (verified numbers)</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-white rounded-lg p-4 border border-blue-100">
+              <div className="flex items-start gap-3">
+                <AlertCircle className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
+                <div>
+                  <h4 className="font-semibold text-gray-900 text-sm mb-1">💡 Also Works</h4>
+                  <ul className="text-sm text-gray-600 space-y-1">
+                    <li>• <strong>Management Accounts</strong></li>
+                    <li>• <strong>Bookkeeping Reports</strong></li>
+                    <li>• <strong>Bank Statements</strong> (for revenue)</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-gradient-to-r from-green-50 to-blue-50 rounded-lg p-4 border border-green-200">
+            <h4 className="font-semibold text-gray-900 text-sm mb-2">📊 What we need to extract:</h4>
+            <div className="grid sm:grid-cols-3 gap-3 text-xs">
+              <div>
+                <p className="font-semibold text-gray-700 mb-1">Required:</p>
+                <ul className="text-gray-600 space-y-0.5">
+                  <li>✓ Annual Revenue</li>
+                  <li>✓ EBITDA / Operating Profit</li>
+                  <li>✓ Company Name</li>
+                </ul>
+              </div>
+              <div>
+                <p className="font-semibold text-gray-700 mb-1">Highly Recommended:</p>
+                <ul className="text-gray-600 space-y-0.5">
+                  <li>✓ 3+ years history</li>
+                  <li>✓ Total Assets</li>
+                  <li>✓ Total Debt & Cash</li>
+                </ul>
+              </div>
+              <div>
+                <p className="font-semibold text-gray-700 mb-1">Improves Accuracy:</p>
+                <ul className="text-gray-600 space-y-0.5">
+                  <li>✓ Net Income / Profit</li>
+                  <li>✓ Cost of Goods Sold</li>
+                  <li>✓ Operating Expenses</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* Privacy Notice */}
@@ -246,16 +315,38 @@ export const DataRoomUpload: React.FC<DataRoomUploadProps> = ({ onComplete }) =>
                     )}
 
                     {file.status === 'completed' && file.extractedData && (
-                      <div className="space-y-1">
+                      <div className="space-y-2 mt-2">
                         <div className="flex items-center gap-2 text-green-600">
                           <CheckCircle className="w-4 h-4" />
                           <p className="text-xs font-medium">
                             Processed successfully ({Math.round((file.extractedData.confidence || 0) * 100)}% confidence)
                           </p>
                         </div>
-                        <div className="text-xs text-gray-500">
-                          Extracted: Revenue €{(file.extractedData.revenue || 0).toLocaleString()}, 
-                          EBITDA €{(file.extractedData.ebitda || 0).toLocaleString()}
+                        <div className="bg-green-50 rounded-lg p-3 border border-green-200">
+                          <p className="text-xs font-semibold text-gray-700 mb-1.5">✓ Extracted Data:</p>
+                          <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs">
+                            {file.extractedData.company_name && (
+                              <div>
+                                <span className="text-gray-500">Company:</span>{' '}
+                                <span className="font-medium text-gray-900">{file.extractedData.company_name}</span>
+                              </div>
+                            )}
+                            {file.extractedData.revenue && (
+                              <div>
+                                <span className="text-gray-500">Revenue:</span>{' '}
+                                <span className="font-medium text-gray-900">€{file.extractedData.revenue.toLocaleString()}</span>
+                              </div>
+                            )}
+                            {file.extractedData.ebitda && (
+                              <div>
+                                <span className="text-gray-500">EBITDA:</span>{' '}
+                                <span className="font-medium text-gray-900">€{file.extractedData.ebitda.toLocaleString()}</span>
+                              </div>
+                            )}
+                          </div>
+                          <p className="text-xs text-gray-500 mt-2 italic">
+                            💡 You can review and edit these numbers before calculating
+                          </p>
                         </div>
                       </div>
                     )}
