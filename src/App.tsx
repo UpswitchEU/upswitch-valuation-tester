@@ -1,13 +1,14 @@
 import { useState } from 'react';
 import { Header } from './components/Header';
-import { ValuationChat } from './components/ValuationChat';
+import { TwoStepFlow } from './components/TwoStepFlow';
 import { ValuationForm } from './components/ValuationForm';
-import { LivePreview } from './components/LivePreview';
 import { Results } from './components/Results';
 import { useValuationStore } from './store/useValuationStore';
 
+type ViewMode = 'two-step' | 'manual';
+
 function App() {
-  const [useLegacyMode, setUseLegacyMode] = useState(false);
+  const [viewMode, setViewMode] = useState<ViewMode>('two-step');
   const { result } = useValuationStore();
 
   return (
@@ -19,79 +20,50 @@ function App() {
         <div className="mb-8 flex items-center justify-between">
           <div>
             <h2 className="text-3xl font-display font-bold text-gray-900 mb-2">
-              {useLegacyMode ? 'Manual Valuation' : '💬 Chat with AI'}
+              {viewMode === 'two-step' ? '🔒 Privacy-First Valuation' : '✏️ Manual Entry'}
             </h2>
             <p className="text-gray-600">
-              {useLegacyMode 
-                ? 'Enter your business data manually' 
-                : 'Have a conversation with AI to value your business'}
+              {viewMode === 'two-step'
+                ? 'Secure document upload + AI assistant (your financial data stays private)'
+                : 'Enter your business data manually'}
             </p>
           </div>
           <button
-            onClick={() => setUseLegacyMode(!useLegacyMode)}
+            onClick={() => setViewMode(viewMode === 'two-step' ? 'manual' : 'two-step')}
             className="px-4 py-2 text-sm font-medium text-primary-600 hover:text-primary-700 border border-primary-200 rounded-lg hover:bg-primary-50 transition-colors"
           >
-            {useLegacyMode ? '🤖 Try AI Chat' : '✏️ Use Manual Form'}
+            {viewMode === 'two-step' ? '✏️ Manual Mode' : '🔒 Privacy-First Mode'}
           </button>
         </div>
 
         {/* Content */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                {/* Main Content */}
-                <div className="lg:col-span-2">
-                  {useLegacyMode ? (
-                    <ValuationForm />
-                  ) : (
-                    <ValuationChat onValuationComplete={() => {
-                      // Scroll to results when calculation completes
-                      setTimeout(() => {
-                        document.getElementById('results')?.scrollIntoView({ behavior: 'smooth' });
-                      }, 500);
-                    }} />
-                  )}
+        {viewMode === 'two-step' ? (
+          <>
+            <TwoStepFlow />
+            
+            {/* Results */}
+            {result && (
+              <div id="results" className="mt-8">
+                <Results />
+              </div>
+            )}
+          </>
+        ) : (
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <div className="lg:col-span-3">
+              <div className="bg-white rounded-2xl shadow-xl border border-gray-200 p-8">
+                <ValuationForm />
+              </div>
 
-                  {/* Results */}
-                  {result && (
-                    <div id="results" className="mt-8">
-                      <Results />
-                    </div>
-                  )}
-                </div>
-
-          {/* Sidebar - Live Preview */}
-          <div className="lg:col-span-1">
-            <div className="sticky top-8">
-              <LivePreview />
-              
-              {/* AI Chat Benefits */}
-              {!useLegacyMode && (
-                <div className="mt-6 bg-gradient-to-br from-primary-50 to-blue-50 rounded-lg p-6 border border-primary-200">
-                  <h3 className="text-lg font-semibold text-gray-900 mb-3">
-                    ✨ Why Chat with AI?
-                  </h3>
-                  <ul className="space-y-2 text-sm text-gray-700">
-                    <li className="flex items-start gap-2">
-                      <span className="text-primary-600 mt-0.5">💬</span>
-                      <span><strong>Natural Conversation:</strong> Just talk like you would to an advisor</span>
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <span className="text-primary-600 mt-0.5">📄</span>
-                      <span><strong>Upload Docs:</strong> Drop your financials, AI extracts everything</span>
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <span className="text-primary-600 mt-0.5">🔍</span>
-                      <span><strong>Auto-Lookup:</strong> Finds your company in registries</span>
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <span className="text-primary-600 mt-0.5">⚡</span>
-                      <span><strong>10x Faster:</strong> No forms, no tedious data entry</span>
-                    </li>
-                  </ul>
+              {/* Results */}
+              {result && (
+                <div id="results" className="mt-8">
+                  <Results />
                 </div>
               )}
             </div>
           </div>
-        </div>
+        )}
       </main>
     </div>
   );
