@@ -53,7 +53,7 @@ export const ValuationMethodSelector: React.FC<ValuationMethodSelectorProps> = (
     }
   ];
 
-  const getColorClasses = (color: string, isActive: boolean) => {
+  const getColorClasses = (isActive: boolean) => {
     const baseClasses = 'flex-1 px-4 py-3 text-sm font-medium rounded-md transition-all';
     
     if (isActive) {
@@ -113,7 +113,7 @@ export const ValuationMethodSelector: React.FC<ValuationMethodSelectorProps> = (
           <button
             key={tab.id}
             onClick={() => onModeChange(tab.id)}
-            className={getColorClasses(tab.color, viewMode === tab.id)}
+            className={getColorClasses(viewMode === tab.id)}
           >
             {tab.label}
           </button>
