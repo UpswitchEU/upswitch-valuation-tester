@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { MessageSquare, Database, TrendingUp, CheckCircle, Lock, Zap } from 'lucide-react';
+import { MessageSquare, Database, TrendingUp, CheckCircle } from 'lucide-react';
 import { ConversationalChat } from './ConversationalChat';
 import { RegistryDataPreview } from './RegistryDataPreview';
 import type { CompanyFinancialData } from '../../types/registry';
@@ -119,44 +119,6 @@ export const AIAssistedValuation: React.FC = () => {
         </div>
       </div>
 
-      {/* Key Benefits Banner */}
-      {stage === 'chat' && (
-        <div className="bg-gradient-to-r from-blue-50 to-primary-50 rounded-xl p-6 border border-blue-200">
-          <div className="flex items-start gap-4">
-            <div className="w-12 h-12 rounded-lg bg-primary-600 flex items-center justify-center flex-shrink-0">
-              <Zap className="w-6 h-6 text-white" />
-            </div>
-            <div className="flex-1">
-              <h3 className="text-lg font-bold text-gray-900 mb-2">
-                🚀 Get Your Valuation in 30 Seconds
-              </h3>
-              <div className="grid md:grid-cols-3 gap-4 text-sm">
-                <div className="flex items-start gap-2">
-                  <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
-                  <div>
-                    <div className="font-semibold text-gray-900">Official Registry Data</div>
-                    <div className="text-gray-600">From Companies House, KBO/BCE, KVK, etc.</div>
-                  </div>
-                </div>
-                <div className="flex items-start gap-2">
-                  <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
-                  <div>
-                    <div className="font-semibold text-gray-900">3+ Years History</div>
-                    <div className="text-gray-600">More accurate with historical data</div>
-                  </div>
-                </div>
-                <div className="flex items-start gap-2">
-                  <Lock className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
-                  <div>
-                    <div className="font-semibold text-gray-900">100% Secure</div>
-                    <div className="text-gray-600">Public data only, GDPR compliant</div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Main Content */}
       <div className="animate-fadeIn">

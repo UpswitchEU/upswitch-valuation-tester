@@ -30,11 +30,7 @@ export const ValuationMethodSelector: React.FC<ValuationMethodSelectorProps> = (
       label: '📝 Manual Input',
       title: 'Manual Financial Input',
       subtitle: 'Enter your financial data directly',
-      benefits: [
-        'Full control over data entry',
-        'Works for any business structure',
-        'Private data processing'
-      ],
+      benefits: [],
       color: 'blue',
       icon: '📝'
     },
@@ -43,11 +39,7 @@ export const ValuationMethodSelector: React.FC<ValuationMethodSelectorProps> = (
       label: '📄 File Upload',
       title: 'Document Upload & Parse',
       subtitle: 'Upload financial documents for AI extraction',
-      benefits: [
-        'Supports PDF, Excel, CSV files',
-        'AI-powered data extraction',
-        'Secure processing on our servers'
-      ],
+      benefits: [],
       color: 'purple',
       icon: '📄'
     }
@@ -63,41 +55,6 @@ export const ValuationMethodSelector: React.FC<ValuationMethodSelectorProps> = (
     return `${baseClasses} text-gray-600 hover:text-gray-900`;
   };
 
-  const getContentColorClasses = (color: string) => {
-    switch (color) {
-      case 'primary':
-        return {
-          bg: 'bg-primary-100',
-          border: 'border-primary-200',
-          text: 'text-primary-600',
-          button: 'bg-primary-600 hover:bg-primary-700'
-        };
-      case 'blue':
-        return {
-          bg: 'bg-blue-100',
-          border: 'border-blue-200',
-          text: 'text-blue-600',
-          button: 'bg-blue-600 hover:bg-blue-700'
-        };
-      case 'purple':
-        return {
-          bg: 'bg-purple-100',
-          border: 'border-purple-200',
-          text: 'text-purple-600',
-          button: 'bg-purple-600 hover:bg-purple-700'
-        };
-      default:
-        return {
-          bg: 'bg-gray-100',
-          border: 'border-gray-200',
-          text: 'text-gray-600',
-          button: 'bg-gray-600 hover:bg-gray-700'
-        };
-    }
-  };
-
-  const activeTab = tabs.find(tab => tab.id === viewMode);
-  const colors = activeTab ? getContentColorClasses(activeTab.color) : getContentColorClasses('primary');
 
   return (
     <div className="mb-8">
@@ -120,14 +77,6 @@ export const ValuationMethodSelector: React.FC<ValuationMethodSelectorProps> = (
         ))}
       </div>
       
-      {/* Minimal Content - Just show the selected method is active */}
-      <div className="text-center py-8">
-        <div className={`w-12 h-12 ${colors.bg} rounded-full flex items-center justify-center mx-auto mb-4`}>
-          <span className="text-xl">{activeTab?.icon}</span>
-        </div>
-        <h3 className="text-lg font-semibold text-gray-900 mb-2">{activeTab?.title}</h3>
-        <p className="text-gray-600 text-sm">{activeTab?.subtitle}</p>
-      </div>
     </div>
   );
 };

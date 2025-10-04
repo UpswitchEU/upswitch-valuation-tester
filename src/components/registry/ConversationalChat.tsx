@@ -29,11 +29,11 @@ I can value your business in 30 seconds by looking up your official financial ac
 Just tell me your company name and country.
 
 **Examples:**
-• "Tech Solutions Ltd in the UK"
-• "Acme GmbH in Germany"  
-• "Innovate BV in Belgium"
+• "Innovate NV in Belgium"
+• "Acme Trading BV in Belgium"
+• "Tech Solutions SA in Belgium"
 
-**Supported countries:** 🇬🇧 UK • 🇧🇪 Belgium • 🇳🇱 Netherlands • 🇩🇪 Germany • 🇫🇷 France • 🇱🇺 Luxembourg`,
+**Supported countries:** 🇧🇪 Belgium`,
       timestamp: new Date()
     }
   ]);
@@ -341,20 +341,6 @@ Would you like to:
         {/* Quick suggestions */}
         {messages.length <= 1 && (
           <div className="mt-3 flex flex-wrap gap-2">
-            <button
-              onClick={() => useSuggestion('Tech Solutions Ltd in the UK')}
-              className="px-3 py-1.5 text-xs bg-gray-100 hover:bg-gray-200 rounded-full transition-colors font-medium"
-              disabled={isProcessing}
-            >
-              🇬🇧 UK Company Example
-            </button>
-            <button
-              onClick={() => useSuggestion('Acme GmbH in Germany')}
-              className="px-3 py-1.5 text-xs bg-gray-100 hover:bg-gray-200 rounded-full transition-colors font-medium"
-              disabled={isProcessing}
-            >
-              🇩🇪 German Company
-            </button>
             <button
               onClick={() => useSuggestion('Innovate NV in Belgium')}
               className="px-3 py-1.5 text-xs bg-gray-100 hover:bg-gray-200 rounded-full transition-colors font-medium"

@@ -193,49 +193,6 @@ export const TwoStepFlow: React.FC = () => {
         </div>
       </div>
 
-      {/* Privacy Summary Footer */}
-      <div className="max-w-4xl mx-auto">
-        <div className="bg-gradient-to-r from-green-50 to-blue-50 border border-green-200 rounded-xl p-6">
-          <div className="flex items-start gap-4">
-            <div className="flex-shrink-0">
-              <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center">
-                <Shield className="w-5 h-5 text-green-600" />
-              </div>
-            </div>
-            <div>
-              <h3 className="text-lg font-bold text-gray-900 mb-2">
-                🔒 Your Privacy is Our Priority
-              </h3>
-              <div className="grid md:grid-cols-2 gap-4 text-sm text-gray-700">
-                <div>
-                  <p className="font-semibold text-gray-900 mb-1">Step 1: Private Processing</p>
-                  <p>
-                    Financial documents are processed exclusively by our proprietary engine on secure
-                    servers. No external AI services (OpenAI, etc.) see your sensitive data.
-                  </p>
-                </div>
-                <div>
-                  <p className="font-semibold text-gray-900 mb-1">Step 2: Public Data Only</p>
-                  <p>
-                    The AI assistant only processes publicly available information like company names,
-                    industry data, and registry information. Your financial numbers stay private.
-                  </p>
-                </div>
-              </div>
-              <div className="mt-4 flex items-center gap-2 text-xs text-gray-600">
-                <svg className="w-4 h-4 text-green-600" fill="currentColor" viewBox="0 0 20 20">
-                  <path
-                    fillRule="evenodd"
-                    d="M2.166 4.999A11.954 11.954 0 0010 1.944 11.954 11.954 0 0017.834 5c.11.65.166 1.32.166 2.001 0 5.225-3.34 9.67-8 11.317C5.34 16.67 2 12.225 2 7c0-.682.057-1.35.166-2.001zm11.541 3.708a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
-                    clipRule="evenodd"
-                  />
-                </svg>
-                <span>GDPR Compliant • SOC 2 Certified • Bank-Grade Encryption</span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
     </div>
   );
 };
