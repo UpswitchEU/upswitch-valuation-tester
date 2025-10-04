@@ -14,16 +14,16 @@ export const ValuationMethodSelector: React.FC<ValuationMethodSelectorProps> = (
   const tabs = [
     {
       id: 'ai-assisted' as ViewMode,
-      label: '🤖 Registry Lookup',
-      title: 'AI-Powered Registry Lookup',
-      subtitle: 'Fastest method - 30 seconds to valuation',
+      label: '🇧🇪 Belgian Registry',
+      title: 'Belgian Company Lookup',
+      subtitle: 'Find your company in the Belgian registry',
       benefits: [
-        'Official registry data (Companies House, KVK, etc.)',
+        'Official Belgian company registry data',
         '3+ years of historical financial data',
-        'GDPR compliant - no sensitive data shared'
+        'Secure and private processing'
       ],
       color: 'primary',
-      icon: '🤖'
+      icon: '🇧🇪'
     },
     {
       id: 'manual' as ViewMode,
@@ -103,8 +103,8 @@ export const ValuationMethodSelector: React.FC<ValuationMethodSelectorProps> = (
     <div className="mb-8">
       {/* Clean header */}
       <div className="text-center mb-8">
-        <h2 className="text-3xl font-bold text-gray-900 mb-2">Business Valuation</h2>
-        <p className="text-gray-600">Choose your preferred method to get started</p>
+        <h2 className="text-3xl font-bold text-gray-900 mb-2">🇧🇪 Belgian Business Valuation</h2>
+        <p className="text-gray-600">Get your company valuation using Belgian registry data</p>
       </div>
       
       {/* Tab Navigation */}
@@ -120,36 +120,13 @@ export const ValuationMethodSelector: React.FC<ValuationMethodSelectorProps> = (
         ))}
       </div>
       
-      {/* Tab Content */}
-      <div className="bg-white rounded-lg border border-gray-200 p-6">
-        <div className="text-center mb-6">
-          <div className={`w-16 h-16 ${colors.bg} rounded-full flex items-center justify-center mx-auto mb-4`}>
-            <span className="text-2xl">{activeTab?.icon}</span>
-          </div>
-          <h3 className="text-xl font-semibold text-gray-900 mb-2">{activeTab?.title}</h3>
-          <p className="text-gray-600">{activeTab?.subtitle}</p>
+      {/* Minimal Content - Just show the selected method is active */}
+      <div className="text-center py-8">
+        <div className={`w-12 h-12 ${colors.bg} rounded-full flex items-center justify-center mx-auto mb-4`}>
+          <span className="text-xl">{activeTab?.icon}</span>
         </div>
-        
-        <div className="space-y-4">
-          {activeTab?.benefits.map((benefit, index) => (
-            <div key={index} className={`flex items-center gap-3 p-3 ${colors.bg} rounded-lg border ${colors.border}`}>
-              <span className={colors.text}>✓</span>
-              <span className="text-sm text-gray-700">{benefit}</span>
-            </div>
-          ))}
-        </div>
-        
-        <div className="mt-6">
-          <button 
-            className={`w-full px-6 py-3 ${colors.button} text-white rounded-lg font-medium transition-colors`}
-            onClick={() => {
-              // The actual action will be handled by the parent component
-              // This is just for visual feedback
-            }}
-          >
-            Start {activeTab?.title.split(' ')[0]} Process
-          </button>
-        </div>
+        <h3 className="text-lg font-semibold text-gray-900 mb-2">{activeTab?.title}</h3>
+        <p className="text-gray-600 text-sm">{activeTab?.subtitle}</p>
       </div>
     </div>
   );

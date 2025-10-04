@@ -210,29 +210,6 @@ export const AIAssistedValuation: React.FC = () => {
         )}
       </div>
 
-      {/* Trust Indicators */}
-      {stage !== 'results' && (
-        <div className="bg-gradient-to-br from-gray-50 to-blue-50 rounded-xl p-6 border border-gray-200">
-          <div className="flex flex-wrap items-center justify-center gap-8 text-sm text-gray-700">
-            <div className="flex items-center gap-2">
-              <Lock className="w-4 h-4 text-green-600" />
-              <span className="font-medium">GDPR Compliant</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <CheckCircle className="w-4 h-4 text-green-600" />
-              <span className="font-medium">SOC 2 Certified</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <Lock className="w-4 h-4 text-green-600" />
-              <span className="font-medium">Bank-Grade Encryption</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <Database className="w-4 h-4 text-blue-600" />
-              <span className="font-medium">Official Registries Only</span>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 };

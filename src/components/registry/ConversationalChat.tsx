@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Send, Bot, User, Sparkles, Loader2 } from 'lucide-react';
+import { Send, Bot, User, Loader2 } from 'lucide-react';
 import { mockCompanySearch, mockFetchFinancials } from '../../services/mockRegistry';
 import type { CompanyFinancialData } from '../../types/registry';
 
@@ -256,11 +256,11 @@ Would you like to:
       <div className="bg-gradient-to-r from-primary-600 to-blue-600 text-white p-6">
         <div className="flex items-center gap-3">
           <div className="w-12 h-12 rounded-full bg-white/20 flex items-center justify-center">
-            <Sparkles className="w-7 h-7" />
+            <span className="text-2xl">🇧🇪</span>
           </div>
           <div>
-            <h3 className="text-xl font-bold">AI Valuation Assistant</h3>
-            <p className="text-sm opacity-90">Powered by official company registries</p>
+            <h3 className="text-xl font-bold">Belgian Company Lookup</h3>
+            <p className="text-sm opacity-90">Find your company in the Belgian registry</p>
           </div>
         </div>
       </div>
