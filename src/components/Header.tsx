@@ -1,4 +1,5 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 
 /**
  * Header Component
@@ -63,7 +64,13 @@ export const Header: React.FC = () => {
               <p className="text-sm text-yellow-700">
                 <strong className="font-semibold">⚠️ Beta Testing Tool - Important Disclaimer:</strong> This is a beta testing version of the Upswitch Valuation Engine for evaluation purposes only. 
                 Valuations are estimates and should not be considered professional financial advice or used as the sole basis for business decisions. 
-                Always consult with qualified financial advisors for important transactions.
+                Always consult with qualified financial advisors for important transactions.{' '}
+                <Link 
+                  to="/privacy-explainer" 
+                  className="font-semibold underline hover:text-yellow-800 transition-colors"
+                >
+                  Learn how we protect your financial data →
+                </Link>
               </p>
             </div>
           </div>
