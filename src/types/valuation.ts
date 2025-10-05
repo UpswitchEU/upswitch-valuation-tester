@@ -1,58 +1,94 @@
 // Valuation Engine API Types
 
-export interface YearlyFinancialData {
+// Enums matching backend
+export enum IndustryCode {
+  TECHNOLOGY = "technology",
+  MANUFACTURING = "manufacturing",
+  RETAIL = "retail",
+  SERVICES = "services",
+  HEALTHCARE = "healthcare",
+  FINANCE = "finance",
+  REAL_ESTATE = "real_estate",
+  HOSPITALITY = "hospitality",
+  CONSTRUCTION = "construction",
+  AGRICULTURE = "agriculture",
+  OTHER = "other"
+}
+
+export enum BusinessModel {
+  B2B = "b2b",
+  B2C = "b2c",
+  B2B_SAAS = "b2b_saas",
+  MARKETPLACE = "marketplace",
+  ECOMMERCE = "ecommerce",
+  MANUFACTURING = "manufacturing",
+  SERVICES = "services",
+  OTHER = "other"
+}
+
+export interface YearDataInput {
   year: number;
   revenue: number;
+  ebitda: number;
+  
+  // Optional detailed financials
+  cogs?: number;
+  gross_profit?: number;
   operating_expenses?: number;
-  ebitda?: number;
-  depreciation_amortization?: number;
+  ebit?: number;
+  depreciation?: number;
+  amortization?: number;
   interest_expense?: number;
   tax_expense?: number;
   net_income?: number;
-  operating_cash_flow?: number;
-  capex?: number;
-  working_capital_change?: number;
+  
+  // Balance sheet
   total_assets?: number;
   current_assets?: number;
+  cash?: number;
+  accounts_receivable?: number;
+  inventory?: number;
+  total_liabilities?: number;
   current_liabilities?: number;
   total_debt?: number;
   total_equity?: number;
-  cash?: number;
+  
+  // Cash flow
+  nwc_change?: number;
 }
 
 export interface ValuationRequest {
+  // Company information (all required)
   company_name: string;
-  country_code: string;
-  industry: string;
-  founding_year?: number;
-  employees?: number;
-  business_model?: string;
+  country_code: string; // 2-letter ISO code (e.g., "BE", "DE", "US")
+  industry: IndustryCode | string; // Backend expects IndustryCode enum
+  business_model: BusinessModel | string; // Backend expects BusinessModel enum
+  founding_year: number; // Required by backend
   
-  current_year_data: YearlyFinancialData;
-  historical_data?: YearlyFinancialData[];
+  // Financial data (required)
+  current_year_data: YearDataInput;
+  historical_years_data?: YearDataInput[];
   
-  market_context?: {
-    risk_free_rate?: number;
-    market_risk_premium?: number;
-    sector_beta?: number;
-    gdp_growth?: number;
-    inflation_rate?: number;
-    terminal_growth_rate?: number;
-  };
+  // Optional company details
+  number_of_employees?: number;
+  recurring_revenue_percentage?: number; // 0.0 to 1.0
   
-  industry_benchmarks?: {
+  // Optional market context overrides
+  government_bond_yield?: number;
+  long_term_gdp_growth?: number;
+  
+  // Valuation preferences
+  use_dcf?: boolean;
+  use_multiples?: boolean;
+  projection_years?: number; // 5-15 years
+  
+  // Optional comparable companies
+  comparables?: Array<{
+    name: string;
     ev_ebitda_multiple?: number;
     ev_revenue_multiple?: number;
     pe_ratio?: number;
-    revenue_growth_rate?: number;
-    ebitda_margin?: number;
-  };
-  
-  dcf_assumptions?: {
-    projection_years?: number;
-    terminal_growth_rate?: number;
-    wacc_override?: number;
-  };
+  }>;
 }
 
 // Extended request type for frontend form state

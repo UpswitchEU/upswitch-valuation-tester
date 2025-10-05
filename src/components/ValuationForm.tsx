@@ -1,7 +1,8 @@
 import React, { useEffect, useCallback } from 'react';
 import { useValuationStore } from '../store/useValuationStore';
 import { debounce } from '../utils/debounce';
-import { TARGET_COUNTRIES, INDUSTRIES } from '../config/countries';
+import { TARGET_COUNTRIES } from '../config/countries';
+import { IndustryCode, BusinessModel } from '../types/valuation';
 
 /**
  * ValuationForm Component
@@ -92,12 +93,57 @@ export const ValuationForm: React.FC = () => {
               required
             >
               <option value="">Select industry...</option>
-              {INDUSTRIES.map((industry) => (
-                <option key={industry} value={industry.toLowerCase().replace(/ & /g, '_').replace(/ /g, '_')}>
-                  {industry}
-                </option>
-              ))}
+              <option value={IndustryCode.TECHNOLOGY}>Technology</option>
+              <option value={IndustryCode.MANUFACTURING}>Manufacturing</option>
+              <option value={IndustryCode.RETAIL}>Retail</option>
+              <option value={IndustryCode.SERVICES}>Services</option>
+              <option value={IndustryCode.HEALTHCARE}>Healthcare</option>
+              <option value={IndustryCode.FINANCE}>Finance</option>
+              <option value={IndustryCode.REAL_ESTATE}>Real Estate</option>
+              <option value={IndustryCode.HOSPITALITY}>Hospitality</option>
+              <option value={IndustryCode.CONSTRUCTION}>Construction</option>
+              <option value={IndustryCode.AGRICULTURE}>Agriculture</option>
+              <option value={IndustryCode.OTHER}>Other</option>
             </select>
+          </div>
+
+          {/* Business Model */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Business Model <span className="text-red-500">*</span>
+            </label>
+            <select
+              value={formData.business_model || 'other'}
+              onChange={(e) => updateFormData({ business_model: e.target.value })}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+              required
+            >
+              <option value={BusinessModel.B2B}>B2B</option>
+              <option value={BusinessModel.B2C}>B2C</option>
+              <option value={BusinessModel.B2B_SAAS}>B2B SaaS</option>
+              <option value={BusinessModel.MARKETPLACE}>Marketplace</option>
+              <option value={BusinessModel.ECOMMERCE}>E-commerce</option>
+              <option value={BusinessModel.MANUFACTURING}>Manufacturing</option>
+              <option value={BusinessModel.SERVICES}>Services</option>
+              <option value={BusinessModel.OTHER}>Other</option>
+            </select>
+          </div>
+
+          {/* Founding Year */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Founding Year <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="number"
+              min="1900"
+              max={new Date().getFullYear()}
+              value={formData.founding_year || new Date().getFullYear() - 5}
+              onChange={(e) => updateFormData({ founding_year: parseInt(e.target.value) })}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+              placeholder="e.g., 2018"
+              required
+            />
           </div>
 
           {/* Country */}

@@ -60,10 +60,10 @@ export const RegistryDataPreview: React.FC<RegistryDataPreviewProps> = ({
         cash: editedData.cash,
       },
       // Add historical data if available (excluding the current year)
-      historical_data: companyData.filing_history.slice(1).map(year => ({
+      historical_years_data: companyData.filing_history.slice(1).map(year => ({
         year: year.year,
         revenue: year.revenue || 0,
-        ebitda: year.ebitda,
+        ebitda: year.ebitda || 0, // Required field, default to 0
         net_income: year.net_income,
         total_assets: year.total_assets,
         total_debt: year.total_debt,
@@ -98,10 +98,10 @@ export const RegistryDataPreview: React.FC<RegistryDataPreviewProps> = ({
         cash: editedData.cash,
       },
       // Add historical data if available (excluding the current year)
-      historical_data: companyData.filing_history.slice(1).map(year => ({
+      historical_years_data: companyData.filing_history.slice(1).map(year => ({
         year: year.year,
         revenue: year.revenue || 0,
-        ebitda: year.ebitda,
+        ebitda: year.ebitda || 0, // Required field, default to 0
         net_income: year.net_income,
         total_assets: year.total_assets,
         total_debt: year.total_debt,
