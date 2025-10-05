@@ -175,14 +175,13 @@ export const ValuationForm: React.FC = () => {
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
             >
               <option value="">Select model...</option>
-              <option value="b2b_saas">B2B SaaS</option>
-              <option value="b2c_saas">B2C SaaS</option>
-              <option value="marketplace">Marketplace</option>
-              <option value="ecommerce">E-commerce</option>
-              <option value="consulting">Consulting</option>
-              <option value="manufacturing">Manufacturing</option>
-              <option value="retail">Retail</option>
-              <option value="other">Other</option>
+              <option value={BusinessModel.B2B_SAAS}>B2B SaaS</option>
+              <option value={BusinessModel.B2C}>B2C</option>
+              <option value={BusinessModel.MARKETPLACE}>Marketplace</option>
+              <option value={BusinessModel.ECOMMERCE}>E-commerce</option>
+              <option value={BusinessModel.MANUFACTURING}>Manufacturing</option>
+              <option value={BusinessModel.SERVICES}>Services</option>
+              <option value={BusinessModel.OTHER}>Other</option>
             </select>
           </div>
         </div>
