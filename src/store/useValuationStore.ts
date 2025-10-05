@@ -91,7 +91,7 @@ export const useValuationStore = create<ValuationStore>((set, get) => ({
       if (!formData.industry) {
         throw new Error('Industry is required');
       }
-      if (!formData.current_year_data?.revenue || !formData.current_year_data?.ebitda) {
+      if (!formData.revenue || !formData.ebitda) {
         throw new Error('Revenue and EBITDA are required');
       }
       
@@ -102,13 +102,13 @@ export const useValuationStore = create<ValuationStore>((set, get) => ({
         business_model: formData.business_model || 'other',
         founding_year: formData.founding_year || new Date().getFullYear() - 5, // Default to 5 years ago
         current_year_data: {
-          year: formData.current_year_data.year || new Date().getFullYear(),
-          revenue: formData.current_year_data.revenue,
-          ebitda: formData.current_year_data.ebitda,
+          year: formData.current_year_data?.year || new Date().getFullYear(),
+          revenue: formData.revenue, // Use formData.revenue
+          ebitda: formData.ebitda, // Use formData.ebitda
           // Include optional fields if present
-          ...(formData.current_year_data.total_assets && { total_assets: formData.current_year_data.total_assets }),
-          ...(formData.current_year_data.total_debt && { total_debt: formData.current_year_data.total_debt }),
-          ...(formData.current_year_data.cash && { cash: formData.current_year_data.cash }),
+          ...(formData.current_year_data?.total_assets && { total_assets: formData.current_year_data.total_assets }),
+          ...(formData.current_year_data?.total_debt && { total_debt: formData.current_year_data.total_debt }),
+          ...(formData.current_year_data?.cash && { cash: formData.current_year_data.cash }),
         },
         historical_years_data: formData.historical_years_data || [],
         number_of_employees: formData.number_of_employees,
