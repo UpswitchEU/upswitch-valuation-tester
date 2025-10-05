@@ -11,14 +11,12 @@ export enum IndustryCode {
   REAL_ESTATE = "real_estate",
   HOSPITALITY = "hospitality",
   CONSTRUCTION = "construction",
-  AGRICULTURE = "agriculture",
   OTHER = "other"
 }
 
 export enum BusinessModel {
-  B2B = "b2b",
-  B2C = "b2c",
   B2B_SAAS = "b2b_saas",
+  B2C = "b2c",
   MARKETPLACE = "marketplace",
   ECOMMERCE = "ecommerce",
   MANUFACTURING = "manufacturing",
