@@ -149,9 +149,15 @@ const classifyIndustry = (industryDescription?: string): string => {
  * Transform a single financial filing year to YearDataInput format
  */
 const transformFinancialYear = (year: FinancialFilingYear): YearDataInput => {
+  // Ensure year is within valid range (2000-2100 per backend validation)
+  const validYear = Math.min(Math.max(year.year, 2000), 2100);
+  
+  // Revenue must be > 0 per backend validation, use 1 as minimum if missing
+  const validRevenue = Math.max(year.revenue || 1, 1);
+  
   return {
-    year: year.year,
-    revenue: year.revenue || 0,
+    year: validYear,
+    revenue: validRevenue,
     ebitda: year.ebitda || 0,
     cogs: year.cost_of_goods_sold,
     operating_expenses: year.operating_expenses,
@@ -240,9 +246,9 @@ export const transformRegistryDataToValuationRequest = (
   // Infer or use provided business model
   const businessModel = options?.businessModel || inferBusinessModel(registryData);
   
-  // Estimate founding year if not available
-  const foundingYear = registryData.founding_year || 
-    (currentYear.year - Math.min(historicalYears.length + 5, 20));
+  // Estimate founding year if not available, ensure within valid range (1900-2100)
+  const estimatedFoundingYear = currentYear.year - Math.min(historicalYears.length + 5, 20);
+  const foundingYear = Math.min(Math.max(registryData.founding_year || estimatedFoundingYear, 1900), 2100);
   
   // Calculate data quality
   const dataQuality = calculateDataQuality(registryData);
