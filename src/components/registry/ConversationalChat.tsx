@@ -59,7 +59,7 @@ Just tell me your company name and country.
     const frMatch = text.match(/([A-Za-z\s&]+)\s+(?:SAS|SARL|SA)/i);
     
     let companyName = '';
-    let country = 'GB';
+    let country = 'BE'; // Default to Belgium since that's what the backend supports
     
     if (ukMatch) {
       companyName = ukMatch[0];
@@ -88,6 +88,10 @@ Just tell me your company name and country.
       else if (text.toLowerCase().includes('netherlands') || text.toLowerCase().includes('holland')) country = 'NL';
       else if (text.toLowerCase().includes('france')) country = 'FR';
       else if (text.toLowerCase().includes('luxembourg')) country = 'LU';
+      else {
+        // Default to Belgium for unknown companies since backend supports it
+        country = 'BE';
+      }
     }
     
     return { companyName, country };
@@ -149,6 +153,22 @@ Just tell me your company name and country.
       
       if (searchResults.length > 0) {
         const bestMatch = searchResults[0];
+        
+        // Check if this is a suggestion/help result
+        if (bestMatch.company_id === 'suggestion') {
+          // Remove loading message
+          setMessages(prev => prev.filter(m => m.id !== loadingId));
+          
+          // Add helpful suggestions message
+          setMessages(prev => [...prev, {
+            id: Date.now().toString(),
+            type: 'ai',
+            content: `⚠️ I couldn't find "${companyName}" in the ${getCountryFlag(country)} registry.\n\n**This could mean:**\n• The company name spelling is slightly different\n• It's a very new company (hasn't filed accounts yet)\n• It's not a registered limited company (e.g., sole trader)\n• The registry is temporarily unavailable\n\n**What would you like to do?**\n1. Try with the exact company name or registration number\n2. Try a different country\n3. Enter your financials manually instead`,
+            timestamp: new Date()
+          }]);
+          
+          return;
+        }
         
         // Remove loading message
         setMessages(prev => prev.filter(m => m.id !== loadingId));

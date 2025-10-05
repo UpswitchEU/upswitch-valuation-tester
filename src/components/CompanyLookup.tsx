@@ -28,7 +28,7 @@ export const CompanyLookup: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearching, setIsSearching] = useState(false);
   const [results, setResults] = useState<CompanyResult[]>([]);
-  const [selectedCountry, setSelectedCountry] = useState('DE');
+  const [selectedCountry, setSelectedCountry] = useState('BE');
   const [error, setError] = useState<string | null>(null);
 
   const performSearch = useCallback(async (query: string, country: string) => {
@@ -157,6 +157,7 @@ export const CompanyLookup: React.FC = () => {
           onChange={handleCountryChange}
           className="px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
         >
+          <option value="BE">🇧🇪 Belgium</option>
           <option value="DE">🇩🇪 Germany</option>
           <option value="GB">🇬🇧 UK</option>
           <option value="FR">🇫🇷 France</option>
@@ -200,6 +201,30 @@ export const CompanyLookup: React.FC = () => {
               </div>
             </button>
           ))}
+        </div>
+      )}
+
+      {/* No Results Message */}
+      {!isSearching && searchQuery.length >= 2 && results.length === 0 && (
+        <div className="border border-gray-200 rounded-lg p-6 text-center">
+          <div className="text-gray-400 mb-2">
+            <svg className="mx-auto h-12 w-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.172 16.172a4 4 0 015.656 0M9 12h6m-6-4h6m2 5.291A7.962 7.962 0 0112 15c-2.34 0-4.29-1.009-5.824-2.709M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+            </svg>
+          </div>
+          <h3 className="text-sm font-medium text-gray-900 mb-1">No companies found</h3>
+          <p className="text-sm text-gray-500 mb-4">
+            We couldn't find "{searchQuery}" in the {selectedCountry === 'BE' ? '🇧🇪 Belgium' : selectedCountry === 'DE' ? '🇩🇪 Germany' : selectedCountry === 'GB' ? '🇬🇧 UK' : selectedCountry === 'FR' ? '🇫🇷 France' : selectedCountry === 'NL' ? '🇳🇱 Netherlands' : '🇺🇸 USA'} registry.
+          </p>
+          <div className="text-xs text-gray-500 space-y-1">
+            <p><strong>Try:</strong></p>
+            <ul className="list-disc list-inside space-y-1">
+              <li>Different spelling or company name</li>
+              <li>Registration number if you have it</li>
+              <li>Different country</li>
+              <li>Manual data entry instead</li>
+            </ul>
+          </div>
         </div>
       )}
 
