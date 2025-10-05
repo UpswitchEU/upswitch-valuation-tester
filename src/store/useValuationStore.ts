@@ -110,7 +110,13 @@ export const useValuationStore = create<ValuationStore>((set, get) => ({
           ...(formData.current_year_data?.total_debt && { total_debt: formData.current_year_data.total_debt }),
           ...(formData.current_year_data?.cash && { cash: formData.current_year_data.cash }),
         },
-        historical_years_data: formData.historical_years_data || [],
+        historical_years_data: formData.historical_years_data && formData.historical_years_data.length > 0 
+          ? formData.historical_years_data 
+          : [{
+              year: new Date().getFullYear() - 1,
+              revenue: formData.revenue * 0.9, // Assume 10% growth
+              ebitda: formData.ebitda * 0.9,
+            }],
         number_of_employees: formData.number_of_employees,
         recurring_revenue_percentage: formData.recurring_revenue_percentage || 0.0,
         use_dcf: true,
