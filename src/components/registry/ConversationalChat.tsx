@@ -145,8 +145,19 @@ Just tell me your company name and country.
       if (searchResults.length > 0) {
         const bestMatch = searchResults[0];
         
-        // Check if this is a suggestion/help result
-        if (bestMatch.company_id.startsWith('suggestion') || bestMatch.status === 'suggestion') {
+        // Check if this is a suggestion/help result (must check BEFORE showing "Found company" message)
+        const isSuggestion = bestMatch.company_id?.startsWith('suggestion') || 
+                            bestMatch.status === 'suggestion' ||
+                            bestMatch.legal_form === 'Search Suggestion';
+        
+        console.log('🔍 Checking if suggestion:', {
+          company_id: bestMatch.company_id,
+          status: bestMatch.status,
+          legal_form: bestMatch.legal_form,
+          isSuggestion
+        });
+        
+        if (isSuggestion) {
           // Remove loading message
           setMessages(prev => prev.filter(m => m.id !== loadingId));
           
@@ -158,6 +169,7 @@ Just tell me your company name and country.
             timestamp: new Date()
           }]);
           
+          setIsProcessing(false);
           return;
         }
         
@@ -172,19 +184,6 @@ Just tell me your company name and country.
           timestamp: new Date(),
           isLoading: true
         }]);
-
-        // Check if this is a real company (not a suggestion)
-        if (bestMatch.company_id.startsWith('suggestion') || bestMatch.status === 'suggestion') {
-          // This shouldn't happen since we checked above, but just in case
-          setMessages(prev => prev.filter(m => !m.isLoading));
-          setMessages(prev => [...prev, {
-            id: Date.now().toString(),
-            type: 'ai',
-            content: `⚠️ This appears to be a search suggestion, not a real company. Please try a different search.`,
-            timestamp: new Date()
-          }]);
-          return;
-        }
 
         // Fetch financials (real API)
         try {

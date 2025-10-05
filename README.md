@@ -1,51 +1,50 @@
-# 🚀 Upswitch Valuation Engine - Standalone Tester
+# 🚀 Upswitch Valuation Tester (Frontend)
+
+**Standalone React application for testing the Upswitch Valuation Engine**
 
 **Version**: 1.0.0  
-**Status**: ✅ Phase 1 Complete, 📋 Phase 2 Ready  
+**Status**: ✅ Production-Ready Frontend  
 **Tech Stack**: React 18 + TypeScript + Tailwind + Vite
-
----
-
-## 📋 Overview
-
-This is a **standalone React application** for testing the Upswitch AI-Powered Business Valuation Engine. It provides a beautiful, brand-consistent UI for:
-
-- ✅ **Manual valuation entry** (Phase 1 - DONE)
-- ✅ **Real-time preview** as you type (Phase 1 - DONE)
-- 📋 **Document upload** with AI parsing (Phase 2 - UI ready)
-- 📋 **Company lookup** with auto-fill (Phase 2 - UI ready)
-- ✅ **Comprehensive results** with charts (Phase 1 - DONE)
 
 ---
 
 ## 🎯 Purpose
 
-This standalone app enables:
-1. **Internal QA testing** - Test valuation engine changes
-2. **External beta testing** - Share with 10-20 business owners
-3. **Sales demos** - Live valuations in calls
-4. **Marketing content** - Screenshots and videos
-5. **Partnership demos** - Show to M&A advisors
+This is a **standalone React frontend application** for testing and demonstrating the Upswitch AI-Powered Business Valuation Engine. It provides a beautiful, brand-consistent UI for:
+
+- ✅ **Manual valuation entry** - Input financial data manually
+- ✅ **Real-time preview** - Live estimate as you type (800ms debounce)
+- ✅ **Document upload** with AI parsing (Phase 2)
+- ✅ **Company lookup** with auto-fill from registries
+- ✅ **Comprehensive results** with charts and insights
+- ✅ **Registry-first approach** - Automatic data from Companies House, KBO/BCE
+
+**📚 Backend Documentation**: For valuation engine documentation, see [../upswitch-valuation-engine/docs/](../upswitch-valuation-engine/docs/README.md)
 
 ---
 
 ## 🏗️ Architecture
 
 ```
-React App (Port 3001) → Python Valuation Engine (Port 8000)
-                        ├─ /api/v1/valuation/quick ✅
-                        ├─ /api/v1/valuation/calculate ✅
-                        ├─ /api/v1/documents/parse ⏳ Phase 2
-                        └─ /api/v1/companies/lookup ⏳ Phase 2
+React Frontend (Port 3001)
+    ↓
+Valuation Engine API (Port 8000)
+    ├─ /api/v1/valuation/quick ✅
+    ├─ /api/v1/valuation/calculate ✅
+    ├─ /api/v1/documents/parse ✅
+    ├─ /api/v1/companies/lookup ✅
+    └─ /api/v1/registry/:country/:id ✅
 ```
+
+**Note**: This is a frontend-only application. For backend/engine documentation, see the valuation-engine docs.
 
 ---
 
 ## 🚀 Quick Start
 
 ### **Prerequisites**
-- Node.js 20+ and npm
-- Python valuation engine running on port 8000
+- Node.js 20+ and npm/yarn
+- Python valuation engine running on port 8000 (see [../upswitch-valuation-engine/](../upswitch-valuation-engine/))
 
 ### **Installation**
 ```bash
@@ -53,19 +52,19 @@ React App (Port 3001) → Python Valuation Engine (Port 8000)
 cd /Users/matthiasmandiau/Downloads/upswitch/apps/upswitch-valuation-tester
 
 # Install dependencies
-npm install
+yarn install
 
-# Copy brand assets from main frontend
+# Copy brand assets (if needed)
 cp ../upswitch-frontend/public/UpSwitch_logo_var1.svg ./public/
 cp ../upswitch-frontend/public/upswitch_favicon.svg ./public/
 
 # Start development server
-npm run dev
+yarn dev
 ```
 
 **Access**: http://localhost:3001
 
-### **Verify Python Engine is Running**
+### **Verify Backend is Running**
 ```bash
 curl http://localhost:8000/health
 # Should return: {"status":"healthy"}
@@ -75,34 +74,34 @@ curl http://localhost:8000/health
 
 ## 📦 What's Included
 
-### **Phase 1: Core Functionality** ✅ COMPLETE
+### **Core Features** ✅
 
 | Feature | Status | Description |
 |---------|--------|-------------|
-| Manual Entry Form | ✅ | Input financial data manually |
-| Real-Time Preview | ✅ | Live estimate as you type (800ms debounce) |
-| Comprehensive Calculation | ✅ | Full DCF + Multiples valuation |
-| Results Display | ✅ | Charts, metrics, insights |
+| Manual Entry Form | ✅ | Input financial data manually with validation |
+| Real-Time Preview | ✅ | Live valuation estimate (updates as you type) |
+| Registry Lookup | ✅ | Auto-fill from Companies House, KBO/BCE |
+| Document Upload | ✅ | Upload PDFs, Excel files for parsing |
+| Comprehensive Results | ✅ | Charts, metrics, DCF, multiples analysis |
 | Export JSON | ✅ | Download valuation results |
-| Beta Disclaimer | ✅ | Legal protection for testing |
+| Privacy-First UI | ✅ | Clear separation of public vs private data |
 | Upswitch Branding | ✅ | Logo, colors, fonts match main app |
 
-### **Phase 2: Next-Gen UX** 📋 UI READY
+### **Frontend Technologies**
 
-| Feature | Status | Backend Needed |
-|---------|--------|----------------|
-| Document Upload UI | ✅ | `/documents/parse` endpoint |
-| Company Lookup UI | ✅ | `/companies/lookup` endpoint |
-| AI Data Extraction | 📋 | GPT-4 integration |
-| Smart Suggestions | 📋 | Field impact analysis |
-
-**Phase 2 Status**: Frontend components are built and ready. Backend endpoints need implementation (see `docs/PHASE2_BACKEND_API_SPEC.md`).
+- **Framework**: React 18 with TypeScript
+- **Build Tool**: Vite
+- **Styling**: Tailwind CSS
+- **State Management**: Zustand
+- **API Client**: Axios
+- **Charts**: Recharts
+- **Forms**: React Hook Form
 
 ---
 
 ## 🎨 Branding
 
-### **Colors** (matching main Upswitch app)
+### **Colors** (matching Upswitch brand)
 - **Primary**: Teal `#14B8A6`
 - **Success**: Green `#22c55e`
 - **Warning**: Amber `#f59e0b`
@@ -123,31 +122,42 @@ curl http://localhost:8000/health
 ```
 upswitch-valuation-tester/
 ├── public/
-│   ├── UpSwitch_logo_var1.svg      # Copy from main frontend
-│   └── upswitch_favicon.svg        # Copy from main frontend
+│   ├── UpSwitch_logo_var1.svg
+│   └── upswitch_favicon.svg
 ├── src/
 │   ├── components/
-│   │   ├── Header.tsx              # Logo + Beta badge
-│   │   ├── DocumentUpload.tsx      # Phase 2: Drag-drop UI
-│   │   ├── CompanyLookup.tsx       # Phase 2: Search autocomplete
-│   │   ├── ValuationForm.tsx       # Manual entry form
-│   │   ├── LivePreview.tsx         # Real-time estimate panel
-│   │   └── Results.tsx             # Valuation results display
-│   ├── hooks/
-│   │   ├── useRealTimePreview.ts   # Debounced quick calc
-│   │   └── useValuation.ts         # Main calculation hook
+│   │   ├── Header.tsx                    # Logo + navigation
+│   │   ├── DocumentUpload.tsx            # Drag-drop file upload
+│   │   ├── CompanyLookup.tsx             # Registry search
+│   │   ├── ValuationForm.tsx             # Manual entry form
+│   │   ├── LivePreview.tsx               # Real-time estimate
+│   │   ├── Results.tsx                   # Results display
+│   │   ├── SmartValuationFlow.tsx        # Main flow orchestrator
+│   │   └── registry/                     # Registry-specific components
+│   │       ├── RegistryDataPreview.tsx
+│   │       ├── AIAssistedValuation.tsx
+│   │       └── ConversationalChat.tsx
 │   ├── services/
-│   │   └── api.ts                  # Axios client
+│   │   ├── api.ts                        # API client
+│   │   └── registryService.ts            # Registry API integration
 │   ├── store/
-│   │   └── useValuationStore.ts    # Zustand state
+│   │   └── useValuationStore.ts          # Zustand state management
 │   ├── types/
-│   │   └── valuation.ts            # TypeScript types
-│   ├── App.tsx                     # Main app component
-│   ├── main.tsx                    # React entry point
-│   └── index.css                   # Tailwind + custom styles
-├── docs/
-│   ├── CTO_IMPLEMENTATION_GUIDE.md # Complete implementation guide
-│   └── PHASE2_BACKEND_API_SPEC.md  # Backend API specifications
+│   │   ├── valuation.ts                  # TypeScript types
+│   │   └── registry.ts                   # Registry types
+│   ├── pages/
+│   │   └── PrivacyExplainer.tsx          # Privacy information page
+│   ├── App.tsx                           # Main app component
+│   └── main.tsx                          # React entry point
+├── docs/                                  # Frontend-specific documentation
+│   ├── README.md                         # Documentation index
+│   ├── frontend/                         # Frontend implementation docs
+│   ├── ux/                               # UX design docs
+│   ├── privacy/                          # Privacy UI docs
+│   ├── implementation/                   # Frontend implementation
+│   ├── status/                           # Project status reports
+│   └── archive/                          # Completed milestones
+├── README.md                             # This file
 ├── package.json
 ├── tsconfig.json
 ├── tailwind.config.ts
@@ -161,29 +171,27 @@ upswitch-valuation-tester/
 ### **Available Scripts**
 ```bash
 # Start development server (port 3001)
-npm run dev
-
-# Type checking
-npm run type-check
+yarn dev
 
 # Build for production
-npm run build
+yarn build
 
 # Preview production build
-npm run preview
+yarn preview
+
+# Type checking
+yarn type-check
 
 # Lint code
-npm run lint
+yarn lint
 ```
 
 ### **Environment Variables**
 ```bash
 # .env (create from .env.example)
 VITE_VALUATION_API_URL=http://localhost:8000
-
-# Phase 2 (optional)
-VITE_OPENAI_API_KEY=sk-...
-VITE_COMPANIES_HOUSE_API_KEY=...
+VITE_ENABLE_REGISTRY=true
+VITE_ENABLE_DOCUMENT_UPLOAD=true
 ```
 
 ---
@@ -201,85 +209,108 @@ vercel --prod
 
 **Result**: `https://valuation-tester.vercel.app`
 
-### **Option 2: Netlify**
+### **Option 2: Static Hosting**
 ```bash
 # Build
-npm run build
-
-# Deploy
-npx netlify-cli deploy --prod --dir=dist
-```
-
-### **Option 3: Static Hosting**
-```bash
-# Build
-npm run build
+yarn build
 
 # Upload dist/ folder to:
 # - AWS S3 + CloudFront
 # - GitHub Pages
+# - Netlify
 # - Any static host
 ```
 
 ---
 
-## 🧪 Testing
+## 🧪 Testing Scenarios
 
-### **Manual Testing Checklist**
-- [ ] Form validation (required fields)
-- [ ] Real-time preview updates
-- [ ] Full calculation works
-- [ ] Results display correctly
-- [ ] Charts render properly
-- [ ] Export JSON works
-- [ ] Mobile responsive
-- [ ] Logo displays correctly
-- [ ] Beta disclaimer visible
+### **Scenario 1: Manual Entry**
+```
+User Flow:
+1. Enter financial data manually
+2. See real-time preview (updates as typing)
+3. Click "Calculate Valuation"
+4. View comprehensive results with charts
 
-### **Test Scenarios**
-```bash
-# Scenario 1: Quick Estimate
-- Revenue: €2,500,000
-- EBITDA: €500,000
-- Industry: Technology
-- Country: Germany
-Expected: €8-14M valuation
+Expected: Full valuation report in <5 seconds
+```
 
-# Scenario 2: Negative EBITDA
-- Revenue: €1,000,000
-- EBITDA: -€50,000
-Expected: Asset-based valuation only
+### **Scenario 2: Registry Lookup**
+```
+User Flow:
+1. Select country (UK, Belgium, etc.)
+2. Enter company number or name
+3. System fetches public registry data
+4. Data pre-fills form automatically
+5. User can supplement with current year data
+6. Click "Calculate Valuation"
 
-# Scenario 3: Historical Data
-- Add 3 years of historical data
-Expected: Higher confidence score
+Expected: Pre-filled form with historical data
+```
+
+### **Scenario 3: Document Upload**
+```
+User Flow:
+1. Upload PDF or Excel file
+2. System parses financial data
+3. Data pre-fills form
+4. User reviews and confirms
+5. Click "Calculate Valuation"
+
+Expected: Extracted data in form, ready for calculation
 ```
 
 ---
 
 ## 📚 Documentation
 
-### **For Developers**
-- [`CTO_IMPLEMENTATION_GUIDE.md`](./docs/CTO_IMPLEMENTATION_GUIDE.md) - Complete technical guide
-- [`PHASE2_BACKEND_API_SPEC.md`](./docs/PHASE2_BACKEND_API_SPEC.md) - Backend endpoint specs
+### **Frontend Documentation** (this repo)
 
-### **For Product Team**
-- See UI screenshots in `/docs/screenshots/`
-- Test scenarios in `/docs/test-scenarios.json`
+Located in [docs/](./docs/):
 
-### **For External Testers**
-- **URL**: http://localhost:3001 (or deployed URL)
-- **Test Duration**: 15-20 minutes
-- **Feedback Form**: [Link to feedback form]
+- **[README.md](./docs/README.md)** - Documentation index
+- **[frontend/](./docs/frontend/)** - Frontend implementation guides
+- **[ux/](./docs/ux/)** - UX design documentation
+- **[privacy/](./docs/privacy/)** - Privacy UI implementation
+- **[implementation/](./docs/implementation/)** - Implementation roadmap
+- **[status/](./docs/status/)** - Project status reports
+- **[archive/](./docs/archive/)** - Completed milestones
+
+### **Backend/Engine Documentation**
+
+For valuation engine, API, architecture, and backend documentation:
+
+👉 **See**: [../upswitch-valuation-engine/docs/](../upswitch-valuation-engine/docs/README.md)
+
+---
+
+## 🔒 Privacy & Security
+
+### **Frontend Privacy Features**
+
+- ✅ **Clear Data Classification**: Visual indicators for public vs private data
+- ✅ **Privacy Explainer Page**: User education about data handling
+- ✅ **Registry-First Messaging**: Clear communication about public data sources
+- ✅ **Consent Management**: User consent for different data types
+- ✅ **No Local Storage of Sensitive Data**: Financial data not persisted locally
+
+### **Backend Privacy**
+
+For backend privacy architecture (3-pipeline system):
+- See [../upswitch-valuation-engine/docs/privacy/](../upswitch-valuation-engine/docs/privacy/)
 
 ---
 
 ## 🐛 Troubleshooting
 
 ### **Issue**: "Failed to connect to valuation engine"
-**Solution**: Verify Python engine is running on port 8000
+**Solution**: Verify Python engine is running
 ```bash
 curl http://localhost:8000/health
+# If not running, start the engine:
+cd ../upswitch-valuation-engine
+uvicorn src.api.main:app --reload --port 8000
 ```
 
 ### **Issue**: "Logo not displaying"
@@ -289,120 +320,143 @@ cp ../upswitch-frontend/public/UpSwitch_logo_var1.svg ./public/
 ```
 
 ### **Issue**: "Real-time preview not working"
-**Solution**: Check browser console. Ensure valuation engine has CORS enabled for `http://localhost:3001`
+**Solution**: 
+1. Check browser console for errors
+2. Verify debounce is working (800ms delay)
+3. Ensure backend CORS allows `http://localhost:3001`
 
 ### **Issue**: TypeScript errors
 **Solution**: Run type check
 ```bash
-npm run type-check
+yarn type-check
 ```
 
 ---
 
 ## 📊 Success Metrics
 
-### **Phase 1 Beta Testing**
-- **Completion Rate**: Target > 60%
-- **Time to Complete**: Target < 5 minutes
-- **User Satisfaction**: Target > 4/5
-- **Calculation Accuracy**: Target > 90% within ±15%
+### **User Experience Metrics**
+- **Time to First Valuation**: Target < 2 minutes
+- **Form Completion Rate**: Target > 70%
+- **User Satisfaction**: Target > 4.5/5
+- **Registry Auto-fill Success**: Target > 85%
 
-### **Phase 2 Goals**
-- **Document Upload Success Rate**: > 80%
-- **Company Lookup Accuracy**: > 85%
-- **Time to Valuation**: < 2 minutes (vs 5 min manual)
-
----
-
-## 🔒 Security
-
-### **Current (Phase 1)**
-- ✅ No authentication required (testing tool)
-- ✅ No data persistence
-- ✅ CORS configured
-- ✅ Rate limiting on backend (100/hour per IP)
-
-### **Phase 2 Additions**
-- [ ] File upload validation (whitelist, size limits)
-- [ ] Virus scanning
-- [ ] PII detection and redaction
+### **Technical Metrics**
+- **Page Load Time**: Target < 2 seconds
+- **Real-time Preview Latency**: Target < 100ms
+- **API Response Time**: Target < 3 seconds
+- **Error Rate**: Target < 1%
 
 ---
 
 ## 🤝 Contributing
 
-This is an internal testing tool. For contributions:
-1. Create feature branch
-2. Follow existing code style
-3. Add TypeScript types
-4. Test manually before PR
-5. Update documentation
+### **Frontend Development Guidelines**
+
+1. **Component Structure**: Use functional components with hooks
+2. **TypeScript**: Always use proper types, avoid `any`
+3. **Styling**: Use Tailwind utility classes
+4. **State Management**: Use Zustand for global state
+5. **API Calls**: Use the centralized API service
+6. **Testing**: Write tests for complex logic
+7. **Documentation**: Update docs for UI changes
+
+### **Code Style**
+
+```typescript
+// Good: Properly typed component
+interface Props {
+  companyName: string;
+  onSubmit: (data: ValuationData) => void;
+}
+
+export const ValuationForm: React.FC<Props> = ({ companyName, onSubmit }) => {
+  // Implementation
+};
+
+// Bad: Untyped component
+export const ValuationForm = (props: any) => {
+  // Implementation
+};
+```
+
+---
+
+## 🎯 Roadmap
+
+### **Completed** ✅
+- [x] Manual entry form with validation
+- [x] Real-time preview functionality
+- [x] Registry lookup integration (UK, Belgium)
+- [x] Document upload UI
+- [x] Comprehensive results display
+- [x] Privacy-first architecture UI
+- [x] Upswitch branding
+
+### **In Progress** 🟡
+- [ ] Enhanced document parsing UI feedback
+- [ ] Mobile responsive improvements
+- [ ] Accessibility (WCAG 2.1 AA)
+
+### **Future** 🔮
+- [ ] Multi-language support (EN, FR, NL, DE)
+- [ ] PDF export of results
+- [ ] Email sharing functionality
+- [ ] Save valuation history (with auth)
+- [ ] Comparison mode (multiple valuations)
 
 ---
 
 ## 📞 Support
 
-### **For Technical Issues**
-- Check `docs/CTO_IMPLEMENTATION_GUIDE.md`
+### **Technical Issues**
+- Check [docs/](./docs/) for frontend documentation
 - Review browser console for errors
-- Verify Python engine health: `curl http://localhost:8000/health`
+- Verify backend is running: `curl http://localhost:8000/health`
 
-### **For Phase 2 Implementation**
-- See `docs/PHASE2_BACKEND_API_SPEC.md` for backend requirements
-- Contact backend team for API implementation timeline
+### **Backend/API Issues**
+- See [../upswitch-valuation-engine/docs/](../upswitch-valuation-engine/docs/)
+- Check API logs
+- Review [operations guide](../upswitch-valuation-engine/docs/operations/)
 
----
-
-## 📅 Roadmap
-
-### **Phase 1** ✅ COMPLETE (October 2025)
-- [x] Project setup
-- [x] Branding and UI
-- [x] Manual entry form
-- [x] Real-time preview
-- [x] Results display
-- [x] Documentation
-
-### **Phase 2** 📋 UI READY, BACKEND PENDING
-- [ ] Backend: Document parsing endpoint (6-8 hours)
-- [ ] Backend: Company lookup endpoint (4-6 hours)
-- [ ] Testing: Document upload flow
-- [ ] Testing: Company lookup flow
-
-### **Phase 3** 🔮 FUTURE
-- [ ] Integration with main Upswitch frontend
-- [ ] Authentication and user accounts
-- [ ] Data persistence (save valuations)
-- [ ] PDF export of results
-- [ ] Email sharing
+### **Architecture Questions**
+- Frontend: See [docs/frontend/](./docs/frontend/)
+- Backend: See [../upswitch-valuation-engine/docs/architecture/](../upswitch-valuation-engine/docs/architecture/)
 
 ---
 
-## ✅ Summary
+## 🏆 Summary
 
-**Current Status**: ✅ Phase 1 Complete and Ready for Beta Testing
+**Current Status**: ✅ Production-Ready Frontend Application
 
 **What Works**:
-- ✅ Manual financial data entry with validation
-- ✅ Real-time valuation preview (updates as you type)
-- ✅ Comprehensive valuation calculation (DCF + Multiples)
-- ✅ Beautiful results display with charts
-- ✅ JSON export functionality
-- ✅ Upswitch branding (logo, colors, fonts)
+- ✅ Complete React frontend with TypeScript
+- ✅ Manual and registry-based data entry
+- ✅ Real-time valuation preview
+- ✅ Document upload interface
+- ✅ Comprehensive results visualization
+- ✅ Privacy-first UI/UX
+- ✅ Upswitch branding
 
-**What's Next**:
-1. **Ship Phase 1 for beta testing** (recommended)
-2. **Gather user feedback** on core functionality
-3. **Build Phase 2 backend endpoints** based on feedback
-4. **Iterate and improve** UX
+**Separate Concerns**:
+- **This repo**: Frontend UI/UX only
+- **Valuation Engine**: Backend API, calculations, architecture
+
+**Integration**:
+- Frontend calls backend API endpoints
+- Backend handles all valuation logic
+- Clear separation allows independent development
 
 ---
 
 **Built with** ❤️ **by the Upswitch Team**  
-**For questions**: Contact CTO / Engineering Lead
+**For questions**: Contact Frontend Team
+
+**Backend Questions**: See [../upswitch-valuation-engine/](../upswitch-valuation-engine/)
 
 ---
 
-**Last Updated**: October 3, 2025  
+**Last Updated**: October 5, 2025  
 **Version**: 1.0.0  
+**Status**: Production-Ready Frontend  
 **License**: Proprietary (Internal Use Only)
