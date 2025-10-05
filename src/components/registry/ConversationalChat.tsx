@@ -145,10 +145,15 @@ Just tell me your company name and country.
       if (searchResults.length > 0) {
         const bestMatch = searchResults[0];
         
+        // Debug: Log the entire result object
+        console.log('🔍 Full search result:', JSON.stringify(bestMatch, null, 2));
+        console.log('🔍 Result keys:', Object.keys(bestMatch));
+        
         // Check if this is a suggestion/help result (must check BEFORE showing "Found company" message)
         const isSuggestion = bestMatch.company_id?.startsWith('suggestion') || 
                             bestMatch.status === 'suggestion' ||
-                            bestMatch.legal_form === 'Search Suggestion';
+                            bestMatch.legal_form === 'Search Suggestion' ||
+                            bestMatch.legal_form === 'Search Help';
         
         console.log('🔍 Checking if suggestion:', {
           company_id: bestMatch.company_id,

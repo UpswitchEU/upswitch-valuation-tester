@@ -51,20 +51,31 @@ export const searchCompanies = async (
       limit: 10
     });
 
-    // Transform API response to our expected format
-    const results: CompanySearchResult[] = response.data.results.map((result: any) => ({
-      company_id: result.company_id,
-      company_name: result.company_name,
-      registration_number: result.registration_number,
-      country_code: result.country_code,
-      legal_form: result.legal_form,
-      address: result.address,
-      website: result.website,
-      status: result.status || 'active',
-      confidence_score: result.confidence_score || 0.9,
-      registry_url: result.registry_url
-    }));
+    console.log('📡 Raw API response:', response.data);
+    console.log('📡 Raw results:', response.data.results);
 
+    // Transform API response to our expected format
+    const results: CompanySearchResult[] = response.data.results.map((result: any) => {
+      console.log('📡 Mapping result:', result);
+      
+      const mapped = {
+        company_id: result.company_id,
+        company_name: result.company_name,
+        registration_number: result.registration_number,
+        country_code: result.country_code,
+        legal_form: result.legal_form,
+        address: result.address,
+        website: result.website,
+        status: result.status || 'active',
+        confidence_score: result.confidence_score || 0.9,
+        registry_url: result.registry_url
+      };
+      
+      console.log('📡 Mapped result:', mapped);
+      return mapped;
+    });
+
+    console.log('📡 Final results:', results);
     return results;
   } catch (error) {
     console.error('Company search failed:', error);
