@@ -63,35 +63,26 @@ Just tell me your company name and country.
     
     if (ukMatch) {
       companyName = ukMatch[0];
-      country = 'GB';
+      country = 'BE'; // Force Belgium since backend only supports it
     } else if (deMatch) {
       companyName = deMatch[0];
-      country = 'DE';
+      country = 'BE'; // Force Belgium since backend only supports it
     } else if (nlMatch) {
       companyName = nlMatch[0];
-      country = 'NL';
+      country = 'BE'; // Force Belgium since backend only supports it
     } else if (beMatch) {
       companyName = beMatch[0];
       country = 'BE';
     } else if (frMatch) {
       companyName = frMatch[0];
-      country = 'FR';
+      country = 'BE'; // Force Belgium since backend only supports it
     } else {
       // Default extraction from text before "in"
       const parts = text.split(/\s+in\s+/i);
       companyName = parts[0].trim();
       
-      // Detect country from text
-      if (text.toLowerCase().includes('uk') || text.toLowerCase().includes('united kingdom')) country = 'GB';
-      else if (text.toLowerCase().includes('germany') || text.toLowerCase().includes('deutschland')) country = 'DE';
-      else if (text.toLowerCase().includes('belgium') || text.toLowerCase().includes('belgique')) country = 'BE';
-      else if (text.toLowerCase().includes('netherlands') || text.toLowerCase().includes('holland')) country = 'NL';
-      else if (text.toLowerCase().includes('france')) country = 'FR';
-      else if (text.toLowerCase().includes('luxembourg')) country = 'LU';
-      else {
-        // Default to Belgium for unknown companies since backend supports it
-        country = 'BE';
-      }
+      // Always default to Belgium since backend only supports it
+      country = 'BE';
     }
     
     return { companyName, country };
@@ -155,7 +146,7 @@ Just tell me your company name and country.
         const bestMatch = searchResults[0];
         
         // Check if this is a suggestion/help result
-        if (bestMatch.company_id === 'suggestion') {
+        if (bestMatch.company_id.startsWith('suggestion') || bestMatch.status === 'suggestion') {
           // Remove loading message
           setMessages(prev => prev.filter(m => m.id !== loadingId));
           
@@ -182,17 +173,31 @@ Just tell me your company name and country.
           isLoading: true
         }]);
 
+        // Check if this is a real company (not a suggestion)
+        if (bestMatch.company_id.startsWith('suggestion') || bestMatch.status === 'suggestion') {
+          // This shouldn't happen since we checked above, but just in case
+          setMessages(prev => prev.filter(m => !m.isLoading));
+          setMessages(prev => [...prev, {
+            id: Date.now().toString(),
+            type: 'ai',
+            content: `⚠️ This appears to be a search suggestion, not a real company. Please try a different search.`,
+            timestamp: new Date()
+          }]);
+          return;
+        }
+
         // Fetch financials (real API)
-        const financialData = await fetchCompanyFinancials(bestMatch.company_id, country);
-        
-        const latest = financialData.filing_history[0];
-        
-        // Add success message with data
-        setMessages(prev => prev.filter(m => !m.isLoading));
-        setMessages(prev => [...prev, {
-          id: Date.now().toString(),
-          type: 'ai',
-          content: `✅ **${financialData.company_name}**
+        try {
+          const financialData = await fetchCompanyFinancials(bestMatch.company_id, country);
+          
+          const latest = financialData.filing_history[0];
+          
+          // Add success message with data
+          setMessages(prev => prev.filter(m => !m.isLoading));
+          setMessages(prev => [...prev, {
+            id: Date.now().toString(),
+            type: 'ai',
+            content: `✅ **${financialData.company_name}**
 Registration: ${financialData.registration_number}
 
 **Latest filed accounts (${latest.year}):**
@@ -210,13 +215,35 @@ Would you like to:
 1. **Calculate valuation** with ${latest.year} data
 2. **Add more recent data** (if you have 2024/2025 figures)
 3. **Review all ${financialData.filing_history.length} years** of data first`,
-          timestamp: new Date()
-        }]);
+            timestamp: new Date()
+          }]);
 
-        // Notify parent after a brief delay to show message
-        setTimeout(() => {
-          onCompanyFound(financialData);
-        }, 1500);
+          // Notify parent after a brief delay to show message
+          setTimeout(() => {
+            onCompanyFound(financialData);
+          }, 1500);
+        } catch (financialError) {
+          console.error('Financial data fetch error:', financialError);
+          setMessages(prev => prev.filter(m => !m.isLoading));
+          setMessages(prev => [...prev, {
+            id: Date.now().toString(),
+            type: 'ai',
+            content: `⚠️ **Found ${bestMatch.company_name}** but couldn't access financial data.
+
+**Error:** ${financialError instanceof Error ? financialError.message : 'Failed to fetch financial data'}
+
+**This could mean:**
+• The company hasn't filed public financial statements
+• Financial data is not available in the registry
+• The registry is temporarily unavailable
+
+**What would you like to do?**
+1. **Try again** (sometimes registry data is temporarily unavailable)
+2. **Enter financial data manually** (if you have the company's financial statements)
+3. **Search for a different company**`,
+            timestamp: new Date()
+          }]);
+        }
         
       } else {
         // Not found

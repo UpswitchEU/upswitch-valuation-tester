@@ -1,6 +1,7 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { useValuationStore } from '../store/useValuationStore';
 import { debounce } from '../utils/debounce';
+import { searchCompanies, getSearchSuggestions, type SearchSuggestion } from '../services/registryService';
 
 /**
  * CompanyLookup Component (Phase 2)
@@ -30,6 +31,9 @@ export const CompanyLookup: React.FC = () => {
   const [results, setResults] = useState<CompanyResult[]>([]);
   const [selectedCountry, setSelectedCountry] = useState('BE');
   const [error, setError] = useState<string | null>(null);
+  const [suggestions, setSuggestions] = useState<SearchSuggestion[]>([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [isLoadingSuggestions, setIsLoadingSuggestions] = useState(false);
 
   const performSearch = useCallback(async (query: string, country: string) => {
     if (query.length < 2) {
@@ -78,12 +82,48 @@ export const CompanyLookup: React.FC = () => {
     }
   }, []);
 
+  const loadSuggestions = useCallback(async (query: string, country: string) => {
+    if (query.length < 2) {
+      setSuggestions([]);
+      setShowSuggestions(false);
+      return;
+    }
+
+    setIsLoadingSuggestions(true);
+    try {
+      const suggestionData = await getSearchSuggestions(query, country);
+      setSuggestions(suggestionData.suggestions);
+      setShowSuggestions(true);
+    } catch (err) {
+      console.error('Failed to load suggestions:', err);
+      setSuggestions([]);
+    } finally {
+      setIsLoadingSuggestions(false);
+    }
+  }, []);
+
+  // Debounced search suggestions
+  const debouncedLoadSuggestions = useCallback(
+    debounce(loadSuggestions, 300),
+    [loadSuggestions]
+  );
+
   const debouncedSearch = useCallback(
     debounce((query: string, country: string) => {
       performSearch(query, country);
     }, 500),
     []
   );
+
+  // Load suggestions when search query changes
+  useEffect(() => {
+    if (searchQuery.length >= 2) {
+      debouncedLoadSuggestions(searchQuery, selectedCountry);
+    } else {
+      setSuggestions([]);
+      setShowSuggestions(false);
+    }
+  }, [searchQuery, selectedCountry, debouncedLoadSuggestions]);
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const query = e.target.value;
@@ -165,6 +205,63 @@ export const CompanyLookup: React.FC = () => {
           <option value="US">🇺🇸 USA</option>
         </select>
       </div>
+
+      {/* Search Suggestions */}
+      {showSuggestions && suggestions.length > 0 && (
+        <div className="mb-4 border border-gray-200 rounded-lg bg-white shadow-lg">
+          <div className="p-3 border-b border-gray-100 bg-gray-50">
+            <h4 className="text-sm font-medium text-gray-700 flex items-center">
+              <svg className="h-4 w-4 text-blue-500 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+              </svg>
+              Search Suggestions
+            </h4>
+          </div>
+          <div className="max-h-48 overflow-y-auto">
+            {suggestions.map((suggestion, index) => (
+              <button
+                key={index}
+                onClick={() => {
+                  setSearchQuery(suggestion.text);
+                  setShowSuggestions(false);
+                  debouncedSearch(suggestion.text, selectedCountry);
+                }}
+                className="w-full p-3 text-left hover:bg-gray-50 border-b border-gray-100 last:border-b-0 transition-colors"
+              >
+                <div className="flex items-start justify-between">
+                  <div className="flex-1">
+                    <p className="text-sm font-medium text-gray-900">{suggestion.text}</p>
+                    <p className="text-xs text-gray-500 mt-1">{suggestion.reason}</p>
+                  </div>
+                  <div className="flex items-center space-x-2 ml-3">
+                    <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${
+                      suggestion.type === 'variation' ? 'bg-blue-100 text-blue-800' :
+                      suggestion.type === 'method' ? 'bg-green-100 text-green-800' :
+                      'bg-purple-100 text-purple-800'
+                    }`}>
+                      {suggestion.type}
+                    </span>
+                    <span className="text-xs text-gray-400">
+                      {Math.round(suggestion.confidence * 100)}%
+                    </span>
+                  </div>
+                </div>
+              </button>
+            ))}
+          </div>
+          {isLoadingSuggestions && (
+            <div className="p-3 text-center">
+              <div className="inline-flex items-center text-sm text-gray-500">
+                <svg className="animate-spin h-4 w-4 text-gray-400 mr-2" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                </svg>
+                Loading suggestions...
+              </div>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Search Results */}
       {results.length > 0 && (

@@ -8,6 +8,21 @@
 import axios from 'axios';
 import type { CompanyFinancialData, CompanySearchResult } from '../types/registry';
 
+// Types for search suggestions
+export interface SearchSuggestion {
+  text: string;
+  type: 'variation' | 'method' | 'language';
+  confidence: number;
+  reason: string;
+}
+
+export interface SearchSuggestionsResponse {
+  suggestions: SearchSuggestion[];
+  total_suggestions: number;
+  company_name: string;
+  country_code: string;
+}
+
 // API Configuration
 const API_BASE_URL = import.meta.env.VITE_VALUATION_API_URL || 'https://upswitch-valuation-engine-production.up.railway.app';
 const API_TIMEOUT = 30000;
@@ -54,6 +69,30 @@ export const searchCompanies = async (
   } catch (error) {
     console.error('Company search failed:', error);
     throw new Error('Failed to search for company. Please try again.');
+  }
+};
+
+/**
+ * Get search suggestions for company names
+ * GET /api/v1/registry/suggestions
+ */
+export const getSearchSuggestions = async (
+  companyName: string,
+  countryCode: string = 'BE'
+): Promise<SearchSuggestionsResponse> => {
+  try {
+    const response = await apiClient.get('/api/v1/registry/suggestions', {
+      params: {
+        company_name: companyName,
+        country_code: countryCode,
+        limit: 5
+      }
+    });
+
+    return response.data;
+  } catch (error) {
+    console.error('Search suggestions failed:', error);
+    throw new Error('Failed to get search suggestions. Please try again.');
   }
 };
 

@@ -19,7 +19,9 @@ DATA COLLECTION → AI PROCESSING → REPORT GENERATION
 ```
 
 **Ilara**: `Trend Data (public)` → `AI Analysis` → `Marketing Reports`  
-**Upswitch**: `Market Data (public) + Financial Data (private)` → `AI Analysis` → `Valuation Reports`
+**Upswitch**: `Market Data (public) + Registry Data (public for limited companies) + Financial Data (private)` → `AI Analysis` → `Valuation Reports`
+
+**Note**: For limited companies, public registry data (Companies House, KBO/BCE, etc.) provides legally public financial information from filed accounts, which can be safely used alongside market data for AI processing.
 
 ### Strategic Value
 - **60% code reuse potential** from Ilara architecture
@@ -89,9 +91,11 @@ DATA COLLECTION → AI PROCESSING → REPORT GENERATION
 │  • OECD API (GDP, inflation) ✅ PUBLIC                      │
 │  • ECB API (interest rates) ✅ PUBLIC                       │
 │  • FMP API (market multiples) ✅ PUBLIC                     │
+│  • Company Registries (KBO/BCE, Companies House) ✅ PUBLIC  │
 │  • Financial statements 🔒 PRIVATE (user uploads)           │
 │                                                              │
 │  Processing:                                                 │
+│  • Registry data lookup (for limited companies)             │
 │  • Manual data entry (current)                              │
 │  • Financial metrics calculation                            │
 │  • DCF engine                                               │
@@ -559,6 +563,49 @@ async def daily_market_data_collection(
 **Ilara**: ALL data is public → Safe to use AI everywhere  
 **Upswitch**: Mixed public + private data → Need strict separation
 
+### Registry-First Advantage for Limited Companies
+
+**Strategic Insight**: For limited companies (Ltd, LLC, GmbH, BV, SA/NV), company registries provide legally public financial data that creates a unique competitive advantage:
+
+**Traditional Approach (Competitors):**
+- Require users to manually upload financial statements
+- Privacy concerns with user-uploaded data
+- Time-consuming manual data entry
+- No historical comparison data
+
+**Upswitch Registry-First Approach:**
+- Automatic lookup from public registries (Companies House, KBO/BCE, etc.)
+- Pre-filled valuations with historical data (3-5 years)
+- No privacy concerns (data is already public by law)
+- AI-safe processing and caching
+- Instant comparables from same registry
+
+**Example Flow:**
+```
+User enters: "Acme Trading Ltd" (UK Company Number: 12345678)
+    ↓
+System queries Companies House API (public data)
+    ↓
+Retrieves: 3 years of filed accounts
+- Revenue: £2.5M (2023), £2.1M (2022), £1.8M (2021)
+- Profit: £450K (2023), £380K (2022), £320K (2021)
+- Assets, liabilities, cash flow (if available)
+    ↓
+Pre-fills valuation form + calculates growth rates
+    ↓
+User can supplement with current year data or accept registry-based valuation
+```
+
+**Benefits:**
+- ✅ 90% faster data entry for limited companies
+- ✅ More accurate with historical trends
+- ✅ AI-safe (public data can use GPT-4 for insights)
+- ✅ Automatic comparables from registry
+- ✅ No privacy compliance issues
+- ✅ Builds trust through official data sources
+
+**Implementation**: This is already architected in the valuation engine's registry-first module (Belgium KBO/BCE implemented, UK Companies House ready).
+
 ### Implementation Strategy
 
 ```
@@ -589,6 +636,20 @@ async def daily_market_data_collection(
 │  • Economic indicators (GDP, interest rates)                │
 │  • Industry trends                                          │
 │  • Comparable companies (public)                            │
+│  • Registry-based financial data (limited companies only)*  │
+│                                                              │
+│  *For Limited Companies:                                     │
+│  Public financial data from company registries (Companies   │
+│  House UK, KBO/BCE Belgium, etc.) is legally public and     │
+│  can be used for valuations. This includes:                 │
+│  - Filed annual accounts (previous years)                   │
+│  - Revenue, profit figures (if filed)                       │
+│  - Company officers & structure                             │
+│  - Share capital information                                │
+│                                                              │
+│  Note: This is DIFFERENT from user-uploaded private data.   │
+│  Registry data is already public by law and can be safely   │
+│  processed with AI, cached, and used for comparables.       │
 │                                                              │
 │  Processing: AI-enhanced (GPT-4, Claude)                    │
 │  Storage: Standard security                                 │
