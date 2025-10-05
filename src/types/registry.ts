@@ -6,6 +6,7 @@
  */
 
 export interface CompanySearchResult {
+  result_type?: 'COMPANY' | 'SUGGESTION' | 'ERROR';  // Explicit type for type-safe detection
   company_id: string;
   company_name: string;
   registration_number: string;
@@ -13,6 +14,10 @@ export interface CompanySearchResult {
   address?: string;
   status: string;
   confidence_score: number;
+  registry_name?: string;
+  registry_url?: string;
+  country_code?: string;
+  website?: string;
 }
 
 export interface FinancialFilingYear {

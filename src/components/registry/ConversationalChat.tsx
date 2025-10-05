@@ -2,6 +2,19 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Send, Bot, User, Loader2 } from 'lucide-react';
 import { searchCompanies, fetchCompanyFinancials } from '../../services/registryService';
 import type { CompanyFinancialData } from '../../types/registry';
+import { 
+  isRealCompany, 
+  isValidCompanyId, 
+  getNotFoundMessage,
+  categorizeError,
+  getErrorMessage,
+  RegistryErrorType
+} from '../../utils/registryUtils';
+import {
+  transformRegistryDataToValuationRequest,
+  validateDataForValuation,
+  getTransformationSummary
+} from '../../services/transformationService';
 
 interface Message {
   id: string;
@@ -148,35 +161,46 @@ Just tell me your company name and country.
         // Debug: Log the entire result object
         console.log('🔍 Full search result:', JSON.stringify(bestMatch, null, 2));
         console.log('🔍 Result keys:', Object.keys(bestMatch));
+        console.log('🔍 Result type:', bestMatch.result_type);
         
-        // Check if this is a suggestion/help result (must check BEFORE showing "Found company" message)
-        const isSuggestion = bestMatch.company_id?.startsWith('suggestion') || 
-                            bestMatch.status === 'suggestion' ||
-                            bestMatch.legal_form === 'Search Suggestion' ||
-                            bestMatch.legal_form === 'Search Help';
-        
-        console.log('🔍 Checking if suggestion:', {
-          company_id: bestMatch.company_id,
-          status: bestMatch.status,
-          legal_form: bestMatch.legal_form,
-          isSuggestion
-        });
-        
-        if (isSuggestion) {
+        // Type-safe detection: Check if this is a real company or a suggestion
+        if (!isRealCompany(bestMatch)) {
+          console.log('🔍 Detected suggestion/non-company result');
+          
           // Remove loading message
           setMessages(prev => prev.filter(m => m.id !== loadingId));
           
-          // Add helpful suggestions message
+          // Add helpful suggestions message using utility function
           setMessages(prev => [...prev, {
             id: Date.now().toString(),
             type: 'ai',
-            content: `⚠️ I couldn't find "${companyName}" in the ${getCountryFlag(country)} registry.\n\n**This could mean:**\n• The company name spelling is slightly different\n• It's a very new company (hasn't filed accounts yet)\n• It's not a registered limited company (e.g., sole trader)\n• The registry is temporarily unavailable\n\n**What would you like to do?**\n1. Try with the exact company name or registration number\n2. Try a different country\n3. Enter your financials manually instead`,
+            content: getNotFoundMessage(companyName, country),
             timestamp: new Date()
           }]);
           
           setIsProcessing(false);
           return;
         }
+        
+        // Validate company ID format before proceeding
+        if (!isValidCompanyId(bestMatch.company_id, country)) {
+          console.error('🔍 Invalid company ID format:', bestMatch.company_id);
+          
+          // Remove loading message
+          setMessages(prev => prev.filter(m => m.id !== loadingId));
+          
+          setMessages(prev => [...prev, {
+            id: Date.now().toString(),
+            type: 'ai',
+            content: `⚠️ Invalid company ID format: "${bestMatch.company_id}"\n\nThis appears to be an error. Please try searching again or contact support.`,
+            timestamp: new Date()
+          }]);
+          
+          setIsProcessing(false);
+          return;
+        }
+        
+        console.log('✅ Valid company found:', bestMatch.company_name);
         
         // Remove loading message
         setMessages(prev => prev.filter(m => m.id !== loadingId));
@@ -190,13 +214,31 @@ Just tell me your company name and country.
           isLoading: true
         }]);
 
-        // Fetch financials (real API)
+        // Fetch financials (real API) with error categorization
         try {
           const financialData = await fetchCompanyFinancials(bestMatch.company_id, country);
           
           const latest = financialData.filing_history[0];
           
-          // Add success message with data
+          // Validate data for valuation
+          const validation = validateDataForValuation(financialData);
+          
+          // Transform data to valuation format
+          let transformationSummary = '';
+          let valuationRequest = null;
+          
+          if (validation.valid) {
+            try {
+              valuationRequest = transformRegistryDataToValuationRequest(financialData);
+              transformationSummary = getTransformationSummary(financialData, valuationRequest);
+              console.log('✅ Data transformation successful:', valuationRequest);
+            } catch (transformError) {
+              console.error('Data transformation failed:', transformError);
+              validation.warnings.push('Automatic data transformation failed - manual entry may be required');
+            }
+          }
+          
+          // Add success message with data and transformation info
           setMessages(prev => prev.filter(m => !m.isLoading));
           setMessages(prev => [...prev, {
             id: Date.now().toString(),
@@ -215,10 +257,14 @@ Registration: ${financialData.registration_number}
 
 ---
 
-Would you like to:
-1. **Calculate valuation** with ${latest.year} data
-2. **Add more recent data** (if you have 2024/2025 figures)
-3. **Review all ${financialData.filing_history.length} years** of data first`,
+${transformationSummary}
+
+---
+
+${validation.valid 
+  ? `✅ **Ready for automatic valuation!**\n\nWould you like to:\n1. **Calculate valuation now** (recommended - data is ready)\n2. **Review/adjust data** before valuation\n3. **Add more recent data** (if you have ${new Date().getFullYear()} figures)`
+  : `⚠️ **Data validation issues:**\n${validation.errors.map(e => `❌ ${e}`).join('\n')}\n\nPlease:\n1. **Enter financial data manually**\n2. **Try a different company**`
+}`,
             timestamp: new Date()
           }]);
 
@@ -228,21 +274,27 @@ Would you like to:
           }, 1500);
         } catch (financialError) {
           console.error('Financial data fetch error:', financialError);
+          
+          // Categorize the error for better messaging
+          const errorType = categorizeError(financialError);
+          const errorMessage = getErrorMessage(errorType);
+          
           setMessages(prev => prev.filter(m => !m.isLoading));
           setMessages(prev => [...prev, {
             id: Date.now().toString(),
             type: 'ai',
             content: `⚠️ **Found ${bestMatch.company_name}** but couldn't access financial data.
 
-**Error:** ${financialError instanceof Error ? financialError.message : 'Failed to fetch financial data'}
+**Error:** ${errorMessage}
 
 **This could mean:**
-• The company hasn't filed public financial statements
-• Financial data is not available in the registry
-• The registry is temporarily unavailable
+• The company hasn't filed public financial statements yet
+• Financial data is not publicly available in the registry
+• The registry is temporarily unavailable or slow
+• There was a network connectivity issue
 
 **What would you like to do?**
-1. **Try again** (sometimes registry data is temporarily unavailable)
+1. **Try again** (${errorType === RegistryErrorType.TIMEOUT || errorType === RegistryErrorType.NETWORK_ERROR ? 'recommended - might be a temporary issue' : 'sometimes registry data is temporarily unavailable'})
 2. **Enter financial data manually** (if you have the company's financial statements)
 3. **Search for a different company**`,
             timestamp: new Date()
@@ -250,39 +302,42 @@ Would you like to:
         }
         
       } else {
-        // Not found
+        // Not found - use utility function for consistent messaging
         setMessages(prev => prev.filter(m => m.id !== loadingId));
         setMessages(prev => [...prev, {
           id: Date.now().toString(),
           type: 'ai',
-          content: `⚠️ I couldn't find "${companyName}" in the ${getCountryFlag(country)} registry.
-
-**This could mean:**
-• The company name spelling is slightly different
-• It's a very new company (hasn't filed accounts yet)
-• It's not a registered limited company (e.g., sole trader)
-• The registry is temporarily unavailable
-
-**What would you like to do?**
-1. Try with the exact company name or registration number
-2. Try a different country
-3. Enter your financials manually instead`,
+          content: getNotFoundMessage(companyName, country),
           timestamp: new Date()
         }]);
       }
     } catch (error) {
       console.error('Lookup error:', error);
+      
+      // Categorize the error for better user guidance
+      const errorType = categorizeError(error);
+      const errorMessage = getErrorMessage(errorType);
+      
       setMessages(prev => prev.filter(m => m.id !== loadingId));
       setMessages(prev => [...prev, {
         id: Date.now().toString(),
         type: 'ai',
         content: `❌ Sorry, I had trouble accessing the registry.
 
-**Error:** ${error instanceof Error ? error.message : 'Unknown error'}
+**Error Type:** ${errorType}
+**Details:** ${errorMessage}
 
-Would you like to:
-• Try again
-• Enter your data manually`,
+**What happened:**
+${error instanceof Error ? error.message : 'An unexpected error occurred'}
+
+**Recommended actions:**
+${errorType === RegistryErrorType.NETWORK_ERROR || errorType === RegistryErrorType.TIMEOUT 
+  ? '1. **Check your internet connection** and try again\n2. Wait a moment and retry\n3. Enter your data manually' 
+  : errorType === RegistryErrorType.UNSUPPORTED_COUNTRY
+  ? '1. **Try Belgium (BE)** - currently the only supported country\n2. Enter your data manually'
+  : errorType === RegistryErrorType.RATE_LIMITED
+  ? '1. **Wait 1-2 minutes** before trying again\n2. Enter your data manually'
+  : '1. **Try again** with exact company name or registration number\n2. Enter your data manually'}`,
         timestamp: new Date()
       }]);
     } finally {

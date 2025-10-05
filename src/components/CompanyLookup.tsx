@@ -1,7 +1,7 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import { useValuationStore } from '../store/useValuationStore';
 import { debounce } from '../utils/debounce';
-import { searchCompanies, getSearchSuggestions, type SearchSuggestion } from '../services/registryService';
+import { getSearchSuggestions, type SearchSuggestion } from '../services/registryService';
 
 /**
  * CompanyLookup Component (Phase 2)

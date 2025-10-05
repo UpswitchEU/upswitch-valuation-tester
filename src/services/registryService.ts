@@ -26,6 +26,8 @@ export interface SearchSuggestionsResponse {
 // API Configuration
 const API_BASE_URL = import.meta.env.VITE_VALUATION_API_URL || 'https://upswitch-valuation-engine-production.up.railway.app';
 const API_TIMEOUT = 30000;
+const MAX_RETRIES = 3;
+const RETRY_DELAY = 1000; // 1 second
 
 // Create axios instance
 const apiClient = axios.create({
@@ -37,6 +39,35 @@ const apiClient = axios.create({
 });
 
 /**
+ * Retry helper for transient failures
+ */
+const withRetry = async <T>(
+  fn: () => Promise<T>,
+  maxRetries: number = MAX_RETRIES,
+  attempt: number = 1
+): Promise<T> => {
+  try {
+    return await fn();
+  } catch (error: any) {
+    // Check if error is retryable
+    const isRetryable = 
+      error.code === 'ECONNABORTED' || // Timeout
+      error.code === 'ERR_NETWORK' || // Network error
+      error.response?.status >= 500 || // Server error
+      error.response?.status === 429; // Rate limited
+    
+    if (isRetryable && attempt < maxRetries) {
+      const delay = RETRY_DELAY * Math.pow(2, attempt - 1); // Exponential backoff
+      console.log(`Retry attempt ${attempt}/${maxRetries} after ${delay}ms...`);
+      await new Promise(resolve => setTimeout(resolve, delay));
+      return withRetry(fn, maxRetries, attempt + 1);
+    }
+    
+    throw error;
+  }
+};
+
+/**
  * Real company search using the Upswitch Valuation Engine API
  * POST /api/v1/registry/search
  */
@@ -44,43 +75,47 @@ export const searchCompanies = async (
   companyName: string,
   countryCode: string
 ): Promise<CompanySearchResult[]> => {
-  try {
-    const response = await apiClient.post('/api/v1/registry/search', {
-      company_name: companyName,
-      country_code: countryCode,
-      limit: 10
-    });
+  return withRetry(async () => {
+    try {
+      const response = await apiClient.post('/api/v1/registry/search', {
+        company_name: companyName,
+        country_code: countryCode,
+        limit: 10
+      });
 
-    console.log('📡 Raw API response:', response.data);
-    console.log('📡 Raw results:', response.data.results);
+      console.log('📡 Raw API response:', response.data);
+      console.log('📡 Raw results:', response.data.results);
 
-    // Transform API response to our expected format
-    const results: CompanySearchResult[] = response.data.results.map((result: any) => {
-      console.log('📡 Mapping result:', result);
-      
-      const mapped = {
-        company_id: result.company_id,
-        company_name: result.company_name,
-        registration_number: result.registration_number,
-        country_code: result.country_code,
-        legal_form: result.legal_form,
-        address: result.address,
-        website: result.website,
-        status: result.status || 'active',
-        confidence_score: result.confidence_score || 0.9,
-        registry_url: result.registry_url
-      };
-      
-      console.log('📡 Mapped result:', mapped);
-      return mapped;
-    });
+      // Transform API response to our expected format
+      const results: CompanySearchResult[] = response.data.results.map((result: any) => {
+        console.log('📡 Mapping result:', result);
+        
+        const mapped = {
+          result_type: result.result_type || 'COMPANY',  // Explicit type field
+          company_id: result.company_id,
+          company_name: result.company_name,
+          registration_number: result.registration_number,
+          country_code: result.country_code,
+          legal_form: result.legal_form,
+          address: result.address,
+          website: result.website,
+          status: result.status || 'active',
+          confidence_score: result.confidence_score || 0.9,
+          registry_name: result.registry_name,
+          registry_url: result.registry_url
+        };
+        
+        console.log('📡 Mapped result:', mapped);
+        return mapped;
+      });
 
-    console.log('📡 Final results:', results);
-    return results;
-  } catch (error) {
-    console.error('Company search failed:', error);
-    throw new Error('Failed to search for company. Please try again.');
-  }
+      console.log('📡 Final results:', results);
+      return results;
+    } catch (error) {
+      console.error('Company search failed:', error);
+      throw error; // Let withRetry handle retries
+    }
+  });
 };
 
 /**
@@ -116,37 +151,39 @@ export const fetchCompanyFinancials = async (
   countryCode: string,
   years: number = 3
 ): Promise<CompanyFinancialData> => {
-  try {
-    const response = await apiClient.post('/api/v1/registry/financials', {
-      company_id: companyId,
-      country_code: countryCode,
-      years: years
-    });
+  return withRetry(async () => {
+    try {
+      const response = await apiClient.post('/api/v1/registry/financials', {
+        company_id: companyId,
+        country_code: countryCode,
+        years: years
+      });
 
-    // Transform API response to our expected format
-    const financialData: CompanyFinancialData = {
-      company_id: response.data.company_id,
-      company_name: response.data.company_name,
-      registration_number: response.data.registration_number,
-      country_code: response.data.country_code,
-      legal_form: response.data.legal_form,
-      filing_history: response.data.filing_history,
-      founding_year: response.data.founding_year,
-      industry_code: response.data.industry_code,
-      industry_description: response.data.industry_description,
-      employees: response.data.employees,
-      website: response.data.website,
-      data_source: response.data.data_source,
-      source_url: response.data.source_url,
-      last_updated: response.data.last_updated,
-      completeness_score: response.data.completeness_score
-    };
+      // Transform API response to our expected format
+      const financialData: CompanyFinancialData = {
+        company_id: response.data.company_id,
+        company_name: response.data.company_name,
+        registration_number: response.data.registration_number,
+        country_code: response.data.country_code,
+        legal_form: response.data.legal_form,
+        filing_history: response.data.filing_history,
+        founding_year: response.data.founding_year,
+        industry_code: response.data.industry_code,
+        industry_description: response.data.industry_description,
+        employees: response.data.employees,
+        website: response.data.website,
+        data_source: response.data.data_source,
+        source_url: response.data.source_url,
+        last_updated: response.data.last_updated,
+        completeness_score: response.data.completeness_score
+      };
 
-    return financialData;
-  } catch (error) {
-    console.error('Financial data fetch failed:', error);
-    throw new Error('Failed to fetch company financial data. Please try again.');
-  }
+      return financialData;
+    } catch (error) {
+      console.error('Financial data fetch failed:', error);
+      throw error; // Let withRetry handle retries
+    }
+  });
 };
 
 /**
