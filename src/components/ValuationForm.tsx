@@ -1,8 +1,10 @@
 import React, { useEffect, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useValuationStore } from '../store/useValuationStore';
 import { debounce } from '../utils/debounce';
 import { TARGET_COUNTRIES } from '../config/countries';
 import { IndustryCode, BusinessModel } from '../types/valuation';
+import { urls } from '../router';
 
 /**
  * ValuationForm Component
@@ -11,6 +13,7 @@ import { IndustryCode, BusinessModel } from '../types/valuation';
  * Supports 3 tiers: Quick, Standard, and Professional.
  */
 export const ValuationForm: React.FC = () => {
+  const navigate = useNavigate();
   const { formData, updateFormData, calculateValuation, quickValuation, isCalculating } = useValuationStore();
 
   // Debounced quick calculation for live preview
@@ -28,9 +31,11 @@ export const ValuationForm: React.FC = () => {
     debouncedQuickCalc(formData);
   }, [formData.revenue, formData.ebitda, formData.industry, formData.country_code]);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    calculateValuation();
+    await calculateValuation();
+    // Navigate to reports page after successful calculation
+    navigate(urls.reports());
   };
 
   // Calculate data quality score

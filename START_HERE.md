@@ -2,13 +2,27 @@
 
 ## ✅ Audit Status: ALL SYSTEMS GREEN
 
-**Build:** ✅ Success (5.86s, 372.24 kB gzipped)
+**Build:** ✅ Success (3.15s, 459.81 kB, 135.68 kB gzipped)
 **Tests:** ✅ 72/72 Passed (100%)
 **Status:** 🚀 Production Ready
 **Strategy:** 🎭 Stealth Mode Active (IP Protection)
+**Deployment:** ✅ Vercel Routing Fixed (v1.8.1)
 
 📋 [View Complete Flow Audit](docs/FLOW_AUDIT_COMPLETE.md) - Comprehensive validation of all flows, edge cases, and security
 🎭 [View Strategic UX Changes](docs/STRATEGIC_UX_STEALTH_MODE.md) - CTO decision: Protect competitive advantage
+🚨 **[Vercel Deployment Fix](docs/VERCEL_DEPLOYMENT_QUICKREF.md)** - ✅ All routes now working (404s fixed)
+
+---
+
+## 🆕 Latest Update: v1.8.1 - Critical Deployment Fix
+
+**Problem Fixed:** Routes like `/instant`, `/manual`, `/reports` were returning 404 errors on Vercel.
+
+**Solution:** Added `vercel.json` configuration for proper SPA routing.
+
+**Status:** ✅ All routes now work correctly - direct navigation, page refresh, browser back/forward all working!
+
+📚 [Full Deployment Guide](docs/DEPLOYMENT_TROUBLESHOOTING.md) | ⚡ [Quick Reference](docs/VERCEL_DEPLOYMENT_QUICKREF.md)
 
 ---
 

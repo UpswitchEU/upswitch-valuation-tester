@@ -1,5 +1,98 @@
 # Changelog - Upswitch Valuation Tester
 
+## [v1.8.2] - 2025-10-06 - UX Improvement: Report Navigation 🎯
+
+### 🎯 Better Report Management Flow
+
+**Changed: Reports now open in dedicated page instead of inline**
+
+**What Changed:**
+- After calculating a valuation (manual or instant), users are now **redirected to `/reports`**
+- Reports are no longer displayed inline on the calculation pages
+- Cleaner, more focused user experience
+
+**Benefits:**
+1. **Clearer Flow**: Separation between "calculate" and "view reports"
+2. **Better Organization**: All reports in one place
+3. **Easier Sharing**: Direct link to reports page
+4. **Less Clutter**: Calculation pages stay focused on data entry
+
+**Technical Changes:**
+- Modified `ValuationForm.tsx` to navigate to `/reports` after calculation
+- Modified `AIAssistedValuation.tsx` to navigate to `/reports` after calculation
+- Removed inline `Results` display from `App.tsx`
+- Reports automatically saved and displayed on `/reports` page
+
+**User Flow (Before):**
+```
+Enter data → Calculate → See results inline → Scroll up to enter new data
+```
+
+**User Flow (After):**
+```
+Enter data → Calculate → Redirected to Reports → See all reports
+Click "New Valuation" → Return to input
+```
+
+**Impact:**
+- ✅ Cleaner UX
+- ✅ Better report management
+- ✅ Easier to compare multiple valuations
+- ✅ More professional workflow
+
+---
+
+## [v1.8.1] - 2025-10-06 - Critical Deployment Fix 🚨
+
+### 🚨 Critical: Fixed 404 Errors on Vercel Deployment
+
+**Problem:**
+- All routes (`/instant`, `/manual`, `/upload`, `/reports`, etc.) returned 404 errors on Vercel
+- Direct navigation or page refresh resulted in "404: NOT_FOUND" errors
+- Only home route `/` was accessible
+
+**Root Cause:**
+- Missing `vercel.json` configuration file
+- Vercel was trying to serve static files at route paths instead of routing to `index.html`
+- Client-side routing (React Router) couldn't intercept requests
+
+**Solution:**
+1. **Created `vercel.json`** with SPA configuration:
+   - Rewrites all requests to `/index.html`
+   - Allows React Router to handle all routing client-side
+   - Added security headers (X-Content-Type-Options, X-Frame-Options, X-XSS-Protection)
+   - Optimized caching strategies:
+     - No cache for `index.html` (always fresh)
+     - 1-year cache for `/assets/*` (immutable bundles)
+
+2. **Verified Router Configuration:**
+   - All routes properly defined in `src/router/routes.ts`
+   - Router correctly configured in `src/router/index.tsx`
+   - App.tsx properly syncs URL with view mode state
+
+**Files Changed:**
+- ✅ `vercel.json` (NEW) - SPA configuration for Vercel
+
+**Testing:**
+- ✅ Direct navigation to `/instant` works
+- ✅ Direct navigation to `/manual` works
+- ✅ Direct navigation to `/reports` works
+- ✅ Page refresh preserves route
+- ✅ Browser back/forward buttons work
+- ✅ All client-side routing works correctly
+
+**Impact:**
+- 🎯 **Critical Fix** - App is now fully functional on Vercel
+- 🎯 Users can now access all routes directly via URL
+- 🎯 Proper SPA behavior restored
+
+**Deploy Notes:**
+- After deploying this update, all routes will work correctly
+- No database or backend changes required
+- Purely frontend/deployment configuration fix
+
+---
+
 ## [v1.8.0] - 2025-10-06 - Reports Page & Saved Valuations 📊
 
 ### 📊 New Feature: Reports Management

@@ -1,14 +1,17 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { MessageSquare, Database, TrendingUp, CheckCircle } from 'lucide-react';
 import { ConversationalChat } from './ConversationalChat';
 import { RegistryDataPreview } from './RegistryDataPreview';
 import type { CompanyFinancialData } from '../../types/registry';
 import { useValuationStore } from '../../store/useValuationStore';
 import { useReportsStore } from '../../store/useReportsStore';
+import { urls } from '../../router';
 
 type FlowStage = 'chat' | 'preview' | 'results';
 
 export const AIAssistedValuation: React.FC = () => {
+  const navigate = useNavigate();
   const [stage, setStage] = useState<FlowStage>('chat');
   const [companyData, setCompanyData] = useState<CompanyFinancialData | null>(null);
   const { calculateValuation, result } = useValuationStore();
@@ -21,7 +24,6 @@ export const AIAssistedValuation: React.FC = () => {
 
   const handleCalculate = async () => {
     await calculateValuation();
-    setStage('results');
     
     // Save report if calculation was successful
     if (result && companyData) {
@@ -33,10 +35,8 @@ export const AIAssistedValuation: React.FC = () => {
       });
     }
     
-    // Scroll to results
-    setTimeout(() => {
-      document.getElementById('results')?.scrollIntoView({ behavior: 'smooth' });
-    }, 100);
+    // Navigate to reports page
+    navigate(urls.reports());
   };
 
   const handleStartOver = () => {

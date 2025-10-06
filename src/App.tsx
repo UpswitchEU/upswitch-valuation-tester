@@ -5,8 +5,6 @@ import { TwoStepFlow } from './components/TwoStepFlow';
 import { ValuationForm } from './components/ValuationForm';
 import { AIAssistedValuation } from './components/registry/AIAssistedValuation';
 import { ValuationMethodSelector } from './components/ValuationMethodSelector';
-import { Results } from './components/Results';
-import { useValuationStore } from './store/useValuationStore';
 import { ROUTE_TO_VIEW_MODE, VIEW_MODE_TO_ROUTE } from './router/routes';
 
 type ViewMode = 'ai-assisted' | 'manual' | 'document-upload';
@@ -14,7 +12,6 @@ type ViewMode = 'ai-assisted' | 'manual' | 'document-upload';
 function App() {
   const location = useLocation();
   const navigate = useNavigate();
-  const { result } = useValuationStore();
   
   // Determine viewMode from route
   const routeBasedViewMode = (ROUTE_TO_VIEW_MODE[location.pathname as keyof typeof ROUTE_TO_VIEW_MODE] || 'ai-assisted') as ViewMode;
@@ -41,16 +38,7 @@ function App() {
 
         {/* Content */}
         {viewMode === 'ai-assisted' && (
-          <>
-            <AIAssistedValuation />
-            
-            {/* Results */}
-            {result && (
-              <div id="results" className="mt-8">
-                <Results />
-              </div>
-            )}
-          </>
+          <AIAssistedValuation />
         )}
 
         {viewMode === 'manual' && (
@@ -59,13 +47,6 @@ function App() {
               <div className="bg-white rounded-2xl shadow-xl border border-gray-200 p-8">
                 <ValuationForm />
               </div>
-
-              {/* Results */}
-              {result && (
-                <div id="results" className="mt-8">
-                  <Results />
-                </div>
-              )}
             </div>
           </div>
         )}
@@ -95,13 +76,6 @@ function App() {
             </div>
 
             <TwoStepFlow />
-            
-            {/* Results */}
-            {result && (
-              <div id="results" className="mt-8">
-                <Results />
-              </div>
-            )}
           </>
         )}
       </main>
