@@ -4,13 +4,15 @@ import { ConversationalChat } from './ConversationalChat';
 import { RegistryDataPreview } from './RegistryDataPreview';
 import type { CompanyFinancialData } from '../../types/registry';
 import { useValuationStore } from '../../store/useValuationStore';
+import { useReportsStore } from '../../store/useReportsStore';
 
 type FlowStage = 'chat' | 'preview' | 'results';
 
 export const AIAssistedValuation: React.FC = () => {
   const [stage, setStage] = useState<FlowStage>('chat');
   const [companyData, setCompanyData] = useState<CompanyFinancialData | null>(null);
-  const { calculateValuation } = useValuationStore();
+  const { calculateValuation, result } = useValuationStore();
+  const { addReport } = useReportsStore();
 
   const handleCompanyFound = (data: CompanyFinancialData) => {
     setCompanyData(data);
@@ -20,6 +22,17 @@ export const AIAssistedValuation: React.FC = () => {
   const handleCalculate = async () => {
     await calculateValuation();
     setStage('results');
+    
+    // Save report if calculation was successful
+    if (result && companyData) {
+      addReport({
+        company_name: companyData.company_name,
+        source: 'instant',
+        result: result,
+        form_data: companyData,
+      });
+    }
+    
     // Scroll to results
     setTimeout(() => {
       document.getElementById('results')?.scrollIntoView({ behavior: 'smooth' });

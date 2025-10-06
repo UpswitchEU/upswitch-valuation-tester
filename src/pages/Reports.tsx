@@ -4,13 +4,12 @@
  */
 
 import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { urls } from '../router';
 import { useReportsStore, type SavedReport } from '../store/useReportsStore';
 import { FileText, Trash2, Eye, Download, AlertCircle, TrendingUp, Calendar, Building2, ArrowLeft } from 'lucide-react';
 
 export const Reports: React.FC = () => {
-  const navigate = useNavigate();
   const { reports, deleteReport, clearAllReports } = useReportsStore();
   const [selectedReport, setSelectedReport] = useState<SavedReport | null>(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState<string | null>(null);

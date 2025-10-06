@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import type { ValuationRequest, ValuationResponse, QuickValuationRequest, ValuationFormData } from '../types/valuation';
 import { api } from '../services/api';
+import { useReportsStore } from './useReportsStore';
 
 interface ValuationStore {
   // Form data
@@ -144,6 +145,14 @@ export const useValuationStore = create<ValuationStore>((set, get) => ({
       console.log('Sending valuation request:', request);
       const response = await api.calculateValuation(request);
       setResult(response);
+      
+      // Save report to reports store
+      useReportsStore.getState().addReport({
+        company_name: formData.company_name,
+        source: 'manual',
+        result: response,
+        form_data: formData,
+      });
     } catch (error: any) {
       console.error('Valuation error:', error);
       console.error('Error response:', error.response?.data);

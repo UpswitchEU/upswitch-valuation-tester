@@ -1,5 +1,8 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
+import { FileText } from 'lucide-react';
+import { urls } from '../router';
+import { useReportsStore } from '../store/useReportsStore';
 
 /**
  * Header Component
@@ -8,6 +11,7 @@ import { Link } from 'react-router-dom';
  * Matches the branding from the main Upswitch platform.
  */
 export const Header: React.FC = () => {
+  const { reports } = useReportsStore();
   return (
     <>
       <header className="z-40 flex px-3 sm:px-4 lg:px-6 gap-2 sm:gap-3 lg:gap-4 w-full flex-row flex-nowrap items-center justify-between h-[var(--navbar-height)] max-w-full overflow-x-hidden bg-white border-b border-gray-200 sticky top-0 shadow-sm">
@@ -44,6 +48,21 @@ export const Header: React.FC = () => {
                 to="/"
               >
                 Valuation Tool
+                <span className="absolute -bottom-1 left-0 w-full h-0.5 bg-primary-600 transition-transform origin-left scale-x-0 group-hover:scale-x-100"></span>
+              </Link>
+            </li>
+            <li className="text-medium whitespace-nowrap box-border list-none">
+              <Link 
+                className="text-sm font-medium transition-colors relative group text-neutral-700 hover:text-primary-600 flex items-center gap-1.5" 
+                to={urls.reports()}
+              >
+                <FileText className="w-4 h-4" />
+                Reports
+                {reports.length > 0 && (
+                  <span className="inline-flex items-center justify-center w-5 h-5 text-xs font-bold text-white bg-red-500 rounded-full">
+                    {reports.length}
+                  </span>
+                )}
                 <span className="absolute -bottom-1 left-0 w-full h-0.5 bg-primary-600 transition-transform origin-left scale-x-0 group-hover:scale-x-100"></span>
               </Link>
             </li>

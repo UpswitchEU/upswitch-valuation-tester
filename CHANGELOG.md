@@ -1,5 +1,66 @@
 # Changelog - Upswitch Valuation Tester
 
+## [v1.8.0] - 2025-10-06 - Reports Page & Saved Valuations 📊
+
+### 📊 New Feature: Reports Management
+
+**Complete reports system for saving and managing valuations**
+
+Created a comprehensive Reports page to store and manage all generated valuations:
+
+1. **Reports Store (Zustand + Persist)**
+   - `src/store/useReportsStore.ts` - Persistent storage with localStorage
+   - Automatic report saving after valuation calculation
+   - CRUD operations: add, delete, clear all
+   - Reports persist across browser sessions
+
+2. **Reports Page (`/reports`)**
+   - List view with all saved reports
+   - Detailed view with full valuation breakdown
+   - Enterprise Value display (Low/Mid/High)
+   - Confidence score visualization
+   - Financial metrics cards
+   - Value drivers and risk factors
+   - Export reports as JSON
+   - Delete individual reports or clear all
+   - Empty state with CTAs
+
+3. **Report Sources Tracked**
+   - ⚡ Instant Valuation (AI-assisted)
+   - Manual Input
+   - 📄 Document Upload
+   - Color-coded badges for easy identification
+
+4. **Header Integration**
+   - Added "Reports" link with badge counter
+   - Real-time count of saved reports
+   - Responsive design
+
+5. **Automatic Report Saving**
+   - Manual valuations auto-saved after calculation
+   - Instant valuations auto-saved after AI lookup
+   - Includes full form data and results
+   - Timestamped with creation date
+
+**Features:**
+- ✅ Persistent storage (survives browser refresh)
+- ✅ Beautiful UI with detailed breakdown
+- ✅ Export to JSON for external use
+- ✅ Quick access from header
+- ✅ Empty state guidance
+- ✅ Confirmation dialogs for deletions
+
+**Reused Components:**
+- Inspired by `/apps/upswitch-frontend` BusinessValuation page
+- Adapted ValuationDashboard patterns
+- Consistent with existing UI/UX
+
+**Build:** 5.17s, 459.81 kB (135.68 kB gzipped)
+
+**Route:** `/reports` or `urls.reports()`
+
+---
+
 ## [v1.7.1] - 2025-10-06 - SEO: Prevent Indexing 🚫
 
 ### 🚫 SEO Updates
