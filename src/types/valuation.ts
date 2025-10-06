@@ -107,7 +107,8 @@ export interface QuickValuationRequest {
 export interface ValuationResponse {
   valuation_id: string;
   company_name: string;
-  timestamp: string;
+  timestamp?: string;
+  valuation_date?: string;
   
   // Final results
   equity_value_low: number;
@@ -123,9 +124,75 @@ export interface ValuationResponse {
   // Methodology
   primary_method?: string;
   methodology?: string;
+  methodology_notes?: string;
+  valuation_summary?: string;
   
-  // Methodology breakdown
-  dcf_result: {
+  // Weights
+  dcf_weight: number;
+  multiples_weight: number;
+  
+  // DCF Valuation (detailed breakdown from API)
+  dcf_valuation?: {
+    enterprise_value: number;
+    equity_value: number;
+    wacc: number;
+    cost_of_equity: number;
+    cost_of_debt: number;
+    terminal_growth_rate: number;
+    terminal_value: number;
+    pv_terminal_value: number;
+    fcf_projections_5y: number[];
+    pv_fcf_projections_5y: number[];
+    sensitivity_wacc: Record<string, number>;
+    sensitivity_growth: Record<string, number>;
+    confidence: string;
+    confidence_score: number;
+    confidence_factors: Record<string, string>;
+  };
+  
+  // Market Multiples (detailed breakdown from API)
+  multiples_valuation?: {
+    ev_ebitda_valuation: number;
+    ev_revenue_valuation: number;
+    pe_valuation: number | null;
+    ebitda_multiple: number;
+    revenue_multiple: number;
+    pe_multiple: number | null;
+    comparables_count: number;
+    comparables_quality: string;
+    size_discount: number;
+    liquidity_discount: number;
+    country_adjustment: number;
+    total_adjustment: number;
+    adjusted_equity_value: number;
+    confidence: string;
+    confidence_score: number;
+  };
+  
+  // Financial Metrics (comprehensive)
+  financial_metrics: {
+    gross_margin: number;
+    ebitda_margin: number;
+    ebit_margin: number;
+    net_margin: number;
+    return_on_assets: number;
+    return_on_equity: number;
+    current_ratio: number;
+    quick_ratio: number;
+    cash_ratio: number;
+    debt_to_equity: number;
+    debt_to_assets: number;
+    interest_coverage: number;
+    revenue_growth: number;
+    revenue_cagr_3y: number;
+    ebitda_growth: number;
+    altman_z_score: number;
+    financial_health_score: number;
+    financial_health_description: string;
+  };
+  
+  // Legacy fields for backward compatibility
+  dcf_result?: {
     enterprise_value: number;
     equity_value: number;
     wacc: number;
@@ -142,7 +209,7 @@ export interface ValuationResponse {
     }>;
   };
   
-  multiples_result: {
+  multiples_result?: {
     ev_ebitda_valuation: number;
     ev_revenue_valuation: number;
     pe_valuation: number | null;
@@ -153,20 +220,6 @@ export interface ValuationResponse {
       pe_ratio?: number;
     }>;
   };
-  
-  financial_metrics: {
-    ebitda_margin: number;
-    net_margin: number;
-    roa?: number;
-    roe?: number;
-    debt_to_equity?: number;
-    current_ratio?: number;
-    financial_health_score: number;
-  };
-  
-  // Weights
-  dcf_weight: number;
-  multiples_weight: number;
   
   // Ownership adjustment (optional)
   ownership_adjustment?: {

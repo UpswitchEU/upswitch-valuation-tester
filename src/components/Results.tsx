@@ -165,25 +165,309 @@ export const Results: React.FC = () => {
 
       {/* Methodology Breakdown */}
       <div className="bg-white rounded-lg border border-gray-200 p-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Methodology</h3>
-        <div className="grid grid-cols-2 gap-4">
+        <h3 className="text-lg font-semibold text-gray-900 mb-4">Methodology Weights</h3>
+        <div className="grid grid-cols-2 gap-4 mb-4">
           <div className="p-4 bg-blue-50 rounded">
-            <p className="text-sm text-gray-600 mb-1">Primary Method</p>
-            <p className="text-lg font-bold text-blue-600">
-              {(result.methodology || result.primary_method) === 'synthesized' ? 'DCF + Multiples' : 
-               (result.methodology || result.primary_method) === 'dcf' ? 'Discounted Cash Flow' : 
-               'Market Multiples'}
+            <p className="text-sm text-gray-600 mb-1">DCF Weight</p>
+            <p className="text-2xl font-bold text-blue-600">
+              {formatPercent((result.dcf_weight || 0) * 100)}
             </p>
           </div>
           <div className="p-4 bg-purple-50 rounded">
-            <p className="text-sm text-gray-600 mb-1">Data Points Used</p>
-            <p className="text-lg font-bold text-purple-600">
-              {(result.confidence || result.confidence_score) >= 80 ? '20+' : 
-               (result.confidence || result.confidence_score) >= 60 ? '10-15' : '5-10'}
+            <p className="text-sm text-gray-600 mb-1">Multiples Weight</p>
+            <p className="text-2xl font-bold text-purple-600">
+              {formatPercent((result.multiples_weight || 0) * 100)}
             </p>
           </div>
         </div>
+        <div className="text-sm text-gray-600">
+          <p><strong>Note:</strong> Weights are dynamically calculated based on data quality and company characteristics.</p>
+        </div>
       </div>
+
+      {/* DCF Valuation Details */}
+      {result.dcf_valuation && (
+        <div className="bg-white rounded-lg border border-blue-200 p-6">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+            <svg className="h-5 w-5 text-blue-600 mr-2" fill="currentColor" viewBox="0 0 20 20">
+              <path d="M2 11a1 1 0 011-1h2a1 1 0 011 1v5a1 1 0 01-1 1H3a1 1 0 01-1-1v-5zM8 7a1 1 0 011-1h2a1 1 0 011 1v9a1 1 0 01-1 1H9a1 1 0 01-1-1V7zM14 4a1 1 0 011-1h2a1 1 0 011 1v12a1 1 0 01-1 1h-2a1 1 0 01-1-1V4z" />
+            </svg>
+            DCF Valuation Details
+          </h3>
+          
+          {/* Key DCF Metrics */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+            <div className="p-3 bg-blue-50 rounded">
+              <p className="text-xs text-gray-600 mb-1">Enterprise Value</p>
+              <p className="text-lg font-bold text-blue-600">
+                {formatCurrency(result.dcf_valuation.enterprise_value)}
+              </p>
+            </div>
+            <div className="p-3 bg-blue-50 rounded">
+              <p className="text-xs text-gray-600 mb-1">WACC</p>
+              <p className="text-lg font-bold text-blue-600">
+                {formatPercent(result.dcf_valuation.wacc * 100)}
+              </p>
+            </div>
+            <div className="p-3 bg-blue-50 rounded">
+              <p className="text-xs text-gray-600 mb-1">Terminal Growth</p>
+              <p className="text-lg font-bold text-blue-600">
+                {formatPercent(result.dcf_valuation.terminal_growth_rate * 100)}
+              </p>
+            </div>
+            <div className="p-3 bg-blue-50 rounded">
+              <p className="text-xs text-gray-600 mb-1">Terminal Value</p>
+              <p className="text-lg font-bold text-blue-600">
+                {formatCurrency(result.dcf_valuation.terminal_value)}
+              </p>
+            </div>
+          </div>
+
+          {/* WACC Components */}
+          <div className="mb-6">
+            <h4 className="text-sm font-semibold text-gray-700 mb-2">WACC Components</h4>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="p-2 bg-gray-50 rounded text-sm">
+                <span className="text-gray-600">Cost of Equity:</span>
+                <span className="font-bold text-gray-900 ml-2">
+                  {formatPercent(result.dcf_valuation.cost_of_equity * 100)}
+                </span>
+              </div>
+              <div className="p-2 bg-gray-50 rounded text-sm">
+                <span className="text-gray-600">Cost of Debt:</span>
+                <span className="font-bold text-gray-900 ml-2">
+                  {formatPercent(result.dcf_valuation.cost_of_debt * 100)}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {/* FCF Projections */}
+          {result.dcf_valuation.fcf_projections_5y && result.dcf_valuation.fcf_projections_5y.length > 0 && (
+            <div className="mb-4">
+              <h4 className="text-sm font-semibold text-gray-700 mb-2">5-Year FCF Projections</h4>
+              <div className="overflow-x-auto">
+                <table className="min-w-full text-sm">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      {result.dcf_valuation.fcf_projections_5y.map((_, idx) => (
+                        <th key={idx} className="px-3 py-2 text-left text-xs font-medium text-gray-600">
+                          Year {idx + 1}
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      {result.dcf_valuation.fcf_projections_5y.map((fcf, idx) => (
+                        <td key={idx} className="px-3 py-2 border-t">
+                          <span className="font-medium text-gray-900">{formatCurrency(fcf)}</span>
+                        </td>
+                      ))}
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          {/* Confidence */}
+          <div className="p-3 bg-blue-50 rounded">
+            <div className="flex items-center justify-between">
+              <span className="text-sm font-medium text-gray-700">DCF Confidence</span>
+              <span className="text-lg font-bold text-blue-600">
+                {result.dcf_valuation.confidence_score}%
+              </span>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Market Multiples Details */}
+      {result.multiples_valuation && (
+        <div className="bg-white rounded-lg border border-purple-200 p-6">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+            <svg className="h-5 w-5 text-purple-600 mr-2" fill="currentColor" viewBox="0 0 20 20">
+              <path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z" />
+              <path fillRule="evenodd" d="M4 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v11a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm3 4a1 1 0 000 2h.01a1 1 0 100-2H7zm3 0a1 1 0 000 2h3a1 1 0 100-2h-3zm-3 4a1 1 0 100 2h.01a1 1 0 100-2H7zm3 0a1 1 0 100 2h3a1 1 0 100-2h-3z" clipRule="evenodd" />
+            </svg>
+            Market Multiples Details
+          </h3>
+          
+          {/* Valuation Methods */}
+          <div className="grid grid-cols-3 gap-4 mb-6">
+            <div className="p-3 bg-purple-50 rounded">
+              <p className="text-xs text-gray-600 mb-1">EV/EBITDA</p>
+              <p className="text-lg font-bold text-purple-600">
+                {formatCurrency(result.multiples_valuation.ev_ebitda_valuation)}
+              </p>
+              <p className="text-xs text-gray-500 mt-1">
+                Multiple: {result.multiples_valuation.ebitda_multiple.toFixed(1)}x
+              </p>
+            </div>
+            <div className="p-3 bg-purple-50 rounded">
+              <p className="text-xs text-gray-600 mb-1">EV/Revenue</p>
+              <p className="text-lg font-bold text-purple-600">
+                {formatCurrency(result.multiples_valuation.ev_revenue_valuation)}
+              </p>
+              <p className="text-xs text-gray-500 mt-1">
+                Multiple: {result.multiples_valuation.revenue_multiple.toFixed(2)}x
+              </p>
+            </div>
+            {result.multiples_valuation.pe_valuation && (
+              <div className="p-3 bg-purple-50 rounded">
+                <p className="text-xs text-gray-600 mb-1">P/E Valuation</p>
+                <p className="text-lg font-bold text-purple-600">
+                  {formatCurrency(result.multiples_valuation.pe_valuation)}
+                </p>
+                {result.multiples_valuation.pe_multiple && (
+                  <p className="text-xs text-gray-500 mt-1">
+                    Multiple: {result.multiples_valuation.pe_multiple.toFixed(1)}x
+                  </p>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* Adjustments */}
+          <div className="mb-6">
+            <h4 className="text-sm font-semibold text-gray-700 mb-2">Valuation Adjustments</h4>
+            <div className="space-y-2">
+              <div className="flex justify-between items-center p-2 bg-gray-50 rounded text-sm">
+                <span className="text-gray-600">Size Discount:</span>
+                <span className="font-bold text-red-600">
+                  {formatPercent(result.multiples_valuation.size_discount * 100)}
+                </span>
+              </div>
+              <div className="flex justify-between items-center p-2 bg-gray-50 rounded text-sm">
+                <span className="text-gray-600">Liquidity Discount:</span>
+                <span className="font-bold text-red-600">
+                  {formatPercent(result.multiples_valuation.liquidity_discount * 100)}
+                </span>
+              </div>
+              <div className="flex justify-between items-center p-2 bg-gray-50 rounded text-sm">
+                <span className="text-gray-600">Country Adjustment:</span>
+                <span className={`font-bold ${result.multiples_valuation.country_adjustment >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                  {result.multiples_valuation.country_adjustment >= 0 ? '+' : ''}
+                  {formatPercent(result.multiples_valuation.country_adjustment * 100)}
+                </span>
+              </div>
+              <div className="flex justify-between items-center p-3 bg-purple-100 rounded text-sm font-semibold">
+                <span className="text-gray-800">Total Adjustment:</span>
+                <span className={`text-lg ${result.multiples_valuation.total_adjustment >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                  {result.multiples_valuation.total_adjustment >= 0 ? '+' : ''}
+                  {formatPercent(result.multiples_valuation.total_adjustment * 100)}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {/* Comparables Info */}
+          <div className="grid grid-cols-2 gap-4 mb-4">
+            <div className="p-3 bg-gray-50 rounded">
+              <p className="text-xs text-gray-600 mb-1">Comparables Used</p>
+              <p className="text-lg font-bold text-gray-900">
+                {result.multiples_valuation.comparables_count}
+              </p>
+            </div>
+            <div className="p-3 bg-gray-50 rounded">
+              <p className="text-xs text-gray-600 mb-1">Data Quality</p>
+              <p className="text-lg font-bold text-gray-900 capitalize">
+                {result.multiples_valuation.comparables_quality}
+              </p>
+            </div>
+          </div>
+
+          {/* Confidence */}
+          <div className="p-3 bg-purple-50 rounded">
+            <div className="flex items-center justify-between">
+              <span className="text-sm font-medium text-gray-700">Multiples Confidence</span>
+              <span className="text-lg font-bold text-purple-600">
+                {result.multiples_valuation.confidence_score}%
+              </span>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Financial Metrics */}
+      {result.financial_metrics && (
+        <div className="bg-white rounded-lg border border-green-200 p-6">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+            <svg className="h-5 w-5 text-green-600 mr-2" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M6 2a2 2 0 00-2 2v12a2 2 0 002 2h8a2 2 0 002-2V4a2 2 0 00-2-2H6zm1 2a1 1 0 000 2h6a1 1 0 100-2H7zm6 7a1 1 0 011 1v3a1 1 0 11-2 0v-3a1 1 0 011-1zm-3 3a1 1 0 100 2h.01a1 1 0 100-2H10zm-4 1a1 1 0 011-1h.01a1 1 0 110 2H7a1 1 0 01-1-1zm1-4a1 1 0 100 2h.01a1 1 0 100-2H7zm2 1a1 1 0 011-1h.01a1 1 0 110 2H10a1 1 0 01-1-1zm4-4a1 1 0 100 2h.01a1 1 0 100-2H13zM9 9a1 1 0 011-1h.01a1 1 0 110 2H10a1 1 0 01-1-1zM7 8a1 1 0 000 2h.01a1 1 0 000-2H7z" clipRule="evenodd" />
+            </svg>
+            Financial Metrics
+          </h3>
+          
+          {/* Profitability */}
+          <div className="mb-4">
+            <h4 className="text-sm font-semibold text-gray-700 mb-2">Profitability</h4>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              <div className="p-2 bg-green-50 rounded text-sm">
+                <p className="text-gray-600 text-xs">EBITDA Margin</p>
+                <p className="font-bold text-green-600">{formatPercent(result.financial_metrics.ebitda_margin * 100)}</p>
+              </div>
+              <div className="p-2 bg-green-50 rounded text-sm">
+                <p className="text-gray-600 text-xs">Net Margin</p>
+                <p className="font-bold text-green-600">{formatPercent(result.financial_metrics.net_margin * 100)}</p>
+              </div>
+              {result.financial_metrics.return_on_assets !== undefined && (
+                <div className="p-2 bg-green-50 rounded text-sm">
+                  <p className="text-gray-600 text-xs">ROA</p>
+                  <p className="font-bold text-green-600">{formatPercent(result.financial_metrics.return_on_assets * 100)}</p>
+                </div>
+              )}
+              {result.financial_metrics.return_on_equity !== undefined && (
+                <div className="p-2 bg-green-50 rounded text-sm">
+                  <p className="text-gray-600 text-xs">ROE</p>
+                  <p className="font-bold text-green-600">{formatPercent(result.financial_metrics.return_on_equity * 100)}</p>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Liquidity & Leverage */}
+          {(result.financial_metrics.current_ratio !== undefined || result.financial_metrics.debt_to_equity !== undefined) && (
+            <div className="mb-4">
+              <h4 className="text-sm font-semibold text-gray-700 mb-2">Liquidity & Leverage</h4>
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                {result.financial_metrics.current_ratio !== undefined && (
+                  <div className="p-2 bg-blue-50 rounded text-sm">
+                    <p className="text-gray-600 text-xs">Current Ratio</p>
+                    <p className="font-bold text-blue-600">{result.financial_metrics.current_ratio.toFixed(2)}</p>
+                  </div>
+                )}
+                {result.financial_metrics.debt_to_equity !== undefined && (
+                  <div className="p-2 bg-blue-50 rounded text-sm">
+                    <p className="text-gray-600 text-xs">Debt/Equity</p>
+                    <p className="font-bold text-blue-600">{result.financial_metrics.debt_to_equity.toFixed(2)}</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Financial Health */}
+          <div className="p-4 bg-gradient-to-r from-green-50 to-emerald-50 rounded border border-green-200">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-sm font-semibold text-gray-700">Financial Health Score</span>
+              <span className="text-2xl font-bold text-green-600">
+                {result.financial_metrics.financial_health_score}/100
+              </span>
+            </div>
+            <div className="w-full bg-gray-200 rounded-full h-3">
+              <div 
+                className={`h-3 rounded-full transition-all ${
+                  result.financial_metrics.financial_health_score >= 70 ? 'bg-green-500' :
+                  result.financial_metrics.financial_health_score >= 50 ? 'bg-yellow-500' : 'bg-red-500'
+                }`}
+                style={{ width: `${result.financial_metrics.financial_health_score}%` }}
+              ></div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Export Actions */}
       <div className="flex space-x-4">
