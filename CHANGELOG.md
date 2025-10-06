@@ -3,10 +3,24 @@
 ## [Unreleased] - 2025-10-06
 
 ### 🐛 Fixed
+
+- **CRITICAL: Form Submission Errors** - Fixed validation and null pointer issues
+  - Made Company Name field required (was optional, causing validation errors)
+  - Added default company name value to prevent empty string validation errors
+  - Improved validation to check for whitespace-only strings
+  - Added null safety to Results component (fixed `TypeError: Cannot read properties of null`)
+  - All `.toFixed()` calls now use optional chaining with 'N/A' fallback
+  - Fixed data quality calculation to properly account for company name
+
+- **Duplicate Business Model Field** - Removed duplicate field in manual input form
+  - Business Model field was appearing twice in Basic Information section
+  - Kept single required field in logical position (after Industry)
+  - Improved form clarity and user experience
+  
 - **TypeScript Build Errors** - Fixed type checking errors in data quality calculation
   - Corrected property access for `net_income`, `total_assets`, `total_debt`, `cash` to use `current_year_data` object
   - Added optional chaining for `historical_years_data` to prevent undefined errors
-  - Production build now compiles successfully (6.04s, 143 kB gzipped)
+  - Production build now compiles successfully (6.17s, 111.57 kB gzipped)
 
 ### ✨ Added
 - **Data Quality Feedback System** - Real-time data completeness indicator with color-coded progress bar

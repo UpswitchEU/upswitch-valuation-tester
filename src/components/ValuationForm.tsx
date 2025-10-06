@@ -157,7 +157,7 @@ export const ValuationForm: React.FC = () => {
           {/* Company Name */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Company Name
+              Company Name <span className="text-red-500">*</span>
             </label>
             <input
               type="text"
@@ -165,6 +165,7 @@ export const ValuationForm: React.FC = () => {
               onChange={(e) => updateFormData({ company_name: e.target.value })}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
               placeholder="e.g., Acme GmbH"
+              required
             />
           </div>
 
@@ -248,27 +249,6 @@ export const ValuationForm: React.FC = () => {
                   {country.flag} {country.name} ({country.currencySymbol})
                 </option>
               ))}
-            </select>
-          </div>
-
-          {/* Business Model */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Business Model
-            </label>
-            <select
-              value={formData.business_model || ''}
-              onChange={(e) => updateFormData({ business_model: e.target.value })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-            >
-              <option value="">Select model...</option>
-              <option value={BusinessModel.B2B_SAAS}>B2B SaaS</option>
-              <option value={BusinessModel.B2C}>B2C</option>
-              <option value={BusinessModel.MARKETPLACE}>Marketplace</option>
-              <option value={BusinessModel.ECOMMERCE}>E-commerce</option>
-              <option value={BusinessModel.MANUFACTURING}>Manufacturing</option>
-              <option value={BusinessModel.SERVICES}>Services</option>
-              <option value={BusinessModel.OTHER}>Other</option>
             </select>
           </div>
         </div>

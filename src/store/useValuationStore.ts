@@ -36,7 +36,7 @@ interface ValuationStore {
 const getSafeCurrentYear = () => Math.min(new Date().getFullYear(), 2100);
 
 const defaultFormData: ValuationFormData = {
-  company_name: '',
+  company_name: 'My Company', // Default company name to avoid validation error
   country_code: 'BE',
   industry: '',
   business_model: 'other', // Default business model
@@ -88,7 +88,7 @@ export const useValuationStore = create<ValuationStore>((set, get) => ({
     
     try {
       // Validate and construct proper request
-      if (!formData.company_name) {
+      if (!formData.company_name || formData.company_name.trim() === '') {
         throw new Error('Company name is required');
       }
       if (!formData.industry) {

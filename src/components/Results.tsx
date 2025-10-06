@@ -302,7 +302,7 @@ export const Results: React.FC = () => {
                 {formatCurrency(result.multiples_valuation.ev_ebitda_valuation)}
               </p>
               <p className="text-xs text-gray-500 mt-1">
-                Multiple: {result.multiples_valuation.ebitda_multiple.toFixed(1)}x
+                Multiple: {result.multiples_valuation.ebitda_multiple?.toFixed(1) || 'N/A'}x
               </p>
             </div>
             <div className="p-3 bg-purple-50 rounded">
@@ -311,7 +311,7 @@ export const Results: React.FC = () => {
                 {formatCurrency(result.multiples_valuation.ev_revenue_valuation)}
               </p>
               <p className="text-xs text-gray-500 mt-1">
-                Multiple: {result.multiples_valuation.revenue_multiple.toFixed(2)}x
+                Multiple: {result.multiples_valuation.revenue_multiple?.toFixed(2) || 'N/A'}x
               </p>
             </div>
             {result.multiples_valuation.pe_valuation && (
@@ -435,13 +435,13 @@ export const Results: React.FC = () => {
                 {result.financial_metrics.current_ratio !== undefined && (
                   <div className="p-2 bg-blue-50 rounded text-sm">
                     <p className="text-gray-600 text-xs">Current Ratio</p>
-                    <p className="font-bold text-blue-600">{result.financial_metrics.current_ratio.toFixed(2)}</p>
+                    <p className="font-bold text-blue-600">{result.financial_metrics.current_ratio?.toFixed(2) || 'N/A'}</p>
                   </div>
                 )}
                 {result.financial_metrics.debt_to_equity !== undefined && (
                   <div className="p-2 bg-blue-50 rounded text-sm">
                     <p className="text-gray-600 text-xs">Debt/Equity</p>
-                    <p className="font-bold text-blue-600">{result.financial_metrics.debt_to_equity.toFixed(2)}</p>
+                    <p className="font-bold text-blue-600">{result.financial_metrics.debt_to_equity?.toFixed(2) || 'N/A'}</p>
                   </div>
                 )}
               </div>
