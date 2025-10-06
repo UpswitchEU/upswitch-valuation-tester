@@ -42,6 +42,10 @@ export const router = createBrowserRouter([
     element: <PrivacyExplainer />,
   },
   {
+    path: '/privacy-explainer',
+    element: <PrivacyExplainer />,
+  },
+  {
     path: ROUTES.ABOUT,
     element: <About />,
   },
