@@ -1,5 +1,113 @@
 # Changelog - Upswitch Valuation Tester
 
+## [v1.11.0] - 2025-10-06 - Full-Screen Ilara Layout 🖥️✨
+
+### 🎯 Major Visual Overhaul: Ilara-Style Full-Screen Split Panel
+
+**Transformed /instant route to match Ilara AI's immersive full-screen experience!**
+
+#### ✨ What Changed
+
+**Before (v1.10.2):**
+- Dark chat component ✅
+- But: Standard page layout with containers, padding, max-width constraints
+- Grid layout with gaps
+- Not full-screen
+
+**After (v1.11.0):**
+- **Full-screen layout** (`h-screen w-screen`) 🎉
+- **Ilara-style toolbar** at top with back button, stage indicators
+- **Edge-to-edge split panel** (60/40 split: Chat | Info)
+- **Dark theme throughout** (zinc-950 background)
+- **No container restrictions** (true full-width experience)
+- **Professional stage indicators** (Lookup, Review, Results)
+
+#### 🎨 Visual Features
+
+**1. Ilara-Style Toolbar**
+- Dark theme (zinc-900/50 with backdrop-blur)
+- Back button to switch methods
+- "⚡ Instant Valuation" title
+- Stage indicators with icons (Lookup, Review, Results)
+- Active stage highlighted with primary color
+
+**2. Split Panel Layout**
+- **Left Panel (60%):** Chat/Data Preview/Results
+- **Right Panel (40%):** Info sidebar with contextual tips
+- Full height, scrollable independently
+- Dark background (zinc-900, zinc-800)
+- Rounded border with zinc-800
+
+**3. Dark Theme Throughout**
+- All panels styled with zinc colors
+- Glassmorphism effects
+- Semi-transparent backgrounds
+- Proper contrast for readability
+
+#### 📁 Files Changed
+
+**Modified:**
+- ✅ `src/App.tsx` - Conditional full-screen layout for AI-assisted mode
+- ✅ `src/components/registry/AIAssistedValuation.tsx` - Complete restructure:
+  - Added `onModeChange` prop
+  - Ilara-style toolbar
+  - 60/40 split panel layout
+  - Dark theme for all stages
+  - Removed old progress indicator
+  - Removed grid layout with gaps
+
+**Removed:**
+- ❌ Tab headers below navigation (v1.10.3)
+- ❌ Old progress indicator (replaced with toolbar stages)
+- ❌ Container constraints on /instant route
+
+#### 🏗️ Layout Comparison
+
+**Standard Routes (/manual, /document-upload):**
+```
+┌─────────────────────────────────────┐
+│ Header                              │
+├─────────────────────────────────────┤
+│ ┌─────────────────────────────────┐ │
+│ │ Tab Navigation                  │ │
+│ └─────────────────────────────────┘ │
+│ ┌─────────────────────────────────┐ │
+│ │ Content (max-w-7xl, padding)    │ │
+│ └─────────────────────────────────┘ │
+└─────────────────────────────────────┘
+```
+
+**/instant Route (NEW):**
+```
+┌───────────────────────────────────────────┐
+│ Toolbar (back btn | title | stages)      │
+├───────────────────┬───────────────────────┤
+│                   │                       │
+│  Chat/Content     │  Info Sidebar        │
+│  (60%)            │  (40%)               │
+│                   │                       │
+│  Full height      │  Full height         │
+│  Dark theme       │  Dark theme          │
+│                   │                       │
+└───────────────────┴───────────────────────┘
+(Full screen, edge-to-edge)
+```
+
+#### 🚀 User Experience
+
+- **Immersive:** Full-screen removes distractions
+- **Professional:** Matches enterprise AI tools (like Ilara)
+- **Focused:** Split panel keeps info accessible without cluttering
+- **Responsive:** Panels scroll independently
+- **Consistent:** Dark theme throughout for cohesion
+
+#### 🔗 Related Changes
+- v1.10.3: Removed tab header info boxes
+- v1.10.2: Applied Ilara chat visual design
+- v1.9.0: Integrated Ilara chat architecture
+
+---
+
 ## [v1.10.0] - 2025-10-06 - Hybrid Results + LivePreview 🔄⚡
 
 ### 🎯 Major UX Enhancement: Inline Results + LivePreview

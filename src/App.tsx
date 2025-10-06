@@ -28,6 +28,16 @@ function App() {
     }
   }, [viewMode, navigate, location.pathname]);
 
+  // Full-screen Ilara-style layout for AI-assisted flow
+  if (viewMode === 'ai-assisted') {
+    return (
+      <div className="flex h-screen w-screen flex-col overflow-hidden bg-zinc-950">
+        <AIAssistedValuation onModeChange={setViewMode} />
+      </div>
+    );
+  }
+
+  // Standard layout for manual and document-upload
   return (
     <div className="min-h-screen bg-gradient-hero">
       <Header />
@@ -40,10 +50,6 @@ function App() {
         />
 
         {/* Content */}
-        {viewMode === 'ai-assisted' && (
-          <AIAssistedValuation />
-        )}
-
         {viewMode === 'manual' && (
           <div className="space-y-8">
             {/* Manual Entry Form */}

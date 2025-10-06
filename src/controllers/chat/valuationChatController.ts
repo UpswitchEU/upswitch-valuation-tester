@@ -61,7 +61,11 @@ export class ValuationChatController {
           'Content-Type': 'application/json',
           'Accept': 'application/json'
         },
-        body: JSON.stringify({ query, country }),
+        body: JSON.stringify({ 
+          company_name: query,
+          country_code: country,
+          limit: 10
+        }),
       });
 
       if (!response.ok) {
@@ -123,7 +127,11 @@ export class ValuationChatController {
           'Content-Type': 'application/json',
           'Accept': 'application/json'
         },
-        body: JSON.stringify({ company_id: companyId, country }),
+        body: JSON.stringify({ 
+          company_id: companyId,
+          country_code: country,
+          years: 3
+        }),
       });
 
       if (!response.ok) {
