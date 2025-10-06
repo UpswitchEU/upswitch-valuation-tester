@@ -231,9 +231,9 @@ Would you like to calculate your business valuation now?`,
   }, []);
 
   return (
-    <div className="flex h-[600px] flex-col overflow-hidden bg-gradient-to-br from-zinc-900 via-zinc-800 to-zinc-900 rounded-2xl shadow-2xl border border-zinc-700/50">
+    <div className="flex h-full flex-col overflow-hidden bg-gradient-to-br from-zinc-900 via-zinc-800 to-zinc-900">
       {/* Header with Health Status - Ilara Style */}
-      <div className="border-b border-zinc-700/50 bg-zinc-900/50 backdrop-blur-sm px-6 py-4">
+      <div className="border-b border-zinc-700/50 bg-zinc-900/50 backdrop-blur-sm px-6 py-4 flex-shrink-0">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary-500 to-blue-600 flex items-center justify-center shadow-lg shadow-primary-500/30">
@@ -259,7 +259,7 @@ Would you like to calculate your business valuation now?`,
         </div>
       </div>
 
-      {/* Messages Container - Ilara Style */}
+      {/* Messages Container - Ilara Style - Scrollable */}
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
         {messages.map((message) => (
           <div
@@ -305,8 +305,8 @@ Would you like to calculate your business valuation now?`,
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Input Area - Ilara Style */}
-      <div className="p-4 border-t border-zinc-800">
+      {/* Input Area - Sticky at Bottom - Ilara Style */}
+      <div className="p-4 border-t border-zinc-800 flex-shrink-0">
         <form
           onSubmit={(e) => {
             e.preventDefault();
