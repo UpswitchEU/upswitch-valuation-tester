@@ -48,15 +48,15 @@ export const ValuationForm: React.FC = () => {
     
     // Current year financials (30 points)
     if (formData.ebitda) { score += 10; total += 10; }
-    if (formData.net_income) { score += 5; total += 5; }
-    if (formData.total_assets) { score += 5; total += 5; }
-    if (formData.total_debt) { score += 5; total += 5; }
-    if (formData.cash) { score += 5; total += 5; }
+    if (formData.current_year_data?.net_income) { score += 5; total += 5; }
+    if (formData.current_year_data?.total_assets) { score += 5; total += 5; }
+    if (formData.current_year_data?.total_debt) { score += 5; total += 5; }
+    if (formData.current_year_data?.cash) { score += 5; total += 5; }
     
     // Historical data (30 points)
     const hasHistorical = formData.historical_years_data && formData.historical_years_data.length > 0;
     if (hasHistorical) {
-      const years = formData.historical_years_data.length;
+      const years = formData.historical_years_data?.length || 0;
       score += Math.min(years * 10, 30);
       total += 30;
     } else {
@@ -121,13 +121,13 @@ export const ValuationForm: React.FC = () => {
                 <span><strong>Add historical data</strong> (3-5 years) to improve accuracy by up to 20%</span>
               </p>
             )}
-            {!formData.total_assets && dataQuality < 80 && (
+            {!formData.current_year_data?.total_assets && dataQuality < 80 && (
               <p className="flex items-start">
                 <span className="text-blue-500 mr-1.5">💡</span>
                 <span><strong>Add balance sheet data</strong> (assets, debt, cash) for full DCF analysis</span>
               </p>
             )}
-            {!formData.net_income && dataQuality < 80 && (
+            {!formData.current_year_data?.net_income && dataQuality < 80 && (
               <p className="flex items-start">
                 <span className="text-blue-500 mr-1.5">💡</span>
                 <span><strong>Add net income</strong> to enable complete financial metrics</span>

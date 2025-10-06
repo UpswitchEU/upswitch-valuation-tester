@@ -2,6 +2,12 @@
 
 ## [Unreleased] - 2025-10-06
 
+### 🐛 Fixed
+- **TypeScript Build Errors** - Fixed type checking errors in data quality calculation
+  - Corrected property access for `net_income`, `total_assets`, `total_debt`, `cash` to use `current_year_data` object
+  - Added optional chaining for `historical_years_data` to prevent undefined errors
+  - Production build now compiles successfully (6.04s, 143 kB gzipped)
+
 ### ✨ Added
 - **Data Quality Feedback System** - Real-time data completeness indicator with color-coded progress bar
   - Calculates quality score based on 3 categories: basic fields (40%), current year financials (30%), historical data (30%)
