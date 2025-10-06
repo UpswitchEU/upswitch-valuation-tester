@@ -1,10 +1,9 @@
 import React, { useEffect, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { useValuationStore } from '../store/useValuationStore';
+import { useReportsStore } from '../store/useReportsStore';
 import { debounce } from '../utils/debounce';
 import { TARGET_COUNTRIES } from '../config/countries';
 import { IndustryCode, BusinessModel } from '../types/valuation';
-import { urls } from '../router';
 
 /**
  * ValuationForm Component
@@ -13,8 +12,8 @@ import { urls } from '../router';
  * Supports 3 tiers: Quick, Standard, and Professional.
  */
 export const ValuationForm: React.FC = () => {
-  const navigate = useNavigate();
-  const { formData, updateFormData, calculateValuation, quickValuation, isCalculating } = useValuationStore();
+  const { formData, updateFormData, calculateValuation, quickValuation, isCalculating, result } = useValuationStore();
+  const { addReport } = useReportsStore();
 
   // Debounced quick calculation for live preview
   const debouncedQuickCalc = useCallback(
@@ -34,9 +33,23 @@ export const ValuationForm: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     await calculateValuation();
-    // Navigate to reports page after successful calculation
-    navigate(urls.reports());
+    
+    // Auto-save report to localStorage (will show inline below the form)
+    // Results component will appear automatically in App.tsx when result is set
   };
+
+  // Auto-save to reports when calculation completes
+  useEffect(() => {
+    if (result && formData.company_name) {
+      // Only save once per result
+      addReport({
+        company_name: formData.company_name,
+        source: 'manual',
+        result: result,
+        form_data: formData,
+      });
+    }
+  }, [result?.valuation_id]); // Only run when result ID changes
 
   // Calculate data quality score
   const calculateDataQuality = () => {

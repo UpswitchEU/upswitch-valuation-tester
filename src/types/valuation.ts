@@ -104,6 +104,9 @@ export interface QuickValuationRequest {
   country_code: string;
 }
 
+// Quick valuation uses same response format as full valuation
+export type QuickValuationResponse = ValuationResponse;
+
 export interface ValuationResponse {
   valuation_id: string;
   company_name: string;

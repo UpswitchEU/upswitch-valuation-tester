@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { MessageSquare, Database, TrendingUp, CheckCircle } from 'lucide-react';
-import { ConversationalChat } from './ConversationalChat';
+import { MessageSquare, Database, TrendingUp, CheckCircle, Save } from 'lucide-react';
+import { EnhancedConversationalChat } from './EnhancedConversationalChat';
 import { RegistryDataPreview } from './RegistryDataPreview';
+import { Results } from '../Results';
 import type { CompanyFinancialData } from '../../types/registry';
 import { useValuationStore } from '../../store/useValuationStore';
 import { useReportsStore } from '../../store/useReportsStore';
@@ -16,6 +17,20 @@ export const AIAssistedValuation: React.FC = () => {
   const [companyData, setCompanyData] = useState<CompanyFinancialData | null>(null);
   const { calculateValuation, result } = useValuationStore();
   const { addReport } = useReportsStore();
+  const [reportSaved, setReportSaved] = useState(false);
+
+  // Auto-save report when result is available
+  useEffect(() => {
+    if (result && companyData && stage === 'results' && !reportSaved) {
+      addReport({
+        company_name: companyData.company_name,
+        source: 'instant',
+        result: result,
+        form_data: companyData,
+      });
+      setReportSaved(true);
+    }
+  }, [result, companyData, stage, reportSaved, addReport]);
 
   const handleCompanyFound = (data: CompanyFinancialData) => {
     setCompanyData(data);
@@ -25,7 +40,10 @@ export const AIAssistedValuation: React.FC = () => {
   const handleCalculate = async () => {
     await calculateValuation();
     
-    // Save report if calculation was successful
+    // Move to results stage (show inline)
+    setStage('results');
+    
+    // Auto-save report to localStorage
     if (result && companyData) {
       addReport({
         company_name: companyData.company_name,
@@ -34,14 +52,12 @@ export const AIAssistedValuation: React.FC = () => {
         form_data: companyData,
       });
     }
-    
-    // Navigate to reports page
-    navigate(urls.reports());
   };
 
   const handleStartOver = () => {
     setStage('chat');
     setCompanyData(null);
+    setReportSaved(false);
   };
 
   return (
@@ -136,7 +152,7 @@ export const AIAssistedValuation: React.FC = () => {
       {/* Main Content */}
       <div className="animate-fadeIn">
         {stage === 'chat' && (
-          <ConversationalChat onCompanyFound={handleCompanyFound} />
+          <EnhancedConversationalChat onCompanyFound={handleCompanyFound} />
         )}
 
         {stage === 'preview' && companyData && (
@@ -156,31 +172,49 @@ export const AIAssistedValuation: React.FC = () => {
           </div>
         )}
 
-        {stage === 'results' && (
-          <div className="bg-white rounded-2xl shadow-xl border border-gray-200 p-8 text-center">
-            <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <CheckCircle className="w-8 h-8 text-green-600" />
+        {stage === 'results' && result && (
+          <div className="space-y-6">
+            {/* Success Banner */}
+            <div className="bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-xl p-6">
+              <div className="flex items-start justify-between">
+                <div className="flex items-start gap-4">
+                  <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0">
+                    <CheckCircle className="w-6 h-6 text-green-600" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-bold text-gray-900 mb-1">
+                      Valuation Complete!
+                    </h3>
+                    <p className="text-sm text-gray-600 mb-3">
+                      Your business valuation report is ready. Scroll down to view the full analysis.
+                    </p>
+                    {reportSaved && (
+                      <div className="flex items-center gap-2 text-sm text-green-700">
+                        <Save className="w-4 h-4" />
+                        <span className="font-medium">Auto-saved to Reports</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+                <div className="flex flex-col gap-2">
+                  <button
+                    onClick={() => navigate(urls.reports())}
+                    className="px-4 py-2 text-sm bg-white border border-green-300 text-green-700 rounded-lg hover:bg-green-50 transition-colors font-medium"
+                  >
+                    View All Reports
+                  </button>
+                  <button
+                    onClick={handleStartOver}
+                    className="px-4 py-2 text-sm bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors font-medium"
+                  >
+                    Value Another Company
+                  </button>
+                </div>
+              </div>
             </div>
-            <h3 className="text-2xl font-bold text-gray-900 mb-2">
-              Valuation Complete!
-            </h3>
-            <p className="text-gray-600 mb-6">
-              Your business valuation is ready. Scroll down to view the full report.
-            </p>
-            <div className="flex gap-3 justify-center">
-              <button
-                onClick={() => document.getElementById('results')?.scrollIntoView({ behavior: 'smooth' })}
-                className="px-6 py-3 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors font-medium"
-              >
-                View Results
-              </button>
-              <button
-                onClick={handleStartOver}
-                className="px-6 py-3 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors font-medium"
-              >
-                Value Another Company
-              </button>
-            </div>
+
+            {/* Inline Results Display */}
+            <Results />
           </div>
         )}
       </div>

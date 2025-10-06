@@ -35,7 +35,7 @@ class ValuationAPI {
     return response.data;
   }
 
-  // Quick valuation
+  // Quick valuation (fast multiples-only calculation for live preview)
   async quickValuation(data: QuickValuationRequest): Promise<ValuationResponse> {
     const response = await this.client.post('/api/v1/valuation/quick', data);
     return response.data;

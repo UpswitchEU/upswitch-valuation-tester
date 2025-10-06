@@ -1,0 +1,146 @@
+/**
+ * CompanyLookupService
+ * 
+ * Adapted from Ilara AI MCPChatService for company lookup workflow.
+ * Provides simplified API for frontend consumption with business logic layer.
+ * 
+ * Features:
+ * - Clean API abstraction
+ * - Error recovery
+ * - Conversation context management
+ */
+
+import { ValuationChatController, type CompanySearchResponse, type HealthStatus } from '../../controllers/chat/valuationChatController';
+import type { CompanyFinancialData } from '../../types/registry';
+
+export interface ChatMessage {
+  id: string;
+  type: 'user' | 'ai' | 'system';
+  content: string;
+  timestamp: Date;
+  isLoading?: boolean;
+  companyData?: CompanyFinancialData;
+}
+
+export interface LookupResult {
+  success: boolean;
+  message: string;
+  companyData?: CompanyFinancialData;
+  searchResults?: CompanySearchResponse;
+  error?: string;
+}
+
+export class CompanyLookupService {
+  private controller: ValuationChatController;
+  private conversationId: string | null = null;
+
+  constructor() {
+    this.controller = new ValuationChatController();
+    console.log('💼 CompanyLookupService initialized');
+  }
+
+  /**
+   * Process a user message (company name query)
+   * Main entry point for company lookup
+   */
+  async processMessage(message: string, country: string = 'BE'): Promise<LookupResult> {
+    const requestId = `lookup_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    console.log(`💬 [${requestId}] Processing message:`, {
+      messagePreview: message.substring(0, 100),
+      country,
+      timestamp: new Date().toISOString(),
+    });
+
+    try {
+      // Step 1: Search for company
+      const searchResponse = await this.controller.searchCompany(message, country);
+
+      if (!searchResponse.success || searchResponse.results.length === 0) {
+        console.warn(`⚠️ [${requestId}] No companies found`);
+        return {
+          success: false,
+          message: `No companies found matching "${message}". Please try:\n• Exact company name\n• Registration number\n• Manual data entry`,
+          searchResults: searchResponse,
+        };
+      }
+
+      // Step 2: Get best match
+      const bestMatch = searchResponse.results[0];
+      console.log(`🎯 [${requestId}] Best match:`, {
+        companyName: bestMatch.company_name,
+        companyId: bestMatch.company_id,
+      });
+
+      // Step 3: Validate company ID
+      if (!this.controller.isValidCompanyId(bestMatch.company_id, country)) {
+        console.error(`❌ [${requestId}] Invalid company ID format:`, bestMatch.company_id);
+        return {
+          success: false,
+          message: `Invalid company ID format: "${bestMatch.company_id}". Please try again or enter data manually.`,
+        };
+      }
+
+      // Step 4: Fetch financial data
+      try {
+        const financialData = await this.controller.getCompanyFinancials(
+          bestMatch.company_id,
+          country
+        );
+
+        console.log(`✅ [${requestId}] Company lookup complete:`, {
+          companyName: financialData.company_name,
+          yearsOfData: financialData.filing_history?.length || 0,
+        });
+
+        return {
+          success: true,
+          message: `Found ${financialData.company_name} with ${financialData.filing_history?.length || 0} years of financial data`,
+          companyData: financialData,
+          searchResults: searchResponse,
+        };
+      } catch (financialError) {
+        console.error(`❌ [${requestId}] Financial data fetch failed:`, financialError);
+        
+        return {
+          success: false,
+          message: `Found company "${bestMatch.company_name}" but couldn't access financial data. The company may not have filed recent accounts, or data may be temporarily unavailable.`,
+          error: financialError instanceof Error ? financialError.message : 'Unknown error',
+        };
+      }
+    } catch (error) {
+      console.error(`❌ [${requestId}] Lookup error:`, {
+        error,
+        stack: error instanceof Error ? error.stack : undefined,
+      });
+
+      return {
+        success: false,
+        message: `Failed to search for company. Please check your connection and try again.`,
+        error: error instanceof Error ? error.message : 'Unknown error',
+      };
+    }
+  }
+
+  /**
+   * Check if the service is available
+   * Adapted from Ilara's health monitoring
+   */
+  async checkHealth(): Promise<HealthStatus> {
+    return this.controller.checkHealth();
+  }
+
+  /**
+   * Generate a conversation ID for tracking
+   */
+  generateConversationId(): string {
+    this.conversationId = `conv_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    return this.conversationId;
+  }
+
+  /**
+   * Get current conversation ID
+   */
+  getConversationId(): string | null {
+    return this.conversationId;
+  }
+}

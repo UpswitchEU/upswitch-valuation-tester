@@ -3,8 +3,11 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { Header } from './components/Header';
 import { TwoStepFlow } from './components/TwoStepFlow';
 import { ValuationForm } from './components/ValuationForm';
+import { LivePreview } from './components/LivePreview';
+import { Results } from './components/Results';
 import { AIAssistedValuation } from './components/registry/AIAssistedValuation';
 import { ValuationMethodSelector } from './components/ValuationMethodSelector';
+import { useValuationStore } from './store/useValuationStore';
 import { ROUTE_TO_VIEW_MODE, VIEW_MODE_TO_ROUTE } from './router/routes';
 
 type ViewMode = 'ai-assisted' | 'manual' | 'document-upload';
@@ -12,6 +15,7 @@ type ViewMode = 'ai-assisted' | 'manual' | 'document-upload';
 function App() {
   const location = useLocation();
   const navigate = useNavigate();
+  const { result } = useValuationStore();
   
   // Determine viewMode from route
   const routeBasedViewMode = (ROUTE_TO_VIEW_MODE[location.pathname as keyof typeof ROUTE_TO_VIEW_MODE] || 'ai-assisted') as ViewMode;
@@ -42,12 +46,28 @@ function App() {
         )}
 
         {viewMode === 'manual' && (
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            <div className="lg:col-span-3">
-              <div className="bg-white rounded-2xl shadow-xl border border-gray-200 p-8">
-                <ValuationForm />
+          <div className="space-y-8">
+            {/* Form + LivePreview Layout */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+              {/* Main Form - 2 columns */}
+              <div className="lg:col-span-2">
+                <div className="bg-white rounded-2xl shadow-xl border border-gray-200 p-8">
+                  <ValuationForm />
+                </div>
+              </div>
+
+              {/* LivePreview Sidebar - 1 column */}
+              <div className="lg:col-span-1">
+                <LivePreview />
               </div>
             </div>
+
+            {/* Inline Results Display */}
+            {result && (
+              <div className="animate-fadeIn">
+                <Results />
+              </div>
+            )}
           </div>
         )}
 
