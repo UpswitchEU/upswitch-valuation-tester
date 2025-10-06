@@ -35,18 +35,21 @@ export const ConversationalChat: React.FC<ConversationalChatProps> = ({
     {
       id: '1',
       type: 'ai',
-      content: `Hi! I'm your AI valuation assistant 👋
+      content: `👋 Welcome! I'll help you value your business in under 30 seconds.
 
-I can value your business in 30 seconds by looking up your official financial accounts from public registries.
+Just tell me your **company name** and I'll take care of the rest.
 
-Just tell me your company name and country.
+**How it works:**
+1. You tell me your company name
+2. I find and analyze your financial data
+3. You get a professional valuation report
 
 **Examples:**
-• "Innovate NV in Belgium"
-• "Acme Trading BV in Belgium"
-• "Tech Solutions SA in Belgium"
+• "Innovate NV"
+• "Acme Trading"
+• "Tech Solutions"
 
-**Supported countries:** 🇧🇪 Belgium`,
+Currently supporting Belgian companies. More countries coming soon! 🚀`,
       timestamp: new Date()
     }
   ]);
@@ -144,7 +147,7 @@ Just tell me your company name and country.
     setMessages(prev => [...prev, {
       id: loadingId,
       type: 'ai',
-      content: 'Looking up your company in official registries...',
+      content: '🔍 Searching for your company...',
       timestamp: new Date(),
       isLoading: true
     }]);
@@ -253,7 +256,7 @@ Registration: ${financialData.registration_number}
 
 📚 I found **${financialData.filing_history.length} years** of financial history
 
-🔗 [View on ${financialData.data_source}](${financialData.source_url})
+📁 Data source: Official records
 
 ---
 
@@ -288,13 +291,13 @@ ${validation.valid
 **Error:** ${errorMessage}
 
 **This could mean:**
-• The company hasn't filed public financial statements yet
-• Financial data is not publicly available in the registry
-• The registry is temporarily unavailable or slow
+• The company's financial data isn't publicly available yet
+• Financial statements haven't been filed recently
+• The data source is temporarily unavailable
 • There was a network connectivity issue
 
 **What would you like to do?**
-1. **Try again** (${errorType === RegistryErrorType.TIMEOUT || errorType === RegistryErrorType.NETWORK_ERROR ? 'recommended - might be a temporary issue' : 'sometimes registry data is temporarily unavailable'})
+1. **Try again** (${errorType === RegistryErrorType.TIMEOUT || errorType === RegistryErrorType.NETWORK_ERROR ? 'recommended - might be a temporary issue' : 'sometimes data is temporarily unavailable'})
 2. **Enter financial data manually** (if you have the company's financial statements)
 3. **Search for a different company**`,
             timestamp: new Date()
@@ -322,7 +325,7 @@ ${validation.valid
       setMessages(prev => [...prev, {
         id: Date.now().toString(),
         type: 'ai',
-        content: `❌ Sorry, I had trouble accessing the registry.
+        content: `❌ Sorry, I had trouble finding that company.
 
 **Error Type:** ${errorType}
 **Details:** ${errorMessage}
@@ -362,11 +365,11 @@ ${errorType === RegistryErrorType.NETWORK_ERROR || errorType === RegistryErrorTy
       <div className="bg-gradient-to-r from-primary-600 to-blue-600 text-white p-6">
         <div className="flex items-center gap-3">
           <div className="w-12 h-12 rounded-full bg-white/20 flex items-center justify-center">
-            <span className="text-2xl">🇧🇪</span>
+            <span className="text-2xl">⚡</span>
           </div>
           <div>
-            <h3 className="text-xl font-bold">Belgian Company Lookup</h3>
-            <p className="text-sm opacity-90">Find your company in the Belgian registry</p>
+            <h3 className="text-xl font-bold">AI Valuation Assistant</h3>
+            <p className="text-sm opacity-90">Tell me your company name, I'll handle the rest</p>
           </div>
         </div>
       </div>
@@ -427,7 +430,7 @@ ${errorType === RegistryErrorType.NETWORK_ERROR || errorType === RegistryErrorTy
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyPress={handleKeyPress}
-            placeholder="Type your company name and country..."
+            placeholder="Type your company name here..."
             className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
             disabled={isProcessing}
           />
@@ -448,11 +451,11 @@ ${errorType === RegistryErrorType.NETWORK_ERROR || errorType === RegistryErrorTy
         {messages.length <= 1 && (
           <div className="mt-3 flex flex-wrap gap-2">
             <button
-              onClick={() => useSuggestion('Innovate NV in Belgium')}
+              onClick={() => useSuggestion('Innovate NV')}
               className="px-3 py-1.5 text-xs bg-gray-100 hover:bg-gray-200 rounded-full transition-colors font-medium"
               disabled={isProcessing}
             >
-              🇧🇪 Belgian Company
+              Try example
             </button>
           </div>
         )}

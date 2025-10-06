@@ -1,6 +1,65 @@
 # Changelog - Upswitch Valuation Tester
 
-## [Unreleased] - 2025-10-06
+## [v1.5.0] - 2025-10-06 - Big 4 Valuation Range Fix 🎯
+
+### 🔧 Critical Backend Fix
+
+**Integrated valuation engine v2.0.0 with Big 4 range methodology**
+
+**Problem:** Valuation ranges were too wide (4-5x spread)
+- Example: €273k to €1.25M (confusing for users)
+
+**Solution:** Implemented Big 4 professional standards
+- New ranges: ±12-22% based on confidence
+- Maximum 2x spread (typically 1.3-1.6x)
+- Methodology divergence shown as risk factor
+
+**Impact:**
+- User's example: 4.6x spread → 1.56x spread (2.9x improvement)
+- Professional, clear, actionable valuations
+- Aligned with Deloitte/PwC/KPMG/EY standards
+
+**See:** `/apps/upswitch-valuation-engine/CHANGELOG.md` for full details
+
+---
+
+## [v1.4.0] - 2025-10-06 - Strategic Stealth Mode 🎭
+
+### 🎯 Strategic UX Changes (CTO Decision: IP Protection)
+
+**Goal:** Hide proprietary Belgian registry technology to protect competitive advantage
+
+#### Changed
+- **Tab Label:** "🇧🇪 Belgian Registry" → "⚡ Instant Valuation"
+- **Main Header:** "Belgian Business Valuation" → "Business Valuation Engine"  
+- **Chat Title:** "Belgian Company Lookup" → "AI Valuation Assistant"
+- **Welcome Message:** Removed mentions of "registry", "KBO/BCE", "official database"
+- **Error Messages:** Generic "data source" instead of "registry"
+- **Loading States:** "🔍 Searching..." instead of "Looking up in registries..."
+- **Data Display:** "📁 Data source: Official records" (generic)
+- **Positioning:** AI-powered intelligence platform vs. registry wrapper
+
+#### Why
+- 🔒 Protects IP: Competitors can't easily reverse-engineer our approach
+- 🚀 Better positioning: "AI-powered" perception > "registry tool"
+- 💎 Competitive moat: Technology remains proprietary
+- ✨ User focus: Benefits (what) not methods (how)
+- 🌍 Scalability: Platform perception, not single-registry tool
+
+#### Technical Details
+- ✅ 100% functionality preserved (backend unchanged)
+- ✅ Still uses Belgian KBO/BCE registry (hidden from UI)
+- ✅ Same speed (< 30 seconds)
+- ✅ Same accuracy (85-95%)
+- ✅ Build: 5.86s, 372.24 kB (111.65 kB gzipped)
+
+#### Documentation
+- 📄 New: `docs/STRATEGIC_UX_STEALTH_MODE.md` - Complete strategic rationale
+- 📄 Updated: `START_HERE.md` - Added stealth mode indicator
+
+---
+
+## [v1.3.0] - 2025-10-06
 
 ### 🐛 Fixed
 

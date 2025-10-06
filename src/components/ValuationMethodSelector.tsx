@@ -14,17 +14,17 @@ export const ValuationMethodSelector: React.FC<ValuationMethodSelectorProps> = (
   const tabs = [
     {
       id: 'ai-assisted' as ViewMode,
-      label: '🇧🇪 Belgian Registry',
-      title: 'Belgian Company Lookup',
+      label: '⚡ Instant Valuation',
+      title: 'AI-Powered Company Lookup',
       subtitle: 'Fastest & most accurate',
-      description: 'Search the official Belgian registry (KBO/BCE) for instant company data',
+      description: 'Just enter your company name - our AI finds and analyzes your financials automatically',
       benefits: [
-        'Official Belgian company registry data',
-        '3+ years of historical financial data',
-        'Automatic calculation in seconds'
+        'Automated financial data retrieval',
+        'Multi-year historical analysis',
+        'Results in under 30 seconds'
       ],
       color: 'primary',
-      icon: '🇧🇪',
+      icon: '⚡',
       badge: 'Recommended'
     },
     {
@@ -76,8 +76,8 @@ export const ValuationMethodSelector: React.FC<ValuationMethodSelectorProps> = (
     <div className="mb-8">
       {/* Clean header */}
       <div className="text-center mb-8">
-        <h2 className="text-3xl font-bold text-gray-900 mb-2">🇧🇪 Belgian Business Valuation</h2>
-        <p className="text-gray-600">Professional-grade valuations in minutes</p>
+        <h2 className="text-3xl font-bold text-gray-900 mb-2">Business Valuation Engine</h2>
+        <p className="text-gray-600">Professional-grade valuations powered by AI</p>
       </div>
       
       {/* Tab Navigation */}
