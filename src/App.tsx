@@ -3,7 +3,6 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { Header } from './components/Header';
 import { TwoStepFlow } from './components/TwoStepFlow';
 import { ValuationForm } from './components/ValuationForm';
-import { LivePreview } from './components/LivePreview';
 import { Results } from './components/Results';
 import { AIAssistedValuation } from './components/registry/AIAssistedValuation';
 import { ValuationMethodSelector } from './components/ValuationMethodSelector';
@@ -47,19 +46,9 @@ function App() {
 
         {viewMode === 'manual' && (
           <div className="space-y-8">
-            {/* Form + LivePreview Layout */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-              {/* Main Form - 2 columns */}
-              <div className="lg:col-span-2">
-                <div className="bg-white rounded-2xl shadow-xl border border-gray-200 p-8">
-                  <ValuationForm />
-                </div>
-              </div>
-
-              {/* LivePreview Sidebar - 1 column */}
-              <div className="lg:col-span-1">
-                <LivePreview />
-              </div>
+            {/* Manual Entry Form */}
+            <div className="bg-white rounded-2xl shadow-xl border border-gray-200 p-8">
+              <ValuationForm />
             </div>
 
             {/* Inline Results Display */}

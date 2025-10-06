@@ -39,8 +39,10 @@ export class ValuationChatController {
   private baseUrl: string;
 
   constructor() {
-    // Use environment variable or default to localhost
-    this.baseUrl = import.meta.env.VITE_VALUATION_ENGINE_URL || 'http://localhost:8000';
+    // Use environment variable or default to production Railway URL
+    this.baseUrl = import.meta.env.VITE_VALUATION_ENGINE_URL || 
+                   import.meta.env.VITE_VALUATION_API_URL || 
+                   'https://upswitch-valuation-engine-production.up.railway.app';
     console.log('🎮 ValuationChatController initialized with baseUrl:', this.baseUrl);
   }
 
