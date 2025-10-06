@@ -14,17 +14,13 @@ export const Header: React.FC = () => {
         {/* Left Side - Logo and Title */}
         <div className="flex basis-0 flex-row flex-grow flex-nowrap justify-start bg-transparent items-center no-underline text-medium whitespace-nowrap box-border">
           <Link className="flex items-center gap-1 sm:gap-1.5 flex-shrink-0" to="/">
-            {/* Upswitch Logo - Using the same SVG as main site */}
-            <svg 
-              className="w-7 h-7 sm:w-8 sm:h-8 flex-shrink-0 text-primary-600 transition-opacity hover:opacity-80" 
-              viewBox="0 0 40 40" 
-              fill="currentColor"
-              xmlns="http://www.w3.org/2000/svg"
+            {/* Upswitch Logo - Using the optimized var2 logo */}
+            <img 
+              src="/UpSwitch_logo_var2.svg" 
+              alt="Upswitch Logo" 
+              className="w-7 h-7 sm:w-8 sm:h-8 flex-shrink-0 transition-opacity hover:opacity-80" 
               style={{ height: '32px', objectFit: 'contain', opacity: 1, visibility: 'visible', display: 'block' }}
-            >
-              {/* Arrow Up Icon representing "Up"switch */}
-              <path d="M20 4L4 20h10v16h12V20h10L20 4z" />
-            </svg>
+            />
             
             {/* App Name - Matching main site typography */}
             <span className="font-display text-lg sm:text-xl font-light text-primary-700 leading-none mt-0.5 flex-shrink-0">
