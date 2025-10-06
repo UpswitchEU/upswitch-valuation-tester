@@ -43,7 +43,15 @@ export const Results: React.FC = () => {
 
       {/* Main Valuation */}
       <div className="bg-white rounded-lg border-2 border-primary-500 p-6 shadow-lg">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Enterprise Value</h3>
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-lg font-semibold text-gray-900">Enterprise Value</h3>
+          <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800 border border-blue-300">
+            <svg className="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-3.976 0 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 01-2.812-2.812 3.066 3.066 0 00-.723-1.745 3.066 3.066 0 010-3.976 3.066 3.066 0 00.723-1.745 3.066 3.066 0 012.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+            </svg>
+            Big 4 Methodology
+          </span>
+        </div>
         
         <div className="grid grid-cols-3 gap-4 mb-6">
           <div className="text-center p-4 bg-gray-50 rounded">
@@ -57,6 +65,26 @@ export const Results: React.FC = () => {
           <div className="text-center p-4 bg-gray-50 rounded">
             <p className="text-sm text-gray-600 mb-1">High Estimate</p>
             <p className="text-2xl font-bold text-gray-900">{formatCurrency(result.equity_value_high)}</p>
+          </div>
+        </div>
+        
+        {/* Range Spread Indicator */}
+        <div className="mb-6 p-3 bg-blue-50 rounded-lg border border-blue-200">
+          <div className="flex items-start">
+            <svg className="h-5 w-5 text-blue-600 mr-2 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+            </svg>
+            <div className="flex-1">
+              <p className="text-sm font-medium text-blue-900">Professional Valuation Range</p>
+              <p className="text-xs text-blue-700 mt-1">
+                This range follows Big 4 (Deloitte, PwC, KPMG, EY) professional standards. 
+                The spread of {(() => {
+                  const spread = (result.equity_value_high / result.equity_value_low).toFixed(2);
+                  const percentage = ((result.equity_value_high - result.equity_value_low) / result.equity_value_mid * 100).toFixed(0);
+                  return `${spread}x (±${percentage}%)`;
+                })()} is based on confidence level and methodology agreement, not extreme scenarios.
+              </p>
+            </div>
           </div>
         </div>
 
@@ -172,16 +200,31 @@ export const Results: React.FC = () => {
             <p className="text-2xl font-bold text-blue-600">
               {formatPercent((result.dcf_weight || 0) * 100)}
             </p>
+            {result.dcf_valuation && (
+              <p className="text-xs text-gray-500 mt-1">
+                Value: {formatCurrency(result.dcf_valuation.equity_value || 0)}
+              </p>
+            )}
           </div>
           <div className="p-4 bg-purple-50 rounded">
             <p className="text-sm text-gray-600 mb-1">Multiples Weight</p>
             <p className="text-2xl font-bold text-purple-600">
               {formatPercent((result.multiples_weight || 0) * 100)}
             </p>
+            {result.multiples_valuation && (
+              <p className="text-xs text-gray-500 mt-1">
+                Value: {formatCurrency(result.multiples_valuation.adjusted_equity_value || 0)}
+              </p>
+            )}
           </div>
         </div>
+        <div className="p-3 bg-gray-50 rounded mb-3">
+          <p className="text-sm text-gray-700">
+            <strong>Weighted Midpoint:</strong> The enterprise value midpoint (€{formatCurrency(result.equity_value_mid)}) is calculated by weighting each methodology based on confidence and data quality, not by using min/max values.
+          </p>
+        </div>
         <div className="text-sm text-gray-600">
-          <p><strong>Note:</strong> Weights are dynamically calculated based on data quality and company characteristics.</p>
+          <p><strong>Note:</strong> Weights are dynamically calculated based on data quality, company characteristics, and methodology agreement. The valuation range (±10-22%) follows professional Big 4 standards.</p>
         </div>
       </div>
 

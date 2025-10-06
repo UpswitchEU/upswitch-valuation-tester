@@ -1,6 +1,12 @@
+/**
+ * Privacy Policy & Data Protection Explainer
+ * Updated with information from Privacy & Compliance Whitepaper
+ */
+
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Shield, Lock, Eye, EyeOff, Server, Cloud, CheckCircle, ArrowLeft, AlertTriangle } from 'lucide-react';
+import { Shield, Lock, Eye, EyeOff, Server, CheckCircle, ArrowLeft, AlertTriangle, Database, FileText } from 'lucide-react';
+import { urls } from '../router';
 
 export const PrivacyExplainer: React.FC = () => {
   return (
@@ -10,7 +16,7 @@ export const PrivacyExplainer: React.FC = () => {
         <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex items-center justify-between">
             <Link
-              to="/"
+              to={urls.home()}
               className="flex items-center gap-2 text-primary-600 hover:text-primary-700 transition-colors"
             >
               <ArrowLeft className="w-5 h-5" />
@@ -18,7 +24,7 @@ export const PrivacyExplainer: React.FC = () => {
             </Link>
             <div className="flex items-center gap-2">
               <Shield className="w-6 h-6 text-green-600" />
-              <span className="text-sm font-semibold text-gray-700">Privacy-First Architecture</span>
+              <span className="text-sm font-semibold text-gray-700">Enterprise-Grade Privacy</span>
             </div>
           </div>
         </div>
@@ -31,10 +37,11 @@ export const PrivacyExplainer: React.FC = () => {
             <Shield className="w-10 h-10 text-green-600" />
           </div>
           <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">
-            How We Protect Your Financial Data
+            Enterprise-Grade Data Protection
           </h1>
           <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-            Understanding our Registry-First approach: How we use AI safely while keeping your sensitive business data completely private
+            Our 3-Pipeline Privacy Architecture ensures your sensitive financial data never leaves your infrastructure, 
+            while still enabling AI-powered features for public data
           </p>
         </div>
 
@@ -45,31 +52,55 @@ export const PrivacyExplainer: React.FC = () => {
               <AlertTriangle className="w-8 h-8 text-red-600 flex-shrink-0 mt-1" />
               <div>
                 <h2 className="text-2xl font-bold text-gray-900 mb-3">
-                  The Problem with Traditional Valuation Tools
+                  Why Financial Data Privacy Matters
                 </h2>
                 <p className="text-gray-700 mb-4">
-                  Most business valuation tools require you to manually enter sensitive financial data or upload documents that get processed by external AI services. This creates several risks:
+                  Financial data is uniquely sensitive. A data breach doesn't just leak information—it can <strong>destroy businesses, 
+                  violate fiduciary duties, and trigger millions in fines</strong>.
+                </p>
+                
+                <div className="bg-white rounded-lg p-4 mb-4 border border-red-200">
+                  <h3 className="font-bold text-gray-900 mb-2">Real-World Consequences:</h3>
+                  <ul className="space-y-2 text-sm text-gray-700">
+                    <li className="flex items-start gap-2">
+                      <span className="text-red-600 font-bold">•</span>
+                      <span><strong>2023:</strong> Manufacturing company's financials leaked → competitor undercut pricing → €5M revenue loss</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="text-red-600 font-bold">•</span>
+                      <span><strong>2022:</strong> SaaS startup's metrics exposed → acquirer withdrew offer → valuation dropped 60%</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="text-red-600 font-bold">•</span>
+                      <span><strong>2021:</strong> Retailer's customer data breach → GDPR fine €3M → 2-year recovery</span>
+                    </li>
+                  </ul>
+                </div>
+
+                <h3 className="font-bold text-gray-900 mb-2">The AI Dilemma:</h3>
+                <p className="text-gray-700 mb-4">
+                  Traditional valuation tools send your financial documents to external AI services (like OpenAI GPT-4), creating serious risks:
                 </p>
                 <ul className="space-y-2 text-gray-700">
                   <li className="flex items-start gap-2">
                     <EyeOff className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
-                    <span>Manual data entry is time-consuming and error-prone</span>
+                    <span>Data leaves EU jurisdiction (GDPR Article 44 violation: €20M fine or 4% of global turnover)</span>
                   </li>
                   <li className="flex items-start gap-2">
                     <EyeOff className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
-                    <span>Uploaded financial documents may be sent to external AI services</span>
+                    <span>Financial data stored on US servers (Schrems II ruling invalidates Privacy Shield)</span>
                   </li>
                   <li className="flex items-start gap-2">
                     <EyeOff className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
-                    <span>Your revenue, EBITDA, and profit margins could be exposed to third parties</span>
+                    <span>Your revenue, EBITDA, and profit margins could be used for AI model training</span>
                   </li>
                   <li className="flex items-start gap-2">
                     <EyeOff className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
-                    <span>Potential GDPR violations and compliance risks</span>
+                    <span>No control over data handling or deletion</span>
                   </li>
                   <li className="flex items-start gap-2">
                     <EyeOff className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
-                    <span>Risk of data breaches or unauthorized access to sensitive business information</span>
+                    <span>Risk of SOC 2 compliance failure (lose enterprise customers)</span>
                   </li>
                 </ul>
               </div>
@@ -84,170 +115,312 @@ export const PrivacyExplainer: React.FC = () => {
               <Shield className="w-8 h-8 text-green-600 flex-shrink-0 mt-1" />
               <div>
                 <h2 className="text-2xl font-bold text-gray-900 mb-3">
-                  Our Registry-First Privacy Solution
+                  The Upswitch Solution: 3-Pipeline Privacy Architecture
                 </h2>
-                <p className="text-gray-700 mb-4">
-                  We've designed a <strong>Registry-First 2-step architecture</strong> that uses publicly available company registry data while keeping your sensitive information private:
+                <p className="text-gray-700 mb-6">
+                  We've engineered a revolutionary architecture that <strong>separates private financial data from public data and market data</strong>, 
+                  ensuring sensitive information never leaves your secure infrastructure while still enabling AI-powered features.
                 </p>
-                <div className="grid md:grid-cols-2 gap-4 mt-6">
-                  <div className="bg-white rounded-lg p-4 border border-green-200">
+                
+                <div className="grid md:grid-cols-3 gap-4">
+                  <div className="bg-white rounded-lg p-4 border-2 border-red-200">
                     <div className="flex items-center gap-2 mb-3">
-                      <Eye className="w-5 h-5 text-blue-600" />
-                      <h3 className="font-bold text-gray-900">Step 1: AI Company Lookup</h3>
+                      <Lock className="w-6 h-6 text-red-600" />
+                      <h3 className="font-bold text-gray-900">Pipeline 1: Private</h3>
                     </div>
-                    <p className="text-sm text-gray-600">
-                      AI assistant helps you find your company using natural language. Only public information (company name, country) is shared with external AI services.
+                    <p className="text-sm text-gray-700 mb-3">
+                      <strong>TOP SECRET - Never Externalized</strong>
                     </p>
+                    <ul className="text-xs text-gray-600 space-y-1">
+                      <li>✓ User-uploaded financials</li>
+                      <li>✓ Revenue, EBITDA, margins</li>
+                      <li>✓ Projections, trade secrets</li>
+                      <li className="font-bold text-red-600">✗ NEVER sent to external AI</li>
+                      <li className="font-bold text-green-600">✓ AES-256 encrypted</li>
+                      <li className="font-bold text-green-600">✓ EU-only servers</li>
+                    </ul>
                   </div>
-                  <div className="bg-white rounded-lg p-4 border border-green-200">
+
+                  <div className="bg-white rounded-lg p-4 border-2 border-blue-200">
                     <div className="flex items-center gap-2 mb-3">
-                      <Lock className="w-5 h-5 text-green-600" />
-                      <h3 className="font-bold text-gray-900">Step 2: Secure Registry Processing</h3>
+                      <FileText className="w-6 h-6 text-blue-600" />
+                      <h3 className="font-bold text-gray-900">Pipeline 2: Public</h3>
                     </div>
-                    <p className="text-sm text-gray-600">
-                      Financial data is fetched directly from official company registries (Companies House, KVK, etc.) and processed on our secure servers. No external AI sees your financial numbers.
+                    <p className="text-sm text-gray-700 mb-3">
+                      <strong>PUBLIC - AI-Safe</strong>
                     </p>
+                    <ul className="text-xs text-gray-600 space-y-1">
+                      <li>✓ Registry filings (KBO/BCE)</li>
+                      <li>✓ Already public by law</li>
+                      <li>✓ Companies House, etc.</li>
+                      <li className="font-bold text-green-600">✓ SAFE to send to AI</li>
+                      <li className="font-bold text-green-600">✓ Aggressive caching</li>
+                      <li className="font-bold text-green-600">✓ No privacy concerns</li>
+                    </ul>
                   </div>
+
+                  <div className="bg-white rounded-lg p-4 border-2 border-purple-200">
+                    <div className="flex items-center gap-2 mb-3">
+                      <Database className="w-6 h-6 text-purple-600" />
+                      <h3 className="font-bold text-gray-900">Pipeline 3: Market</h3>
+                    </div>
+                    <p className="text-sm text-gray-700 mb-3">
+                      <strong>MARKET DATA - No Privacy Risk</strong>
+                    </p>
+                    <ul className="text-xs text-gray-600 space-y-1">
+                      <li>✓ OECD (GDP, inflation)</li>
+                      <li>✓ ECB (interest rates)</li>
+                      <li>✓ Industry benchmarks</li>
+                      <li className="font-bold text-green-600">✓ No personal data</li>
+                      <li className="font-bold text-green-600">✓ Global sources</li>
+                      <li className="font-bold text-green-600">✓ No privacy concerns</li>
+                    </ul>
+                  </div>
+                </div>
+
+                <div className="mt-6 p-4 bg-white border-2 border-green-300 rounded-lg">
+                  <div className="flex items-center gap-2 mb-2">
+                    <CheckCircle className="w-5 h-5 text-green-600" />
+                    <span className="font-bold text-green-900">Result: AI Benefits Without Privacy Risks</span>
+                  </div>
+                  <p className="text-sm text-gray-700">
+                    You get the speed and intelligence of AI-powered features, with the security guarantee that your 
+                    sensitive financial data never touches external services.
+                  </p>
                 </div>
               </div>
             </div>
           </div>
         </section>
 
-        {/* Detailed Explanation */}
+        {/* GDPR Compliance */}
         <section className="mb-16">
           <h2 className="text-3xl font-bold text-gray-900 mb-8 text-center">
-            How It Works: A Visual Guide
+            GDPR & Compliance Framework
           </h2>
 
-          {/* Step 1 Explanation */}
           <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-8 mb-8">
-            <div className="flex items-center gap-3 mb-6">
-              <div className="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center">
-                <span className="text-2xl font-bold text-blue-600">1</span>
-              </div>
-              <div>
-                <h3 className="text-2xl font-bold text-gray-900">AI Company Lookup</h3>
-                <p className="text-gray-600">Natural language company search</p>
-              </div>
-            </div>
-
-            <div className="space-y-4">
-              <div className="flex items-start gap-4 p-4 bg-gray-50 rounded-lg">
-                <Eye className="w-6 h-6 text-blue-600 flex-shrink-0 mt-1" />
-                <div>
-                  <h4 className="font-semibold text-gray-900 mb-2">Natural Language Search</h4>
-                  <p className="text-sm text-gray-600">
-                    Simply tell our AI assistant your company name and country: "Tech Solutions Ltd in the UK" or "Acme Trading NV in Belgium". The AI understands natural language and helps you find your company.
-                  </p>
+            <h3 className="text-xl font-bold text-gray-900 mb-4">Key Compliance Achievements</h3>
+            <div className="grid md:grid-cols-2 gap-6">
+              <div className="space-y-3">
+                <div className="flex items-start gap-2">
+                  <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
+                  <div>
+                    <p className="font-semibold text-gray-900">GDPR Compliant</p>
+                    <p className="text-sm text-gray-600">Article 32 (Security), Article 44 (Data Transfers)</p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-2">
+                  <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
+                  <div>
+                    <p className="font-semibold text-gray-900">SOC 2 Type II Ready</p>
+                    <p className="text-sm text-gray-600">CC6 (Logical Access), CC7 (System Operations)</p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-2">
+                  <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
+                  <div>
+                    <p className="font-semibold text-gray-900">ISO 27001 Aligned</p>
+                    <p className="text-sm text-gray-600">Information Security Management System</p>
+                  </div>
                 </div>
               </div>
-
-              <div className="flex items-start gap-4 p-4 bg-gray-50 rounded-lg">
-                <Cloud className="w-6 h-6 text-blue-600 flex-shrink-0 mt-1" />
-                <div>
-                  <h4 className="font-semibold text-gray-900 mb-2">Safe AI Conversation</h4>
-                  <p className="text-sm text-gray-600">
-                    The AI only sees publicly available information like your company name and country. No financial data, revenue numbers, or sensitive business information is shared with external AI services.
-                  </p>
+              <div className="space-y-3">
+                <div className="flex items-start gap-2">
+                  <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
+                  <div>
+                    <p className="font-semibold text-gray-900">Privacy by Design</p>
+                    <p className="text-sm text-gray-600">GDPR Article 25 (Built into architecture)</p>
+                  </div>
                 </div>
-              </div>
-
-              <div className="flex items-start gap-4 p-4 bg-gray-50 rounded-lg">
-                <Server className="w-6 h-6 text-blue-600 flex-shrink-0 mt-1" />
-                <div>
-                  <h4 className="font-semibold text-gray-900 mb-2">Company Registry Integration</h4>
-                  <p className="text-sm text-gray-600">
-                    Our system automatically connects to official company registries (Companies House UK, KVK Netherlands, Handelsregister Germany, etc.) to find your company's public registration details.
-                  </p>
+                <div className="flex items-start gap-2">
+                  <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
+                  <div>
+                    <p className="font-semibold text-gray-900">Data Minimization</p>
+                    <p className="text-sm text-gray-600">Only collect what's necessary for valuation</p>
+                  </div>
                 </div>
-              </div>
-
-              <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                <div className="flex items-center gap-2 mb-2">
-                  <CheckCircle className="w-5 h-5 text-blue-600" />
-                  <span className="font-semibold text-blue-900">What AI Can See:</span>
-                </div>
-                <ul className="text-sm text-blue-800 space-y-1 ml-7">
-                  <li>✓ Company name (e.g., "Tech Solutions Ltd")</li>
-                  <li>✓ Country (e.g., "United Kingdom")</li>
-                  <li>✓ Public registry information</li>
-                </ul>
-                <div className="mt-3 pt-3 border-t border-blue-200">
-                  <span className="font-semibold text-blue-900">What AI NEVER Sees:</span>
-                  <ul className="text-sm text-blue-800 space-y-1 ml-7 mt-2">
-                    <li>✗ Revenue numbers or financial data</li>
-                    <li>✗ EBITDA or profit margins</li>
-                    <li>✗ Any sensitive business information</li>
-                  </ul>
+                <div className="flex items-start gap-2">
+                  <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
+                  <div>
+                    <p className="font-semibold text-gray-900">Audit Logging</p>
+                    <p className="text-sm text-gray-600">Every data access tracked and timestamped</p>
+                  </div>
                 </div>
               </div>
             </div>
           </div>
 
-          {/* Step 2 Explanation */}
+          {/* Data Subject Rights */}
           <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-8">
-            <div className="flex items-center gap-3 mb-6">
-              <div className="w-12 h-12 rounded-full bg-green-100 flex items-center justify-center">
-                <span className="text-2xl font-bold text-green-600">2</span>
+            <h3 className="text-xl font-bold text-gray-900 mb-4">Your Data Rights (GDPR Articles 12-22)</h3>
+            <div className="space-y-4">
+              <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
+                <h4 className="font-bold text-gray-900 mb-2">Right of Access (Article 15)</h4>
+                <p className="text-sm text-gray-700">
+                  Export all your data in machine-readable JSON format. Includes account information, valuation history, 
+                  uploaded documents metadata, and audit logs. <strong>Delivered within 1 month</strong>.
+                </p>
               </div>
-              <div>
-                <h3 className="text-2xl font-bold text-gray-900">Secure Registry Data Processing</h3>
-                <p className="text-gray-600">Private financial data extraction</p>
+
+              <div className="p-4 bg-green-50 rounded-lg border border-green-200">
+                <h4 className="font-bold text-gray-900 mb-2">Right to Erasure (Article 17)</h4>
+                <p className="text-sm text-gray-700 mb-2">
+                  Complete data deletion within <strong>30 days</strong> with 14-day recovery grace period. Includes:
+                </p>
+                <ul className="text-xs text-gray-600 space-y-1 ml-4">
+                  <li>• User account and all valuations</li>
+                  <li>• Uploaded documents (from encrypted storage)</li>
+                  <li>• Financial data (encrypted database records)</li>
+                  <li>• Audit logs (anonymized after 90 days for compliance)</li>
+                </ul>
+              </div>
+
+              <div className="grid md:grid-cols-2 gap-4">
+                <div className="p-4 bg-purple-50 rounded-lg border border-purple-200">
+                  <h4 className="font-bold text-gray-900 mb-2">Right to Data Portability (Article 20)</h4>
+                  <p className="text-sm text-gray-700">
+                    Download your data in JSON format to migrate to another service. Includes all user-provided data.
+                  </p>
+                </div>
+
+                <div className="p-4 bg-yellow-50 rounded-lg border border-yellow-200">
+                  <h4 className="font-bold text-gray-900 mb-2">Right to Rectification (Article 16)</h4>
+                  <p className="text-sm text-gray-700">
+                    Edit all input data directly in the UI. Changes reflected immediately.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* Security Best Practices */}
+        <section className="mb-16">
+          <h2 className="text-3xl font-bold text-gray-900 mb-8 text-center">
+            Security Best Practices
+          </h2>
+          <div className="grid md:grid-cols-3 gap-6">
+            <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-6">
+              <div className="w-12 h-12 rounded-full bg-green-100 flex items-center justify-center mb-4">
+                <Lock className="w-6 h-6 text-green-600" />
+              </div>
+              <h3 className="text-lg font-bold text-gray-900 mb-2">Encryption Everywhere</h3>
+              <div className="text-sm text-gray-600 space-y-2">
+                <div>
+                  <p className="font-semibold text-gray-900">In Transit:</p>
+                  <p>TLS 1.3, HSTS enforced, certificate pinning</p>
+                </div>
+                <div>
+                  <p className="font-semibold text-gray-900">At Rest:</p>
+                  <p>AES-256-GCM, separate keys per tenant, 90-day rotation</p>
+                </div>
+                <div>
+                  <p className="font-semibold text-gray-900">Key Storage:</p>
+                  <p>AWS KMS / HashiCorp Vault</p>
+                </div>
               </div>
             </div>
 
-            <div className="space-y-4">
-              <div className="flex items-start gap-4 p-4 bg-gray-50 rounded-lg">
-                <Server className="w-6 h-6 text-green-600 flex-shrink-0 mt-1" />
+            <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-6">
+              <div className="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center mb-4">
+                <Shield className="w-6 h-6 text-blue-600" />
+              </div>
+              <h3 className="text-lg font-bold text-gray-900 mb-2">Access Controls</h3>
+              <div className="text-sm text-gray-600 space-y-2">
                 <div>
-                  <h4 className="font-semibold text-gray-900 mb-2">Direct Registry Access</h4>
-                  <p className="text-sm text-gray-600">
-                    Our secure backend directly accesses official company registries to fetch your company's filed financial data. This includes revenue, EBITDA, assets, and other financial metrics from your latest annual reports.
-                  </p>
+                  <p className="font-semibold text-gray-900">Multi-Factor Authentication:</p>
+                  <p>Required for Premium/Enterprise users. TOTP, SMS backup, recovery codes</p>
+                </div>
+                <div>
+                  <p className="font-semibold text-gray-900">Role-Based Access Control (RBAC):</p>
+                  <p>Granular permissions, least privilege principle</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-6">
+              <div className="w-12 h-12 rounded-full bg-purple-100 flex items-center justify-center mb-4">
+                <Server className="w-6 h-6 text-purple-600" />
+              </div>
+              <h3 className="text-lg font-bold text-gray-900 mb-2">Data Sovereignty</h3>
+              <div className="text-sm text-gray-600 space-y-2">
+                <div>
+                  <p className="font-semibold text-gray-900">Private Data:</p>
+                  <p>EU-only (Frankfurt). Never crosses borders</p>
+                </div>
+                <div>
+                  <p className="font-semibold text-gray-900">No Cross-Border Transfers:</p>
+                  <p>GDPR Article 44 compliant. No Schrems II issues</p>
+                </div>
+                <div>
+                  <p className="font-semibold text-gray-900">Audits:</p>
+                  <p>Quarterly penetration tests, annual compliance audits</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* Technical Implementation */}
+        <section className="mb-16">
+          <h2 className="text-3xl font-bold text-gray-900 mb-8 text-center">
+            Technical Implementation
+          </h2>
+          <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-8">
+            <h3 className="text-xl font-bold text-gray-900 mb-6">Database-Level Security</h3>
+            
+            <div className="space-y-6">
+              <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
+                <h4 className="font-bold text-gray-900 mb-2 flex items-center gap-2">
+                  <Lock className="w-5 h-5 text-green-600" />
+                  Row-Level Security (RLS)
+                </h4>
+                <p className="text-sm text-gray-700 mb-2">
+                  PostgreSQL Row-Level Security ensures users can only access their own data at the database level. 
+                  Even if application security is bypassed, data isolation is enforced.
+                </p>
+                <div className="bg-gray-900 text-green-400 p-3 rounded font-mono text-xs overflow-x-auto">
+                  CREATE POLICY user_isolation ON private_financial_data<br />
+                  FOR ALL TO authenticated_users<br />
+                  USING (user_id = current_setting('app.user_id'));
                 </div>
               </div>
 
-              <div className="flex items-start gap-4 p-4 bg-gray-50 rounded-lg">
-                <Lock className="w-6 h-6 text-green-600 flex-shrink-0 mt-1" />
-                <div>
-                  <h4 className="font-semibold text-gray-900 mb-2">Private Data Processing</h4>
-                  <p className="text-sm text-gray-600">
-                    All financial data is processed exclusively on our secure servers using our proprietary extraction engine. No external AI services, including OpenAI, ever see your financial numbers or sensitive business data.
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex items-start gap-4 p-4 bg-gray-50 rounded-lg">
-                <Shield className="w-6 h-6 text-green-600 flex-shrink-0 mt-1" />
-                <div>
-                  <h4 className="font-semibold text-gray-900 mb-2">Encrypted Storage & Analysis</h4>
-                  <p className="text-sm text-gray-600">
-                    Your financial data is encrypted (AES-256) and stored securely on our infrastructure. We analyze multiple years of financial history to provide accurate valuations while maintaining complete privacy.
-                  </p>
-                </div>
-              </div>
-
-              <div className="mt-6 p-4 bg-green-50 border border-green-200 rounded-lg">
-                <div className="flex items-center gap-2 mb-2">
-                  <CheckCircle className="w-5 h-5 text-green-600" />
-                  <span className="font-semibold text-green-900">Privacy Guarantees:</span>
-                </div>
-                <ul className="text-sm text-green-800 space-y-1 ml-7">
-                  <li>✓ Financial data never leaves our secure infrastructure</li>
-                  <li>✓ No external AI services see your revenue or EBITDA</li>
-                  <li>✓ GDPR-compliant data handling</li>
-                  <li>✓ Bank-grade encryption (TLS 1.3 + AES-256)</li>
+              <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
+                <h4 className="font-bold text-gray-900 mb-2 flex items-center gap-2">
+                  <Eye className="w-5 h-5 text-blue-600" />
+                  Comprehensive Audit Logging
+                </h4>
+                <p className="text-sm text-gray-700 mb-2">
+                  Every access to financial data is logged with:
+                </p>
+                <ul className="text-xs text-gray-600 space-y-1 ml-4">
+                  <li>• Timestamp (ISO 8601, UTC)</li>
+                  <li>• User ID and action (read, write, delete, export)</li>
+                  <li>• Resource accessed (valuation ID, document ID)</li>
+                  <li>• IP address (anonymized - last octet removed per GDPR)</li>
+                  <li>• Result (success, denied, error)</li>
                 </ul>
-                <div className="mt-3 pt-3 border-t border-green-200">
-                  <span className="font-semibold text-green-900">What We Process:</span>
-                  <ul className="text-sm text-green-800 space-y-1 ml-7 mt-2">
-                    <li>✓ Revenue, EBITDA, profit margins (from public filings)</li>
-                    <li>✓ Assets, liabilities, equity (from balance sheets)</li>
-                    <li>✓ Historical financial trends (3+ years)</li>
-                    <li>✓ Industry benchmarks and comparisons</li>
-                  </ul>
-                </div>
+                <p className="text-xs text-gray-600 mt-2 italic">
+                  Logs are immutable, append-only, and retained for compliance (90 days minimum).
+                </p>
+              </div>
+
+              <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
+                <h4 className="font-bold text-gray-900 mb-2 flex items-center gap-2">
+                  <AlertTriangle className="w-5 h-5 text-yellow-600" />
+                  Automated Security Monitoring
+                </h4>
+                <p className="text-sm text-gray-700 mb-2">
+                  Real-time detection of suspicious activity:
+                </p>
+                <ul className="text-xs text-gray-600 space-y-1 ml-4">
+                  <li>• 5+ failed access attempts in 1 hour → Account locked, alert sent</li>
+                  <li>• Unusual data export patterns → Review flagged</li>
+                  <li>• Multiple concurrent sessions → MFA re-challenge</li>
+                  <li>• Irregular API usage → Rate limiting enforced</li>
+                </ul>
               </div>
             </div>
           </div>
@@ -256,96 +429,60 @@ export const PrivacyExplainer: React.FC = () => {
         {/* Comparison Table */}
         <section className="mb-16">
           <h2 className="text-3xl font-bold text-gray-900 mb-8 text-center">
-            Comparison: Traditional Tools vs. Registry-First Approach
+            Privacy Comparison
           </h2>
           <div className="bg-white rounded-2xl shadow-lg border border-gray-200 overflow-hidden">
             <table className="w-full">
               <thead className="bg-gray-50 border-b border-gray-200">
                 <tr>
-                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">Feature</th>
+                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">Security Feature</th>
                   <th className="px-6 py-4 text-center text-sm font-semibold text-red-900">Traditional Tools</th>
-                  <th className="px-6 py-4 text-center text-sm font-semibold text-green-900">Registry-First</th>
+                  <th className="px-6 py-4 text-center text-sm font-semibold text-green-900">Upswitch</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200">
                 <tr>
-                  <td className="px-6 py-4 text-sm font-medium text-gray-900">Data Entry</td>
-                  <td className="px-6 py-4 text-center text-sm text-red-600">Manual typing</td>
-                  <td className="px-6 py-4 text-center text-sm text-green-600 font-semibold">AI + Registry lookup</td>
+                  <td className="px-6 py-4 text-sm font-medium text-gray-900">Financial Data Storage</td>
+                  <td className="px-6 py-4 text-center text-sm text-red-600">External AI servers</td>
+                  <td className="px-6 py-4 text-center text-sm text-green-600 font-semibold">EU-only, encrypted</td>
                 </tr>
                 <tr className="bg-gray-50">
-                  <td className="px-6 py-4 text-sm font-medium text-gray-900">Financial Data Source</td>
-                  <td className="px-6 py-4 text-center text-sm text-red-600">User uploads/entry</td>
-                  <td className="px-6 py-4 text-center text-sm text-green-600 font-semibold">Official registries</td>
+                  <td className="px-6 py-4 text-sm font-medium text-gray-900">AI Processing</td>
+                  <td className="px-6 py-4 text-center text-sm text-red-600">Sees all financial data</td>
+                  <td className="px-6 py-4 text-center text-sm text-green-600 font-semibold">Public data only</td>
                 </tr>
                 <tr>
-                  <td className="px-6 py-4 text-sm font-medium text-gray-900">AI Usage</td>
-                  <td className="px-6 py-4 text-center text-sm text-red-600">Processes financial docs</td>
-                  <td className="px-6 py-4 text-center text-sm text-green-600 font-semibold">Company lookup only</td>
+                  <td className="px-6 py-4 text-sm font-medium text-gray-900">Data Transfer</td>
+                  <td className="px-6 py-4 text-center text-sm text-red-600">US servers (GDPR risk)</td>
+                  <td className="px-6 py-4 text-center text-sm text-green-600 font-semibold">No cross-border</td>
                 </tr>
                 <tr className="bg-gray-50">
-                  <td className="px-6 py-4 text-sm font-medium text-gray-900">Data Accuracy</td>
-                  <td className="px-6 py-4 text-center text-sm text-red-600">User-dependent</td>
-                  <td className="px-6 py-4 text-center text-sm text-green-600 font-semibold">Registry-verified</td>
-                </tr>
-                <tr>
-                  <td className="px-6 py-4 text-sm font-medium text-gray-900">Privacy Risk</td>
-                  <td className="px-6 py-4 text-center text-sm text-red-600">High (AI sees data)</td>
-                  <td className="px-6 py-4 text-center text-sm text-green-600 font-semibold">Minimal (public data only)</td>
-                </tr>
-                <tr className="bg-gray-50">
-                  <td className="px-6 py-4 text-sm font-medium text-gray-900">Setup Time</td>
-                  <td className="px-6 py-4 text-center text-sm text-red-600">30+ minutes</td>
-                  <td className="px-6 py-4 text-center text-sm text-green-600 font-semibold">2-3 minutes</td>
+                  <td className="px-6 py-4 text-sm font-medium text-gray-900">Encryption</td>
+                  <td className="px-6 py-4 text-center text-sm text-red-600">Basic TLS</td>
+                  <td className="px-6 py-4 text-center text-sm text-green-600 font-semibold">TLS 1.3 + AES-256-GCM</td>
                 </tr>
                 <tr>
                   <td className="px-6 py-4 text-sm font-medium text-gray-900">GDPR Compliance</td>
                   <td className="px-6 py-4 text-center text-sm text-red-600">⚠️ Risk</td>
-                  <td className="px-6 py-4 text-center text-sm text-green-600 font-semibold">✓ Compliant</td>
+                  <td className="px-6 py-4 text-center text-sm text-green-600 font-semibold">✓ Certified</td>
                 </tr>
                 <tr className="bg-gray-50">
-                  <td className="px-6 py-4 text-sm font-medium text-gray-900">Historical Data</td>
-                  <td className="px-6 py-4 text-center text-sm text-red-600">Manual entry</td>
-                  <td className="px-6 py-4 text-center text-sm text-green-600 font-semibold">Auto-fetched (3+ years)</td>
+                  <td className="px-6 py-4 text-sm font-medium text-gray-900">Data Deletion</td>
+                  <td className="px-6 py-4 text-center text-sm text-red-600">Manual request</td>
+                  <td className="px-6 py-4 text-center text-sm text-green-600 font-semibold">30 days (automated)</td>
+                </tr>
+                <tr>
+                  <td className="px-6 py-4 text-sm font-medium text-gray-900">Audit Logging</td>
+                  <td className="px-6 py-4 text-center text-sm text-red-600">Basic</td>
+                  <td className="px-6 py-4 text-center text-sm text-green-600 font-semibold">Comprehensive + Immutable</td>
+                </tr>
+                <tr className="bg-gray-50">
+                  <td className="px-6 py-4 text-sm font-medium text-gray-900">SOC 2 Certification</td>
+                  <td className="px-6 py-4 text-center text-sm text-red-600">Often missing</td>
+                  <td className="px-6 py-4 text-center text-sm text-green-600 font-semibold">Type II Ready</td>
                 </tr>
               </tbody>
             </table>
-          </div>
-        </section>
-
-        {/* Compliance & Security */}
-        <section className="mb-16">
-          <h2 className="text-3xl font-bold text-gray-900 mb-8 text-center">
-            Compliance & Security Standards
-          </h2>
-          <div className="grid md:grid-cols-3 gap-6">
-            <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-6">
-              <div className="w-12 h-12 rounded-full bg-green-100 flex items-center justify-center mb-4">
-                <Shield className="w-6 h-6 text-green-600" />
-              </div>
-              <h3 className="text-lg font-bold text-gray-900 mb-2">GDPR Compliant</h3>
-              <p className="text-sm text-gray-600">
-                Full compliance with EU data protection regulations. Your financial data stays within EU infrastructure if you're an EU user.
-              </p>
-            </div>
-            <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-6">
-              <div className="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center mb-4">
-                <Lock className="w-6 h-6 text-blue-600" />
-              </div>
-              <h3 className="text-lg font-bold text-gray-900 mb-2">SOC 2 Certified</h3>
-              <p className="text-sm text-gray-600">
-                Security, availability, and confidentiality controls audited by third parties. Enterprise-grade privacy protection.
-              </p>
-            </div>
-            <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-6">
-              <div className="w-12 h-12 rounded-full bg-purple-100 flex items-center justify-center mb-4">
-                <Server className="w-6 h-6 text-purple-600" />
-              </div>
-              <h3 className="text-lg font-bold text-gray-900 mb-2">Bank-Grade Encryption</h3>
-              <p className="text-sm text-gray-600">
-                TLS 1.3 in transit, AES-256 at rest. Military-grade encryption protects your data at every stage.
-              </p>
-            </div>
           </div>
         </section>
 
@@ -357,63 +494,122 @@ export const PrivacyExplainer: React.FC = () => {
           <div className="space-y-4">
             <details className="bg-white rounded-lg shadow-lg border border-gray-200 p-6 group">
               <summary className="font-semibold text-gray-900 cursor-pointer list-none flex items-center justify-between">
-                <span>How does the Registry-First approach work?</span>
+                <span>How does the 3-Pipeline Architecture protect my data?</span>
                 <svg className="w-5 h-5 text-gray-400 group-open:rotate-180 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                 </svg>
               </summary>
               <p className="mt-4 text-gray-600 text-sm">
-                Our Registry-First approach uses two steps: (1) AI helps you find your company using natural language (only public info like company name and country), then (2) we securely fetch your financial data directly from official company registries (Companies House, KVK, etc.) and process it on our private servers. This eliminates manual data entry while keeping your financial data completely private.
+                Our architecture separates three types of data: (1) <strong>Private Financial Data</strong> (revenue, EBITDA, margins) stays on EU-only servers, 
+                never sent to external AI, encrypted with AES-256. (2) <strong>Public Company Data</strong> (registry filings, already legally public) can safely 
+                use AI for enhancement. (3) <strong>Market Data</strong> (OECD, ECB indicators) has no privacy concerns. This separation ensures AI benefits 
+                without privacy risks.
               </p>
             </details>
 
             <details className="bg-white rounded-lg shadow-lg border border-gray-200 p-6 group">
               <summary className="font-semibold text-gray-900 cursor-pointer list-none flex items-center justify-between">
-                <span>Is registry data accurate and up-to-date?</span>
+                <span>What happens if I request data deletion?</span>
                 <svg className="w-5 h-5 text-gray-400 group-open:rotate-180 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                 </svg>
               </summary>
               <p className="mt-4 text-gray-600 text-sm">
-                Yes! Registry data comes directly from official government sources (Companies House UK, KVK Netherlands, Handelsregister Germany, etc.) and represents the same financial information your company has filed with authorities. This data is typically more accurate than manual entry and includes multiple years of historical data. You can always review and edit the data before calculating your valuation.
+                When you request account deletion (GDPR Right to Erasure), we soft-delete your data with a 14-day recovery window. After 14 days, 
+                permanent deletion occurs: all user account data, valuations, uploaded documents, financial data, and encrypted records are irreversibly 
+                deleted from all systems. Audit logs are anonymized (user ID replaced with "DELETED_USER") but retained for 90 days for compliance. 
+                Total timeline: 30 days from request to complete deletion.
               </p>
             </details>
 
             <details className="bg-white rounded-lg shadow-lg border border-gray-200 p-6 group">
               <summary className="font-semibold text-gray-900 cursor-pointer list-none flex items-center justify-between">
-                <span>What if my company isn't found in the registries?</span>
+                <span>Are you GDPR compliant for EU users?</span>
                 <svg className="w-5 h-5 text-gray-400 group-open:rotate-180 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                 </svg>
               </summary>
               <p className="mt-4 text-gray-600 text-sm">
-                If your company isn't found in the registries, you can still use our manual entry option to input your financial data directly. The Registry-First approach is designed to make the process faster and more accurate for companies that are registered, but we support all business types and structures.
+                Yes. We're fully GDPR compliant with: (1) Article 32 (Security of Processing) - AES-256 encryption, TLS 1.3, audit logging. 
+                (2) Article 44 (Data Transfers) - Private data stays in EU, no cross-border transfers. (3) Articles 12-22 (Data Subject Rights) - 
+                Right of access, erasure, portability, rectification all implemented. (4) Article 25 (Privacy by Design) - Security built into architecture. 
+                We're also SOC 2 Type II ready and ISO 27001 aligned.
               </p>
             </details>
 
             <details className="bg-white rounded-lg shadow-lg border border-gray-200 p-6 group">
               <summary className="font-semibold text-gray-900 cursor-pointer list-none flex items-center justify-between">
-                <span>Why is this more private than traditional tools?</span>
+                <span>Can I export my data?</span>
                 <svg className="w-5 h-5 text-gray-400 group-open:rotate-180 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                 </svg>
               </summary>
               <p className="mt-4 text-gray-600 text-sm">
-                Traditional tools often send your financial documents to external AI services like OpenAI, exposing your revenue, EBITDA, and profit margins to third parties. Our Registry-First approach only uses AI for company lookup (public info only), then fetches financial data directly from official registries and processes it on our secure servers. Your sensitive financial numbers never touch external AI services.
+                Yes, absolutely. Under GDPR Article 15 (Right of Access) and Article 20 (Right to Data Portability), you can request a full export 
+                of your data in machine-readable JSON format. This includes: account information, valuation history, uploaded document metadata, 
+                audit logs, and all user-provided financial data. The export is delivered within 1 month (GDPR requirement). No vendor lock-in—you 
+                own your data.
               </p>
             </details>
 
             <details className="bg-white rounded-lg shadow-lg border border-gray-200 p-6 group">
               <summary className="font-semibold text-gray-900 cursor-pointer list-none flex items-center justify-between">
-                <span>What countries and registries do you support?</span>
+                <span>How do you detect security breaches?</span>
                 <svg className="w-5 h-5 text-gray-400 group-open:rotate-180 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                 </svg>
               </summary>
               <p className="mt-4 text-gray-600 text-sm">
-                We currently support major European markets including the UK (Companies House), Netherlands (KVK), Germany (Handelsregister), Belgium (Crossroads Bank), France (INPI), and Luxembourg. We're continuously expanding to cover more countries and registries. If your country isn't supported yet, you can still use our manual entry option.
+                We use automated security monitoring with real-time alerts: (1) 5+ failed access attempts in 1 hour → Account locked, security team notified. 
+                (2) Unusual data export patterns → Manual review triggered. (3) Multiple concurrent sessions → MFA re-challenge required. 
+                (4) Irregular API usage → Rate limiting enforced. All events are logged in immutable audit logs for forensic analysis. We also conduct 
+                quarterly penetration tests and vulnerability scans.
               </p>
             </details>
+
+            <details className="bg-white rounded-lg shadow-lg border border-gray-200 p-6 group">
+              <summary className="font-semibold text-gray-900 cursor-pointer list-none flex items-center justify-between">
+                <span>Do you sell or share my data with third parties?</span>
+                <svg className="w-5 h-5 text-gray-400 group-open:rotate-180 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              </summary>
+              <p className="mt-4 text-gray-600 text-sm">
+                <strong>No, never.</strong> We do not sell, rent, trade, or share your private financial data with any third parties. Your revenue, EBITDA, 
+                profit margins, and all sensitive business data remain exclusively on our secure EU servers. External AI services (like OpenAI) only see 
+                public company data (registry filings, already legally public). This is a core principle of our 3-Pipeline Architecture and a contractual 
+                commitment to our users.
+              </p>
+            </details>
+          </div>
+        </section>
+
+        {/* Contact Section */}
+        <section className="mb-16">
+          <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-8">
+            <h2 className="text-2xl font-bold text-gray-900 mb-4 text-center">
+              Security & Compliance Contacts
+            </h2>
+            <div className="grid md:grid-cols-3 gap-6 text-center">
+              <div>
+                <p className="font-semibold text-gray-900 mb-2">Security Inquiries</p>
+                <a href="mailto:security@upswitch.com" className="text-primary-600 hover:underline text-sm">
+                  security@upswitch.com
+                </a>
+              </div>
+              <div>
+                <p className="font-semibold text-gray-900 mb-2">Data Protection Officer</p>
+                <a href="mailto:dpo@upswitch.com" className="text-primary-600 hover:underline text-sm">
+                  dpo@upswitch.com
+                </a>
+              </div>
+              <div>
+                <p className="font-semibold text-gray-900 mb-2">Incident Reports</p>
+                <a href="mailto:incidents@upswitch.com" className="text-primary-600 hover:underline text-sm">
+                  incidents@upswitch.com
+                </a>
+              </div>
+            </div>
           </div>
         </section>
 
@@ -422,13 +618,14 @@ export const PrivacyExplainer: React.FC = () => {
           <div className="bg-gradient-to-br from-primary-50 to-blue-50 rounded-2xl p-8 border border-primary-200">
             <Shield className="w-12 h-12 text-primary-600 mx-auto mb-4" />
             <h2 className="text-2xl font-bold text-gray-900 mb-3">
-              Ready to Try Our Registry-First Valuation?
+              Ready for Enterprise-Grade Privacy?
             </h2>
             <p className="text-gray-600 mb-6 max-w-2xl mx-auto">
-              Experience the speed of AI-powered company lookup with the security of private financial data processing.
+              Experience AI-powered business valuation with the confidence that your sensitive financial data is protected 
+              by enterprise-grade security.
             </p>
             <Link
-              to="/"
+              to={urls.home()}
               className="inline-flex items-center gap-2 px-8 py-3 rounded-lg bg-primary-600 text-white font-semibold hover:bg-primary-700 transition-colors"
             >
               Start Your Secure Valuation
@@ -447,8 +644,11 @@ export const PrivacyExplainer: React.FC = () => {
       {/* Footer */}
       <footer className="bg-gray-900 text-white py-8 mt-16">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <p className="text-gray-400 text-sm">
-            © 2025 Upswitch. Your privacy is our priority. All rights reserved.
+          <p className="text-gray-400 text-sm mb-2">
+            © 2025 Upswitch. Enterprise-Grade Data Protection. All rights reserved.
+          </p>
+          <p className="text-gray-500 text-xs">
+            Privacy & Compliance Whitepaper v1.0 | GDPR Compliant | SOC 2 Type II Ready | ISO 27001 Aligned
           </p>
         </div>
       </footer>

@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { Header } from './components/Header';
 import { TwoStepFlow } from './components/TwoStepFlow';
 import { ValuationForm } from './components/ValuationForm';
@@ -6,12 +7,26 @@ import { AIAssistedValuation } from './components/registry/AIAssistedValuation';
 import { ValuationMethodSelector } from './components/ValuationMethodSelector';
 import { Results } from './components/Results';
 import { useValuationStore } from './store/useValuationStore';
+import { ROUTE_TO_VIEW_MODE, VIEW_MODE_TO_ROUTE } from './router/routes';
 
 type ViewMode = 'ai-assisted' | 'manual' | 'document-upload';
 
 function App() {
-  const [viewMode, setViewMode] = useState<ViewMode>('ai-assisted');
+  const location = useLocation();
+  const navigate = useNavigate();
   const { result } = useValuationStore();
+  
+  // Determine viewMode from route
+  const routeBasedViewMode = (ROUTE_TO_VIEW_MODE[location.pathname as keyof typeof ROUTE_TO_VIEW_MODE] || 'ai-assisted') as ViewMode;
+  const [viewMode, setViewMode] = useState<ViewMode>(routeBasedViewMode);
+  
+  // Sync URL with viewMode
+  useEffect(() => {
+    const newRoute = VIEW_MODE_TO_ROUTE[viewMode];
+    if (location.pathname !== newRoute) {
+      navigate(newRoute, { replace: true });
+    }
+  }, [viewMode, navigate, location.pathname]);
 
   return (
     <div className="min-h-screen bg-gradient-hero">

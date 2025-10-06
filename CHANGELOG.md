@@ -1,5 +1,126 @@
 # Changelog - Upswitch Valuation Tester
 
+## [v1.7.0] - 2025-10-06 - Enhanced Privacy Policy 🔒
+
+### 🔒 Privacy Policy Enhancement
+
+**Comprehensive Update from Privacy & Compliance Whitepaper**
+
+Updated `/privacy-explainer` with enterprise-grade privacy information:
+
+1. **3-Pipeline Privacy Architecture**
+   - Pipeline 1: Private Financial Data (TOP SECRET - Never externalized)
+   - Pipeline 2: Public Company Data (AI-safe, already legally public)
+   - Pipeline 3: Market Data (No privacy concerns)
+   - Visual representation of data separation
+
+2. **GDPR Compliance Framework**
+   - Key compliance achievements (GDPR, SOC 2, ISO 27001)
+   - Data subject rights (Articles 12-22)
+     - Right of Access: JSON export within 1 month
+     - Right to Erasure: 30-day deletion with 14-day grace period
+     - Right to Data Portability, Rectification, and Object
+   - No cross-border data transfers (Article 44 compliant)
+
+3. **Security Best Practices**
+   - Encryption: TLS 1.3, AES-256-GCM, 90-day key rotation
+   - Access Controls: MFA, RBAC, session management
+   - Data Sovereignty: EU-only for private data
+   - Quarterly penetration tests
+
+4. **Technical Implementation Details**
+   - Row-Level Security (PostgreSQL RLS)
+   - Comprehensive audit logging (immutable, timestamped)
+   - Automated security monitoring (breach detection)
+   - Real-time alerts for suspicious activity
+
+5. **Privacy Comparison Table**
+   - Traditional tools vs. Upswitch side-by-side
+   - Clear visualization of security advantages
+
+6. **Enhanced FAQs**
+   - How 3-Pipeline Architecture works
+   - Data deletion process
+   - GDPR compliance details
+   - Data export capabilities
+   - Security breach detection
+   - Third-party data sharing (answer: never)
+
+7. **Contact Information**
+   - security@upswitch.com
+   - dpo@upswitch.com
+   - incidents@upswitch.com
+
+**Source**: Privacy & Compliance Whitepaper v1.0
+
+**Build:** 25.67s, 442.74 kB (131.90 kB gzipped)
+
+**Route:** `/privacy` or `/privacy-explainer`
+
+---
+
+## [v1.6.0] - 2025-10-06 - Routing System & URL Generator 🗺️
+
+### 🚀 New Features
+
+**Complete Routing System with Type-Safe URL Generation**
+
+1. **React Router v7 Integration**
+   - Proper routing with React Router
+   - Route-based navigation
+   - Browser back/forward support
+   - Deep linking and shareable URLs
+
+2. **URL Generator Utility**
+   - Type-safe URL generation
+   - Query parameter handling
+   - Shareable valuation links
+   - Pre-fill form data via URL
+
+3. **New Pages**
+   - `/404` - 404 Not Found page
+   - `/about` - About page with methodology explanation
+   - `/how-it-works` - How it works with Big 4 breakdown
+   - `/privacy` - Privacy policy (existing, now integrated)
+
+4. **Route-Aware App**
+   - URL syncs with current valuation method
+   - `/instant` - AI-powered instant valuation
+   - `/manual` - Manual financial entry
+   - `/upload` - Document upload
+   - `/results/:id?` - Valuation results
+
+**Usage:**
+
+```typescript
+import { urls } from './router';
+
+// Navigate to instant valuation
+navigate(urls.instantValuation());  // "/instant"
+
+// Navigate to results with ID
+navigate(urls.results('abc123'));  // "/results/abc123"
+
+// Add query parameters
+const url = urls.withQuery(urls.manual(), {
+  companyName: 'My Company',
+  industry: 'technology'
+});
+```
+
+**Benefits:**
+- ✅ Type-safe navigation
+- ✅ Shareable URLs
+- ✅ Deep linking
+- ✅ SEO-ready
+- ✅ Query parameter support
+
+**Build:** 10.48s, 434.64 kB (129.99 kB gzipped)
+
+**Documentation:** `docs/ROUTING_SYSTEM.md`
+
+---
+
 ## [v1.5.0] - 2025-10-06 - Big 4 Valuation Range Fix 🎯
 
 ### 🔧 Critical Backend Fix
@@ -20,6 +141,33 @@
 - Aligned with Deloitte/PwC/KPMG/EY standards
 
 **See:** `/apps/upswitch-valuation-engine/CHANGELOG.md` for full details
+
+### 🎨 Frontend Enhancements
+
+**Visual indicators of Big 4 methodology:**
+
+1. **"Big 4 Methodology" Badge**
+   - Blue badge with checkmark icon next to Enterprise Value
+   - Immediately signals professional standards
+   
+2. **Professional Valuation Range Info Box**
+   - Shows spread calculation (e.g., "1.56x (±22%)")
+   - Explains it follows Big 4 standards
+   - Clarifies range is based on confidence, not extremes
+
+3. **Enhanced Methodology Weights Section**
+   - Shows individual methodology values
+   - Explains weighted midpoint calculation
+   - Clarifies NOT using min/max approach
+   - References Big 4 standards (±10-22%)
+
+**User Experience:**
+- Before: "€300k or €1.2M? This is useless!" 😞
+- After: "€650k-€1M range makes sense!" ✅
+
+**Build:** 5.65s, 374.90 kB (112.25 kB gzipped)
+
+**Documentation:** `docs/BIG_4_FRONTEND_CHANGES.md`
 
 ---
 
