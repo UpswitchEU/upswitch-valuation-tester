@@ -1,5 +1,186 @@
 # Changelog - Upswitch Valuation Tester
 
+## [v1.12.0] - 2025-10-06 - Navigation Dropdown + Cleaner Pages 🎯
+
+### 🎯 Major UX Improvement: Valuation Method Selection Moved to Header
+
+**Moved the valuation method selector from page content to a dropdown in the header navigation!**
+
+#### ✨ What Changed
+
+**Before (v1.11.3):**
+- Every page showed a big 3-tab selector
+- Title and description above selector
+- Took up ~200px of vertical space
+- Repetitive across all pages
+
+**After (v1.12.0):**
+- "Valuation" dropdown in header navigation
+- Clean dropdown with 3 options:
+  - ⚡ Instant Valuation (Recommended)
+  - 📝 Manual Input
+  - 📄 File Upload (Beta)
+- NO selector on pages
+- More space for content
+
+#### 🎨 Features
+
+**Header Dropdown:**
+- Click "Valuation" → dropdown appears
+- Current method highlighted (primary-50 bg)
+- Shows badges (Recommended, Beta)
+- Chevron icon rotates on open/close
+- Click outside to close
+- Professional styling with shadow
+
+**Navigation:**
+- URL-aware (detects current route)
+- Click option → navigates to route
+- Smooth transitions
+- Consistent with modern web apps
+
+#### 📁 Files Changed
+
+**Modified:**
+- ✅ `src/components/Header.tsx` - Added dropdown with 3 valuation methods
+- ✅ `src/App.tsx` - Removed ValuationMethodSelector component
+
+**Removed:**
+- ❌ ValuationMethodSelector rendering (lines 46-50)
+- ❌ Import statement
+
+#### ✨ Benefits
+
+1. **Cleaner Pages**
+   - No repetitive selector
+   - More space for content
+   - Less visual clutter
+
+2. **Consistent Navigation**
+   - Standard dropdown pattern
+   - Matches Gmail, Notion, etc.
+   - Professional UX
+
+3. **Better Space Utilization**
+   - Title/description removed
+   - Big selector removed
+   - Content starts higher
+
+4. **Persistent Access**
+   - Always in header
+   - Works on all pages
+   - Clear current method
+
+---
+
+## [v1.11.3] - 2025-10-06 - Mock Suggestion ID Fix 🔧
+
+### 🐛 Bug Fix: Gracefully Handle Backend Mock Suggestions
+
+**Fixed the "Invalid company ID format: suggestion_0" error!**
+
+#### The Problem
+- Backend returns mock suggestions when data sources fail (404s)
+- Frontend tried to fetch financials for fake IDs
+- User saw cryptic error message
+
+#### The Solution
+
+**Detection (valuationChatController.ts):**
+- `isValidCompanyId()` now detects `suggestion_` and `mock_` prefixes
+- Returns `false` for placeholder IDs
+- Prevents wasted fetch attempts
+
+**Graceful Handling (companyLookupService.ts):**
+- Enhanced error message with helpful guidance
+- Explains WHY company wasn't found
+- Provides actionable alternatives
+- Links to KBO registry
+
+#### ✨ New Error Message
+
+**Before:**
+```
+❌ Invalid company ID format: "suggestion_0". 
+   Please try again or enter data manually.
+```
+
+**After:**
+```
+Sorry, I couldn't find "Delhaize" in the official registry.
+
+This might be because:
+• The company name is spelled differently
+• It's a subsidiary or trading name
+• Data sources are temporarily unavailable
+
+What you can do:
+1. Try the full legal name (e.g., "Delhaize Group SA")
+2. Use the company's VAT or KBO number
+3. Switch to Manual Input
+
+💡 Tip: Find official names at kbopub.economie.fgov.be
+```
+
+---
+
+## [v1.11.2] - 2025-10-06 - Sticky Input at Bottom Like Ilara 📌
+
+### 🎯 UX Fix: Chat Input Sticky at Bottom
+
+**Made the chat input area sticky at the bottom, just like Ilara AI!**
+
+#### What Changed
+
+**Before:**
+- Fixed height chat (600px)
+- Input could scroll away
+- Not responsive to container height
+
+**After:**
+- Full-height chat (fills container)
+- Input ALWAYS at bottom (sticky)
+- Header ALWAYS at top (sticky)
+- Messages scroll independently
+- Matches Ilara's behavior!
+
+#### Layout Structure
+
+```
+Chat Panel (Full Height):
+┌──────────────────────────┐
+│ 🤖 AI Assistant          │ ← Header (flex-shrink-0)
+├──────────────────────────┤
+│ Messages (scrollable)    │ ← Messages (flex-1)
+├──────────────────────────┤
+│ Input (sticky)           │ ← Input (flex-shrink-0)
+└──────────────────────────┘
+```
+
+---
+
+## [v1.11.1] - 2025-10-06 - Clean Right Panel Like Ilara 🧹
+
+### 🎯 Visual Polish: Simplified Right Panel
+
+**Cleaned up the right panel to match Ilara's minimal design!**
+
+#### What Changed
+
+**Right Panel (Preview Stage):**
+- Simplified "Valuation Preview" empty state
+- White background (not dark)
+- Removed detailed "How It Works" instructions
+- Removed tips section
+- Cleaner, more minimal design
+
+**Benefits:**
+- Less visual clutter
+- Matches Ilara's aesthetic
+- Focus on content, not instructions
+
+---
+
 ## [v1.11.0] - 2025-10-06 - Full-Screen Ilara Layout 🖥️✨
 
 ### 🎯 Major Visual Overhaul: Ilara-Style Full-Screen Split Panel
