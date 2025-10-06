@@ -33,34 +33,121 @@ export const ValuationForm: React.FC = () => {
     calculateValuation();
   };
 
+  // Calculate data quality score
+  const calculateDataQuality = () => {
+    let score = 0;
+    let total = 0;
+    
+    // Basic required fields (40 points)
+    if (formData.company_name) { score += 5; total += 5; }
+    if (formData.country_code) { score += 5; total += 5; }
+    if (formData.industry) { score += 10; total += 10; }
+    if (formData.business_model) { score += 10; total += 10; }
+    if (formData.founding_year) { score += 5; total += 5; }
+    if (formData.revenue && formData.revenue > 0) { score += 5; total += 5; }
+    
+    // Current year financials (30 points)
+    if (formData.ebitda) { score += 10; total += 10; }
+    if (formData.net_income) { score += 5; total += 5; }
+    if (formData.total_assets) { score += 5; total += 5; }
+    if (formData.total_debt) { score += 5; total += 5; }
+    if (formData.cash) { score += 5; total += 5; }
+    
+    // Historical data (30 points)
+    const hasHistorical = formData.historical_years_data && formData.historical_years_data.length > 0;
+    if (hasHistorical) {
+      const years = formData.historical_years_data.length;
+      score += Math.min(years * 10, 30);
+      total += 30;
+    } else {
+      total += 30;
+    }
+    
+    return total > 0 ? Math.round((score / total) * 100) : 0;
+  };
+
+  const dataQuality = calculateDataQuality();
+  const hasMinimumData = formData.revenue && formData.ebitda && formData.industry && formData.country_code;
+
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
-      {/* Tier Selector */}
-      <div className="bg-white rounded-lg border border-gray-200 p-4">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-semibold text-gray-900">Data Tier</h3>
-          <div className="flex space-x-2">
-            <button
-              type="button"
-              className="px-3 py-1 rounded text-sm font-medium bg-primary-600 text-white"
-            >
-              Quick (30s)
-            </button>
-            <button
-              type="button"
-              className="px-3 py-1 rounded text-sm font-medium bg-gray-200 text-gray-700 hover:bg-gray-300"
-            >
-              Standard (5min)
-            </button>
-            <button
-              type="button"
-              className="px-3 py-1 rounded text-sm font-medium bg-gray-200 text-gray-700 hover:bg-gray-300"
-            >
-              Professional (15min)
-            </button>
+      {/* Data Quality Tip */}
+      <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border border-blue-200 p-4">
+        <div className="flex items-start">
+          <div className="flex-shrink-0">
+            <svg className="h-5 w-5 text-blue-600 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+            </svg>
+          </div>
+          <div className="ml-3 flex-1">
+            <h3 className="text-sm font-semibold text-blue-900">💡 Maximize Accuracy</h3>
+            <p className="text-sm text-blue-700 mt-1">
+              More complete data leads to higher valuation accuracy. Add historical years and complete financial details for professional-grade results.
+            </p>
           </div>
         </div>
       </div>
+
+      {/* Data Quality Indicator */}
+      {hasMinimumData && (
+        <div className="bg-white rounded-lg border border-gray-200 p-4">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-sm font-semibold text-gray-700">Data Completeness</span>
+            <span className={`text-lg font-bold ${
+              dataQuality >= 80 ? 'text-green-600' : 
+              dataQuality >= 60 ? 'text-blue-600' : 
+              dataQuality >= 40 ? 'text-yellow-600' : 'text-red-600'
+            }`}>
+              {dataQuality}%
+            </span>
+          </div>
+          <div className="w-full bg-gray-200 rounded-full h-2.5 mb-3">
+            <div 
+              className={`h-2.5 rounded-full transition-all duration-500 ${
+                dataQuality >= 80 ? 'bg-gradient-to-r from-green-400 to-green-600' : 
+                dataQuality >= 60 ? 'bg-gradient-to-r from-blue-400 to-blue-600' : 
+                dataQuality >= 40 ? 'bg-gradient-to-r from-yellow-400 to-yellow-600' : 
+                'bg-gradient-to-r from-red-400 to-red-600'
+              }`}
+              style={{ width: `${dataQuality}%` }}
+            />
+          </div>
+          
+          {/* Contextual Tips */}
+          <div className="text-xs text-gray-600 space-y-1">
+            {dataQuality < 60 && !formData.historical_years_data?.length && (
+              <p className="flex items-start">
+                <span className="text-yellow-500 mr-1.5">⚠️</span>
+                <span><strong>Add historical data</strong> (3-5 years) to improve accuracy by up to 20%</span>
+              </p>
+            )}
+            {!formData.total_assets && dataQuality < 80 && (
+              <p className="flex items-start">
+                <span className="text-blue-500 mr-1.5">💡</span>
+                <span><strong>Add balance sheet data</strong> (assets, debt, cash) for full DCF analysis</span>
+              </p>
+            )}
+            {!formData.net_income && dataQuality < 80 && (
+              <p className="flex items-start">
+                <span className="text-blue-500 mr-1.5">💡</span>
+                <span><strong>Add net income</strong> to enable complete financial metrics</span>
+              </p>
+            )}
+            {dataQuality >= 80 && (
+              <p className="flex items-start">
+                <span className="text-green-500 mr-1.5">✅</span>
+                <span><strong>Excellent data quality!</strong> Ready for professional-grade valuation.</span>
+              </p>
+            )}
+            {dataQuality >= 60 && dataQuality < 80 && (
+              <p className="flex items-start">
+                <span className="text-blue-500 mr-1.5">👍</span>
+                <span><strong>Good data quality.</strong> Add more historical years for even better results.</span>
+              </p>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Basic Information */}
       <div className="bg-white rounded-lg border border-gray-200 p-6">
