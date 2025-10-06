@@ -1,6 +1,6 @@
-import React from 'react';
-import { Link } from 'react-router-dom';
-import { FileText } from 'lucide-react';
+import React, { useState, useRef, useEffect } from 'react';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { FileText, ChevronDown } from 'lucide-react';
 import { urls } from '../router';
 import { useReportsStore } from '../store/useReportsStore';
 
@@ -12,6 +12,39 @@ import { useReportsStore } from '../store/useReportsStore';
  */
 export const Header: React.FC = () => {
   const { reports } = useReportsStore();
+  const navigate = useNavigate();
+  const location = useLocation();
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const dropdownRef = useRef<HTMLLIElement>(null);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsDropdownOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  // Determine current valuation method from URL
+  const getCurrentMethod = () => {
+    if (location.pathname === '/' || location.pathname === '/instant') return 'instant';
+    if (location.pathname === '/manual') return 'manual';
+    if (location.pathname === '/document-upload') return 'document';
+    return 'instant';
+  };
+
+  const currentMethod = getCurrentMethod();
+  
+  const valuationMethods = [
+    { id: 'instant', label: '⚡ Instant Valuation', badge: 'Recommended', path: '/instant' },
+    { id: 'manual', label: '📝 Manual Input', badge: null, path: '/manual' },
+    { id: 'document', label: '📄 File Upload', badge: 'Beta', path: '/document-upload' },
+  ];
+
   return (
     <>
       <header className="z-40 flex px-3 sm:px-4 lg:px-6 gap-2 sm:gap-3 lg:gap-4 w-full flex-row flex-nowrap items-center justify-between h-[var(--navbar-height)] max-w-full overflow-x-hidden bg-white border-b border-gray-200 sticky top-0 shadow-sm">
@@ -42,14 +75,44 @@ export const Header: React.FC = () => {
         {/* Center - Navigation (Hidden on mobile, shown on desktop) */}
         <div className="absolute left-1/2 transform -translate-x-1/2 hidden lg:block">
           <ul className="h-full flex-row flex-nowrap items-center flex gap-6">
-            <li className="text-medium whitespace-nowrap box-border list-none flex items-center">
-              <Link 
-                className="text-sm font-medium transition-colors relative group text-neutral-700 hover:text-primary-600" 
-                to="/"
+            <li className="text-medium whitespace-nowrap box-border list-none flex items-center relative" ref={dropdownRef}>
+              <button
+                onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                className="text-sm font-medium transition-colors relative group text-neutral-700 hover:text-primary-600 flex items-center gap-1.5"
               >
-                Valuation Tool
+                Valuation
+                <ChevronDown className={`w-4 h-4 transition-transform ${isDropdownOpen ? 'rotate-180' : ''}`} />
                 <span className="absolute -bottom-1 left-0 w-full h-0.5 bg-primary-600 transition-transform origin-left scale-x-0 group-hover:scale-x-100"></span>
-              </Link>
+              </button>
+              
+              {/* Dropdown Menu */}
+              {isDropdownOpen && (
+                <div className="absolute top-full left-0 mt-2 w-64 bg-white rounded-lg shadow-xl border border-gray-200 py-2 z-50">
+                  {valuationMethods.map((method) => (
+                    <button
+                      key={method.id}
+                      onClick={() => {
+                        navigate(method.path);
+                        setIsDropdownOpen(false);
+                      }}
+                      className={`w-full text-left px-4 py-3 hover:bg-gray-50 transition-colors flex items-center justify-between ${
+                        currentMethod === method.id ? 'bg-primary-50' : ''
+                      }`}
+                    >
+                      <span className="text-sm font-medium text-gray-700">{method.label}</span>
+                      {method.badge && (
+                        <span className={`px-2 py-0.5 text-xs font-semibold rounded ${
+                          method.badge === 'Recommended' 
+                            ? 'bg-green-100 text-green-700' 
+                            : 'bg-yellow-100 text-yellow-700'
+                        }`}>
+                          {method.badge}
+                        </span>
+                      )}
+                    </button>
+                  ))}
+                </div>
+              )}
             </li>
             <li className="text-medium whitespace-nowrap box-border list-none">
               <Link 

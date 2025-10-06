@@ -5,7 +5,6 @@ import { TwoStepFlow } from './components/TwoStepFlow';
 import { ValuationForm } from './components/ValuationForm';
 import { Results } from './components/Results';
 import { AIAssistedValuation } from './components/registry/AIAssistedValuation';
-import { ValuationMethodSelector } from './components/ValuationMethodSelector';
 import { useValuationStore } from './store/useValuationStore';
 import { ROUTE_TO_VIEW_MODE, VIEW_MODE_TO_ROUTE } from './router/routes';
 
@@ -43,12 +42,6 @@ function App() {
       <Header />
 
       <main className="container mx-auto px-4 py-8 max-w-7xl">
-        {/* Clean 3-Tab Interface */}
-        <ValuationMethodSelector 
-          viewMode={viewMode} 
-          onModeChange={setViewMode} 
-        />
-
         {/* Content */}
         {viewMode === 'manual' && (
           <div className="space-y-8">
