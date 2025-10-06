@@ -73,10 +73,25 @@ export class CompanyLookupService {
 
       // Step 3: Validate company ID
       if (!this.controller.isValidCompanyId(bestMatch.company_id, country)) {
-        console.error(`❌ [${requestId}] Invalid company ID format:`, bestMatch.company_id);
+        console.log(`⚠️ [${requestId}] Mock/suggestion result detected - data sources unavailable`);
+        
         return {
           success: false,
-          message: `Invalid company ID format: "${bestMatch.company_id}". Please try again or enter data manually.`,
+          message: `Sorry, I couldn't find **"${message}"** in the official Belgian company registry.
+
+**This might be because:**
+• The company name is spelled differently in official records
+• It's registered under a different legal name
+• It's a subsidiary or trading name (not the parent company)
+• The company hasn't filed recent accounts with KBO/BCE
+• Data sources are temporarily unavailable
+
+**What you can do:**
+1. **Try the full legal name** (e.g., "Delhaize Group SA" not just "Delhaize")
+2. **Use the company's VAT or KBO number** if you have it
+3. **Switch to Manual Input** and enter the financials yourself
+
+💡 **Tip:** You can find a company's official name at [kbopub.economie.fgov.be](https://kbopub.economie.fgov.be)`,
         };
       }
 

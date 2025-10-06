@@ -208,13 +208,21 @@ export class ValuationChatController {
    * Helper method for pre-flight validation
    */
   isValidCompanyId(companyId: string, country: string = 'BE'): boolean {
+    // Check for mock/suggestion IDs first (backend fallback when data unavailable)
+    if (!companyId || 
+        companyId.length < 3 || 
+        companyId.startsWith('suggestion_') || 
+        companyId.startsWith('mock_')) {
+      return false;
+    }
+    
     // Belgian company numbers are 10 digits with dots: 0123.456.789
     if (country === 'BE') {
       const cleaned = companyId.replace(/\./g, '');
       return /^\d{10}$/.test(cleaned);
     }
     
-    // Default: any non-empty string
+    // Default: any non-empty string (for other countries)
     return companyId.length > 0;
   }
 }
