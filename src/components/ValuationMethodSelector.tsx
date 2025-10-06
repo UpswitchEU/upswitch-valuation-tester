@@ -70,8 +70,6 @@ export const ValuationMethodSelector: React.FC<ValuationMethodSelectorProps> = (
     return `${baseClasses} text-gray-600 hover:text-gray-900`;
   };
 
-  const currentTab = tabs.find(tab => tab.id === viewMode);
-
   return (
     <div className="mb-8">
       {/* Clean header */}
@@ -103,45 +101,7 @@ export const ValuationMethodSelector: React.FC<ValuationMethodSelectorProps> = (
         ))}
       </div>
 
-      {/* Tab Description */}
-      {currentTab && (
-        <div className="bg-white rounded-lg border border-gray-200 p-6 mb-6">
-          <div className="flex items-start">
-            <div className="flex-shrink-0 text-3xl mr-4">
-              {currentTab.icon}
-            </div>
-            <div className="flex-1">
-              <div className="flex items-center justify-between mb-2">
-                <h3 className="text-xl font-bold text-gray-900">{currentTab.title}</h3>
-                {currentTab.badge && (
-                  <span className={`px-3 py-1 text-xs font-semibold rounded-full ${
-                    currentTab.badge === 'Recommended' ? 'bg-green-100 text-green-700' :
-                    currentTab.badge === 'Beta' ? 'bg-yellow-100 text-yellow-700' : ''
-                  }`}>
-                    {currentTab.badge}
-                  </span>
-                )}
-              </div>
-              <p className="text-sm text-gray-500 mb-3">{currentTab.subtitle}</p>
-              {currentTab.description && (
-                <p className="text-sm text-gray-700 mb-3">{currentTab.description}</p>
-              )}
-              {currentTab.benefits && currentTab.benefits.length > 0 && (
-                <ul className="space-y-1.5">
-                  {currentTab.benefits.map((benefit, idx) => (
-                    <li key={idx} className="flex items-start text-sm text-gray-600">
-                      <svg className="h-4 w-4 text-green-500 mr-2 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                      </svg>
-                      {benefit}
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Tab Description - REMOVED for cleaner UI */}
       
     </div>
   );
