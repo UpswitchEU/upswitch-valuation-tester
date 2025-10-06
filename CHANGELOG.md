@@ -1,5 +1,29 @@
 # Changelog - Upswitch Valuation Tester
 
+## [v1.7.1] - 2025-10-06 - SEO: Prevent Indexing 🚫
+
+### 🚫 SEO Updates
+
+**Prevent search engine indexing for beta/testing app**
+
+Added noindex directives to prevent this testing app from appearing in search results:
+
+1. **Meta Tags in HTML**
+   - `<meta name="robots" content="noindex, nofollow" />`
+   - `<meta name="googlebot" content="noindex, nofollow" />`
+
+2. **robots.txt File**
+   - Created `/public/robots.txt`
+   - Disallows all crawlers: `User-agent: *` → `Disallow: /`
+
+**Why**: This is a beta testing tool, not the production app. We don't want users finding it via Google.
+
+**Impact**: Search engines will not index any pages from this domain.
+
+**Build:** 8.15s, 442.79 kB (131.90 kB gzipped)
+
+---
+
 ## [v1.7.0] - 2025-10-06 - Enhanced Privacy Policy 🔒
 
 ### 🔒 Privacy Policy Enhancement

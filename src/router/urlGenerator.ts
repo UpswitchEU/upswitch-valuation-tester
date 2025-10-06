@@ -69,6 +69,13 @@ export class UrlGenerator {
   }
 
   /**
+   * Reports page (saved valuations)
+   */
+  static reports(): string {
+    return ROUTES.REPORTS;
+  }
+
+  /**
    * Privacy policy
    */
   static privacy(): string {

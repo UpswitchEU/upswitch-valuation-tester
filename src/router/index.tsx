@@ -11,6 +11,7 @@ import { NotFound } from '../pages/NotFound';
 import { PrivacyExplainer } from '../pages/PrivacyExplainer';
 import { About } from '../pages/About';
 import { HowItWorks } from '../pages/HowItWorks';
+import { Reports } from '../pages/Reports';
 
 /**
  * Main application router
@@ -36,6 +37,10 @@ export const router = createBrowserRouter([
   {
     path: ROUTES.RESULTS,
     element: <App />,
+  },
+  {
+    path: ROUTES.REPORTS,
+    element: <Reports />,
   },
   {
     path: ROUTES.PRIVACY,

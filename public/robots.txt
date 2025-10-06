@@ -1,0 +1,3 @@
+# Upswitch Valuation Tester - Not for public indexing
+User-agent: *
+Disallow: /

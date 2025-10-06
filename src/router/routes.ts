@@ -15,6 +15,7 @@ export const ROUTES = {
   
   // Results
   RESULTS: '/results/:valuationId?',
+  REPORTS: '/reports',
   
   // Info pages
   PRIVACY: '/privacy',
