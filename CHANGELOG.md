@@ -1,5 +1,123 @@
 # Changelog - Upswitch Valuation Tester
 
+## [v1.14.0] - 2025-10-06 - Dark Landing Page with Method Selection 🎨✨
+
+### 🎯 New Feature: Professional Landing Page
+
+**Created a beautiful dark-themed landing page where users can choose their valuation method!**
+
+#### ✨ What Changed
+
+**Before (v1.13.0):**
+- Root path (`/`) redirected to `/instant`
+- No landing page
+- No clear method selection
+
+**After (v1.14.0):**
+- Professional landing page at root (`/`)
+- Dark theme matching `/instant` aesthetic
+- 3 large interactive cards to choose method
+- Clear hero section with title/subtitle
+- Trust indicators and beta disclaimer
+
+#### 🎨 Landing Page Features
+
+**Hero Section:**
+- **Title:** "Business Valuation Engine"
+- **Subtitle:** "Professional-grade valuations powered by AI"
+- **Feature Pills:**
+  - DCF + Market Multiples
+  - Enterprise-Grade Security
+  - Real-Time Market Data
+
+**3 Method Cards:**
+
+1. **⚡ Instant Valuation** (Recommended)
+   - Primary gradient (blue/cyan)
+   - Green "Recommended" badge
+   - Features: Auto retrieval, No input, 30 seconds, Verified data
+   
+2. **📝 Manual Input**
+   - Neutral gradient (zinc)
+   - No badge
+   - Features: Full control, Live preview, Historical data, Custom assumptions
+   
+3. **📄 File Upload** (Beta)
+   - Warning gradient (yellow/orange)
+   - Yellow "Beta" badge
+   - Features: PDF/Excel support, Auto extraction, Review before, 60-70% accuracy
+
+**Card Interactions:**
+- Hover: Scale up (1.05x)
+- Glow effect on hover
+- Color transitions
+- Arrow CTA animates right
+- Click navigates to method
+
+**Bottom Section:**
+- Trust indicators: GDPR, SOC 2, ISO 27001, Bank-Grade Encryption
+- Beta disclaimer with warning icon
+
+#### 🎨 Design System
+
+**Dark Theme:**
+- Background: `from-zinc-950 via-zinc-900 to-zinc-950`
+- Cards: Gradient backgrounds with glow borders
+- Text: White headings, zinc-400 body
+- Accents: Primary (blue), green (recommended), yellow (beta)
+
+**Animations:**
+- Smooth scale on hover
+- Color transitions
+- Glow shadows
+- Arrow slide animation
+
+#### 📁 Files Changed
+
+**Created:**
+- ✅ `src/pages/HomePage.tsx` - New landing page component
+
+**Modified:**
+- ✅ `src/router/index.tsx` - Use HomePage for root path
+
+#### 📊 User Flow
+
+**New Flow:**
+```
+1. User visits / (root)
+2. Sees landing page with 3 options
+3. Hovers over cards (animations)
+4. Clicks preferred method
+5. Navigates to:
+   - /instant (AI lookup)
+   - /manual (Form + preview)
+   - /document-upload (File extraction)
+```
+
+#### ✨ Benefits
+
+1. **Clear Entry Point**
+   - Users choose method upfront
+   - No confusion about options
+   - Professional first impression
+
+2. **Visual Guidance**
+   - Recommended method highlighted
+   - Beta features clearly marked
+   - Feature lists help decision
+
+3. **Consistent Theme**
+   - Dark aesthetic matches `/instant`
+   - Professional appearance
+   - Modern design patterns
+
+4. **Trust Building**
+   - Security badges visible
+   - Compliance indicators
+   - Transparent about beta status
+
+---
+
 ## [v1.13.0] - 2025-10-06 - Full-Screen Manual Flow 🖥️✨
 
 ### 🎯 Major UX Overhaul: Manual Flow Now Matches Instant Flow
