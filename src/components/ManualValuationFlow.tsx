@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Edit3, TrendingUp, CheckCircle, Save, ArrowLeft } from 'lucide-react';
 import { ValuationForm } from './ValuationForm';
-import { LivePreview } from './LivePreview';
 import { Results } from './Results';
 import { useValuationStore } from '../store/useValuationStore';
 import { useReportsStore } from '../store/useReportsStore';
@@ -83,7 +82,7 @@ export const ManualValuationFlow: React.FC = () => {
       {/* Full-screen Split Panel - Ilara Style */}
       <div className="flex flex-1 overflow-hidden mx-4 my-4 rounded-lg border border-zinc-800">
         {/* Left Panel: Form/Results (60% width) */}
-        <div className="h-full flex flex-col bg-white border-r border-zinc-200" style={{ width: '60%' }}>
+        <div className="h-full flex flex-col bg-zinc-900 border-r border-zinc-800" style={{ width: '60%' }}>
           {stage === 'form' && (
             <div className="flex-1 overflow-y-auto p-6">
               <div className="max-w-4xl mx-auto">
@@ -95,21 +94,21 @@ export const ManualValuationFlow: React.FC = () => {
           {stage === 'results' && result && (
             <div className="flex-1 overflow-y-auto p-6">
               {/* Success Banner */}
-              <div className="bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-xl p-6 mb-6 max-w-4xl mx-auto">
+              <div className="bg-gradient-to-r from-green-900/30 to-emerald-900/30 border border-green-700/50 rounded-xl p-6 mb-6 max-w-4xl mx-auto">
                 <div className="flex items-start justify-between">
                   <div className="flex items-start gap-4">
                     <div className="w-12 h-12 bg-green-500/20 rounded-full flex items-center justify-center flex-shrink-0">
-                      <CheckCircle className="w-6 h-6 text-green-600" />
+                      <CheckCircle className="w-6 h-6 text-green-400" />
                     </div>
                     <div>
-                      <h3 className="text-lg font-bold text-gray-900 mb-1">
+                      <h3 className="text-lg font-bold text-white mb-1">
                         Valuation Complete!
                       </h3>
-                      <p className="text-sm text-gray-700 mb-3">
+                      <p className="text-sm text-zinc-300 mb-3">
                         Your business valuation report is ready.
                       </p>
                       {reportSaved && (
-                        <div className="flex items-center gap-2 text-sm text-green-700">
+                        <div className="flex items-center gap-2 text-sm text-green-400">
                           <Save className="w-4 h-4" />
                           <span className="font-medium">Auto-saved to Reports</span>
                         </div>
@@ -119,7 +118,7 @@ export const ManualValuationFlow: React.FC = () => {
                   <div className="flex flex-col gap-2">
                     <button
                       onClick={() => navigate(urls.reports())}
-                      className="px-4 py-2 text-sm bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium"
+                      className="px-4 py-2 text-sm bg-zinc-800 border border-zinc-700 text-zinc-300 rounded-lg hover:bg-zinc-700 transition-colors font-medium"
                     >
                       View All Reports
                     </button>
@@ -141,11 +140,17 @@ export const ManualValuationFlow: React.FC = () => {
           )}
         </div>
 
-        {/* Right Panel: Live Preview (40% width) */}
-        <div className="h-full flex flex-col bg-gray-50 overflow-y-auto" style={{ width: '40%' }}>
+        {/* Right Panel: Preview (40% width) */}
+        <div className="h-full flex flex-col bg-white overflow-y-auto" style={{ width: '40%' }}>
           {stage === 'form' && (
-            <div className="p-6">
-              <LivePreview />
+            <div className="flex flex-col items-center justify-center h-full p-8 text-center">
+              <div className="w-16 h-16 rounded-full bg-zinc-100 flex items-center justify-center mb-4">
+                <TrendingUp className="w-8 h-8 text-zinc-400" />
+              </div>
+              <h3 className="text-lg font-semibold text-zinc-900 mb-2">Valuation Preview</h3>
+              <p className="text-sm text-zinc-500 max-w-xs">
+                Your valuation report will appear here once you submit the form.
+              </p>
             </div>
           )}
 
