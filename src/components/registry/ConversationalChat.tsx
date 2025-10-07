@@ -35,14 +35,15 @@ export const ConversationalChat: React.FC<ConversationalChatProps> = ({
     {
       id: '1',
       type: 'ai',
-      content: `👋 Welcome! I'll help you value your business in under 30 seconds.
+      content: `👋 Welcome! I'll help you value your business in 1-2 minutes.
 
-Just tell me your **company name** and I'll take care of the rest.
+Just tell me your **company name** to get started.
 
 **How it works:**
 1. You tell me your company name
-2. I find and analyze your financial data
-3. You get a professional valuation report
+2. I search official registries for your company
+3. I'll ask 2-4 quick financial questions
+4. You get your professional valuation report
 
 **Examples:**
 • "Innovate NV"

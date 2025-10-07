@@ -38,7 +38,7 @@ export const ROUTE_META = {
   },
   [ROUTES.INSTANT_VALUATION]: {
     title: 'Instant Valuation - AI-Powered',
-    description: 'Get your business valuation in under 30 seconds',
+    description: 'Get your business valuation in 1-2 minutes with conversational AI',
   },
   [ROUTES.MANUAL_VALUATION]: {
     title: 'Manual Valuation Entry',

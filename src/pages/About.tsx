@@ -68,7 +68,7 @@ export const About: React.FC = () => {
               <div className="p-4 bg-yellow-50 rounded-lg">
                 <h3 className="font-bold text-gray-900 mb-2">✓ Fast & Accurate</h3>
                 <p className="text-sm text-gray-700">
-                  85-95% accuracy target with results in under 30 seconds
+                  85-95% accuracy target with results in 1-2 minutes
                 </p>
               </div>
             </div>

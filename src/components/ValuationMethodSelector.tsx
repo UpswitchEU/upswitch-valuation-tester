@@ -17,11 +17,11 @@ export const ValuationMethodSelector: React.FC<ValuationMethodSelectorProps> = (
       label: '⚡ Instant Valuation',
       title: 'AI-Powered Company Lookup',
       subtitle: 'Fastest & most accurate',
-      description: 'Just enter your company name - our AI finds and analyzes your financials automatically',
+      description: 'Conversational AI guides you through company search and 2-4 quick financial questions',
       benefits: [
-        'Automated financial data retrieval',
-        'Multi-year historical analysis',
-        'Results in under 30 seconds'
+        'AI-powered company search',
+        'Answer 2-4 quick questions',
+        'Results in 1-2 minutes'
       ],
       color: 'primary',
       icon: '⚡',
