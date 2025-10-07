@@ -47,19 +47,19 @@ export const HomePage: React.FC = () => {
       id: 'document',
       icon: Upload,
       title: 'File Upload',
-      description: 'AI-powered document extraction with private infrastructure (launching 2026)',
-      badge: '2026',
-      badgeColor: 'bg-purple-500/20 text-purple-300 border-purple-500/30',
+      description: 'Extract financial data from your documents automatically (PDF, Excel, CSV)',
+      badge: 'Coming soon',
+      badgeColor: 'bg-yellow-500/20 text-yellow-300 border-yellow-500/30',
       features: [
-        'Self-hosted AI (privacy-first)',
         'PDF & Excel support',
-        'Zero external dependencies',
-        'GDPR compliant extraction'
+        'Automatic data extraction',
+        'Review before valuation',
+        '60-70% accuracy (improving)'
       ],
       path: '/upload',
-      bgGradient: 'from-purple-900/10 via-indigo-900/10 to-purple-900/10',
-      borderColor: 'border-purple-600/30 hover:border-purple-500/50',
-      glowColor: 'group-hover:shadow-purple-500/20',
+      bgGradient: 'from-yellow-900/10 via-orange-900/10 to-yellow-900/10',
+      borderColor: 'border-yellow-600/30 hover:border-yellow-500/50',
+      glowColor: 'group-hover:shadow-yellow-500/20',
       disabled: true,
     },
   ];

@@ -90,16 +90,16 @@ export const ValuationForm: React.FC = () => {
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
       {/* Data Quality Tip */}
-      <div className="bg-gradient-to-r from-blue-900/30 to-indigo-900/30 rounded-lg border border-blue-700/50 p-4">
+      <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border border-blue-200 p-4">
         <div className="flex items-start">
           <div className="flex-shrink-0">
-            <svg className="h-5 w-5 text-blue-400 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+            <svg className="h-5 w-5 text-blue-600 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
               <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
             </svg>
           </div>
           <div className="ml-3 flex-1">
-            <h3 className="text-sm font-semibold text-blue-300">💡 Maximize Accuracy</h3>
-            <p className="text-sm text-blue-200 mt-1">
+            <h3 className="text-sm font-semibold text-blue-900">💡 Maximize Accuracy</h3>
+            <p className="text-sm text-blue-700 mt-1">
               More complete data leads to higher valuation accuracy. Add historical years and complete financial details for professional-grade results.
             </p>
           </div>
@@ -108,13 +108,13 @@ export const ValuationForm: React.FC = () => {
 
       {/* Data Quality Indicator */}
       {hasMinimumData && (
-        <div className="bg-zinc-800 rounded-lg border border-zinc-700 p-4">
+        <div className="bg-white rounded-lg border border-gray-200 p-4">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-sm font-semibold text-zinc-300">Data Completeness</span>
+            <span className="text-sm font-semibold text-gray-700">Data Completeness</span>
             <span className={`text-lg font-bold ${
-              dataQuality >= 80 ? 'text-green-400' : 
-              dataQuality >= 60 ? 'text-blue-400' : 
-              dataQuality >= 40 ? 'text-yellow-400' : 'text-red-400'
+              dataQuality >= 80 ? 'text-green-600' : 
+              dataQuality >= 60 ? 'text-blue-600' : 
+              dataQuality >= 40 ? 'text-yellow-600' : 'text-red-600'
             }`}>
               {dataQuality}%
             </span>
@@ -132,7 +132,7 @@ export const ValuationForm: React.FC = () => {
           </div>
           
           {/* Contextual Tips */}
-          <div className="text-xs text-zinc-400 space-y-1">
+          <div className="text-xs text-gray-600 space-y-1">
             {dataQuality < 60 && !formData.historical_years_data?.length && (
               <p className="flex items-start">
                 <span className="text-yellow-500 mr-1.5">⚠️</span>
@@ -168,7 +168,7 @@ export const ValuationForm: React.FC = () => {
       )}
 
       {/* Basic Information */}
-      <div className="bg-zinc-800 rounded-lg border border-zinc-700 p-6">
+      <div className="bg-white rounded-lg border border-gray-200 p-6">
         <h3 className="text-lg font-semibold text-gray-900 mb-4">Basic Information</h3>
         
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -273,7 +273,7 @@ export const ValuationForm: React.FC = () => {
       </div>
 
       {/* Ownership Structure */}
-      <div className="bg-zinc-800 rounded-lg border border-zinc-700 p-6">
+      <div className="bg-white rounded-lg border border-gray-200 p-6">
         <h3 className="text-lg font-semibold text-gray-900 mb-4">Ownership Structure</h3>
         
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -317,7 +317,7 @@ export const ValuationForm: React.FC = () => {
       </div>
 
       {/* Financial Data */}
-      <div className="bg-zinc-800 rounded-lg border border-zinc-700 p-6">
+      <div className="bg-white rounded-lg border border-gray-200 p-6">
         <h3 className="text-lg font-semibold text-gray-900 mb-4">Current Year Financials ({Math.min(new Date().getFullYear(), 2100)})</h3>
         
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -360,7 +360,7 @@ export const ValuationForm: React.FC = () => {
       </div>
 
       {/* Historical Data (3 Years) */}
-      <div className="bg-zinc-800 rounded-lg border border-zinc-700 p-6">
+      <div className="bg-white rounded-lg border border-gray-200 p-6">
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-lg font-semibold text-gray-900">Historical Data (Optional)</h3>
           <span className="text-xs text-gray-500 bg-green-100 px-2 py-1 rounded">+20% Accuracy</span>
