@@ -582,8 +582,7 @@ ${firstQ.question}
               <Bot className="w-5 h-5 text-white" />
             </div>
             <div>
-              <h3 className="text-white font-semibold text-sm">AI Auditor</h3>
-              <p className="text-zinc-400 text-xs">Secure company valuation engine</p>
+              <h3 className="text-white font-semibold text-sm">AI auditor</h3>
             </div>
           </div>
           
