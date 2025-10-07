@@ -1,5 +1,110 @@
 # Changelog - Upswitch Valuation Tester
 
+## [v1.13.0] - 2025-10-06 - Full-Screen Manual Flow 🖥️✨
+
+### 🎯 Major UX Overhaul: Manual Flow Now Matches Instant Flow
+
+**Transformed the `/manual` route to use the same immersive full-screen split-panel layout as `/instant`!**
+
+#### ✨ What Changed
+
+**Before (v1.12.0):**
+- Manual flow used standard layout
+- Header visible
+- Form in a container with max-width
+- Results displayed below form
+- No live preview
+
+**After (v1.13.0):**
+- Full-screen split-panel layout (just like `/instant`)
+- 60/40 split: Form | Live Preview
+- Ilara-style toolbar at top
+- Stage indicators (Input Data → Results)
+- Live preview always visible in right panel
+- Consistent experience across both flows
+
+#### 🎨 Layout Structure
+
+```
+Manual Flow (/manual):
+┌────────────────────────────────────────────────┐
+│ Toolbar: Back | 📝 Manual Input | Stages      │
+├────────────────────────────┬───────────────────┤
+│ Left Panel (60%)           │ Right Panel (40%) │
+│                            │                   │
+│ Form Stage:                │ LivePreview:      │
+│ • ValuationForm           │ • Real-time est.  │
+│ • All input fields        │ • Updates as type │
+│ • Scrollable              │ • Quick multiples │
+│                            │ • Sticky sidebar  │
+│ Results Stage:             │                   │
+│ • Success banner          │ Report Summary:   │
+│ • Full Results display    │ • Checklist       │
+│ • Auto-saved indicator    │ • Quick actions   │
+└────────────────────────────┴───────────────────┘
+```
+
+#### 📁 New Component
+
+**Created:**
+- ✅ `src/components/ManualValuationFlow.tsx` - Full-screen component for manual flow
+
+**Features:**
+- Full-screen layout (h-screen w-screen)
+- Ilara-style toolbar with back button
+- Stage management (form → results)
+- 60/40 split panel
+- Auto-save to reports
+- Success banner with actions
+- Responsive scrolling
+
+#### 🎨 Right Panel Content
+
+**Form Stage:**
+- LivePreview component
+- Real-time valuation estimates
+- Updates with 800ms debounce
+- Shows quick multiples-only calculation
+- Sticky sidebar
+
+**Results Stage:**
+- Report ready indicator
+- Completion checklist (✓ DCF, ✓ Multiples, etc.)
+- Quick actions:
+  - View All Reports
+  - Create New Valuation
+
+#### ✨ Benefits
+
+1. **Consistent Experience**
+   - Manual and Instant flows now identical in layout
+   - Professional full-screen immersion
+   - Familiar navigation patterns
+
+2. **Better Focus**
+   - No header distractions
+   - Full-screen real estate
+   - Edge-to-edge panels
+
+3. **Live Feedback**
+   - Preview always visible
+   - Updates as you type
+   - Instant validation
+
+4. **Professional Appearance**
+   - Matches Ilara AI aesthetic
+   - Clean white/gray design
+   - Modern split-panel layout
+
+#### 📊 Flow Comparison
+
+**Now All Flows:**
+- ✅ `/instant` - Full-screen (Chat | Info)
+- ✅ `/manual` - Full-screen (Form | Preview) **NEW!**
+- 📄 `/document-upload` - Standard layout (only one left)
+
+---
+
 ## [v1.12.0] - 2025-10-06 - Navigation Dropdown + Cleaner Pages 🎯
 
 ### 🎯 Major UX Improvement: Valuation Method Selection Moved to Header
