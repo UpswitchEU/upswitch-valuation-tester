@@ -57,15 +57,20 @@ const CustomNumberInputField: React.FC<CustomNumberInputFieldProps> = ({
     onBlur(e);
   };
 
+  const handlePaste = (_e: React.ClipboardEvent<HTMLInputElement>) => {
+    // Allow paste operations - don't prevent default
+    // The onChange handler will process the pasted content
+  };
+
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    // Allow all Ctrl+key combinations (including paste, copy, cut, select all)
+    if (e.ctrlKey || e.metaKey) {
+      return;
+    }
+    
     // Allow: backspace, delete, tab, escape, enter, decimal point, minus, comma
     if (
       ['Backspace', 'Delete', 'Tab', 'Escape', 'Enter', '.', '-', ','].includes(e.key) ||
-      // Allow: Ctrl+A, Ctrl+C, Ctrl+V, Ctrl+X
-      (e.key === 'a' && e.ctrlKey) ||
-      (e.key === 'c' && e.ctrlKey) ||
-      (e.key === 'v' && e.ctrlKey) ||
-      (e.key === 'x' && e.ctrlKey) ||
       // Allow: home, end, left, right, down, up
       ['Home', 'End', 'ArrowLeft', 'ArrowRight', 'ArrowDown', 'ArrowUp'].includes(e.key)
     ) {
@@ -125,6 +130,7 @@ const CustomNumberInputField: React.FC<CustomNumberInputFieldProps> = ({
           onFocus={handleFocus}
           onBlur={handleBlur}
           onKeyDown={handleKeyDown}
+          onPaste={handlePaste}
           name={name}
           required={required}
           disabled={disabled}
