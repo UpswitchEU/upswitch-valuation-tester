@@ -34,19 +34,22 @@ export const EnhancedConversationalChat: React.FC<EnhancedConversationalChatProp
     {
       id: 'welcome_1',
       type: 'ai',
-      content: `👋 Welcome! I'll help you value your business in under 30 seconds.
+      content: `👋 Welcome! I'll guide you through a quick business valuation.
 
-Just tell me your **company name** and I'll take care of the rest.
+Just tell me your **company name** to get started.
 
 **How it works:**
 1. You tell me your company name
-2. I find and analyze your financial data
-3. You get a professional valuation report
+2. I search for financial data from official registries
+3. If needed, I'll ask you a few quick questions about your financials
+4. You review the data and get your professional valuation report
 
 **Examples:**
-• "Innovate NV"
-• "Acme Trading"
-• "Tech Solutions"
+• "Proximus"
+• "Delhaize"
+• "Acme Trading NV"
+
+**Time:** 1-2 minutes • **Privacy:** Your data stays secure 🔒
 
 Currently supporting Belgian companies. More countries coming soon! 🚀`,
       timestamp: new Date(),
