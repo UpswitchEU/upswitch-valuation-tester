@@ -1,5 +1,36 @@
 # Changelog - Upswitch Valuation Tester
 
+## [v1.14.2] - 2025-10-07 - Minimal Header for Home Page 🎨
+
+### 🎨 UX Improvement: Cleaner Landing Page
+
+**Home page now uses a minimal header with only logo and beta badge - no navigation links.**
+
+#### What Changed
+
+**Before (v1.14.1):**
+- Home page had full navigation header
+- Valuation dropdown, Reports link, Privacy link
+- Visual clutter on landing page
+
+**After (v1.14.2):**
+- Minimal header: logo + title + BETA badge only
+- No navigation links on home page
+- Clean, focused landing experience
+
+#### Files Added/Modified
+- **NEW:** `MinimalHeader.tsx` - Clean header component
+- **MODIFIED:** `HomePage.tsx` - Uses MinimalHeader instead of Header
+
+#### Benefits
+- ✅ Cleaner landing page design
+- ✅ Less visual clutter
+- ✅ Focus on main action (method selection)
+- ✅ Better first impression
+- ✅ Navigation still available on other pages
+
+---
+
 ## [v1.14.1] - 2025-10-07 - Fixed Navigation: Other Methods → Home 🏠
 
 ### 🐛 Bug Fix: Navigation Improvement
