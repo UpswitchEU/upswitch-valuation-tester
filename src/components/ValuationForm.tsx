@@ -91,16 +91,16 @@ export const ValuationForm: React.FC = () => {
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
       {/* Data Quality Tip */}
-      <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border border-blue-200 p-4">
+      <div className="bg-gradient-to-r from-blue-900/30 to-indigo-900/30 rounded-lg border border-blue-700/50 p-4">
         <div className="flex items-start">
           <div className="flex-shrink-0">
-            <svg className="h-5 w-5 text-blue-600 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+            <svg className="h-5 w-5 text-blue-400 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
               <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
             </svg>
           </div>
           <div className="ml-3 flex-1">
-            <h3 className="text-sm font-semibold text-blue-900">💡 Maximize Accuracy</h3>
-            <p className="text-sm text-blue-700 mt-1">
+            <h3 className="text-sm font-semibold text-blue-300">💡 Maximize Accuracy</h3>
+            <p className="text-sm text-blue-200 mt-1">
               More complete data leads to higher valuation accuracy. Add historical years and complete financial details for professional-grade results.
             </p>
           </div>
@@ -109,18 +109,18 @@ export const ValuationForm: React.FC = () => {
 
       {/* Data Quality Indicator */}
       {hasMinimumData && (
-        <div className="bg-white rounded-lg border border-gray-200 p-4">
+        <div className="bg-zinc-800 rounded-lg border border-zinc-700 p-4">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-sm font-semibold text-gray-700">Data Completeness</span>
+            <span className="text-sm font-semibold text-zinc-300">Data Completeness</span>
             <span className={`text-lg font-bold ${
-              dataQuality >= 80 ? 'text-green-600' : 
-              dataQuality >= 60 ? 'text-blue-600' : 
-              dataQuality >= 40 ? 'text-yellow-600' : 'text-red-600'
+              dataQuality >= 80 ? 'text-green-400' : 
+              dataQuality >= 60 ? 'text-blue-400' : 
+              dataQuality >= 40 ? 'text-yellow-400' : 'text-red-400'
             }`}>
               {dataQuality}%
             </span>
           </div>
-          <div className="w-full bg-gray-200 rounded-full h-2.5 mb-3">
+          <div className="w-full bg-zinc-700 rounded-full h-2.5 mb-3">
             <div 
               className={`h-2.5 rounded-full transition-all duration-500 ${
                 dataQuality >= 80 ? 'bg-gradient-to-r from-green-400 to-green-600' : 
@@ -133,34 +133,34 @@ export const ValuationForm: React.FC = () => {
           </div>
           
           {/* Contextual Tips */}
-          <div className="text-xs text-gray-600 space-y-1">
+          <div className="text-xs text-zinc-400 space-y-1">
             {dataQuality < 60 && !formData.historical_years_data?.length && (
               <p className="flex items-start">
-                <span className="text-yellow-500 mr-1.5">⚠️</span>
+                <span className="text-yellow-400 mr-1.5">⚠️</span>
                 <span><strong>Add historical data</strong> (3-5 years) to improve accuracy by up to 20%</span>
               </p>
             )}
             {!formData.current_year_data?.total_assets && dataQuality < 80 && (
               <p className="flex items-start">
-                <span className="text-blue-500 mr-1.5">💡</span>
+                <span className="text-blue-400 mr-1.5">💡</span>
                 <span><strong>Add balance sheet data</strong> (assets, debt, cash) for full DCF analysis</span>
               </p>
             )}
             {!formData.current_year_data?.net_income && dataQuality < 80 && (
               <p className="flex items-start">
-                <span className="text-blue-500 mr-1.5">💡</span>
+                <span className="text-blue-400 mr-1.5">💡</span>
                 <span><strong>Add net income</strong> to enable complete financial metrics</span>
               </p>
             )}
             {dataQuality >= 80 && (
               <p className="flex items-start">
-                <span className="text-green-500 mr-1.5">✅</span>
+                <span className="text-green-400 mr-1.5">✅</span>
                 <span><strong>Excellent data quality!</strong> Ready for professional-grade valuation.</span>
               </p>
             )}
             {dataQuality >= 60 && dataQuality < 80 && (
               <p className="flex items-start">
-                <span className="text-blue-500 mr-1.5">👍</span>
+                <span className="text-blue-400 mr-1.5">👍</span>
                 <span><strong>Good data quality.</strong> Add more historical years for even better results.</span>
               </p>
             )}
@@ -351,22 +351,30 @@ export const ValuationForm: React.FC = () => {
                 />
               </div>
               <div>
-                <label className="block text-xs font-medium text-gray-700 mb-1">Revenue (€)</label>
-                <input
-                  type="number"
-                  min="0"
-                  step="1000"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500"
+                <CustomNumberInputField
+                  label="Revenue (€)"
                   placeholder="Optional"
+                  value=""
+                  onChange={() => {}}
+                  onBlur={() => {}}
+                  name={`historical_revenue_${year}`}
+                  min={0}
+                  step={1000}
+                  prefix="€"
+                  formatAsCurrency
                 />
               </div>
               <div>
-                <label className="block text-xs font-medium text-gray-700 mb-1">EBITDA (€)</label>
-                <input
-                  type="number"
-                  step="1000"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500"
+                <CustomNumberInputField
+                  label="EBITDA (€)"
                   placeholder="Optional"
+                  value=""
+                  onChange={() => {}}
+                  onBlur={() => {}}
+                  name={`historical_ebitda_${year}`}
+                  step={1000}
+                  prefix="€"
+                  formatAsCurrency
                 />
               </div>
             </div>
@@ -378,14 +386,14 @@ export const ValuationForm: React.FC = () => {
       <div className="flex justify-end space-x-4">
         <button
           type="button"
-          className="px-6 py-3 border border-gray-300 rounded-md text-gray-700 font-medium hover:bg-gray-50"
+          className="px-6 py-3 border border-zinc-600 rounded-md text-zinc-300 font-medium hover:bg-zinc-700 transition-colors"
         >
           Reset Form
         </button>
         <button
           type="submit"
           disabled={isCalculating || !formData.revenue || !formData.ebitda || !formData.industry || !formData.country_code}
-          className="px-6 py-3 bg-primary-600 text-white rounded-md font-medium hover:bg-primary-700 disabled:bg-gray-300 disabled:cursor-not-allowed flex items-center space-x-2"
+          className="px-6 py-3 bg-primary-600 text-white rounded-md font-medium hover:bg-primary-700 disabled:bg-zinc-700 disabled:text-zinc-500 disabled:cursor-not-allowed flex items-center space-x-2 transition-colors"
         >
           {isCalculating ? (
             <>
