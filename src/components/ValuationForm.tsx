@@ -342,12 +342,14 @@ export const ValuationForm: React.FC = () => {
           {[2023, 2024].map((year) => (
             <div key={year} className="grid grid-cols-3 gap-4 p-3 bg-zinc-900 border border-zinc-700 rounded">
               <div>
-                <label className="block text-xs font-medium text-zinc-300 mb-1">{year}</label>
-                <input
+                <CustomInputField
+                  label={`${year}`}
                   type="text"
-                  value={year}
-                  disabled
-                  className="w-full px-3 py-2 border border-zinc-700 rounded-md bg-zinc-800 text-zinc-400"
+                  value={year.toString()}
+                  onChange={() => {}}
+                  onBlur={() => {}}
+                  disabled={true}
+                  placeholder=""
                 />
               </div>
               <div>

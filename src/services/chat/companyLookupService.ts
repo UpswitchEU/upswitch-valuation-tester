@@ -116,10 +116,30 @@ export class CompanyLookupService {
       } catch (financialError) {
         console.error(`❌ [${requestId}] Financial data fetch failed:`, financialError);
         
+        // Financial data fetch failed, but we still have the company info
+        // Create a basic company data object with the search result
+        const basicCompanyData: any = {
+          company_id: bestMatch.company_id,
+          company_name: bestMatch.company_name,
+          registration_number: bestMatch.registration_number,
+          country_code: bestMatch.country_code,
+          legal_form: bestMatch.legal_form,
+          address: bestMatch.address,
+          website: bestMatch.website,
+          status: bestMatch.status,
+          filing_history: [], // Empty - no financial data available
+          data_source: 'KBO Registry (no financial data)',
+          completeness_score: 0.3, // Low score since no financials
+        };
+        
+        console.log(`⚠️ [${requestId}] Returning company with no financial data - will trigger conversational input`);
+        
         return {
-          success: false,
-          message: `Found company "${bestMatch.company_name}" but couldn't access financial data. The company may not have filed recent accounts, or data may be temporarily unavailable.`,
-          error: financialError instanceof Error ? financialError.message : 'Unknown error',
+          success: true, // Mark as success so frontend transitions to financial input
+          message: `Found ${bestMatch.company_name}. Let's collect the financial data.`,
+          companyData: basicCompanyData,
+          searchResults: searchResponse,
+          needsFinancialInput: true, // Flag to indicate financial input needed
         };
       }
     } catch (error) {
