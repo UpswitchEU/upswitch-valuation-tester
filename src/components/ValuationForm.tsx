@@ -343,7 +343,7 @@ export const ValuationForm: React.FC = () => {
             <div key={year} className="grid grid-cols-3 gap-4 p-3 bg-zinc-900 border border-zinc-700 rounded">
               <div>
                 <CustomInputField
-                  label={`${year}`}
+                  label="Year"
                   type="text"
                   value={year.toString()}
                   onChange={() => {}}
