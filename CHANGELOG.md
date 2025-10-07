@@ -1,6 +1,36 @@
 # Changelog - Upswitch Valuation Tester
 
-## [v1.14.3] - 2025-10-07 - Beta Disclaimer with Dark Theme Styling 🎨
+## [v1.14.2] - 2025-10-07 - Consolidated Beta Disclaimer 🎨
+
+### 🎨 UX Improvement: Cleaner Home Page Layout
+
+**Consolidated duplicate beta disclaimers into a single, complete disclaimer at the bottom of the home page.**
+
+#### What Changed
+
+**Before (v1.14.1):**
+- Beta disclaimer at top of home page (cluttered hero section)
+- Beta disclaimer at bottom of home page (incomplete, missing privacy link)
+- Duplicate information
+
+**After (v1.14.2):**
+- Removed top beta disclaimer
+- Enhanced bottom beta disclaimer with privacy link
+- Single, complete disclaimer at bottom
+
+#### Files Modified
+- **HomePage.tsx** - Removed duplicate top disclaimer, enhanced bottom disclaimer
+
+#### Benefits
+- ✅ Cleaner hero section
+- ✅ Single, complete beta disclaimer
+- ✅ Better information hierarchy
+- ✅ Privacy link accessible at bottom
+- ✅ No duplicate information
+
+---
+
+## [v1.14.1] - 2025-10-07 - Fixed Navigation: Other Methods → Home 🏠
 
 ### 🎨 UX Improvement: Better Visual Integration
 
