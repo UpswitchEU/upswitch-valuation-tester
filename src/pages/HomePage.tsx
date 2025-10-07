@@ -10,7 +10,7 @@ export const HomePage: React.FC = () => {
     {
       id: 'instant',
       icon: Zap,
-      title: '⚡ Instant Valuation',
+      title: 'Instant Valuation',
       description: 'AI-powered company lookup with automatic data retrieval from official registries',
       badge: 'Recommended',
       badgeColor: 'bg-green-500/20 text-green-300 border-green-500/30',
@@ -28,7 +28,7 @@ export const HomePage: React.FC = () => {
     {
       id: 'manual',
       icon: Edit3,
-      title: '📝 Manual Input',
+      title: 'Manual Input',
       description: 'Full control over your valuation with comprehensive financial data entry',
       badge: null,
       badgeColor: '',
@@ -46,7 +46,7 @@ export const HomePage: React.FC = () => {
     {
       id: 'document',
       icon: Upload,
-      title: '📄 File Upload',
+      title: 'File Upload',
       description: 'Extract financial data from your documents automatically (PDF, Excel, CSV)',
       badge: 'Beta',
       badgeColor: 'bg-yellow-500/20 text-yellow-300 border-yellow-500/30',
