@@ -2,7 +2,7 @@
 // Location: src/shared/components/forms/CustomInputField.tsx
 // Purpose: Reusable input field with smooth animations and validation states
 
-import React, { useState } from 'react';
+import React from 'react';
 
 export interface CustomInputFieldProps {
   label?: string;
@@ -47,20 +47,14 @@ const CustomInputField: React.FC<CustomInputFieldProps> = ({
   autoComplete,
   inputRef,
 }) => {
-  const [isFocused, setIsFocused] = useState(false);
-
   const handleFocus = (e: React.FocusEvent<HTMLInputElement>) => {
-    setIsFocused(true);
     onFocus?.(e);
   };
 
   const handleBlur = (e: React.FocusEvent<HTMLInputElement>) => {
-    setIsFocused(false);
     onBlur(e);
   };
 
-  const hasValue = value.length > 0;
-  const isLabelFloating = isFocused || hasValue;
   const hasError = error && touched;
 
   return (
@@ -105,12 +99,7 @@ const CustomInputField: React.FC<CustomInputFieldProps> = ({
 
         <label
           className={`
-            absolute left-4 transition-all duration-200 ease-in-out pointer-events-none
-            ${
-              isLabelFloating
-                ? 'top-2 text-xs text-gray-600 font-medium'
-                : 'top-5 text-base text-gray-500'
-            }
+            absolute left-4 top-2 text-xs text-gray-600 font-medium pointer-events-none
             ${hasError ? 'text-red-500' : ''}
             ${disabled ? 'text-gray-400' : ''}
           `}

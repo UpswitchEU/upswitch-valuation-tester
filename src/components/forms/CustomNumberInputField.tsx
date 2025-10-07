@@ -2,7 +2,7 @@
 // Location: src/shared/components/forms/CustomNumberInputField.tsx
 // Purpose: Number input with formatting, min/max validation, and consistent styling
 
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 
 export interface CustomNumberInputFieldProps {
   label: string;
@@ -49,20 +49,11 @@ const CustomNumberInputField: React.FC<CustomNumberInputFieldProps> = ({
   allowDecimals = true,
   formatAsCurrency = false,
 }) => {
-  const [isFocused, setIsFocused] = useState(false);
-  const [hasContent, setHasContent] = useState(false);
-
-  useEffect(() => {
-    setHasContent(!!value);
-  }, [value]);
-
   const handleFocus = (e: React.FocusEvent<HTMLInputElement>) => {
-    setIsFocused(true);
     onFocus?.(e);
   };
 
   const handleBlur = (e: React.FocusEvent<HTMLInputElement>) => {
-    setIsFocused(false);
     onBlur(e);
   };
 
@@ -148,12 +139,7 @@ const CustomNumberInputField: React.FC<CustomNumberInputFieldProps> = ({
         )}
         <label
           className={`
-            absolute left-4 transition-all duration-200 pointer-events-none font-medium
-            ${
-              hasContent || isFocused || value
-                ? 'top-2 text-xs text-gray-700'
-                : 'top-1/2 -translate-y-1/2 text-sm text-gray-500'
-            }
+            absolute left-4 top-2 text-xs text-gray-700 pointer-events-none font-medium
             ${hasError ? 'text-red-600' : ''}
             ${prefix ? 'left-8' : ''}
           `}
