@@ -119,7 +119,7 @@ export const ValuationForm: React.FC = () => {
               {dataQuality}%
             </span>
           </div>
-          <div className="w-full bg-gray-200 rounded-full h-2.5 mb-3">
+          <div className="w-full bg-zinc-700 rounded-full h-2.5 mb-3">
             <div 
               className={`h-2.5 rounded-full transition-all duration-500 ${
                 dataQuality >= 80 ? 'bg-gradient-to-r from-green-400 to-green-600' : 
@@ -132,7 +132,7 @@ export const ValuationForm: React.FC = () => {
           </div>
           
           {/* Contextual Tips */}
-          <div className="text-xs text-zinc-400 space-y-1">
+          <div className="text-xs text-zinc-300 space-y-1">
             {dataQuality < 60 && !formData.historical_years_data?.length && (
               <p className="flex items-start">
                 <span className="text-yellow-500 mr-1.5">⚠️</span>
@@ -169,19 +169,19 @@ export const ValuationForm: React.FC = () => {
 
       {/* Basic Information */}
       <div className="bg-zinc-800 rounded-lg border border-zinc-700 p-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Basic Information</h3>
+        <h3 className="text-lg font-semibold text-white mb-4">Basic Information</h3>
         
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {/* Company Name */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-zinc-300 mb-1">
               Company Name <span className="text-red-500">*</span>
             </label>
             <input
               type="text"
               value={formData.company_name || ''}
               onChange={(e) => updateFormData({ company_name: e.target.value })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+              className="w-full px-3 py-2 border border-zinc-600 rounded-md bg-zinc-900 text-white focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
               placeholder="e.g., Acme GmbH"
               required
             />
@@ -189,13 +189,13 @@ export const ValuationForm: React.FC = () => {
 
           {/* Industry */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-zinc-300 mb-1">
               Industry <span className="text-red-500">*</span>
             </label>
             <select
               value={formData.industry || ''}
               onChange={(e) => updateFormData({ industry: e.target.value })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+              className="w-full px-3 py-2 border border-zinc-600 rounded-md bg-zinc-900 text-white focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
               required
             >
               <option value="">Select industry...</option>
@@ -214,13 +214,13 @@ export const ValuationForm: React.FC = () => {
 
           {/* Business Model */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-zinc-300 mb-1">
               Business Model <span className="text-red-500">*</span>
             </label>
             <select
               value={formData.business_model || 'other'}
               onChange={(e) => updateFormData({ business_model: e.target.value })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+              className="w-full px-3 py-2 border border-zinc-600 rounded-md bg-zinc-900 text-white focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
               required
             >
               <option value={BusinessModel.B2B_SAAS}>B2B SaaS</option>
@@ -235,7 +235,7 @@ export const ValuationForm: React.FC = () => {
 
           {/* Founding Year */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-zinc-300 mb-1">
               Founding Year <span className="text-red-500">*</span>
             </label>
             <input
@@ -244,7 +244,7 @@ export const ValuationForm: React.FC = () => {
               max={new Date().getFullYear()}
               value={formData.founding_year || new Date().getFullYear() - 5}
               onChange={(e) => updateFormData({ founding_year: parseInt(e.target.value) })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+              className="w-full px-3 py-2 border border-zinc-600 rounded-md bg-zinc-900 text-white focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
               placeholder="e.g., 2018"
               required
             />
@@ -252,13 +252,13 @@ export const ValuationForm: React.FC = () => {
 
           {/* Country */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-zinc-300 mb-1">
               Country <span className="text-red-500">*</span>
             </label>
             <select
               value={formData.country_code || ''}
               onChange={(e) => updateFormData({ country_code: e.target.value })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+              className="w-full px-3 py-2 border border-zinc-600 rounded-md bg-zinc-900 text-white focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
               required
             >
               <option value="">Select country...</option>
@@ -274,18 +274,18 @@ export const ValuationForm: React.FC = () => {
 
       {/* Ownership Structure */}
       <div className="bg-zinc-800 rounded-lg border border-zinc-700 p-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Ownership Structure</h3>
+        <h3 className="text-lg font-semibold text-white mb-4">Ownership Structure</h3>
         
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {/* Business Type */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-zinc-300 mb-1">
               Business Structure
             </label>
             <select
               value={formData.business_type || 'company'}
               onChange={(e) => updateFormData({ business_type: e.target.value as 'sole-trader' | 'company' })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+              className="w-full px-3 py-2 border border-zinc-600 rounded-md bg-zinc-900 text-white focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
             >
               <option value="sole-trader">Sole Trader (100% owned)</option>
               <option value="company">Company (with shareholders)</option>
@@ -295,7 +295,7 @@ export const ValuationForm: React.FC = () => {
           {/* Shares for Sale */}
           {formData.business_type === 'company' && (
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-zinc-300 mb-1">
                 % Shares for Sale
               </label>
               <input
@@ -305,10 +305,10 @@ export const ValuationForm: React.FC = () => {
                 step="0.1"
                 value={formData.shares_for_sale || 100}
                 onChange={(e) => updateFormData({ shares_for_sale: parseFloat(e.target.value) })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                className="w-full px-3 py-2 border border-zinc-600 rounded-md bg-zinc-900 text-white focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
                 placeholder="e.g., 50"
               />
-              <p className="mt-1 text-xs text-gray-500">
+              <p className="mt-1 text-xs text-zinc-300">
                 Enter the percentage of the company you're selling (0-100%)
               </p>
             </div>
@@ -318,12 +318,12 @@ export const ValuationForm: React.FC = () => {
 
       {/* Financial Data */}
       <div className="bg-zinc-800 rounded-lg border border-zinc-700 p-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Current Year Financials ({Math.min(new Date().getFullYear(), 2100)})</h3>
+        <h3 className="text-lg font-semibold text-white mb-4">Current Year Financials ({Math.min(new Date().getFullYear(), 2100)})</h3>
         
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {/* Revenue */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-zinc-300 mb-1">
               Revenue (€) <span className="text-red-500">*</span>
             </label>
             <input
@@ -332,7 +332,7 @@ export const ValuationForm: React.FC = () => {
               step="1000"
               value={formData.revenue || ''}
               onChange={(e) => updateFormData({ revenue: parseFloat(e.target.value) || undefined })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+              className="w-full px-3 py-2 border border-zinc-600 rounded-md bg-zinc-900 text-white focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
               placeholder="e.g., 2500000"
               required
             />
@@ -340,7 +340,7 @@ export const ValuationForm: React.FC = () => {
 
           {/* EBITDA */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-zinc-300 mb-1">
               EBITDA (€) <span className="text-red-500">*</span>
             </label>
             <input
@@ -348,11 +348,11 @@ export const ValuationForm: React.FC = () => {
               step="1000"
               value={formData.ebitda || ''}
               onChange={(e) => updateFormData({ ebitda: parseFloat(e.target.value) || undefined })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+              className="w-full px-3 py-2 border border-zinc-600 rounded-md bg-zinc-900 text-white focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
               placeholder="e.g., 500000"
               required
             />
-            <p className="mt-1 text-xs text-gray-500">
+            <p className="mt-1 text-xs text-zinc-400">
               Earnings Before Interest, Taxes, Depreciation & Amortization
             </p>
           </div>
@@ -362,42 +362,42 @@ export const ValuationForm: React.FC = () => {
       {/* Historical Data (3 Years) */}
       <div className="bg-zinc-800 rounded-lg border border-zinc-700 p-6">
         <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-semibold text-gray-900">Historical Data (Optional)</h3>
-          <span className="text-xs text-gray-500 bg-green-100 px-2 py-1 rounded">+20% Accuracy</span>
+          <h3 className="text-lg font-semibold text-white">Historical Data (Optional)</h3>
+          <span className="text-xs text-green-300 bg-green-900/30 px-2 py-1 rounded border border-green-700/50">+20% Accuracy</span>
         </div>
         
-        <p className="text-sm text-gray-600 mb-4">
+        <p className="text-sm text-zinc-300 mb-4">
           Adding 3 years of historical data enables growth rate calculation and improves valuation accuracy
         </p>
 
         <div className="space-y-3">
           {[2023, 2024].map((year) => (
-            <div key={year} className="grid grid-cols-3 gap-4 p-3 bg-gray-50 rounded">
+            <div key={year} className="grid grid-cols-3 gap-4 p-3 bg-zinc-900 border border-zinc-700 rounded">
               <div>
-                <label className="block text-xs font-medium text-gray-700 mb-1">{year}</label>
+                <label className="block text-xs font-medium text-zinc-300 mb-1">{year}</label>
                 <input
                   type="text"
                   value={year}
                   disabled
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-100 text-gray-600"
+                  className="w-full px-3 py-2 border border-zinc-600 rounded-md bg-zinc-900 text-zinc-400"
                 />
               </div>
               <div>
-                <label className="block text-xs font-medium text-gray-700 mb-1">Revenue (€)</label>
+                <label className="block text-xs font-medium text-zinc-300 mb-1">Revenue (€)</label>
                 <input
                   type="number"
                   min="0"
                   step="1000"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500"
+                  className="w-full px-3 py-2 border border-zinc-600 rounded-md bg-zinc-900 text-white focus:ring-2 focus:ring-primary-500"
                   placeholder="Optional"
                 />
               </div>
               <div>
-                <label className="block text-xs font-medium text-gray-700 mb-1">EBITDA (€)</label>
+                <label className="block text-xs font-medium text-zinc-300 mb-1">EBITDA (€)</label>
                 <input
                   type="number"
                   step="1000"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500"
+                  className="w-full px-3 py-2 border border-zinc-600 rounded-md bg-zinc-900 text-white focus:ring-2 focus:ring-primary-500"
                   placeholder="Optional"
                 />
               </div>
@@ -410,14 +410,14 @@ export const ValuationForm: React.FC = () => {
       <div className="flex justify-end space-x-4">
         <button
           type="button"
-          className="px-6 py-3 border border-gray-300 rounded-md text-gray-700 font-medium hover:bg-gray-50"
+          className="px-6 py-3 border border-zinc-600 rounded-md text-zinc-300 font-medium hover:bg-zinc-800 bg-zinc-900"
         >
           Reset Form
         </button>
         <button
           type="submit"
           disabled={isCalculating || !formData.revenue || !formData.ebitda || !formData.industry || !formData.country_code}
-          className="px-6 py-3 bg-primary-600 text-white rounded-md font-medium hover:bg-primary-700 disabled:bg-gray-300 disabled:cursor-not-allowed flex items-center space-x-2"
+          className="px-6 py-3 bg-primary-600 text-white rounded-md font-medium hover:bg-primary-700 disabled:bg-zinc-700 disabled:text-zinc-500 disabled:cursor-not-allowed flex items-center space-x-2"
         >
           {isCalculating ? (
             <>
