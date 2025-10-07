@@ -23,15 +23,15 @@ import { API_CONFIG } from '../../config';
 // TYPES
 // ============================================================================
 
-interface CompanyInfo {
-  company_id: string;
-  company_name: string;
-  registration_number: string;
-  legal_form: string;
-  country: string;
-  address?: string;
-  status: string;
-}
+// interface CompanyInfo {
+//   company_id: string;
+//   company_name: string;
+//   registration_number: string;
+//   legal_form: string;
+//   country: string;
+//   address?: string;
+//   status: string;
+// }
 
 interface ChatMessage {
   id: string;
@@ -77,7 +77,7 @@ export const ConversationalFinancialInput: React.FC<ConversationalFinancialInput
   onError
 }) => {
   const [sessionId, setSessionId] = useState<string | null>(null);
-  const [companyInfo, setCompanyInfo] = useState<CompanyInfo | null>(null);
+  // const [companyInfo, setCompanyInfo] = useState<CompanyInfo | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [currentStep, setCurrentStep] = useState<ConversationStep | null>(null);
   const [loading, setLoading] = useState(false);
