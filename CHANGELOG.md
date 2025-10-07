@@ -1,5 +1,37 @@
 # Changelog - Upswitch Valuation Tester
 
+## [v1.14.3] - 2025-10-07 - Beta Disclaimer with Dark Theme Styling 🎨
+
+### 🎨 UX Improvement: Better Visual Integration
+
+**Moved beta disclaimer to home page with dark theme styling for better visual integration.**
+
+#### What Changed
+
+**Before (v1.14.2):**
+- Beta disclaimer in Header component (light theme)
+- `bg-yellow-50 border-l-4 border-yellow-400`
+- `text-yellow-700`
+- Appeared on all pages
+
+**After (v1.14.3):**
+- Beta disclaimer on HomePage only (dark theme)
+- `bg-yellow-500/10 border border-yellow-500/30 rounded-xl`
+- `text-yellow-300` (title), `text-yellow-200/80` (text)
+- Better integration with dark landing page
+
+#### Files Modified
+- **Header.tsx** - Removed beta disclaimer banner
+- **HomePage.tsx** - Added beta disclaimer with dark theme styling
+
+#### Benefits
+- ✅ Better visual integration with dark theme
+- ✅ More prominent on home page
+- ✅ Cleaner header component
+- ✅ Consistent with landing page design
+
+---
+
 ## [v1.14.2] - 2025-10-07 - Minimal Header for Home Page 🎨
 
 ### 🎨 UX Improvement: Cleaner Landing Page
