@@ -1,5 +1,36 @@
 # Changelog - Upswitch Valuation Tester
 
+## [v1.14.1] - 2025-10-07 - Fixed Navigation: Other Methods → Home 🏠
+
+### 🐛 Bug Fix: Navigation Improvement
+
+**Changed "Other Methods" button to navigate to home page instead of toggling between methods.**
+
+#### What Changed
+
+**Before (v1.14.0):**
+- `/instant` → [Other Methods] → `/manual` (toggle)
+- `/manual` → [Other Methods] → `/instant` (toggle)
+- Confusing navigation pattern
+
+**After (v1.14.1):**
+- `/instant` → [Other Methods] → `/` (home)
+- `/manual` → [Other Methods] → `/` (home)
+- Clear navigation to landing page with all 3 options
+
+#### Files Modified
+- `AIAssistedValuation.tsx` - Back button now navigates to `/`
+- `ManualValuationFlow.tsx` - Back button now navigates to `/`
+- `App.tsx` - Removed unused `onModeChange` prop
+
+#### Benefits
+- ✅ Clearer navigation pattern
+- ✅ Users can easily see all 3 method options
+- ✅ Consistent with having a landing page
+- ✅ Better UX (no confusing toggle)
+
+---
+
 ## [v1.14.0] - 2025-10-06 - Dark Landing Page with Method Selection 🎨✨
 
 ### 🎯 New Feature: Professional Landing Page
