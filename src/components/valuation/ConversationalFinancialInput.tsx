@@ -23,15 +23,15 @@ import { API_CONFIG } from '../../config';
 // TYPES
 // ============================================================================
 
-// interface CompanyInfo {
-//   company_id: string;
-//   company_name: string;
-//   registration_number: string;
-//   legal_form: string;
-//   country: string;
-//   address?: string;
-//   status: string;
-// }
+interface CompanyInfo {
+  company_id: string;
+  company_name: string;
+  registration_number: string;
+  legal_form: string;
+  country: string;
+  address?: string;
+  status: string;
+}
 
 interface ChatMessage {
   id: string;
