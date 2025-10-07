@@ -25,7 +25,7 @@ export const MinimalHeader: React.FC = () => {
           {/* App Name - Dark theme typography */}
           <span className="font-display text-lg sm:text-xl font-light text-white leading-none mt-0.5 flex-shrink-0">
             Upswitch
-            <span className="text-zinc-300 font-medium"> Valuation</span>
+            <span className="text-zinc-300 font-light"> Valuation</span>
           </span>
           
           {/* BETA Badge */}
