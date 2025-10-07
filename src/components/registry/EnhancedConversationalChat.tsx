@@ -583,7 +583,7 @@ ${firstQ.question}
             </div>
             <div>
               <h3 className="text-white font-semibold text-sm">AI Auditor</h3>
-              <p className="text-zinc-400 text-xs">Instant company lookup</p>
+              <p className="text-zinc-400 text-xs">Secure company valuation engine</p>
             </div>
           </div>
           

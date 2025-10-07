@@ -149,14 +149,57 @@ export const AIAssistedValuation: React.FC = () => {
 
       {/* Full-screen Split Panel - Ilara Style */}
       <div className="flex flex-1 overflow-hidden mx-4 my-4 rounded-lg border border-zinc-800">
-        {/* Left Panel: Chat/Content (60% width) */}
+        {/* Left Panel: Chat/Financial Input (60% width) - Always visible */}
         <div className="h-full flex flex-col bg-zinc-900 border-r border-zinc-800" style={{ width: '60%' }}>
-          {(stage === 'chat' || stage === 'preview') && (
+          {/* Success Banner when results are ready */}
+          {stage === 'results' && result && (
+            <div className="bg-gradient-to-r from-green-900/30 to-emerald-900/30 border border-green-700/50 rounded-xl p-6 m-6 mb-0">
+              <div className="flex items-start justify-between">
+                <div className="flex items-start gap-4">
+                  <div className="w-12 h-12 bg-green-500/20 rounded-full flex items-center justify-center flex-shrink-0">
+                    <CheckCircle className="w-6 h-6 text-green-400" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-bold text-white mb-1">
+                      Valuation Complete!
+                    </h3>
+                    <p className="text-sm text-zinc-300 mb-3">
+                      Your report is displayed on the right. Scroll below to see the conversation history.
+                    </p>
+                    {reportSaved && (
+                      <div className="flex items-center gap-2 text-sm text-green-400">
+                        <Save className="w-4 h-4" />
+                        <span className="font-medium">Auto-saved to Reports</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+                <div className="flex flex-col gap-2">
+                  <button
+                    onClick={() => navigate(urls.reports())}
+                    className="px-4 py-2 text-sm bg-zinc-800 border border-zinc-700 text-zinc-200 rounded-lg hover:bg-zinc-700 transition-colors font-medium"
+                  >
+                    View All Reports
+                  </button>
+                  <button
+                    onClick={handleStartOver}
+                    className="px-4 py-2 text-sm bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors font-medium"
+                  >
+                    Value Another Company
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Chat - Always visible */}
+          {(stage === 'chat' || stage === 'preview' || stage === 'results') && (
             <div className="flex-1 overflow-y-auto">
               <EnhancedConversationalChat onCompanyFound={handleCompanyFound} />
             </div>
           )}
 
+          {/* Financial Input */}
           {stage === 'financial-input' && selectedCompanyId && (
             <div className="flex-1 overflow-y-auto">
               <ConversationalFinancialInput
@@ -169,57 +212,11 @@ export const AIAssistedValuation: React.FC = () => {
               />
             </div>
           )}
-
-          {stage === 'results' && result && (
-            <div className="flex-1 overflow-y-auto p-6">
-              {/* Success Banner */}
-              <div className="bg-gradient-to-r from-green-900/30 to-emerald-900/30 border border-green-700/50 rounded-xl p-6 mb-6">
-                <div className="flex items-start justify-between">
-                  <div className="flex items-start gap-4">
-                    <div className="w-12 h-12 bg-green-500/20 rounded-full flex items-center justify-center flex-shrink-0">
-                      <CheckCircle className="w-6 h-6 text-green-400" />
-                    </div>
-                    <div>
-                      <h3 className="text-lg font-bold text-white mb-1">
-                        Valuation Complete!
-                      </h3>
-                      <p className="text-sm text-zinc-300 mb-3">
-                        Your business valuation report is ready.
-                      </p>
-                      {reportSaved && (
-                        <div className="flex items-center gap-2 text-sm text-green-400">
-                          <Save className="w-4 h-4" />
-                          <span className="font-medium">Auto-saved to Reports</span>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                  <div className="flex flex-col gap-2">
-                    <button
-                      onClick={() => navigate(urls.reports())}
-                      className="px-4 py-2 text-sm bg-zinc-800 border border-zinc-700 text-zinc-200 rounded-lg hover:bg-zinc-700 transition-colors font-medium"
-                    >
-                      View All Reports
-                    </button>
-                    <button
-                      onClick={handleStartOver}
-                      className="px-4 py-2 text-sm bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors font-medium"
-                    >
-                      Value Another Company
-                    </button>
-                  </div>
-                </div>
-              </div>
-
-              {/* Inline Results Display */}
-              <Results />
-            </div>
-          )}
         </div>
 
-        {/* Right Panel: Preview (40% width) - Like Ilara */}
+        {/* Right Panel: Report Preview (40% width) */}
         <div className="h-full flex flex-col bg-white overflow-y-auto" style={{ width: '40%' }}>
-          {(stage === 'chat' || stage === 'financial-input') && (
+          {(stage === 'chat' || stage === 'financial-input') && !result && (
             <div className="flex flex-col items-center justify-center h-full p-8 text-center">
               <div className="w-16 h-16 rounded-full bg-zinc-100 flex items-center justify-center mb-4">
                 <TrendingUp className="w-8 h-8 text-zinc-400" />
@@ -231,7 +228,7 @@ export const AIAssistedValuation: React.FC = () => {
             </div>
           )}
 
-          {stage === 'preview' && companyData && (
+          {stage === 'preview' && companyData && !result && (
             <div className="flex-1 overflow-y-auto">
               <RegistryDataPreview
                 companyData={companyData}
@@ -240,37 +237,9 @@ export const AIAssistedValuation: React.FC = () => {
             </div>
           )}
 
-          {stage === 'results' && (
-            <div className="p-6 bg-zinc-50">
-              <div className="bg-white rounded-xl border border-zinc-200 p-6 shadow-sm">
-                <div className="flex items-center gap-3 mb-6">
-                  <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center">
-                    <CheckCircle className="w-5 h-5 text-green-600" />
-                  </div>
-                  <div>
-                    <h3 className="text-lg font-bold text-zinc-900">Report Ready</h3>
-                    <p className="text-xs text-zinc-500">Professional valuation complete</p>
-                  </div>
-                </div>
-
-                <div className="space-y-3 text-sm text-zinc-700">
-                  <p className="flex items-center gap-2">
-                    <span className="text-green-600">✓</span> DCF Analysis Complete
-                  </p>
-                  <p className="flex items-center gap-2">
-                    <span className="text-green-600">✓</span> Market Multiples Applied
-                  </p>
-                  <p className="flex items-center gap-2">
-                    <span className="text-green-600">✓</span> Financial Metrics Calculated
-                  </p>
-                  <p className="flex items-center gap-2">
-                    <span className="text-green-600">✓</span> Risk Factors Identified
-                  </p>
-                  <p className="flex items-center gap-2">
-                    <span className="text-green-600">✓</span> Report Auto-saved
-                  </p>
-                </div>
-              </div>
+          {result && (
+            <div className="flex-1 overflow-y-auto p-6">
+              <Results />
             </div>
           )}
         </div>
