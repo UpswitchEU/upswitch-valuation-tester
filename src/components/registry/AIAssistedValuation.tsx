@@ -17,7 +17,7 @@ export const AIAssistedValuation: React.FC = () => {
   const [stage, setStage] = useState<FlowStage>('chat');
   const [companyData, setCompanyData] = useState<CompanyFinancialData | null>(null);
   const [selectedCompanyId, setSelectedCompanyId] = useState<string | null>(null);
-  const [financialSummary, setFinancialSummary] = useState<any | null>(null);
+  // const [financialSummary, setFinancialSummary] = useState<any | null>(null);
   const { calculateValuation, result } = useValuationStore();
   const { addReport } = useReportsStore();
   const [reportSaved, setReportSaved] = useState(false);
@@ -49,8 +49,8 @@ export const AIAssistedValuation: React.FC = () => {
     }
   };
   
-  const handleFinancialInputComplete = (summary: any, valuationId?: string) => {
-    setFinancialSummary(summary);
+  const handleFinancialInputComplete = (summary: any, _valuationId?: string) => {
+    // setFinancialSummary(summary);
     // Convert summary to CompanyFinancialData format for preview
     if (companyData) {
       const updatedCompanyData: CompanyFinancialData = {
@@ -64,7 +64,7 @@ export const AIAssistedValuation: React.FC = () => {
           total_debt: summary.total_debt,
           cash: summary.cash,
           filing_date: new Date().toISOString().split('T')[0],
-          source_url: null
+          source_url: undefined
         }]
       };
       setCompanyData(updatedCompanyData);
@@ -237,7 +237,7 @@ export const AIAssistedValuation: React.FC = () => {
 
         {/* Right Panel: Preview (40% width) - Like Ilara */}
         <div className="h-full flex flex-col bg-white overflow-y-auto" style={{ width: '40%' }}>
-          {stage === 'chat' && (
+          {(stage === 'chat' || stage === 'financial-input') && (
             <div className="flex flex-col items-center justify-center h-full p-8 text-center">
               <div className="w-16 h-16 rounded-full bg-zinc-100 flex items-center justify-center mb-4">
                 <TrendingUp className="w-8 h-8 text-zinc-400" />
@@ -246,27 +246,6 @@ export const AIAssistedValuation: React.FC = () => {
               <p className="text-sm text-zinc-500 max-w-xs">
                 Your valuation report will appear here once the company data is found.
               </p>
-            </div>
-          )}
-
-          {stage === 'financial-input' && companyData && (
-            <div className="flex flex-col items-center justify-center h-full p-8 text-center">
-              <div className="w-16 h-16 rounded-full bg-primary-100 flex items-center justify-center mb-4">
-                <DollarSign className="w-8 h-8 text-primary-600" />
-              </div>
-              <h3 className="text-lg font-semibold text-zinc-900 mb-2">Financial Data Collection</h3>
-              <p className="text-sm text-zinc-500 max-w-xs mb-4">
-                Answer the quick questions on the left to provide your company's financial information.
-              </p>
-              <div className="bg-primary-50 rounded-lg border border-primary-200 p-4 text-left max-w-sm">
-                <div className="flex items-start gap-2">
-                  <CheckCircle className="w-4 h-4 text-primary-600 mt-0.5 flex-shrink-0" />
-                  <div className="text-xs text-primary-900">
-                    <p className="font-medium mb-1">🔒 Privacy-First</p>
-                    <p>Your financial data is encrypted and stored securely on our servers. It is NEVER shared with external AI services.</p>
-                  </div>
-                </div>
-              </div>
             </div>
           )}
 
