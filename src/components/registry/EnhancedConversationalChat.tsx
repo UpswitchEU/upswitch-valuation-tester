@@ -76,8 +76,8 @@ Currently supporting Belgian companies. More countries coming soon! 🚀`,
 
   /**
    * Health monitoring
-   * Checks backend availability every 30 seconds
-   * Adapted from Ilara's proactive health monitoring
+   * Check backend availability on initial load only
+   * Additional checks happen on-demand when errors occur
    */
   useEffect(() => {
     const checkHealth = async () => {
@@ -85,13 +85,11 @@ Currently supporting Belgian companies. More countries coming soon! 🚀`,
       setHealthStatus(health);
     };
     
-    // Initial check
+    // Single check on mount
     checkHealth();
     
-    // Periodic checks
-    const interval = setInterval(checkHealth, 30000); // Every 30s
-    
-    return () => clearInterval(interval);
+    // No continuous polling - reduces server load
+    // Health will be re-checked on errors if needed
   }, [lookupService]);
 
   /**
@@ -192,6 +190,10 @@ Would you like to calculate your business valuation now?`,
       // Remove all loading messages
       setMessages(prev => prev.filter(msg => !msg.isLoading));
       
+      // Check backend health on error for accurate status
+      const currentHealth = await lookupService.checkHealth();
+      setHealthStatus(currentHealth);
+      
       // Show error message with recovery suggestions
       const errorMessage: ChatMessage = {
         id: `error_${Date.now()}`,
@@ -203,7 +205,7 @@ Would you like to calculate your business valuation now?`,
 2. ⏳ Wait a moment and try again
 3. 📝 Enter your data manually (fallback option)
 
-**Backend status:** ${healthStatus?.available ? '🟢 Connected' : '🔴 Offline'}`,
+**Backend status:** ${currentHealth?.available ? '🟢 Connected' : '🔴 Offline'}`,
         timestamp: new Date(),
       };
       
