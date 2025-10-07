@@ -1,7 +1,7 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Zap, Edit3, Upload, ArrowRight, TrendingUp, Shield, Clock } from 'lucide-react';
-import { Header } from '../components/Header';
+import { MinimalHeader } from '../components/MinimalHeader';
 
 export const HomePage: React.FC = () => {
   const navigate = useNavigate();
@@ -65,7 +65,7 @@ export const HomePage: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-zinc-950 via-zinc-900 to-zinc-950">
-      <Header />
+      <MinimalHeader />
 
       {/* Hero Section */}
       <div className="container mx-auto px-4 py-16 max-w-7xl">
