@@ -33,7 +33,7 @@ export const Header: React.FC = () => {
   const getCurrentMethod = () => {
     if (location.pathname === '/' || location.pathname === '/instant') return 'instant';
     if (location.pathname === '/manual') return 'manual';
-    if (location.pathname === '/document-upload') return 'document';
+    if (location.pathname === '/upload') return 'document';
     return 'instant';
   };
 
@@ -42,7 +42,7 @@ export const Header: React.FC = () => {
   const valuationMethods = [
     { id: 'instant', label: '⚡ Instant Valuation', badge: 'Recommended', path: '/instant' },
     { id: 'manual', label: '📝 Manual Input', badge: null, path: '/manual' },
-    { id: 'document', label: '📄 File Upload', badge: 'Beta', path: '/document-upload' },
+    { id: 'document', label: '📄 File Upload', badge: 'Beta', path: '/upload' },
   ];
 
   return (

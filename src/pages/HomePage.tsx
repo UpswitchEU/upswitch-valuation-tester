@@ -48,7 +48,7 @@ export const HomePage: React.FC = () => {
       icon: Upload,
       title: 'File Upload',
       description: 'Extract financial data from your documents automatically (PDF, Excel, CSV)',
-      badge: 'Under construction',
+      badge: 'Beta',
       badgeColor: 'bg-yellow-500/20 text-yellow-300 border-yellow-500/30',
       features: [
         'PDF & Excel support',
@@ -56,7 +56,7 @@ export const HomePage: React.FC = () => {
         'Review before valuation',
         '60-70% accuracy (improving)'
       ],
-      path: '/document-upload',
+      path: '/upload',
       bgGradient: 'from-yellow-900/10 via-orange-900/10 to-yellow-900/10',
       borderColor: 'border-yellow-600/30 hover:border-yellow-500/50',
       glowColor: 'group-hover:shadow-yellow-500/20',
