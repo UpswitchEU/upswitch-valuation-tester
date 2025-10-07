@@ -4,6 +4,7 @@ import { useReportsStore } from '../store/useReportsStore';
 import { debounce } from '../utils/debounce';
 import { TARGET_COUNTRIES } from '../config/countries';
 import { IndustryCode, BusinessModel } from '../types/valuation';
+import { CustomInputField, CustomNumberInputField, CustomDropdown } from './forms';
 
 /**
  * ValuationForm Component
@@ -168,191 +169,158 @@ export const ValuationForm: React.FC = () => {
       )}
 
       {/* Basic Information */}
-      <div className="bg-white rounded-lg border border-gray-200 p-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Basic Information</h3>
+      <div className="bg-zinc-800 rounded-lg border border-zinc-700 p-6">
+        <h3 className="text-lg font-semibold text-white mb-4">Basic Information</h3>
         
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {/* Company Name */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Company Name <span className="text-red-500">*</span>
-            </label>
-            <input
-              type="text"
-              value={formData.company_name || ''}
-              onChange={(e) => updateFormData({ company_name: e.target.value })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-              placeholder="e.g., Acme GmbH"
-              required
-            />
-          </div>
+          <CustomInputField
+            label="Company Name"
+            type="text"
+            value={formData.company_name || ''}
+            onChange={(e) => updateFormData({ company_name: e.target.value })}
+            onBlur={() => {}}
+            placeholder="e.g., Acme GmbH"
+            required
+          />
 
           {/* Industry */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Industry <span className="text-red-500">*</span>
-            </label>
-            <select
-              value={formData.industry || ''}
-              onChange={(e) => updateFormData({ industry: e.target.value })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-              required
-            >
-              <option value="">Select industry...</option>
-              <option value={IndustryCode.TECHNOLOGY}>Technology</option>
-              <option value={IndustryCode.MANUFACTURING}>Manufacturing</option>
-              <option value={IndustryCode.RETAIL}>Retail</option>
-              <option value={IndustryCode.SERVICES}>Services</option>
-              <option value={IndustryCode.HEALTHCARE}>Healthcare</option>
-              <option value={IndustryCode.FINANCE}>Finance</option>
-              <option value={IndustryCode.REAL_ESTATE}>Real Estate</option>
-              <option value={IndustryCode.HOSPITALITY}>Hospitality</option>
-              <option value={IndustryCode.CONSTRUCTION}>Construction</option>
-              <option value={IndustryCode.OTHER}>Other</option>
-            </select>
-          </div>
+          <CustomDropdown
+            label="Industry"
+            placeholder="Select industry..."
+            options={[
+              { value: IndustryCode.TECHNOLOGY, label: 'Technology' },
+              { value: IndustryCode.MANUFACTURING, label: 'Manufacturing' },
+              { value: IndustryCode.RETAIL, label: 'Retail' },
+              { value: IndustryCode.SERVICES, label: 'Services' },
+              { value: IndustryCode.HEALTHCARE, label: 'Healthcare' },
+              { value: IndustryCode.FINANCE, label: 'Finance' },
+              { value: IndustryCode.REAL_ESTATE, label: 'Real Estate' },
+              { value: IndustryCode.HOSPITALITY, label: 'Hospitality' },
+              { value: IndustryCode.CONSTRUCTION, label: 'Construction' },
+              { value: IndustryCode.OTHER, label: 'Other' },
+            ]}
+            value={formData.industry || ''}
+            onChange={(value) => updateFormData({ industry: value })}
+            required
+          />
 
           {/* Business Model */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Business Model <span className="text-red-500">*</span>
-            </label>
-            <select
-              value={formData.business_model || 'other'}
-              onChange={(e) => updateFormData({ business_model: e.target.value })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-              required
-            >
-              <option value={BusinessModel.B2B_SAAS}>B2B SaaS</option>
-              <option value={BusinessModel.B2C}>B2C</option>
-              <option value={BusinessModel.MARKETPLACE}>Marketplace</option>
-              <option value={BusinessModel.ECOMMERCE}>E-commerce</option>
-              <option value={BusinessModel.MANUFACTURING}>Manufacturing</option>
-              <option value={BusinessModel.SERVICES}>Services</option>
-              <option value={BusinessModel.OTHER}>Other</option>
-            </select>
-          </div>
+          <CustomDropdown
+            label="Business Model"
+            placeholder="Select business model..."
+            options={[
+              { value: BusinessModel.B2B_SAAS, label: 'B2B SaaS' },
+              { value: BusinessModel.B2C, label: 'B2C' },
+              { value: BusinessModel.MARKETPLACE, label: 'Marketplace' },
+              { value: BusinessModel.ECOMMERCE, label: 'E-commerce' },
+              { value: BusinessModel.MANUFACTURING, label: 'Manufacturing' },
+              { value: BusinessModel.SERVICES, label: 'Services' },
+              { value: BusinessModel.OTHER, label: 'Other' },
+            ]}
+            value={formData.business_model || 'other'}
+            onChange={(value) => updateFormData({ business_model: value })}
+            required
+          />
 
           {/* Founding Year */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Founding Year <span className="text-red-500">*</span>
-            </label>
-            <input
-              type="number"
-              min="1900"
-              max={new Date().getFullYear()}
-              value={formData.founding_year || new Date().getFullYear() - 5}
-              onChange={(e) => updateFormData({ founding_year: parseInt(e.target.value) })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-              placeholder="e.g., 2018"
-              required
-            />
-          </div>
+          <CustomNumberInputField
+            label="Founding Year"
+            placeholder="e.g., 2018"
+            value={formData.founding_year || new Date().getFullYear() - 5}
+            onChange={(e) => updateFormData({ founding_year: parseInt(e.target.value) || new Date().getFullYear() - 5 })}
+            onBlur={() => {}}
+            name="founding_year"
+            min={1900}
+            max={new Date().getFullYear()}
+            required
+          />
 
           {/* Country */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Country <span className="text-red-500">*</span>
-            </label>
-            <select
-              value={formData.country_code || ''}
-              onChange={(e) => updateFormData({ country_code: e.target.value })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-              required
-            >
-              <option value="">Select country...</option>
-              {TARGET_COUNTRIES.map((country) => (
-                <option key={country.code} value={country.code}>
-                  {country.flag} {country.name} ({country.currencySymbol})
-                </option>
-              ))}
-            </select>
-          </div>
+          <CustomDropdown
+            label="Country"
+            placeholder="Select country..."
+            options={TARGET_COUNTRIES.map((country) => ({
+              value: country.code,
+              label: `${country.flag} ${country.name} (${country.currencySymbol})`,
+            }))}
+            value={formData.country_code || ''}
+            onChange={(value) => updateFormData({ country_code: value })}
+            required
+          />
         </div>
       </div>
 
       {/* Ownership Structure */}
-      <div className="bg-white rounded-lg border border-gray-200 p-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Ownership Structure</h3>
+      <div className="bg-zinc-800 rounded-lg border border-zinc-700 p-6">
+        <h3 className="text-lg font-semibold text-white mb-4">Ownership Structure</h3>
         
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {/* Business Type */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Business Structure
-            </label>
-            <select
-              value={formData.business_type || 'company'}
-              onChange={(e) => updateFormData({ business_type: e.target.value as 'sole-trader' | 'company' })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-            >
-              <option value="sole-trader">Sole Trader (100% owned)</option>
-              <option value="company">Company (with shareholders)</option>
-            </select>
-          </div>
+          <CustomDropdown
+            label="Business Structure"
+            placeholder="Select structure..."
+            options={[
+              { value: 'sole-trader', label: 'Sole Trader (100% owned)' },
+              { value: 'company', label: 'Company (with shareholders)' },
+            ]}
+            value={formData.business_type || 'company'}
+            onChange={(value) => updateFormData({ business_type: value as 'sole-trader' | 'company' })}
+          />
 
           {/* Shares for Sale */}
           {formData.business_type === 'company' && (
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                % Shares for Sale
-              </label>
-              <input
-                type="number"
-                min="0"
-                max="100"
-                step="0.1"
-                value={formData.shares_for_sale || 100}
-                onChange={(e) => updateFormData({ shares_for_sale: parseFloat(e.target.value) })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-                placeholder="e.g., 50"
-              />
-              <p className="mt-1 text-xs text-gray-500">
-                Enter the percentage of the company you're selling (0-100%)
-              </p>
-            </div>
+            <CustomNumberInputField
+              label="% Shares for Sale"
+              placeholder="e.g., 50"
+              value={formData.shares_for_sale || 100}
+              onChange={(e) => updateFormData({ shares_for_sale: parseFloat(e.target.value) || 100 })}
+              onBlur={() => {}}
+              name="shares_for_sale"
+              min={0}
+              max={100}
+              step={0.1}
+              suffix="%"
+            />
           )}
         </div>
       </div>
 
       {/* Financial Data */}
-      <div className="bg-white rounded-lg border border-gray-200 p-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Current Year Financials ({Math.min(new Date().getFullYear(), 2100)})</h3>
+      <div className="bg-zinc-800 rounded-lg border border-zinc-700 p-6">
+        <h3 className="text-lg font-semibold text-white mb-4">Current Year Financials ({Math.min(new Date().getFullYear(), 2100)})</h3>
         
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {/* Revenue */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Revenue (€) <span className="text-red-500">*</span>
-            </label>
-            <input
-              type="number"
-              min="0"
-              step="1000"
-              value={formData.revenue || ''}
-              onChange={(e) => updateFormData({ revenue: parseFloat(e.target.value) || undefined })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-              placeholder="e.g., 2500000"
-              required
-            />
-          </div>
+          <CustomNumberInputField
+            label="Revenue"
+            placeholder="e.g., 2,500,000"
+            value={formData.revenue || ''}
+            onChange={(e) => updateFormData({ revenue: parseFloat(e.target.value.replace(/,/g, '')) || undefined })}
+            onBlur={() => {}}
+            name="revenue"
+            min={0}
+            step={1000}
+            prefix="€"
+            formatAsCurrency
+            required
+          />
 
           {/* EBITDA */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              EBITDA (€) <span className="text-red-500">*</span>
-            </label>
-            <input
-              type="number"
-              step="1000"
+            <CustomNumberInputField
+              label="EBITDA"
+              placeholder="e.g., 500,000"
               value={formData.ebitda || ''}
-              onChange={(e) => updateFormData({ ebitda: parseFloat(e.target.value) || undefined })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-              placeholder="e.g., 500000"
+              onChange={(e) => updateFormData({ ebitda: parseFloat(e.target.value.replace(/,/g, '')) || undefined })}
+              onBlur={() => {}}
+              name="ebitda"
+              step={1000}
+              prefix="€"
+              formatAsCurrency
               required
             />
-            <p className="mt-1 text-xs text-gray-500">
+            <p className="mt-1 text-xs text-zinc-400">
               Earnings Before Interest, Taxes, Depreciation & Amortization
             </p>
           </div>
@@ -360,26 +328,26 @@ export const ValuationForm: React.FC = () => {
       </div>
 
       {/* Historical Data (3 Years) */}
-      <div className="bg-white rounded-lg border border-gray-200 p-6">
+      <div className="bg-zinc-800 rounded-lg border border-zinc-700 p-6">
         <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-semibold text-gray-900">Historical Data (Optional)</h3>
-          <span className="text-xs text-gray-500 bg-green-100 px-2 py-1 rounded">+20% Accuracy</span>
+          <h3 className="text-lg font-semibold text-white">Historical Data (Optional)</h3>
+          <span className="text-xs text-green-400 bg-green-900/30 px-2 py-1 rounded border border-green-700/50">+20% Accuracy</span>
         </div>
         
-        <p className="text-sm text-gray-600 mb-4">
+        <p className="text-sm text-zinc-300 mb-4">
           Adding 3 years of historical data enables growth rate calculation and improves valuation accuracy
         </p>
 
         <div className="space-y-3">
           {[2023, 2024].map((year) => (
-            <div key={year} className="grid grid-cols-3 gap-4 p-3 bg-gray-50 rounded">
+            <div key={year} className="grid grid-cols-3 gap-4 p-3 bg-zinc-900 border border-zinc-700 rounded">
               <div>
-                <label className="block text-xs font-medium text-gray-700 mb-1">{year}</label>
+                <label className="block text-xs font-medium text-zinc-300 mb-1">{year}</label>
                 <input
                   type="text"
                   value={year}
                   disabled
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-100 text-gray-600"
+                  className="w-full px-3 py-2 border border-zinc-700 rounded-md bg-zinc-800 text-zinc-400"
                 />
               </div>
               <div>
