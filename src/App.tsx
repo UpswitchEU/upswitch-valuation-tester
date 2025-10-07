@@ -28,7 +28,7 @@ function App() {
   if (viewMode === 'ai-assisted') {
     return (
       <div className="flex h-screen w-screen flex-col overflow-hidden bg-zinc-950">
-        <AIAssistedValuation onModeChange={setViewMode} />
+        <AIAssistedValuation />
       </div>
     );
   }
@@ -37,7 +37,7 @@ function App() {
   if (viewMode === 'manual') {
     return (
       <div className="flex h-screen w-screen flex-col overflow-hidden bg-zinc-950">
-        <ManualValuationFlow onModeChange={setViewMode} />
+        <ManualValuationFlow />
       </div>
     );
   }

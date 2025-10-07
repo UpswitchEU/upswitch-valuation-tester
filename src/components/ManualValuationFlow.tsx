@@ -9,13 +9,8 @@ import { useReportsStore } from '../store/useReportsStore';
 import { urls } from '../router';
 
 type FlowStage = 'form' | 'results';
-type ViewMode = 'ai-assisted' | 'manual' | 'document-upload';
 
-interface ManualValuationFlowProps {
-  onModeChange?: (mode: ViewMode) => void;
-}
-
-export const ManualValuationFlow: React.FC<ManualValuationFlowProps> = ({ onModeChange }) => {
+export const ManualValuationFlow: React.FC = () => {
   const navigate = useNavigate();
   const [stage, setStage] = useState<FlowStage>('form');
   const { result, formData } = useValuationStore();
@@ -54,7 +49,7 @@ export const ManualValuationFlow: React.FC<ManualValuationFlowProps> = ({ onMode
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
             <button
-              onClick={() => onModeChange?.('ai-assisted')}
+              onClick={() => navigate('/')}
               className="flex items-center gap-2 px-3 py-2 text-sm text-zinc-400 hover:text-white transition-colors rounded-lg hover:bg-zinc-800"
             >
               <ArrowLeft className="w-4 h-4" />

@@ -10,13 +10,8 @@ import { useReportsStore } from '../../store/useReportsStore';
 import { urls } from '../../router';
 
 type FlowStage = 'chat' | 'preview' | 'results';
-type ViewMode = 'ai-assisted' | 'manual' | 'document-upload';
 
-interface AIAssistedValuationProps {
-  onModeChange?: (mode: ViewMode) => void;
-}
-
-export const AIAssistedValuation: React.FC<AIAssistedValuationProps> = ({ onModeChange }) => {
+export const AIAssistedValuation: React.FC = () => {
   const navigate = useNavigate();
   const [stage, setStage] = useState<FlowStage>('chat');
   const [companyData, setCompanyData] = useState<CompanyFinancialData | null>(null);
@@ -72,7 +67,7 @@ export const AIAssistedValuation: React.FC<AIAssistedValuationProps> = ({ onMode
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
             <button
-              onClick={() => onModeChange?.('manual')}
+              onClick={() => navigate('/')}
               className="flex items-center gap-2 px-3 py-2 text-sm text-zinc-400 hover:text-white transition-colors rounded-lg hover:bg-zinc-800"
             >
               <ArrowLeft className="w-4 h-4" />
