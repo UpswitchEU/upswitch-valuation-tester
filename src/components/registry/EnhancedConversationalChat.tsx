@@ -368,6 +368,7 @@ ${firstQ.question}
           type: 'ai',
           content: result.message + `\n\n**Backend status:** ${healthStatus?.available ? '🟢 Connected' : '🔴 Offline'}`,
           timestamp: new Date(),
+          searchResults: result.searchResults, // Include search results for suggestion buttons
         };
         
         addUniqueMessage(errorMessage);
@@ -420,6 +421,157 @@ ${firstQ.question}
     setInputValue(suggestion);
   }, []);
 
+  /**
+   * Send a specific message directly (used for suggestion buttons)
+   */
+  const sendMessage = useCallback(async (messageText: string) => {
+    if (isLoading) return;
+
+    const userMessage: ChatMessage = {
+      id: `user_${Date.now()}`,
+      type: 'user',
+      content: messageText,
+      timestamp: new Date(),
+    };
+
+    // Add user message
+    addUniqueMessage(userMessage);
+
+    // Handle company lookup
+    setIsLoading(true);
+
+    // Add loading message
+    const loadingMessage: ChatMessage = {
+      id: `loading_${Date.now()}`,
+      type: 'ai',
+      content: '',
+      timestamp: new Date(),
+      isLoading: true,
+    };
+    addUniqueMessage(loadingMessage);
+
+    try {
+      // Process company lookup
+      const result = await lookupService.processMessage(messageText, 'BE');
+
+      // Remove loading message
+      setMessages(prev => prev.filter(msg => msg.id !== loadingMessage.id));
+      messageIdsRef.current.delete(loadingMessage.id);
+
+      if (result.success && result.companyData) {
+        // Check if we have financial data or need to collect it
+        const hasFinancialData = result.companyData.filing_history && 
+                                  result.companyData.filing_history.length > 0;
+        
+        if (hasFinancialData) {
+          // Success - company found WITH financial data
+          const latest = result.companyData.filing_history[0];
+          
+          const successMessage: ChatMessage = {
+            id: `success_${Date.now()}`,
+            type: 'ai',
+            content: `✅ **${result.companyData.company_name}**
+Registration: ${result.companyData.registration_number}
+
+**Latest filed accounts (${latest.year}):**
+📊 Revenue: €${(latest.revenue || 0).toLocaleString()}
+💰 EBITDA: €${(latest.ebitda || 0).toLocaleString()}
+🏦 Assets: €${(latest.total_assets || 0).toLocaleString()}
+
+📚 I found **${result.companyData.filing_history.length} years** of financial history
+
+📁 Data source: Official records
+
+---
+
+✅ **Ready for valuation!**
+
+Would you like to calculate your business valuation now?`,
+            timestamp: new Date(),
+            companyData: result.companyData,
+          };
+          
+          addUniqueMessage(successMessage);
+
+          // Notify parent after brief delay to show message
+          setTimeout(() => {
+            onCompanyFound(result.companyData!);
+          }, 1500);
+          
+        } else {
+          // Success - company found WITHOUT financial data (stay in chat, ask questions)
+          setFoundCompany(result.companyData);
+          setCollectingFinancials(true);
+          setCurrentFinancialQuestion(0);
+          
+          const firstQ = financialQuestions[0];
+          const successMessage: ChatMessage = {
+            id: `success_${Date.now()}`,
+            type: 'ai',
+            content: `✅ **Found: ${result.companyData.company_name}**
+Registration: ${result.companyData.registration_number}
+
+📋 No financial data available in public registries, but no problem!
+
+💬 **Let's collect the data together** - I'll ask ${financialQuestions.length} quick questions.
+
+⏱️ Takes under 1 minute • 🔒 Your data stays secure
+
+---
+
+**Question 1 of ${financialQuestions.length}:**
+${firstQ.question}
+
+💡 ${firstQ.helpText}`,
+            timestamp: new Date(),
+          };
+          
+          addUniqueMessage(successMessage);
+        }
+
+      } else {
+        // Error or not found
+        const errorMessage: ChatMessage = {
+          id: `error_${Date.now()}`,
+          type: 'ai',
+          content: result.message + `\n\n**Backend status:** ${healthStatus?.available ? '🟢 Connected' : '🔴 Offline'}`,
+          timestamp: new Date(),
+          searchResults: result.searchResults, // Include search results for suggestion buttons
+        };
+        
+        addUniqueMessage(errorMessage);
+      }
+    } catch (error) {
+      console.error('Message handling error:', error);
+      
+      // Recheck health on error
+      const health = await lookupService.checkHealth();
+      setHealthStatus(health);
+      
+      // Remove all loading messages
+      setMessages(prev => prev.filter(msg => !msg.isLoading));
+      
+      // Show error message with recovery suggestions
+      const errorMessage: ChatMessage = {
+        id: `error_${Date.now()}`,
+        type: 'ai',
+        content: `❌ Sorry, I encountered an unexpected error.
+
+**What you can do:**
+1. ✅ Check your internet connection
+2. ⏳ Wait a moment and try again
+3. 📝 Enter your data manually (fallback option)
+
+**Backend status:** ${health?.available ? '🟢 Connected' : '🔴 Offline'}`,
+        timestamp: new Date(),
+      };
+      
+      addUniqueMessage(errorMessage);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [isLoading, lookupService, addUniqueMessage, healthStatus, onCompanyFound, financialQuestions]);
+
   return (
     <div className="flex h-full flex-col overflow-hidden bg-gradient-to-br from-zinc-900 via-zinc-800 to-zinc-900">
       {/* Header with Health Status - Ilara Style */}
@@ -430,7 +582,7 @@ ${firstQ.question}
               <Bot className="w-5 h-5 text-white" />
             </div>
             <div>
-              <h3 className="text-white font-semibold text-sm">AI Assistant</h3>
+              <h3 className="text-white font-semibold text-sm">AI Auditor</h3>
               <p className="text-zinc-400 text-xs">Instant company lookup</p>
             </div>
           </div>
@@ -470,15 +622,39 @@ ${firstQ.question}
                       <UpswitchLoadingSpinner />
                     </div>
                   ) : (
-                    <div 
-                      className="whitespace-pre-wrap text-sm"
-                      dangerouslySetInnerHTML={{ 
-                        __html: message.content
-                          .replace(/\*\*(.*?)\*\*/g, '<strong class="font-bold">$1</strong>')
-                          .replace(/\n/g, '<br/>')
-                          .replace(/^• /gm, '&nbsp;&nbsp;• ')
-                      }}
-                    />
+                    <>
+                      <div 
+                        className="whitespace-pre-wrap text-sm"
+                        dangerouslySetInnerHTML={{ 
+                          __html: message.content
+                            .replace(/\*\*(.*?)\*\*/g, '<strong class="font-bold">$1</strong>')
+                            .replace(/\n/g, '<br/>')
+                            .replace(/^• /gm, '&nbsp;&nbsp;• ')
+                        }}
+                      />
+                      
+                      {/* Clickable Suggestion Buttons */}
+                      {message.searchResults && message.searchResults.results && message.searchResults.results.length > 0 && (
+                        <div className="mt-4 pt-4 border-t border-zinc-600/30">
+                          <p className="text-xs text-zinc-400 mb-2 font-medium">👆 Click to select:</p>
+                          <div className="flex flex-col gap-2">
+                            {message.searchResults.results.slice(0, 5).map((result, index) => (
+                              <button
+                                key={result.company_id || index}
+                                onClick={() => sendMessage(result.company_name)}
+                                disabled={isLoading}
+                                className="w-full px-3 py-2.5 bg-zinc-800/50 hover:bg-zinc-700/60 border border-zinc-700/50 hover:border-primary-500/50 rounded-lg text-left text-sm text-zinc-200 hover:text-white transition-all duration-200 hover:shadow-md hover:shadow-primary-500/10 hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed"
+                              >
+                                <span className="font-medium">{result.company_name}</span>
+                                {result.registration_number && (
+                                  <span className="text-zinc-400 ml-2">({result.registration_number})</span>
+                                )}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </>
                   )}
                 </div>
                 <div

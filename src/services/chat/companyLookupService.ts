@@ -20,6 +20,7 @@ export interface ChatMessage {
   timestamp: Date;
   isLoading?: boolean;
   companyData?: CompanyFinancialData;
+  searchResults?: CompanySearchResponse;
 }
 
 export interface LookupResult {
@@ -76,6 +77,35 @@ export class CompanyLookupService {
       if (!this.controller.isValidCompanyId(bestMatch.company_id, country)) {
         console.log(`⚠️ [${requestId}] Mock/suggestion result detected - data sources unavailable`);
         
+        // Check if we have suggestions to show (single or multiple)
+        if (searchResponse.results.length > 0) {
+          const suggestionsList = searchResponse.results
+            .slice(0, 5) // Show max 5 suggestions
+            .map((result, index) => `${index + 1}. **${result.company_name}**${result.registration_number ? ` (${result.registration_number})` : ''}`)
+            .join('\n');
+          
+          const header = searchResponse.results.length === 1 
+            ? `I found a possible match for "${message}":`
+            : `I found ${searchResponse.results.length} possible matches for "${message}":`;
+          
+          return {
+            success: false,
+            message: `${header}
+
+${suggestionsList}
+
+**Did you mean ${searchResponse.results.length === 1 ? 'this' : 'one of these'}?**
+Please type the exact name or try:
+• Use the full legal company name
+• Enter the KBO/VAT number
+• Switch to **Manual Input** to enter data yourself
+
+💡 **Tip:** Find official names at [kbopub.economie.fgov.be](https://kbopub.economie.fgov.be)`,
+            searchResults: searchResponse,
+          };
+        }
+        
+        // No suggestions available, show not found message
         return {
           success: false,
           message: `Sorry, I couldn't find **"${message}"** in the official Belgian company registry.

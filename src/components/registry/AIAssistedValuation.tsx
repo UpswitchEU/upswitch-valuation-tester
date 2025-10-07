@@ -112,7 +112,7 @@ export const AIAssistedValuation: React.FC = () => {
             </button>
             <div className="h-6 w-px bg-zinc-700" />
             <div>
-              <h1 className="text-lg font-bold text-white">⚡ Instant Valuation</h1>
+              <h1 className="text-lg font-bold text-white">Instant Valuation</h1>
               <p className="text-xs text-zinc-400">AI-powered company lookup</p>
             </div>
           </div>
