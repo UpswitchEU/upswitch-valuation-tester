@@ -79,7 +79,7 @@ export const RegistryDataPreview: React.FC<RegistryDataPreviewProps> = ({
   };
 
   const handleCalculate = () => {
-    // Ensure data is synced to store
+    // Ensure data is synced to store - SIMPLIFIED to match /manual
     const currentYear = editedData.year || new Date().getFullYear();
     
     // Get industry from inferred data or fallback
@@ -89,9 +89,6 @@ export const RegistryDataPreview: React.FC<RegistryDataPreviewProps> = ({
     
     // Get business model from inferred data or fallback
     const businessModel = (companyData as any)._inferred_business_model || 'other';
-    
-    // Get additional context from conversational input
-    const additionalContext = (companyData as any)._additional_context || {};
     
     // Get founding year from company data or estimate
     const foundingYear = companyData.founding_year || currentYear - 5;
@@ -108,27 +105,15 @@ export const RegistryDataPreview: React.FC<RegistryDataPreviewProps> = ({
         year: currentYear,
         revenue: editedData.revenue || 0,
         ebitda: editedData.ebitda || 0,
-        net_income: editedData.net_income,
-        total_assets: editedData.total_assets,
-        total_debt: editedData.total_debt,
-        cash: editedData.cash,
-        operating_expenses: editedData.operating_expenses,
       },
-      // Add historical data if available (excluding the current year)
+      // Add historical data if available (only revenue & EBITDA like /manual)
       historical_years_data: companyData.filing_history.length > 1 
         ? companyData.filing_history.slice(1).map(year => ({
             year: year.year,
             revenue: year.revenue || 0,
             ebitda: year.ebitda || 0,
-            net_income: year.net_income,
-            total_assets: year.total_assets,
-            total_debt: year.total_debt,
-            cash: year.cash,
           }))
         : undefined,
-      // Add additional context from conversational input
-      number_of_employees: additionalContext.number_of_employees || companyData.employees,
-      recurring_revenue_percentage: additionalContext.recurring_revenue_percentage,
     });
     onCalculateValuation();
   };

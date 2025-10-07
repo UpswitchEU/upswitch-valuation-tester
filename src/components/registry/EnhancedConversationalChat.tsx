@@ -34,19 +34,19 @@ export const EnhancedConversationalChat: React.FC<EnhancedConversationalChatProp
     {
       id: 'welcome_1',
       type: 'ai',
-      content: `👋 Welcome! I'll guide you through a quick business valuation.
+      content: `👋 Welcome! I'll help you value your business in under 2 minutes.
 
 Just tell me your **company name** to get started.
 
 **How it works:**
 1. You tell me your company name
-2. I search for financial data from official registries
-3. If needed, I'll ask you a few quick questions about your financials
-4. You review the data and get your professional valuation report
+2. I search official registries for your company
+3. I'll ask 2-4 quick financial questions
+4. You get your professional valuation report
 
 **Examples:**
 • "Proximus"
-• "Delhaize"
+• "Colruyt"
 • "Acme Trading NV"
 
 **Time:** 1-2 minutes • **Privacy:** Your data stays secure 🔒
@@ -69,26 +69,16 @@ Currently supporting Belgian companies. More countries coming soon! 🚀`,
   const messageIdsRef = useRef(new Set<string>()); // For deduplication
   const lookupService = useRef(new CompanyLookupService()).current;
 
-  // Financial questions (extended for higher accuracy)
+  // Financial questions - SIMPLIFIED to match /manual
+  // Only ask what's actually needed: Revenue & EBITDA (current + optional historical)
   const financialQuestions = [
-    // Current year (required)
-    { field: 'revenue', question: "What's your annual revenue for this year? (in EUR)", helpText: "Your total income for 2023", year: 'current' },
-    { field: 'ebitda', question: "What's your EBITDA for this year? (in EUR)", helpText: "Earnings before interest, taxes, depreciation, and amortization", year: 'current' },
-    { field: 'net_income', question: "What's your net income for this year? (in EUR)", helpText: "Profit after all expenses", year: 'current' },
-    { field: 'total_assets', question: "What are your total assets? (in EUR)", helpText: "Everything your company owns", year: 'current' },
-    { field: 'total_debt', question: "What's your total debt? (in EUR)", helpText: "All outstanding loans and liabilities", year: 'current' },
-    { field: 'cash', question: "How much cash do you have? (in EUR)", helpText: "Cash and cash equivalents", year: 'current' },
+    // Current year (REQUIRED - same as /manual)
+    { field: 'revenue', question: "What's your annual revenue for this year? (in EUR)", helpText: "Your total income before expenses", optional: false },
+    { field: 'ebitda', question: "What's your EBITDA for this year? (in EUR)", helpText: "Earnings Before Interest, Taxes, Depreciation & Amortization", optional: false },
     
-    // Previous year (for growth analysis)
-    { field: 'revenue_y1', question: "What was your revenue LAST year? (in EUR)", helpText: "For 2022 - helps calculate growth rate", year: 'previous' },
-    { field: 'ebitda_y1', question: "What was your EBITDA last year? (in EUR)", helpText: "For 2022 - validates profitability trend", year: 'previous' },
-    
-    // Company context (critical for valuation)
-    { field: 'employees', question: "How many employees do you have?", helpText: "Full-time equivalent count", year: 'current' },
-    { field: 'recurring_revenue', question: "What % of your revenue is recurring?", helpText: "Subscription, retainers, contracts (0-100%)", year: 'current' },
-    
-    // Optional but helpful
-    { field: 'operating_expenses', question: "What are your total operating expenses? (in EUR)", helpText: "COGS + admin + sales costs (optional - press Enter to skip)", year: 'current', optional: true },
+    // Previous year (OPTIONAL - for growth calculation, same as /manual)
+    { field: 'revenue_y1', question: "What was your revenue last year? (in EUR)", helpText: "Optional - helps calculate growth rate (press Enter to skip)", optional: true },
+    { field: 'ebitda_y1', question: "What was your EBITDA last year? (in EUR)", helpText: "Optional - validates profitability trend (press Enter to skip)", optional: true },
   ];
 
   /**
@@ -131,6 +121,7 @@ Currently supporting Belgian companies. More countries coming soon! 🚀`,
 
   /**
    * Complete financial data collection and structure for valuation
+   * SIMPLIFIED to match /manual: only revenue & EBITDA
    */
   const completeFinancialCollection = useCallback((collectedData: any) => {
     setCollectingFinancials(false);
@@ -140,29 +131,17 @@ Currently supporting Belgian companies. More countries coming soon! 🚀`,
     const summaryLines = [
       `🎉 **Perfect! I have all the data.**\n`,
       `**Current Year (${currentYear}):**`,
-      `• Revenue: €${collectedData.revenue?.toLocaleString() || '?'}`,
-      `• EBITDA: €${collectedData.ebitda?.toLocaleString() || '?'}`,
-      `• Net Income: €${collectedData.net_income?.toLocaleString() || '?'}`,
-      `• Total Assets: €${collectedData.total_assets?.toLocaleString() || '?'}`,
-      `• Total Debt: €${collectedData.total_debt?.toLocaleString() || '?'}`,
-      `• Cash: €${collectedData.cash?.toLocaleString() || '?'}`,
+      `• Revenue: €${collectedData.revenue?.toLocaleString()}`,
+      `• EBITDA: €${collectedData.ebitda?.toLocaleString()}`,
     ];
     
+    // Add historical data if provided
     if (collectedData.revenue_y1) {
       summaryLines.push(`\n**Last Year (${currentYear - 1}):**`);
       summaryLines.push(`• Revenue: €${collectedData.revenue_y1?.toLocaleString()}`);
       if (collectedData.ebitda_y1) {
         summaryLines.push(`• EBITDA: €${collectedData.ebitda_y1?.toLocaleString()}`);
       }
-    }
-    
-    if (collectedData.employees) {
-      summaryLines.push(`\n**Company Context:**`);
-      summaryLines.push(`• Employees: ${collectedData.employees}`);
-    }
-    
-    if (collectedData.recurring_revenue !== undefined) {
-      summaryLines.push(`• Recurring Revenue: ${collectedData.recurring_revenue}%`);
     }
     
     summaryLines.push(`\n⚡ Preparing your valuation...`);
@@ -174,25 +153,20 @@ Currently supporting Belgian companies. More countries coming soon! 🚀`,
       timestamp: new Date(),
     });
 
-    // Structure data for valuation engine
+    // Structure data for valuation engine (matches /manual structure)
     if (foundCompany) {
       const filingHistory = [];
       
-      // Current year data
+      // Current year data (only revenue & EBITDA like /manual)
       filingHistory.push({
         year: currentYear,
         revenue: collectedData.revenue,
         ebitda: collectedData.ebitda,
-        net_income: collectedData.net_income,
-        total_assets: collectedData.total_assets,
-        total_debt: collectedData.total_debt,
-        cash: collectedData.cash,
-        operating_expenses: collectedData.operating_expenses,
         filing_date: new Date().toISOString().split('T')[0],
         source_url: undefined
       });
       
-      // Previous year data (if provided)
+      // Previous year data (if provided - optional like /manual)
       if (collectedData.revenue_y1) {
         filingHistory.push({
           year: currentYear - 1,
@@ -206,9 +180,8 @@ Currently supporting Belgian companies. More countries coming soon! 🚀`,
       const updatedCompanyData: CompanyFinancialData = {
         ...foundCompany,
         filing_history: filingHistory,
-        employees: collectedData.employees,
-        // Store additional context for valuation
-        completeness_score: collectedData.revenue_y1 ? 0.85 : 0.65,
+        // Completeness score based on historical data presence
+        completeness_score: collectedData.revenue_y1 ? 0.75 : 0.60,
         data_source: `Conversational input (${filingHistory.length} year${filingHistory.length > 1 ? 's' : ''})`
       };
       
@@ -372,9 +345,9 @@ Registration: ${result.companyData.registration_number}
 
 📋 No financial data available in public registries, but no problem!
 
-💬 **Let's collect the data together** - I'll ask you ${financialQuestions.length} quick questions to get you the most accurate valuation.
+💬 **Let's collect the data together** - I'll ask ${financialQuestions.length} quick questions.
 
-⏱️ Takes 2-3 minutes • 🔒 Your data stays secure • 📊 Investment-grade accuracy
+⏱️ Takes under 1 minute • 🔒 Your data stays secure
 
 ---
 
