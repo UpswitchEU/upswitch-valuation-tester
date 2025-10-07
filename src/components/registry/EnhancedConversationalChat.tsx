@@ -142,13 +142,18 @@ Currently supporting Belgian companies. More countries coming soon! 🚀`,
       messageIdsRef.current.delete(loadingMessage.id);
 
       if (result.success && result.companyData) {
-        // Success - company found with financial data
-        const latest = result.companyData.filing_history[0];
+        // Check if we have financial data or need to collect it
+        const hasFinancialData = result.companyData.filing_history && 
+                                  result.companyData.filing_history.length > 0;
         
-        const successMessage: ChatMessage = {
-          id: `success_${Date.now()}`,
-          type: 'ai',
-          content: `✅ **${result.companyData.company_name}**
+        if (hasFinancialData) {
+          // Success - company found WITH financial data
+          const latest = result.companyData.filing_history[0];
+          
+          const successMessage: ChatMessage = {
+            id: `success_${Date.now()}`,
+            type: 'ai',
+            content: `✅ **${result.companyData.company_name}**
 Registration: ${result.companyData.registration_number}
 
 **Latest filed accounts (${latest.year}):**
@@ -165,16 +170,44 @@ Registration: ${result.companyData.registration_number}
 ✅ **Ready for valuation!**
 
 Would you like to calculate your business valuation now?`,
-          timestamp: new Date(),
-          companyData: result.companyData,
-        };
-        
-        addUniqueMessage(successMessage);
+            timestamp: new Date(),
+            companyData: result.companyData,
+          };
+          
+          addUniqueMessage(successMessage);
 
-        // Notify parent after brief delay to show message
-        setTimeout(() => {
-          onCompanyFound(result.companyData!);
-        }, 1500);
+          // Notify parent after brief delay to show message
+          setTimeout(() => {
+            onCompanyFound(result.companyData!);
+          }, 1500);
+          
+        } else {
+          // Success - company found WITHOUT financial data (needs conversational input)
+          const successMessage: ChatMessage = {
+            id: `success_${Date.now()}`,
+            type: 'ai',
+            content: `✅ **Found: ${result.companyData.company_name}**
+Registration: ${result.companyData.registration_number}
+
+📋 No financial data available in public registries, but no problem!
+
+💬 **Let's collect the data together** - I'll ask you a few quick questions about your company's financials.
+
+⏱️ Takes about 1 minute
+🔒 Your data stays secure
+
+Ready to start?`,
+            timestamp: new Date(),
+            companyData: result.companyData,
+          };
+          
+          addUniqueMessage(successMessage);
+
+          // Notify parent immediately to transition to financial input
+          setTimeout(() => {
+            onCompanyFound(result.companyData!);
+          }, 1000);
+        }
 
       } else {
         // Error or not found
