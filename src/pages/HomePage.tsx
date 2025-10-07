@@ -11,14 +11,14 @@ export const HomePage: React.FC = () => {
       id: 'instant',
       icon: Zap,
       title: 'Instant Valuation',
-      description: 'AI-powered company lookup with automatic data retrieval from official registries',
+      description: 'Conversational AI guides you through a quick valuation with smart company search',
       badge: 'Recommended',
       badgeColor: 'bg-green-500/20 text-green-300 border-green-500/30',
       features: [
-        'Automatic data retrieval',
-        'No manual input needed',
-        'Results in under 30 seconds',
-        'Verified registry data'
+        'AI-powered company search',
+        'Answer 2-4 quick questions',
+        'Results in 1-2 minutes',
+        'Verified KBO registry data'
       ],
       path: '/instant',
       bgGradient: 'from-primary-900/20 via-blue-900/20 to-cyan-900/20',
