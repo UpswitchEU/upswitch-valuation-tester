@@ -355,7 +355,7 @@ ${errorType === RegistryErrorType.NETWORK_ERROR || errorType === RegistryErrorTy
     }
   };
 
-  const useSuggestion = (suggestion: string) => {
+  const handleSuggestion = (suggestion: string) => {
     setInput(suggestion);
   };
 
@@ -451,7 +451,7 @@ ${errorType === RegistryErrorType.NETWORK_ERROR || errorType === RegistryErrorTy
         {messages.length <= 1 && (
           <div className="mt-3 flex flex-wrap gap-2">
             <button
-              onClick={() => useSuggestion('Innovate NV')}
+              onClick={() => handleSuggestion('Innovate NV')}
               className="px-3 py-1.5 text-xs bg-gray-100 hover:bg-gray-200 rounded-full transition-colors font-medium"
               disabled={isProcessing}
             >
