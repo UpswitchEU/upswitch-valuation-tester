@@ -48,7 +48,7 @@ export const HomePage: React.FC = () => {
       icon: Upload,
       title: 'File Upload',
       description: 'Extract financial data from your documents automatically (PDF, Excel, CSV)',
-      badge: 'Beta',
+      badge: 'Coming soon',
       badgeColor: 'bg-yellow-500/20 text-yellow-300 border-yellow-500/30',
       features: [
         'PDF & Excel support',
