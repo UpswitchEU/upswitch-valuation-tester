@@ -9,7 +9,7 @@ import { urls } from '../router';
 
 export const ManualValuationFlow: React.FC = () => {
   const navigate = useNavigate();
-  const { result, formData, resetFormData, setResult } = useValuationStore();
+  const { result, formData, resetValuation } = useValuationStore();
   const { addReport } = useReportsStore();
   const [reportSaved, setReportSaved] = useState(false);
 
@@ -27,8 +27,7 @@ export const ManualValuationFlow: React.FC = () => {
   }, [result, formData.company_name, reportSaved, addReport]);
 
   const handleStartOver = () => {
-    resetFormData();
-    setResult(null);
+    resetValuation();
     setReportSaved(false);
   };
 
@@ -54,12 +53,14 @@ export const ManualValuationFlow: React.FC = () => {
 
           {/* Stage indicator */}
           <div className="flex items-center gap-6">
-            <div className="flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium bg-primary-500/20 text-primary-300">
+            <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium ${
+              stage === 'form' ? 'bg-primary-500/20 text-primary-300' : 'bg-zinc-800 text-zinc-400'
+            }`}>
               <Edit3 className="w-3 h-3" />
               <span>Input Data</span>
             </div>
             <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium ${
-              result ? 'bg-green-500/20 text-green-300' : 'bg-zinc-800 text-zinc-400'
+              stage === 'results' ? 'bg-green-500/20 text-green-300' : 'bg-zinc-800 text-zinc-400'
             }`}>
               <TrendingUp className="w-3 h-3" />
               <span>Results</span>
