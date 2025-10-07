@@ -27,6 +27,7 @@ export interface LookupResult {
   message: string;
   companyData?: CompanyFinancialData;
   searchResults?: CompanySearchResponse;
+  needsFinancialInput?: boolean;
   error?: string;
 }
 
