@@ -60,6 +60,7 @@ export const HomePage: React.FC = () => {
       bgGradient: 'from-yellow-900/10 via-orange-900/10 to-yellow-900/10',
       borderColor: 'border-yellow-600/30 hover:border-yellow-500/50',
       glowColor: 'group-hover:shadow-yellow-500/20',
+      disabled: true,
     },
   ];
 
@@ -84,11 +85,17 @@ export const HomePage: React.FC = () => {
         <div className="grid md:grid-cols-3 gap-6 max-w-7xl mx-auto">
           {valuationMethods.map((method) => {
             const IconComponent = method.icon;
+            const isDisabled = method.disabled;
             return (
               <button
                 key={method.id}
-                onClick={() => navigate(method.path)}
-                className={`group relative bg-gradient-to-br ${method.bgGradient} rounded-2xl border ${method.borderColor} p-8 transition-all duration-300 hover:scale-105 ${method.glowColor} hover:shadow-2xl text-left`}
+                onClick={() => !isDisabled && navigate(method.path)}
+                disabled={isDisabled}
+                className={`group relative bg-gradient-to-br ${method.bgGradient} rounded-2xl border ${method.borderColor} p-8 transition-all duration-300 ${
+                  isDisabled 
+                    ? 'opacity-50 cursor-not-allowed' 
+                    : 'hover:scale-105 hover:shadow-2xl'
+                } ${method.glowColor} text-left`}
               >
                 {/* Badge */}
                 {method.badge && (
@@ -100,25 +107,37 @@ export const HomePage: React.FC = () => {
                 )}
 
                 {/* Icon */}
-                <div className="w-14 h-14 rounded-xl bg-zinc-800/50 border border-zinc-700/50 flex items-center justify-center mb-6 group-hover:bg-zinc-700/50 transition-colors">
-                  <IconComponent className="w-7 h-7 text-zinc-300 group-hover:text-white transition-colors" />
+                <div className={`w-14 h-14 rounded-xl bg-zinc-800/50 border border-zinc-700/50 flex items-center justify-center mb-6 transition-colors ${
+                  isDisabled ? '' : 'group-hover:bg-zinc-700/50'
+                }`}>
+                  <IconComponent className={`w-7 h-7 transition-colors ${
+                    isDisabled ? 'text-zinc-500' : 'text-zinc-300 group-hover:text-white'
+                  }`} />
                 </div>
 
                 {/* Title */}
-                <h3 className="text-2xl font-bold text-white mb-3 group-hover:text-primary-300 transition-colors">
+                <h3 className={`text-2xl font-bold mb-3 transition-colors ${
+                  isDisabled ? 'text-zinc-500' : 'text-white group-hover:text-primary-300'
+                }`}>
                   {method.title}
                 </h3>
 
                 {/* Description */}
-                <p className="text-zinc-400 text-sm mb-6 leading-relaxed">
+                <p className={`text-sm mb-6 leading-relaxed ${
+                  isDisabled ? 'text-zinc-600' : 'text-zinc-400'
+                }`}>
                   {method.description}
                 </p>
 
                 {/* Features */}
                 <ul className="space-y-2 mb-6">
                   {method.features.map((feature, idx) => (
-                    <li key={idx} className="flex items-center gap-2 text-zinc-300 text-sm">
-                      <div className="w-1.5 h-1.5 rounded-full bg-primary-500" />
+                    <li key={idx} className={`flex items-center gap-2 text-sm ${
+                      isDisabled ? 'text-zinc-600' : 'text-zinc-300'
+                    }`}>
+                      <div className={`w-1.5 h-1.5 rounded-full ${
+                        isDisabled ? 'bg-zinc-600' : 'bg-primary-500'
+                      }`} />
                       <span>{feature}</span>
                     </li>
                   ))}
@@ -126,10 +145,16 @@ export const HomePage: React.FC = () => {
 
                 {/* CTA */}
                 <div className="flex items-center justify-between pt-6 border-t border-zinc-700/50">
-                  <span className="text-zinc-400 text-sm font-medium group-hover:text-primary-300 transition-colors">
-                    Get Started
+                  <span className={`text-sm font-medium transition-colors ${
+                    isDisabled ? 'text-zinc-600' : 'text-zinc-400 group-hover:text-primary-300'
+                  }`}>
+                    {isDisabled ? 'Coming Soon' : 'Get Started'}
                   </span>
-                  <ArrowRight className="w-5 h-5 text-zinc-500 group-hover:text-primary-400 group-hover:translate-x-1 transition-all" />
+                  <ArrowRight className={`w-5 h-5 transition-all ${
+                    isDisabled 
+                      ? 'text-zinc-600' 
+                      : 'text-zinc-500 group-hover:text-primary-400 group-hover:translate-x-1'
+                  }`} />
                 </div>
               </button>
             );

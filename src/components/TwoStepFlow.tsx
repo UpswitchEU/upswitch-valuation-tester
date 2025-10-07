@@ -6,7 +6,11 @@ import { useValuationStore } from '../store/useValuationStore';
 
 type Step = 1 | 2;
 
-export const TwoStepFlow: React.FC = () => {
+interface TwoStepFlowProps {
+  onValuationComplete?: () => void;
+}
+
+export const TwoStepFlow: React.FC<TwoStepFlowProps> = ({ onValuationComplete }) => {
   const [currentStep, setCurrentStep] = useState<Step>(1);
   const [uploadedData, setUploadedData] = useState<any>(null);
   const { updateFormData, calculateValuation } = useValuationStore();
@@ -48,6 +52,11 @@ export const TwoStepFlow: React.FC = () => {
 
     // Trigger valuation calculation
     await calculateValuation();
+    
+    // Notify parent component that valuation is complete
+    if (onValuationComplete) {
+      onValuationComplete();
+    }
   };
 
   return (
