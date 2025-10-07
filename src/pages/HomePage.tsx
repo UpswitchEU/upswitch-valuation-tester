@@ -1,6 +1,6 @@
 import React from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { Zap, Edit3, Upload, ArrowRight, TrendingUp, Shield, Clock } from 'lucide-react';
+import { Zap, Edit3, Upload, ArrowRight } from 'lucide-react';
 import { MinimalHeader } from '../components/MinimalHeader';
 
 export const HomePage: React.FC = () => {
@@ -78,21 +78,6 @@ export const HomePage: React.FC = () => {
             Professional-grade valuations powered by AI
           </p>
 
-          {/* Feature Pills */}
-          <div className="flex flex-wrap justify-center gap-4 mt-8">
-            <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-zinc-800/50 border border-zinc-700/50 text-zinc-300 text-sm">
-              <TrendingUp className="w-4 h-4 text-primary-400" />
-              <span>DCF + Market Multiples</span>
-            </div>
-            <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-zinc-800/50 border border-zinc-700/50 text-zinc-300 text-sm">
-              <Shield className="w-4 h-4 text-green-400" />
-              <span>Enterprise-Grade Security</span>
-            </div>
-            <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-zinc-800/50 border border-zinc-700/50 text-zinc-300 text-sm">
-              <Clock className="w-4 h-4 text-blue-400" />
-              <span>Real-Time Market Data</span>
-            </div>
-          </div>
         </div>
 
         {/* Valuation Method Cards */}
@@ -151,18 +136,6 @@ export const HomePage: React.FC = () => {
           })}
         </div>
 
-        {/* Bottom Info */}
-        <div className="mt-16 text-center">
-          <p className="text-zinc-500 text-sm mb-4">
-            Trusted by businesses across Belgium and Europe
-          </p>
-          <div className="flex flex-wrap justify-center gap-8 text-zinc-600 text-xs">
-            <span>✓ GDPR Compliant</span>
-            <span>✓ SOC 2 Type II</span>
-            <span>✓ ISO 27001</span>
-            <span>✓ Bank-Grade Encryption</span>
-          </div>
-        </div>
 
         {/* Beta Disclaimer */}
         <div className="mt-12 max-w-3xl mx-auto">
