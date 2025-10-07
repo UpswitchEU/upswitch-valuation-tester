@@ -59,11 +59,25 @@ Currently supporting Belgian companies. More countries coming soon! 🚀`,
   const [inputValue, setInputValue] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [healthStatus, setHealthStatus] = useState<HealthStatus | null>(null);
+  const [collectingFinancials, setCollectingFinancials] = useState(false);
+  const [currentFinancialQuestion, setCurrentFinancialQuestion] = useState(0);
+  const [financialData, setFinancialData] = useState<any>({});
+  const [foundCompany, setFoundCompany] = useState<CompanyFinancialData | null>(null);
   
   // Refs
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messageIdsRef = useRef(new Set<string>()); // For deduplication
   const lookupService = useRef(new CompanyLookupService()).current;
+
+  // Financial questions
+  const financialQuestions = [
+    { field: 'revenue', question: "What's your annual revenue? (in EUR)", helpText: "Your total income for the year" },
+    { field: 'ebitda', question: "What's your EBITDA? (in EUR)", helpText: "Earnings before interest, taxes, depreciation, and amortization" },
+    { field: 'net_income', question: "What's your net income? (in EUR)", helpText: "Profit after all expenses" },
+    { field: 'total_assets', question: "What are your total assets? (in EUR)", helpText: "Everything your company owns" },
+    { field: 'total_debt', question: "What's your total debt? (in EUR)", helpText: "All outstanding loans and liabilities" },
+    { field: 'cash', question: "How much cash do you have? (in EUR)", helpText: "Cash and cash equivalents" },
+  ];
 
   /**
    * Message deduplication
@@ -120,7 +134,76 @@ Currently supporting Belgian companies. More countries coming soon! 🚀`,
 
     // Add user message
     addUniqueMessage(userMessage);
+    const userInput = inputValue.trim();
     setInputValue('');
+
+    // If we're collecting financial data, handle that
+    if (collectingFinancials) {
+      const value = parseFloat(userInput.replace(/[^0-9.-]/g, ''));
+      
+      if (isNaN(value)) {
+        addUniqueMessage({
+          id: `error_${Date.now()}`,
+          type: 'ai',
+          content: "Please enter a valid number. For example: 1000000",
+          timestamp: new Date(),
+        });
+        return;
+      }
+
+      // Save the financial data
+      const currentQ = financialQuestions[currentFinancialQuestion];
+      const newData = { ...financialData, [currentQ.field]: value };
+      setFinancialData(newData);
+
+      // Move to next question or finish
+      if (currentFinancialQuestion < financialQuestions.length - 1) {
+        const nextQ = financialQuestions[currentFinancialQuestion + 1];
+        setCurrentFinancialQuestion(currentFinancialQuestion + 1);
+        
+        addUniqueMessage({
+          id: `ai_${Date.now()}`,
+          type: 'ai',
+          content: `✅ Got it!\n\n${nextQ.question}\n\n💡 ${nextQ.helpText}`,
+          timestamp: new Date(),
+        });
+      } else {
+        // All questions answered - complete the data
+        setCollectingFinancials(false);
+        
+        addUniqueMessage({
+          id: `ai_${Date.now()}`,
+          type: 'ai',
+          content: `🎉 **Perfect! I have all the data.**\n\nHere's what we collected:\n• Revenue: €${newData.revenue?.toLocaleString()}\n• EBITDA: €${newData.ebitda?.toLocaleString()}\n• Net Income: €${newData.net_income?.toLocaleString()}\n• Total Assets: €${newData.total_assets?.toLocaleString()}\n• Total Debt: €${newData.total_debt?.toLocaleString()}\n• Cash: €${newData.cash?.toLocaleString()}\n\nPreparing your valuation...`,
+          timestamp: new Date(),
+        });
+
+        // Complete - pass data to parent
+        if (foundCompany) {
+          const updatedCompanyData: CompanyFinancialData = {
+            ...foundCompany,
+            filing_history: [{
+              year: 2023,
+              revenue: newData.revenue,
+              ebitda: newData.ebitda,
+              net_income: newData.net_income,
+              total_assets: newData.total_assets,
+              total_debt: newData.total_debt,
+              cash: newData.cash,
+              filing_date: new Date().toISOString().split('T')[0],
+              source_url: undefined
+            }]
+          };
+          
+          setTimeout(() => {
+            onCompanyFound(updatedCompanyData);
+          }, 1500);
+        }
+      }
+      return;
+    }
+
+    // Otherwise, handle company lookup
     setIsLoading(true);
 
     // Add loading message
@@ -182,7 +265,12 @@ Would you like to calculate your business valuation now?`,
           }, 1500);
           
         } else {
-          // Success - company found WITHOUT financial data (needs conversational input)
+          // Success - company found WITHOUT financial data (stay in chat, ask questions)
+          setFoundCompany(result.companyData);
+          setCollectingFinancials(true);
+          setCurrentFinancialQuestion(0);
+          
+          const firstQ = financialQuestions[0];
           const successMessage: ChatMessage = {
             id: `success_${Date.now()}`,
             type: 'ai',
@@ -191,22 +279,20 @@ Registration: ${result.companyData.registration_number}
 
 📋 No financial data available in public registries, but no problem!
 
-💬 **Let's collect the data together** - I'll ask you a few quick questions about your company's financials.
+💬 **Let's collect the data together** - I'll ask you a few quick questions.
 
-⏱️ Takes about 1 minute
-🔒 Your data stays secure
+⏱️ Takes about 1 minute • 🔒 Your data stays secure
 
-Ready to start?`,
+---
+
+**Question 1 of ${financialQuestions.length}:**
+${firstQ.question}
+
+💡 ${firstQ.helpText}`,
             timestamp: new Date(),
-            companyData: result.companyData,
           };
           
           addUniqueMessage(successMessage);
-
-          // Notify parent immediately to transition to financial input
-          setTimeout(() => {
-            onCompanyFound(result.companyData!);
-          }, 1000);
         }
 
       } else {
@@ -249,7 +335,7 @@ Ready to start?`,
     } finally {
       setIsLoading(false);
     }
-  }, [inputValue, isLoading, lookupService, addUniqueMessage, onCompanyFound, healthStatus]);
+  }, [inputValue, isLoading, collectingFinancials, currentFinancialQuestion, financialData, foundCompany, financialQuestions, lookupService, addUniqueMessage, onCompanyFound, healthStatus]);
 
   /**
    * Keyboard shortcut handler
