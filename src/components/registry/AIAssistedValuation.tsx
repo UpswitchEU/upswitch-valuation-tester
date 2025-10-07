@@ -93,7 +93,7 @@ export const AIAssistedValuation: React.FC = () => {
     setStage('chat');
     setCompanyData(null);
     setSelectedCompanyId(null);
-    setFinancialSummary(null);
+    // setFinancialSummary(null);
     setReportSaved(false);
   };
 

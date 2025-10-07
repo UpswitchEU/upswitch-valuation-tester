@@ -89,21 +89,20 @@ const CustomDropdown: React.FC<CustomDropdownProps> = ({
   dropdownRef,
 }) => {
   const [isOpen, setIsOpen] = useState(false);
-  const [isFocused, setIsFocused] = useState(false);
+  // const [isFocused, setIsFocused] = useState(false);
   const internalRef = useRef<HTMLDivElement>(null);
   const ref = dropdownRef || internalRef;
 
   // Find the selected option
   const selectedOption = options.find(option => option.value === value);
   const hasValue = !!selectedOption;
-  const isFilled = hasValue || isFocused;
 
   // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (ref.current && !ref.current.contains(event.target as Node)) {
         setIsOpen(false);
-        setIsFocused(false);
+        // setIsFocused(false);
       }
     };
 
@@ -116,7 +115,7 @@ const CustomDropdown: React.FC<CustomDropdownProps> = ({
     const handleEscape = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
         setIsOpen(false);
-        setIsFocused(false);
+        // setIsFocused(false);
       }
     };
 
@@ -127,14 +126,14 @@ const CustomDropdown: React.FC<CustomDropdownProps> = ({
   const handleToggle = () => {
     if (!disabled) {
       setIsOpen(!isOpen);
-      setIsFocused(!isOpen);
+      // setIsFocused(!isOpen);
     }
   };
 
   const handleOptionSelect = (optionValue: string) => {
     onChange(optionValue);
     setIsOpen(false);
-    setIsFocused(false);
+    // setIsFocused(false);
   };
 
   const handleKeyDown = (event: React.KeyboardEvent) => {
@@ -153,10 +152,10 @@ const CustomDropdown: React.FC<CustomDropdownProps> = ({
           tabIndex={0}
           onClick={handleToggle}
           onKeyDown={handleKeyDown}
-          onFocus={() => setIsFocused(true)}
+          onFocus={() => {/* setIsFocused(true) */}}
           onBlur={() => {
             // Delay to allow option selection
-            setTimeout(() => setIsFocused(false), 150);
+            // setTimeout(() => setIsFocused(false), 150);
           }}
           disabled={disabled}
           name={name}

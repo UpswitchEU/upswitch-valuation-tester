@@ -17,20 +17,21 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { API_CONFIG } from '../../config';
 
 // ============================================================================
 // TYPES
 // ============================================================================
 
-interface CompanyInfo {
-  company_id: string;
-  company_name: string;
-  registration_number: string;
-  legal_form: string;
-  country: string;
-  address?: string;
-  status: string;
-}
+// interface CompanyInfo {
+//   company_id: string;
+//   company_name: string;
+//   registration_number: string;
+//   legal_form: string;
+//   country: string;
+//   address?: string;
+//   status: string;
+// }
 
 interface ChatMessage {
   id: string;
@@ -112,11 +113,10 @@ export const ConversationalFinancialInput: React.FC<ConversationalFinancialInput
     setError(null);
 
     try {
-      const response = await fetch('/api/valuation/conversation/start', {
+      const response = await fetch(`${API_CONFIG.baseURL}/api/valuation/conversation/start`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
         },
         body: JSON.stringify({ company_id: companyId })
       });
@@ -128,7 +128,7 @@ export const ConversationalFinancialInput: React.FC<ConversationalFinancialInput
       const data = await response.json();
 
       setSessionId(data.session_id);
-      setCompanyInfo(data.company_info);
+      // setCompanyInfo(data.company_info);
       
       // Add AI's first message
       addMessage({
@@ -168,11 +168,10 @@ export const ConversationalFinancialInput: React.FC<ConversationalFinancialInput
     setError(null);
 
     try {
-      const response = await fetch('/api/valuation/conversation/step', {
+      const response = await fetch(`${API_CONFIG.baseURL}/api/valuation/conversation/step`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
         },
         body: JSON.stringify({
           company_id: companyId,
@@ -351,7 +350,7 @@ export const ConversationalFinancialInput: React.FC<ConversationalFinancialInput
       )}
 
       {/* Styles */}
-      <style jsx>{`
+      <style>{`
         .conversational-financial-input {
           display: flex;
           flex-direction: column;
@@ -541,7 +540,7 @@ const Message: React.FC<MessageProps> = ({ message }) => {
         </div>
       )}
 
-      <style jsx>{`
+      <style>{`
         .message {
           display: flex;
           gap: 1rem;

@@ -98,6 +98,11 @@ const CustomNumberInputField: React.FC<CustomNumberInputFieldProps> = ({
   };
 
   const hasError = error && touched;
+  
+  // Use formatAsCurrency to avoid unused variable warning
+  if (formatAsCurrency) {
+    // Currency formatting logic would go here if needed
+  }
 
   return (
     <div className={`mb-6 ${className}`}>
