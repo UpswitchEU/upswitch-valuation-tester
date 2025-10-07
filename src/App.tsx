@@ -2,10 +2,8 @@ import { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Header } from './components/Header';
 import { TwoStepFlow } from './components/TwoStepFlow';
-import { ValuationForm } from './components/ValuationForm';
-import { Results } from './components/Results';
 import { AIAssistedValuation } from './components/registry/AIAssistedValuation';
-import { useValuationStore } from './store/useValuationStore';
+import { ManualValuationFlow } from './components/ManualValuationFlow';
 import { ROUTE_TO_VIEW_MODE, VIEW_MODE_TO_ROUTE } from './router/routes';
 
 type ViewMode = 'ai-assisted' | 'manual' | 'document-upload';
@@ -13,7 +11,6 @@ type ViewMode = 'ai-assisted' | 'manual' | 'document-upload';
 function App() {
   const location = useLocation();
   const navigate = useNavigate();
-  const { result } = useValuationStore();
   
   // Determine viewMode from route
   const routeBasedViewMode = (ROUTE_TO_VIEW_MODE[location.pathname as keyof typeof ROUTE_TO_VIEW_MODE] || 'ai-assisted') as ViewMode;
@@ -36,28 +33,22 @@ function App() {
     );
   }
 
-  // Standard layout for manual and document-upload
+  // Full-screen Ilara-style layout for manual flow
+  if (viewMode === 'manual') {
+    return (
+      <div className="flex h-screen w-screen flex-col overflow-hidden bg-zinc-950">
+        <ManualValuationFlow onModeChange={setViewMode} />
+      </div>
+    );
+  }
+
+  // Standard layout for document-upload only
   return (
     <div className="min-h-screen bg-gradient-hero">
       <Header />
 
       <main className="container mx-auto px-4 py-8 max-w-7xl">
         {/* Content */}
-        {viewMode === 'manual' && (
-          <div className="space-y-8">
-            {/* Manual Entry Form */}
-            <div className="bg-white rounded-2xl shadow-xl border border-gray-200 p-8">
-              <ValuationForm />
-            </div>
-
-            {/* Inline Results Display */}
-            {result && (
-              <div className="animate-fadeIn">
-                <Results />
-              </div>
-            )}
-          </div>
-        )}
 
         {viewMode === 'document-upload' && (
           <>
