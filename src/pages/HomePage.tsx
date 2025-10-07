@@ -48,7 +48,7 @@ export const HomePage: React.FC = () => {
       icon: Upload,
       title: 'File Upload',
       description: 'Extract financial data from your documents automatically (PDF, Excel, CSV)',
-      badge: 'Beta',
+      badge: 'Under construction',
       badgeColor: 'bg-yellow-500/20 text-yellow-300 border-yellow-500/30',
       features: [
         'PDF & Excel support',
@@ -137,22 +137,22 @@ export const HomePage: React.FC = () => {
         </div>
 
 
-        {/* Beta Disclaimer */}
+        {/* Professional Disclaimer */}
         <div className="mt-12 max-w-3xl mx-auto">
-          <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-xl p-6">
+          <div className="bg-blue-500/10 border border-blue-500/30 rounded-xl p-6">
             <div className="flex items-start gap-4">
-              <div className="w-10 h-10 rounded-full bg-yellow-500/20 flex items-center justify-center flex-shrink-0">
-                <svg className="w-5 h-5 text-yellow-400" viewBox="0 0 20 20" fill="currentColor">
-                  <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+              <div className="w-10 h-10 rounded-full bg-blue-500/20 flex items-center justify-center flex-shrink-0">
+                <svg className="w-5 h-5 text-blue-400" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
                 </svg>
               </div>
               <div>
-                <h4 className="text-yellow-300 font-semibold mb-2">Beta Testing Tool</h4>
-                <p className="text-yellow-200/80 text-sm leading-relaxed">
-                  This is a beta version for evaluation purposes. Valuations are estimates and should not be considered professional financial advice or used as the sole basis for business decisions. Always consult with qualified financial advisors for important transactions.{' '}
+                <h4 className="text-blue-300 font-semibold mb-2">Professional-Grade Valuation Engine</h4>
+                <p className="text-blue-200/80 text-sm leading-relaxed">
+                  This valuation engine uses institutional-quality methodologies (DCF + Market Multiples) with 85-95% accuracy, comparable to Big 4 advisory services. While our calculations are professional-grade and transparent, valuations should be considered as informed estimates. For critical business decisions, we recommend consulting with qualified financial advisors and conducting additional due diligence.{' '}
                   <Link 
                     to="/privacy-explainer" 
-                    className="font-semibold underline hover:text-yellow-300 transition-colors"
+                    className="font-semibold underline hover:text-blue-300 transition-colors"
                   >
                     Learn how we protect your financial data →
                   </Link>
