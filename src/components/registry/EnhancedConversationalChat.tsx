@@ -69,14 +69,26 @@ Currently supporting Belgian companies. More countries coming soon! 🚀`,
   const messageIdsRef = useRef(new Set<string>()); // For deduplication
   const lookupService = useRef(new CompanyLookupService()).current;
 
-  // Financial questions
+  // Financial questions (extended for higher accuracy)
   const financialQuestions = [
-    { field: 'revenue', question: "What's your annual revenue? (in EUR)", helpText: "Your total income for the year" },
-    { field: 'ebitda', question: "What's your EBITDA? (in EUR)", helpText: "Earnings before interest, taxes, depreciation, and amortization" },
-    { field: 'net_income', question: "What's your net income? (in EUR)", helpText: "Profit after all expenses" },
-    { field: 'total_assets', question: "What are your total assets? (in EUR)", helpText: "Everything your company owns" },
-    { field: 'total_debt', question: "What's your total debt? (in EUR)", helpText: "All outstanding loans and liabilities" },
-    { field: 'cash', question: "How much cash do you have? (in EUR)", helpText: "Cash and cash equivalents" },
+    // Current year (required)
+    { field: 'revenue', question: "What's your annual revenue for this year? (in EUR)", helpText: "Your total income for 2023", year: 'current' },
+    { field: 'ebitda', question: "What's your EBITDA for this year? (in EUR)", helpText: "Earnings before interest, taxes, depreciation, and amortization", year: 'current' },
+    { field: 'net_income', question: "What's your net income for this year? (in EUR)", helpText: "Profit after all expenses", year: 'current' },
+    { field: 'total_assets', question: "What are your total assets? (in EUR)", helpText: "Everything your company owns", year: 'current' },
+    { field: 'total_debt', question: "What's your total debt? (in EUR)", helpText: "All outstanding loans and liabilities", year: 'current' },
+    { field: 'cash', question: "How much cash do you have? (in EUR)", helpText: "Cash and cash equivalents", year: 'current' },
+    
+    // Previous year (for growth analysis)
+    { field: 'revenue_y1', question: "What was your revenue LAST year? (in EUR)", helpText: "For 2022 - helps calculate growth rate", year: 'previous' },
+    { field: 'ebitda_y1', question: "What was your EBITDA last year? (in EUR)", helpText: "For 2022 - validates profitability trend", year: 'previous' },
+    
+    // Company context (critical for valuation)
+    { field: 'employees', question: "How many employees do you have?", helpText: "Full-time equivalent count", year: 'current' },
+    { field: 'recurring_revenue', question: "What % of your revenue is recurring?", helpText: "Subscription, retainers, contracts (0-100%)", year: 'current' },
+    
+    // Optional but helpful
+    { field: 'operating_expenses', question: "What are your total operating expenses? (in EUR)", helpText: "COGS + admin + sales costs (optional - press Enter to skip)", year: 'current', optional: true },
   ];
 
   /**
@@ -118,6 +130,100 @@ Currently supporting Belgian companies. More countries coming soon! 🚀`,
   }, [messages]);
 
   /**
+   * Complete financial data collection and structure for valuation
+   */
+  const completeFinancialCollection = useCallback((collectedData: any) => {
+    setCollectingFinancials(false);
+    
+    // Build summary message
+    const currentYear = new Date().getFullYear();
+    const summaryLines = [
+      `🎉 **Perfect! I have all the data.**\n`,
+      `**Current Year (${currentYear}):**`,
+      `• Revenue: €${collectedData.revenue?.toLocaleString() || '?'}`,
+      `• EBITDA: €${collectedData.ebitda?.toLocaleString() || '?'}`,
+      `• Net Income: €${collectedData.net_income?.toLocaleString() || '?'}`,
+      `• Total Assets: €${collectedData.total_assets?.toLocaleString() || '?'}`,
+      `• Total Debt: €${collectedData.total_debt?.toLocaleString() || '?'}`,
+      `• Cash: €${collectedData.cash?.toLocaleString() || '?'}`,
+    ];
+    
+    if (collectedData.revenue_y1) {
+      summaryLines.push(`\n**Last Year (${currentYear - 1}):**`);
+      summaryLines.push(`• Revenue: €${collectedData.revenue_y1?.toLocaleString()}`);
+      if (collectedData.ebitda_y1) {
+        summaryLines.push(`• EBITDA: €${collectedData.ebitda_y1?.toLocaleString()}`);
+      }
+    }
+    
+    if (collectedData.employees) {
+      summaryLines.push(`\n**Company Context:**`);
+      summaryLines.push(`• Employees: ${collectedData.employees}`);
+    }
+    
+    if (collectedData.recurring_revenue !== undefined) {
+      summaryLines.push(`• Recurring Revenue: ${collectedData.recurring_revenue}%`);
+    }
+    
+    summaryLines.push(`\n⚡ Preparing your valuation...`);
+    
+    addUniqueMessage({
+      id: `ai_${Date.now()}`,
+      type: 'ai',
+      content: summaryLines.join('\n'),
+      timestamp: new Date(),
+    });
+
+    // Structure data for valuation engine
+    if (foundCompany) {
+      const filingHistory = [];
+      
+      // Current year data
+      filingHistory.push({
+        year: currentYear,
+        revenue: collectedData.revenue,
+        ebitda: collectedData.ebitda,
+        net_income: collectedData.net_income,
+        total_assets: collectedData.total_assets,
+        total_debt: collectedData.total_debt,
+        cash: collectedData.cash,
+        operating_expenses: collectedData.operating_expenses,
+        filing_date: new Date().toISOString().split('T')[0],
+        source_url: undefined
+      });
+      
+      // Previous year data (if provided)
+      if (collectedData.revenue_y1) {
+        filingHistory.push({
+          year: currentYear - 1,
+          revenue: collectedData.revenue_y1,
+          ebitda: collectedData.ebitda_y1,
+          filing_date: `${currentYear - 1}-12-31`,
+          source_url: undefined
+        });
+      }
+      
+      const updatedCompanyData: CompanyFinancialData = {
+        ...foundCompany,
+        filing_history: filingHistory,
+        employees: collectedData.employees,
+        // Store additional context for valuation
+        completeness_score: collectedData.revenue_y1 ? 0.85 : 0.65,
+        data_source: `Conversational input (${filingHistory.length} year${filingHistory.length > 1 ? 's' : ''})`,
+        // Pass through for valuation form
+        _additional_context: {
+          recurring_revenue_percentage: collectedData.recurring_revenue ? collectedData.recurring_revenue / 100 : undefined,
+          number_of_employees: collectedData.employees,
+        }
+      };
+      
+      setTimeout(() => {
+        onCompanyFound(updatedCompanyData);
+      }, 1500);
+    }
+  }, [foundCompany, addUniqueMessage, onCompanyFound]);
+
+  /**
    * Handle message send
    * Main interaction handler with comprehensive error handling
    * Optimized with useCallback to prevent unnecessary re-renders
@@ -139,20 +245,41 @@ Currently supporting Belgian companies. More countries coming soon! 🚀`,
 
     // If we're collecting financial data, handle that
     if (collectingFinancials) {
+      const currentQ = financialQuestions[currentFinancialQuestion];
+      
+      // Allow skipping optional questions
+      if (currentQ.optional && userInput.trim() === '') {
+        // Skip this question
+        if (currentFinancialQuestion < financialQuestions.length - 1) {
+          const nextQ = financialQuestions[currentFinancialQuestion + 1];
+          setCurrentFinancialQuestion(currentFinancialQuestion + 1);
+          
+          addUniqueMessage({
+            id: `ai_${Date.now()}`,
+            type: 'ai',
+            content: `⏭️ Skipped.\n\n**Question ${currentFinancialQuestion + 2} of ${financialQuestions.length}:**\n${nextQ.question}\n\n💡 ${nextQ.helpText}${nextQ.optional ? '\n\n_(Press Enter to skip)_' : ''}`,
+            timestamp: new Date(),
+          });
+        } else {
+          // Last question was optional and skipped - complete
+          onCompanyFound(financialData);
+        }
+        return;
+      }
+      
       const value = parseFloat(userInput.replace(/[^0-9.-]/g, ''));
       
       if (isNaN(value)) {
         addUniqueMessage({
           id: `error_${Date.now()}`,
           type: 'ai',
-          content: "Please enter a valid number. For example: 1000000",
+          content: `Please enter a valid number. For example: ${currentQ.field.includes('employees') ? '50' : '1000000'}${currentQ.optional ? '\n\nOr press Enter to skip this question.' : ''}`,
           timestamp: new Date(),
         });
         return;
       }
 
       // Save the financial data
-      const currentQ = financialQuestions[currentFinancialQuestion];
       const newData = { ...financialData, [currentQ.field]: value };
       setFinancialData(newData);
 
@@ -164,41 +291,12 @@ Currently supporting Belgian companies. More countries coming soon! 🚀`,
         addUniqueMessage({
           id: `ai_${Date.now()}`,
           type: 'ai',
-          content: `✅ Got it!\n\n${nextQ.question}\n\n💡 ${nextQ.helpText}`,
+          content: `✅ Got it!\n\n**Question ${currentFinancialQuestion + 2} of ${financialQuestions.length}:**\n${nextQ.question}\n\n💡 ${nextQ.helpText}${nextQ.optional ? '\n\n_(Press Enter to skip)_' : ''}`,
           timestamp: new Date(),
         });
       } else {
-        // All questions answered - complete the data
-        setCollectingFinancials(false);
-        
-        addUniqueMessage({
-          id: `ai_${Date.now()}`,
-          type: 'ai',
-          content: `🎉 **Perfect! I have all the data.**\n\nHere's what we collected:\n• Revenue: €${newData.revenue?.toLocaleString()}\n• EBITDA: €${newData.ebitda?.toLocaleString()}\n• Net Income: €${newData.net_income?.toLocaleString()}\n• Total Assets: €${newData.total_assets?.toLocaleString()}\n• Total Debt: €${newData.total_debt?.toLocaleString()}\n• Cash: €${newData.cash?.toLocaleString()}\n\nPreparing your valuation...`,
-          timestamp: new Date(),
-        });
-
-        // Complete - pass data to parent
-        if (foundCompany) {
-          const updatedCompanyData: CompanyFinancialData = {
-            ...foundCompany,
-            filing_history: [{
-              year: 2023,
-              revenue: newData.revenue,
-              ebitda: newData.ebitda,
-              net_income: newData.net_income,
-              total_assets: newData.total_assets,
-              total_debt: newData.total_debt,
-              cash: newData.cash,
-              filing_date: new Date().toISOString().split('T')[0],
-              source_url: undefined
-            }]
-          };
-          
-          setTimeout(() => {
-            onCompanyFound(updatedCompanyData);
-          }, 1500);
-        }
+        // All questions answered - complete
+        completeFinancialCollection(newData);
       }
       return;
     }
@@ -279,9 +377,9 @@ Registration: ${result.companyData.registration_number}
 
 📋 No financial data available in public registries, but no problem!
 
-💬 **Let's collect the data together** - I'll ask you a few quick questions.
+💬 **Let's collect the data together** - I'll ask you ${financialQuestions.length} quick questions to get you the most accurate valuation.
 
-⏱️ Takes about 1 minute • 🔒 Your data stays secure
+⏱️ Takes 2-3 minutes • 🔒 Your data stays secure • 📊 Investment-grade accuracy
 
 ---
 
