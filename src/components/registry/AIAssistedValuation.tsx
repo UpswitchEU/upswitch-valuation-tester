@@ -1,20 +1,23 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { MessageSquare, Database, TrendingUp, CheckCircle, Save, ArrowLeft } from 'lucide-react';
+import { MessageSquare, Database, TrendingUp, CheckCircle, Save, ArrowLeft, DollarSign } from 'lucide-react';
 import { EnhancedConversationalChat } from './EnhancedConversationalChat';
 import { RegistryDataPreview } from './RegistryDataPreview';
 import { Results } from '../Results';
+import { ConversationalFinancialInput } from '../valuation/ConversationalFinancialInput';
 import type { CompanyFinancialData } from '../../types/registry';
 import { useValuationStore } from '../../store/useValuationStore';
 import { useReportsStore } from '../../store/useReportsStore';
 import { urls } from '../../router';
 
-type FlowStage = 'chat' | 'preview' | 'results';
+type FlowStage = 'chat' | 'financial-input' | 'preview' | 'results';
 
 export const AIAssistedValuation: React.FC = () => {
   const navigate = useNavigate();
   const [stage, setStage] = useState<FlowStage>('chat');
   const [companyData, setCompanyData] = useState<CompanyFinancialData | null>(null);
+  const [selectedCompanyId, setSelectedCompanyId] = useState<string | null>(null);
+  const [financialSummary, setFinancialSummary] = useState<any | null>(null);
   const { calculateValuation, result } = useValuationStore();
   const { addReport } = useReportsStore();
   const [reportSaved, setReportSaved] = useState(false);
@@ -34,6 +37,38 @@ export const AIAssistedValuation: React.FC = () => {
 
   const handleCompanyFound = (data: CompanyFinancialData) => {
     setCompanyData(data);
+    setSelectedCompanyId(data.company_id);
+    
+    // Check if we have financial data from API
+    if (data.filing_history && data.filing_history.length > 0 && data.filing_history[0].revenue) {
+      // We have API financial data - go directly to preview
+      setStage('preview');
+    } else {
+      // No API financial data - collect via conversational input
+      setStage('financial-input');
+    }
+  };
+  
+  const handleFinancialInputComplete = (summary: any, valuationId?: string) => {
+    setFinancialSummary(summary);
+    // Convert summary to CompanyFinancialData format for preview
+    if (companyData) {
+      const updatedCompanyData: CompanyFinancialData = {
+        ...companyData,
+        filing_history: [{
+          year: 2023, // TODO: Make dynamic
+          revenue: summary.revenue,
+          ebitda: summary.ebitda,
+          net_income: summary.net_income,
+          total_assets: summary.total_assets,
+          total_debt: summary.total_debt,
+          cash: summary.cash,
+          filing_date: new Date().toISOString().split('T')[0],
+          source_url: null
+        }]
+      };
+      setCompanyData(updatedCompanyData);
+    }
     setStage('preview');
   };
 
@@ -57,6 +92,8 @@ export const AIAssistedValuation: React.FC = () => {
   const handleStartOver = () => {
     setStage('chat');
     setCompanyData(null);
+    setSelectedCompanyId(null);
+    setFinancialSummary(null);
     setReportSaved(false);
   };
 
@@ -89,6 +126,12 @@ export const AIAssistedValuation: React.FC = () => {
               <span>Lookup</span>
             </div>
             <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium ${
+              stage === 'financial-input' ? 'bg-primary-500/20 text-primary-300' : 'bg-zinc-800 text-zinc-400'
+            }`}>
+              <DollarSign className="w-3 h-3" />
+              <span>Financial Data</span>
+            </div>
+            <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium ${
               stage === 'preview' ? 'bg-primary-500/20 text-primary-300' : 'bg-zinc-800 text-zinc-400'
             }`}>
               <Database className="w-3 h-3" />
@@ -111,6 +154,19 @@ export const AIAssistedValuation: React.FC = () => {
           {stage === 'chat' && (
             <div className="flex-1 overflow-y-auto">
               <EnhancedConversationalChat onCompanyFound={handleCompanyFound} />
+            </div>
+          )}
+
+          {stage === 'financial-input' && selectedCompanyId && (
+            <div className="flex-1 overflow-y-auto">
+              <ConversationalFinancialInput
+                companyId={selectedCompanyId}
+                onComplete={handleFinancialInputComplete}
+                onError={(error) => {
+                  console.error('Financial input error:', error);
+                  // TODO: Show error message to user
+                }}
+              />
             </div>
           )}
 
@@ -190,6 +246,27 @@ export const AIAssistedValuation: React.FC = () => {
               <p className="text-sm text-zinc-500 max-w-xs">
                 Your valuation report will appear here once the company data is found.
               </p>
+            </div>
+          )}
+
+          {stage === 'financial-input' && companyData && (
+            <div className="flex flex-col items-center justify-center h-full p-8 text-center">
+              <div className="w-16 h-16 rounded-full bg-primary-100 flex items-center justify-center mb-4">
+                <DollarSign className="w-8 h-8 text-primary-600" />
+              </div>
+              <h3 className="text-lg font-semibold text-zinc-900 mb-2">Financial Data Collection</h3>
+              <p className="text-sm text-zinc-500 max-w-xs mb-4">
+                Answer the quick questions on the left to provide your company's financial information.
+              </p>
+              <div className="bg-primary-50 rounded-lg border border-primary-200 p-4 text-left max-w-sm">
+                <div className="flex items-start gap-2">
+                  <CheckCircle className="w-4 h-4 text-primary-600 mt-0.5 flex-shrink-0" />
+                  <div className="text-xs text-primary-900">
+                    <p className="font-medium mb-1">🔒 Privacy-First</p>
+                    <p>Your financial data is encrypted and stored securely on our servers. It is NEVER shared with external AI services.</p>
+                  </div>
+                </div>
+              </div>
             </div>
           )}
 
