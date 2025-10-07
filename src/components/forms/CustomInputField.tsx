@@ -84,14 +84,14 @@ const CustomInputField: React.FC<CustomInputFieldProps> = ({
           autoFocus={autoFocus}
           autoComplete={autoComplete}
           className={`
-            w-full h-14 px-4 pt-6 pb-2 text-base text-gray-900 
-            bg-transparent border-none rounded-xl 
+            w-full h-14 px-4 pt-6 pb-2 text-base 
+            border-none rounded-xl 
             focus:outline-none focus:ring-0
             transition-all duration-200 ease-in-out
             ${leftIcon ? 'pl-10' : ''}
             ${rightIcon ? 'pr-10' : ''}
             ${hasError ? 'text-red-600' : ''}
-            ${disabled ? 'bg-gray-100 cursor-not-allowed text-gray-400' : ''}
+            ${disabled ? 'bg-transparent cursor-not-allowed text-gray-400' : 'bg-transparent text-gray-900'}
           `}
         />
 
