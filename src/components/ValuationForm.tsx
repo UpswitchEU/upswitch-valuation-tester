@@ -1,4 +1,4 @@
-import React, { useEffect, useCallback } from 'react';
+import React, { useEffect, useCallback, useState } from 'react';
 import { useValuationStore } from '../store/useValuationStore';
 import { useReportsStore } from '../store/useReportsStore';
 import { debounce } from '../utils/debounce';
@@ -15,6 +15,9 @@ import { CustomInputField, CustomNumberInputField, CustomDropdown } from './form
 export const ValuationForm: React.FC = () => {
   const { formData, updateFormData, calculateValuation, quickValuation, isCalculating, result } = useValuationStore();
   const { addReport } = useReportsStore();
+  
+  // Local state for historical data inputs
+  const [historicalInputs, setHistoricalInputs] = useState<{[key: string]: string}>({});
 
   // Debounced quick calculation for live preview
   const debouncedQuickCalc = useCallback(
@@ -87,6 +90,46 @@ export const ValuationForm: React.FC = () => {
 
   const dataQuality = calculateDataQuality();
   const hasMinimumData = formData.revenue && formData.ebitda && formData.industry && formData.country_code;
+
+  // Helper function to update historical data
+  const updateHistoricalData = (year: number, field: 'revenue' | 'ebitda', value: string) => {
+    const key = `${year}_${field}`;
+    setHistoricalInputs(prev => ({
+      ...prev,
+      [key]: value
+    }));
+    
+    // Update form data when we have valid numbers
+    const revenueKey = `${year}_revenue`;
+    const ebitdaKey = `${year}_ebitda`;
+    const revenueValue = field === 'revenue' ? value : historicalInputs[revenueKey] || '';
+    const ebitdaValue = field === 'ebitda' ? value : historicalInputs[ebitdaKey] || '';
+    
+    const revenue = parseFloat(revenueValue.replace(/,/g, '')) || 0;
+    const ebitda = parseFloat(ebitdaValue.replace(/,/g, '')) || 0;
+    
+    // Only update form data if we have meaningful values
+    if (revenue > 0 || ebitda > 0) {
+      const currentHistorical = formData.historical_years_data || [];
+      const existingIndex = currentHistorical.findIndex(data => data.year === year);
+      
+      const yearData = {
+        year,
+        revenue: revenue > 0 ? revenue : 0,
+        ebitda: ebitda > 0 ? ebitda : 0
+      };
+      
+      if (existingIndex >= 0) {
+        const updatedHistorical = [...currentHistorical];
+        updatedHistorical[existingIndex] = yearData;
+        updateFormData({ historical_years_data: updatedHistorical });
+      } else {
+        updateFormData({ 
+          historical_years_data: [...currentHistorical, yearData] 
+        });
+      }
+    }
+  };
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
@@ -339,48 +382,55 @@ export const ValuationForm: React.FC = () => {
         </p>
 
         <div className="space-y-3">
-          {[2023, 2024].map((year) => (
-            <div key={year} className="grid grid-cols-3 gap-4 p-3 bg-zinc-900 border border-zinc-700 rounded">
-              <div>
-                <CustomInputField
-                  label="Year"
-                  type="text"
-                  value={year.toString()}
-                  onChange={() => {}}
-                  onBlur={() => {}}
-                  disabled={true}
-                  placeholder=""
-                />
+          {[2023, 2024].map((year) => {
+            const revenueKey = `${year}_revenue`;
+            const ebitdaKey = `${year}_ebitda`;
+            const revenue = historicalInputs[revenueKey] || '';
+            const ebitda = historicalInputs[ebitdaKey] || '';
+
+            return (
+              <div key={year} className="grid grid-cols-3 gap-4 p-3 bg-zinc-900 border border-zinc-700 rounded">
+                <div>
+                  <CustomInputField
+                    label="Year"
+                    type="text"
+                    value={year.toString()}
+                    onChange={() => {}}
+                    onBlur={() => {}}
+                    disabled={true}
+                    placeholder=""
+                  />
+                </div>
+                <div>
+                  <CustomNumberInputField
+                    label="Revenue (€)"
+                    placeholder="Optional"
+                    value={revenue}
+                    onChange={(e) => updateHistoricalData(year, 'revenue', e.target.value)}
+                    onBlur={() => {}}
+                    name={`historical_revenue_${year}`}
+                    min={0}
+                    step={1000}
+                    prefix="€"
+                    formatAsCurrency
+                  />
+                </div>
+                <div>
+                  <CustomNumberInputField
+                    label="EBITDA (€)"
+                    placeholder="Optional"
+                    value={ebitda}
+                    onChange={(e) => updateHistoricalData(year, 'ebitda', e.target.value)}
+                    onBlur={() => {}}
+                    name={`historical_ebitda_${year}`}
+                    step={1000}
+                    prefix="€"
+                    formatAsCurrency
+                  />
+                </div>
               </div>
-              <div>
-                <CustomNumberInputField
-                  label="Revenue (€)"
-                  placeholder="Optional"
-                  value=""
-                  onChange={() => {}}
-                  onBlur={() => {}}
-                  name={`historical_revenue_${year}`}
-                  min={0}
-                  step={1000}
-                  prefix="€"
-                  formatAsCurrency
-                />
-              </div>
-              <div>
-                <CustomNumberInputField
-                  label="EBITDA (€)"
-                  placeholder="Optional"
-                  value=""
-                  onChange={() => {}}
-                  onBlur={() => {}}
-                  name={`historical_ebitda_${year}`}
-                  step={1000}
-                  prefix="€"
-                  formatAsCurrency
-                />
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
 
