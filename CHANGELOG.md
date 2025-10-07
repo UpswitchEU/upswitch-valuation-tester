@@ -1,5 +1,41 @@
 # Changelog - Upswitch Valuation Tester
 
+## [v1.14.3] - 2025-10-07 - Ilara-Style Invisible Header 🎨
+
+### 🎨 Visual Enhancement: Invisible Header Design
+
+**Updated MinimalHeader to match Ilara's invisible/transparent header style with seamless dark theme integration.**
+
+#### What Changed
+
+**Before (v1.14.2):**
+- White header background with gray border
+- Light theme colors (primary-700, primary-600)
+- Traditional header appearance with shadow
+
+**After (v1.14.3):**
+- Transparent background with backdrop blur (`bg-zinc-900/50 backdrop-blur-sm`)
+- Dark theme colors (white, zinc-300)
+- Invisible/glassmorphism effect like Ilara
+
+#### Files Modified
+- **MinimalHeader.tsx** - Updated to Ilara-style invisible design
+
+#### Visual Changes
+- **Header Background:** `bg-white border-gray-200 shadow-sm` → `bg-zinc-900/50 backdrop-blur-sm border-zinc-800`
+- **Title Color:** `text-primary-700` → `text-white`
+- **Subtitle Color:** `text-primary-600` → `text-zinc-300`
+- **Beta Badge:** `bg-primary-100 text-primary-800 border-primary-300` → `bg-zinc-800/50 text-zinc-200 border-zinc-700/50`
+
+#### Benefits
+- ✅ Invisible/transparent header like Ilara
+- ✅ Better integration with dark landing page
+- ✅ Modern glassmorphism effect
+- ✅ Consistent with instant/manual page headers
+- ✅ Professional, seamless appearance
+
+---
+
 ## [v1.14.2] - 2025-10-07 - Consolidated Beta Disclaimer 🎨
 
 ### 🎨 UX Improvement: Cleaner Home Page Layout
