@@ -151,7 +151,7 @@ export const AIAssistedValuation: React.FC = () => {
       <div className="flex flex-1 overflow-hidden mx-4 my-4 rounded-lg border border-zinc-800">
         {/* Left Panel: Chat/Content (60% width) */}
         <div className="h-full flex flex-col bg-zinc-900 border-r border-zinc-800" style={{ width: '60%' }}>
-          {stage === 'chat' && (
+          {(stage === 'chat' || stage === 'preview') && (
             <div className="flex-1 overflow-y-auto">
               <EnhancedConversationalChat onCompanyFound={handleCompanyFound} />
             </div>
@@ -167,24 +167,6 @@ export const AIAssistedValuation: React.FC = () => {
                   // TODO: Show error message to user
                 }}
               />
-            </div>
-          )}
-
-          {stage === 'preview' && companyData && (
-            <div className="flex-1 overflow-y-auto p-6">
-              <div className="space-y-4">
-                <button
-                  onClick={handleStartOver}
-                  className="text-sm text-primary-400 hover:text-primary-300 font-medium flex items-center gap-2"
-                >
-                  <ArrowLeft className="w-4 h-4" />
-                  Search different company
-                </button>
-                <RegistryDataPreview
-                  companyData={companyData}
-                  onCalculateValuation={handleCalculate}
-                />
-              </div>
             </div>
           )}
 
@@ -250,62 +232,11 @@ export const AIAssistedValuation: React.FC = () => {
           )}
 
           {stage === 'preview' && companyData && (
-            <div className="p-6 bg-zinc-50">
-              <div className="bg-white rounded-xl border border-zinc-200 p-6 shadow-sm">
-                <div className="flex items-center gap-3 mb-6">
-                  <div className="w-10 h-10 rounded-full bg-primary-100 flex items-center justify-center">
-                    <Database className="w-5 h-5 text-primary-600" />
-                  </div>
-                  <div>
-                    <h3 className="text-lg font-bold text-zinc-900">Data Overview</h3>
-                    <p className="text-xs text-zinc-500">From official registry</p>
-                  </div>
-                </div>
-
-                <div className="space-y-3">
-                  <div className="bg-zinc-50 rounded-lg p-4 border border-zinc-200">
-                    <div className="text-xs text-zinc-500 mb-1">Company Name</div>
-                    <div className="text-sm font-semibold text-zinc-900">{companyData.company_name}</div>
-                  </div>
-
-                  <div className="bg-zinc-50 rounded-lg p-4 border border-zinc-200">
-                    <div className="text-xs text-zinc-500 mb-1">Data Completeness</div>
-                    <div className="flex items-center gap-2">
-                      <div className="flex-1 bg-zinc-200 rounded-full h-2">
-                        <div
-                          className="bg-primary-500 h-2 rounded-full transition-all duration-500"
-                          style={{ width: `${Math.round(companyData.completeness_score * 100)}%` }}
-                        />
-                      </div>
-                      <span className="text-sm font-bold text-primary-600">
-                        {Math.round(companyData.completeness_score * 100)}%
-                      </span>
-                    </div>
-                  </div>
-
-                  <div className="bg-zinc-50 rounded-lg p-4 border border-zinc-200">
-                    <div className="text-xs text-zinc-500 mb-1">Financial Years</div>
-                    <div className="text-sm font-semibold text-zinc-900">
-                      {companyData.filing_history.length} years of data
-                    </div>
-                  </div>
-
-                  <div className="bg-zinc-50 rounded-lg p-4 border border-zinc-200">
-                    <div className="text-xs text-zinc-500 mb-1">Data Source</div>
-                    <div className="text-sm font-semibold text-zinc-900">{companyData.data_source}</div>
-                  </div>
-                </div>
-
-                <div className="mt-4 bg-green-50 rounded-lg p-4 border border-green-200">
-                  <div className="flex items-start gap-2">
-                    <CheckCircle className="w-4 h-4 text-green-600 mt-0.5 flex-shrink-0" />
-                    <div className="text-xs text-green-700">
-                      <p className="font-medium mb-1">✓ Verified Data</p>
-                      <p>All financial data is sourced from official registries and can be edited before calculation.</p>
-                    </div>
-                  </div>
-                </div>
-              </div>
+            <div className="flex-1 overflow-y-auto">
+              <RegistryDataPreview
+                companyData={companyData}
+                onCalculateValuation={handleCalculate}
+              />
             </div>
           )}
 
