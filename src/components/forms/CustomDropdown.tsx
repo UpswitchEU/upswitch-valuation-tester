@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 // 📋 Custom Dropdown Component - Enhanced dropdown with floating label
 // Location: src/shared/components/forms/CustomDropdown.tsx
 // Purpose: Reusable dropdown component with HeroUI styling and floating label

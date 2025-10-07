@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 // 📝 Custom Input Field - Enhanced input with floating label
 // Location: src/shared/components/forms/CustomInputField.tsx
 // Purpose: Reusable input field with smooth animations and validation states

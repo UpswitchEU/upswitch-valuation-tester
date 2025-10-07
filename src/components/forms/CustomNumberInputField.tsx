@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 // 🔢 Custom Number Input Field - Number input with formatting and validation
 // Location: src/shared/components/forms/CustomNumberInputField.tsx
 // Purpose: Number input with formatting, min/max validation, and consistent styling
