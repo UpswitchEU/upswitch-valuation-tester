@@ -82,10 +82,26 @@ export const RegistryDataPreview: React.FC<RegistryDataPreviewProps> = ({
     // Ensure data is synced to store
     const currentYear = editedData.year || new Date().getFullYear();
     
+    // Get industry from inferred data or fallback
+    const industry = (companyData as any)._inferred_industry || 
+                     companyData.industry_description?.toLowerCase().replace(/\s+/g, '_') || 
+                     'services';
+    
+    // Get business model from inferred data or fallback
+    const businessModel = (companyData as any)._inferred_business_model || 'other';
+    
+    // Get additional context from conversational input
+    const additionalContext = (companyData as any)._additional_context || {};
+    
+    // Get founding year from company data or estimate
+    const foundingYear = companyData.founding_year || currentYear - 5;
+    
     updateFormData({
       company_name: companyData.company_name,
       country_code: companyData.country_code,
-      industry: companyData.industry_description?.toLowerCase().replace(/\s+/g, '_') || 'technology',
+      industry: industry,
+      business_model: businessModel,
+      founding_year: foundingYear,
       revenue: editedData.revenue,
       ebitda: editedData.ebitda,
       current_year_data: {
@@ -96,17 +112,23 @@ export const RegistryDataPreview: React.FC<RegistryDataPreviewProps> = ({
         total_assets: editedData.total_assets,
         total_debt: editedData.total_debt,
         cash: editedData.cash,
+        operating_expenses: editedData.operating_expenses,
       },
       // Add historical data if available (excluding the current year)
-      historical_years_data: companyData.filing_history.slice(1).map(year => ({
-        year: year.year,
-        revenue: year.revenue || 0,
-        ebitda: year.ebitda || 0, // Required field, default to 0
-        net_income: year.net_income,
-        total_assets: year.total_assets,
-        total_debt: year.total_debt,
-        cash: year.cash,
-      }))
+      historical_years_data: companyData.filing_history.length > 1 
+        ? companyData.filing_history.slice(1).map(year => ({
+            year: year.year,
+            revenue: year.revenue || 0,
+            ebitda: year.ebitda || 0,
+            net_income: year.net_income,
+            total_assets: year.total_assets,
+            total_debt: year.total_debt,
+            cash: year.cash,
+          }))
+        : undefined,
+      // Add additional context from conversational input
+      number_of_employees: additionalContext.number_of_employees || companyData.employees,
+      recurring_revenue_percentage: additionalContext.recurring_revenue_percentage,
     });
     onCalculateValuation();
   };

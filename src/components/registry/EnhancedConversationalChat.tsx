@@ -209,12 +209,7 @@ Currently supporting Belgian companies. More countries coming soon! 🚀`,
         employees: collectedData.employees,
         // Store additional context for valuation
         completeness_score: collectedData.revenue_y1 ? 0.85 : 0.65,
-        data_source: `Conversational input (${filingHistory.length} year${filingHistory.length > 1 ? 's' : ''})`,
-        // Pass through for valuation form
-        _additional_context: {
-          recurring_revenue_percentage: collectedData.recurring_revenue ? collectedData.recurring_revenue / 100 : undefined,
-          number_of_employees: collectedData.employees,
-        }
+        data_source: `Conversational input (${filingHistory.length} year${filingHistory.length > 1 ? 's' : ''})`
       };
       
       setTimeout(() => {

@@ -60,27 +60,27 @@ const CustomNumberInputField: React.FC<CustomNumberInputFieldProps> = ({
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     // Allow: backspace, delete, tab, escape, enter, decimal point, minus, comma
     if (
-      [8, 9, 27, 13, 46, 110, 190, 189, 109, 188].indexOf(e.keyCode) !== -1 ||
+      ['Backspace', 'Delete', 'Tab', 'Escape', 'Enter', '.', '-', ','].includes(e.key) ||
       // Allow: Ctrl+A, Ctrl+C, Ctrl+V, Ctrl+X
-      (e.keyCode === 65 && e.ctrlKey === true) ||
-      (e.keyCode === 67 && e.ctrlKey === true) ||
-      (e.keyCode === 86 && e.ctrlKey === true) ||
-      (e.keyCode === 88 && e.ctrlKey === true) ||
+      (e.key === 'a' && e.ctrlKey) ||
+      (e.key === 'c' && e.ctrlKey) ||
+      (e.key === 'v' && e.ctrlKey) ||
+      (e.key === 'x' && e.ctrlKey) ||
       // Allow: home, end, left, right, down, up
-      (e.keyCode >= 35 && e.keyCode <= 40)
+      ['Home', 'End', 'ArrowLeft', 'ArrowRight', 'ArrowDown', 'ArrowUp'].includes(e.key)
     ) {
       return;
     }
     // Allow numbers (0-9) from both main keyboard and numpad
-    if ((e.keyCode >= 48 && e.keyCode <= 57) || (e.keyCode >= 96 && e.keyCode <= 105)) {
+    if (/^[0-9]$/.test(e.key)) {
       return;
     }
     // Allow decimal point if decimals are allowed
-    if (allowDecimals && (e.keyCode === 190 || e.keyCode === 110)) {
+    if (allowDecimals && e.key === '.') {
       return;
     }
     // Allow comma for thousands separator
-    if (e.keyCode === 188) {
+    if (e.key === ',') {
       return;
     }
     // Block all other keys
