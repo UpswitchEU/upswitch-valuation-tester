@@ -204,7 +204,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         hasUser: !!user, 
         companyName: user?.company_name,
         businessType: user?.business_type,
-        industry: user?.industry
+        industry: user?.industry,
+        allUserKeys: user ? Object.keys(user) : [],
+        fullUserObject: user
       });
       return null;
     }
@@ -329,6 +331,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             employee_count_range: data.data.employee_count_range,
             country: data.data.country
           });
+          console.log('🔍 Full user object (data.data):', JSON.stringify(data.data, null, 2));
           setUser(data.data);
           console.log('✅ Existing session found (data.data):', data.data);
         } else if (data.success && data.user) {
