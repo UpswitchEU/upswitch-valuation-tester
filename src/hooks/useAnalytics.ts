@@ -195,7 +195,7 @@ export const usePerformanceAnalytics = () => {
       // Track First Input Delay (FID)
       new PerformanceObserver((list) => {
         const entries = list.getEntries();
-        entries.forEach((entry) => {
+        entries.forEach((entry: any) => {
           analytics.trackPerformanceMetric('fid', entry.processingStart - entry.startTime);
         });
       }).observe({ entryTypes: ['first-input'] });
@@ -204,7 +204,7 @@ export const usePerformanceAnalytics = () => {
       let clsValue = 0;
       new PerformanceObserver((list) => {
         const entries = list.getEntries();
-        entries.forEach((entry) => {
+        entries.forEach((entry: any) => {
           if (!entry.hadRecentInput) {
             clsValue += entry.value;
           }
