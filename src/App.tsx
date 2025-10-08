@@ -5,10 +5,11 @@ import { AIAssistedValuation } from './components/registry/AIAssistedValuation';
 import { ManualValuationFlow } from './components/ManualValuationFlow';
 import { DocumentUploadFlow } from './components/DocumentUploadFlow';
 import { ROUTE_TO_VIEW_MODE, VIEW_MODE_TO_ROUTE } from './router/routes';
+import { AuthProvider } from './contexts/AuthContext';
 
 type ViewMode = 'ai-assisted' | 'manual' | 'document-upload';
 
-function App() {
+function AppContent() {
   const location = useLocation();
   const navigate = useNavigate();
   
@@ -62,6 +63,15 @@ function App() {
         </div>
       </main>
     </div>
+  );
+}
+
+// Wrap app with AuthProvider
+function App() {
+  return (
+    <AuthProvider>
+      <AppContent />
+    </AuthProvider>
   );
 }
 

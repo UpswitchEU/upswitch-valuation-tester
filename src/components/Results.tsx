@@ -27,22 +27,31 @@ export const Results: React.FC = () => {
     }).format(value);
   };
 
+  const formatCurrencyCompact = (value: number) => {
+    if (value >= 1000000) {
+      return `€${(value / 1000000).toFixed(1)}M`;
+    } else if (value >= 1000) {
+      return `€${(value / 1000).toFixed(0)}K`;
+    }
+    return formatCurrency(value);
+  };
+
   const formatPercent = (value: number) => {
     return `${value.toFixed(1)}%`;
   };
 
   return (
-    <div className="space-y-6 mt-8">
+    <div className="space-y-4 sm:space-y-6 mt-4 sm:mt-8">
       {/* Header */}
-      <div className="bg-gradient-to-r from-primary-600 to-blue-600 rounded-lg p-6 text-white">
-        <h2 className="text-2xl font-bold mb-2">Valuation Results</h2>
-        <p className="text-primary-100">
+      <div className="bg-gradient-to-r from-primary-600 to-blue-600 rounded-lg p-4 sm:p-6 text-white">
+        <h2 className="text-xl sm:text-2xl font-bold mb-2">Valuation Results</h2>
+        <p className="text-sm sm:text-base text-primary-100">
           Comprehensive analysis using {result.methodology || result.primary_method || 'synthesized'} methodology
         </p>
       </div>
 
       {/* Main Valuation */}
-      <div className="bg-white rounded-lg border-2 border-primary-500 p-6 shadow-lg">
+      <div className="bg-white rounded-lg border-2 border-primary-500 p-4 sm:p-6 shadow-lg">
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-lg font-semibold text-gray-900">Enterprise Value</h3>
           <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800 border border-blue-300">
@@ -53,18 +62,33 @@ export const Results: React.FC = () => {
           </span>
         </div>
         
-        <div className="grid grid-cols-3 gap-4 mb-6">
-          <div className="text-center p-4 bg-gray-50 rounded">
-            <p className="text-sm text-gray-600 mb-1">Low Estimate</p>
-            <p className="text-2xl font-bold text-gray-900">{formatCurrency(result.equity_value_low)}</p>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 mb-6">
+          <div className="text-center p-3 sm:p-4 bg-gray-50 rounded">
+            <p className="text-xs sm:text-sm text-gray-600 mb-1">Low Estimate</p>
+            <p className="text-lg sm:text-xl lg:text-2xl font-bold text-gray-900 break-words">
+              {formatCurrencyCompact(result.equity_value_low)}
+            </p>
+            <p className="text-xs text-gray-500 mt-1 hidden sm:block">
+              {formatCurrency(result.equity_value_low)}
+            </p>
           </div>
-          <div className="text-center p-4 bg-primary-50 rounded border-2 border-primary-500">
-            <p className="text-sm text-primary-600 mb-1">Mid-Point</p>
-            <p className="text-3xl font-bold text-primary-600">{formatCurrency(result.equity_value_mid)}</p>
+          <div className="text-center p-3 sm:p-4 bg-primary-50 rounded border-2 border-primary-500">
+            <p className="text-xs sm:text-sm text-primary-600 mb-1">Mid-Point</p>
+            <p className="text-xl sm:text-2xl lg:text-3xl font-bold text-primary-600 break-words">
+              {formatCurrencyCompact(result.equity_value_mid)}
+            </p>
+            <p className="text-xs text-primary-500 mt-1 hidden sm:block">
+              {formatCurrency(result.equity_value_mid)}
+            </p>
           </div>
-          <div className="text-center p-4 bg-gray-50 rounded">
-            <p className="text-sm text-gray-600 mb-1">High Estimate</p>
-            <p className="text-2xl font-bold text-gray-900">{formatCurrency(result.equity_value_high)}</p>
+          <div className="text-center p-3 sm:p-4 bg-gray-50 rounded">
+            <p className="text-xs sm:text-sm text-gray-600 mb-1">High Estimate</p>
+            <p className="text-lg sm:text-xl lg:text-2xl font-bold text-gray-900 break-words">
+              {formatCurrencyCompact(result.equity_value_high)}
+            </p>
+            <p className="text-xs text-gray-500 mt-1 hidden sm:block">
+              {formatCurrency(result.equity_value_high)}
+            </p>
           </div>
         </div>
         
@@ -89,13 +113,18 @@ export const Results: React.FC = () => {
         </div>
 
         {/* Recommended Asking Price */}
-        <div className="bg-gradient-to-r from-green-50 to-emerald-50 rounded-lg p-4 border border-green-300">
+        <div className="bg-gradient-to-r from-green-50 to-emerald-50 rounded-lg p-3 sm:p-4 border border-green-300">
           <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-700">Recommended Asking Price</p>
-              <p className="text-2xl font-bold text-green-700">{formatCurrency(result.recommended_asking_price)}</p>
+            <div className="flex-1 min-w-0">
+              <p className="text-xs sm:text-sm font-medium text-gray-700">Recommended Asking Price</p>
+              <p className="text-lg sm:text-xl lg:text-2xl font-bold text-green-700 break-words">
+                {formatCurrencyCompact(result.recommended_asking_price)}
+              </p>
+              <p className="text-xs text-green-600 mt-1 hidden sm:block">
+                {formatCurrency(result.recommended_asking_price)}
+              </p>
             </div>
-            <svg className="h-12 w-12 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <svg className="h-8 w-8 sm:h-10 sm:w-10 lg:h-12 lg:w-12 text-green-500 flex-shrink-0 ml-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
           </div>
@@ -194,26 +223,26 @@ export const Results: React.FC = () => {
       {/* Methodology Breakdown */}
       <div className="bg-white rounded-lg border border-gray-200 p-6">
         <h3 className="text-lg font-semibold text-gray-900 mb-4">Methodology Weights</h3>
-        <div className="grid grid-cols-2 gap-4 mb-4">
-          <div className="p-4 bg-blue-50 rounded">
-            <p className="text-sm text-gray-600 mb-1">DCF Weight</p>
-            <p className="text-2xl font-bold text-blue-600">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 mb-4">
+          <div className="p-3 sm:p-4 bg-blue-50 rounded">
+            <p className="text-xs sm:text-sm text-gray-600 mb-1">DCF Weight</p>
+            <p className="text-xl sm:text-2xl font-bold text-blue-600">
               {formatPercent((result.dcf_weight || 0) * 100)}
             </p>
             {result.dcf_valuation && (
-              <p className="text-xs text-gray-500 mt-1">
-                Value: {formatCurrency(result.dcf_valuation.equity_value || 0)}
+              <p className="text-xs text-gray-500 mt-1 break-words">
+                Value: {formatCurrencyCompact(result.dcf_valuation.equity_value || 0)}
               </p>
             )}
           </div>
-          <div className="p-4 bg-purple-50 rounded">
-            <p className="text-sm text-gray-600 mb-1">Multiples Weight</p>
-            <p className="text-2xl font-bold text-purple-600">
+          <div className="p-3 sm:p-4 bg-purple-50 rounded">
+            <p className="text-xs sm:text-sm text-gray-600 mb-1">Multiples Weight</p>
+            <p className="text-xl sm:text-2xl font-bold text-purple-600">
               {formatPercent((result.multiples_weight || 0) * 100)}
             </p>
             {result.multiples_valuation && (
-              <p className="text-xs text-gray-500 mt-1">
-                Value: {formatCurrency(result.multiples_valuation.adjusted_equity_value || 0)}
+              <p className="text-xs text-gray-500 mt-1 break-words">
+                Value: {formatCurrencyCompact(result.multiples_valuation.adjusted_equity_value || 0)}
               </p>
             )}
           </div>
@@ -239,28 +268,34 @@ export const Results: React.FC = () => {
           </h3>
           
           {/* Key DCF Metrics */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-6">
             <div className="p-3 bg-blue-50 rounded">
               <p className="text-xs text-gray-600 mb-1">Enterprise Value</p>
-              <p className="text-lg font-bold text-blue-600">
+              <p className="text-sm sm:text-base lg:text-lg font-bold text-blue-600 break-words">
+                {formatCurrencyCompact(result.dcf_valuation.enterprise_value)}
+              </p>
+              <p className="text-xs text-blue-500 mt-1 hidden sm:block">
                 {formatCurrency(result.dcf_valuation.enterprise_value)}
               </p>
             </div>
             <div className="p-3 bg-blue-50 rounded">
               <p className="text-xs text-gray-600 mb-1">WACC</p>
-              <p className="text-lg font-bold text-blue-600">
+              <p className="text-sm sm:text-base lg:text-lg font-bold text-blue-600">
                 {formatPercent(result.dcf_valuation.wacc * 100)}
               </p>
             </div>
             <div className="p-3 bg-blue-50 rounded">
               <p className="text-xs text-gray-600 mb-1">Terminal Growth</p>
-              <p className="text-lg font-bold text-blue-600">
+              <p className="text-sm sm:text-base lg:text-lg font-bold text-blue-600">
                 {formatPercent(result.dcf_valuation.terminal_growth_rate * 100)}
               </p>
             </div>
             <div className="p-3 bg-blue-50 rounded">
               <p className="text-xs text-gray-600 mb-1">Terminal Value</p>
-              <p className="text-lg font-bold text-blue-600">
+              <p className="text-sm sm:text-base lg:text-lg font-bold text-blue-600 break-words">
+                {formatCurrencyCompact(result.dcf_valuation.terminal_value)}
+              </p>
+              <p className="text-xs text-blue-500 mt-1 hidden sm:block">
                 {formatCurrency(result.dcf_valuation.terminal_value)}
               </p>
             </div>
@@ -338,10 +373,13 @@ export const Results: React.FC = () => {
           </h3>
           
           {/* Valuation Methods */}
-          <div className="grid grid-cols-3 gap-4 mb-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 mb-6">
             <div className="p-3 bg-purple-50 rounded">
               <p className="text-xs text-gray-600 mb-1">EV/EBITDA</p>
-              <p className="text-lg font-bold text-purple-600">
+              <p className="text-sm sm:text-base lg:text-lg font-bold text-purple-600 break-words">
+                {formatCurrencyCompact(result.multiples_valuation.ev_ebitda_valuation)}
+              </p>
+              <p className="text-xs text-purple-500 mt-1 hidden sm:block">
                 {formatCurrency(result.multiples_valuation.ev_ebitda_valuation)}
               </p>
               <p className="text-xs text-gray-500 mt-1">
@@ -350,7 +388,10 @@ export const Results: React.FC = () => {
             </div>
             <div className="p-3 bg-purple-50 rounded">
               <p className="text-xs text-gray-600 mb-1">EV/Revenue</p>
-              <p className="text-lg font-bold text-purple-600">
+              <p className="text-sm sm:text-base lg:text-lg font-bold text-purple-600 break-words">
+                {formatCurrencyCompact(result.multiples_valuation.ev_revenue_valuation)}
+              </p>
+              <p className="text-xs text-purple-500 mt-1 hidden sm:block">
                 {formatCurrency(result.multiples_valuation.ev_revenue_valuation)}
               </p>
               <p className="text-xs text-gray-500 mt-1">
@@ -360,7 +401,10 @@ export const Results: React.FC = () => {
             {result.multiples_valuation.pe_valuation && (
               <div className="p-3 bg-purple-50 rounded">
                 <p className="text-xs text-gray-600 mb-1">P/E Valuation</p>
-                <p className="text-lg font-bold text-purple-600">
+                <p className="text-sm sm:text-base lg:text-lg font-bold text-purple-600 break-words">
+                  {formatCurrencyCompact(result.multiples_valuation.pe_valuation)}
+                </p>
+                <p className="text-xs text-purple-500 mt-1 hidden sm:block">
                   {formatCurrency(result.multiples_valuation.pe_valuation)}
                 </p>
                 {result.multiples_valuation.pe_multiple && (
@@ -513,12 +557,13 @@ export const Results: React.FC = () => {
       )}
 
       {/* Export Actions */}
-      <div className="flex space-x-4">
-        <button className="flex-1 px-6 py-3 bg-gray-100 text-gray-700 rounded-md font-medium hover:bg-gray-200 flex items-center justify-center space-x-2">
-          <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
+        <button className="flex-1 px-4 sm:px-6 py-3 bg-gray-100 text-gray-700 rounded-md font-medium hover:bg-gray-200 flex items-center justify-center space-x-2 text-sm sm:text-base">
+          <svg className="h-4 w-4 sm:h-5 sm:w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10" />
           </svg>
-          <span>Export PDF Report</span>
+          <span className="hidden sm:inline">Export PDF Report</span>
+          <span className="sm:hidden">PDF</span>
         </button>
         <button 
           onClick={() => {
@@ -530,12 +575,13 @@ export const Results: React.FC = () => {
             linkElement.setAttribute('download', exportFileDefaultName);
             linkElement.click();
           }}
-          className="flex-1 px-6 py-3 bg-primary-600 text-white rounded-md font-medium hover:bg-primary-700 flex items-center justify-center space-x-2"
+          className="flex-1 px-4 sm:px-6 py-3 bg-primary-600 text-white rounded-md font-medium hover:bg-primary-700 flex items-center justify-center space-x-2 text-sm sm:text-base"
         >
-          <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <svg className="h-4 w-4 sm:h-5 sm:w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
           </svg>
-          <span>Export JSON</span>
+          <span className="hidden sm:inline">Export JSON</span>
+          <span className="sm:hidden">JSON</span>
         </button>
       </div>
     </div>

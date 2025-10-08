@@ -28,9 +28,14 @@ interface ValuationStore {
   liveEstimate: ValuationResponse | null;
   setLiveEstimate: (estimate: ValuationResponse | null) => void;
   
+  // Saved valuation ID (from backend)
+  savedValuationId: string | null;
+  setSavedValuationId: (id: string | null) => void;
+  
   // Actions
   calculateValuation: () => Promise<void>;
   quickValuation: () => Promise<void>;
+  saveToBackend: (businessId?: string) => Promise<{ id: string } | null>;
 }
 
 // Helper to get safe current year (allow up to current year, max 2100 per backend validation)
@@ -39,7 +44,7 @@ const getSafeCurrentYear = () => Math.min(new Date().getFullYear(), 2100);
 const defaultFormData: ValuationFormData = {
   company_name: 'My Company', // Default company name to avoid validation error
   country_code: 'BE',
-  industry: '',
+  industry: 'services', // Default to valid industry code
   business_model: 'other', // Default business model
   founding_year: getSafeCurrentYear() - 5, // Default to 5 years ago
   business_type: 'company',
@@ -79,6 +84,10 @@ export const useValuationStore = create<ValuationStore>((set, get) => ({
   // Real-time preview
   liveEstimate: null,
   setLiveEstimate: (liveEstimate) => set({ liveEstimate }),
+  
+  // Saved valuation ID
+  savedValuationId: null,
+  setSavedValuationId: (savedValuationId) => set({ savedValuationId }),
   
   // Actions
   calculateValuation: async () => {
@@ -203,6 +212,86 @@ export const useValuationStore = create<ValuationStore>((set, get) => ({
       console.error('Quick valuation failed:', error);
     } finally {
       setIsCalculatingLive(false);
+    }
+  },
+  
+  /**
+   * Save valuation to backend database
+   * Requires authentication via cookie
+   */
+  saveToBackend: async (businessId?: string) => {
+    const { result, formData, setSavedValuationId, setError } = get();
+    
+    if (!result) {
+      console.warn('⚠️ No valuation result to save');
+      return null;
+    }
+    
+    try {
+      console.log('💾 Saving valuation to backend...');
+      
+      const API_URL = import.meta.env.VITE_API_URL || 'https://api.upswitch.biz';
+      
+      const response = await fetch(`${API_URL}/api/valuations/save`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include', // Send authentication cookie
+        body: JSON.stringify({
+          businessId,
+          valuation: {
+            ...result,
+            company_name: formData.company_name,
+            country_code: formData.country_code,
+            industry: formData.industry,
+          },
+        }),
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to save valuation');
+      }
+      
+      const data = await response.json();
+      
+      if (data.success && data.data?.id) {
+        setSavedValuationId(data.data.id);
+        console.log('✅ Valuation saved successfully:', data.data.id);
+        
+        // Notify parent window via PostMessage
+        if (window.opener || window.parent !== window) {
+          const targetOrigin = import.meta.env.VITE_PARENT_DOMAIN || 'https://upswitch.biz';
+          
+          const message = {
+            type: 'VALUATION_SAVED',
+            valuationId: data.data.id,
+            companyName: formData.company_name,
+            timestamp: new Date().toISOString(),
+          };
+          
+          // Try to send to opener (new window)
+          if (window.opener && !window.opener.closed) {
+            window.opener.postMessage(message, targetOrigin);
+            console.log('📤 PostMessage sent to opener window');
+          }
+          
+          // Try to send to parent (iframe)
+          if (window.parent !== window) {
+            window.parent.postMessage(message, targetOrigin);
+            console.log('📤 PostMessage sent to parent window');
+          }
+        }
+        
+        return { id: data.data.id };
+      } else {
+        throw new Error('Invalid response from server');
+      }
+    } catch (error: any) {
+      console.error('❌ Failed to save valuation:', error);
+      setError(error.message || 'Failed to save valuation to backend');
+      return null;
     }
   },
 }));
