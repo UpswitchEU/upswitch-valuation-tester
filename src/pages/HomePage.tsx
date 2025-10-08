@@ -70,19 +70,19 @@ export const HomePage: React.FC = () => {
 
 
       {/* Hero Section */}
-      <div className="container mx-auto px-4 py-16 max-w-7xl">
-        <div className="text-center mb-16">
-          <h1 className="text-5xl md:text-6xl font-bold text-white mb-4">
+      <div className="container mx-auto px-4 sm:px-6 py-8 sm:py-12 md:py-16 max-w-7xl">
+        <div className="text-center mb-8 sm:mb-12 md:mb-16">
+          <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-3 sm:mb-4 px-2">
             Business Valuation Engine
           </h1>
-          <p className="text-xl text-zinc-400 max-w-2xl mx-auto">
+          <p className="text-base sm:text-lg md:text-xl text-zinc-400 max-w-2xl mx-auto px-4">
             Professional-grade valuations powered by AI
           </p>
 
         </div>
 
         {/* Valuation Method Cards */}
-        <div className="grid md:grid-cols-3 gap-6 max-w-7xl mx-auto">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 max-w-7xl mx-auto">
           {valuationMethods.map((method) => {
             const IconComponent = method.icon;
             const isDisabled = method.disabled;
@@ -91,39 +91,39 @@ export const HomePage: React.FC = () => {
                 key={method.id}
                 onClick={() => !isDisabled && navigate(method.path)}
                 disabled={isDisabled}
-                className={`group relative bg-gradient-to-br ${method.bgGradient} rounded-2xl border ${method.borderColor} p-8 transition-all duration-300 ${
+                className={`group relative bg-gradient-to-br ${method.bgGradient} rounded-xl sm:rounded-2xl border ${method.borderColor} p-6 sm:p-8 transition-all duration-300 ${
                   isDisabled 
                     ? 'opacity-50 cursor-not-allowed' 
-                    : 'hover:scale-105 hover:shadow-2xl'
-                } ${method.glowColor} text-left`}
+                    : 'active:scale-95 md:hover:scale-105 hover:shadow-2xl'
+                } ${method.glowColor} text-left w-full`}
               >
                 {/* Badge */}
                 {method.badge && (
-                  <div className="absolute top-4 right-4">
-                    <span className={`px-3 py-1 rounded-full text-xs font-semibold border ${method.badgeColor}`}>
+                  <div className="absolute top-3 right-3 sm:top-4 sm:right-4">
+                    <span className={`px-2 sm:px-3 py-1 rounded-full text-xs font-semibold border ${method.badgeColor}`}>
                       {method.badge}
                     </span>
                   </div>
                 )}
 
                 {/* Icon */}
-                <div className={`w-14 h-14 rounded-xl bg-zinc-800/50 border border-zinc-700/50 flex items-center justify-center mb-6 transition-colors ${
+                <div className={`w-12 h-12 sm:w-14 sm:h-14 rounded-lg sm:rounded-xl bg-zinc-800/50 border border-zinc-700/50 flex items-center justify-center mb-4 sm:mb-6 transition-colors ${
                   isDisabled ? '' : 'group-hover:bg-zinc-700/50'
                 }`}>
-                  <IconComponent className={`w-7 h-7 transition-colors ${
+                  <IconComponent className={`w-6 h-6 sm:w-7 sm:h-7 transition-colors ${
                     isDisabled ? 'text-zinc-500' : 'text-zinc-300 group-hover:text-white'
                   }`} />
                 </div>
 
                 {/* Title */}
-                <h3 className={`text-2xl font-bold mb-3 transition-colors ${
+                <h3 className={`text-xl sm:text-2xl font-bold mb-2 sm:mb-3 transition-colors ${
                   isDisabled ? 'text-zinc-500' : 'text-white group-hover:text-primary-300'
                 }`}>
                   {method.title}
                 </h3>
 
                 {/* Description */}
-                <p className={`text-sm mb-6 leading-relaxed ${
+                <p className={`text-sm mb-4 sm:mb-6 leading-relaxed ${
                   isDisabled ? 'text-zinc-600' : 'text-zinc-400'
                 }`}>
                   {method.description}
@@ -163,21 +163,21 @@ export const HomePage: React.FC = () => {
 
 
         {/* Professional Disclaimer */}
-        <div className="mt-12 max-w-3xl mx-auto">
-          <div className="bg-blue-500/10 border border-blue-500/30 rounded-xl p-6">
-            <div className="flex items-start gap-4">
-              <div className="w-10 h-10 rounded-full bg-blue-500/20 flex items-center justify-center flex-shrink-0">
-                <svg className="w-5 h-5 text-blue-400" viewBox="0 0 20 20" fill="currentColor">
+        <div className="mt-8 sm:mt-12 max-w-3xl mx-auto">
+          <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg sm:rounded-xl p-4 sm:p-6">
+            <div className="flex items-start gap-3 sm:gap-4">
+              <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-blue-500/20 flex items-center justify-center flex-shrink-0">
+                <svg className="w-4 h-4 sm:w-5 sm:h-5 text-blue-400" viewBox="0 0 20 20" fill="currentColor">
                   <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
                 </svg>
               </div>
               <div>
-                <h4 className="text-blue-300 font-semibold mb-2">Professional-Grade Valuation Engine</h4>
-                <p className="text-blue-200/80 text-sm leading-relaxed">
+                <h4 className="text-blue-300 font-semibold mb-2 text-sm sm:text-base">Professional-Grade Valuation Engine</h4>
+                <p className="text-blue-200/80 text-xs sm:text-sm leading-relaxed">
                   This valuation engine uses institutional-quality methodologies (DCF + Market Multiples) with 85-95% accuracy, comparable to Big 4 advisory services. While our calculations are professional-grade and transparent, valuations should be considered as informed estimates. For critical business decisions, we recommend consulting with qualified financial advisors and conducting additional due diligence.{' '}
                   <Link 
                     to="/privacy-explainer" 
-                    className="font-semibold underline hover:text-blue-300 transition-colors"
+                    className="font-semibold underline hover:text-blue-300 transition-colors inline-block mt-1"
                   >
                     Learn how we protect your financial data →
                   </Link>

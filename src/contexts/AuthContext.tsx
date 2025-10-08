@@ -245,15 +245,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const token = params.get('token');
 
       if (token) {
-        console.log('🔑 Token found in URL, exchanging for session...');
+        console.log('🔑 Token found in URL - user coming from upswitch.biz');
+        console.log('🔄 Exchanging token for authenticated session...');
         await exchangeToken(token);
         
         // Remove token from URL for security
         const newUrl = window.location.pathname + window.location.hash;
         window.history.replaceState({}, document.title, newUrl);
+        console.log('✅ Token exchange complete - user authenticated');
       } else {
         // Check for existing session cookie
-        console.log('🔍 Checking for existing session...');
+        console.log('🔍 No token in URL - checking for existing session cookie...');
         await checkSession();
       }
     } catch (err) {
@@ -285,9 +287,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       const data = await response.json();
 
-      if (data.success && data.data?.user) {
-        setUser(data.data.user);
-        console.log('✅ Authentication successful:', data.data.user.email);
+      if (data.success && data.data) {
+        // Handle nested user structure (data.data.user or data.data)
+        const userData = data.data.user || data.data;
+        setUser(userData);
+        console.log('✅ Authentication successful via token exchange:', userData.email);
+        console.log('✅ Token exchange - user data:', {
+          id: userData.id,
+          email: userData.email,
+          company_name: userData.company_name,
+          business_type: userData.business_type,
+          industry: userData.industry
+        });
       } else {
         throw new Error('Invalid response from token exchange');
       }
@@ -355,8 +366,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           console.log('ℹ️ No existing session - response:', JSON.stringify(data));
           setUser(null);
         }
+      } else if (response.status === 404 || response.status === 401) {
+        // Expected: No session exists (guest user or not authenticated)
+        console.log('ℹ️ No active session - continuing as guest user');
+        setUser(null);
       } else {
-        console.log('ℹ️ No valid session - status:', response.status);
+        console.log('ℹ️ Session check failed - status:', response.status);
         setUser(null);
       }
     } catch (err) {
