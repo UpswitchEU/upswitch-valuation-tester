@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { MessageSquare, Database, TrendingUp, CheckCircle, Save, ArrowLeft, DollarSign } from 'lucide-react';
 import { EnhancedConversationalChat } from './EnhancedConversationalChat';
@@ -7,6 +7,7 @@ import { Results } from '../Results';
 import { ConversationalFinancialInput } from '../valuation/ConversationalFinancialInput';
 import type { CompanyFinancialData } from '../../types/registry';
 import { useValuationStore } from '../../store/useValuationStore';
+import { useAuth } from '../../contexts/AuthContext';
 // import { useReportsStore } from '../../store/useReportsStore'; // Deprecated: Now saving to database
 // import { urls } from '../../router'; // Removed reports link
 
@@ -18,9 +19,63 @@ export const AIAssistedValuation: React.FC = () => {
   const [companyData, setCompanyData] = useState<CompanyFinancialData | null>(null);
   const [selectedCompanyId, setSelectedCompanyId] = useState<string | null>(null);
   // const [financialSummary, setFinancialSummary] = useState<any | null>(null);
-  const { calculateValuation, result } = useValuationStore();
+  const { calculateValuation, result, updateFormData } = useValuationStore();
+  const { businessCard, isAuthenticated } = useAuth();
   // const { addReport } = useReportsStore(); // Deprecated: Now saving to database
   const [reportSaved, setReportSaved] = useState(false);
+  const [hasPrefilledOnce, setHasPrefilledOnce] = useState(false);
+
+  // 🚀 SMART PRE-POPULATION: Use user's business data for instant flow
+  useEffect(() => {
+    console.log('🔍 Instant flow pre-fill check:', { 
+      isAuthenticated, 
+      hasBusinessCard: !!businessCard, 
+      hasPrefilledOnce,
+      businessCard 
+    });
+    
+    if (isAuthenticated && businessCard && !hasPrefilledOnce) {
+      console.log('🏢 Pre-filling instant flow with business card data:', {
+        ...businessCard,
+        employee_count: businessCard.employee_count ? `${businessCard.employee_count} employees` : 'not available'
+      });
+      
+      // Create CompanyFinancialData from business card
+      const userCompanyData: CompanyFinancialData = {
+        company_id: `user-${businessCard.company_name?.toLowerCase().replace(/\s+/g, '-')}`,
+        company_name: businessCard.company_name || 'Your Company',
+        registration_number: '', // Not available from business card
+        country_code: businessCard.country_code || 'BE',
+        legal_form: 'BV', // Default for Belgium
+        industry_code: businessCard.industry || 'services',
+        industry_description: businessCard.industry || 'services',
+        founding_year: businessCard.founding_year || new Date().getFullYear(),
+        employees: businessCard.employee_count || 1,
+        filing_history: [], // Will be collected via conversational input
+        data_source: 'user_profile',
+        last_updated: new Date().toISOString(),
+        completeness_score: 100 // High confidence since it's user's own data
+      };
+      
+      // Pre-populate the form data
+      updateFormData({
+        company_name: userCompanyData.company_name,
+        country_code: userCompanyData.country_code,
+        industry: userCompanyData.industry_description,
+        business_model: businessCard.business_model || 'other',
+        founding_year: userCompanyData.founding_year,
+        number_of_employees: userCompanyData.employees,
+      });
+      
+      // Set company data and skip to financial input
+      setCompanyData(userCompanyData);
+      setSelectedCompanyId(userCompanyData.company_id);
+      setStage('financial-input'); // Skip chat, go directly to financial input
+      setHasPrefilledOnce(true);
+      
+      console.log('✅ Instant flow pre-populated with user business data');
+    }
+  }, [isAuthenticated, businessCard, hasPrefilledOnce, updateFormData]);
 
   // 📝 DEPRECATED: Auto-save report to localStorage
   // Now handled by calculateValuation() → saveToBackend()
@@ -97,6 +152,7 @@ export const AIAssistedValuation: React.FC = () => {
     setSelectedCompanyId(null);
     // setFinancialSummary(null);
     setReportSaved(false);
+    setHasPrefilledOnce(false); // Reset pre-fill state to allow re-pre-filling
   };
 
   return (

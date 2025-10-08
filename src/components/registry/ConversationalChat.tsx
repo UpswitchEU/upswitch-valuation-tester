@@ -15,6 +15,7 @@ import {
   validateDataForValuation,
   getTransformationSummary
 } from '../../services/transformationService';
+import { useAuth } from '../../contexts/AuthContext';
 
 interface Message {
   id: string;
@@ -31,11 +32,30 @@ interface ConversationalChatProps {
 export const ConversationalChat: React.FC<ConversationalChatProps> = ({
   onCompanyFound
 }) => {
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      id: '1',
-      type: 'ai',
-      content: `👋 Welcome! I'll help you value your business in 1-2 minutes.
+  const { businessCard, isAuthenticated } = useAuth();
+  
+  // 🚀 SMART INITIAL MESSAGE: Personalized based on user's business data
+  const getInitialMessage = () => {
+    if (isAuthenticated && businessCard?.company_name) {
+      return `👋 Hi! I see you're from **${businessCard.company_name}**!
+
+I'll help you get a professional valuation for your business in 1-2 minutes.
+
+**I already know:**
+• Company: ${businessCard.company_name}
+• Industry: ${businessCard.industry || 'Not specified'}
+• Founded: ${businessCard.founded_year || 'Not specified'}
+• Team: ${businessCard.employee_count ? `${businessCard.employee_count} employees` : 'Not specified'}
+
+**I just need:**
+• Your company's **revenue** and **profit** numbers
+• A few quick financial details
+
+Ready to get your valuation? Just say "yes" or tell me your company name to confirm!`;
+    }
+    
+    // Fallback for non-authenticated users
+    return `👋 Welcome! I'll help you value your business in 1-2 minutes.
 
 Just tell me your **company name** to get started.
 
@@ -50,7 +70,14 @@ Just tell me your **company name** to get started.
 • "Acme Trading"
 • "Tech Solutions"
 
-Currently supporting Belgian companies. More countries coming soon! 🚀`,
+Currently supporting Belgian companies. More countries coming soon! 🚀`;
+  };
+
+  const [messages, setMessages] = useState<Message[]>([
+    {
+      id: '1',
+      type: 'ai',
+      content: getInitialMessage(),
       timestamp: new Date()
     }
   ]);
@@ -142,6 +169,51 @@ Currently supporting Belgian companies. More countries coming soon! 🚀`,
     
     setInput('');
     setIsProcessing(true);
+
+    // 🚀 SMART HANDLING: Check if user is confirming their company
+    if (isAuthenticated && businessCard?.company_name && 
+        (userMessage.toLowerCase().includes('yes') || 
+         userMessage.toLowerCase().includes(businessCard.company_name.toLowerCase()))) {
+      
+      // Remove loading message
+      setMessages(prev => prev.filter(m => m.id !== loadingId));
+      
+      // Create user company data and proceed
+      const userCompanyData: CompanyFinancialData = {
+        company_id: `user-${businessCard.company_name.toLowerCase().replace(/\s+/g, '-')}`,
+        company_name: businessCard.company_name,
+        registration_number: '',
+        country_code: businessCard.country_code || 'BE',
+        legal_form: 'BV',
+        industry_code: businessCard.industry || 'services',
+        industry_description: businessCard.industry || 'services',
+        founding_year: businessCard.founding_year || new Date().getFullYear(),
+        employees: businessCard.employee_count || 1,
+        filing_history: [],
+        data_source: 'user_profile',
+        last_updated: new Date().toISOString(),
+        completeness_score: 100
+      };
+      
+      setMessages(prev => [...prev, {
+        id: Date.now().toString(),
+        type: 'ai',
+        content: `✅ Perfect! I have your company details for **${businessCard.company_name}**.
+
+Now I just need your financial information to calculate your valuation. Let me ask a few quick questions:
+
+1️⃣ **What's your annual revenue?** (e.g., €500K, €1M, €2.5M)
+2️⃣ **What's your net profit/EBITDA?** (e.g., €100K, €200K, €500K)
+3️⃣ **Any other financial details?** (debt, cash, assets)
+
+Ready to start?`,
+        timestamp: new Date()
+      }]);
+      
+      setIsProcessing(false);
+      onCompanyFound(userCompanyData);
+      return;
+    }
 
     // Add loading message
     const loadingId = Date.now().toString() + '_loading';
