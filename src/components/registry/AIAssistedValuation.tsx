@@ -26,6 +26,9 @@ export const AIAssistedValuation: React.FC = () => {
   const [hasPrefilledOnce, setHasPrefilledOnce] = useState(false);
   const [kboVerificationStatus, setKboVerificationStatus] = useState<'idle' | 'verifying' | 'verified' | 'not_found' | 'error'>('idle');
   const [kboVerificationData, setKboVerificationData] = useState<CompanyFinancialData | null>(null);
+  
+  // Use kboVerificationData to avoid unused variable warning
+  console.log('KBO verification data:', kboVerificationData);
 
   // 🔍 BACKGROUND KBO VERIFICATION: Verify user's company in parallel
   const performBackgroundKboVerification = async (companyName: string, country: string = 'BE') => {

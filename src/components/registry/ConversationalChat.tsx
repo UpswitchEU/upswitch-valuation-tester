@@ -44,7 +44,7 @@ I'll help you get a professional valuation for your business in 1-2 minutes.
 **I already know:**
 • Company: ${businessCard.company_name}
 • Industry: ${businessCard.industry || 'Not specified'}
-• Founded: ${businessCard.founded_year || 'Not specified'}
+• Founded: ${businessCard.founding_year || 'Not specified'}
 • Team: ${businessCard.employee_count ? `${businessCard.employee_count} employees` : 'Not specified'}
 
 **I just need:**
