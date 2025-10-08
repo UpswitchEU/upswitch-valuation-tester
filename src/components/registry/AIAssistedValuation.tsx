@@ -24,6 +24,67 @@ export const AIAssistedValuation: React.FC = () => {
   // const { addReport } = useReportsStore(); // Deprecated: Now saving to database
   const [reportSaved, setReportSaved] = useState(false);
   const [hasPrefilledOnce, setHasPrefilledOnce] = useState(false);
+  const [kboVerificationStatus, setKboVerificationStatus] = useState<'idle' | 'verifying' | 'verified' | 'not_found' | 'error'>('idle');
+  const [kboVerificationData, setKboVerificationData] = useState<CompanyFinancialData | null>(null);
+
+  // 🔍 BACKGROUND KBO VERIFICATION: Verify user's company in parallel
+  const performBackgroundKboVerification = async (companyName: string, country: string = 'BE') => {
+    if (kboVerificationStatus === 'verifying') return; // Prevent duplicate calls
+    
+    setKboVerificationStatus('verifying');
+    console.log('🔍 Starting background KBO verification for:', companyName);
+    
+    try {
+      // Import the search function
+      const { searchCompanies } = await import('../../services/registryService');
+      
+      // Search for the company in KBO registry
+      const searchResults = await searchCompanies(companyName, country);
+      
+      if (searchResults.length > 0) {
+        const searchResult = searchResults[0];
+        console.log('✅ KBO verification successful:', searchResult);
+        
+        // Convert CompanySearchResult to CompanyFinancialData
+        const verifiedData: CompanyFinancialData = {
+          company_id: searchResult.company_id,
+          company_name: searchResult.company_name,
+          registration_number: searchResult.registration_number,
+          country_code: searchResult.country_code || 'BE',
+          legal_form: searchResult.legal_form,
+          industry_code: undefined, // Not available in search result
+          industry_description: undefined, // Not available in search result
+          founding_year: undefined, // Not available in search result
+          employees: undefined, // Not available in search result
+          filing_history: [], // Will be fetched separately if needed
+          data_source: 'kbo_registry',
+          last_updated: new Date().toISOString(),
+          completeness_score: searchResult.confidence_score
+        };
+        
+        // Update with verified data
+        setKboVerificationData(verifiedData);
+        setKboVerificationStatus('verified');
+        
+        // Update form data with verified information
+        console.log('📊 KBO verification complete, updating form with verified data...');
+        updateFormData({
+          company_name: searchResult.company_name,
+          country_code: searchResult.country_code || businessCard?.country_code,
+          industry: businessCard?.industry, // Keep user's industry
+          business_model: businessCard?.business_model || 'other',
+          founding_year: businessCard?.founding_year, // Keep user's founding year
+          number_of_employees: businessCard?.employee_count, // Keep user's employee count
+        });
+      } else {
+        console.log('⚠️ KBO verification: Company not found in registry');
+        setKboVerificationStatus('not_found');
+      }
+    } catch (error) {
+      console.error('❌ KBO verification failed:', error);
+      setKboVerificationStatus('error');
+    }
+  };
 
   // 🚀 SMART PRE-POPULATION: Use user's business data for instant flow
   useEffect(() => {
@@ -72,6 +133,9 @@ export const AIAssistedValuation: React.FC = () => {
       setSelectedCompanyId(userCompanyData.company_id);
       setStage('financial-input'); // Skip chat, go directly to financial input
       setHasPrefilledOnce(true);
+      
+      // 🔍 START BACKGROUND KBO VERIFICATION (non-blocking)
+      performBackgroundKboVerification(userCompanyData.company_name, userCompanyData.country_code);
       
       console.log('✅ Instant flow pre-populated with user business data');
     }
@@ -172,6 +236,35 @@ export const AIAssistedValuation: React.FC = () => {
             <div>
               <h1 className="text-lg font-bold text-white">Instant Valuation</h1>
               <p className="text-xs text-zinc-400">AI-powered company lookup</p>
+              {/* 🔍 KBO Verification Status */}
+              {kboVerificationStatus !== 'idle' && (
+                <div className="flex items-center gap-2 mt-1">
+                  {kboVerificationStatus === 'verifying' && (
+                    <div className="flex items-center gap-1 text-xs text-blue-400">
+                      <div className="w-2 h-2 bg-blue-400 rounded-full animate-pulse" />
+                      <span>Verifying company in KBO registry...</span>
+                    </div>
+                  )}
+                  {kboVerificationStatus === 'verified' && (
+                    <div className="flex items-center gap-1 text-xs text-green-400">
+                      <div className="w-2 h-2 bg-green-400 rounded-full" />
+                      <span>✅ Company verified in KBO registry</span>
+                    </div>
+                  )}
+                  {kboVerificationStatus === 'not_found' && (
+                    <div className="flex items-center gap-1 text-xs text-yellow-400">
+                      <div className="w-2 h-2 bg-yellow-400 rounded-full" />
+                      <span>⚠️ Company not found in KBO registry</span>
+                    </div>
+                  )}
+                  {kboVerificationStatus === 'error' && (
+                    <div className="flex items-center gap-1 text-xs text-red-400">
+                      <div className="w-2 h-2 bg-red-400 rounded-full" />
+                      <span>❌ KBO verification failed</span>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           </div>
 

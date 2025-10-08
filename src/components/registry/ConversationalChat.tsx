@@ -200,6 +200,8 @@ Currently supporting Belgian companies. More countries coming soon! 🚀`;
         type: 'ai',
         content: `✅ Perfect! I have your company details for **${businessCard.company_name}**.
 
+🔍 I'm also verifying your company in the official KBO registry in the background to ensure we have the most accurate data.
+
 Now I just need your financial information to calculate your valuation. Let me ask a few quick questions:
 
 1️⃣ **What's your annual revenue?** (e.g., €500K, €1M, €2.5M)
