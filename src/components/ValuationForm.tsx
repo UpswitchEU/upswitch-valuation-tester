@@ -40,7 +40,10 @@ export const ValuationForm: React.FC = () => {
   // Pre-fill form with business card data when authenticated
   useEffect(() => {
     if (isAuthenticated && businessCard && !hasPrefilledOnce) {
-      console.log('🏢 Pre-filling form with business card data:', businessCard);
+      console.log('🏢 Pre-filling form with business card data:', {
+        ...businessCard,
+        employee_count: businessCard.employee_count ? `${businessCard.employee_count} employees` : 'not available'
+      });
       prefillFromBusinessCard(businessCard);
       setHasPrefilledOnce(true);
     }
@@ -80,6 +83,9 @@ export const ValuationForm: React.FC = () => {
     if (formData.founding_year) { score += 5; total += 5; }
     if (formData.revenue && formData.revenue > 0) { score += 5; total += 5; }
     
+    // Optional company details (5 points)
+    if (formData.number_of_employees && formData.number_of_employees > 0) { score += 5; total += 5; }
+    
     // Current year financials (30 points)
     if (formData.ebitda) { score += 10; total += 10; }
     if (formData.current_year_data?.net_income) { score += 5; total += 5; }
@@ -87,14 +93,14 @@ export const ValuationForm: React.FC = () => {
     if (formData.current_year_data?.total_debt) { score += 5; total += 5; }
     if (formData.current_year_data?.cash) { score += 5; total += 5; }
     
-    // Historical data (30 points)
+    // Historical data (25 points)
     const hasHistorical = formData.historical_years_data && formData.historical_years_data.length > 0;
     if (hasHistorical) {
       const years = formData.historical_years_data?.length || 0;
-      score += Math.min(years * 10, 30);
-      total += 30;
+      score += Math.min(years * 8, 25);
+      total += 25;
     } else {
-      total += 30;
+      total += 25;
     }
     
     return total > 0 ? Math.round((score / total) * 100) : 0;
@@ -193,6 +199,12 @@ export const ValuationForm: React.FC = () => {
               <p className="flex items-start">
                 <span className="text-yellow-400 mr-1.5">⚠️</span>
                 <span><strong>Add historical data</strong> (3-5 years) to improve accuracy by up to 20%</span>
+              </p>
+            )}
+            {!formData.number_of_employees && dataQuality < 80 && (
+              <p className="flex items-start">
+                <span className="text-blue-400 mr-1.5">💡</span>
+                <span><strong>Add number of employees</strong> to improve company size benchmarking</span>
               </p>
             )}
             {!formData.current_year_data?.total_assets && dataQuality < 80 && (
@@ -302,6 +314,21 @@ export const ValuationForm: React.FC = () => {
             value={formData.country_code || ''}
             onChange={(value) => updateFormData({ country_code: value })}
             required
+          />
+
+          {/* Number of Employees */}
+          <CustomNumberInputField
+            label="Number of Employees"
+            placeholder="e.g., 25"
+            value={formData.number_of_employees || ''}
+            onChange={(e) => {
+              const value = parseInt(e.target.value) || undefined;
+              updateFormData({ number_of_employees: value });
+            }}
+            onBlur={() => {}}
+            name="number_of_employees"
+            min={0}
+            step={1}
           />
         </div>
       </div>

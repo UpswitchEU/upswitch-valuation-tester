@@ -81,6 +81,7 @@ export const useValuationStore = create<ValuationStore>((set, get) => ({
     business_model: string;
     founding_year: number;
     country_code: string;
+    employee_count?: number;
   }) =>
     set((state) => ({
       formData: {
@@ -90,6 +91,7 @@ export const useValuationStore = create<ValuationStore>((set, get) => ({
         business_model: businessCard.business_model,
         founding_year: businessCard.founding_year,
         country_code: businessCard.country_code,
+        number_of_employees: businessCard.employee_count,
       },
     })),
 

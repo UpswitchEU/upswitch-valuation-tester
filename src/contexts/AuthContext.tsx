@@ -42,6 +42,7 @@ interface AuthContextType {
     business_model: string;
     founding_year: number;
     country_code: string;
+    employee_count?: number;
   } | null;
 }
 
@@ -66,6 +67,41 @@ export const useAuth = () => {
 const API_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001';
 
 // =============================================================================
+// HELPER FUNCTIONS
+// =============================================================================
+
+/**
+ * Convert employee_count_range string to approximate number
+ * Examples: "1-10" -> 5, "11-50" -> 30, "51-200" -> 125
+ */
+const parseEmployeeCount = (range?: string): number | undefined => {
+  if (!range) return undefined;
+  
+  // Handle common range formats
+  const rangeMatch = range.match(/(\d+)-(\d+)/);
+  if (rangeMatch) {
+    const min = parseInt(rangeMatch[1], 10);
+    const max = parseInt(rangeMatch[2], 10);
+    // Return middle of range
+    return Math.floor((min + max) / 2);
+  }
+  
+  // Handle "200+" or "500+" formats
+  const plusMatch = range.match(/(\d+)\+/);
+  if (plusMatch) {
+    return parseInt(plusMatch[1], 10);
+  }
+  
+  // Try to parse as direct number
+  const directNumber = parseInt(range, 10);
+  if (!isNaN(directNumber)) {
+    return directNumber;
+  }
+  
+  return undefined;
+};
+
+// =============================================================================
 // PROVIDER
 // =============================================================================
 
@@ -82,6 +118,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         business_model: user.business_type || 'other',
         founding_year: user.founded_year || new Date().getFullYear() - (user.years_in_operation || 5),
         country_code: user.country === 'Belgium' ? 'BE' : user.country === 'Netherlands' ? 'NL' : 'BE',
+        employee_count: parseEmployeeCount(user.employee_count_range),
       }
     : null;
 
@@ -176,11 +213,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         
         if (data.success && data.data) {
           setUser(data.data);
-          console.log('✅ Existing session found:', data.data.email || data.data.id);
+          console.log('✅ Existing session found:', data.data);
         } else if (data.success && data.user) {
           // Alternative response format
           setUser(data.user);
-          console.log('✅ Existing session found:', data.user.email || data.user.id);
+          console.log('✅ Existing session found:', data.user);
         } else {
           console.log('ℹ️ No existing session - response:', JSON.stringify(data));
           setUser(null);
