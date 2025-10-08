@@ -24,7 +24,9 @@ export interface SearchSuggestionsResponse {
 }
 
 // API Configuration
-const API_BASE_URL = import.meta.env.VITE_VALUATION_API_URL || 'https://upswitch-valuation-engine-production.up.railway.app';
+const API_BASE_URL = import.meta.env.VITE_VALUATION_ENGINE_URL || 
+                     import.meta.env.VITE_VALUATION_API_URL || 
+                     'https://upswitch-valuation-engine-production.up.railway.app';
 const API_TIMEOUT = 30000;
 const MAX_RETRIES = 3;
 const RETRY_DELAY = 1000; // 1 second

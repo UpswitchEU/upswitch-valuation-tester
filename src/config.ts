@@ -1,6 +1,8 @@
 // API Configuration
 export const API_CONFIG = {
-  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:8000',
+  baseURL: import.meta.env.VITE_VALUATION_ENGINE_URL || 
+           import.meta.env.VITE_VALUATION_API_URL || 
+           'http://localhost:8000',
   timeout: 30000,
 };
 

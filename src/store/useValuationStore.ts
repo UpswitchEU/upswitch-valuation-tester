@@ -273,9 +273,12 @@ export const useValuationStore = create<ValuationStore>((set, get) => ({
     try {
       console.log('💾 Saving valuation to backend...');
       
-      const API_URL = import.meta.env.VITE_API_URL || 'https://api.upswitch.biz';
+      // Use environment variable for backend URL (Node.js backend for auth & saving)
+      const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 
+                          import.meta.env.VITE_API_BASE_URL || 
+                          'http://localhost:5001';
       
-      const response = await fetch(`${API_URL}/api/valuations/save`, {
+      const response = await fetch(`${BACKEND_URL}/api/valuations/save`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

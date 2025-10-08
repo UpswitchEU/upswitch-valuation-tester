@@ -64,7 +64,10 @@ export const useAuth = () => {
 // CONFIGURATION
 // =============================================================================
 
-const API_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001';
+// Backend URL for authentication (Node.js backend, not the valuation tester itself)
+const API_URL = import.meta.env.VITE_BACKEND_URL || 
+                import.meta.env.VITE_API_BASE_URL || 
+                'http://localhost:5001';
 
 // =============================================================================
 // HELPER FUNCTIONS
@@ -110,11 +113,88 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   
+  // Helper to map business_type to industry category if industry is not set
+  const getIndustry = (user: User): string | undefined => {
+    if (user.industry) return user.industry;
+    
+    // Map common business types to industry categories
+    // This ensures pre-fill works even if user only set business_type
+    const businessTypeToIndustry: Record<string, string> = {
+      // Food & Beverage
+      'chef': 'services',
+      'catering': 'services',
+      'restaurant': 'hospitality',
+      'meals': 'services',
+      
+      // Beauty & Wellness
+      'hairstyling': 'services',
+      'makeup': 'services',
+      'massage': 'services',
+      'nailcare': 'services',
+      'wellness': 'services',
+      
+      // Fitness & Health
+      'personaltraining': 'services',
+      'gym': 'services',
+      'healthcare': 'healthcare',
+      
+      // Creative & Media
+      'photography': 'services',
+      'videography': 'services',
+      'design': 'services',
+      'marketing': 'services',
+      
+      // Tech & Digital
+      'saas': 'technology',
+      'software': 'technology',
+      'webdev': 'technology',
+      'itsupport': 'technology',
+      'b2b_saas': 'technology',
+      
+      // E-commerce & Retail
+      'ecommerce': 'retail',
+      'retail': 'retail',
+      'subscription': 'retail',
+      
+      // Home & Property
+      'cleaning': 'services',
+      'realestate': 'real_estate',
+      'construction': 'construction',
+      'landscaping': 'services',
+      
+      // Professional Services
+      'consulting': 'services',
+      'legal': 'services',
+      'accounting': 'services',
+      'hr': 'services',
+      
+      // Education & Training
+      'education': 'services',
+      'coaching': 'services',
+      
+      // Transportation & Logistics
+      'logistics': 'services',
+      'automotive': 'services',
+      
+      // Events & Entertainment
+      'events': 'services',
+      'entertainment': 'services',
+      
+      // Legacy types
+      'manufacturing': 'manufacturing',
+      'marketplace': 'technology',
+      'b2c': 'retail',
+    };
+    
+    const mapped = businessTypeToIndustry[user.business_type?.toLowerCase() || ''];
+    return mapped || 'services'; // Default to services if no mapping found
+  };
+  
   // Compute business card data from user
-  const businessCard = user && user.company_name && user.industry
+  const businessCard = user && user.company_name
     ? {
         company_name: user.company_name,
-        industry: user.industry,
+        industry: getIndustry(user) || 'services',
         business_model: user.business_type || 'other',
         founding_year: user.founded_year || new Date().getFullYear() - (user.years_in_operation || 5),
         country_code: user.country === 'Belgium' ? 'BE' : user.country === 'Netherlands' ? 'NL' : 'BE',

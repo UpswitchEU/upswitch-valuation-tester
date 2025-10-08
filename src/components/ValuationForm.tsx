@@ -4,7 +4,8 @@ import { useValuationStore } from '../store/useValuationStore';
 import { useAuth } from '../contexts/AuthContext';
 import { debounce } from '../utils/debounce';
 import { TARGET_COUNTRIES } from '../config/countries';
-import { IndustryCode, BusinessModel } from '../types/valuation';
+import { BUSINESS_TYPES } from '../config/businessTypes';
+import { IndustryCode } from '../types/valuation';
 import { CustomInputField, CustomNumberInputField, CustomDropdown } from './forms';
 
 /**
@@ -275,16 +276,11 @@ export const ValuationForm: React.FC = () => {
           {/* Business Model */}
           <CustomDropdown
             label="Business Model"
-            placeholder="Select business model..."
-            options={[
-              { value: BusinessModel.B2B_SAAS, label: 'B2B SaaS' },
-              { value: BusinessModel.B2C, label: 'B2C' },
-              { value: BusinessModel.MARKETPLACE, label: 'Marketplace' },
-              { value: BusinessModel.ECOMMERCE, label: 'E-commerce' },
-              { value: BusinessModel.MANUFACTURING, label: 'Manufacturing' },
-              { value: BusinessModel.SERVICES, label: 'Services' },
-              { value: BusinessModel.OTHER, label: 'Other' },
-            ]}
+            placeholder="Select your business type..."
+            options={BUSINESS_TYPES.map(type => ({
+              value: type.value,
+              label: type.label,
+            }))}
             value={formData.business_model || 'other'}
             onChange={(value) => updateFormData({ business_model: value })}
             required
