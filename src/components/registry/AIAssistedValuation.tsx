@@ -131,10 +131,10 @@ export const AIAssistedValuation: React.FC = () => {
         number_of_employees: userCompanyData.employees,
       });
       
-      // Set company data and skip to financial input
+      // Set company data and keep chat interface
       setCompanyData(userCompanyData);
       setSelectedCompanyId(userCompanyData.company_id);
-      setStage('financial-input'); // Skip chat, go directly to financial input
+      setStage('chat'); // Keep chat interface active for user interaction
       setHasPrefilledOnce(true);
       
       // 🔍 START BACKGROUND KBO VERIFICATION (non-blocking)
