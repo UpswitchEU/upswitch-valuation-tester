@@ -1,6 +1,7 @@
 import React, { useEffect, useCallback, useState } from 'react';
 import { useValuationStore } from '../store/useValuationStore';
 import { useReportsStore } from '../store/useReportsStore';
+import { useAuth } from '../contexts/AuthContext';
 import { debounce } from '../utils/debounce';
 import { TARGET_COUNTRIES } from '../config/countries';
 import { IndustryCode, BusinessModel } from '../types/valuation';
@@ -13,11 +14,13 @@ import { CustomInputField, CustomNumberInputField, CustomDropdown } from './form
  * Supports 3 tiers: Quick, Standard, and Professional.
  */
 export const ValuationForm: React.FC = () => {
-  const { formData, updateFormData, calculateValuation, quickValuation, isCalculating, result } = useValuationStore();
+  const { formData, updateFormData, calculateValuation, quickValuation, isCalculating, result, prefillFromBusinessCard } = useValuationStore();
   const { addReport } = useReportsStore();
+  const { businessCard, isAuthenticated } = useAuth();
   
   // Local state for historical data inputs
   const [historicalInputs, setHistoricalInputs] = useState<{[key: string]: string}>({});
+  const [hasPrefilledOnce, setHasPrefilledOnce] = useState(false);
 
   // Debounced quick calculation for live preview
   const debouncedQuickCalc = useCallback(
@@ -33,6 +36,15 @@ export const ValuationForm: React.FC = () => {
   useEffect(() => {
     debouncedQuickCalc(formData);
   }, [formData.revenue, formData.ebitda, formData.industry, formData.country_code]);
+
+  // Pre-fill form with business card data when authenticated
+  useEffect(() => {
+    if (isAuthenticated && businessCard && !hasPrefilledOnce) {
+      console.log('🏢 Pre-filling form with business card data:', businessCard);
+      prefillFromBusinessCard(businessCard);
+      setHasPrefilledOnce(true);
+    }
+  }, [isAuthenticated, businessCard, hasPrefilledOnce, prefillFromBusinessCard]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

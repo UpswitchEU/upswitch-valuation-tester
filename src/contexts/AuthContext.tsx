@@ -17,6 +17,17 @@ interface User {
   name: string;
   role: string;
   email_verified?: boolean;
+  
+  // Business card fields
+  company_name?: string;
+  business_type?: string;
+  industry?: string;
+  founded_year?: number;
+  years_in_operation?: number;
+  employee_count_range?: string;
+  city?: string;
+  country?: string;
+  company_description?: string;
 }
 
 interface AuthContextType {
@@ -25,6 +36,13 @@ interface AuthContextType {
   isLoading: boolean;
   error: string | null;
   refreshAuth: () => Promise<void>;
+  businessCard: {
+    company_name: string;
+    industry: string;
+    business_model: string;
+    founding_year: number;
+    country_code: string;
+  } | null;
 }
 
 // =============================================================================
@@ -55,6 +73,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  
+  // Compute business card data from user
+  const businessCard = user && user.company_name && user.industry
+    ? {
+        company_name: user.company_name,
+        industry: user.industry,
+        business_model: user.business_type || 'other',
+        founding_year: user.founded_year || new Date().getFullYear() - (user.years_in_operation || 5),
+        country_code: user.country === 'Belgium' ? 'BE' : user.country === 'Netherlands' ? 'NL' : 'BE',
+      }
+    : null;
 
   /**
    * Initialize authentication on mount
@@ -200,6 +229,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     isLoading,
     error,
     refreshAuth,
+    businessCard,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

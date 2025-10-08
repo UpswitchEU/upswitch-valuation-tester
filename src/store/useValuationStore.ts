@@ -9,6 +9,13 @@ interface ValuationStore {
   
   updateFormData: (data: Partial<ValuationFormData>) => void;
   resetFormData: () => void;
+  prefillFromBusinessCard: (businessCard: {
+    company_name: string;
+    industry: string;
+    business_model: string;
+    founding_year: number;
+    country_code: string;
+  }) => void;
 
   // Results
   result: ValuationResponse | null;
@@ -66,6 +73,25 @@ export const useValuationStore = create<ValuationStore>((set, get) => ({
       formData: { ...state.formData, ...data },
     })),
   resetFormData: () => set({ formData: defaultFormData }),
+  
+  // Pre-fill form data with business card data
+  prefillFromBusinessCard: (businessCard: {
+    company_name: string;
+    industry: string;
+    business_model: string;
+    founding_year: number;
+    country_code: string;
+  }) =>
+    set((state) => ({
+      formData: {
+        ...state.formData,
+        company_name: businessCard.company_name,
+        industry: businessCard.industry,
+        business_model: businessCard.business_model,
+        founding_year: businessCard.founding_year,
+        country_code: businessCard.country_code,
+      },
+    })),
 
   // Results
   result: null,
