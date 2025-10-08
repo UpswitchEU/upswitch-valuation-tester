@@ -276,7 +276,7 @@ export const useValuationStore = create<ValuationStore>((set, get) => ({
       // Use environment variable for backend URL (Node.js backend for auth & saving)
       const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 
                           import.meta.env.VITE_API_BASE_URL || 
-                          'http://localhost:5001';
+                          'https://web-production-8d00b.up.railway.app';
       
       const response = await fetch(`${BACKEND_URL}/api/valuations/save`, {
         method: 'POST',

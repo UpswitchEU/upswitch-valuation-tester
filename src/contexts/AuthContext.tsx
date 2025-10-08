@@ -67,7 +67,7 @@ export const useAuth = () => {
 // Backend URL for authentication (Node.js backend, not the valuation tester itself)
 const API_URL = import.meta.env.VITE_BACKEND_URL || 
                 import.meta.env.VITE_API_BASE_URL || 
-                'https://upswitch.biz';
+                'https://web-production-8d00b.up.railway.app';
 
 // =============================================================================
 // HELPER FUNCTIONS
