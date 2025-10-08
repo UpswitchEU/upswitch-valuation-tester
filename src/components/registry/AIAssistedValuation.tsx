@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { MessageSquare, Database, TrendingUp, CheckCircle, Save, ArrowLeft, DollarSign } from 'lucide-react';
 import { EnhancedConversationalChat } from './EnhancedConversationalChat';
@@ -7,8 +7,8 @@ import { Results } from '../Results';
 import { ConversationalFinancialInput } from '../valuation/ConversationalFinancialInput';
 import type { CompanyFinancialData } from '../../types/registry';
 import { useValuationStore } from '../../store/useValuationStore';
-import { useReportsStore } from '../../store/useReportsStore';
-import { urls } from '../../router';
+// import { useReportsStore } from '../../store/useReportsStore'; // Deprecated: Now saving to database
+// import { urls } from '../../router'; // Removed reports link
 
 type FlowStage = 'chat' | 'financial-input' | 'preview' | 'results';
 
@@ -19,21 +19,22 @@ export const AIAssistedValuation: React.FC = () => {
   const [selectedCompanyId, setSelectedCompanyId] = useState<string | null>(null);
   // const [financialSummary, setFinancialSummary] = useState<any | null>(null);
   const { calculateValuation, result } = useValuationStore();
-  const { addReport } = useReportsStore();
+  // const { addReport } = useReportsStore(); // Deprecated: Now saving to database
   const [reportSaved, setReportSaved] = useState(false);
 
-  // Auto-save report when result is available
-  useEffect(() => {
-    if (result && companyData && stage === 'results' && !reportSaved) {
-      addReport({
-        company_name: companyData.company_name,
-        source: 'instant',
-        result: result,
-        form_data: companyData,
-      });
-      setReportSaved(true);
-    }
-  }, [result, companyData, stage, reportSaved, addReport]);
+  // 📝 DEPRECATED: Auto-save report to localStorage
+  // Now handled by calculateValuation() → saveToBackend()
+  // useEffect(() => {
+  //   if (result && companyData && stage === 'results' && !reportSaved) {
+  //     addReport({
+  //       company_name: companyData.company_name,
+  //       source: 'instant',
+  //       result: result,
+  //       form_data: companyData,
+  //     });
+  //     setReportSaved(true);
+  //   }
+  // }, [result, companyData, stage, reportSaved, addReport]);
 
   const handleCompanyFound = (data: CompanyFinancialData) => {
     setCompanyData(data);
@@ -78,15 +79,16 @@ export const AIAssistedValuation: React.FC = () => {
     // Move to results stage (show inline)
     setStage('results');
     
-    // Auto-save report to localStorage
-    if (result && companyData) {
-      addReport({
-        company_name: companyData.company_name,
-        source: 'instant',
-        result: result,
-        form_data: companyData,
-      });
-    }
+    // 📝 DEPRECATED: Auto-save to localStorage
+    // Now handled by calculateValuation() → saveToBackend()
+    // if (result && companyData) {
+    //   addReport({
+    //     company_name: companyData.company_name,
+    //     source: 'instant',
+    //     result: result,
+    //     form_data: companyData,
+    //   });
+    // }
   };
 
   const handleStartOver = () => {
@@ -175,12 +177,13 @@ export const AIAssistedValuation: React.FC = () => {
                   </div>
                 </div>
                 <div className="flex flex-col gap-2">
-                  <button
+                  {/* DISABLED: Reports now shown on upswitch.biz */}
+                  {/* <button
                     onClick={() => navigate(urls.reports())}
                     className="px-4 py-2 text-sm bg-zinc-800 border border-zinc-700 text-zinc-200 rounded-lg hover:bg-zinc-700 transition-colors font-medium"
                   >
                     View All Reports
-                  </button>
+                  </button> */}
                   <button
                     onClick={handleStartOver}
                     className="px-4 py-2 text-sm bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors font-medium"

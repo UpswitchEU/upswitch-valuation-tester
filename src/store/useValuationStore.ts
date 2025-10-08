@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import type { ValuationRequest, ValuationResponse, QuickValuationRequest, ValuationFormData } from '../types/valuation';
 import { api } from '../services/api';
-import { useReportsStore } from './useReportsStore';
+// import { useReportsStore } from './useReportsStore'; // Deprecated: Now saving to database
 
 interface ValuationStore {
   // Form data
@@ -166,11 +166,13 @@ export const useValuationStore = create<ValuationStore>((set, get) => ({
               ...year,
               year: Math.min(Math.max(year.year, 2000), 2100)
             }))
-          : [{
-              year: Math.min(currentYear - 1, 2100),
-              revenue: formData.revenue * 0.9, // Assume 10% growth
-              ebitda: formData.ebitda * 0.9,
-            }],
+          : (formData.revenue && formData.revenue > 0 && formData.ebitda && formData.ebitda > 0)
+            ? [{
+                year: Math.min(currentYear - 1, 2100),
+                revenue: formData.revenue * 0.9, // Assume 10% growth
+                ebitda: formData.ebitda * 0.9,
+              }]
+            : [], // Don't send historical data if current data is invalid
         number_of_employees: formData.number_of_employees && formData.number_of_employees >= 0 ? formData.number_of_employees : undefined,
         recurring_revenue_percentage: recurringRevenue,
         use_dcf: true,
@@ -183,13 +185,26 @@ export const useValuationStore = create<ValuationStore>((set, get) => ({
       const response = await api.calculateValuation(request);
       setResult(response);
       
-      // Save report to reports store
-      useReportsStore.getState().addReport({
-        company_name: formData.company_name,
-        source: 'manual',
-        result: response,
-        form_data: formData,
-      });
+      // ✅ AUTO-SAVE TO DATABASE (primary storage)
+      // This will also send PostMessage to parent window (upswitch.biz)
+      try {
+        const saveResult = await get().saveToBackend();
+        if (saveResult) {
+          console.log('✅ Valuation auto-saved to database:', saveResult.id);
+        }
+      } catch (saveError) {
+        console.warn('⚠️ Failed to auto-save to database:', saveError);
+        // Don't fail the whole operation - valuation still calculated successfully
+      }
+      
+      // 📝 DEPRECATED: localStorage save (keeping for backward compatibility/guest users)
+      // TODO: Remove this after guest user flow is implemented
+      // useReportsStore.getState().addReport({
+      //   company_name: formData.company_name,
+      //   source: 'manual',
+      //   result: response,
+      //   form_data: formData,
+      // });
     } catch (error: any) {
       console.error('Valuation error:', error);
       console.error('Error response:', error.response?.data);

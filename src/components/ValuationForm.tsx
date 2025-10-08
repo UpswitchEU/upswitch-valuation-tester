@@ -1,6 +1,6 @@
-import React, { useEffect, useCallback, useState } from 'react';
+import React, { useCallback, useState, useEffect } from 'react';
 import { useValuationStore } from '../store/useValuationStore';
-import { useReportsStore } from '../store/useReportsStore';
+// import { useReportsStore } from '../store/useReportsStore'; // Deprecated: Now saving to database
 import { useAuth } from '../contexts/AuthContext';
 import { debounce } from '../utils/debounce';
 import { TARGET_COUNTRIES } from '../config/countries';
@@ -14,8 +14,8 @@ import { CustomInputField, CustomNumberInputField, CustomDropdown } from './form
  * Supports 3 tiers: Quick, Standard, and Professional.
  */
 export const ValuationForm: React.FC = () => {
-  const { formData, updateFormData, calculateValuation, quickValuation, isCalculating, result, prefillFromBusinessCard } = useValuationStore();
-  const { addReport } = useReportsStore();
+  const { formData, updateFormData, calculateValuation, quickValuation, isCalculating, prefillFromBusinessCard } = useValuationStore();
+  // const { addReport } = useReportsStore(); // Deprecated: Now saving to database
   const { businessCard, isAuthenticated } = useAuth();
   
   // Local state for historical data inputs
@@ -57,18 +57,18 @@ export const ValuationForm: React.FC = () => {
     // Results component will appear automatically in App.tsx when result is set
   };
 
-  // Auto-save to reports when calculation completes
-  useEffect(() => {
-    if (result && formData.company_name) {
-      // Only save once per result
-      addReport({
-        company_name: formData.company_name,
-        source: 'manual',
-        result: result,
-        form_data: formData,
-      });
-    }
-  }, [result?.valuation_id]); // Only run when result ID changes
+  // 📝 DEPRECATED: Auto-save to localStorage
+  // Now handled by calculateValuation() → saveToBackend()
+  // useEffect(() => {
+  //   if (result && formData.company_name) {
+  //     addReport({
+  //       company_name: formData.company_name,
+  //       source: 'manual',
+  //       result: result,
+  //       form_data: formData,
+  //     });
+  //   }
+  // }, [result?.valuation_id]);
 
   // Calculate data quality score
   const calculateDataQuality = () => {

@@ -1,40 +1,42 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Upload, TrendingUp, CheckCircle, Save, ArrowLeft, FileText, AlertTriangle } from 'lucide-react';
+import { Upload, TrendingUp, CheckCircle, ArrowLeft, FileText, AlertTriangle } from 'lucide-react';
+// import { Save } from 'lucide-react'; // Removed with auto-save indicator
 import { TwoStepFlow } from './TwoStepFlow';
 import { Results } from './Results';
-import { useValuationStore } from '../store/useValuationStore';
-import { useReportsStore } from '../store/useReportsStore';
-import { urls } from '../router';
+// import { useValuationStore } from '../store/useValuationStore'; // Not needed since we removed result usage
+// import { useReportsStore } from '../store/useReportsStore'; // Deprecated: Now saving to database
+// import { urls } from '../router'; // Removed reports link
 
 type FlowStage = 'upload' | 'results';
 
 export const DocumentUploadFlow: React.FC = () => {
   const navigate = useNavigate();
   const [stage, setStage] = useState<FlowStage>('upload');
-  const { result, formData } = useValuationStore();
-  const { addReport } = useReportsStore();
-  const [reportSaved, setReportSaved] = useState(false);
+  // const { result } = useValuationStore(); // Not needed since we removed auto-save indicator
+  // const { addReport } = useReportsStore(); // Deprecated: Now saving to database
+  // const [reportSaved, setReportSaved] = useState(false); // No longer needed
 
-  // Auto-save report when result is available
-  useEffect(() => {
-    if (result && formData.company_name && stage === 'results' && !reportSaved) {
-      addReport({
-        company_name: formData.company_name,
-        source: 'document',
-        result: result,
-        form_data: formData,
-      });
-      setReportSaved(true);
-    }
-  }, [result, formData.company_name, stage, reportSaved, addReport]);
+  // 📝 DEPRECATED: Auto-save report to localStorage
+  // Now handled by calculateValuation() → saveToBackend()
+  // useEffect(() => {
+  //   if (result && formData.company_name && stage === 'results' && !reportSaved) {
+  //     addReport({
+  //       company_name: formData.company_name,
+  //       source: 'document',
+  //       result: result,
+  //       form_data: formData,
+  //     });
+  //     setReportSaved(true);
+  //   }
+  // }, [result, formData.company_name, stage, reportSaved, addReport]);
 
   const handleValuationComplete = () => {
     setStage('results');
   };
 
   const handleBackToHome = () => {
-    navigate(urls.home());
+    navigate('/'); // Changed from urls.home() since urls is no longer imported
   };
 
   const handleNewValuation = () => {
@@ -149,12 +151,13 @@ export const DocumentUploadFlow: React.FC = () => {
                 </div>
 
                 <div className="flex items-center gap-3">
-                  {reportSaved && (
+                  {/* DISABLED: Auto-save indicator (now saves to database automatically) */}
+                  {/* {reportSaved && (
                     <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-green-500/10 border border-green-500/20">
                       <Save className="w-4 h-4 text-green-400" />
                       <span className="text-xs font-medium text-green-300">Saved</span>
                     </div>
-                  )}
+                  )} */}
                   
                   <button
                     onClick={handleNewValuation}

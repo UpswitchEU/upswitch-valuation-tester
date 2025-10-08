@@ -12,7 +12,7 @@ import { NotFound } from '../pages/NotFound';
 import { PrivacyExplainer } from '../pages/PrivacyExplainer';
 import { About } from '../pages/About';
 import { HowItWorks } from '../pages/HowItWorks';
-import { Reports } from '../pages/Reports';
+// import { Reports } from '../pages/Reports'; // DISABLED: Reports now shown on upswitch.biz
 
 /**
  * Main application router
@@ -39,10 +39,13 @@ export const router = createBrowserRouter([
     path: ROUTES.RESULTS,
     element: <App />,
   },
-  {
-    path: ROUTES.REPORTS,
-    element: <Reports />,
-  },
+  // 📝 DISABLED: Reports page removed - reports now displayed on upswitch.biz
+  // This saves to database automatically and parent window shows reports
+  // TODO: Re-enable for guest users (localStorage fallback)
+  // {
+  //   path: ROUTES.REPORTS,
+  //   element: <Reports />,
+  // },
   {
     path: ROUTES.PRIVACY,
     element: <PrivacyExplainer />,

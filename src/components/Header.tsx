@@ -1,8 +1,9 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { FileText, ChevronDown } from 'lucide-react';
-import { urls } from '../router';
-import { useReportsStore } from '../store/useReportsStore';
+// import { FileText } from 'lucide-react'; // Removed with reports link
+import { ChevronDown } from 'lucide-react';
+// import { urls } from '../router'; // Removed with reports link
+// import { useReportsStore } from '../store/useReportsStore'; // Deprecated: Reports now on upswitch.biz
 
 /**
  * Header Component
@@ -11,7 +12,7 @@ import { useReportsStore } from '../store/useReportsStore';
  * Matches the branding from the main Upswitch platform.
  */
 export const Header: React.FC = () => {
-  const { reports } = useReportsStore();
+  // const { reports } = useReportsStore(); // Deprecated: Reports now on upswitch.biz
   const navigate = useNavigate();
   const location = useLocation();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
@@ -114,7 +115,8 @@ export const Header: React.FC = () => {
                 </div>
               )}
             </li>
-            <li className="text-medium whitespace-nowrap box-border list-none">
+            {/* DISABLED: Reports now shown on upswitch.biz */}
+            {/* <li className="text-medium whitespace-nowrap box-border list-none">
               <Link 
                 className="text-sm font-medium transition-colors relative group text-neutral-700 hover:text-primary-600 flex items-center gap-1.5" 
                 to={urls.reports()}
@@ -128,7 +130,7 @@ export const Header: React.FC = () => {
                 )}
                 <span className="absolute -bottom-1 left-0 w-full h-0.5 bg-primary-600 transition-transform origin-left scale-x-0 group-hover:scale-x-100"></span>
               </Link>
-            </li>
+            </li> */}
             <li className="text-medium whitespace-nowrap box-border list-none">
               <Link 
                 className="text-sm font-medium transition-colors relative group text-neutral-700 hover:text-primary-600" 
