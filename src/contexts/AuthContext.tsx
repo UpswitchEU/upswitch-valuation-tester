@@ -172,15 +172,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (response.ok) {
         const data = await response.json();
         
+        console.log('🔍 Session response:', data);
+        
         if (data.success && data.data) {
           setUser(data.data);
-          console.log('✅ Existing session found:', data.data.email);
+          console.log('✅ Existing session found:', data.data.email || data.data.id);
+        } else if (data.success && data.user) {
+          // Alternative response format
+          setUser(data.user);
+          console.log('✅ Existing session found:', data.user.email || data.user.id);
         } else {
-          console.log('ℹ️ No existing session');
+          console.log('ℹ️ No existing session - response:', JSON.stringify(data));
           setUser(null);
         }
       } else {
-        console.log('ℹ️ No valid session');
+        console.log('ℹ️ No valid session - status:', response.status);
         setUser(null);
       }
     } catch (err) {
