@@ -40,6 +40,13 @@ export const ValuationForm: React.FC = () => {
 
   // Pre-fill form with business card data when authenticated
   useEffect(() => {
+    console.log('🔍 Pre-fill check:', { 
+      isAuthenticated, 
+      hasBusinessCard: !!businessCard, 
+      hasPrefilledOnce,
+      businessCard 
+    });
+    
     if (isAuthenticated && businessCard && !hasPrefilledOnce) {
       console.log('🏢 Pre-filling form with business card data:', {
         ...businessCard,

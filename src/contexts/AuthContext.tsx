@@ -191,16 +191,27 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
   
   // Compute business card data from user
-  const businessCard = user && user.company_name
-    ? {
-        company_name: user.company_name,
-        industry: getIndustry(user) || 'services',
-        business_model: user.business_type || 'other',
-        founding_year: user.founded_year || new Date().getFullYear() - (user.years_in_operation || 5),
-        country_code: user.country === 'Belgium' ? 'BE' : user.country === 'Netherlands' ? 'NL' : 'BE',
-        employee_count: parseEmployeeCount(user.employee_count_range),
-      }
-    : null;
+  const businessCard = React.useMemo(() => {
+    if (!user || !user.company_name) {
+      console.log('❌ No business card: user or company_name missing', { 
+        hasUser: !!user, 
+        companyName: user?.company_name 
+      });
+      return null;
+    }
+    
+    const card = {
+      company_name: user.company_name,
+      industry: getIndustry(user) || 'services',
+      business_model: user.business_type || 'other',
+      founding_year: user.founded_year || new Date().getFullYear() - (user.years_in_operation || 5),
+      country_code: user.country || 'BE', // Already a 2-letter code (BE, NL, etc.)
+      employee_count: parseEmployeeCount(user.employee_count_range),
+    };
+    
+    console.log('✅ Business card computed:', card);
+    return card;
+  }, [user]);
 
   /**
    * Initialize authentication on mount
