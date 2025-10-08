@@ -32,11 +32,13 @@ Fallback chain:
 ```typescript
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 
                     import.meta.env.VITE_API_BASE_URL || 
-                    'http://localhost:5001';
+                    'https://web-production-8d00b.up.railway.app';
 ```
 
 ✅ **Production**: Uses `VITE_API_BASE_URL=https://web-production-8d00b.up.railway.app`  
-✅ **Local**: Falls back to `http://localhost:5001`
+✅ **Local**: Falls back to `https://web-production-8d00b.up.railway.app` (for development consistency)
+
+**Note**: 404 errors on `/api/auth/me` are **expected and normal** for guest users accessing the subdomain directly without authentication. The system handles this gracefully and continues as a guest user.
 
 ---
 

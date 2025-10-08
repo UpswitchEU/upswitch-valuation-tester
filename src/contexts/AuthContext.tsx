@@ -317,6 +317,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const response = await fetch(`${API_URL}/api/auth/me`, {
         method: 'GET',
         credentials: 'include', // Send cookies
+        // Don't throw on 404 - it's expected for guest users
       });
 
       if (response.ok) {
