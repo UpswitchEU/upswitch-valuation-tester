@@ -192,16 +192,25 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   
   // Compute business card data from user
   const businessCard = React.useMemo(() => {
-    if (!user || !user.company_name) {
-      console.log('❌ No business card: user or company_name missing', { 
+    if (!user) {
+      console.log('❌ No business card: user missing');
+      return null;
+    }
+    
+    // Check if user has any business profile data
+    const hasBusinessData = user.company_name || user.business_type || user.industry;
+    if (!hasBusinessData) {
+      console.log('❌ No business card: no business profile data', { 
         hasUser: !!user, 
-        companyName: user?.company_name 
+        companyName: user?.company_name,
+        businessType: user?.business_type,
+        industry: user?.industry
       });
       return null;
     }
     
     const card = {
-      company_name: user.company_name,
+      company_name: user.company_name || 'Your Company', // Fallback if missing
       industry: getIndustry(user) || 'services',
       business_model: user.business_type || 'other',
       founding_year: user.founded_year || new Date().getFullYear() - (user.years_in_operation || 5),
@@ -303,10 +312,30 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         console.log('🔍 Session response:', data);
         
         if (data.success && data.data) {
+          console.log('🔍 User data fields:', {
+            id: data.data.id,
+            email: data.data.email,
+            company_name: data.data.company_name,
+            business_type: data.data.business_type,
+            industry: data.data.industry,
+            founded_year: data.data.founded_year,
+            employee_count_range: data.data.employee_count_range,
+            country: data.data.country
+          });
           setUser(data.data);
           console.log('✅ Existing session found:', data.data);
         } else if (data.success && data.user) {
           // Alternative response format
+          console.log('🔍 User data fields (alt format):', {
+            id: data.user.id,
+            email: data.user.email,
+            company_name: data.user.company_name,
+            business_type: data.user.business_type,
+            industry: data.user.industry,
+            founded_year: data.user.founded_year,
+            employee_count_range: data.user.employee_count_range,
+            country: data.user.country
+          });
           setUser(data.user);
           console.log('✅ Existing session found:', data.user);
         } else {

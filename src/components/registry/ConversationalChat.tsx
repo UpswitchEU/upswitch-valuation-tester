@@ -54,7 +54,9 @@ I'll help you get a professional valuation for your business in 1-2 minutes.
 Ready to get your valuation? Just say "yes" or tell me your company name to confirm!`;
     }
     
-    // Fallback for non-authenticated users
+    // Fallback for non-authenticated users or when business card is not available
+    const companySuggestion = businessCard?.company_name ? `• "${businessCard.company_name}" (your company)` : '';
+    
     return `👋 Welcome! I'll help you value your business in 1-2 minutes.
 
 Just tell me your **company name** to get started.
@@ -66,7 +68,7 @@ Just tell me your **company name** to get started.
 4. You get your professional valuation report
 
 **Examples:**
-• "Innovate NV"
+${companySuggestion ? companySuggestion + '\n' : ''}• "Innovate NV"
 • "Acme Trading"
 • "Tech Solutions"
 
