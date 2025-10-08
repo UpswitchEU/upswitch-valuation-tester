@@ -21,54 +21,55 @@ export const TARGET_COUNTRIES: Country[] = [
     locale: 'nl-BE', // Dutch Belgium default, can add fr-BE
     taxSystem: 'belgian',
   },
-  {
-    code: 'NL',
-    name: 'Netherlands',
-    flag: '🇳🇱',
-    currency: 'EUR',
-    currencySymbol: '€',
-    locale: 'nl-NL',
-    taxSystem: 'dutch',
-  },
-  {
-    code: 'LU',
-    name: 'Luxembourg',
-    flag: '🇱🇺',
-    currency: 'EUR',
-    currencySymbol: '€',
-    locale: 'fr-LU',
-    taxSystem: 'luxembourg',
-  },
-  {
-    code: 'DE',
-    name: 'Germany',
-    flag: '🇩🇪',
-    currency: 'EUR',
-    currencySymbol: '€',
-    locale: 'de-DE',
-    taxSystem: 'german',
-  },
-  {
-    code: 'GB',
-    name: 'United Kingdom',
-    flag: '🇬🇧',
-    currency: 'GBP',
-    currencySymbol: '£',
-    locale: 'en-GB',
-    taxSystem: 'uk',
-  },
-  {
-    code: 'FR',
-    name: 'France',
-    flag: '🇫🇷',
-    currency: 'EUR',
-    currencySymbol: '€',
-    locale: 'fr-FR',
-    taxSystem: 'french',
-  },
+  // Temporarily disabled - only Belgium supported for now
+  // {
+  //   code: 'NL',
+  //   name: 'Netherlands',
+  //   flag: '🇳🇱',
+  //   currency: 'EUR',
+  //   currencySymbol: '€',
+  //   locale: 'nl-NL',
+  //   taxSystem: 'dutch',
+  // },
+  // {
+  //   code: 'LU',
+  //   name: 'Luxembourg',
+  //   flag: '🇱🇺',
+  //   currency: 'EUR',
+  //   currencySymbol: '€',
+  //   locale: 'fr-LU',
+  //   taxSystem: 'luxembourg',
+  // },
+  // {
+  //   code: 'DE',
+  //   name: 'Germany',
+  //   flag: '🇩🇪',
+  //   currency: 'EUR',
+  //   currencySymbol: '€',
+  //   locale: 'de-DE',
+  //   taxSystem: 'german',
+  // },
+  // {
+  //   code: 'GB',
+  //   name: 'United Kingdom',
+  //   flag: '🇬🇧',
+  //   currency: 'GBP',
+  //   currencySymbol: '£',
+  //   locale: 'en-GB',
+  //   taxSystem: 'uk',
+  // },
+  // {
+  //   code: 'FR',
+  //   name: 'France',
+  //   flag: '🇫🇷',
+  //   currency: 'EUR',
+  //   currencySymbol: '€',
+  //   locale: 'fr-FR',
+  //   taxSystem: 'french',
+  // },
 ] as const;
 
-export const DEFAULT_COUNTRY = TARGET_COUNTRIES[1]; // Netherlands
+export const DEFAULT_COUNTRY = TARGET_COUNTRIES[0]; // Belgium
 
 // Helper functions
 export function getCountryByCode(code: string): Country | undefined {
