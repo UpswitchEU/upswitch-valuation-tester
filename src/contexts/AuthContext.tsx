@@ -310,9 +310,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         const data = await response.json();
         
         console.log('🔍 Session response:', data);
+        console.log('🔍 Session response structure:', {
+          success: data.success,
+          hasData: !!data.data,
+          hasUser: !!data.user,
+          dataKeys: data.data ? Object.keys(data.data) : [],
+          userKeys: data.user ? Object.keys(data.user) : []
+        });
         
         if (data.success && data.data) {
-          console.log('🔍 User data fields:', {
+          console.log('🔍 User data fields (data.data):', {
             id: data.data.id,
             email: data.data.email,
             company_name: data.data.company_name,
@@ -323,10 +330,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             country: data.data.country
           });
           setUser(data.data);
-          console.log('✅ Existing session found:', data.data);
+          console.log('✅ Existing session found (data.data):', data.data);
         } else if (data.success && data.user) {
           // Alternative response format
-          console.log('🔍 User data fields (alt format):', {
+          console.log('🔍 User data fields (data.user):', {
             id: data.user.id,
             email: data.user.email,
             company_name: data.user.company_name,
@@ -337,7 +344,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             country: data.user.country
           });
           setUser(data.user);
-          console.log('✅ Existing session found:', data.user);
+          console.log('✅ Existing session found (data.user):', data.user);
         } else {
           console.log('ℹ️ No existing session - response:', JSON.stringify(data));
           setUser(null);
