@@ -321,19 +321,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         });
         
         if (data.success && data.data) {
+          // Check if user data is nested in data.data.user
+          const userData = data.data.user || data.data;
+          
           console.log('🔍 User data fields (data.data):', {
-            id: data.data.id,
-            email: data.data.email,
-            company_name: data.data.company_name,
-            business_type: data.data.business_type,
-            industry: data.data.industry,
-            founded_year: data.data.founded_year,
-            employee_count_range: data.data.employee_count_range,
-            country: data.data.country
+            id: userData.id,
+            email: userData.email,
+            company_name: userData.company_name,
+            business_type: userData.business_type,
+            industry: userData.industry,
+            founded_year: userData.founded_year,
+            employee_count_range: userData.employee_count_range,
+            country: userData.country
           });
           console.log('🔍 Full user object (data.data):', JSON.stringify(data.data, null, 2));
-          setUser(data.data);
-          console.log('✅ Existing session found (data.data):', data.data);
+          setUser(userData);
+          console.log('✅ Existing session found (data.data):', userData);
         } else if (data.success && data.user) {
           // Alternative response format
           console.log('🔍 User data fields (data.user):', {
