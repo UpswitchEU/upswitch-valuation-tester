@@ -1,10 +1,22 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { Zap, Edit3, Upload, ArrowRight } from 'lucide-react';
 import { MinimalHeader } from '../components/MinimalHeader';
 
 export const HomePage: React.FC = () => {
   const navigate = useNavigate();
+
+  // Auto-redirect to instant valuation if token is present
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const token = params.get('token');
+    
+    if (token) {
+      console.log('🔑 Token detected on homepage - redirecting to instant valuation');
+      // Preserve token in URL when navigating to instant
+      navigate(`/instant?token=${token}`, { replace: true });
+    }
+  }, [navigate]);
 
   const valuationMethods = [
     {

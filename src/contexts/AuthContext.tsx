@@ -240,7 +240,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setError(null);
 
     try {
-      // Check for token in URL parameters
+      // First, try to check for existing session cookie (cross-subdomain)
+      // This allows users already logged into upswitch.biz to be automatically authenticated
+      console.log('🔍 Checking for existing session cookie (cross-subdomain)...');
+      await checkSession();
+      
+      // If session check succeeded, we're done
+      if (user) {
+        console.log('✅ Existing session found via cookie - user already authenticated');
+        setIsLoading(false);
+        return;
+      }
+
+      // If no session, check for token in URL parameters
       const params = new URLSearchParams(window.location.search);
       const token = params.get('token');
 
@@ -254,9 +266,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         window.history.replaceState({}, document.title, newUrl);
         console.log('✅ Token exchange complete - user authenticated');
       } else {
-        // Check for existing session cookie
-        console.log('🔍 No token in URL - checking for existing session cookie...');
-        await checkSession();
+        // No token and no session - continue as guest
+        console.log('ℹ️ No token or session - continuing as guest user');
       }
     } catch (err) {
       console.error('❌ Auth initialization error:', err);
