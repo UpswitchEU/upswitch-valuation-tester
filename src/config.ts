@@ -2,7 +2,7 @@
 export const API_CONFIG = {
   baseURL: import.meta.env.VITE_VALUATION_ENGINE_URL || 
            import.meta.env.VITE_VALUATION_API_URL || 
-           'http://localhost:8000',
+           'https://upswitch-valuation-engine-production.up.railway.app',
   timeout: 30000,
 };
 

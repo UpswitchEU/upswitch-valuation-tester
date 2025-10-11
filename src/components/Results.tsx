@@ -1,6 +1,15 @@
 import React from 'react';
 import { useValuationStore } from '../store/useValuationStore';
 
+// Transparency UI Components (Radical Transparency Strategy)
+import {
+  DataSourceBadge,
+  IndustryBenchmarkBar,
+  ValidationReport,
+  CalculationSteps,
+  TransparencyDisclosure,
+} from './transparency';
+
 /**
  * Results Component
  * 
@@ -145,6 +154,13 @@ export const Results: React.FC = () => {
         </div>
       </div>
 
+      {/* Data Quality & Transparency Section */}
+      {result.transparency && result.transparency.validation_report && (
+        <ValidationReport 
+          report={result.transparency.validation_report}
+        />
+      )}
+
       {/* Ownership Adjustment (if applicable) */}
       {result.ownership_adjustment && (
         <div className="bg-white rounded-lg border border-gray-200 p-6">
@@ -279,10 +295,30 @@ export const Results: React.FC = () => {
               </p>
             </div>
             <div className="p-3 bg-blue-50 rounded">
-              <p className="text-xs text-gray-600 mb-1">WACC</p>
+              <div className="flex items-center justify-between mb-1">
+                <p className="text-xs text-gray-600">WACC</p>
+                {result.transparency && result.transparency.calculation_steps && result.transparency.calculation_steps['WACC'] && (
+                  <DataSourceBadge 
+                    source="CALCULATED"
+                    details="Weighted Average Cost of Capital"
+                    size="sm"
+                  />
+                )}
+              </div>
               <p className="text-sm sm:text-base lg:text-lg font-bold text-blue-600">
                 {formatPercent(result.dcf_valuation.wacc * 100)}
               </p>
+              {result.transparency && result.transparency.calculation_steps && result.transparency.calculation_steps['WACC'] && (
+                <TransparencyDisclosure 
+                  title="See WACC Calculation"
+                  size="sm"
+                >
+                  <CalculationSteps 
+                    steps={result.transparency.calculation_steps['WACC']}
+                    title="WACC Breakdown"
+                  />
+                </TransparencyDisclosure>
+              )}
             </div>
             <div className="p-3 bg-blue-50 rounded">
               <p className="text-xs text-gray-600 mb-1">Terminal Growth</p>
@@ -552,6 +588,39 @@ export const Results: React.FC = () => {
                 style={{ width: `${result.financial_metrics.financial_health_score}%` }}
               ></div>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Industry Benchmarks - Transparency Section */}
+      {result.transparency && result.transparency.industry_benchmarks && Object.keys(result.transparency.industry_benchmarks).length > 0 && (
+        <div className="bg-white rounded-lg border border-purple-200 p-6">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+            <svg className="h-5 w-5 text-purple-600 mr-2" fill="currentColor" viewBox="0 0 20 20">
+              <path d="M2 11a1 1 0 011-1h2a1 1 0 011 1v5a1 1 0 01-1 1H3a1 1 0 01-1-1v-5zM8 7a1 1 0 011-1h2a1 1 0 011 1v9a1 1 0 01-1 1H9a1 1 0 01-1-1V7zM14 4a1 1 0 011-1h2a1 1 0 011 1v12a1 1 0 01-1 1h-2a1 1 0 01-1-1V4z" />
+            </svg>
+            Industry Benchmarks
+            <DataSourceBadge 
+              source="OECD"
+              details="OECD Industry Database"
+              size="sm"
+              className="ml-2"
+            />
+          </h3>
+          
+          <div className="space-y-4">
+            {Object.entries(result.transparency.industry_benchmarks).map(([key, benchmark]: [string, any]) => (
+              <IndustryBenchmarkBar
+                key={key}
+                metric={benchmark.metric_name || key}
+                companyValue={benchmark.metric_value}
+                industryMedian={benchmark.industry_data?.median || 0}
+                industryP25={benchmark.industry_data?.p25}
+                industryP75={benchmark.industry_data?.p75}
+                companyPercentile={benchmark.industry_data?.percentile}
+                comparisonText={benchmark.industry_data?.comparison_text}
+              />
+            ))}
           </div>
         </div>
       )}

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { CheckCircle, Shield, MessageCircle } from 'lucide-react';
 import { DataRoomUpload } from './DataRoomUpload';
-import { AIConversation } from './AIConversation';
+import { ConversationUI } from './ConversationUI';
 import { useValuationStore } from '../store/useValuationStore';
 
 type Step = 1 | 2;
@@ -193,9 +193,13 @@ export const TwoStepFlow: React.FC<TwoStepFlowProps> = ({ onValuationComplete })
 
           {currentStep === 2 && (
             <div className="animate-fadeIn">
-              <AIConversation
-                extractedCompanyName={uploadedData?.company_name}
+              <ConversationUI
+                companyId={uploadedData?.company_id || uploadedData?.company_name || "BE0000000000"}
                 onComplete={handleConversationComplete}
+                onError={(err) => {
+                  console.error('Conversation error:', err);
+                  // TODO: Show error toast to user
+                }}
               />
             </div>
           )}
