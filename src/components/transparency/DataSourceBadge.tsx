@@ -110,7 +110,7 @@ export const DataSourceBadge: React.FC<DataSourceBadgeProps> = ({
     if (onClick) {
       onClick();
     } else if (url || config.defaultUrl) {
-      window.open(url || config.defaultUrl, '_blank', 'noopener,noreferrer');
+      window.open(url || config.defaultUrl || undefined, '_blank', 'noopener,noreferrer');
     }
   };
 

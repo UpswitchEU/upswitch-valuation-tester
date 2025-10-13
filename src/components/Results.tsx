@@ -157,7 +157,13 @@ export const Results: React.FC = () => {
       {/* Data Quality & Transparency Section */}
       {result.transparency && result.transparency.validation_report && (
         <ValidationReport 
-          report={result.transparency.validation_report}
+          totalChecks={result.transparency.validation_report.totalChecks || 0}
+          passed={result.transparency.validation_report.passed || 0}
+          warnings={result.transparency.validation_report.warnings || 0}
+          failed={result.transparency.validation_report.failed || 0}
+          checks={result.transparency.validation_report.checks || []}
+          validationScore={result.transparency.validation_report.validationScore || 0}
+          summary={result.transparency.validation_report.summary || ''}
         />
       )}
 
@@ -299,8 +305,8 @@ export const Results: React.FC = () => {
                 <p className="text-xs text-gray-600">WACC</p>
                 {result.transparency && result.transparency.calculation_steps && result.transparency.calculation_steps['WACC'] && (
                   <DataSourceBadge 
-                    source="CALCULATED"
-                    details="Weighted Average Cost of Capital"
+                    source="calculated"
+                    tooltip="Weighted Average Cost of Capital"
                     size="sm"
                   />
                 )}
@@ -311,7 +317,7 @@ export const Results: React.FC = () => {
               {result.transparency && result.transparency.calculation_steps && result.transparency.calculation_steps['WACC'] && (
                 <TransparencyDisclosure 
                   title="See WACC Calculation"
-                  size="sm"
+                  summary="View detailed WACC calculation steps"
                 >
                   <CalculationSteps 
                     steps={result.transparency.calculation_steps['WACC']}
@@ -601,10 +607,9 @@ export const Results: React.FC = () => {
             </svg>
             Industry Benchmarks
             <DataSourceBadge 
-              source="OECD"
-              details="OECD Industry Database"
+              source="oecd_database"
+              tooltip="OECD Industry Database"
               size="sm"
-              className="ml-2"
             />
           </h3>
           
@@ -612,13 +617,15 @@ export const Results: React.FC = () => {
             {Object.entries(result.transparency.industry_benchmarks).map(([key, benchmark]: [string, any]) => (
               <IndustryBenchmarkBar
                 key={key}
-                metric={benchmark.metric_name || key}
+                metricName={benchmark.metric_name || key}
                 companyValue={benchmark.metric_value}
                 industryMedian={benchmark.industry_data?.median || 0}
                 industryP25={benchmark.industry_data?.p25}
                 industryP75={benchmark.industry_data?.p75}
+                industryP90={benchmark.industry_data?.p90 || benchmark.industry_data?.p75}
                 companyPercentile={benchmark.industry_data?.percentile}
-                comparisonText={benchmark.industry_data?.comparison_text}
+                assessment={benchmark.assessment || 'average'}
+                explanation={benchmark.explanation || `Company performance vs industry benchmark for ${benchmark.metric_name || key}`}
               />
             ))}
           </div>

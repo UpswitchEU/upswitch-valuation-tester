@@ -235,6 +235,13 @@ export interface ValuationResponse {
   key_value_drivers: string[];
   value_drivers?: string[]; // Alias for key_value_drivers
   risk_factors: string[];
+  
+  // Transparency data
+  transparency?: {
+    validation_report?: any;
+    calculation_steps?: Record<string, any>;
+    industry_benchmarks?: Record<string, any>;
+  };
 }
 
 export interface CompanyLookupResult {

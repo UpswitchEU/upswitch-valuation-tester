@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Header } from './components/Header';
-import { AIAssistedValuation } from './components/registry/AIAssistedValuation';
+import { ConversationUI } from './components/ConversationUI';
 import { ManualValuationFlow } from './components/ManualValuationFlow';
 import { DocumentUploadFlow } from './components/DocumentUploadFlow';
 import { ROUTE_TO_VIEW_MODE, VIEW_MODE_TO_ROUTE } from './router/routes';
@@ -29,7 +29,13 @@ function AppContent() {
   if (viewMode === 'ai-assisted') {
     return (
       <div className="flex h-screen w-screen flex-col overflow-hidden bg-zinc-950">
-        <AIAssistedValuation />
+        <ConversationUI 
+          companyId="demo-company"
+          onComplete={(valuation) => {
+            console.log('Valuation completed:', valuation);
+            // Handle completion
+          }}
+        />
       </div>
     );
   }
