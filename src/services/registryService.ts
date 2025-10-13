@@ -1,8 +1,8 @@
 /**
  * Registry Service
  * 
- * Connects to the real Upswitch Valuation Engine API
- * https://upswitch-valuation-engine-production.up.railway.app
+ * Connects to the real Upswitch Backend API
+ * https://web-production-8d00b.up.railway.app
  */
 
 import axios from 'axios';
@@ -26,7 +26,7 @@ export interface SearchSuggestionsResponse {
 // API Configuration
 const API_BASE_URL = import.meta.env.VITE_VALUATION_ENGINE_URL || 
                      import.meta.env.VITE_VALUATION_API_URL || 
-                     'https://upswitch-valuation-engine-production.up.railway.app';
+                     'https://web-production-8d00b.up.railway.app';
 const API_TIMEOUT = 30000;
 const MAX_RETRIES = 3;
 const RETRY_DELAY = 1000; // 1 second

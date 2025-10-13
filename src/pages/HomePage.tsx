@@ -7,14 +7,18 @@ export const HomePage: React.FC = () => {
   const navigate = useNavigate();
 
   // Auto-redirect to instant valuation if token is present
+  // BUT NOT if coming from main platform (upswitch.biz) - let user choose
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const token = params.get('token');
+    const fromMainPlatform = params.get('from') === 'upswitch';
     
-    if (token) {
+    if (token && !fromMainPlatform) {
       console.log('🔑 Token detected on homepage - redirecting to instant valuation');
       // Preserve token in URL when navigating to instant
       navigate(`/instant?token=${token}`, { replace: true });
+    } else if (token && fromMainPlatform) {
+      console.log('🔑 Token detected from main platform - staying on homepage for user choice');
     }
   }, [navigate]);
 
