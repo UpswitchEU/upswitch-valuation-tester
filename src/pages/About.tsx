@@ -4,7 +4,7 @@
 
 import { Link } from 'react-router-dom';
 import { Header } from '../components/Header';
-import { urls } from '../router';
+import { urls } from '../router/exports';
 
 export const About: React.FC = () => {
   return (

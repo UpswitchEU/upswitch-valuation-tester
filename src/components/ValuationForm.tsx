@@ -1,7 +1,7 @@
 import React, { useCallback, useState, useEffect } from 'react';
 import { useValuationStore } from '../store/useValuationStore';
 // import { useReportsStore } from '../store/useReportsStore'; // Deprecated: Now saving to database
-import { useAuth } from '../contexts/AuthContext';
+import { useAuth } from '../hooks/useAuth';
 import { debounce } from '../utils/debounce';
 import { TARGET_COUNTRIES } from '../config/countries';
 import { BUSINESS_TYPES } from '../config/businessTypes';

@@ -5,60 +5,13 @@
  * Integrates with main platform (upswitch.biz) authentication
  */
 
-import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
+import { AuthContext, AuthContextType, User } from './AuthContextTypes';
 
 // =============================================================================
 // TYPES
 // =============================================================================
 
-interface User {
-  id: string;
-  email: string;
-  name: string;
-  role: string;
-  email_verified?: boolean;
-  
-  // Business card fields
-  company_name?: string;
-  business_type?: string;
-  industry?: string;
-  founded_year?: number;
-  years_in_operation?: number;
-  employee_count_range?: string;
-  city?: string;
-  country?: string;
-  company_description?: string;
-}
-
-interface AuthContextType {
-  user: User | null;
-  isAuthenticated: boolean;
-  isLoading: boolean;
-  error: string | null;
-  refreshAuth: () => Promise<void>;
-  businessCard: {
-    company_name: string;
-    industry: string;
-    business_model: string;
-    founding_year: number;
-    country_code: string;
-    employee_count?: number;
-  } | null;
-}
-
-// =============================================================================
-// CONTEXT
-// =============================================================================
-
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
-
-export const useAuth = () => {
-  const context = useContext(AuthContext);
-  if (!context) {
-    throw new Error('useAuth must be used within AuthProvider');
-  }
-  return context;
-};
 
 // =============================================================================
 // CONFIGURATION
@@ -438,20 +391,4 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
 
-/**
- * Hook to require authentication
- * Redirects or shows message if not authenticated
- */
-export const useRequireAuth = () => {
-  const { isAuthenticated, isLoading } = useAuth();
-
-  useEffect(() => {
-    if (!isLoading && !isAuthenticated) {
-      console.warn('⚠️ Authentication required');
-      // Could redirect or show login prompt here
-    }
-  }, [isAuthenticated, isLoading]);
-
-  return { isAuthenticated, isLoading };
-};
 

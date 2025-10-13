@@ -3,7 +3,7 @@
  */
 
 import { Link } from 'react-router-dom';
-import { urls } from '../router';
+import { urls } from '../router/exports';
 
 export const NotFound: React.FC = () => {
   return (

@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { MessageSquare, Database, TrendingUp, CheckCircle, Save, ArrowLeft, DollarSign } from 'lucide-react';
+import { MessageSquare, Database, TrendingUp, CheckCircle, Save, ArrowLeft } from 'lucide-react';
 import { ConversationUI } from './ConversationUI';
-import type { ValuationResult } from '../types/valuation';
+import type { ValuationResponse } from '../types/valuation';
 
 type FlowStage = 'chat' | 'preview' | 'results';
 
@@ -10,15 +10,11 @@ export const AIAssistedValuation: React.FC = () => {
   const navigate = useNavigate();
   const [stage, setStage] = useState<FlowStage>('chat');
   const [companyData, setCompanyData] = useState<any | null>(null);
-  const [valuationResult, setValuationResult] = useState<ValuationResult | null>(null);
+  const [valuationResult, setValuationResult] = useState<ValuationResponse | null>(null);
   const [reportSaved, setReportSaved] = useState(false);
 
-  const handleCompanyFound = (data: any) => {
-    setCompanyData(data);
-    setStage('preview');
-  };
 
-  const handleValuationComplete = (result: ValuationResult) => {
+  const handleValuationComplete = (result: ValuationResponse) => {
     setValuationResult(result);
     setStage('results');
     setReportSaved(true);
@@ -174,18 +170,16 @@ export const AIAssistedValuation: React.FC = () => {
                   <div className="bg-white rounded-lg p-4 border border-green-200">
                     <h4 className="font-semibold text-zinc-900 mb-2">Equity Value</h4>
                     <div className="text-2xl font-bold text-green-600">
-                      €{valuationResult.equity_value?.toLocaleString() || 'N/A'}
+                      €{valuationResult.equity_value_mid?.toLocaleString() || 'N/A'}
                     </div>
                   </div>
                   
-                  {valuationResult.valuation_range && (
-                    <div className="bg-white rounded-lg p-4 border border-green-200">
-                      <h4 className="font-semibold text-zinc-900 mb-2">Valuation Range</h4>
-                      <div className="text-sm text-zinc-600">
-                        €{valuationResult.valuation_range.min?.toLocaleString()} - €{valuationResult.valuation_range.max?.toLocaleString()}
-                      </div>
+                  <div className="bg-white rounded-lg p-4 border border-green-200">
+                    <h4 className="font-semibold text-zinc-900 mb-2">Valuation Range</h4>
+                    <div className="text-sm text-zinc-600">
+                      €{valuationResult.equity_value_low?.toLocaleString()} - €{valuationResult.equity_value_high?.toLocaleString()}
                     </div>
-                  )}
+                  </div>
                   
                   {valuationResult.confidence_score && (
                     <div className="bg-white rounded-lg p-4 border border-green-200">

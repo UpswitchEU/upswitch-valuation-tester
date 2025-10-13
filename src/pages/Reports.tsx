@@ -5,7 +5,7 @@
 
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { urls } from '../router';
+import { urls } from '../router/exports';
 import { useReportsStore, type SavedReport } from '../store/useReportsStore';
 import { FileText, Trash2, Eye, Download, AlertCircle, TrendingUp, Calendar, Building2, ArrowLeft } from 'lucide-react';
 

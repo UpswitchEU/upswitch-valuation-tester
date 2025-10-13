@@ -12,7 +12,6 @@
  */
 
 import React, { useState, useEffect, useRef } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
 import { Send, Loader2, CheckCircle, AlertCircle, TrendingUp } from 'lucide-react';
 import { API_CONFIG } from '../config';
 
@@ -38,21 +37,11 @@ interface ConversationStep {
   };
 }
 
-interface ValuationResult {
-  valuation_id: string;
-  equity_value: number;
-  valuation_range: {
-    min: number;
-    max: number;
-  };
-  confidence_score: number;
-  methodology: string;
-  [key: string]: any;
-}
+import type { ValuationResponse } from '../types/valuation';
 
 interface ConversationUIProps {
   companyId: string;
-  onComplete: (valuation: ValuationResult) => void;
+  onComplete: (valuation: ValuationResponse) => void;
   onError?: (error: Error) => void;
 }
 

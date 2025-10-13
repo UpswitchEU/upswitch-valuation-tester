@@ -15,7 +15,7 @@ import {
   validateDataForValuation,
   getTransformationSummary
 } from '../../services/transformationService';
-import { useAuth } from '../../contexts/AuthContext';
+import { useAuth } from '../../hooks/useAuth';
 
 interface Message {
   id: string;

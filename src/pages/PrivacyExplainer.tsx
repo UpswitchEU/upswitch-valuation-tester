@@ -6,7 +6,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { Shield, Lock, Eye, EyeOff, Server, CheckCircle, ArrowLeft, AlertTriangle, Database, FileText } from 'lucide-react';
-import { urls } from '../router';
+import { urls } from '../router/exports';
 
 export const PrivacyExplainer: React.FC = () => {
   return (
