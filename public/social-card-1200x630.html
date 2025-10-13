@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Upswitch Valuation Tester Social Card Generator</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+            width: 1200px;
+            height: 630px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .card-content {
+            text-align: center;
+            color: white;
+            z-index: 2;
+            position: relative;
+        }
+        
+        .logo {
+            font-size: 72px;
+            font-weight: 700;
+            margin-bottom: 20px;
+            text-shadow: 0 4px 8px rgba(0,0,0,0.3);
+        }
+        
+        .tagline {
+            font-size: 32px;
+            font-weight: 500;
+            margin-bottom: 16px;
+            opacity: 0.95;
+        }
+        
+        .description {
+            font-size: 24px;
+            font-weight: 400;
+            opacity: 0.9;
+            max-width: 800px;
+            line-height: 1.4;
+        }
+        
+        .background-pattern {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            opacity: 0.1;
+            background-image: 
+                radial-gradient(circle at 20% 80%, rgba(255,255,255,0.3) 0%, transparent 50%),
+                radial-gradient(circle at 80% 20%, rgba(255,255,255,0.2) 0%, transparent 50%),
+                radial-gradient(circle at 40% 40%, rgba(255,255,255,0.1) 0%, transparent 50%);
+        }
+        
+        .corner-accent {
+            position: absolute;
+            top: -50px;
+            right: -50px;
+            width: 200px;
+            height: 200px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 50%;
+        }
+        
+        .corner-accent-2 {
+            position: absolute;
+            bottom: -30px;
+            left: -30px;
+            width: 150px;
+            height: 150px;
+            background: rgba(255,255,255,0.08);
+            border-radius: 50%;
+        }
+        
+        .beta-badge {
+            position: absolute;
+            top: 30px;
+            right: 30px;
+            background: rgba(255,255,255,0.2);
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 16px;
+            font-weight: 600;
+            backdrop-filter: blur(10px);
+        }
+    </style>
+</head>
+<body>
+    <div class="background-pattern"></div>
+    <div class="corner-accent"></div>
+    <div class="corner-accent-2"></div>
+    <div class="beta-badge">BETA</div>
+    
+    <div class="card-content">
+        <div class="logo">Upswitch</div>
+        <div class="tagline">Valuation Engine</div>
+        <div class="description">AI-powered business valuation engine for SME M&A - Beta Testing Tool</div>
+    </div>
+</body>
+</html>
