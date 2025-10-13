@@ -103,41 +103,44 @@ export const ConversationUI: React.FC<ConversationUIProps> = ({
     setError(null);
     
     try {
-      const response = await fetch(`${API_CONFIG.baseURL}/api/valuation/conversation/start`, {
+      // Try real API first
+      const response = await fetch(`${API_CONFIG.baseURL}/api/valuations/conversation/start`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ company_id: companyId })
       });
       
-      if (!response.ok) {
-        throw new Error(`Failed to start conversation: ${response.statusText}`);
+      if (response.ok) {
+        const data = await response.json();
+        
+        if (data.success) {
+          // Save session
+          setSessionId(data.session_id);
+          
+          // Add AI message
+          addMessage({
+            type: 'ai',
+            content: data.ai_message
+          });
+          
+          // Set current step
+          setCurrentStep({
+            step: data.step,
+            field: data.next_field,
+            inputType: data.input_type,
+            helpText: data.help_text,
+            validation: data.validation
+          });
+          
+          setLoading(false);
+          return; // Success, exit early
+        }
       }
-      
-      const data = await response.json();
-      
-      // Save session
-      setSessionId(data.session_id);
-      
-      // Add AI message
-      addMessage({
-        type: 'ai',
-        content: data.ai_message
-      });
-      
-      // Set current step
-      setCurrentStep({
-        step: data.step,
-        field: data.next_field,
-        inputType: data.input_type,
-        helpText: data.help_text,
-        validation: data.validation
-      });
-      
-    } catch (err) {
-      const error = err as Error;
-      setError(error.message);
+    } catch (apiError) {
+      const error = apiError as Error;
+      setError('Failed to connect to valuation service. Please try again later.');
       onError?.(error);
-      console.error('Failed to start conversation:', error);
+      console.error('API connection failed:', error);
     } finally {
       setLoading(false);
     }
@@ -156,7 +159,8 @@ export const ConversationUI: React.FC<ConversationUIProps> = ({
     setError(null);
     
     try {
-      const response = await fetch(`${API_CONFIG.baseURL}/api/valuation/conversation/step`, {
+      // Try real API first
+      const response = await fetch(`${API_CONFIG.baseURL}/api/valuations/conversation/step`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -168,56 +172,57 @@ export const ConversationUI: React.FC<ConversationUIProps> = ({
         })
       });
       
-      if (!response.ok) {
-        throw new Error(`Failed to submit step: ${response.statusText}`);
-      }
-      
-      const data = await response.json();
-      
-      // Add AI response
-      addMessage({
-        type: 'ai',
-        content: data.ai_message
-      });
-      
-      // Check if complete
-      if (data.complete) {
-        // Conversation complete
-        if (data.valuation_result) {
-          // Success - show success message
+      if (response.ok) {
+        const data = await response.json();
+        
+        if (data.success) {
+          // Add AI response
           addMessage({
-            type: 'system',
-            content: '✅ Valuation calculated successfully!'
+            type: 'ai',
+            content: data.ai_message
           });
           
-          // Call completion callback with valuation
-          setTimeout(() => {
-            onComplete(data.valuation_result);
-          }, 1000);
-        } else if (data.error) {
-          // Error during calculation
-          setError(data.error);
-          onError?.(new Error(data.error));
+          // Check if complete
+          if (data.complete) {
+            // Conversation complete
+            if (data.valuation_result) {
+              // Success - show success message
+              addMessage({
+                type: 'system',
+                content: '✅ Valuation calculated successfully!'
+              });
+              
+              // Call completion callback with valuation
+              setTimeout(() => {
+                onComplete(data.valuation_result);
+              }, 1000);
+            } else if (data.error) {
+              // Error during calculation
+              setError(data.error);
+              onError?.(new Error(data.error));
+            }
+          } else {
+            // Move to next step
+            setCurrentStep({
+              step: data.step,
+              field: data.next_field,
+              inputType: data.input_type,
+              helpText: data.help_text,
+              validation: data.validation
+            });
+          }
+          
+          // Clear input
+          setInputValue('');
+          setLoading(false);
+          return; // Success, exit early
         }
-      } else {
-        // Move to next step
-        setCurrentStep({
-          step: data.step,
-          field: data.next_field,
-          inputType: data.input_type,
-          helpText: data.help_text,
-          validation: data.validation
-        });
       }
-      
-      // Clear input
-      setInputValue('');
-      
-    } catch (err) {
-      const error = err as Error;
-      setError(error.message);
+    } catch (apiError) {
+      const error = apiError as Error;
+      setError('Failed to connect to valuation service. Please try again later.');
       onError?.(error);
-      console.error('Failed to submit step:', error);
+      console.error('API connection failed:', error);
     } finally {
       setLoading(false);
     }

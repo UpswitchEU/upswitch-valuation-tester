@@ -22,6 +22,8 @@
     "@heroui/theme": "^2.4.21",
     "@tailwindcss/forms": "^0.5.10",
     "axios": "^1.6.8",
+    "cors": "^2.8.5",
+    "express": "^5.1.0",
     "framer-motion": "^12.23.12",
     "lucide-react": "^0.400.0",
     "react": "^18.3.1",
