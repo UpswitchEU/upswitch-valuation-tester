@@ -89,10 +89,12 @@ export const ConversationUI: React.FC<ConversationUIProps> = ({
     }
   }, [currentStep, loading]);
   
-  // Start conversation on mount
+  // Start conversation on mount (only once)
   useEffect(() => {
-    startConversation();
-  }, [companyId]);
+    if (!sessionId && !loading) {
+      startConversation();
+    }
+  }, []);
   
   // ============================================================================
   // API CALLS (thin client - just call backend)
@@ -272,60 +274,75 @@ export const ConversationUI: React.FC<ConversationUIProps> = ({
   // ============================================================================
   
   return (
-    <div className="flex flex-col h-full bg-zinc-900 rounded-lg border border-zinc-800 shadow-2xl">
-      {/* Header */}
-      <div className="flex items-center justify-between px-6 py-4 border-b border-zinc-800 bg-zinc-900/50 backdrop-blur-sm">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-gradient-to-br from-primary-500 to-primary-600 rounded-lg flex items-center justify-center">
-            <TrendingUp className="w-5 h-5 text-white" />
+    <div className="flex h-full flex-col overflow-hidden bg-gradient-to-br from-zinc-900 via-zinc-800 to-zinc-900">
+      {/* Header with Health Status - Ilara Style */}
+      <div className="border-b border-zinc-700/50 bg-zinc-900/50 backdrop-blur-sm px-6 py-4 flex-shrink-0">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary-500 to-blue-600 flex items-center justify-center shadow-lg shadow-primary-500/30">
+              <TrendingUp className="w-5 h-5 text-white" />
+            </div>
+            <div>
+              <h3 className="text-white font-semibold text-sm">AI auditor</h3>
+            </div>
           </div>
-          <div>
-            <h3 className="text-base font-semibold text-white">Conversational Valuation</h3>
-            <p className="text-xs text-zinc-400">6 quick questions • 30 seconds</p>
+          
+          {/* Health Status Indicator */}
+          <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-zinc-800/50 border border-zinc-700/50">
+            <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+            <span className="text-xs text-zinc-300 font-medium">
+              Connected
+            </span>
           </div>
         </div>
-        {currentStep && (
-          <div className="text-sm text-zinc-400">
-            Step {currentStep.step + 1} of 6
-          </div>
-        )}
       </div>
       
-      {/* Messages */}
-      <div className="flex-1 overflow-y-auto p-6 space-y-4">
-        <AnimatePresence>
-          {messages.map((message) => (
-            <motion.div
-              key={message.id}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0 }}
-              className={`flex ${message.type === 'user' ? 'justify-end' : 'justify-start'}`}
-            >
-              <div
-                className={`max-w-[80%] rounded-lg px-4 py-3 ${
-                  message.type === 'ai'
-                    ? 'bg-zinc-800 text-white'
-                    : message.type === 'user'
-                    ? 'bg-primary-600 text-white'
-                    : 'bg-green-900/30 border border-green-700/50 text-green-200'
-                }`}
-              >
-                {message.type === 'system' && (
-                  <div className="flex items-center gap-2 mb-2">
-                    <CheckCircle className="w-4 h-4 text-green-400" />
-                  </div>
-                )}
-                <div className="prose prose-invert prose-sm max-w-none whitespace-pre-line">
-                  {message.content}
+      {/* Messages Container - Ilara Style - Scrollable */}
+      <div className="flex-1 overflow-y-auto p-4 space-y-4">
+        {messages.map((message) => (
+          <div
+            key={message.id}
+            className={`flex ${message.type === 'user' ? 'justify-end' : 'justify-start'}`}
+          >
+            <div className={`max-w-[80%] ${message.type === 'user' ? 'ml-auto' : 'mr-auto'}`}>
+              <div className="flex flex-col gap-1">
+                <div
+                  className={`px-4 py-3 rounded-lg ${
+                    message.type === 'user' 
+                      ? 'bg-zinc-800 text-white' 
+                      : message.type === 'system'
+                      ? 'bg-green-900/30 border border-green-700/50 text-green-200'
+                      : 'bg-zinc-700/50 text-white'
+                  }`}
+                >
+                  {message.type === 'system' ? (
+                    <div className="flex items-center gap-2 text-green-400">
+                      <CheckCircle className="w-4 h-4" />
+                      <span className="text-sm font-medium">{message.content}</span>
+                    </div>
+                  ) : (
+                    <div 
+                      className="whitespace-pre-wrap text-sm"
+                      dangerouslySetInnerHTML={{ 
+                        __html: message.content
+                          .replace(/\*\*(.*?)\*\*/g, '<strong class="font-bold">$1</strong>')
+                          .replace(/\n/g, '<br/>')
+                          .replace(/^• /gm, '&nbsp;&nbsp;• ')
+                      }}
+                    />
+                  )}
                 </div>
-                <div className="text-xs opacity-60 mt-2">
+                <div
+                  className={`text-xs text-zinc-500 ${
+                    message.type === 'user' ? 'text-right' : 'text-left'
+                  }`}
+                >
                   {message.timestamp.toLocaleTimeString()}
                 </div>
               </div>
-            </motion.div>
-          ))}
-        </AnimatePresence>
+            </div>
+          </div>
+        ))}
         
         {loading && (
           <div className="flex items-center gap-2 text-zinc-400">
@@ -337,9 +354,9 @@ export const ConversationUI: React.FC<ConversationUIProps> = ({
         <div ref={messagesEndRef} />
       </div>
       
-      {/* Input */}
+      {/* Input Area - Sticky at Bottom - Ilara Style */}
       {currentStep && !loading && (
-        <div className="border-t border-zinc-800 p-4 bg-zinc-900/50 backdrop-blur-sm">
+        <div className="p-4 border-t border-zinc-800 flex-shrink-0">
           {error && (
             <div className="mb-3 p-3 bg-red-900/20 border border-red-700/50 rounded-lg flex items-start gap-2">
               <AlertCircle className="w-4 h-4 text-red-400 flex-shrink-0 mt-0.5" />
@@ -347,32 +364,45 @@ export const ConversationUI: React.FC<ConversationUIProps> = ({
             </div>
           )}
           
-          <form onSubmit={handleSubmit} className="flex gap-2">
-            <div className="flex-1">
+          <form
+            onSubmit={handleSubmit}
+            className="focus-within:bg-zinc-900/30 group flex flex-col gap-3 p-4 duration-150 w-full rounded-3xl border border-zinc-700/50 bg-zinc-900/20 text-base shadow-xl transition-all ease-in-out focus-within:border-zinc-500/40 hover:border-zinc-600/30 focus-within:hover:border-zinc-500/40 backdrop-blur-sm"
+          >
+            {/* Textarea container */}
+            <div className="relative flex items-center">
               <input
                 ref={inputRef}
                 type="text"
                 value={inputValue}
                 onChange={(e) => setInputValue(e.target.value)}
                 placeholder={`Enter amount (e.g., 1500000)`}
-                className="w-full px-4 py-3 bg-zinc-800 border border-zinc-700 rounded-lg text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-primary-500 transition-all"
+                className="flex w-full rounded-md px-3 py-3 ring-offset-background placeholder:text-zinc-400 focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 disabled:cursor-not-allowed disabled:opacity-50 resize-none text-sm leading-snug placeholder-shown:text-ellipsis placeholder-shown:whitespace-nowrap max-h-[200px] bg-transparent focus:bg-transparent flex-1 text-white"
+                style={{ minHeight: '60px', height: '60px' }}
                 disabled={loading}
+                spellCheck="false"
               />
-              {currentStep.helpText && (
-                <p className="mt-1.5 text-xs text-zinc-500">
-                  💡 {currentStep.helpText}
-                </p>
-              )}
             </div>
-            
-            <button
-              type="submit"
-              disabled={loading || !inputValue}
-              className="px-6 py-3 bg-primary-600 hover:bg-primary-700 disabled:bg-zinc-700 disabled:text-zinc-500 text-white rounded-lg font-medium transition-all flex items-center gap-2 shadow-lg hover:shadow-primary-500/25"
-            >
-              <Send className="w-4 h-4" />
-              Send
-            </button>
+
+            {/* Action buttons row */}
+            <div className="flex gap-2 flex-wrap items-center">
+              {/* Help text */}
+              {currentStep.helpText && (
+                <div className="text-xs text-zinc-400">
+                  💡 {currentStep.helpText}
+                </div>
+              )}
+
+              {/* Right side with send button */}
+              <div className="flex flex-grow items-center justify-end gap-2">
+                <button
+                  type="submit"
+                  disabled={loading || !inputValue}
+                  className="submit-button-white flex h-8 w-8 items-center justify-center rounded-full bg-white hover:bg-zinc-100 transition-all duration-150 ease-out disabled:cursor-not-allowed disabled:opacity-50 disabled:bg-zinc-600"
+                >
+                  <Send className="w-4 h-4 text-zinc-900" />
+                </button>
+              </div>
+            </div>
           </form>
         </div>
       )}
