@@ -191,20 +191,38 @@ Would you like to:
           setMessages(prev => [...prev, {
             id: Date.now().toString(),
             type: 'ai',
-            content: `⚠️ **Found ${bestMatch.company_name}** but couldn't access financial data.
+            content: `✅ **Found: ${bestMatch.company_name}**
+Registration: ${bestMatch.registration_number}
 
-**This could mean:**
-• The company's financial data isn't publicly available yet
-• Financial statements haven't been filed recently
-• The data source is temporarily unavailable
-• There was a network connectivity issue
+📋 No financial data available in public registries, but no problem!
 
-**What would you like to do?**
-1. **Try again** (sometimes data is temporarily unavailable)
-2. **Enter financial data manually** (if you have the company's financial statements)
-3. **Search for a different company**`,
+💬 **Let's collect the data together** - I'll ask a few quick questions.
+
+⏱️ Takes under 1 minute • 🔒 Your data stays secure
+
+---
+
+**Question 1 of 2:**
+What's your annual revenue for this year? (in EUR)
+
+💡 Your total income before expenses`,
             timestamp: new Date()
           }]);
+
+          // Continue with conversational financial data collection
+          setTimeout(() => {
+            onCompanyFound({
+              company_id: bestMatch.company_id,
+              company_name: bestMatch.company_name,
+              registration_number: bestMatch.registration_number,
+              country_code: bestMatch.country_code,
+              legal_form: bestMatch.legal_form,
+              filing_history: [], // Empty - will be collected via conversation
+              data_source: 'conversational_input',
+              last_updated: new Date().toISOString(),
+              completeness_score: 0.5
+            });
+          }, 1500);
         }
         
       } else {

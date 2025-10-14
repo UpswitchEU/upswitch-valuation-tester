@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { MessageSquare, Database, TrendingUp, CheckCircle, Save, ArrowLeft } from 'lucide-react';
+import { MessageSquare, Database, TrendingUp, CheckCircle, Save, ArrowLeft, DollarSign } from 'lucide-react';
 import { ConversationalChat } from './ConversationalChat';
+import { ConversationalFinancialInput } from './ConversationalFinancialInput';
 import type { ValuationResponse } from '../types/valuation';
 
-type FlowStage = 'chat' | 'preview' | 'results';
+type FlowStage = 'chat' | 'financial-input' | 'preview' | 'results';
 
 export const AIAssistedValuation: React.FC = () => {
   const navigate = useNavigate();
@@ -12,12 +13,46 @@ export const AIAssistedValuation: React.FC = () => {
   const [companyData, setCompanyData] = useState<any | null>(null);
   const [valuationResult, setValuationResult] = useState<ValuationResponse | null>(null);
   const [reportSaved, setReportSaved] = useState(false);
+  const [selectedCompanyId, setSelectedCompanyId] = useState<string | null>(null);
 
 
+
+  const handleCompanyFound = (data: any) => {
+    setCompanyData(data);
+    setSelectedCompanyId(data.company_id);
+    
+    // Check if we have financial data from API
+    if (data.filing_history && data.filing_history.length > 0 && data.filing_history[0].revenue) {
+      // We have API financial data - go directly to preview
+      setStage('preview');
+    } else {
+      // No API financial data - collect via conversational input
+      setStage('financial-input');
+    }
+  };
+
+  const handleFinancialInputComplete = (summary: any, _valuationId?: string) => {
+    // Convert summary to CompanyFinancialData format for preview
+    if (companyData) {
+      const updatedCompanyData = {
+        ...companyData,
+        filing_history: [{
+          year: new Date().getFullYear(),
+          revenue: summary.revenue,
+          ebitda: summary.ebitda,
+          filing_date: new Date().toISOString().split('T')[0],
+          source_url: undefined
+        }]
+      };
+      setCompanyData(updatedCompanyData);
+    }
+    setStage('preview');
+  };
 
   const handleStartOver = () => {
     setStage('chat');
     setCompanyData(null);
+    setSelectedCompanyId(null);
     setValuationResult(null);
     setReportSaved(false);
   };
@@ -50,6 +85,12 @@ export const AIAssistedValuation: React.FC = () => {
             }`}>
               <MessageSquare className="w-3 h-3 flex-shrink-0" />
               <span className="hidden sm:inline">Lookup</span>
+            </div>
+            <div className={`flex items-center gap-1 sm:gap-1.5 md:gap-2 px-2 sm:px-2.5 md:px-3 py-1 sm:py-1.5 rounded-full text-xs font-medium ${
+              stage === 'financial-input' ? 'bg-primary-500/20 text-primary-300' : 'bg-zinc-800 text-zinc-400'
+            }`}>
+              <DollarSign className="w-3 h-3 flex-shrink-0" />
+              <span className="hidden md:inline">Financial</span>
             </div>
             <div className={`flex items-center gap-1 sm:gap-1.5 md:gap-2 px-2 sm:px-2.5 md:px-3 py-1 sm:py-1.5 rounded-full text-xs font-medium ${
               stage === 'preview' ? 'bg-primary-500/20 text-primary-300' : 'bg-zinc-800 text-zinc-400'
@@ -108,19 +149,32 @@ export const AIAssistedValuation: React.FC = () => {
           )}
 
           {/* Chat - Always visible */}
-          <div className="flex-1 overflow-y-auto">
-            <ConversationalChat
-              onCompanyFound={(data) => {
-                setCompanyData(data);
-                setStage('preview');
-              }}
-            />
-          </div>
+          {(stage === 'chat' || stage === 'preview' || stage === 'results') && (
+            <div className="flex-1 overflow-y-auto">
+              <ConversationalChat
+                onCompanyFound={handleCompanyFound}
+              />
+            </div>
+          )}
+
+          {/* Financial Input */}
+          {stage === 'financial-input' && selectedCompanyId && (
+            <div className="flex-1 overflow-y-auto">
+              <ConversationalFinancialInput
+                companyId={selectedCompanyId}
+                onComplete={handleFinancialInputComplete}
+                onError={(error) => {
+                  console.error('Financial input error:', error);
+                  // TODO: Show error message to user
+                }}
+              />
+            </div>
+          )}
         </div>
 
         {/* Right Panel: Preview/Results (40% on desktop, full width on mobile below chat) */}
         <div className="h-full min-h-[400px] lg:min-h-0 flex flex-col bg-white overflow-y-auto w-full lg:w-[40%] border-t lg:border-t-0 border-zinc-800">
-          {(stage === 'chat') && !valuationResult && (
+          {(stage === 'chat' || stage === 'financial-input') && !valuationResult && (
             <div className="flex flex-col items-center justify-center h-full p-6 sm:p-8 text-center">
               <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-zinc-100 flex items-center justify-center mb-3 sm:mb-4">
                 <TrendingUp className="w-6 h-6 sm:w-8 sm:h-8 text-zinc-400" />
