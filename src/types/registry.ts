@@ -1,23 +1,15 @@
-/**
- * Registry-First Architecture Types
- * 
- * Types for company registry lookups and financial data fetching
- * Matches backend API schema from valuation-engine
- */
-
 export interface CompanySearchResult {
-  result_type?: 'COMPANY' | 'SUGGESTION' | 'ERROR';  // Explicit type for type-safe detection
+  result_type: string;
   company_id: string;
   company_name: string;
   registration_number: string;
+  country_code: string;
   legal_form: string;
-  address?: string;
+  address: string;
   status: string;
   confidence_score: number;
-  registry_name?: string;
-  registry_url?: string;
-  country_code?: string;
-  website?: string;
+  registry_name: string;
+  registry_url: string;
 }
 
 export interface FinancialFilingYear {
@@ -28,9 +20,7 @@ export interface FinancialFilingYear {
   total_assets?: number;
   total_debt?: number;
   cash?: number;
-  cost_of_goods_sold?: number;
-  operating_expenses?: number;
-  filing_date?: string;
+  filing_date: string;
   source_url?: string;
 }
 
@@ -40,39 +30,13 @@ export interface CompanyFinancialData {
   registration_number: string;
   country_code: string;
   legal_form: string;
-  
-  // Financial history
-  filing_history: FinancialFilingYear[];
-  
-  // Company metadata
-  founding_year?: number;
   industry_code?: string;
   industry_description?: string;
+  founding_year?: number;
   employees?: number;
-  website?: string;
-  
-  // Data quality
+  filing_history: FinancialFilingYear[];
   data_source: string;
-  source_url?: string;
   last_updated: string;
   completeness_score: number;
+  source_url?: string;
 }
-
-export interface RegistrySearchRequest {
-  company_name: string;
-  country_code: string;
-  registration_number?: string;
-}
-
-export interface RegistrySearchResponse {
-  results: CompanySearchResult[];
-  registry_name: string;
-  registry_url: string;
-}
-
-export interface RegistryFetchRequest {
-  company_id: string;
-  country_code: string;
-  years?: number;
-}
-

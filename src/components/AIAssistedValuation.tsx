@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { MessageSquare, Database, TrendingUp, CheckCircle, Save, ArrowLeft } from 'lucide-react';
-import { ConversationUI } from './ConversationUI';
+import { ConversationalChat } from './ConversationalChat';
 import type { ValuationResponse } from '../types/valuation';
 
 type FlowStage = 'chat' | 'preview' | 'results';
@@ -14,11 +14,6 @@ export const AIAssistedValuation: React.FC = () => {
   const [reportSaved, setReportSaved] = useState(false);
 
 
-  const handleValuationComplete = (result: ValuationResponse) => {
-    setValuationResult(result);
-    setStage('results');
-    setReportSaved(true);
-  };
 
   const handleStartOver = () => {
     setStage('chat');
@@ -114,11 +109,10 @@ export const AIAssistedValuation: React.FC = () => {
 
           {/* Chat - Always visible */}
           <div className="flex-1 overflow-y-auto">
-            <ConversationUI
-              companyId="demo-company"
-              onComplete={handleValuationComplete}
-              onError={(error) => {
-                console.error('Conversation error:', error);
+            <ConversationalChat
+              onCompanyFound={(data) => {
+                setCompanyData(data);
+                setStage('preview');
               }}
             />
           </div>
