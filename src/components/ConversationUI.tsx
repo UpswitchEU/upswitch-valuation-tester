@@ -12,7 +12,7 @@
  */
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Send, Loader2, CheckCircle, AlertCircle, TrendingUp } from 'lucide-react';
+import { Send, Loader2, CheckCircle, AlertCircle, TrendingUp, Upload, Building2, Calculator, FileText, Sparkles } from 'lucide-react';
 import { API_CONFIG } from '../config';
 
 // ============================================================================
@@ -259,148 +259,146 @@ export const ConversationUI: React.FC<ConversationUIProps> = ({
   };
   
   // ============================================================================
-  // RENDER
+  // RENDER - Matching Archived Version UI
   // ============================================================================
   
+  const quickActions = [
+    { icon: Upload, label: 'Upload Financial Documents', action: () => console.log('Upload clicked') },
+    { icon: Building2, label: 'Look up my company', action: () => setInputValue('Look up my company in Belgium') },
+    { icon: Calculator, label: 'Tell you my numbers', action: () => setInputValue('My revenue is €2.5M and EBITDA is €450K') },
+  ];
+
+  const LoadingSpinner = () => (
+    <div className="flex items-center gap-3 text-primary-600">
+      <div className="animate-spin rounded-full h-5 w-5 border-2 border-primary-600 border-t-transparent" />
+      <span className="text-sm">AI is analyzing...</span>
+    </div>
+  );
+  
   return (
-    <div className="flex h-full flex-col overflow-hidden bg-gradient-to-br from-zinc-900 via-zinc-800 to-zinc-900">
-      {/* Header with Health Status - Ilara Style */}
-      <div className="border-b border-zinc-700/50 bg-zinc-900/50 backdrop-blur-sm px-6 py-4 flex-shrink-0">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary-500 to-blue-600 flex items-center justify-center shadow-lg shadow-primary-500/30">
-              <TrendingUp className="w-5 h-5 text-white" />
-            </div>
-            <div>
-              <h3 className="text-white font-semibold text-sm">AI auditor</h3>
-            </div>
+    <div className="flex flex-col h-[600px] bg-white rounded-2xl shadow-lg border border-gray-200 overflow-hidden">
+      {/* Header - Matching Archived Version */}
+      <div className="bg-gradient-to-r from-primary-600 to-primary-700 p-4">
+        <div className="flex items-center gap-3">
+          <div className="bg-white/20 backdrop-blur-sm rounded-full p-2">
+            <Sparkles className="w-5 h-5 text-white" />
           </div>
-          
-          {/* Health Status Indicator */}
-          <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-zinc-800/50 border border-zinc-700/50">
-            <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
-            <span className="text-xs text-zinc-300 font-medium">
-              Connected
-            </span>
+          <div>
+            <h3 className="text-white font-semibold text-lg">AI Valuation Assistant</h3>
+            <p className="text-primary-100 text-sm">Powered by GPT-4 & Company Registries</p>
           </div>
         </div>
       </div>
-      
-      {/* Messages Container - Ilara Style - Scrollable */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4">
+
+      {/* Messages Container - Light Theme */}
+      <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50">
         {messages.map((message) => (
           <div
             key={message.id}
             className={`flex ${message.type === 'user' ? 'justify-end' : 'justify-start'}`}
           >
-            <div className={`max-w-[80%] ${message.type === 'user' ? 'ml-auto' : 'mr-auto'}`}>
-              <div className="flex flex-col gap-1">
-                <div
-                  className={`px-4 py-3 rounded-lg ${
-                    message.type === 'user' 
-                      ? 'bg-zinc-800 text-white' 
-                      : message.type === 'system'
-                      ? 'bg-green-900/30 border border-green-700/50 text-green-200'
-                      : 'bg-zinc-700/50 text-white'
-                  }`}
-                >
-                  {message.type === 'system' ? (
-                    <div className="flex items-center gap-2 text-green-400">
-                      <CheckCircle className="w-4 h-4" />
-                      <span className="text-sm font-medium">{message.content}</span>
-                    </div>
-                  ) : (
-                    <div 
-                      className="whitespace-pre-wrap text-sm"
-                      dangerouslySetInnerHTML={{ 
-                        __html: message.content
-                          .replace(/\*\*(.*?)\*\*/g, '<strong class="font-bold">$1</strong>')
-                          .replace(/\n/g, '<br/>')
-                          .replace(/^• /gm, '&nbsp;&nbsp;• ')
-                      }}
-                    />
-                  )}
-                </div>
-                <div
-                  className={`text-xs text-zinc-500 ${
-                    message.type === 'user' ? 'text-right' : 'text-left'
-                  }`}
-                >
-                  {message.timestamp.toLocaleTimeString()}
-                </div>
+            <div className={`max-w-[85%] ${message.type === 'user' ? 'ml-auto' : 'mr-auto'}`}>
+              <div
+                className={`px-4 py-3 rounded-2xl ${
+                  message.type === 'user'
+                    ? 'bg-primary-600 text-white rounded-br-sm'
+                    : message.type === 'system'
+                    ? 'bg-green-100 border border-green-200 text-green-800 rounded-bl-sm'
+                    : 'bg-white border border-gray-200 text-gray-800 rounded-bl-sm'
+                }`}
+              >
+                {message.type === 'system' ? (
+                  <div className="flex items-center gap-2 text-green-600">
+                    <CheckCircle className="w-4 h-4" />
+                    <span className="text-sm font-medium">{message.content}</span>
+                  </div>
+                ) : (
+                  <div className="text-sm whitespace-pre-line leading-relaxed">{message.content}</div>
+                )}
+              </div>
+              <div
+                className={`text-xs text-gray-400 mt-1 px-2 ${
+                  message.type === 'user' ? 'text-right' : 'text-left'
+                }`}
+              >
+                {message.timestamp.toLocaleTimeString()}
               </div>
             </div>
           </div>
         ))}
         
-        {loading && (
-          <div className="flex items-center gap-2 text-zinc-400">
-            <Loader2 className="w-4 h-4 animate-spin" />
-            <span className="text-sm">Processing...</span>
-          </div>
-        )}
-        
+        {loading && <LoadingSpinner />}
         <div ref={messagesEndRef} />
       </div>
-      
-      {/* Input Area - Sticky at Bottom - Ilara Style */}
+
+      {/* Quick Actions - Shown initially or when messages are few */}
+      {messages.length <= 2 && !loading && (
+        <div className="px-4 pb-2 bg-gray-50">
+          <div className="flex gap-2 flex-wrap">
+            {quickActions.map((action, idx) => (
+              <button
+                key={idx}
+                onClick={action.action}
+                className="flex items-center gap-2 px-3 py-2 bg-white hover:bg-gray-100 border border-gray-200 rounded-lg text-sm text-gray-700 hover:text-primary-600 hover:border-primary-300 transition-all"
+              >
+                <action.icon className="w-4 h-4" />
+                {action.label}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Input Area - Sticky at Bottom - Matching Archived Version */}
       {currentStep && !loading && (
-        <div className="p-4 border-t border-zinc-800 flex-shrink-0">
+        <div className="p-4 bg-white border-t border-gray-200">
           {error && (
-            <div className="mb-3 p-3 bg-red-900/20 border border-red-700/50 rounded-lg flex items-start gap-2">
+            <div className="mb-3 p-3 bg-red-50 border border-red-200 rounded-lg flex items-start gap-2">
               <AlertCircle className="w-4 h-4 text-red-400 flex-shrink-0 mt-0.5" />
-              <p className="text-sm text-red-200">{error}</p>
+              <p className="text-sm text-red-600">{error}</p>
             </div>
           )}
           
           <form
             onSubmit={handleSubmit}
-            className="focus-within:bg-zinc-900/30 group flex flex-col gap-3 p-4 duration-150 w-full rounded-3xl border border-zinc-700/50 bg-zinc-900/20 text-base shadow-xl transition-all ease-in-out focus-within:border-zinc-500/40 hover:border-zinc-600/30 focus-within:hover:border-zinc-500/40 backdrop-blur-sm"
+            className="flex gap-2 items-end"
           >
-            {/* Textarea container */}
-            <div className="relative flex items-center">
-              <input
-                ref={inputRef}
-                type="text"
-                value={inputValue}
-                onChange={(e) => setInputValue(e.target.value)}
-                placeholder={`Enter amount (e.g., 1500000)`}
-                className="flex w-full rounded-md px-3 py-3 ring-offset-background placeholder:text-zinc-400 focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 disabled:cursor-not-allowed disabled:opacity-50 resize-none text-sm leading-snug placeholder-shown:text-ellipsis placeholder-shown:whitespace-nowrap max-h-[200px] bg-transparent focus:bg-transparent flex-1 text-white"
-                style={{ minHeight: '60px', height: '60px' }}
-                disabled={loading}
-                spellCheck="false"
-              />
-            </div>
+            <button
+              type="button"
+              onClick={() => console.log('Upload clicked')}
+              className="flex-shrink-0 p-2.5 rounded-lg border border-gray-300 hover:border-primary-500 hover:bg-primary-50 transition-colors"
+              title="Upload document"
+            >
+              <FileText className="w-5 h-5 text-gray-600" />
+            </button>
 
-            {/* Action buttons row */}
-            <div className="flex gap-2 flex-wrap items-center">
-              {/* Help text */}
-              {currentStep.helpText && (
-                <div className="text-xs text-zinc-400">
-                  💡 {currentStep.helpText}
-                </div>
-              )}
+            <textarea
+              ref={inputRef}
+              value={inputValue}
+              onChange={(e) => setInputValue(e.target.value)}
+              placeholder="Type your message or upload documents..."
+              className="flex-1 resize-none rounded-lg border border-gray-300 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+              rows={1}
+              disabled={loading}
+            />
 
-              {/* Right side with send button */}
-              <div className="flex flex-grow items-center justify-end gap-2">
-                <button
-                  type="submit"
-                  disabled={loading || !inputValue}
-                  className="submit-button-white flex h-8 w-8 items-center justify-center rounded-full bg-white hover:bg-zinc-100 transition-all duration-150 ease-out disabled:cursor-not-allowed disabled:opacity-50 disabled:bg-zinc-600"
-                >
-                  <Send className="w-4 h-4 text-zinc-900" />
-                </button>
-              </div>
-            </div>
+            <button
+              type="submit"
+              disabled={!inputValue.trim() || loading}
+              className="flex-shrink-0 p-2.5 rounded-lg bg-primary-600 hover:bg-primary-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
+              title="Send message"
+            >
+              <Send className="w-5 h-5 text-white" />
+            </button>
           </form>
         </div>
       )}
       
       {/* Completion message */}
       {!currentStep && !loading && messages.length > 0 && (
-        <div className="border-t border-zinc-800 p-6 bg-gradient-to-br from-green-900/20 to-emerald-900/20">
-          <div className="flex items-center gap-3 text-green-200">
-            <CheckCircle className="w-6 h-6 text-green-400" />
+        <div className="border-t border-gray-200 p-6 bg-gradient-to-br from-green-50 to-emerald-50">
+          <div className="flex items-center gap-3 text-green-700">
+            <CheckCircle className="w-6 h-6 text-green-500" />
             <div>
               <p className="font-semibold">All done!</p>
               <p className="text-sm opacity-80">Preparing your valuation report...</p>
