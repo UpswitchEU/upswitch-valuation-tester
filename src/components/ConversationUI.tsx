@@ -340,7 +340,7 @@ export const ConversationUI: React.FC<ConversationUIProps> = ({
   );
   
   return (
-    <div className="flex flex-col h-full bg-zinc-900 overflow-hidden">
+    <div className="flex h-full flex-col overflow-hidden bg-gradient-to-br from-zinc-900 via-zinc-800 to-zinc-900">
       {/* Header - Dark theme */}
       <div className="bg-gradient-to-r from-primary-600 to-primary-700 p-4 sm:p-6 shadow-lg">
         <div className="flex items-center gap-3">
@@ -375,7 +375,7 @@ export const ConversationUI: React.FC<ConversationUIProps> = ({
       </div>
 
       {/* Messages Container - Dark Theme */}
-      <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4 bg-zinc-900">
+      <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4">
         {messages.map((message) => (
           <div
             key={message.id}
@@ -430,7 +430,7 @@ export const ConversationUI: React.FC<ConversationUIProps> = ({
 
       {/* Quick Actions - Shown initially or when messages are few */}
       {messages.length <= 2 && !loading && (
-        <div className="px-4 sm:px-6 pb-2 bg-zinc-900">
+        <div className="px-4 sm:px-6 pb-2">
           <div className="flex gap-2 flex-wrap">
             {quickActions.map((action, idx) => (
               <button
@@ -448,7 +448,7 @@ export const ConversationUI: React.FC<ConversationUIProps> = ({
 
       {/* Input Area - Sticky at Bottom - Always visible */}
       {!loading && (
-        <div className="p-4 sm:p-6 bg-zinc-900 border-t border-zinc-800">
+        <div className="p-4 sm:p-6 border-t border-zinc-700/50">
           {error && (
             <div className="mb-3 p-3 bg-red-50 border border-red-200 rounded-lg flex items-start gap-2">
               <AlertCircle className="w-4 h-4 text-red-400 flex-shrink-0 mt-0.5" />
@@ -497,7 +497,7 @@ export const ConversationUI: React.FC<ConversationUIProps> = ({
       
       {/* Completion message */}
       {!currentStep && !loading && messages.length > 0 && (
-        <div className="border-t border-zinc-800 p-6 bg-gradient-to-br from-green-900/20 to-emerald-900/20">
+        <div className="border-t border-zinc-700/50 p-6 bg-gradient-to-br from-green-900/20 to-emerald-900/20">
           <div className="flex items-center gap-3 text-green-400">
             <CheckCircle className="w-6 h-6 text-green-500" />
             <div>
