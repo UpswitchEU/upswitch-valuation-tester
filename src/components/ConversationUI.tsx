@@ -329,37 +329,72 @@ export const ConversationUI: React.FC<ConversationUIProps> = ({
   ];
 
   const LoadingSpinner = () => (
-    <div className="flex items-center gap-3 text-primary-600">
-      <div className="animate-spin rounded-full h-5 w-5 border-2 border-primary-600 border-t-transparent" />
-      <span className="text-sm">AI is analyzing...</span>
+    <div className="flex justify-start">
+      <div className="bg-zinc-800 border border-zinc-700 rounded-2xl rounded-bl-sm px-5 py-4">
+        <div className="flex items-center gap-3 text-primary-400">
+          <div className="animate-spin rounded-full h-5 w-5 border-2 border-primary-400 border-t-transparent" />
+          <span className="text-sm">AI is analyzing...</span>
+        </div>
+      </div>
     </div>
   );
   
   return (
-    <div className="flex flex-col h-[600px] bg-white rounded-2xl shadow-lg border border-gray-200 overflow-hidden">
-      {/* Header - Matching Archived Version */}
-      <div className="bg-gradient-to-r from-primary-600 to-primary-700 p-4">
+    <div className="flex flex-col h-full bg-zinc-900 overflow-hidden">
+      {/* Header - Dark theme */}
+      <div className="bg-gradient-to-r from-primary-600 to-primary-700 p-4 sm:p-6 shadow-lg">
         <div className="flex items-center gap-3">
-          <div className="bg-white/20 backdrop-blur-sm rounded-full p-2">
-            <Sparkles className="w-5 h-5 text-white" />
+          <div className="bg-white/20 backdrop-blur-sm rounded-full p-2 sm:p-3">
+            <Sparkles className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
           </div>
           <div>
-            <h3 className="text-white font-semibold text-lg">AI Valuation Assistant</h3>
-            <p className="text-primary-100 text-sm">Powered by GPT-4 & Company Registries</p>
+            <h3 className="text-white font-bold text-lg sm:text-xl">AI Assistant</h3>
+            <p className="text-primary-100 text-xs sm:text-sm">
+              Powered by LLM - Only public data (company registries, industry info)
+            </p>
           </div>
+        </div>
+
+        {/* Privacy Notice */}
+        <div className="mt-3 sm:mt-4 bg-white/10 backdrop-blur-sm border border-white/20 rounded-lg p-2 sm:p-3">
+          <p className="text-white text-xs flex items-start gap-2">
+            <svg className="w-3 h-3 sm:w-4 sm:h-4 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+              <path
+                fillRule="evenodd"
+                d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
+                clipRule="evenodd"
+              />
+            </svg>
+            <span>
+              <strong>Privacy Note:</strong> This AI assistant only processes public information
+              (company names, industries, etc.). Your financial data remains private and
+              is never shared with external AI services.
+            </span>
+          </p>
         </div>
       </div>
 
-      {/* Messages Container - Light Theme */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50">
+      {/* Messages Container - Dark Theme */}
+      <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4 bg-zinc-900">
         {messages.map((message) => (
           <div
             key={message.id}
             className={`flex ${message.type === 'user' ? 'justify-end' : 'justify-start'}`}
           >
-            <div className={`max-w-[85%] ${message.type === 'user' ? 'ml-auto' : 'mr-auto'}`}>
+            <div className={`max-w-[80%] ${message.type === 'user' ? 'ml-auto' : 'mr-auto'}`}>
+              {/* Avatar for AI messages */}
+              {message.type === 'ai' && (
+                <div className="flex items-center gap-2 mb-2">
+                  <div className="w-6 h-6 rounded-full bg-primary-100 flex items-center justify-center">
+                    <Sparkles className="w-4 h-4 text-primary-600" />
+                  </div>
+                  <span className="text-xs font-medium text-zinc-400">AI Assistant</span>
+                </div>
+              )}
+
+              {/* Message Bubble */}
               <div
-                className={`px-4 py-3 rounded-2xl ${
+                className={`px-5 py-3 rounded-2xl shadow-sm ${
                   message.type === 'user'
                     ? 'bg-primary-600 text-white rounded-br-sm'
                     : message.type === 'system'
@@ -376,8 +411,10 @@ export const ConversationUI: React.FC<ConversationUIProps> = ({
                   <div className="text-sm whitespace-pre-line leading-relaxed">{message.content}</div>
                 )}
               </div>
+
+              {/* Timestamp */}
               <div
-                className={`text-xs text-gray-400 mt-1 px-2 ${
+                className={`text-xs text-zinc-400 mt-1 px-2 ${
                   message.type === 'user' ? 'text-right' : 'text-left'
                 }`}
               >
@@ -393,13 +430,13 @@ export const ConversationUI: React.FC<ConversationUIProps> = ({
 
       {/* Quick Actions - Shown initially or when messages are few */}
       {messages.length <= 2 && !loading && (
-        <div className="px-4 pb-2 bg-gray-50">
+        <div className="px-4 sm:px-6 pb-2 bg-zinc-900">
           <div className="flex gap-2 flex-wrap">
             {quickActions.map((action, idx) => (
               <button
                 key={idx}
                 onClick={action.action}
-                className="flex items-center gap-2 px-3 py-2 bg-white hover:bg-gray-100 border border-gray-200 rounded-lg text-sm text-gray-700 hover:text-primary-600 hover:border-primary-300 transition-all"
+                className="flex items-center gap-2 px-3 py-2 bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 rounded-lg text-sm text-zinc-300 hover:text-primary-400 hover:border-primary-500 transition-all"
               >
                 <action.icon className="w-4 h-4" />
                 {action.label}
@@ -411,7 +448,7 @@ export const ConversationUI: React.FC<ConversationUIProps> = ({
 
       {/* Input Area - Sticky at Bottom - Always visible */}
       {!loading && (
-        <div className="p-4 bg-white border-t border-gray-200">
+        <div className="p-4 sm:p-6 bg-zinc-900 border-t border-zinc-800">
           {error && (
             <div className="mb-3 p-3 bg-red-50 border border-red-200 rounded-lg flex items-start gap-2">
               <AlertCircle className="w-4 h-4 text-red-400 flex-shrink-0 mt-0.5" />
@@ -421,15 +458,15 @@ export const ConversationUI: React.FC<ConversationUIProps> = ({
           
           <form
             onSubmit={handleSubmit}
-            className="flex gap-2 items-end"
+            className="flex gap-3 items-end"
           >
             <button
               type="button"
               onClick={() => console.log('Upload clicked')}
-              className="flex-shrink-0 p-2.5 rounded-lg border border-gray-300 hover:border-primary-500 hover:bg-primary-50 transition-colors"
+              className="flex-shrink-0 p-2.5 rounded-lg border border-zinc-600 hover:border-primary-500 hover:bg-primary-500/10 transition-colors bg-zinc-800"
               title="Upload document"
             >
-              <FileText className="w-5 h-5 text-gray-600" />
+              <FileText className="w-5 h-5 text-zinc-400" />
             </button>
 
             <textarea
@@ -437,31 +474,35 @@ export const ConversationUI: React.FC<ConversationUIProps> = ({
               value={inputValue}
               onChange={(e) => setInputValue(e.target.value)}
               placeholder={currentStep ? "Type your message or upload documents..." : "Start by typing your company name or asking about valuation..."}
-              className="flex-1 resize-none rounded-lg border border-gray-300 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-              rows={1}
+              className="flex-1 resize-none rounded-xl border border-zinc-600 bg-zinc-800 text-zinc-100 placeholder-zinc-400 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent max-h-32"
+              rows={2}
               disabled={loading}
             />
 
             <button
               type="submit"
               disabled={!inputValue.trim() || loading}
-              className="flex-shrink-0 p-2.5 rounded-lg bg-primary-600 hover:bg-primary-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
+              className="flex-shrink-0 p-3 rounded-xl bg-primary-600 hover:bg-primary-700 disabled:bg-zinc-600 disabled:cursor-not-allowed transition-colors"
               title="Send message"
             >
               <Send className="w-5 h-5 text-white" />
             </button>
           </form>
+
+          <p className="text-xs text-zinc-500 mt-2 text-center">
+            Press Enter to send • Shift+Enter for new line
+          </p>
         </div>
       )}
       
       {/* Completion message */}
       {!currentStep && !loading && messages.length > 0 && (
-        <div className="border-t border-gray-200 p-6 bg-gradient-to-br from-green-50 to-emerald-50">
-          <div className="flex items-center gap-3 text-green-700">
+        <div className="border-t border-zinc-800 p-6 bg-gradient-to-br from-green-900/20 to-emerald-900/20">
+          <div className="flex items-center gap-3 text-green-400">
             <CheckCircle className="w-6 h-6 text-green-500" />
             <div>
-              <p className="font-semibold">All done!</p>
-              <p className="text-sm opacity-80">Preparing your valuation report...</p>
+              <p className="font-semibold text-green-300">All done!</p>
+              <p className="text-sm text-green-200 opacity-80">Preparing your valuation report...</p>
             </div>
           </div>
         </div>
