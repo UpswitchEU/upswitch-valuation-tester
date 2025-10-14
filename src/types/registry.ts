@@ -20,6 +20,8 @@ export interface FinancialFilingYear {
   total_assets?: number;
   total_debt?: number;
   cash?: number;
+  cost_of_goods_sold?: number;
+  operating_expenses?: number;
   filing_date: string;
   source_url?: string;
 }

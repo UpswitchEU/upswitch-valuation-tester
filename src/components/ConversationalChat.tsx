@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Send, Bot, User, Loader2, Sparkles, Shield } from 'lucide-react';
+import { Send, Bot, Loader2, Shield } from 'lucide-react';
 import { searchCompanies, fetchCompanyFinancials } from '../services/registryService';
 import type { CompanyFinancialData } from '../types/registry';
 
@@ -258,22 +258,30 @@ ${error instanceof Error ? error.message : 'An unexpected error occurred'}
   };
 
   return (
-    <div className="bg-white rounded-2xl shadow-xl border border-gray-200 overflow-hidden">
-      {/* Chat Header */}
-      <div className="bg-gradient-to-r from-primary-600 to-blue-600 text-white p-6">
-        <div className="flex items-center gap-3">
-          <div className="w-12 h-12 rounded-full bg-white/20 flex items-center justify-center">
-            <Sparkles className="w-6 h-6" />
+    <div className="flex h-full flex-col overflow-hidden bg-gradient-to-br from-zinc-900 via-zinc-800 to-zinc-900">
+      {/* Header with Health Status - Ilara Style */}
+      <div className="border-b border-zinc-700/50 bg-zinc-900/50 backdrop-blur-sm px-6 py-4 flex-shrink-0">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary-500 to-blue-600 flex items-center justify-center shadow-lg shadow-primary-500/30">
+              <Bot className="w-5 h-5 text-white" />
+            </div>
+            <div>
+              <h3 className="text-white font-semibold text-sm">AI auditor</h3>
+              <p className="text-xs text-zinc-400">Powered by LLM - Only public data</p>
+            </div>
           </div>
-          <div>
-            <h3 className="text-xl font-bold">AI Assistant</h3>
-            <p className="text-sm opacity-90">Powered by LLM - Only public data (company registries, industry info)</p>
+          
+          {/* Health Status Indicator */}
+          <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-zinc-800/50 border border-zinc-700/50">
+            <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+            <span className="text-xs text-zinc-300 font-medium">Connected</span>
           </div>
         </div>
         
         {/* Privacy Note */}
-        <div className="mt-4 bg-white/10 backdrop-blur-sm border border-white/20 rounded-lg p-3">
-          <p className="text-white text-xs flex items-start gap-2">
+        <div className="mt-4 bg-zinc-800/30 backdrop-blur-sm border border-zinc-700/50 rounded-lg p-3">
+          <p className="text-zinc-300 text-xs flex items-start gap-2">
             <Shield className="w-4 h-4 flex-shrink-0 mt-0.5" />
             <span>
               <strong>Privacy Note:</strong> This AI assistant only processes public information
@@ -284,91 +292,109 @@ ${error instanceof Error ? error.message : 'An unexpected error occurred'}
         </div>
       </div>
 
-      {/* Messages */}
-      <div className="h-[500px] overflow-y-auto p-6 space-y-4 bg-gradient-to-b from-gray-50 to-white">
-        {messages.map(message => (
+      {/* Messages Container - Ilara Style - Scrollable */}
+      <div className="flex-1 overflow-y-auto p-4 space-y-4">
+        {messages.map((message) => (
           <div
             key={message.id}
-            className={`flex ${message.type === 'user' ? 'justify-end' : 'justify-start'} animate-fadeIn`}
+            className={`flex ${message.type === 'user' ? 'justify-end' : 'justify-start'}`}
           >
-            <div
-              className={`max-w-[85%] p-4 rounded-xl ${
-                message.type === 'user'
-                  ? 'bg-primary-600 text-white rounded-br-none shadow-md'
-                  : 'bg-white text-gray-800 rounded-bl-none shadow-sm border border-gray-100'
-              }`}
-            >
-              <div className="flex items-center gap-2 mb-2">
-                {message.type === 'ai' && <Bot className="w-4 h-4 text-primary-600" />}
-                {message.type === 'user' && <User className="w-4 h-4" />}
-                <span className="font-semibold text-sm">
-                  {message.type === 'user' ? 'You' : 'AI Assistant'}
-                </span>
-              </div>
-              
-              {message.isLoading ? (
-                <div className="flex items-center gap-2">
-                  <Loader2 className="w-4 h-4 animate-spin text-primary-600" />
-                  <span className="text-sm">{message.content}</span>
+            <div className={`max-w-[80%] ${message.type === 'user' ? 'ml-auto' : 'mr-auto'}`}>
+              <div className="flex flex-col gap-1">
+                <div
+                  className={`px-4 py-3 rounded-lg ${
+                    message.type === 'user' 
+                      ? 'bg-zinc-800 text-white' 
+                      : 'bg-zinc-700/50 text-white'
+                  }`}
+                >
+                  {message.isLoading ? (
+                    <div className="flex items-center justify-center py-2">
+                      <Loader2 className="w-4 h-4 animate-spin text-primary-600" />
+                    </div>
+                  ) : (
+                    <div 
+                      className="whitespace-pre-wrap text-sm"
+                      dangerouslySetInnerHTML={{ 
+                        __html: message.content
+                          .replace(/\*\*(.*?)\*\*/g, '<strong class="font-bold">$1</strong>')
+                          .replace(/\n/g, '<br/>')
+                          .replace(/^• /gm, '&nbsp;&nbsp;• ')
+                      }}
+                    />
+                  )}
                 </div>
-              ) : (
-                <div 
-                  className="text-sm whitespace-pre-wrap leading-relaxed"
-                  dangerouslySetInnerHTML={{ 
-                    __html: message.content
-                      .replace(/\*\*(.*?)\*\*/g, '<strong class="font-semibold">$1</strong>')
-                      .replace(/\n/g, '<br/>')
-                      .replace(/^• /gm, '&nbsp;&nbsp;• ')
-                  }}
-                />
-              )}
-              
-              <p className={`text-xs mt-2 ${message.type === 'user' ? 'text-primary-100' : 'text-gray-400'}`}>
-                {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-              </p>
+                <div
+                  className={`text-xs text-zinc-500 ${
+                    message.type === 'user' ? 'text-right' : 'text-left'
+                  }`}
+                >
+                  {message.timestamp.toLocaleTimeString()}
+                </div>
+              </div>
             </div>
           </div>
         ))}
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Input Area */}
-      <div className="p-4 border-t bg-white">
-        <div className="flex gap-2">
-          <input
-            type="text"
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyPress={handleKeyPress}
-            placeholder="Type your company name here..."
-            className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-            disabled={isProcessing}
-          />
-          <button
-            onClick={handleSend}
-            disabled={!input.trim() || isProcessing}
-            className="px-6 py-3 bg-primary-600 text-white rounded-lg hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-2"
-          >
-            {isProcessing ? (
-              <Loader2 className="w-5 h-5 animate-spin" />
-            ) : (
-              <Send className="w-5 h-5" />
-            )}
-          </button>
-        </div>
-        
-        {/* Quick suggestions */}
-        {messages.length <= 1 && (
-          <div className="mt-3 flex flex-wrap gap-2">
-            <button
-              onClick={() => useSuggestion('Innovate NV')}
-              className="px-3 py-1.5 text-xs bg-gray-100 hover:bg-gray-200 rounded-full transition-colors font-medium"
+      {/* Input Area - Sticky at Bottom - Ilara Style */}
+      <div className="p-4 border-t border-zinc-800 flex-shrink-0">
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            handleSend();
+          }}
+          className="focus-within:bg-zinc-900/30 group flex flex-col gap-3 p-4 duration-150 w-full rounded-3xl border border-zinc-700/50 bg-zinc-900/20 text-base shadow-xl transition-all ease-in-out focus-within:border-zinc-500/40 hover:border-zinc-600/30 focus-within:hover:border-zinc-500/40 backdrop-blur-sm"
+        >
+          {/* Textarea container */}
+          <div className="relative flex items-center">
+            <textarea
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyPress={handleKeyPress}
+              placeholder="Enter your company name (e.g., Proximus Belgium)..."
+              className="flex w-full rounded-md px-3 py-3 ring-offset-background placeholder:text-zinc-400 focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 disabled:cursor-not-allowed disabled:opacity-50 resize-none text-sm leading-snug placeholder-shown:text-ellipsis placeholder-shown:whitespace-nowrap max-h-[200px] bg-transparent focus:bg-transparent flex-1 text-white"
+              style={{ minHeight: '60px', height: '60px' }}
               disabled={isProcessing}
-            >
-              Try example
-            </button>
+              spellCheck="false"
+            />
           </div>
-        )}
+
+          {/* Action buttons row */}
+          <div className="flex gap-2 flex-wrap items-center">
+            {/* Quick suggestion buttons */}
+            {messages.length <= 1 && (
+              <>
+                <button
+                  type="button"
+                  onClick={() => useSuggestion('Proximus Belgium')}
+                  className="px-3 py-1.5 bg-zinc-800/50 hover:bg-zinc-700/60 border border-zinc-700/50 hover:border-zinc-600/60 rounded-full text-xs text-zinc-300 hover:text-white transition-all duration-200 hover:shadow-md hover:shadow-black/20"
+                >
+                  Proximus Belgium
+                </button>
+                <button
+                  type="button"
+                  onClick={() => useSuggestion('Delhaize')}
+                  className="px-3 py-1.5 bg-zinc-800/50 hover:bg-zinc-700/60 border border-zinc-700/50 hover:border-zinc-600/60 rounded-full text-xs text-zinc-300 hover:text-white transition-all duration-200 hover:shadow-md hover:shadow-black/20"
+                >
+                  Delhaize
+                </button>
+              </>
+            )}
+
+            {/* Right side with send button */}
+            <div className="flex flex-grow items-center justify-end gap-2">
+              <button
+                type="submit"
+                disabled={isProcessing || !input.trim()}
+                className="submit-button-white flex h-8 w-8 items-center justify-center rounded-full bg-white hover:bg-zinc-100 transition-all duration-150 ease-out disabled:cursor-not-allowed disabled:opacity-50 disabled:bg-zinc-600"
+              >
+                <Send className="w-4 h-4 text-zinc-900" />
+              </button>
+            </div>
+          </div>
+        </form>
       </div>
     </div>
   );

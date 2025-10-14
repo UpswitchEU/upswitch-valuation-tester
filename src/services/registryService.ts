@@ -18,6 +18,8 @@ export interface CompanySearchResult {
 export interface SearchSuggestion {
   text: string;
   type: string;
+  reason?: string;
+  confidence?: number;
 }
 
 export interface CompanyFinancialData {
@@ -78,11 +80,13 @@ export const fetchCompanyFinancials = async (
   }
 };
 
-export const getSearchSuggestions = async (query: string): Promise<SearchSuggestion[]> => {
+export const getSearchSuggestions = async (query: string, _country?: string): Promise<{ suggestions: SearchSuggestion[] }> => {
   // Mock implementation - in real app this would call the backend
-  return [
-    { text: `${query} NV`, type: 'company' },
-    { text: `${query} BV`, type: 'company' },
-    { text: `${query} SA`, type: 'company' }
-  ];
+  return {
+    suggestions: [
+      { text: `${query} NV`, type: 'company', reason: 'Belgian company', confidence: 0.9 },
+      { text: `${query} BV`, type: 'company', reason: 'Belgian company', confidence: 0.8 },
+      { text: `${query} SA`, type: 'company', reason: 'Belgian company', confidence: 0.7 }
+    ]
+  };
 };

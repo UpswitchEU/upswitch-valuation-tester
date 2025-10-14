@@ -242,7 +242,7 @@ export const CompanyLookup: React.FC = () => {
                       {suggestion.type}
                     </span>
                     <span className="text-xs text-gray-400">
-                      {Math.round(suggestion.confidence * 100)}%
+                      {Math.round((suggestion.confidence || 0) * 100)}%
                     </span>
                   </div>
                 </div>

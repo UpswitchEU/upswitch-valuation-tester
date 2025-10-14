@@ -5,11 +5,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Upswitch Valuation Tester Social Card Generator</title>
     <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800;900&display=swap');
+        
         body {
             margin: 0;
             padding: 0;
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-            background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+            background: linear-gradient(135deg, #14B8A6 0%, #0F766E 100%);
             width: 1200px;
             height: 630px;
             display: flex;
@@ -24,28 +27,49 @@
             color: white;
             z-index: 2;
             position: relative;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
         }
         
-        .logo {
-            font-size: 72px;
-            font-weight: 700;
-            margin-bottom: 20px;
-            text-shadow: 0 4px 8px rgba(0,0,0,0.3);
+        .logo-container {
+            display: flex;
+            align-items: center;
+            gap: 24px;
+            margin-bottom: 40px;
+        }
+        
+        .logo-image {
+            width: 100px;
+            height: 100px;
+            object-fit: contain;
+            filter: drop-shadow(0 6px 12px rgba(0,0,0,0.2));
+        }
+        
+        .logo-text {
+            font-size: 84px;
+            font-weight: 800;
+            text-shadow: 0 6px 12px rgba(0,0,0,0.3);
+            font-family: 'DM Sans', 'Inter', sans-serif;
+            letter-spacing: -0.02em;
         }
         
         .tagline {
-            font-size: 32px;
-            font-weight: 500;
-            margin-bottom: 16px;
+            font-size: 36px;
+            font-weight: 600;
+            margin-bottom: 20px;
             opacity: 0.95;
+            font-family: 'DM Sans', 'Inter', sans-serif;
+            letter-spacing: -0.01em;
         }
         
         .description {
-            font-size: 24px;
+            font-size: 26px;
             font-weight: 400;
             opacity: 0.9;
-            max-width: 800px;
+            max-width: 900px;
             line-height: 1.4;
+            font-family: 'Inter', sans-serif;
         }
         
         .background-pattern {
@@ -54,43 +78,56 @@
             left: 0;
             width: 100%;
             height: 100%;
-            opacity: 0.1;
+            opacity: 0.15;
             background-image: 
-                radial-gradient(circle at 20% 80%, rgba(255,255,255,0.3) 0%, transparent 50%),
-                radial-gradient(circle at 80% 20%, rgba(255,255,255,0.2) 0%, transparent 50%),
-                radial-gradient(circle at 40% 40%, rgba(255,255,255,0.1) 0%, transparent 50%);
+                radial-gradient(circle at 25% 75%, rgba(255,255,255,0.4) 0%, transparent 60%),
+                radial-gradient(circle at 75% 25%, rgba(255,255,255,0.3) 0%, transparent 60%),
+                radial-gradient(circle at 50% 50%, rgba(255,255,255,0.2) 0%, transparent 50%);
         }
         
         .corner-accent {
             position: absolute;
-            top: -50px;
-            right: -50px;
-            width: 200px;
-            height: 200px;
-            background: rgba(255,255,255,0.1);
+            top: -60px;
+            right: -60px;
+            width: 240px;
+            height: 240px;
+            background: rgba(255,255,255,0.12);
             border-radius: 50%;
         }
         
         .corner-accent-2 {
             position: absolute;
-            bottom: -30px;
-            left: -30px;
-            width: 150px;
-            height: 150px;
+            bottom: -40px;
+            left: -40px;
+            width: 180px;
+            height: 180px;
             background: rgba(255,255,255,0.08);
+            border-radius: 50%;
+        }
+        
+        .brand-accent {
+            position: absolute;
+            top: 50px;
+            left: 50px;
+            width: 120px;
+            height: 120px;
+            background: rgba(255,255,255,0.06);
             border-radius: 50%;
         }
         
         .beta-badge {
             position: absolute;
-            top: 30px;
-            right: 30px;
-            background: rgba(255,255,255,0.2);
-            padding: 8px 16px;
-            border-radius: 20px;
-            font-size: 16px;
-            font-weight: 600;
+            top: 40px;
+            right: 40px;
+            background: rgba(255,255,255,0.25);
+            padding: 12px 24px;
+            border-radius: 30px;
+            font-size: 18px;
+            font-weight: 700;
             backdrop-filter: blur(10px);
+            font-family: 'DM Sans', 'Inter', sans-serif;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
         }
     </style>
 </head>
@@ -98,10 +135,14 @@
     <div class="background-pattern"></div>
     <div class="corner-accent"></div>
     <div class="corner-accent-2"></div>
-    <div class="beta-badge">BETA</div>
+    <div class="brand-accent"></div>
+    <div class="beta-badge">Beta</div>
     
     <div class="card-content">
-        <div class="logo">Upswitch</div>
+        <div class="logo-container">
+            <img src="/upswitch_logo.svg" alt="Upswitch Logo" class="logo-image" />
+            <div class="logo-text">Upswitch</div>
+        </div>
         <div class="tagline">Valuation Engine</div>
         <div class="description">AI-powered business valuation engine for SME M&A - Beta Testing Tool</div>
     </div>
