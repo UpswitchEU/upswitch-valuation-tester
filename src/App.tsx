@@ -6,6 +6,7 @@ import { ManualValuationFlow } from './components/ManualValuationFlow';
 import { DocumentUploadFlow } from './components/DocumentUploadFlow';
 import { ROUTE_TO_VIEW_MODE, VIEW_MODE_TO_ROUTE } from './router/routes';
 import { AuthProvider } from './contexts/AuthContext';
+import { ScrollToTop } from './utils';
 
 type ViewMode = 'ai-assisted' | 'manual' | 'document-upload';
 
@@ -29,6 +30,7 @@ function AppContent() {
   if (viewMode === 'ai-assisted') {
     return (
       <div className="flex h-screen w-screen flex-col overflow-hidden bg-zinc-950">
+        <ScrollToTop />
         <AIAssistedValuation />
       </div>
     );
@@ -38,6 +40,7 @@ function AppContent() {
   if (viewMode === 'manual') {
     return (
       <div className="flex h-screen w-screen flex-col overflow-hidden bg-zinc-950">
+        <ScrollToTop />
         <ManualValuationFlow />
       </div>
     );
@@ -47,6 +50,7 @@ function AppContent() {
   if (viewMode === 'document-upload') {
     return (
       <div className="flex h-screen w-screen flex-col overflow-hidden bg-zinc-950">
+        <ScrollToTop />
         <DocumentUploadFlow />
       </div>
     );
@@ -55,6 +59,7 @@ function AppContent() {
   // Fallback - should not reach here
   return (
     <div className="min-h-screen bg-gradient-hero">
+      <ScrollToTop />
       <Header />
       <main className="container mx-auto px-4 py-8 max-w-7xl">
         <div className="text-center">
