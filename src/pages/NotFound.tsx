@@ -4,10 +4,12 @@
 
 import { Link } from 'react-router-dom';
 import { urls } from '../router/exports';
+import { ScrollToTop } from '../utils';
 
 export const NotFound: React.FC = () => {
   return (
     <div className="min-h-screen bg-gradient-hero flex items-center justify-center px-4">
+      <ScrollToTop />
       <div className="max-w-md w-full text-center">
         <div className="mb-8">
           <h1 className="text-9xl font-bold text-primary-600">404</h1>

@@ -2,6 +2,7 @@ import React, { useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { Zap, Edit3, Upload, ArrowRight } from 'lucide-react';
 import { MinimalHeader } from '../components/MinimalHeader';
+import { ScrollToTop } from '../utils';
 
 export const HomePage: React.FC = () => {
   const navigate = useNavigate();
@@ -82,6 +83,7 @@ export const HomePage: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-zinc-950 via-zinc-900 to-zinc-950">
+      <ScrollToTop />
       <MinimalHeader />
 
 

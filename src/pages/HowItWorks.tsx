@@ -5,10 +5,12 @@
 import { Link } from 'react-router-dom';
 import { Header } from '../components/Header';
 import { urls } from '../router/exports';
+import { ScrollToTop } from '../utils';
 
 export const HowItWorks: React.FC = () => {
   return (
     <div className="min-h-screen bg-gradient-hero">
+      <ScrollToTop />
       <Header />
       
       <main className="container mx-auto px-4 py-12 max-w-6xl">

@@ -7,10 +7,12 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { Shield, Lock, Eye, EyeOff, Server, CheckCircle, ArrowLeft, AlertTriangle, Database, FileText } from 'lucide-react';
 import { urls } from '../router/exports';
+import { ScrollToTop } from '../utils';
 
 export const PrivacyExplainer: React.FC = () => {
   return (
     <div className="min-h-screen bg-gradient-hero">
+      <ScrollToTop />
       {/* Header with Back Button */}
       <header className="bg-white border-b border-gray-200 sticky top-0 z-50 shadow-sm">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
