@@ -1,12 +1,12 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { MessageSquare, Database, TrendingUp, CheckCircle, Save, ArrowLeft, DollarSign, User, Building2 } from 'lucide-react';
+import { MessageSquare, Database, TrendingUp, CheckCircle, Save, ArrowLeft, DollarSign, Building2 } from 'lucide-react';
 import { ConversationalChat } from './ConversationalChat';
 import { ConversationalFinancialInput } from './ConversationalFinancialInput';
 import { businessDataService, type BusinessProfileData } from '../services/businessDataService';
 import { api } from '../services/api';
 import { useAuth } from '../hooks/useAuth';
-import type { ValuationResponse, ConversationStartResponse } from '../types/valuation';
+import type { ValuationResponse } from '../types/valuation';
 
 type FlowStage = 'chat' | 'financial-input' | 'preview' | 'results';
 
@@ -21,7 +21,6 @@ export const AIAssistedValuation: React.FC = () => {
   
   // NEW: Business profile data state
   const [businessProfile, setBusinessProfile] = useState<BusinessProfileData | null>(null);
-  const [conversationSession, setConversationSession] = useState<ConversationStartResponse | null>(null);
   const [isLoadingProfile, setIsLoadingProfile] = useState(true);
   const [profileError, setProfileError] = useState<string | null>(null);
 
@@ -38,7 +37,6 @@ export const AIAssistedValuation: React.FC = () => {
 
       // Start conversation with valuation engine
       const response = await api.startConversation(conversationRequest);
-      setConversationSession(response);
       
       console.log('✅ Intelligent conversation started:', response);
       
@@ -294,7 +292,6 @@ export const AIAssistedValuation: React.FC = () => {
             <div className="flex-1 overflow-y-auto">
               <ConversationalChat
                 onCompanyFound={handleCompanyFound}
-                conversationSession={conversationSession}
                 businessProfile={businessProfile}
               />
             </div>

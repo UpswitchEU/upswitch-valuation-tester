@@ -71,6 +71,15 @@ export interface ValuationRequest {
   number_of_employees?: number;
   recurring_revenue_percentage?: number; // 0.0 to 1.0
   
+  // Additional business context
+  business_type?: string;
+  revenue?: number;
+  employee_count?: number;
+  business_description?: string;
+  business_highlights?: string;
+  reason_for_selling?: string;
+  city?: string;
+  
   // Optional market context overrides
   government_bond_yield?: number;
   long_term_gdp_growth?: number;
@@ -95,6 +104,11 @@ export interface ValuationFormData extends Partial<ValuationRequest> {
   ebitda?: number;
   business_type?: 'sole-trader' | 'company';
   shares_for_sale?: number;
+  employee_count?: number;
+  business_description?: string;
+  business_highlights?: string;
+  reason_for_selling?: string;
+  city?: string;
 }
 
 export interface QuickValuationRequest {
@@ -278,6 +292,7 @@ export interface ConversationStartRequest {
     time_commitment?: 'quick' | 'detailed' | 'comprehensive';
     focus_area?: 'valuation' | 'growth' | 'risk' | 'all';
   };
+  pre_filled_data?: Partial<ValuationRequest>;
 }
 
 export interface ConversationStartResponse {
@@ -286,6 +301,7 @@ export interface ConversationStartResponse {
   next_question: ConversationQuestion;
   estimated_steps: number;
   methodology_preview?: string;
+  current_valuation?: ValuationResponse;
 }
 
 export interface ConversationQuestion {

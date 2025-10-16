@@ -8,8 +8,8 @@
  * Date: October 2025
  */
 
-import React, { useState, useEffect } from 'react';
-import { User, Clock, Users, Shield, TrendingUp, AlertTriangle, CheckCircle } from 'lucide-react';
+import React, { useState } from 'react';
+import { User, Shield, AlertTriangle, CheckCircle } from 'lucide-react';
 import { api } from '../services/api';
 import type { OwnerProfile, OwnerProfileRequest, OwnerProfileResponse } from '../types/valuation';
 

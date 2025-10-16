@@ -3,7 +3,6 @@ import { Send, Bot, Loader2, Shield } from 'lucide-react';
 import { searchCompanies, fetchCompanyFinancials } from '../services/registryService';
 import type { CompanyFinancialData } from '../types/registry';
 import type { BusinessProfileData } from '../services/businessDataService';
-import type { ConversationStartResponse } from '../types/valuation';
 
 interface Message {
   id: string;
@@ -15,13 +14,11 @@ interface Message {
 
 interface ConversationalChatProps {
   onCompanyFound: (data: CompanyFinancialData) => void;
-  conversationSession?: ConversationStartResponse | null;
   businessProfile?: BusinessProfileData | null;
 }
 
 export const ConversationalChat: React.FC<ConversationalChatProps> = ({
   onCompanyFound,
-  conversationSession,
   businessProfile
 }) => {
   const [messages, setMessages] = useState<Message[]>([]);
