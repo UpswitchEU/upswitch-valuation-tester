@@ -30,7 +30,9 @@ export const ConversationalChat: React.FC<ConversationalChatProps> = ({
   // Customize initial message when business profile exists
   const getInitialMessage = () => {
     if (businessProfile?.company_name) {
-      return `👋 Hi! I see you want to value ${businessProfile.company_name}. Let me help you get a comprehensive valuation.`;
+      return `👋 Hi! I see you're here to value ${businessProfile.company_name}. I already have some information about your business. Let's gather the financial details to complete your valuation.
+
+What was your revenue last year? (in EUR)`;
     }
     return `👋 Hi! I'm here to help you get a business valuation. Let's start by finding your company. What's the name of your company?`;
   };
@@ -131,7 +133,46 @@ export const ConversationalChat: React.FC<ConversationalChatProps> = ({
     setInput('');
     setIsProcessing(true);
 
-    // Add loading message
+    // If we have business profile data, skip company lookup and go directly to financial data collection
+    if (businessProfile?.company_name && messages.length <= 1) {
+      // Skip company lookup - we already know the company
+      setMessages(prev => [...prev, {
+        id: Date.now().toString(),
+        type: 'ai',
+        content: `✅ Perfect! I'll use ${businessProfile.company_name} for your valuation.
+
+Let me collect the financial details I need:
+
+**Question 1 of 3:**
+What was your annual revenue last year? (in EUR)
+
+💡 Your total income before expenses`,
+        timestamp: new Date()
+      }]);
+
+      // Create mock company data from business profile
+      const mockCompanyData = {
+        company_id: `user-${businessProfile.user_id}`,
+        company_name: businessProfile.company_name,
+        registration_number: 'User Business',
+        country_code: businessProfile.country || 'BE',
+        legal_form: businessProfile.business_type || 'Company',
+        filing_history: [], // Will be collected via conversation
+        data_source: 'user_profile',
+        last_updated: new Date().toISOString(),
+        completeness_score: 0.3
+      };
+
+      // Notify parent component that we found the company (from user profile)
+      setTimeout(() => {
+        onCompanyFound(mockCompanyData);
+      }, 1000);
+
+      setIsProcessing(false);
+      return;
+    }
+
+    // Add loading message for company search
     const loadingId = Date.now().toString() + '_loading';
     setMessages(prev => [...prev, {
       id: loadingId,
@@ -387,7 +428,10 @@ ${error instanceof Error ? error.message : 'An unexpected error occurred'}
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyPress={handleKeyPress}
-              placeholder="Enter your company name (e.g., Proximus Belgium)..."
+              placeholder={businessProfile?.company_name ? 
+                `Enter your revenue for ${businessProfile.company_name} (e.g., 1000000)...` : 
+                "Enter your company name (e.g., Proximus Belgium)..."
+              }
               className="flex w-full rounded-md px-3 py-3 ring-offset-background placeholder:text-zinc-400 focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 disabled:cursor-not-allowed disabled:opacity-50 resize-none text-sm leading-snug placeholder-shown:text-ellipsis placeholder-shown:whitespace-nowrap max-h-[200px] bg-transparent focus:bg-transparent flex-1 text-white"
               style={{ minHeight: '60px', height: '60px' }}
               disabled={isProcessing}
@@ -400,20 +444,32 @@ ${error instanceof Error ? error.message : 'An unexpected error occurred'}
             {/* Quick suggestion buttons */}
             {messages.length <= 1 && (
               <>
-                <button
-                  type="button"
-                  onClick={() => useSuggestion('Proximus Belgium')}
-                  className="px-3 py-1.5 bg-zinc-800/50 hover:bg-zinc-700/60 border border-zinc-700/50 hover:border-zinc-600/60 rounded-full text-xs text-zinc-300 hover:text-white transition-all duration-200 hover:shadow-md hover:shadow-black/20"
-                >
-                  Proximus Belgium
-                </button>
-                <button
-                  type="button"
-                  onClick={() => useSuggestion('Delhaize')}
-                  className="px-3 py-1.5 bg-zinc-800/50 hover:bg-zinc-700/60 border border-zinc-700/50 hover:border-zinc-600/60 rounded-full text-xs text-zinc-300 hover:text-white transition-all duration-200 hover:shadow-md hover:shadow-black/20"
-                >
-                  Delhaize
-                </button>
+                {businessProfile?.company_name ? (
+                  <button
+                    type="button"
+                    onClick={() => useSuggestion(businessProfile.company_name)}
+                    className="px-3 py-1.5 bg-zinc-800/50 hover:bg-zinc-700/60 border border-zinc-700/50 hover:border-zinc-600/60 rounded-full text-xs text-zinc-300 hover:text-white transition-all duration-200 hover:shadow-md hover:shadow-black/20"
+                  >
+                    {businessProfile.company_name} ✓
+                  </button>
+                ) : (
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => useSuggestion('Proximus Belgium')}
+                      className="px-3 py-1.5 bg-zinc-800/50 hover:bg-zinc-700/60 border border-zinc-700/50 hover:border-zinc-600/60 rounded-full text-xs text-zinc-300 hover:text-white transition-all duration-200 hover:shadow-md hover:shadow-black/20"
+                    >
+                      Proximus Belgium
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => useSuggestion('Delhaize')}
+                      className="px-3 py-1.5 bg-zinc-800/50 hover:bg-zinc-700/60 border border-zinc-700/50 hover:border-zinc-600/60 rounded-full text-xs text-zinc-300 hover:text-white transition-all duration-200 hover:shadow-md hover:shadow-black/20"
+                    >
+                      Delhaize
+                    </button>
+                  </>
+                )}
               </>
             )}
 
