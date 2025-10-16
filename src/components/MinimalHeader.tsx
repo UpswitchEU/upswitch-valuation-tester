@@ -1,5 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
+import UserAvatar from './UserAvatar';
 
 /**
  * Minimal Header Component for Home Page
