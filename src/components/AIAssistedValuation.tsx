@@ -1,14 +1,13 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { MessageSquare, Database, TrendingUp, CheckCircle, Save, ArrowLeft, DollarSign, Building2 } from 'lucide-react';
+import { TrendingUp, CheckCircle, Save, ArrowLeft, Building2 } from 'lucide-react';
 import { ConversationalChat } from './ConversationalChat';
-import { ConversationalFinancialInput } from './ConversationalFinancialInput';
 import { businessDataService, type BusinessProfileData } from '../services/businessDataService';
 import { api } from '../services/api';
 import { useAuth } from '../hooks/useAuth';
 import type { ValuationResponse } from '../types/valuation';
 
-type FlowStage = 'chat' | 'financial-input' | 'preview' | 'results';
+type FlowStage = 'chat' | 'results';
 
 export const AIAssistedValuation: React.FC = () => {
   const navigate = useNavigate();
@@ -121,23 +120,6 @@ export const AIAssistedValuation: React.FC = () => {
     console.log('✅ Valuation complete, moving to results stage');
   };
 
-  const handleFinancialInputComplete = (summary: any, _valuationId?: string) => {
-    // Convert summary to CompanyFinancialData format for preview
-    if (companyData) {
-      const updatedCompanyData = {
-        ...companyData,
-        filing_history: [{
-          year: new Date().getFullYear(),
-          revenue: summary.revenue,
-          ebitda: summary.ebitda,
-          filing_date: new Date().toISOString().split('T')[0],
-          source_url: undefined
-        }]
-      };
-      setCompanyData(updatedCompanyData);
-    }
-    setStage('preview');
-  };
 
   const handleStartOver = () => {
     setStage('chat');
@@ -172,32 +154,20 @@ export const AIAssistedValuation: React.FC = () => {
             </div>
           </div>
 
-          {/* Stage indicator */}
-          <div className="flex items-center gap-1.5 sm:gap-2 md:gap-4 lg:gap-6 flex-shrink-0">
-            <div className={`flex items-center gap-1 sm:gap-1.5 md:gap-2 px-2 sm:px-2.5 md:px-3 py-1 sm:py-1.5 rounded-full text-xs font-medium ${
-              stage === 'chat' ? 'bg-primary-500/20 text-primary-300' : 'bg-zinc-800 text-zinc-400'
-            }`}>
-              <MessageSquare className="w-3 h-3 flex-shrink-0" />
-              <span className="hidden sm:inline">Lookup</span>
-            </div>
-            <div className={`flex items-center gap-1 sm:gap-1.5 md:gap-2 px-2 sm:px-2.5 md:px-3 py-1 sm:py-1.5 rounded-full text-xs font-medium ${
-              stage === 'financial-input' ? 'bg-primary-500/20 text-primary-300' : 'bg-zinc-800 text-zinc-400'
-            }`}>
-              <DollarSign className="w-3 h-3 flex-shrink-0" />
-              <span className="hidden md:inline">Financial</span>
-            </div>
-            <div className={`flex items-center gap-1 sm:gap-1.5 md:gap-2 px-2 sm:px-2.5 md:px-3 py-1 sm:py-1.5 rounded-full text-xs font-medium ${
-              stage === 'preview' ? 'bg-primary-500/20 text-primary-300' : 'bg-zinc-800 text-zinc-400'
-            }`}>
-              <Database className="w-3 h-3 flex-shrink-0" />
-              <span className="hidden md:inline">Review</span>
-            </div>
-            <div className={`flex items-center gap-1 sm:gap-1.5 md:gap-2 px-2 sm:px-2.5 md:px-3 py-1 sm:py-1.5 rounded-full text-xs font-medium ${
-              stage === 'results' ? 'bg-green-500/20 text-green-300' : 'bg-zinc-800 text-zinc-400'
-            }`}>
-              <TrendingUp className="w-3 h-3 flex-shrink-0" />
-              <span className="hidden sm:inline">Results</span>
-            </div>
+          {/* Simple status indicator */}
+          <div className="flex items-center gap-2 text-xs text-zinc-400">
+            {stage === 'chat' && (
+              <>
+                <div className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
+                <span>AI conversation active</span>
+              </>
+            )}
+            {stage === 'results' && (
+              <>
+                <div className="w-2 h-2 rounded-full bg-green-500" />
+                <span>Valuation complete</span>
+              </>
+            )}
           </div>
         </div>
       </div>
@@ -291,7 +261,7 @@ export const AIAssistedValuation: React.FC = () => {
           )}
 
           {/* Chat - Always visible */}
-          {(stage === 'chat' || stage === 'preview' || stage === 'results') && (
+          {(stage === 'chat' || stage === 'results') && (
             <div className="flex-1 overflow-y-auto">
               <ConversationalChat
                 onCompanyFound={handleCompanyFound}
@@ -301,24 +271,11 @@ export const AIAssistedValuation: React.FC = () => {
             </div>
           )}
 
-          {/* Financial Input */}
-          {stage === 'financial-input' && selectedCompanyId && (
-            <div className="flex-1 overflow-y-auto">
-              <ConversationalFinancialInput
-                companyId={selectedCompanyId}
-                onComplete={handleFinancialInputComplete}
-                onError={(error) => {
-                  console.error('Financial input error:', error);
-                  // TODO: Show error message to user
-                }}
-              />
-            </div>
-          )}
         </div>
 
         {/* Right Panel: Preview/Results (40% on desktop, full width on mobile below chat) */}
         <div className="h-full min-h-[400px] lg:min-h-0 flex flex-col bg-white overflow-y-auto w-full lg:w-[40%] border-t lg:border-t-0 border-zinc-800">
-          {(stage === 'chat' || stage === 'financial-input') && !valuationResult && (
+          {stage === 'chat' && !valuationResult && (
             <div className="flex flex-col items-center justify-center h-full p-6 sm:p-8 text-center">
               <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-zinc-100 flex items-center justify-center mb-3 sm:mb-4">
                 <TrendingUp className="w-6 h-6 sm:w-8 sm:h-8 text-zinc-400" />
@@ -330,23 +287,6 @@ export const AIAssistedValuation: React.FC = () => {
             </div>
           )}
 
-          {stage === 'preview' && companyData && !valuationResult && (
-            <div className="flex-1 overflow-y-auto p-4 sm:p-6">
-              <div className="bg-zinc-50 rounded-lg p-4">
-                <h3 className="text-lg font-semibold text-zinc-900 mb-4">Company Data Preview</h3>
-                <div className="space-y-2 text-sm">
-                  <div><strong>Company:</strong> {companyData.company_name || 'Demo Company'}</div>
-                  <div><strong>Industry:</strong> {companyData.industry || 'Technology'}</div>
-                  <div><strong>Country:</strong> {companyData.country || 'Belgium'}</div>
-                </div>
-                <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                  <p className="text-sm text-blue-800">
-                    Continue the conversation to complete your valuation.
-                  </p>
-                </div>
-              </div>
-            </div>
-          )}
 
           {stage === 'results' && valuationResult && (
             <div className="flex-1 overflow-y-auto p-4 sm:p-6">
