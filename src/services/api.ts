@@ -5,6 +5,15 @@ import type {
   QuickValuationRequest,
   CompanyLookupResult,
   DocumentParseResult,
+  ConversationStartRequest,
+  ConversationStartResponse,
+  ConversationStepRequest,
+  ConversationStepResponse,
+  ConversationContext,
+  BusinessTypeAnalysis,
+  MethodologyRecommendation,
+  OwnerProfileRequest,
+  OwnerProfileResponse,
 } from '../types/valuation';
 
 class ValuationAPI {
@@ -73,6 +82,56 @@ class ValuationAPI {
     
     // Placeholder
     throw new Error('Document parsing not yet implemented in backend');
+  }
+
+  // =============================================================================
+  // INTELLIGENT CONVERSATION API
+  // =============================================================================
+
+  // Start intelligent conversation
+  async startConversation(data: ConversationStartRequest): Promise<ConversationStartResponse> {
+    const response = await this.client.post('/api/v1/intelligent-conversation/start', data);
+    return response.data;
+  }
+
+  // Process conversation step
+  async conversationStep(data: ConversationStepRequest): Promise<ConversationStepResponse> {
+    const response = await this.client.post('/api/v1/intelligent-conversation/step', data);
+    return response.data;
+  }
+
+  // Get conversation context
+  async getConversationContext(sessionId: string): Promise<ConversationContext> {
+    const response = await this.client.get(`/api/v1/intelligent-conversation/context/${sessionId}`);
+    return response.data;
+  }
+
+  // Submit owner profile
+  async submitOwnerProfile(data: OwnerProfileRequest): Promise<OwnerProfileResponse> {
+    const response = await this.client.post('/api/v1/intelligent-conversation/owner-profile', data);
+    return response.data;
+  }
+
+  // =============================================================================
+  // BUSINESS TYPE ANALYSIS API
+  // =============================================================================
+
+  // Get business types
+  async getBusinessTypes(): Promise<BusinessTypeAnalysis[]> {
+    const response = await this.client.get('/api/v1/business-types');
+    return response.data;
+  }
+
+  // Get methodology recommendation
+  async getMethodologyRecommendation(businessContext: Partial<ValuationRequest>): Promise<MethodologyRecommendation> {
+    const response = await this.client.post('/api/v1/methodology-recommendation', businessContext);
+    return response.data;
+  }
+
+  // Analyze business type
+  async analyzeBusinessType(businessContext: Partial<ValuationRequest>): Promise<BusinessTypeAnalysis> {
+    const response = await this.client.post('/api/v1/analyze', businessContext);
+    return response.data;
   }
 }
 

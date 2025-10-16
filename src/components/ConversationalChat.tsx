@@ -2,6 +2,8 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Send, Bot, Loader2, Shield } from 'lucide-react';
 import { searchCompanies, fetchCompanyFinancials } from '../services/registryService';
 import type { CompanyFinancialData } from '../types/registry';
+import type { BusinessProfileData } from '../services/businessDataService';
+import type { ConversationStartResponse } from '../types/valuation';
 
 interface Message {
   id: string;
@@ -13,27 +15,44 @@ interface Message {
 
 interface ConversationalChatProps {
   onCompanyFound: (data: CompanyFinancialData) => void;
+  conversationSession?: ConversationStartResponse | null;
+  businessProfile?: BusinessProfileData | null;
 }
 
 export const ConversationalChat: React.FC<ConversationalChatProps> = ({
-  onCompanyFound
+  onCompanyFound,
+  conversationSession,
+  businessProfile
 }) => {
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      id: '1',
-      type: 'ai',
-      content: `👋 Hi! I'm here to help you get a business valuation. Let's start by finding your company. What's the name of your company?`,
-      timestamp: new Date()
-    }
-  ]);
+  const [messages, setMessages] = useState<Message[]>([]);
   
   const [input, setInput] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
+  // Customize initial message when business profile exists
+  const getInitialMessage = () => {
+    if (businessProfile?.company_name) {
+      return `👋 Hi! I see you want to value ${businessProfile.company_name}. Let me help you get a comprehensive valuation.`;
+    }
+    return `👋 Hi! I'm here to help you get a business valuation. Let's start by finding your company. What's the name of your company?`;
+  };
+
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
+
+  // Initialize messages with dynamic initial message
+  useEffect(() => {
+    if (messages.length === 0) {
+      setMessages([{
+        id: '1',
+        type: 'ai',
+        content: getInitialMessage(),
+        timestamp: new Date()
+      }]);
+    }
+  }, [businessProfile]);
 
   useEffect(() => {
     scrollToBottom();

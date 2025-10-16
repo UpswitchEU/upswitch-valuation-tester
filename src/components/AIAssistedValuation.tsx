@@ -1,20 +1,109 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { MessageSquare, Database, TrendingUp, CheckCircle, Save, ArrowLeft, DollarSign } from 'lucide-react';
+import { MessageSquare, Database, TrendingUp, CheckCircle, Save, ArrowLeft, DollarSign, User, Building2 } from 'lucide-react';
 import { ConversationalChat } from './ConversationalChat';
 import { ConversationalFinancialInput } from './ConversationalFinancialInput';
-import type { ValuationResponse } from '../types/valuation';
+import { businessDataService, type BusinessProfileData } from '../services/businessDataService';
+import { api } from '../services/api';
+import { useAuth } from '../contexts/AuthContext';
+import type { ValuationResponse, ConversationStartResponse } from '../types/valuation';
 
 type FlowStage = 'chat' | 'financial-input' | 'preview' | 'results';
 
 export const AIAssistedValuation: React.FC = () => {
   const navigate = useNavigate();
+  const { user, isAuthenticated } = useAuth();
   const [stage, setStage] = useState<FlowStage>('chat');
   const [companyData, setCompanyData] = useState<any | null>(null);
   const [valuationResult, setValuationResult] = useState<ValuationResponse | null>(null);
   const [reportSaved, setReportSaved] = useState(false);
   const [selectedCompanyId, setSelectedCompanyId] = useState<string | null>(null);
+  
+  // NEW: Business profile data state
+  const [businessProfile, setBusinessProfile] = useState<BusinessProfileData | null>(null);
+  const [conversationSession, setConversationSession] = useState<ConversationStartResponse | null>(null);
+  const [isLoadingProfile, setIsLoadingProfile] = useState(true);
+  const [profileError, setProfileError] = useState<string | null>(null);
 
+  // NEW: Start intelligent conversation with pre-filled data
+  const startIntelligentConversation = useCallback(async (profileData: BusinessProfileData) => {
+    try {
+      console.log('🤖 Starting intelligent conversation...');
+      
+      // Transform business data to conversation request
+      const conversationRequest = businessDataService.transformToConversationStartRequest(profileData, {
+        time_commitment: 'detailed',
+        focus_area: 'all'
+      });
+
+      // Start conversation with valuation engine
+      const response = await api.startConversation(conversationRequest);
+      setConversationSession(response);
+      
+      console.log('✅ Intelligent conversation started:', response);
+      
+      // If we have financial data from KBO lookup, go to preview
+      if (response.current_valuation) {
+        setStage('preview');
+        setValuationResult(response.current_valuation);
+      } else {
+        // Start with conversational data collection
+        setStage('chat');
+      }
+      
+    } catch (error) {
+      console.error('❌ Error starting intelligent conversation:', error);
+      setProfileError('Failed to start intelligent conversation. Using manual flow.');
+      setStage('chat');
+    }
+  }, []);
+
+  // NEW: Fetch business profile data on component mount
+  useEffect(() => {
+    const fetchBusinessProfile = async () => {
+      try {
+        setIsLoadingProfile(true);
+        setProfileError(null);
+
+        // Check if user is authenticated
+        if (!isAuthenticated || !user?.id) {
+          console.log('ℹ️ No authenticated user, skipping profile fetch');
+          setIsLoadingProfile(false);
+          return;
+        }
+
+        const userId = user.id;
+        
+        console.log('🔍 Fetching business profile for instant valuation...');
+        const profileData = await businessDataService.fetchUserBusinessData(userId);
+        
+        if (profileData) {
+          setBusinessProfile(profileData);
+          console.log('✅ Business profile loaded:', profileData);
+          
+          // Check if we have enough data to start conversation
+          if (businessDataService.hasCompleteBusinessProfile(profileData)) {
+            console.log('🚀 Starting intelligent conversation with pre-filled data...');
+            await startIntelligentConversation(profileData);
+          } else {
+            console.log('⚠️ Incomplete business profile, will collect missing data');
+            const missingFields = businessDataService.getMissingFields(profileData);
+            console.log('Missing fields:', missingFields);
+          }
+        } else {
+          console.log('ℹ️ No business profile found, starting fresh conversation');
+        }
+        
+      } catch (error) {
+        console.error('❌ Error fetching business profile:', error);
+        setProfileError('Failed to load business profile. Starting fresh conversation.');
+      } finally {
+        setIsLoadingProfile(false);
+      }
+    };
+
+    fetchBusinessProfile();
+  }, [isAuthenticated, user?.id, startIntelligentConversation]);
 
 
   const handleCompanyFound = (data: any) => {
@@ -74,7 +163,11 @@ export const AIAssistedValuation: React.FC = () => {
             <div className="h-4 sm:h-6 w-px bg-zinc-700 flex-shrink-0" />
             <div className="min-w-0 flex-1">
               <h1 className="text-base sm:text-lg font-bold text-white truncate">Instant Valuation</h1>
-              <p className="text-xs text-zinc-400 hidden sm:block">AI-powered company lookup</p>
+              <p className="text-xs text-zinc-400 hidden sm:block">
+                {isLoadingProfile ? 'Loading your business profile...' : 
+                 businessProfile ? `AI-powered valuation for ${businessProfile.company_name || 'your business'}` :
+                 'AI-powered company lookup'}
+              </p>
             </div>
           </div>
 
@@ -107,6 +200,54 @@ export const AIAssistedValuation: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Business Profile Summary */}
+      {businessProfile && !isLoadingProfile && (
+        <div className="border-b border-zinc-800 bg-zinc-900/30 px-3 sm:px-4 md:px-6 py-3 mx-2 sm:mx-4">
+          <div className="flex items-center gap-3">
+            <Building2 className="w-5 h-5 text-primary-400 flex-shrink-0" />
+            <div className="min-w-0 flex-1">
+              <h3 className="text-sm font-medium text-white truncate">
+                {businessProfile.company_name || 'Your Business'}
+              </h3>
+              <div className="flex items-center gap-2 text-xs text-zinc-400">
+                {businessProfile.industry && (
+                  <span className="bg-zinc-800 px-2 py-1 rounded">{businessProfile.industry}</span>
+                )}
+                {businessProfile.business_type && (
+                  <span className="bg-zinc-800 px-2 py-1 rounded">{businessProfile.business_type}</span>
+                )}
+                {businessProfile.revenue_range && (
+                  <span className="bg-zinc-800 px-2 py-1 rounded">{businessProfile.revenue_range}</span>
+                )}
+              </div>
+            </div>
+            <div className="text-xs text-zinc-500">
+              {businessDataService.getDataCompleteness(businessProfile)}% complete
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Error Message */}
+      {profileError && (
+        <div className="border-b border-red-800 bg-red-900/20 px-3 sm:px-4 md:px-6 py-3 mx-2 sm:mx-4">
+          <div className="flex items-center gap-2 text-sm text-red-300">
+            <span>⚠️</span>
+            <span>{profileError}</span>
+          </div>
+        </div>
+      )}
+
+      {/* Loading State */}
+      {isLoadingProfile && (
+        <div className="flex items-center justify-center h-32 mx-2 sm:mx-4">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-500 mx-auto mb-4"></div>
+            <p className="text-zinc-400 text-sm">Loading your business profile...</p>
+          </div>
+        </div>
+      )}
 
       {/* Full-screen Split Panel - Ilara Style */}
       <div className="flex flex-col lg:flex-row flex-1 overflow-hidden mx-2 sm:mx-4 my-2 sm:my-4 rounded-lg border border-zinc-800">
@@ -153,6 +294,8 @@ export const AIAssistedValuation: React.FC = () => {
             <div className="flex-1 overflow-y-auto">
               <ConversationalChat
                 onCompanyFound={handleCompanyFound}
+                conversationSession={conversationSession}
+                businessProfile={businessProfile}
               />
             </div>
           )}
