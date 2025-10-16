@@ -146,7 +146,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // Compute business card data from user
   const businessCard = React.useMemo(() => {
     if (!user) {
-      console.log('❌ No business card: user missing');
+      console.log('ℹ️ No business card: continuing as guest user');
       return null;
     }
     

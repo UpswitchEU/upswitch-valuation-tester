@@ -75,7 +75,11 @@ export const fetchCompanyFinancials = async (
     
     return response.data;
   } catch (error) {
-    console.error('Company financials fetch error:', error);
+    if (axios.isAxiosError(error) && error.response?.status === 404) {
+      console.info('ℹ️ Company registry data not available (will collect manually)');
+    } else {
+      console.error('Company financials fetch error:', error);
+    }
     throw new Error('Failed to fetch company financial data');
   }
 };

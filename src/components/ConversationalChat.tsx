@@ -328,14 +328,7 @@ Registration: ${bestMatch.registration_number}
 
 💬 **Let's collect the data together** - I'll ask a few quick questions.
 
-⏱️ Takes under 1 minute • 🔒 Your data stays secure
-
----
-
-**Question 1 of 2:**
-What's your annual revenue for this year? (in EUR)
-
-💡 Your total income before expenses`,
+⏱️ Takes under 1 minute • 🔒 Your data stays secure`,
             timestamp: new Date()
           }]);
 
@@ -546,7 +539,7 @@ ${error instanceof Error ? error.message : 'An unexpected error occurred'}
       setMessages(prev => [...prev, {
         id: Date.now().toString(),
         type: 'ai',
-        content: `Let me help you with a business valuation. ${firstQuestion.question}${firstQuestion.helpText ? `\n\n💡 ${firstQuestion.helpText}` : ''}`,
+        content: `${firstQuestion.question}${firstQuestion.helpText ? `\n\n💡 ${firstQuestion.helpText}` : ''}`,
         timestamp: new Date()
       }]);
     }
