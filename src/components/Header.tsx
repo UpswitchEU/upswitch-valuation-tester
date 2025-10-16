@@ -4,6 +4,7 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { ChevronDown } from 'lucide-react';
 // import { urls } from '../router'; // Removed with reports link
 // import { useReportsStore } from '../store/useReportsStore'; // Deprecated: Reports now on upswitch.biz
+import UserAvatar from './UserAvatar';
 
 /**
  * Header Component
@@ -154,6 +155,11 @@ export const Header: React.FC = () => {
                 </svg>
                 <span>Engine Connected</span>
               </div>
+            </li>
+            
+            {/* User Avatar */}
+            <li className="text-medium whitespace-nowrap box-border list-none flex items-center">
+              <UserAvatar size="md" />
             </li>
             
             {/* Mobile Menu Button */}

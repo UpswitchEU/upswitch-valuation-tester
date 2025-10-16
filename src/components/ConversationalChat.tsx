@@ -56,10 +56,18 @@ export const ConversationalChat: React.FC<ConversationalChatProps> = ({
 
   // Initialize triage system when component mounts or company is found
   useEffect(() => {
-    if (foundCompanyData || businessProfile) {
+    console.log('🔍 State:', {
+      isUsingIntelligentTriage,
+      hasTriageSession: !!triageSession,
+      hasBusinessProfile: !!businessProfile,
+      hasFoundCompany: !!foundCompanyData
+    });
+    
+    // Only initialize if we have company data or business profile
+    if ((foundCompanyData || businessProfile) && !triageSession && isUsingIntelligentTriage) {
       initializeTriage();
     }
-  }, [foundCompanyData, businessProfile]);
+  }, [foundCompanyData, businessProfile, triageSession, isUsingIntelligentTriage]);
 
   // Customize initial message when business profile exists
   const getInitialMessage = () => {
@@ -483,64 +491,95 @@ ${error instanceof Error ? error.message : 'An unexpected error occurred'}
 
   // Initialize intelligent triage session
   const initializeTriage = async () => {
-    if (!triageSession && isUsingIntelligentTriage) {
-      try {
-        const session = await intelligentTriageService.startConversation({
-          user_id: businessProfile?.user_id,
-          company_id: foundCompanyData?.company_id,
-          business_type: businessProfile?.business_type || foundCompanyData?.business_type,
-          industry: businessProfile?.industry || foundCompanyData?.industry,
-          country_code: businessProfile?.country || foundCompanyData?.country_code || 'BE',
-          business_context: {
-            company_name: businessProfile?.company_name || foundCompanyData?.company_name,
-            is_authenticated: !!businessProfile,
-            has_business_profile: !!businessProfile
-          },
-          pre_filled_data: businessProfile ? {
-            company_name: businessProfile.company_name,
-            revenue: businessProfile.revenue,
-            ebitda: businessProfile.ebitda,
-            employees: businessProfile.employees
-          } : {}
-        });
-        
-        setTriageSession(session);
-        setTriageError(null);
-        
-        // Add initial AI message from triage
+    // Don't initialize if already initialized or triage is disabled
+    if (triageSession || !isUsingIntelligentTriage) {
+      return;
+    }
+
+    console.log('🚀 Initializing intelligent triage...');
+
+    try {
+      const session = await intelligentTriageService.startConversation({
+        user_id: businessProfile?.user_id,
+        company_id: foundCompanyData?.company_id,
+        business_type: businessProfile?.business_type || foundCompanyData?.business_type,
+        industry: businessProfile?.industry || foundCompanyData?.industry,
+        country_code: businessProfile?.country || foundCompanyData?.country_code || 'BE',
+        business_context: {
+          company_name: businessProfile?.company_name || foundCompanyData?.company_name,
+          is_authenticated: !!businessProfile,
+          has_business_profile: !!businessProfile
+        },
+        pre_filled_data: businessProfile ? {
+          company_name: businessProfile.company_name,
+          revenue: businessProfile.revenue,
+          ebitda: businessProfile.ebitda,
+          employees: businessProfile.employees
+        } : {}
+      });
+      
+      setTriageSession(session);
+      setTriageError(null);
+      
+      console.log('✅ Triage session started:', session.session_id);
+      
+      // Add initial AI message from triage
+      if (session.ai_message) {
         setMessages(prev => [...prev, {
           id: Date.now().toString(),
           type: 'ai',
           content: session.ai_message,
           timestamp: new Date()
         }]);
-      } catch (error) {
-        console.error('Failed to start triage session:', error);
-        setTriageError('Failed to start intelligent conversation');
-        setIsUsingIntelligentTriage(false);
-        // Fallback to manual flow
-        initializeFallback();
       }
+    } catch (error) {
+      console.warn('⚠️ Triage initialization failed, switching to fallback mode:', error);
+      setTriageError('Intelligent triage unavailable, using fallback mode');
+      setIsUsingIntelligentTriage(false);
+      
+      // Initialize fallback with delay to ensure component is ready
+      setTimeout(() => {
+        initializeFallback();
+      }, 100);
     }
   };
 
   // Initialize fallback system
   const initializeFallback = () => {
+    console.log('🔄 Switching to fallback question mode');
+    
     const questions = fallbackQuestionService.getQuestionSequence(
       businessProfile?.business_type || foundCompanyData?.business_type,
       businessProfile?.industry || foundCompanyData?.industry
     );
-    setCurrentFallbackQuestion(questions[0] || null);
+    
+    const firstQuestion = questions[0];
+    
+    if (firstQuestion) {
+      setCurrentFallbackQuestion(firstQuestion);
+      
+      // Add initial fallback message
+      setMessages(prev => [...prev, {
+        id: Date.now().toString(),
+        type: 'ai',
+        content: `Let me help you with a business valuation. ${firstQuestion.question}${firstQuestion.helpText ? `\n\n💡 ${firstQuestion.helpText}` : ''}`,
+        timestamp: new Date()
+      }]);
+    }
   };
 
   // Handle triage answer
   const handleTriageAnswer = async (answer: string) => {
     if (!triageSession) return;
     
+    console.log('🔄 Processing triage answer:', { answer, sessionId: triageSession.session_id });
+    
     try {
       // Extract field name from current question
       const fieldName = triageSession.field_name || extractFieldFromMessage(triageSession.ai_message);
       const detectedIntent = detectUserIntent(answer);
+      
+      console.log('📝 Triage context:', { fieldName, detectedIntent });
       
       // Process step with triage engine
       const nextSession = await intelligentTriageService.processStep(
@@ -554,6 +593,12 @@ ${error instanceof Error ? error.message : 'An unexpected error occurred'}
           enhanced_context: buildEnhancedContext()
         }
       );
+      
+      console.log('✅ Triage step completed:', { 
+        complete: nextSession.complete, 
+        hasNextQuestion: !!nextSession.field_name,
+        hasValuation: !!nextSession.valuation_result
+      });
       
       setTriageSession(nextSession);
       
@@ -578,7 +623,7 @@ ${error instanceof Error ? error.message : 'An unexpected error occurred'}
       }
       
     } catch (error) {
-      console.error('Triage step failed:', error);
+      console.error('❌ Triage step failed:', error);
       setTriageError('Failed to process response');
       // Fallback to manual flow
       setIsUsingIntelligentTriage(false);

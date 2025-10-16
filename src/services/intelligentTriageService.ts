@@ -46,16 +46,23 @@ export const intelligentTriageService = {
   async startConversation(request: StartTriageRequest): Promise<TriageSession> {
     try {
       const response: ConversationStartResponse = await api.startConversation(request);
+      
+      // Add null safety checks
+      if (!response || !response.next_question) {
+        console.warn('⚠️ Triage API returned incomplete response, using fallback');
+        throw new Error('Incomplete triage response');
+      }
+      
       // Convert to TriageSession format
       return {
         session_id: response.session_id,
         complete: false,
-        ai_message: response.welcome_message,
+        ai_message: response.welcome_message || 'Welcome to the valuation conversation',
         step: 0,
         field_name: response.next_question.id,
         input_type: response.next_question.question_type,
-        validation_rules: { required: response.next_question.required },
-        help_text: response.next_question.help_text,
+        validation_rules: { required: response.next_question.required ?? false },
+        help_text: response.next_question.help_text || '',
         context: { estimated_steps: response.estimated_steps },
         owner_profile_needed: false,
         valuation_result: response.current_valuation
@@ -85,27 +92,34 @@ export const intelligentTriageService = {
       
       const response: ConversationStepResponse = await api.conversationStep(request);
       
+      // ✅ Add null safety
+      if (!response) {
+        throw new Error('Empty response from conversation step API');
+      }
+      
       // Convert to TriageSession format
       return {
         session_id: sessionId,
-        complete: response.is_complete,
+        complete: response.is_complete ?? false,
         ai_message: response.next_question?.question || 'Conversation complete',
         step: 0, // Will be updated based on progress
         field_name: response.next_question?.id,
         input_type: response.next_question?.question_type,
-        validation_rules: { required: response.next_question?.required },
-        help_text: response.next_question?.help_text,
+        validation_rules: { 
+          required: response.next_question?.required ?? false 
+        },
+        help_text: response.next_question?.help_text || '',
         context: { 
-          progress_percentage: response.progress_percentage,
-          insights: response.insights,
-          recommendations: response.recommendations
+          progress_percentage: response.progress_percentage ?? 0,
+          insights: response.insights || [],
+          recommendations: response.recommendations || []
         },
         owner_profile_needed: false, // Will be determined by backend
         valuation_result: response.current_valuation
       };
     } catch (error) {
       console.error('Failed to process triage step:', error);
-      throw new Error('Failed to process conversation step');
+      throw new Error(`Failed to process conversation step: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   },
 
