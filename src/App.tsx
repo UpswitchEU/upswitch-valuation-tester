@@ -5,12 +5,11 @@ import { AIAssistedValuation } from './components/AIAssistedValuation';
 import { ManualValuationFlow } from './components/ManualValuationFlow';
 import { DocumentUploadFlow } from './components/DocumentUploadFlow';
 import { ROUTE_TO_VIEW_MODE, VIEW_MODE_TO_ROUTE } from './router/routes';
-import { AuthProvider } from './contexts/AuthContext';
 import { ScrollToTop } from './utils';
 
 type ViewMode = 'ai-assisted' | 'manual' | 'document-upload';
 
-function AppContent() {
+function App() {
   const location = useLocation();
   const navigate = useNavigate();
   
@@ -68,15 +67,6 @@ function AppContent() {
         </div>
       </main>
     </div>
-  );
-}
-
-// Wrap app with AuthProvider
-function App() {
-  return (
-    <AuthProvider>
-      <AppContent />
-    </AuthProvider>
   );
 }
 
