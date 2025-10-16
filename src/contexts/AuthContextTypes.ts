@@ -22,6 +22,9 @@ export interface User {
   role: string;
   email_verified?: boolean;
   
+  // Profile fields
+  avatar_url?: string;
+  
   // Business card fields
   company_name?: string;
   business_type?: string;

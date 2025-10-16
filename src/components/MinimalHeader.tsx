@@ -11,7 +11,7 @@ import UserAvatar from './UserAvatar';
  */
 export const MinimalHeader: React.FC = () => {
   return (
-    <header className="z-40 flex px-6 py-4 gap-2 sm:gap-3 lg:gap-4 w-full flex-row flex-nowrap items-center justify-start max-w-full overflow-x-hidden bg-zinc-900/50 backdrop-blur-sm border-b border-zinc-800 sticky top-0">
+    <header className="z-40 flex px-6 py-4 gap-2 sm:gap-3 lg:gap-4 w-full flex-row flex-nowrap items-center justify-between max-w-full overflow-x-hidden bg-zinc-900/50 backdrop-blur-sm border-b border-zinc-800 sticky top-0">
       {/* Logo and Title */}
       <div className="flex basis-0 flex-row flex-grow flex-nowrap justify-start bg-transparent items-center no-underline text-medium whitespace-nowrap box-border">
         <Link className="flex items-center gap-1 sm:gap-1.5 flex-shrink-0" to="/">
@@ -34,6 +34,11 @@ export const MinimalHeader: React.FC = () => {
             BETA
           </span>
         </Link>
+      </div>
+      
+      {/* User Avatar - Right side */}
+      <div className="flex items-center">
+        <UserAvatar size="md" />
       </div>
     </header>
   );

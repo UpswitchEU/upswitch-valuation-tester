@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { User, UserCircle } from 'lucide-react';
+import { User } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 
 interface UserAvatarProps {
