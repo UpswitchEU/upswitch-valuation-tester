@@ -44,6 +44,10 @@ export const ConversationalChat: React.FC<ConversationalChatProps> = ({
   const [showOwnerProfiling, setShowOwnerProfiling] = useState(false);
   const [ownerProfileData, setOwnerProfileData] = useState<OwnerProfileData | null>(null);
   
+  // Conversation flow state management
+  const [conversationFlowActive, setConversationFlowActive] = useState(false);
+  const [activeFlowType, setActiveFlowType] = useState<'triage' | 'fallback' | 'legacy' | null>(null);
+  
   // Legacy state (for backward compatibility)
   const [conversationMode, setConversationMode] = useState<'company-lookup' | 'financial-collection' | 'complete'>('company-lookup');
   const [financialData, setFinancialData] = useState({
@@ -60,14 +64,19 @@ export const ConversationalChat: React.FC<ConversationalChatProps> = ({
       isUsingIntelligentTriage,
       hasTriageSession: !!triageSession,
       hasBusinessProfile: !!businessProfile,
-      hasFoundCompany: !!foundCompanyData
+      hasFoundCompany: !!foundCompanyData,
+      conversationFlowActive,
+      activeFlowType
     });
     
-    // Only initialize if we have company data or business profile
-    if ((foundCompanyData || businessProfile) && !triageSession && isUsingIntelligentTriage) {
+    // Only initialize if we have company data AND no flow is active yet
+    if ((foundCompanyData || businessProfile) && 
+        !triageSession && 
+        isUsingIntelligentTriage && 
+        !conversationFlowActive) {
       initializeTriage();
     }
-  }, [foundCompanyData, businessProfile, triageSession, isUsingIntelligentTriage]);
+  }, [foundCompanyData, businessProfile, triageSession, isUsingIntelligentTriage, conversationFlowActive]);
 
   // Customize initial message when business profile exists
   const getInitialMessage = () => {
@@ -225,23 +234,11 @@ What was your annual revenue last year? (in EUR)
         completeness_score: 0.3
       };
 
-      // Store company data and start financial collection
+      // Store company data and let triage/fallback handle questions
       setFoundCompanyData(mockCompanyData);
-      setConversationMode('financial-collection');
-      setCurrentQuestion(0);
       
-      // Start financial data collection
-      setTimeout(() => {
-        const firstQuestion = getNextFinancialQuestion(0);
-        if (firstQuestion) {
-          setMessages(prev => [...prev, {
-            id: Date.now().toString(),
-            type: 'ai',
-            content: firstQuestion,
-            timestamp: new Date()
-          }]);
-        }
-      }, 1000);
+      // ✅ Instead, let the useEffect trigger triage or fallback
+      console.log('✅ Company found, letting triage/fallback handle questions');
 
       setIsProcessing(false);
       return;
@@ -312,23 +309,11 @@ Would you like to:
             timestamp: new Date()
           }]);
 
-          // Store company data and start financial collection
+          // Store company data and let triage/fallback handle questions
           setFoundCompanyData(financialData);
-          setConversationMode('financial-collection');
-          setCurrentQuestion(0);
           
-          // Start financial data collection
-          setTimeout(() => {
-            const firstQuestion = getNextFinancialQuestion(0);
-            if (firstQuestion) {
-              setMessages(prev => [...prev, {
-                id: Date.now().toString(),
-                type: 'ai',
-                content: firstQuestion,
-                timestamp: new Date()
-              }]);
-            }
-          }, 1500);
+          // ✅ Instead, let the useEffect trigger triage or fallback
+          console.log('✅ Company found with financial data, letting triage/fallback handle questions');
         } catch (financialError) {
           console.error('Financial data fetch error:', financialError);
           
@@ -368,21 +353,9 @@ What's your annual revenue for this year? (in EUR)
           };
           
           setFoundCompanyData(companyData);
-          setConversationMode('financial-collection');
-          setCurrentQuestion(0);
           
-          // Start financial data collection
-          setTimeout(() => {
-            const firstQuestion = getNextFinancialQuestion(0);
-            if (firstQuestion) {
-              setMessages(prev => [...prev, {
-                id: Date.now().toString(),
-                type: 'ai',
-                content: firstQuestion,
-                timestamp: new Date()
-              }]);
-            }
-          }, 1500);
+          // ✅ Instead, let the useEffect trigger triage or fallback
+          console.log('✅ Company found without financial data, letting triage/fallback handle questions');
         }
         
       } else {
@@ -491,11 +464,13 @@ ${error instanceof Error ? error.message : 'An unexpected error occurred'}
 
   // Initialize intelligent triage session
   const initializeTriage = async () => {
-    // Don't initialize if already initialized or triage is disabled
-    if (triageSession || !isUsingIntelligentTriage) {
+    // Don't initialize if already initialized, triage is disabled, OR another flow is active
+    if (triageSession || !isUsingIntelligentTriage || conversationFlowActive) {
       return;
     }
 
+    setConversationFlowActive(true);
+    setActiveFlowType('triage');
     console.log('🚀 Initializing intelligent triage...');
 
     try {
@@ -536,6 +511,7 @@ ${error instanceof Error ? error.message : 'An unexpected error occurred'}
       console.warn('⚠️ Triage initialization failed, switching to fallback mode:', error);
       setTriageError('Intelligent triage unavailable, using fallback mode');
       setIsUsingIntelligentTriage(false);
+      setActiveFlowType('fallback');
       
       // Initialize fallback with delay to ensure component is ready
       setTimeout(() => {
@@ -546,6 +522,14 @@ ${error instanceof Error ? error.message : 'An unexpected error occurred'}
 
   // Initialize fallback system
   const initializeFallback = () => {
+    // Only initialize if no other flow is active
+    if (conversationFlowActive && activeFlowType !== 'fallback') {
+      console.log('⚠️ Another conversation flow is already active, skipping fallback');
+      return;
+    }
+
+    setConversationFlowActive(true);
+    setActiveFlowType('fallback');
     console.log('🔄 Switching to fallback question mode');
     
     const questions = fallbackQuestionService.getQuestionSequence(
