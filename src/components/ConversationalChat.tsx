@@ -875,6 +875,27 @@ The detailed report is now available in the preview panel.`,
         </div>
       </div>
 
+      {/* Error Display */}
+      {triageError && (
+        <div className="p-4 bg-red-900/20 border border-red-500/30 rounded-lg mx-4 mb-4">
+          <div className="flex items-center gap-2">
+            <div className="w-2 h-2 rounded-full bg-red-500" />
+            <span className="text-red-300 text-sm font-medium">Triage Error</span>
+          </div>
+          <p className="text-red-200 text-sm mt-1">{triageError}</p>
+          <button
+            onClick={() => {
+              setTriageError(null);
+              setIsUsingIntelligentTriage(false);
+              initializeFallback();
+            }}
+            className="text-red-300 hover:text-red-200 text-xs underline mt-2"
+          >
+            Switch to fallback mode
+          </button>
+        </div>
+      )}
+
       {/* Messages Container - Ilara Style - Scrollable */}
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
         {messages.map((message) => (
