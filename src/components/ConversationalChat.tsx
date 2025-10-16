@@ -14,11 +14,13 @@ interface Message {
 
 interface ConversationalChatProps {
   onCompanyFound: (data: CompanyFinancialData) => void;
+  onValuationComplete: (valuationResult: any) => void;
   businessProfile?: BusinessProfileData | null;
 }
 
 export const ConversationalChat: React.FC<ConversationalChatProps> = ({
   onCompanyFound,
+  onValuationComplete,
   businessProfile
 }) => {
   const [messages, setMessages] = useState<Message[]>([]);
@@ -26,6 +28,16 @@ export const ConversationalChat: React.FC<ConversationalChatProps> = ({
   const [input, setInput] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  // Financial data collection state
+  const [conversationMode, setConversationMode] = useState<'company-lookup' | 'financial-collection' | 'complete'>('company-lookup');
+  const [financialData, setFinancialData] = useState({
+    revenue: null as number | null,
+    ebitda: null as number | null,
+    employees: null as number | null
+  });
+  const [currentQuestion, setCurrentQuestion] = useState(0);
+  const [foundCompanyData, setFoundCompanyData] = useState<any>(null);
 
   // Customize initial message when business profile exists
   const getInitialMessage = () => {
@@ -133,6 +145,13 @@ What was your revenue last year? (in EUR)`;
     setInput('');
     setIsProcessing(true);
 
+    // Handle different conversation modes
+    if (conversationMode === 'financial-collection') {
+      await handleFinancialAnswer(userMessage);
+      setIsProcessing(false);
+      return;
+    }
+
     // If we have business profile data, skip company lookup and go directly to financial data collection
     if (businessProfile?.company_name && messages.length <= 1) {
       // Skip company lookup - we already know the company
@@ -163,9 +182,22 @@ What was your annual revenue last year? (in EUR)
         completeness_score: 0.3
       };
 
-      // Notify parent component that we found the company (from user profile)
+      // Store company data and start financial collection
+      setFoundCompanyData(mockCompanyData);
+      setConversationMode('financial-collection');
+      setCurrentQuestion(0);
+      
+      // Start financial data collection
       setTimeout(() => {
-        onCompanyFound(mockCompanyData);
+        const firstQuestion = getNextFinancialQuestion(0);
+        if (firstQuestion) {
+          setMessages(prev => [...prev, {
+            id: Date.now().toString(),
+            type: 'ai',
+            content: firstQuestion,
+            timestamp: new Date()
+          }]);
+        }
       }, 1000);
 
       setIsProcessing(false);
@@ -237,9 +269,22 @@ Would you like to:
             timestamp: new Date()
           }]);
 
-          // Notify parent after a brief delay to show message
+          // Store company data and start financial collection
+          setFoundCompanyData(financialData);
+          setConversationMode('financial-collection');
+          setCurrentQuestion(0);
+          
+          // Start financial data collection
           setTimeout(() => {
-            onCompanyFound(financialData);
+            const firstQuestion = getNextFinancialQuestion(0);
+            if (firstQuestion) {
+              setMessages(prev => [...prev, {
+                id: Date.now().toString(),
+                type: 'ai',
+                content: firstQuestion,
+                timestamp: new Date()
+              }]);
+            }
           }, 1500);
         } catch (financialError) {
           console.error('Financial data fetch error:', financialError);
@@ -266,19 +311,34 @@ What's your annual revenue for this year? (in EUR)
             timestamp: new Date()
           }]);
 
-          // Continue with conversational financial data collection
+          // Store company data and start financial collection
+          const companyData = {
+            company_id: bestMatch.company_id,
+            company_name: bestMatch.company_name,
+            registration_number: bestMatch.registration_number,
+            country_code: bestMatch.country_code,
+            legal_form: bestMatch.legal_form,
+            filing_history: [], // Empty - will be collected via conversation
+            data_source: 'conversational_input',
+            last_updated: new Date().toISOString(),
+            completeness_score: 0.5
+          };
+          
+          setFoundCompanyData(companyData);
+          setConversationMode('financial-collection');
+          setCurrentQuestion(0);
+          
+          // Start financial data collection
           setTimeout(() => {
-            onCompanyFound({
-              company_id: bestMatch.company_id,
-              company_name: bestMatch.company_name,
-              registration_number: bestMatch.registration_number,
-              country_code: bestMatch.country_code,
-              legal_form: bestMatch.legal_form,
-              filing_history: [], // Empty - will be collected via conversation
-              data_source: 'conversational_input',
-              last_updated: new Date().toISOString(),
-              completeness_score: 0.5
-            });
+            const firstQuestion = getNextFinancialQuestion(0);
+            if (firstQuestion) {
+              setMessages(prev => [...prev, {
+                id: Date.now().toString(),
+                type: 'ai',
+                content: firstQuestion,
+                timestamp: new Date()
+              }]);
+            }
           }, 1500);
         }
         
@@ -330,6 +390,150 @@ ${error instanceof Error ? error.message : 'An unexpected error occurred'}
 
   const useSuggestion = (suggestion: string) => {
     setInput(suggestion);
+  };
+
+  // Financial data collection helpers
+  const getFinancialQuestions = () => [
+    {
+      field: 'revenue',
+      question: 'What was your annual revenue last year? (in EUR)',
+      help: 'Your total income before expenses'
+    },
+    {
+      field: 'ebitda',
+      question: 'What was your EBITDA? (in EUR)',
+      help: 'Earnings before interest, taxes, depreciation, and amortization'
+    },
+    {
+      field: 'employees',
+      question: 'How many employees does your company have?',
+      help: 'Full-time equivalent employees'
+    }
+  ];
+
+  const getNextFinancialQuestion = (questionIndex: number) => {
+    const questions = getFinancialQuestions();
+    if (questionIndex < questions.length) {
+      const q = questions[questionIndex];
+      return `**Question ${questionIndex + 1} of ${questions.length}:**
+${q.question}
+
+💡 ${q.help}`;
+    }
+    return null;
+  };
+
+  const handleFinancialAnswer = async (answer: string) => {
+    const questions = getFinancialQuestions();
+    const currentField = questions[currentQuestion].field;
+    const numericValue = parseFloat(answer.replace(/[^\d.-]/g, ''));
+    
+    if (isNaN(numericValue)) {
+      setMessages(prev => [...prev, {
+        id: Date.now().toString(),
+        type: 'ai',
+        content: `❌ Please enter a valid number for ${questions[currentQuestion].field}.`,
+        timestamp: new Date()
+      }]);
+      return;
+    }
+
+    setFinancialData(prev => ({
+      ...prev,
+      [currentField]: numericValue
+    }));
+
+    if (currentQuestion < questions.length - 1) {
+      // Ask next question
+      setCurrentQuestion(prev => prev + 1);
+      const nextQuestion = getNextFinancialQuestion(currentQuestion + 1);
+      if (nextQuestion) {
+        setMessages(prev => [...prev, {
+          id: Date.now().toString(),
+          type: 'ai',
+          content: nextQuestion,
+          timestamp: new Date()
+        }]);
+      }
+    } else {
+      // All questions answered - calculate valuation
+      setMessages(prev => [...prev, {
+        id: Date.now().toString(),
+        type: 'ai',
+        content: '✅ Perfect! I have all the information I need. Calculating your valuation...',
+        timestamp: new Date(),
+        isLoading: true
+      }]);
+
+      await calculateValuation();
+    }
+  };
+
+  const calculateValuation = async () => {
+    try {
+      // Create valuation request
+      const valuationRequest = {
+        company_name: foundCompanyData?.company_name || businessProfile?.company_name || 'Your Company',
+        country_code: foundCompanyData?.country_code || businessProfile?.country || 'BE',
+        industry: foundCompanyData?.industry || businessProfile?.industry || 'services',
+        business_type: foundCompanyData?.business_type || businessProfile?.business_type || 'company',
+        current_year: new Date().getFullYear(),
+        revenue: financialData.revenue || 0,
+        ebitda: financialData.ebitda || 0,
+        employees: financialData.employees || 0
+      };
+
+      // Call valuation API
+      const response = await fetch('http://localhost:8000/api/v1/calculate', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(valuationRequest),
+      });
+
+      if (!response.ok) {
+        throw new Error('Valuation calculation failed');
+      }
+
+      const result = await response.json();
+      
+      // Remove loading message
+      setMessages(prev => prev.filter(m => !m.isLoading));
+      
+      // Add success message
+      setMessages(prev => [...prev, {
+        id: Date.now().toString(),
+        type: 'ai',
+        content: `🎉 **Valuation Complete!**
+
+Your business is valued at **€${result.equity_value_mid?.toLocaleString() || 'N/A'}**
+
+**Valuation Range:** €${result.equity_value_low?.toLocaleString()} - €${result.equity_value_high?.toLocaleString()}
+**Confidence:** ${Math.round((result.confidence_score || 0) * 100)}%
+**Methodology:** ${result.methodology || 'DCF + Market Multiples'}
+
+The detailed report is now available in the preview panel.`,
+        timestamp: new Date()
+      }]);
+
+      setConversationMode('complete');
+      onValuationComplete(result);
+      
+    } catch (error) {
+      console.error('Valuation calculation error:', error);
+      
+      // Remove loading message
+      setMessages(prev => prev.filter(m => !m.isLoading));
+      
+      // Add error message
+      setMessages(prev => [...prev, {
+        id: Date.now().toString(),
+        type: 'ai',
+        content: `❌ Sorry, I encountered an error calculating your valuation. Please try again or contact support.`,
+        timestamp: new Date()
+      }]);
+    }
   };
 
   return (
@@ -428,9 +632,12 @@ ${error instanceof Error ? error.message : 'An unexpected error occurred'}
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyPress={handleKeyPress}
-              placeholder={businessProfile?.company_name ? 
-                `Enter your revenue for ${businessProfile.company_name} (e.g., 1000000)...` : 
-                "Enter your company name (e.g., Proximus Belgium)..."
+              placeholder={
+                conversationMode === 'financial-collection' 
+                  ? "Enter your financial data (e.g., 1000000)..."
+                  : businessProfile?.company_name 
+                    ? `Enter your revenue for ${businessProfile.company_name} (e.g., 1000000)...` 
+                    : "Enter your company name (e.g., Proximus Belgium)..."
               }
               className="flex w-full rounded-md px-3 py-3 ring-offset-background placeholder:text-zinc-400 focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 disabled:cursor-not-allowed disabled:opacity-50 resize-none text-sm leading-snug placeholder-shown:text-ellipsis placeholder-shown:whitespace-nowrap max-h-[200px] bg-transparent focus:bg-transparent flex-1 text-white"
               style={{ minHeight: '60px', height: '60px' }}

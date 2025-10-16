@@ -108,14 +108,17 @@ export const AIAssistedValuation: React.FC = () => {
     setCompanyData(data);
     setSelectedCompanyId(data.company_id);
     
-    // Check if we have financial data from API
-    if (data.filing_history && data.filing_history.length > 0 && data.filing_history[0].revenue) {
-      // We have API financial data - go directly to preview
-      setStage('preview');
-    } else {
-      // No API financial data - collect via conversational input
-      setStage('financial-input');
-    }
+    // DON'T change stage - keep conversation active
+    // The chat will continue to collect financial data via conversation
+    // Only move to 'results' stage when valuation is complete
+    
+    console.log('✅ Company found, keeping conversation active:', data.company_name);
+  };
+
+  const handleValuationComplete = (valuationResult: ValuationResponse) => {
+    setValuationResult(valuationResult);
+    setStage('results');
+    console.log('✅ Valuation complete, moving to results stage');
   };
 
   const handleFinancialInputComplete = (summary: any, _valuationId?: string) => {
@@ -292,6 +295,7 @@ export const AIAssistedValuation: React.FC = () => {
             <div className="flex-1 overflow-y-auto">
               <ConversationalChat
                 onCompanyFound={handleCompanyFound}
+                onValuationComplete={handleValuationComplete}
                 businessProfile={businessProfile}
               />
             </div>
