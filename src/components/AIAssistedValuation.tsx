@@ -5,7 +5,7 @@ import { ConversationalChat } from './ConversationalChat';
 import { ConversationalFinancialInput } from './ConversationalFinancialInput';
 import { businessDataService, type BusinessProfileData } from '../services/businessDataService';
 import { api } from '../services/api';
-import { useAuth } from '../contexts/AuthContext';
+import { useAuth } from '../hooks/useAuth';
 import type { ValuationResponse, ConversationStartResponse } from '../types/valuation';
 
 type FlowStage = 'chat' | 'financial-input' | 'preview' | 'results';
