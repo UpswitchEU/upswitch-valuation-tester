@@ -42,7 +42,7 @@ export class ValuationChatController {
     // Use environment variable or default to production Railway URL
     this.baseUrl = import.meta.env.VITE_VALUATION_ENGINE_URL || 
                    import.meta.env.VITE_VALUATION_API_URL || 
-                   'https://web-production-8d00b.up.railway.app';
+                   'https://upswitch-valuation-engine-production.up.railway.app';
     console.log('🎮 ValuationChatController initialized with baseUrl:', this.baseUrl);
   }
 
