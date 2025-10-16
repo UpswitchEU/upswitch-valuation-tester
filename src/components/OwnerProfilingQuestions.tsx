@@ -147,7 +147,7 @@ export const OwnerProfilingQuestions: React.FC<OwnerProfilingQuestionsProps> = (
             {currentQuestion.inputType === 'number' && (
               <input
                 type="number"
-                value={profile[currentQuestion.field as keyof OwnerProfileData] || ''}
+                value={String(profile[currentQuestion.field as keyof OwnerProfileData] || '')}
                 onChange={(e) => handleInputChange(currentQuestion.field, parseInt(e.target.value) || 0)}
                 min={currentQuestion.validation?.min}
                 max={currentQuestion.validation?.max}

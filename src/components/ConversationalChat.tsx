@@ -22,7 +22,6 @@ interface ConversationalChatProps {
 }
 
 export const ConversationalChat: React.FC<ConversationalChatProps> = ({
-  onCompanyFound,
   onValuationComplete,
   businessProfile
 }) => {
@@ -38,7 +37,6 @@ export const ConversationalChat: React.FC<ConversationalChatProps> = ({
   const [triageError, setTriageError] = useState<string | null>(null);
   
   // Fallback system state
-  const [fallbackQuestions, setFallbackQuestions] = useState<FallbackQuestion[]>([]);
   const [currentFallbackQuestion, setCurrentFallbackQuestion] = useState<FallbackQuestion | null>(null);
   const [collectedData, setCollectedData] = useState<Record<string, any>>({});
   
@@ -532,7 +530,6 @@ ${error instanceof Error ? error.message : 'An unexpected error occurred'}
       businessProfile?.business_type || foundCompanyData?.business_type,
       businessProfile?.industry || foundCompanyData?.industry
     );
-    setFallbackQuestions(questions);
     setCurrentFallbackQuestion(questions[0] || null);
   };
 
@@ -652,9 +649,8 @@ ${error instanceof Error ? error.message : 'An unexpected error occurred'}
     
     try {
       // Send owner profile to triage engine
-      if (triageSession && businessProfile?.user_id) {
+      if (triageSession) {
         await intelligentTriageService.createOwnerProfile(
-          businessProfile.user_id,
           foundCompanyData?.company_id || 'unknown',
           profile
         );
@@ -961,7 +957,7 @@ The detailed report is now available in the preview panel.`,
                 isUsingIntelligentTriage && triageSession
                   ? "Enter your response..."
                   : !isUsingIntelligentTriage && currentFallbackQuestion
-                    ? `Enter ${currentFallbackQuestion.field} (e.g., ${currentFallbackQuestion.inputType === 'number' ? '1000000' : 'text'})...`
+                    ? `Enter ${currentFallbackQuestion.field || 'data'} (e.g., ${currentFallbackQuestion.inputType === 'number' ? '1000000' : 'text'})...`
                     : conversationMode === 'financial-collection' 
                       ? "Enter your financial data (e.g., 1000000)..."
                       : businessProfile?.company_name 
@@ -983,7 +979,7 @@ The detailed report is now available in the preview panel.`,
                 {businessProfile?.company_name ? (
                   <button
                     type="button"
-                    onClick={() => useSuggestion(businessProfile.company_name)}
+                    onClick={() => useSuggestion(businessProfile.company_name || '')}
                     className="px-3 py-1.5 bg-zinc-800/50 hover:bg-zinc-700/60 border border-zinc-700/50 hover:border-zinc-600/60 rounded-full text-xs text-zinc-300 hover:text-white transition-all duration-200 hover:shadow-md hover:shadow-black/20"
                   >
                     {businessProfile.company_name} ✓

@@ -13,10 +13,8 @@ export const AIAssistedValuation: React.FC = () => {
   const navigate = useNavigate();
   const { user, isAuthenticated } = useAuth();
   const [stage, setStage] = useState<FlowStage>('chat');
-  const [companyData, setCompanyData] = useState<any | null>(null);
   const [valuationResult, setValuationResult] = useState<ValuationResponse | null>(null);
   const [reportSaved, setReportSaved] = useState(false);
-  const [selectedCompanyId, setSelectedCompanyId] = useState<string | null>(null);
   
   // NEW: Business profile data state
   const [businessProfile, setBusinessProfile] = useState<BusinessProfileData | null>(null);
@@ -39,9 +37,9 @@ export const AIAssistedValuation: React.FC = () => {
       
       console.log('✅ Intelligent conversation started:', response);
       
-      // If we have financial data from KBO lookup, go to preview
+      // If we have financial data from KBO lookup, go to results
       if (response.current_valuation) {
-        setStage('preview');
+        setStage('results');
         setValuationResult(response.current_valuation);
       } else {
         // Start with conversational data collection
@@ -104,9 +102,6 @@ export const AIAssistedValuation: React.FC = () => {
 
 
   const handleCompanyFound = (data: any) => {
-    setCompanyData(data);
-    setSelectedCompanyId(data.company_id);
-    
     // DON'T change stage - keep conversation active
     // The chat will continue to collect financial data via conversation
     // Only move to 'results' stage when valuation is complete
@@ -123,8 +118,6 @@ export const AIAssistedValuation: React.FC = () => {
 
   const handleStartOver = () => {
     setStage('chat');
-    setCompanyData(null);
-    setSelectedCompanyId(null);
     setValuationResult(null);
     setReportSaved(false);
   };

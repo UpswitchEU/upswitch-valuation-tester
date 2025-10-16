@@ -28,6 +28,10 @@ export interface BusinessProfileData {
   business_highlights?: string;
   reason_for_selling?: string;
   city?: string;
+  // Add financial data properties for intelligent triage
+  revenue?: number;
+  ebitda?: number;
+  employees?: number;
   country?: string;
   business_verified?: boolean;
   listing_status?: string;
