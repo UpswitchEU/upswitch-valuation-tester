@@ -21,7 +21,6 @@ export const router = createBrowserRouter([
   {
     path: ROUTES.HOME,
     element: <HomePage />,
-    errorElement: <NotFound />,
   },
   {
     path: ROUTES.INSTANT_VALUATION,
