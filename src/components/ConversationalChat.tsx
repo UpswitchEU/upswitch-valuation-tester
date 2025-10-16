@@ -1,6 +1,9 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Send, Bot, Loader2, Shield } from 'lucide-react';
 import { searchCompanies, fetchCompanyFinancials } from '../services/registryService';
+import { intelligentTriageService, type TriageSession } from '../services/intelligentTriageService';
+import { fallbackQuestionService, type FallbackQuestion } from '../services/fallbackQuestionService';
+import { OwnerProfilingQuestions, type OwnerProfileData } from './OwnerProfilingQuestions';
 import type { CompanyFinancialData } from '../types/registry';
 import type { BusinessProfileData } from '../services/businessDataService';
 
@@ -29,7 +32,21 @@ export const ConversationalChat: React.FC<ConversationalChatProps> = ({
   const [isProcessing, setIsProcessing] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  // Financial data collection state
+  // Intelligent triage state
+  const [triageSession, setTriageSession] = useState<TriageSession | null>(null);
+  const [isUsingIntelligentTriage, setIsUsingIntelligentTriage] = useState(true);
+  const [triageError, setTriageError] = useState<string | null>(null);
+  
+  // Fallback system state
+  const [fallbackQuestions, setFallbackQuestions] = useState<FallbackQuestion[]>([]);
+  const [currentFallbackQuestion, setCurrentFallbackQuestion] = useState<FallbackQuestion | null>(null);
+  const [collectedData, setCollectedData] = useState<Record<string, any>>({});
+  
+  // Owner profiling state
+  const [showOwnerProfiling, setShowOwnerProfiling] = useState(false);
+  const [ownerProfileData, setOwnerProfileData] = useState<OwnerProfileData | null>(null);
+  
+  // Legacy state (for backward compatibility)
   const [conversationMode, setConversationMode] = useState<'company-lookup' | 'financial-collection' | 'complete'>('company-lookup');
   const [financialData, setFinancialData] = useState({
     revenue: null as number | null,
@@ -38,6 +55,13 @@ export const ConversationalChat: React.FC<ConversationalChatProps> = ({
   });
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [foundCompanyData, setFoundCompanyData] = useState<any>(null);
+
+  // Initialize triage system when component mounts or company is found
+  useEffect(() => {
+    if (foundCompanyData || businessProfile) {
+      initializeTriage();
+    }
+  }, [foundCompanyData, businessProfile]);
 
   // Customize initial message when business profile exists
   const getInitialMessage = () => {
@@ -146,6 +170,19 @@ What was your revenue last year? (in EUR)`;
     setIsProcessing(true);
 
     // Handle different conversation modes
+    if (isUsingIntelligentTriage && triageSession) {
+      await handleTriageAnswer(userMessage);
+      setIsProcessing(false);
+      return;
+    }
+    
+    if (!isUsingIntelligentTriage && currentFallbackQuestion) {
+      await handleFallbackAnswer(userMessage);
+      setIsProcessing(false);
+      return;
+    }
+    
+    // Legacy mode
     if (conversationMode === 'financial-collection') {
       await handleFinancialAnswer(userMessage);
       setIsProcessing(false);
@@ -392,6 +429,261 @@ ${error instanceof Error ? error.message : 'An unexpected error occurred'}
     setInput(suggestion);
   };
 
+  // Intent detection (IlaraAI pattern)
+  const detectUserIntent = (message: string): string => {
+    const intentPatterns = {
+      'quick_estimate': ['quick', 'fast', 'estimate', 'ballpark', 'rough'],
+      'detailed_valuation': ['detailed', 'comprehensive', 'thorough', 'complete'],
+      'comparison': ['compare', 'benchmark', 'versus', 'similar'],
+      'update_data': ['update', 'change', 'correct', 'modify'],
+      'clarification': ['what', 'why', 'how', 'explain', 'mean']
+    };
+    
+    const lowerMessage = message.toLowerCase();
+    
+    for (const [intent, keywords] of Object.entries(intentPatterns)) {
+      if (keywords.some(keyword => lowerMessage.includes(keyword))) {
+        return intent;
+      }
+    }
+    
+    return 'answer_question'; // Default intent
+  };
+
+  // Enhanced context building (IlaraAI pattern)
+  const buildEnhancedContext = (): Record<string, any> => {
+    return {
+      // User context
+      user_type: businessProfile ? 'authenticated' : 'guest',
+      business_profile_available: !!businessProfile,
+      
+      // Conversation context
+      message_count: messages.length,
+      conversation_duration: Date.now() - (messages[0]?.timestamp?.getTime() || Date.now()),
+      
+      // Data context
+      data_completeness: calculateDataCompleteness(),
+      collected_fields: Object.keys(collectedData),
+      
+      // Industry context
+      business_type: businessProfile?.business_type || foundCompanyData?.business_type,
+      industry: businessProfile?.industry || foundCompanyData?.industry,
+      
+      // Company context
+      company_name: businessProfile?.company_name || foundCompanyData?.company_name,
+      country_code: businessProfile?.country || foundCompanyData?.country_code || 'BE'
+    };
+  };
+
+  const calculateDataCompleteness = (): number => {
+    const requiredFields = ['revenue', 'ebitda', 'employees'];
+    const completedFields = requiredFields.filter(field => 
+      collectedData[field] !== null && collectedData[field] !== undefined
+    );
+    return completedFields.length / requiredFields.length;
+  };
+
+  // Initialize intelligent triage session
+  const initializeTriage = async () => {
+    if (!triageSession && isUsingIntelligentTriage) {
+      try {
+        const session = await intelligentTriageService.startConversation({
+          user_id: businessProfile?.user_id,
+          company_id: foundCompanyData?.company_id,
+          business_type: businessProfile?.business_type || foundCompanyData?.business_type,
+          industry: businessProfile?.industry || foundCompanyData?.industry,
+          country_code: businessProfile?.country || foundCompanyData?.country_code || 'BE',
+          business_context: {
+            company_name: businessProfile?.company_name || foundCompanyData?.company_name,
+            is_authenticated: !!businessProfile,
+            has_business_profile: !!businessProfile
+          },
+          pre_filled_data: businessProfile ? {
+            company_name: businessProfile.company_name,
+            revenue: businessProfile.revenue,
+            ebitda: businessProfile.ebitda,
+            employees: businessProfile.employees
+          } : {}
+        });
+        
+        setTriageSession(session);
+        setTriageError(null);
+        
+        // Add initial AI message from triage
+        setMessages(prev => [...prev, {
+          id: Date.now().toString(),
+          type: 'ai',
+          content: session.ai_message,
+          timestamp: new Date()
+        }]);
+      } catch (error) {
+        console.error('Failed to start triage session:', error);
+        setTriageError('Failed to start intelligent conversation');
+        setIsUsingIntelligentTriage(false);
+        // Fallback to manual flow
+        initializeFallback();
+      }
+    }
+  };
+
+  // Initialize fallback system
+  const initializeFallback = () => {
+    const questions = fallbackQuestionService.getQuestionSequence(
+      businessProfile?.business_type || foundCompanyData?.business_type,
+      businessProfile?.industry || foundCompanyData?.industry
+    );
+    setFallbackQuestions(questions);
+    setCurrentFallbackQuestion(questions[0] || null);
+  };
+
+  // Handle triage answer
+  const handleTriageAnswer = async (answer: string) => {
+    if (!triageSession) return;
+    
+    try {
+      // Extract field name from current question
+      const fieldName = triageSession.field_name || extractFieldFromMessage(triageSession.ai_message);
+      const detectedIntent = detectUserIntent(answer);
+      
+      // Process step with triage engine
+      const nextSession = await intelligentTriageService.processStep(
+        triageSession.session_id,
+        fieldName,
+        answer,
+        {
+          previous_answer: answer,
+          conversation_history: messages.slice(-5), // Last 5 messages for context
+          detected_intent: detectedIntent,
+          enhanced_context: buildEnhancedContext()
+        }
+      );
+      
+      setTriageSession(nextSession);
+      
+      // Add AI response
+      setMessages(prev => [...prev, {
+        id: Date.now().toString(),
+        type: 'ai',
+        content: nextSession.ai_message,
+        timestamp: new Date()
+      }]);
+      
+      // Check if owner profiling is needed
+      if (nextSession.owner_profile_needed && !ownerProfileData) {
+        setShowOwnerProfiling(true);
+        return;
+      }
+      
+      // Check if conversation is complete
+      if (nextSession.complete && nextSession.valuation_result) {
+        // Show valuation result
+        onValuationComplete(nextSession.valuation_result);
+      }
+      
+    } catch (error) {
+      console.error('Triage step failed:', error);
+      setTriageError('Failed to process response');
+      // Fallback to manual flow
+      setIsUsingIntelligentTriage(false);
+      initializeFallback();
+    }
+  };
+
+  // Handle fallback answer
+  const handleFallbackAnswer = async (answer: string) => {
+    if (!currentFallbackQuestion) return;
+    
+    // Validate input
+    const validation = fallbackQuestionService.validateInput(answer, currentFallbackQuestion);
+    if (!validation.valid) {
+      setMessages(prev => [...prev, {
+        id: Date.now().toString(),
+        type: 'ai',
+        content: `❌ ${validation.error}`,
+        timestamp: new Date()
+      }]);
+      return;
+    }
+    
+    // Store the answer
+    setCollectedData(prev => ({
+      ...prev,
+      [currentFallbackQuestion.field]: answer
+    }));
+    
+    // Get next question
+    const nextQuestion = fallbackQuestionService.getNextQuestion(
+      { ...collectedData, [currentFallbackQuestion.field]: answer },
+      businessProfile?.business_type || foundCompanyData?.business_type,
+      businessProfile?.industry || foundCompanyData?.industry
+    );
+    
+    if (nextQuestion) {
+      setCurrentFallbackQuestion(nextQuestion);
+      setMessages(prev => [...prev, {
+        id: Date.now().toString(),
+        type: 'ai',
+        content: nextQuestion.question + (nextQuestion.helpText ? `\n\n💡 ${nextQuestion.helpText}` : ''),
+        timestamp: new Date()
+      }]);
+    } else {
+      // All questions answered - calculate valuation
+      await calculateValuation();
+    }
+  };
+
+  // Extract field name from AI message
+  const extractFieldFromMessage = (message: string): string => {
+    // Simple field extraction based on common patterns
+    if (message.toLowerCase().includes('revenue')) return 'revenue';
+    if (message.toLowerCase().includes('ebitda')) return 'ebitda';
+    if (message.toLowerCase().includes('employee')) return 'employees';
+    if (message.toLowerCase().includes('recurring')) return 'recurring_revenue_percentage';
+    if (message.toLowerCase().includes('inventory')) return 'inventory_turnover';
+    if (message.toLowerCase().includes('capacity')) return 'production_capacity';
+    if (message.toLowerCase().includes('rate')) return 'hourly_rate';
+    return 'general';
+  };
+
+  // Handle owner profile completion
+  const handleOwnerProfileComplete = async (profile: OwnerProfileData) => {
+    setOwnerProfileData(profile);
+    setShowOwnerProfiling(false);
+    
+    try {
+      // Send owner profile to triage engine
+      if (triageSession && businessProfile?.user_id) {
+        await intelligentTriageService.createOwnerProfile(
+          businessProfile.user_id,
+          foundCompanyData?.company_id || 'unknown',
+          profile
+        );
+      }
+      
+      // Continue with triage session
+      if (triageSession) {
+        const nextSession = await intelligentTriageService.processStep(
+          triageSession.session_id,
+          'owner_profile',
+          profile,
+          { owner_profile_completed: true }
+        );
+        
+        setTriageSession(nextSession);
+        
+        setMessages(prev => [...prev, {
+          id: Date.now().toString(),
+          type: 'ai',
+          content: nextSession.ai_message,
+          timestamp: new Date()
+        }]);
+      }
+    } catch (error) {
+      console.error('Failed to process owner profile:', error);
+      // Continue anyway
+    }
+  };
+
   // Financial data collection helpers
   const getFinancialQuestions = () => [
     {
@@ -536,6 +828,16 @@ The detailed report is now available in the preview panel.`,
     }
   };
 
+  // Show owner profiling component if needed
+  if (showOwnerProfiling) {
+    return (
+      <OwnerProfilingQuestions
+        onComplete={handleOwnerProfileComplete}
+        onCancel={() => setShowOwnerProfiling(false)}
+      />
+    );
+  }
+
   return (
     <div className="flex h-full flex-col overflow-hidden bg-gradient-to-br from-zinc-900 via-zinc-800 to-zinc-900">
       {/* Header with Health Status - Ilara Style */}
@@ -547,7 +849,9 @@ The detailed report is now available in the preview panel.`,
             </div>
             <div>
               <h3 className="text-white font-semibold text-sm">AI auditor</h3>
-              <p className="text-xs text-zinc-400">Powered by LLM - Only public data</p>
+              <p className="text-xs text-zinc-400">
+                {isUsingIntelligentTriage ? 'Intelligent Triage Active' : 'Fallback Mode'}
+              </p>
             </div>
           </div>
           
@@ -633,11 +937,15 @@ The detailed report is now available in the preview panel.`,
               onChange={(e) => setInput(e.target.value)}
               onKeyPress={handleKeyPress}
               placeholder={
-                conversationMode === 'financial-collection' 
-                  ? "Enter your financial data (e.g., 1000000)..."
-                  : businessProfile?.company_name 
-                    ? `Enter your revenue for ${businessProfile.company_name} (e.g., 1000000)...` 
-                    : "Enter your company name (e.g., Proximus Belgium)..."
+                isUsingIntelligentTriage && triageSession
+                  ? "Enter your response..."
+                  : !isUsingIntelligentTriage && currentFallbackQuestion
+                    ? `Enter ${currentFallbackQuestion.field} (e.g., ${currentFallbackQuestion.inputType === 'number' ? '1000000' : 'text'})...`
+                    : conversationMode === 'financial-collection' 
+                      ? "Enter your financial data (e.g., 1000000)..."
+                      : businessProfile?.company_name 
+                        ? `Enter your revenue for ${businessProfile.company_name} (e.g., 1000000)...` 
+                        : "Enter your company name (e.g., Proximus Belgium)..."
               }
               className="flex w-full rounded-md px-3 py-3 ring-offset-background placeholder:text-zinc-400 focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 disabled:cursor-not-allowed disabled:opacity-50 resize-none text-sm leading-snug placeholder-shown:text-ellipsis placeholder-shown:whitespace-nowrap max-h-[200px] bg-transparent focus:bg-transparent flex-1 text-white"
               style={{ minHeight: '60px', height: '60px' }}
