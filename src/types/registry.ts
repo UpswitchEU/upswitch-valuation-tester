@@ -36,6 +36,10 @@ export interface CompanyFinancialData {
   industry_description?: string;
   founding_year?: number;
   employees?: number;
+  /**
+   * Historical financial filings
+   * NOTE: Can be empty array if no public financial data available
+   */
   filing_history: FinancialFilingYear[];
   data_source: string;
   last_updated: string;

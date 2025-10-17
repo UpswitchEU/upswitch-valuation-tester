@@ -15,7 +15,12 @@ export const RegistryDataPreview: React.FC<RegistryDataPreviewProps> = ({
   const { updateFormData } = useValuationStore();
   const [isEditing, setIsEditing] = useState(false);
   const [editedData, setEditedData] = useState<FinancialFilingYear>(
-    companyData.filing_history[0]
+    companyData.filing_history[0] || {
+      year: new Date().getFullYear(),
+      revenue: 0,
+      ebitda: 0,
+      filing_date: new Date().toISOString(),
+    }
   );
 
   const formatCurrency = (amount: number): string => {
@@ -119,6 +124,7 @@ export const RegistryDataPreview: React.FC<RegistryDataPreviewProps> = ({
   };
 
   const latestYear = companyData.filing_history[0];
+  const hasFinancialData = companyData.filing_history.length > 0;
 
   return (
     <div className="bg-white rounded-2xl shadow-xl border border-gray-200 overflow-hidden">
@@ -185,7 +191,8 @@ export const RegistryDataPreview: React.FC<RegistryDataPreviewProps> = ({
       </div>
 
       {/* Financial Data */}
-      <div className="p-6">
+      {hasFinancialData ? (
+        <div className="p-6">
         {/* Latest Year (Editable) */}
         <div className="mb-6">
           <div className="flex items-center justify-between mb-4">
@@ -370,6 +377,27 @@ export const RegistryDataPreview: React.FC<RegistryDataPreviewProps> = ({
           )}
         </div>
       </div>
+      ) : (
+        // Show "No Financial Data" UI
+        <div className="p-6 text-center">
+          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6">
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">
+              📋 No Public Financial Data Available
+            </h3>
+            <p className="text-gray-600 mb-4">
+              Financial data for {companyData.company_name} is not publicly available.
+              You can proceed with manual data entry.
+            </p>
+            <button
+              onClick={onCalculateValuation}
+              className="w-full flex items-center justify-center gap-3 px-8 py-4 bg-gradient-to-r from-primary-600 to-blue-600 text-white rounded-xl hover:from-primary-700 hover:to-blue-700 transition-all shadow-lg hover:shadow-xl text-lg font-semibold"
+            >
+              <Calculator className="w-6 h-6" />
+              Enter Financial Data Manually
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

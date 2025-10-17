@@ -280,13 +280,15 @@ What was your annual revenue last year? (in EUR)
           const financialData = await fetchCompanyFinancials(bestMatch.company_id, country);
           
           const latest = financialData.filing_history[0];
+          const hasFinancialData = financialData.filing_history.length > 0;
           
           // Add success message with data
           setMessages(prev => prev.filter(m => !m.isLoading));
           setMessages(prev => [...prev, {
             id: Date.now().toString(),
             type: 'ai',
-            content: `✅ **${financialData.company_name}**
+            content: hasFinancialData ? 
+              `✅ Found: **${financialData.company_name}**
 Registration: ${financialData.registration_number}
 
 **Latest filed accounts (${latest.year}):**
@@ -305,7 +307,16 @@ Registration: ${financialData.registration_number}
 Would you like to:
 1. **Calculate valuation now** (recommended - data is ready)
 2. **Review/adjust data** before valuation
-3. **Add more recent data** (if you have ${new Date().getFullYear()} figures)`,
+3. **Add more recent data** (if you have ${new Date().getFullYear()} figures)` 
+              : 
+              `✅ Found: **${financialData.company_name}**
+Registration: ${financialData.registration_number}
+
+📋 No financial data available in public registries, but no problem!
+
+💬 Let's collect the data together - I'll ask a few quick questions.
+
+⏱️ Takes under 1 minute • 🔒 Your data stays secure`,
             timestamp: new Date()
           }]);
 

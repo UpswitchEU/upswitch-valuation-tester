@@ -231,6 +231,11 @@ export const transformRegistryDataToValuationRequest = (
   // Sort filing history by year (most recent first)
   const sortedHistory = [...registryData.filing_history].sort((a, b) => b.year - a.year);
   
+  // Guard clause for empty filing history
+  if (sortedHistory.length === 0) {
+    throw new Error('No financial data available for transformation. Please use manual entry.');
+  }
+  
   // Extract current year and historical years
   const currentYear = sortedHistory[0];
   const historicalYears = sortedHistory.slice(1);
