@@ -185,10 +185,9 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
             user_input: userInput,
             user_id: userId,
             context: {
-              previous_messages: messages.slice(-5).map(msg => ({
-                role: msg.type === 'user' ? 'user' : 'assistant',
-                content: msg.content
-              }))
+              message_count: messages.length,  // ✅ Safe - only count
+              conversation_stage: Math.floor(messages.length / 2)  // ✅ Safe - stage only
+              // DO NOT send message content from frontend (privacy compliance)
             }
           })
         }
