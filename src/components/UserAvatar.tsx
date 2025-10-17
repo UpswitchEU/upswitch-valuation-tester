@@ -72,8 +72,8 @@ const UserAvatar: React.FC<UserAvatarProps> = ({
           focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2
         `}
         style={{
-          backgroundColor: user ? '#3B82F6' : '#6B7280',
-          borderColor: user ? '#2563EB' : '#4B5563'
+          backgroundColor: user ? '#6B7280' : '#6B7280',
+          borderColor: user ? '#4B5563' : '#4B5563'
         }}
         aria-label={user ? `${user.name || 'User'}` : 'Guest'}
         role="button"
@@ -94,7 +94,7 @@ const UserAvatar: React.FC<UserAvatarProps> = ({
         ) : user ? (
           // User without avatar - show initials
           <span 
-            className={`${config.text} font-semibold text-white`}
+            className={`${config.text} font-semibold text-gray-200`}
             style={{ lineHeight: 1 }}
           >
             {getUserInitials()}
@@ -102,7 +102,7 @@ const UserAvatar: React.FC<UserAvatarProps> = ({
         ) : (
           // Guest user - show user icon
           <User 
-            className={`${config.icon} text-white`}
+            className={`${config.icon} text-gray-200`}
           />
         )}
       </div>

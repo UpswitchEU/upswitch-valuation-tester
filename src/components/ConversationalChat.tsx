@@ -4,6 +4,7 @@ import { searchCompanies, fetchCompanyFinancials } from '../services/registrySer
 import { intelligentTriageService, type TriageSession } from '../services/intelligentTriageService';
 import { fallbackQuestionService, type FallbackQuestion } from '../services/fallbackQuestionService';
 import { OwnerProfilingQuestions, type OwnerProfileData } from './OwnerProfilingQuestions';
+import { useAuth } from '../hooks/useAuth';
 import type { CompanyFinancialData } from '../types/registry';
 import type { BusinessProfileData } from '../services/businessDataService';
 
@@ -25,6 +26,7 @@ export const ConversationalChat: React.FC<ConversationalChatProps> = ({
   onValuationComplete,
   businessProfile
 }) => {
+  const { businessCard, user, isAuthenticated } = useAuth();
   const [messages, setMessages] = useState<Message[]>([]);
   
   const [input, setInput] = useState('');
@@ -478,23 +480,34 @@ ${error instanceof Error ? error.message : 'An unexpected error occurred'}
     console.log('🚀 Initializing intelligent triage...');
 
     try {
+      // Merge business card data with business profile data
+      const enhancedBusinessContext = {
+        company_name: businessProfile?.company_name || businessCard?.company_name || foundCompanyData?.company_name,
+        business_type: businessProfile?.business_type || businessCard?.business_model || foundCompanyData?.business_type,
+        industry: businessProfile?.industry || businessCard?.industry || foundCompanyData?.industry,
+        founded_year: businessProfile?.founded_year || businessCard?.founding_year || foundCompanyData?.founded_year,
+        employee_count_range: businessProfile?.employee_count_range || businessCard?.employee_count || foundCompanyData?.employee_count,
+        country: businessProfile?.country || businessCard?.country_code || foundCompanyData?.country_code || 'BE',
+        is_authenticated: isAuthenticated,
+        has_business_profile: !!businessProfile,
+        has_business_card: !!businessCard
+      };
+
       const session = await intelligentTriageService.startConversation({
-        user_id: businessProfile?.user_id,
+        user_id: user?.id || businessProfile?.user_id,
         company_id: foundCompanyData?.company_id,
-        business_type: businessProfile?.business_type || foundCompanyData?.business_type,
-        industry: businessProfile?.industry || foundCompanyData?.industry,
-        country_code: businessProfile?.country || foundCompanyData?.country_code || 'BE',
-        business_context: {
-          company_name: businessProfile?.company_name || foundCompanyData?.company_name,
-          is_authenticated: !!businessProfile,
-          has_business_profile: !!businessProfile
-        },
-        pre_filled_data: businessProfile ? {
-          company_name: businessProfile.company_name,
-          revenue: businessProfile.revenue,
-          ebitda: businessProfile.ebitda,
-          employees: businessProfile.employees
-        } : {}
+        business_type: enhancedBusinessContext.business_type,
+        industry: enhancedBusinessContext.industry,
+        country_code: enhancedBusinessContext.country,
+        business_context: enhancedBusinessContext,
+        pre_filled_data: {
+          company_name: enhancedBusinessContext.company_name,
+          business_type: enhancedBusinessContext.business_type,
+          industry: enhancedBusinessContext.industry,
+          founded_year: enhancedBusinessContext.founded_year,
+          employee_count: enhancedBusinessContext.employee_count_range,
+          country: enhancedBusinessContext.country
+        }
       });
       
       setTriageSession(session);
