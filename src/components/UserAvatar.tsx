@@ -4,18 +4,15 @@ import { useAuth } from '../hooks/useAuth';
 
 interface UserAvatarProps {
   size?: 'sm' | 'md' | 'lg';
-  showTooltip?: boolean;
   className?: string;
 }
 
 const UserAvatar: React.FC<UserAvatarProps> = ({ 
   size = 'md', 
-  showTooltip = true,
   className = '' 
 }) => {
   const { user, isLoading } = useAuth();
   const [imageError, setImageError] = useState(false);
-  const [showTooltipState, setShowTooltipState] = useState(false);
 
   // Size configurations
   const sizeConfig = {
@@ -52,14 +49,6 @@ const UserAvatar: React.FC<UserAvatarProps> = ({
   const avatarUrl = user?.avatar_url;
   const hasValidAvatar = avatarUrl && !imageError;
 
-  // Tooltip content
-  const getTooltipContent = () => {
-    if (isLoading) return 'Loading...';
-    if (user) {
-      return `${user.name || 'User'}${user.email ? ` (${user.email})` : ''}`;
-    }
-    return 'Guest';
-  };
 
   // Handle image load error
   const handleImageError = () => {
@@ -86,9 +75,7 @@ const UserAvatar: React.FC<UserAvatarProps> = ({
           backgroundColor: user ? '#3B82F6' : '#6B7280',
           borderColor: user ? '#2563EB' : '#4B5563'
         }}
-        onMouseEnter={() => showTooltip && setShowTooltipState(true)}
-        onMouseLeave={() => showTooltip && setShowTooltipState(false)}
-        aria-label={getTooltipContent()}
+        aria-label={user ? `${user.name || 'User'}` : 'Guest'}
         role="button"
         tabIndex={0}
       >
@@ -120,14 +107,6 @@ const UserAvatar: React.FC<UserAvatarProps> = ({
         )}
       </div>
 
-      {/* Tooltip */}
-      {showTooltip && showTooltipState && (
-        <div className="absolute bottom-full mb-2 left-1/2 transform -translate-x-1/2 bg-black text-white text-xs rounded-lg px-3 py-2 whitespace-nowrap z-50 shadow-lg">
-          <div className="font-medium">{getTooltipContent()}</div>
-          {/* Tooltip arrow */}
-          <div className="absolute left-1/2 top-full transform -translate-x-1/2 w-0 h-0 border-4 border-transparent border-t-black"></div>
-        </div>
-      )}
     </div>
   );
 };
