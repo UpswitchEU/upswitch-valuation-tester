@@ -47,25 +47,25 @@ export const intelligentTriageService = {
     try {
       const response: ConversationStartResponse = await api.startConversation(request);
       
-      // Add null safety checks
-      if (!response || !response.next_question) {
-        console.warn('⚠️ Triage API returned incomplete response, using fallback');
-        throw new Error('Incomplete triage response');
+      // Add null safety checks for response
+      if (!response) {
+        console.warn('⚠️ Triage API returned empty response, using fallback');
+        throw new Error('Empty triage response');
       }
       
-      // Convert to TriageSession format
+      // Convert to TriageSession format - map backend response directly
       return {
         session_id: response.session_id,
-        complete: false,
-        ai_message: response.welcome_message || 'Welcome to the valuation conversation',
-        step: 0,
-        field_name: response.next_question.id,
-        input_type: response.next_question.question_type,
-        validation_rules: { required: response.next_question.required ?? false },
-        help_text: response.next_question.help_text || '',
-        context: { estimated_steps: response.estimated_steps },
-        owner_profile_needed: false,
-        valuation_result: response.current_valuation
+        complete: response.complete || false,
+        ai_message: response.ai_message || 'Welcome to the valuation conversation',
+        step: response.step || 0,
+        field_name: response.field_name,  // Direct mapping, not response.next_question.id
+        input_type: response.input_type,   // Direct mapping, not response.next_question.question_type
+        validation_rules: response.validation_rules || { required: true },
+        help_text: response.help_text || '',
+        context: response.context || {},
+        owner_profile_needed: response.owner_profile_needed || false,
+        valuation_result: response.valuation_result
       };
     } catch (error) {
       console.error('Failed to start triage conversation:', error);

@@ -297,11 +297,16 @@ export interface ConversationStartRequest {
 
 export interface ConversationStartResponse {
   session_id: string;
-  welcome_message: string;
-  next_question: ConversationQuestion;
-  estimated_steps: number;
-  methodology_preview?: string;
-  current_valuation?: ValuationResponse;
+  complete: boolean;
+  ai_message: string;
+  step: number;
+  field_name?: string;
+  input_type?: string;
+  validation_rules?: Record<string, any>;
+  help_text?: string;
+  context: Record<string, any>;
+  owner_profile_needed: boolean;
+  valuation_result?: any;
 }
 
 export interface ConversationQuestion {

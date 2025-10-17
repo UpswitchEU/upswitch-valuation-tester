@@ -38,9 +38,9 @@ export const AIAssistedValuation: React.FC = () => {
       console.log('✅ Intelligent conversation started:', response);
       
       // If we have financial data from KBO lookup, go to results
-      if (response.current_valuation) {
+      if (response.valuation_result) {
         setStage('results');
-        setValuationResult(response.current_valuation);
+        setValuationResult(response.valuation_result);
       } else {
         // Start with conversational data collection
         setStage('chat');
