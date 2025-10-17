@@ -101,13 +101,6 @@ export const AIAssistedValuation: React.FC = () => {
   }, [isAuthenticated, user?.id, startIntelligentConversation]);
 
 
-  const handleCompanyFound = (data: any) => {
-    // DON'T change stage - keep conversation active
-    // The chat will continue to collect financial data via conversation
-    // Only move to 'results' stage when valuation is complete
-    
-    console.log('✅ Company found, keeping conversation active:', data.company_name);
-  };
 
   const handleValuationComplete = (valuationResult: ValuationResponse) => {
     setValuationResult(valuationResult);

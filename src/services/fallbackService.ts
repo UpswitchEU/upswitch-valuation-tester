@@ -166,7 +166,7 @@ class FallbackService {
     return selectedResponse;
   }
 
-  private determineNextField(state: ConversationState | undefined, currentField?: string): string {
+  private determineNextField(state: ConversationState | undefined, _currentField?: string): string {
     if (!state) {
       return 'company_name';
     }
