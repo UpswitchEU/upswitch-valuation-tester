@@ -4,7 +4,7 @@
  */
 
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { Send, Loader2, Bot, User, AlertCircle, CheckCircle } from 'lucide-react';
+import { Send, Loader2, Bot, User } from 'lucide-react';
 import { AI_CONFIG } from '../config';
 
 interface Message {
@@ -39,8 +39,6 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [isStreaming, setIsStreaming] = useState(false);
-  const [connectionStatus, setConnectionStatus] = useState<'connected' | 'connecting' | 'disconnected'>('disconnected');
-  const [error, setError] = useState<string | null>(null);
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const eventSourceRef = useRef<EventSource | null>(null);
@@ -135,7 +133,7 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
         break;
         
       case 'error':
-        setError(data.content || 'An error occurred');
+        console.error('Stream error:', data.content || 'An error occurred');
         setIsStreaming(false);
         updateStreamingMessage('', true);
         break;
@@ -145,9 +143,7 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
   const startStreaming = useCallback(async (userInput: string) => {
     if (!userInput.trim() || isStreaming) return;
 
-    setError(null);
     setIsStreaming(true);
-    setConnectionStatus('connecting');
 
     // Add user message
     addMessage({
@@ -231,18 +227,14 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
           }
         } catch (error) {
           console.error('Stream processing error:', error);
-          setConnectionStatus('disconnected');
-          setError('Stream connection lost');
           setIsStreaming(false);
         }
       };
 
       processStream();
-      setConnectionStatus('connected');
 
     } catch (error) {
       console.error('Failed to start streaming:', error);
-      setError('Failed to start conversation');
       setIsStreaming(false);
       handleFallbackResponse(userInput);
     }
@@ -272,27 +264,6 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
     }
   }, [handleSubmit]);
 
-  const getConnectionStatusIcon = () => {
-    switch (connectionStatus) {
-      case 'connected':
-        return <CheckCircle className="w-4 h-4 text-green-500" />;
-      case 'connecting':
-        return <Loader2 className="w-4 h-4 text-yellow-500 animate-spin" />;
-      case 'disconnected':
-        return <AlertCircle className="w-4 h-4 text-red-500" />;
-    }
-  };
-
-  const getConnectionStatusText = () => {
-    switch (connectionStatus) {
-      case 'connected':
-        return 'Connected';
-      case 'connecting':
-        return 'Connecting...';
-      case 'disconnected':
-        return 'Disconnected';
-    }
-  };
 
   return (
     <div className={`flex flex-col h-full bg-gradient-to-br from-zinc-900 via-zinc-800 to-zinc-900 rounded-lg shadow-lg ${className}`}>
