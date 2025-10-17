@@ -376,18 +376,18 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
                   
                   {/* NEW: Display valuation narrative if available */}
                   {AI_CONFIG.showNarratives && message.metadata?.valuation_narrative && (
-                    <div className="mt-3 p-3 bg-blue-50 rounded-lg">
-                      <h4 className="text-sm font-semibold text-blue-900 mb-2">
+                    <div className="mt-3 p-3 bg-primary-600/10 rounded-lg">
+                      <h4 className="text-sm font-semibold text-primary-300 mb-2">
                         Why this valuation?
                       </h4>
-                      <div className="text-sm text-blue-800 whitespace-pre-wrap">
+                      <div className="text-sm text-primary-200 whitespace-pre-wrap">
                         {message.metadata.valuation_narrative}
                       </div>
                     </div>
                   )}
                   
                   {message.type !== 'user' && message.isStreaming && (
-                    <div className="flex items-center gap-1 mt-2 text-xs text-gray-500">
+                    <div className="flex items-center gap-1 mt-2 text-xs text-zinc-400">
                       <Loader2 className="w-3 h-3 animate-spin" />
                       <span>AI is typing...</span>
                     </div>
@@ -395,13 +395,13 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
                 </div>
                 
                 {message.type === 'user' && (
-                  <div className="flex-shrink-0 w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center">
-                    <User className="w-4 h-4 text-gray-600" />
+                  <div className="flex-shrink-0 w-8 h-8 bg-zinc-700 rounded-full flex items-center justify-center">
+                    <User className="w-4 h-4 text-zinc-400" />
                   </div>
                 )}
               </div>
               
-              <div className={`text-xs text-gray-500 mt-1 ${
+              <div className={`text-xs text-zinc-500 mt-1 ${
                 message.type === 'user' ? 'text-right' : 'text-left'
               }`}>
                 {message.timestamp.toLocaleTimeString()}
@@ -413,7 +413,7 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
       </div>
 
       {/* Input */}
-      <div className="p-4 border-t border-gray-200">
+      <div className="p-4 border-t border-zinc-800">
         <form onSubmit={handleSubmit} className="flex gap-2">
           <textarea
             value={input}
