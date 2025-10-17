@@ -2,8 +2,13 @@
 export const API_CONFIG = {
   baseURL: import.meta.env.VITE_VALUATION_ENGINE_URL || 
            import.meta.env.VITE_VALUATION_API_URL || 
-           'https://upswitch-valuation-engine-production.up.railway.app',
+           'https://web-production-8d00b.up.railway.app',
   timeout: 30000,
+  streaming: {
+    enabled: import.meta.env.VITE_ENABLE_STREAMING === 'true' || true,
+    timeout: parseInt(import.meta.env.VITE_STREAMING_TIMEOUT || '30000'),
+    maxRetries: parseInt(import.meta.env.VITE_MAX_RETRY_ATTEMPTS || '3')
+  }
 };
 
 // App Configuration

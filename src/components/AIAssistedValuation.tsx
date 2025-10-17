@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { TrendingUp, CheckCircle, Save, ArrowLeft, Building2 } from 'lucide-react';
-import { ConversationalChat } from './ConversationalChat';
+import { StreamingChat } from './StreamingChat';
 import { businessDataService, type BusinessProfileData } from '../services/businessDataService';
 import { api } from '../services/api';
 import { useAuth } from '../hooks/useAuth';
@@ -256,10 +256,12 @@ export const AIAssistedValuation: React.FC = () => {
           {/* Chat - Always visible */}
           {(stage === 'chat' || stage === 'results') && (
             <div className="flex-1 overflow-y-auto">
-              <ConversationalChat
-                onCompanyFound={handleCompanyFound}
+              <StreamingChat
+                sessionId={`session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`}
+                userId={user?.id}
                 onValuationComplete={handleValuationComplete}
-                businessProfile={businessProfile}
+                className="h-full"
+                placeholder="Ask about your business valuation..."
               />
             </div>
           )}

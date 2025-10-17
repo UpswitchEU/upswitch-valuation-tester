@@ -103,6 +103,40 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
     }
   }, [onMessageComplete]);
 
+  const handleStreamEvent = useCallback((data: any) => {
+    switch (data.type) {
+      case 'typing':
+        // AI is typing
+        break;
+        
+      case 'message_start':
+        // Start of AI response
+        break;
+        
+      case 'message_chunk':
+        // Stream content
+        updateStreamingMessage(data.content);
+        break;
+        
+      case 'message_complete':
+        // Complete response
+        updateStreamingMessage('', true);
+        setIsStreaming(false);
+        
+        // Check for valuation result
+        if (data.metadata?.valuation_result) {
+          onValuationComplete?.(data.metadata.valuation_result);
+        }
+        break;
+        
+      case 'error':
+        setError(data.content || 'An error occurred');
+        setIsStreaming(false);
+        updateStreamingMessage('', true);
+        break;
+    }
+  }, [updateStreamingMessage, onValuationComplete]);
+
   const startStreaming = useCallback(async (userInput: string) => {
     if (!userInput.trim() || isStreaming) return;
 
@@ -111,7 +145,7 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
     setConnectionStatus('connecting');
 
     // Add user message
-    const userMessage = addMessage({
+    addMessage({
       type: 'user',
       content: userInput,
       isComplete: true
@@ -133,9 +167,9 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
         eventSourceRef.current.close();
       }
 
-      // Create new EventSource connection
-      const eventSource = new EventSource(
-        `${process.env.REACT_APP_VALUATION_ENGINE_URL}/api/v1/intelligent-conversation/stream`,
+      // Create streaming request using fetch with ReadableStream
+      const response = await fetch(
+        `${import.meta.env.VITE_VALUATION_ENGINE_URL || 'https://web-production-8d00b.up.railway.app'}/api/v1/intelligent-conversation/stream`,
         {
           method: 'POST',
           headers: {
@@ -155,65 +189,52 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
         }
       );
 
-      eventSourceRef.current = eventSource;
-      setConnectionStatus('connected');
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
 
-      // Handle streaming events
-      eventSource.onmessage = (event) => {
+      const reader = response.body?.getReader();
+      if (!reader) {
+        throw new Error('No response body reader available');
+      }
+
+      const decoder = new TextDecoder();
+      let buffer = '';
+
+      const processStream = async () => {
         try {
-          const data = JSON.parse(event.data);
-          
-          switch (data.type) {
-            case 'typing':
-              // AI is typing
+          while (true) {
+            const { done, value } = await reader.read();
+            
+            if (done) {
               break;
-              
-            case 'message_start':
-              // Start of AI response
-              break;
-              
-            case 'message_chunk':
-              // Stream content
-              updateStreamingMessage(data.content);
-              break;
-              
-            case 'message_complete':
-              // Complete response
-              updateStreamingMessage('', true);
-              setIsStreaming(false);
-              
-              // Check for valuation result
-              if (data.metadata?.valuation_result) {
-                onValuationComplete?.(data.metadata.valuation_result);
+            }
+
+            buffer += decoder.decode(value, { stream: true });
+            const lines = buffer.split('\n');
+            buffer = lines.pop() || '';
+
+            for (const line of lines) {
+              if (line.startsWith('data: ')) {
+                try {
+                  const data = JSON.parse(line.slice(6));
+                  handleStreamEvent(data);
+                } catch (parseError) {
+                  console.error('Failed to parse SSE data:', parseError);
+                }
               }
-              break;
-              
-            case 'error':
-              setError(data.content || 'An error occurred');
-              setIsStreaming(false);
-              updateStreamingMessage('', true);
-              break;
+            }
           }
-        } catch (parseError) {
-          console.error('Failed to parse SSE data:', parseError);
-          setError('Failed to parse response');
+        } catch (error) {
+          console.error('Stream processing error:', error);
+          setConnectionStatus('disconnected');
+          setError('Stream connection lost');
           setIsStreaming(false);
         }
       };
 
-      eventSource.onerror = (error) => {
-        console.error('SSE connection error:', error);
-        setConnectionStatus('disconnected');
-        setError('Connection lost. Please try again.');
-        setIsStreaming(false);
-        
-        // Fallback to non-streaming response
-        handleFallbackResponse(userInput);
-      };
-
-      eventSource.onopen = () => {
-        setConnectionStatus('connected');
-      };
+      processStream();
+      setConnectionStatus('connected');
 
     } catch (error) {
       console.error('Failed to start streaming:', error);
@@ -221,9 +242,9 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
       setIsStreaming(false);
       handleFallbackResponse(userInput);
     }
-  }, [sessionId, userId, messages, isStreaming, addMessage, updateStreamingMessage, onValuationComplete]);
+  }, [sessionId, userId, messages, isStreaming, addMessage, updateStreamingMessage, onValuationComplete, handleStreamEvent]);
 
-  const handleFallbackResponse = useCallback((userInput: string) => {
+  const handleFallbackResponse = useCallback((_userInput: string) => {
     // Fallback response when streaming fails
     setTimeout(() => {
       const fallbackResponse = "I understand you're looking for a business valuation. Let me help you with that. Could you tell me your company's annual revenue?";
