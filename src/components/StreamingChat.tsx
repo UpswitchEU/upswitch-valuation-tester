@@ -93,9 +93,9 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
   }, []);
 
   const updateStreamingMessage = useCallback((content: string, isComplete: boolean = false) => {
-    if (currentStreamingMessageRef.current) {
+    if (currentStreamingMessageRef.current && currentStreamingMessageRef.current.id) {
       setMessages(prev => prev.map(msg => 
-        msg.id === currentStreamingMessageRef.current!.id
+        msg && msg.id === currentStreamingMessageRef.current!.id
           ? { ...msg, content: msg.content + content, isComplete }
           : msg
       ));
@@ -331,7 +331,7 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
 
       {/* Messages */}
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
-        {messages.map((message) => (
+        {messages.filter(msg => msg && msg.id).map((message) => (
           <div
             key={message.id}
             className={`flex ${message.type === 'user' ? 'justify-end' : 'justify-start'}`}
