@@ -296,38 +296,6 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
 
   return (
     <div className={`flex flex-col h-full bg-gradient-to-br from-zinc-900 via-zinc-800 to-zinc-900 rounded-lg shadow-lg ${className}`}>
-      {/* Header */}
-      <div className="flex items-center justify-between p-4 border-b border-zinc-800">
-        <div className="flex items-center gap-2">
-          <Bot className="w-6 h-6 text-primary-400" />
-          <h3 className="text-lg font-semibold text-white">{AI_CONFIG.branding.expertTitle}</h3>
-          {AI_CONFIG.branding.showLevelBadge && (
-            <span className="text-xs px-2 py-1 bg-primary-600/20 text-primary-400 rounded-full">
-              {AI_CONFIG.branding.levelIndicator}
-            </span>
-          )}
-        </div>
-        <div className="flex items-center gap-2 text-sm text-zinc-400">
-          {getConnectionStatusIcon()}
-          <span>{getConnectionStatusText()}</span>
-        </div>
-      </div>
-
-      {/* Error Display */}
-      {error && (
-        <div className="p-3 bg-red-50 border-b border-red-200">
-          <div className="flex items-center gap-2 text-red-700">
-            <AlertCircle className="w-4 h-4" />
-            <span className="text-sm">{error}</span>
-            <button
-              onClick={() => setError(null)}
-              className="ml-auto text-red-500 hover:text-red-700"
-            >
-              ×
-            </button>
-          </div>
-        </div>
-      )}
 
       {/* Messages */}
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
@@ -414,27 +382,56 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
 
       {/* Input */}
       <div className="p-4 border-t border-zinc-800">
-        <form onSubmit={handleSubmit} className="flex gap-2">
-          <textarea
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyPress={handleKeyPress}
-            placeholder={placeholder}
-            disabled={disabled || isStreaming}
-            className="flex-1 resize-none border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed"
-            rows={2}
-          />
-          <button
-            type="submit"
-            disabled={!input.trim() || isStreaming || disabled}
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center gap-2"
-          >
-            {isStreaming ? (
-              <Loader2 className="w-4 h-4 animate-spin" />
-            ) : (
-              <Send className="w-4 h-4" />
-            )}
-          </button>
+        <form
+          onSubmit={handleSubmit}
+          className="focus-within:bg-zinc-900/30 group flex flex-col gap-3 p-4 duration-150 w-full rounded-3xl border border-zinc-700/50 bg-zinc-900/20 text-base shadow-xl transition-all ease-in-out focus-within:border-zinc-500/40 hover:border-zinc-600/30 focus-within:hover:border-zinc-500/40 backdrop-blur-sm"
+        >
+          {/* Textarea container */}
+          <div className="relative flex items-center">
+            <textarea
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyPress={handleKeyPress}
+              placeholder={placeholder}
+              disabled={disabled || isStreaming}
+              className="flex w-full rounded-md px-3 py-3 ring-offset-background placeholder:text-zinc-400 focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 disabled:cursor-not-allowed disabled:opacity-50 resize-none text-sm leading-snug placeholder-shown:text-ellipsis placeholder-shown:whitespace-nowrap max-h-[200px] bg-transparent focus:bg-transparent flex-1 text-white"
+              style={{ minHeight: '60px', height: '60px' }}
+              spellCheck="false"
+            />
+          </div>
+
+          {/* Action buttons row */}
+          <div className="flex gap-2 flex-wrap items-center">
+            <button
+              type="button"
+              onClick={() => setInput('What is my business worth?')}
+              className="px-3 py-1.5 bg-zinc-800/50 hover:bg-zinc-700/60 border border-zinc-700/50 hover:border-zinc-600/60 rounded-full text-xs text-zinc-300 hover:text-white transition-all duration-200 hover:shadow-md hover:shadow-black/20"
+            >
+              What is my business worth?
+            </button>
+            <button
+              type="button"
+              onClick={() => setInput('How do you calculate valuation?')}
+              className="px-3 py-1.5 bg-zinc-800/50 hover:bg-zinc-700/60 border border-zinc-700/50 hover:border-zinc-600/60 rounded-full text-xs text-zinc-300 hover:text-white transition-all duration-200 hover:shadow-md hover:shadow-black/20"
+            >
+              How do you calculate valuation?
+            </button>
+            
+            {/* Right side with send button */}
+            <div className="flex flex-grow items-center justify-end gap-2">
+              <button
+                type="submit"
+                disabled={!input.trim() || isStreaming || disabled}
+                className="submit-button-white flex h-8 w-8 items-center justify-center rounded-full bg-white hover:bg-zinc-100 transition-all duration-150 ease-out disabled:cursor-not-allowed disabled:opacity-50 disabled:bg-zinc-600"
+              >
+                {isStreaming ? (
+                  <Loader2 className="w-4 h-4 text-zinc-900 animate-spin" />
+                ) : (
+                  <Send className="w-4 h-4 text-zinc-900" />
+                )}
+              </button>
+            </div>
+          </div>
         </form>
       </div>
     </div>
