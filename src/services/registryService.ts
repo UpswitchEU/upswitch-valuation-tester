@@ -1,6 +1,10 @@
 import axios from 'axios';
 import { API_CONFIG } from '../config';
 
+// In-memory cache for company lookups
+const companyCache = new Map<string, { data: any; timestamp: number }>();
+const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+
 export interface CompanySearchResult {
   result_type: string;
   company_id: string;
@@ -70,8 +74,21 @@ export const fetchCompanyFinancials = async (
   companyId: string,
   countryCode: string
 ): Promise<CompanyFinancialData> => {
+  const cacheKey = `${countryCode.toLowerCase()}-${companyId}`;
+  const cached = companyCache.get(cacheKey);
+  
+  // Check if we have valid cached data
+  if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
+    console.log('✅ Using cached company data');
+    return cached.data;
+  }
+  
   try {
     const response = await axios.get(`${API_CONFIG.baseURL}/api/registry/${countryCode.toLowerCase()}/${companyId}`);
+    
+    // Cache the result
+    companyCache.set(cacheKey, { data: response.data, timestamp: Date.now() });
+    console.log('💾 Company data cached');
     
     return response.data;
   } catch (error) {

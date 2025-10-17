@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Send, Bot, Loader2, Shield } from 'lucide-react';
+import { Send, Bot, Loader2 } from 'lucide-react';
 import { searchCompanies, fetchCompanyFinancials } from '../services/registryService';
 import { intelligentTriageService, type TriageSession } from '../services/intelligentTriageService';
 import { fallbackQuestionService, type FallbackQuestion } from '../services/fallbackQuestionService';
@@ -866,10 +866,7 @@ The detailed report is now available in the preview panel.`,
               <Bot className="w-5 h-5 text-white" />
             </div>
             <div>
-              <h3 className="text-white font-semibold text-sm">AI auditor</h3>
-              <p className="text-xs text-zinc-400">
-                {isUsingIntelligentTriage ? 'Intelligent Triage Active' : 'Fallback Mode'}
-              </p>
+              <h3 className="text-white font-semibold text-sm">AI valuation expert</h3>
             </div>
           </div>
           
@@ -880,17 +877,6 @@ The detailed report is now available in the preview panel.`,
           </div>
         </div>
         
-        {/* Privacy Note */}
-        <div className="mt-4 bg-zinc-800/30 backdrop-blur-sm border border-zinc-700/50 rounded-lg p-3">
-          <p className="text-zinc-300 text-xs flex items-start gap-2">
-            <Shield className="w-4 h-4 flex-shrink-0 mt-0.5" />
-            <span>
-              <strong>Privacy Note:</strong> This AI assistant only processes public information
-              (company names, industries, etc.). Your financial data remains private and
-              is never shared with external AI services.
-            </span>
-          </p>
-        </div>
       </div>
 
       {/* Error Display */}

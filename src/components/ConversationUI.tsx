@@ -365,11 +365,6 @@ export const ConversationUI: React.FC<ConversationUIProps> = ({
                 clipRule="evenodd"
               />
             </svg>
-            <span>
-              <strong>Privacy Note:</strong> This AI assistant only processes public information
-              (company names, industries, etc.). Your financial data remains private and
-              is never shared with external AI services.
-            </span>
           </p>
         </div>
       </div>

@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Send, Bot, User, Loader2, Sparkles, Shield } from 'lucide-react';
+import { Send, Bot, User, Loader2, Sparkles } from 'lucide-react';
 
 interface Message {
   id: string;
@@ -144,17 +144,6 @@ Currently supporting Belgian companies. More countries coming soon! 🚀`,
           </div>
         </div>
         
-        {/* Privacy Note */}
-        <div className="mt-4 bg-white/10 backdrop-blur-sm border border-white/20 rounded-lg p-3">
-          <p className="text-white text-xs flex items-start gap-2">
-            <Shield className="w-4 h-4 flex-shrink-0 mt-0.5" />
-            <span>
-              <strong>Privacy Note:</strong> This AI assistant only processes public information
-              (company names, industries, etc.). Your financial data remains private and
-              is never shared with external AI services.
-            </span>
-          </p>
-        </div>
       </div>
 
       {/* Messages */}
