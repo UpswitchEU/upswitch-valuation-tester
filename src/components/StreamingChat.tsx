@@ -295,19 +295,19 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
   };
 
   return (
-    <div className={`flex flex-col h-full bg-white rounded-lg shadow-lg ${className}`}>
+    <div className={`flex flex-col h-full bg-gradient-to-br from-zinc-900 via-zinc-800 to-zinc-900 rounded-lg shadow-lg ${className}`}>
       {/* Header */}
-      <div className="flex items-center justify-between p-4 border-b border-gray-200">
+      <div className="flex items-center justify-between p-4 border-b border-zinc-800">
         <div className="flex items-center gap-2">
-          <Bot className="w-6 h-6 text-blue-600" />
-          <h3 className="text-lg font-semibold text-gray-900">{AI_CONFIG.branding.expertTitle}</h3>
+          <Bot className="w-6 h-6 text-primary-400" />
+          <h3 className="text-lg font-semibold text-white">{AI_CONFIG.branding.expertTitle}</h3>
           {AI_CONFIG.branding.showLevelBadge && (
-            <span className="text-xs px-2 py-1 bg-blue-100 text-blue-700 rounded-full">
+            <span className="text-xs px-2 py-1 bg-primary-600/20 text-primary-400 rounded-full">
               {AI_CONFIG.branding.levelIndicator}
             </span>
           )}
         </div>
-        <div className="flex items-center gap-2 text-sm text-gray-500">
+        <div className="flex items-center gap-2 text-sm text-zinc-400">
           {getConnectionStatusIcon()}
           <span>{getConnectionStatusText()}</span>
         </div>
@@ -339,15 +339,15 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
             <div className={`max-w-[80%] ${message.type === 'user' ? 'ml-auto' : 'mr-auto'}`}>
               <div className="flex items-start gap-3">
                 {message.type !== 'user' && (
-                  <div className="flex-shrink-0 w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-                    <Bot className="w-4 h-4 text-blue-600" />
+                  <div className="flex-shrink-0 w-8 h-8 bg-primary-600/20 rounded-full flex items-center justify-center">
+                    <Bot className="w-4 h-4 text-primary-400" />
                   </div>
                 )}
                 
                 <div className={`rounded-lg px-4 py-2 ${
                   message.type === 'user' 
-                    ? 'bg-blue-600 text-white' 
-                    : 'bg-gray-100 text-gray-900'
+                    ? 'bg-zinc-800 text-white' 
+                    : 'bg-zinc-700/50 text-white'
                 }`}>
                   <div className="whitespace-pre-wrap text-sm">
                     {message.content}
@@ -358,8 +358,8 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
                   
                   {/* NEW: Display reasoning if available */}
                   {AI_CONFIG.showReasoning && message.metadata?.reasoning && (
-                    <div className="mt-2 pt-2 border-t border-gray-200">
-                      <p className="text-xs text-gray-600 italic">
+                    <div className="mt-2 pt-2 border-t border-zinc-600/30">
+                      <p className="text-xs text-zinc-400 italic">
                         💡 {message.metadata.reasoning}
                       </p>
                     </div>
@@ -368,7 +368,7 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
                   {/* NEW: Display help text if available */}
                   {AI_CONFIG.showHelpText && message.metadata?.help_text && (
                     <div className="mt-1">
-                      <p className="text-xs text-blue-600">
+                      <p className="text-xs text-primary-400">
                         ℹ️ {message.metadata.help_text}
                       </p>
                     </div>
