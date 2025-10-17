@@ -18,3 +18,17 @@ export const APP_CONFIG = {
   environment: import.meta.env.MODE || 'development',
 };
 
+// AI Agent Configuration
+export const AI_CONFIG = {
+  enabled: import.meta.env.VITE_AI_ENHANCED_MODE === 'true' || true,
+  model: import.meta.env.VITE_OPENAI_MODEL || 'gpt-4o-mini',
+  showReasoning: import.meta.env.VITE_SHOW_AI_REASONING === 'true' || true,
+  showHelpText: import.meta.env.VITE_SHOW_AI_HELP_TEXT === 'true' || true,
+  showNarratives: import.meta.env.VITE_SHOW_VALUATION_NARRATIVES === 'true' || true,
+  branding: {
+    expertTitle: 'AI Valuation Expert',
+    levelIndicator: 'Big 4 Level',
+    showLevelBadge: import.meta.env.VITE_SHOW_LEVEL_BADGE === 'true' || true
+  }
+};
+

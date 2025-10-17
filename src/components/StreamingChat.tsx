@@ -5,6 +5,7 @@
 
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { Send, Loader2, Bot, User, AlertCircle, CheckCircle } from 'lucide-react';
+import { AI_CONFIG } from '../config';
 
 interface Message {
   id: string;
@@ -60,9 +61,13 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
       setMessages([{
         id: 'welcome',
         type: 'ai',
-        content: 'Hello! I\'m your AI valuation expert. I\'ll help you get a professional business valuation through our conversation. What\'s the name of your business?',
+        content: `Hello! I'm your ${AI_CONFIG.branding.expertTitle.toLowerCase()} with ${AI_CONFIG.branding.levelIndicator.toLowerCase()} expertise. I'll help you get a professional business valuation through our intelligent conversation. What's the name of your business?`,
         timestamp: new Date(),
-        isComplete: true
+        isComplete: true,
+        metadata: {
+          reasoning: "Starting with company identification to establish context for valuation",
+          help_text: "Please provide your company's legal name as it appears on official documents"
+        }
       }]);
     }
   }, [messages.length]);
@@ -296,7 +301,12 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
       <div className="flex items-center justify-between p-4 border-b border-gray-200">
         <div className="flex items-center gap-2">
           <Bot className="w-6 h-6 text-blue-600" />
-          <h3 className="text-lg font-semibold text-gray-900">AI Valuation Expert</h3>
+          <h3 className="text-lg font-semibold text-gray-900">{AI_CONFIG.branding.expertTitle}</h3>
+          {AI_CONFIG.branding.showLevelBadge && (
+            <span className="text-xs px-2 py-1 bg-blue-100 text-blue-700 rounded-full">
+              {AI_CONFIG.branding.levelIndicator}
+            </span>
+          )}
         </div>
         <div className="flex items-center gap-2 text-sm text-gray-500">
           {getConnectionStatusIcon()}
@@ -346,6 +356,36 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
                       <span className="inline-block w-2 h-4 bg-current animate-pulse ml-1" />
                     )}
                   </div>
+                  
+                  {/* NEW: Display reasoning if available */}
+                  {AI_CONFIG.showReasoning && message.metadata?.reasoning && (
+                    <div className="mt-2 pt-2 border-t border-gray-200">
+                      <p className="text-xs text-gray-600 italic">
+                        💡 {message.metadata.reasoning}
+                      </p>
+                    </div>
+                  )}
+                  
+                  {/* NEW: Display help text if available */}
+                  {AI_CONFIG.showHelpText && message.metadata?.help_text && (
+                    <div className="mt-1">
+                      <p className="text-xs text-blue-600">
+                        ℹ️ {message.metadata.help_text}
+                      </p>
+                    </div>
+                  )}
+                  
+                  {/* NEW: Display valuation narrative if available */}
+                  {AI_CONFIG.showNarratives && message.metadata?.valuation_narrative && (
+                    <div className="mt-3 p-3 bg-blue-50 rounded-lg">
+                      <h4 className="text-sm font-semibold text-blue-900 mb-2">
+                        Why this valuation?
+                      </h4>
+                      <div className="text-sm text-blue-800 whitespace-pre-wrap">
+                        {message.metadata.valuation_narrative}
+                      </div>
+                    </div>
+                  )}
                   
                   {message.type !== 'user' && message.isStreaming && (
                     <div className="flex items-center gap-1 mt-2 text-xs text-gray-500">
