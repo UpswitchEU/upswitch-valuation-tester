@@ -49,9 +49,18 @@ export class StreamingChatService {
         buffer = lines.pop() || '';
 
         for (const line of lines) {
-          if (line.startsWith('data: ')) {
-            const data = JSON.parse(line.slice(6));
-            yield data;
+          if (line.startsWith('data: ') && line.trim().length > 6) {
+            try {
+              const jsonStr = line.slice(6).trim();
+              if (jsonStr) {
+                const data = JSON.parse(jsonStr);
+                yield data;
+              }
+            } catch (parseError) {
+              console.warn('Failed to parse SSE data:', line, parseError);
+              // Skip malformed chunks - they'll be completed in next iteration
+              continue;
+            }
           }
         }
       }
