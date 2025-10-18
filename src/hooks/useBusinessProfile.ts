@@ -1,7 +1,17 @@
 import { useState, useEffect } from 'react';
 import { businessDataService } from '../services/businessDataService';
 import { chatLogger } from '../utils/logger';
-import type { BusinessProfileData } from '../types/business';
+// import type { BusinessProfileData } from '../types/business';
+
+// Temporary interface until business types are defined
+interface BusinessProfileData {
+  user_id: string;
+  company_name?: string;
+  industry?: string;
+  created_at: string;
+  updated_at: string;
+  // Add other properties as needed
+}
 
 export const useBusinessProfile = (userId?: string) => {
   const [businessProfile, setBusinessProfile] = useState<BusinessProfileData | null>(null);

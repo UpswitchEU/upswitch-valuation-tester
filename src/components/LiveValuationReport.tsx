@@ -51,6 +51,16 @@ export const LiveValuationReport: React.FC<LiveValuationReportProps> = ({
 
   return (
     <div className="h-full flex flex-col bg-white">
+      {/* Screen reader announcements */}
+      <div 
+        role="status" 
+        aria-live="polite" 
+        aria-atomic="true"
+        className="sr-only"
+      >
+        {isGenerating ? "Generating valuation report..." : "Report updated"}
+      </div>
+      
       {/* Progress bar */}
       {isGenerating && (
         <div className="h-1 bg-zinc-200">

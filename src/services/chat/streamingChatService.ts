@@ -1,3 +1,5 @@
+import { chatLogger } from '../../utils/logger';
+
 interface StreamEvent {
   type: 'message_start' | 'message_chunk' | 'message_complete' | 'report_update' | 'error';
   content?: string;

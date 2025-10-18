@@ -49,6 +49,14 @@ export const Header: React.FC = () => {
 
   return (
     <>
+      {/* Skip Link for Keyboard Navigation */}
+      <a 
+        href="#main-content" 
+        className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-50 focus:px-4 focus:py-2 focus:bg-primary-600 focus:text-white focus:rounded focus:shadow-lg"
+      >
+        Skip to main content
+      </a>
+      
       <header className="z-40 flex px-3 sm:px-4 lg:px-6 gap-2 sm:gap-3 lg:gap-4 w-full flex-row flex-nowrap items-center justify-between h-[var(--navbar-height)] max-w-full overflow-x-hidden bg-white border-b border-gray-200 sticky top-0 shadow-sm">
         {/* Left Side - Logo and Title */}
         <div className="flex basis-0 flex-row flex-grow flex-nowrap justify-start bg-transparent items-center no-underline text-medium whitespace-nowrap box-border">

@@ -1,3 +1,5 @@
+import { serviceLogger } from '../utils/logger';
+
 /**
  * Health Check Service - Monitors service availability and implements circuit breaker pattern
  * Inspired by IlaraAI Mercury health monitoring architecture
@@ -256,7 +258,9 @@ class HealthCheckService {
       try {
         listener(status);
       } catch (error) {
-        console.error('Health listener error:', error);
+        serviceLogger.error('Health listener error', {
+          error: error instanceof Error ? error.message : 'Unknown error'
+        });
       }
     });
   }

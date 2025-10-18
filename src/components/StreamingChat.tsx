@@ -330,6 +330,7 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
       <div className="p-4 border-t border-zinc-800">
         <form
           onSubmit={handleSubmit}
+          aria-label="Chat message form"
           className="focus-within:bg-zinc-900/30 group flex flex-col gap-3 p-4 duration-150 w-full rounded-3xl border border-zinc-700/50 bg-zinc-900/20 text-base shadow-xl transition-all ease-in-out focus-within:border-zinc-500/40 hover:border-zinc-600/30 focus-within:hover:border-zinc-500/40 backdrop-blur-sm"
         >
           {/* Textarea container */}
@@ -340,10 +341,15 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
               onKeyPress={handleKeyPress}
               placeholder={placeholder}
               disabled={disabled || isStreaming}
+              aria-label="Type your message"
+              aria-describedby="chat-help-text"
               className="flex w-full rounded-md px-3 py-3 ring-offset-background placeholder:text-zinc-400 focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 disabled:cursor-not-allowed disabled:opacity-50 resize-none text-sm leading-snug placeholder-shown:text-ellipsis placeholder-shown:whitespace-nowrap max-h-[200px] bg-transparent focus:bg-transparent flex-1 text-white"
               style={{ minHeight: '60px', height: '60px' }}
               spellCheck="false"
             />
+            <span id="chat-help-text" className="sr-only">
+              Press Enter to send, Shift+Enter for new line
+            </span>
           </div>
 
           {/* Action buttons row */}
@@ -365,12 +371,13 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
               <button
                 type="submit"
                 disabled={!input.trim() || isStreaming || disabled}
+                aria-label={isStreaming ? "Sending message..." : "Send message"}
                 className="submit-button-white flex h-8 w-8 items-center justify-center rounded-full bg-white hover:bg-zinc-100 transition-all duration-150 ease-out disabled:cursor-not-allowed disabled:opacity-50 disabled:bg-zinc-600"
               >
                 {isStreaming ? (
-                  <Loader2 className="w-4 h-4 text-zinc-900 animate-spin" />
+                  <Loader2 className="w-4 h-4 text-zinc-900 animate-spin" aria-hidden="true" />
                 ) : (
-                  <Send className="w-4 h-4 text-zinc-900" />
+                  <Send className="w-4 h-4 text-zinc-900" aria-hidden="true" />
                 )}
               </button>
             </div>

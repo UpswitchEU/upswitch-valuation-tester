@@ -1,4 +1,5 @@
 import axios, { AxiosInstance } from 'axios';
+import { apiLogger } from '../utils/logger';
 import type {
   ValuationRequest,
   ValuationResponse,
@@ -34,7 +35,10 @@ class ValuationAPI {
     this.client.interceptors.response.use(
       response => response,
       error => {
-        console.error('API Error:', error.response?.data || error.message);
+        apiLogger.error('API Error', {
+          error: error.response?.data || error.message,
+          status: error.response?.status
+        });
         throw error;
       }
     );

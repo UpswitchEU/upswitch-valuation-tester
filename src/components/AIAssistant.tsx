@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Send, Bot, User, Loader2, Sparkles } from 'lucide-react';
+import { serviceLogger } from '../utils/logger';
 
 interface Message {
   id: string;

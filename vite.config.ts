@@ -29,5 +29,14 @@ export default defineConfig({
     outDir: 'dist',
     sourcemap: false,
     target: 'es2020',
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          'react-vendor': ['react', 'react-dom', 'react-router-dom'],
+          'ui-vendor': ['@heroui/react', 'lucide-react'],
+          'utils': ['axios', 'pino', 'zustand']
+        }
+      }
+    }
   },
 });

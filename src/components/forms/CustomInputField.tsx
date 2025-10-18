@@ -83,6 +83,8 @@ const CustomInputField: React.FC<CustomInputFieldProps> = ({
           disabled={disabled}
           autoFocus={autoFocus}
           autoComplete={autoComplete}
+          aria-invalid={hasError ? "true" : "false"}
+          aria-describedby={hasError ? `${name}-error` : undefined}
           className={`
             w-full h-14 px-4 pt-6 pb-2 text-base 
             border-none rounded-xl 
@@ -115,7 +117,15 @@ const CustomInputField: React.FC<CustomInputFieldProps> = ({
 
       {description && <p className="mt-1 text-sm text-gray-600">{description}</p>}
 
-      {hasError && <p className="mt-1 text-sm text-red-600">{error}</p>}
+      {hasError && (
+        <p 
+          id={`${name}-error`} 
+          role="alert" 
+          className="mt-1 text-sm text-red-600"
+        >
+          {error}
+        </p>
+      )}
     </div>
   );
 };

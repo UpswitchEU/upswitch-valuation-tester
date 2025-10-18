@@ -136,45 +136,7 @@ export const ValuationForm: React.FC = () => {
     [formData.revenue, formData.ebitda, formData.industry, formData.country_code]
   );
 
-  // Helper function to update historical data
-  const updateHistoricalData = useCallback((year: number, field: 'revenue' | 'ebitda', value: string) => {
-    const key = `${year}_${field}`;
-    setHistoricalInputs(prev => ({
-      ...prev,
-      [key]: value
-    }));
-    
-    // Update form data when we have valid numbers
-    const revenueKey = `${year}_revenue`;
-    const ebitdaKey = `${year}_ebitda`;
-    const revenueValue = field === 'revenue' ? value : historicalInputs[revenueKey] || '';
-    const ebitdaValue = field === 'ebitda' ? value : historicalInputs[ebitdaKey] || '';
-    
-    const revenue = parseFloat(revenueValue.replace(/,/g, '')) || 0;
-    const ebitda = parseFloat(ebitdaValue.replace(/,/g, '')) || 0;
-    
-    // Only update form data if we have meaningful values
-    if (revenue > 0 || ebitda > 0) {
-      const currentHistorical = formData.historical_years_data || [];
-      const existingIndex = currentHistorical.findIndex(data => data.year === year);
-      
-      const yearData = {
-        year,
-        revenue: revenue > 0 ? revenue : 0,
-        ebitda: ebitda > 0 ? ebitda : 0
-      };
-      
-      if (existingIndex >= 0) {
-        const updatedHistorical = [...currentHistorical];
-        updatedHistorical[existingIndex] = yearData;
-        updateFormData({ historical_years_data: updatedHistorical });
-      } else {
-        updateFormData({ 
-          historical_years_data: [...currentHistorical, yearData] 
-        });
-      }
-    }
-  }, [formData.historical_years_data, updateFormData, historicalInputs]);
+  // Historical data is now handled by HistoricalDataInputs component
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">

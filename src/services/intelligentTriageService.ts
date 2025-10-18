@@ -1,4 +1,5 @@
 import { api } from './api';
+import { serviceLogger } from '../utils/logger';
 import type { 
   ConversationStepRequest, 
   ConversationStartResponse, 
