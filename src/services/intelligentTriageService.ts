@@ -49,7 +49,7 @@ export const intelligentTriageService = {
       
       // Add null safety checks for response
       if (!response) {
-        console.warn('⚠️ Triage API returned empty response, using fallback');
+        serviceLogger.warn('Triage API returned empty response, using fallback');
         throw new Error('Empty triage response');
       }
       
@@ -68,7 +68,9 @@ export const intelligentTriageService = {
         valuation_result: response.valuation_result
       };
     } catch (error) {
-      console.error('Failed to start triage conversation:', error);
+      serviceLogger.error('Failed to start triage conversation', {
+        error: error instanceof Error ? error.message : 'Unknown error'
+      });
       throw new Error('Failed to start intelligent conversation');
     }
   },
@@ -118,7 +120,9 @@ export const intelligentTriageService = {
         valuation_result: response.current_valuation
       };
     } catch (error) {
-      console.error('Failed to process triage step:', error);
+      serviceLogger.error('Failed to process triage step', {
+        error: error instanceof Error ? error.message : 'Unknown error'
+      });
       throw new Error(`Failed to process conversation step: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   },
@@ -150,7 +154,9 @@ export const intelligentTriageService = {
         valuation_result: undefined
       };
     } catch (error) {
-      console.error('Failed to get triage context:', error);
+      serviceLogger.error('Failed to get triage context', {
+        error: error instanceof Error ? error.message : 'Unknown error'
+      });
       throw new Error('Failed to get conversation context');
     }
   },
@@ -194,7 +200,9 @@ export const intelligentTriageService = {
       const response = await api.submitOwnerProfile(request);
       return response;
     } catch (error) {
-      console.error('Failed to create owner profile:', error);
+      serviceLogger.error('Failed to create owner profile', {
+        error: error instanceof Error ? error.message : 'Unknown error'
+      });
       throw new Error('Failed to create owner profile');
     }
   }

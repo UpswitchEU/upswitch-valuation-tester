@@ -1,26 +1,16 @@
 import React, { useState, useCallback } from 'react';
 import { Upload, FileText, CheckCircle, X, AlertCircle } from 'lucide-react';
+import { fileProcessingService, type ProcessedFile } from '../services/fileProcessingService';
+import { serviceLogger } from '../utils/logger';
 
-interface UploadedFile {
-  id: string;
-  file: File;
-  status: 'uploading' | 'processing' | 'completed' | 'error';
-  progress: number;
-  extractedData?: {
-    revenue?: number;
-    ebitda?: number;
-    company_name?: string;
-    confidence?: number;
-  };
-  error?: string;
-}
+// Use ProcessedFile from service instead of local interface
 
 interface DataRoomUploadProps {
-  onComplete: (files: UploadedFile[]) => void;
+  onComplete: (files: ProcessedFile[]) => void;
 }
 
 export const DataRoomUpload: React.FC<DataRoomUploadProps> = ({ onComplete }) => {
-  const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
+  const [uploadedFiles, setUploadedFiles] = useState<ProcessedFile[]>([]);
   const [isDragging, setIsDragging] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
 
@@ -51,61 +41,16 @@ export const DataRoomUpload: React.FC<DataRoomUploadProps> = ({ onComplete }) =>
   const processFiles = async (files: File[]) => {
     setIsProcessing(true);
 
-    const newFiles: UploadedFile[] = files.map(file => ({
-      id: `${Date.now()}_${file.name}`,
-      file,
-      status: 'uploading',
-      progress: 0,
-    }));
-
-    setUploadedFiles(prev => [...prev, ...newFiles]);
-
-    // Process each file
-    for (const uploadedFile of newFiles) {
-      try {
-        // Simulate upload progress
-        for (let progress = 0; progress <= 100; progress += 20) {
-          await new Promise(resolve => setTimeout(resolve, 200));
-          setUploadedFiles(prev =>
-            prev.map(f =>
-              f.id === uploadedFile.id
-                ? { ...f, progress, status: progress === 100 ? 'processing' : 'uploading' }
-                : f
-            )
-          );
-        }
-
-        // TODO: Call backend /api/v1/documents/parse (PRIVATE - NO LLM)
-        // This happens on YOUR server, never sent to OpenAI/external LLM
-        await new Promise(resolve => setTimeout(resolve, 2000));
-
-        // Mock extracted data (from YOUR engine, not LLM)
-        const extractedData = {
-          revenue: 2500000,
-          ebitda: 450000,
-          company_name: 'Acme Trading NV',
-          confidence: 0.92,
-        };
-
-        setUploadedFiles(prev =>
-          prev.map(f =>
-            f.id === uploadedFile.id
-              ? { ...f, status: 'completed', progress: 100, extractedData }
-              : f
-          )
-        );
-      } catch (error) {
-        setUploadedFiles(prev =>
-          prev.map(f =>
-            f.id === uploadedFile.id
-              ? { ...f, status: 'error', error: 'Failed to process file' }
-              : f
-          )
-        );
-      }
+    try {
+      const processedFiles = await fileProcessingService.processFiles(files);
+      setUploadedFiles(prev => [...prev, ...processedFiles]);
+    } catch (error) {
+      serviceLogger.error('Failed to process files', {
+        error: error instanceof Error ? error.message : 'Unknown error'
+      });
+    } finally {
+      setIsProcessing(false);
     }
-
-    setIsProcessing(false);
   };
 
   const removeFile = (id: string) => {

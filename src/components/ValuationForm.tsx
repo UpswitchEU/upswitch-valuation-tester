@@ -1,4 +1,4 @@
-import React, { useCallback, useState, useEffect } from 'react';
+import React, { useCallback, useState, useEffect, useMemo } from 'react';
 import { useValuationStore } from '../store/useValuationStore';
 // import { useReportsStore } from '../store/useReportsStore'; // Deprecated: Now saving to database
 import { useAuth } from '../hooks/useAuth';
@@ -6,7 +6,7 @@ import { debounce } from '../utils/debounce';
 import { TARGET_COUNTRIES } from '../config/countries';
 import { BUSINESS_TYPES } from '../config/businessTypes';
 import { IndustryCode } from '../types/valuation';
-import { CustomInputField, CustomNumberInputField, CustomDropdown } from './forms';
+import { CustomInputField, CustomNumberInputField, CustomDropdown, HistoricalDataInputs } from './forms';
 import { generalLogger } from '../utils/logger';
 
 /**
@@ -58,13 +58,13 @@ export const ValuationForm: React.FC = () => {
     }
   }, [isAuthenticated, businessCard, hasPrefilledOnce, prefillFromBusinessCard]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
     await calculateValuation();
     
     // Auto-save report to localStorage (will show inline below the form)
     // Results component will appear automatically in App.tsx when result is set
-  };
+  }, [calculateValuation]);
 
   // 📝 DEPRECATED: Auto-save to localStorage
   // Now handled by calculateValuation() → saveToBackend()
@@ -115,11 +115,29 @@ export const ValuationForm: React.FC = () => {
     return total > 0 ? Math.round((score / total) * 100) : 0;
   };
 
-  const dataQuality = calculateDataQuality();
-  const hasMinimumData = formData.revenue && formData.ebitda && formData.industry && formData.country_code;
+  const dataQuality = useMemo(() => calculateDataQuality(), [
+    formData.company_name,
+    formData.country_code,
+    formData.industry,
+    formData.business_model,
+    formData.founding_year,
+    formData.revenue,
+    formData.number_of_employees,
+    formData.ebitda,
+    formData.current_year_data?.net_income,
+    formData.current_year_data?.total_assets,
+    formData.current_year_data?.total_debt,
+    formData.current_year_data?.cash,
+    formData.historical_years_data?.length
+  ]);
+  
+  const hasMinimumData = useMemo(() => 
+    formData.revenue && formData.ebitda && formData.industry && formData.country_code,
+    [formData.revenue, formData.ebitda, formData.industry, formData.country_code]
+  );
 
   // Helper function to update historical data
-  const updateHistoricalData = (year: number, field: 'revenue' | 'ebitda', value: string) => {
+  const updateHistoricalData = useCallback((year: number, field: 'revenue' | 'ebitda', value: string) => {
     const key = `${year}_${field}`;
     setHistoricalInputs(prev => ({
       ...prev,
@@ -156,7 +174,7 @@ export const ValuationForm: React.FC = () => {
         });
       }
     }
-  };
+  }, [formData.historical_years_data, updateFormData, historicalInputs]);
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
@@ -424,57 +442,11 @@ export const ValuationForm: React.FC = () => {
           Adding 3 years of historical data enables growth rate calculation and improves valuation accuracy
         </p>
 
-        <div className="space-y-3">
-          {[2023, 2024].map((year) => {
-            const revenueKey = `${year}_revenue`;
-            const ebitdaKey = `${year}_ebitda`;
-            const revenue = historicalInputs[revenueKey] || '';
-            const ebitda = historicalInputs[ebitdaKey] || '';
-
-            return (
-              <div key={year} className="grid grid-cols-3 gap-4 p-3 bg-zinc-900 border border-zinc-700 rounded">
-                <div>
-                  <CustomInputField
-                    label="Year"
-                    type="text"
-                    value={year.toString()}
-                    onChange={() => {}}
-                    onBlur={() => {}}
-                    disabled={true}
-                    placeholder=""
-                  />
-                </div>
-                <div>
-                  <CustomNumberInputField
-                    label="Revenue (€)"
-                    placeholder="Optional"
-                    value={revenue}
-                    onChange={(e) => updateHistoricalData(year, 'revenue', e.target.value)}
-                    onBlur={() => {}}
-                    name={`historical_revenue_${year}`}
-                    min={0}
-                    step={1000}
-                    prefix="€"
-                    formatAsCurrency
-                  />
-                </div>
-                <div>
-                  <CustomNumberInputField
-                    label="EBITDA (€)"
-                    placeholder="Optional"
-                    value={ebitda}
-                    onChange={(e) => updateHistoricalData(year, 'ebitda', e.target.value)}
-                    onBlur={() => {}}
-                    name={`historical_ebitda_${year}`}
-                    step={1000}
-                    prefix="€"
-                    formatAsCurrency
-                  />
-                </div>
-              </div>
-            );
-          })}
-        </div>
+        <HistoricalDataInputs
+          historicalInputs={historicalInputs}
+          onChange={setHistoricalInputs}
+          onBlur={() => {}}
+        />
       </div>
 
       {/* Submit Button */}

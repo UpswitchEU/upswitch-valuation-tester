@@ -32,7 +32,7 @@ export class ErrorHandler {
         code: error.code,
         canRetry: this.canRetry(error),
         userAction: this.getUserAction(error),
-        technicalDetails: this.getTechnicalDetails(error)
+        technicalDetails: this.getTechnicalDetails(error, context)
       };
     }
     
@@ -191,6 +191,7 @@ export class ErrorHandler {
       'NETWORK_ERROR',
       'TIMEOUT_ERROR',
       'REGISTRY_ERROR',
+      'RATE_LIMIT_ERROR',
       'SERVER_ERROR',
       'INTERNAL_SERVER_ERROR',
       'BAD_GATEWAY_ERROR',
@@ -234,7 +235,6 @@ export class ErrorHandler {
       'DEPRECATED_ERROR',
       'MAINTENANCE_ERROR',
       'QUOTA_EXCEEDED_ERROR',
-      'RATE_LIMIT_ERROR',
       'TOO_MANY_REQUESTS_ERROR',
       'FORMAT_ERROR',
       'PARAMETER_ERROR',
@@ -290,11 +290,13 @@ export class ErrorHandler {
   /**
    * Get technical details for debugging
    */
-  private static getTechnicalDetails(error: AppError): string {
+  private static getTechnicalDetails(error: AppError, additionalContext?: Record<string, any>): string {
     const details = [];
     
-    if (error.context) {
-      details.push(`Context: ${JSON.stringify(error.context)}`);
+    // Merge error context with additional context
+    const mergedContext = { ...error.context, ...additionalContext };
+    if (Object.keys(mergedContext).length > 0) {
+      details.push(`Context: ${JSON.stringify(mergedContext)}`);
     }
     
     if (error.statusCode) {

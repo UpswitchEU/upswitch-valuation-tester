@@ -67,7 +67,10 @@ export const AIAssistedValuation: React.FC = () => {
       }
       
     } catch (error) {
-      console.error('❌ Error starting intelligent conversation:', error);
+      chatLogger.error('Error starting intelligent conversation', { 
+        error: error instanceof Error ? error.message : 'Unknown error',
+        stack: error instanceof Error ? error.stack : undefined
+      });
       setProfileError('Failed to start intelligent conversation. Using manual flow.');
       setStage('chat');
     }
@@ -110,7 +113,10 @@ export const AIAssistedValuation: React.FC = () => {
         }
         
       } catch (error) {
-        console.error('❌ Error fetching business profile:', error);
+        chatLogger.error('Error fetching business profile', { 
+          error: error instanceof Error ? error.message : 'Unknown error',
+          stack: error instanceof Error ? error.stack : undefined
+        });
         setProfileError('Failed to load business profile. Starting fresh conversation.');
       } finally {
         setIsLoadingProfile(false);

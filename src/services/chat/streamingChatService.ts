@@ -57,7 +57,7 @@ export class StreamingChatService {
                 yield data;
               }
             } catch (parseError) {
-              console.warn('Failed to parse SSE data:', line, parseError);
+              chatLogger.warn('Failed to parse SSE data', { line, parseError });
               // Skip malformed chunks - they'll be completed in next iteration
               continue;
             }

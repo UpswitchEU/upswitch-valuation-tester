@@ -7,7 +7,7 @@ interface UserAvatarProps {
   className?: string;
 }
 
-const UserAvatar: React.FC<UserAvatarProps> = ({ 
+const UserAvatar: React.FC<UserAvatarProps> = React.memo(({ 
   size = 'md', 
   className = '' 
 }) => {
@@ -109,6 +109,6 @@ const UserAvatar: React.FC<UserAvatarProps> = ({
 
     </div>
   );
-};
+});
 
 export default UserAvatar;

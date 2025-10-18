@@ -98,7 +98,10 @@ class BusinessDataService {
       return result.data;
       
     } catch (error) {
-      console.error('❌ Error fetching business profile:', error);
+      serviceLogger.error('Failed to fetch business data', {
+        userId,
+        error: error instanceof Error ? error.message : 'Unknown error'
+      });
       return null;
     }
   }
@@ -316,7 +319,9 @@ class BusinessDataService {
       return result;
       
     } catch (error) {
-      console.error('❌ Error analyzing business type:', error);
+      serviceLogger.error('Error analyzing business type', {
+        error: error instanceof Error ? error.message : 'Unknown error'
+      });
       return null;
     }
   }

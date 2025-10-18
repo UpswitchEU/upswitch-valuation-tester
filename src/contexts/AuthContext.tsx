@@ -224,7 +224,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         authLogger.info('No token or session - continuing as guest user');
       }
     } catch (err) {
-      console.error('❌ Auth initialization error:', err);
+      authLogger.error('Auth initialization error', {
+        error: err instanceof Error ? err.message : 'Unknown error'
+      });
       setError('Failed to initialize authentication');
     } finally {
       setIsLoading(false);
@@ -268,7 +270,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         throw new Error('Invalid response from token exchange');
       }
     } catch (err) {
-      console.error('❌ Token exchange error:', err);
+      authLogger.error('Token exchange error', {
+        error: err instanceof Error ? err.message : 'Unknown error'
+      });
       setError(err instanceof Error ? err.message : 'Token exchange failed');
       throw err;
     }
@@ -341,7 +345,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setUser(null);
       }
     } catch (err) {
-      console.error('❌ Session check error:', err);
+      authLogger.error('Session check error', {
+        error: err instanceof Error ? err.message : 'Unknown error'
+      });
       setUser(null);
     }
   };

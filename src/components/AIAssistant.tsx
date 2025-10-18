@@ -100,7 +100,9 @@ Ready to get your professional valuation?`,
       }
       
     } catch (error) {
-      console.error('Company search error:', error);
+      serviceLogger.error('Company search error', {
+        error: error instanceof Error ? error.message : 'Unknown error'
+      });
       
       // Remove loading message
       setMessages(prev => prev.filter(m => m.id !== loadingId));

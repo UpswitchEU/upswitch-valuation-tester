@@ -9,7 +9,7 @@ interface ContextualTipProps {
   };
 }
 
-export const ContextualTip: React.FC<ContextualTipProps> = ({ type, message, action }) => {
+export const ContextualTip: React.FC<ContextualTipProps> = React.memo(({ type, message, action }) => {
   const colorMap = {
     info: 'text-blue-400/70',
     success: 'text-green-400/70',
@@ -32,4 +32,4 @@ export const ContextualTip: React.FC<ContextualTipProps> = ({ type, message, act
       </p>
     </div>
   );
-};
+});
