@@ -62,7 +62,7 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
   const [messages, setMessages] = useState<Message[]>([{
     id: 'welcome',
     type: 'ai',
-    content: `Hello! I'm your ${AI_CONFIG.branding.expertTitle.toLowerCase()} with ${AI_CONFIG.branding.levelIndicator.toLowerCase()} expertise. I'll help you get a professional business valuation through our intelligent conversation. What's the name of your business?`,
+    content: `Hello! I'm your ${AI_CONFIG?.branding?.expertTitle?.toLowerCase() || 'ai valuation expert'} with ${AI_CONFIG?.branding?.levelIndicator?.toLowerCase() || 'big 4 level'} expertise. I'll help you get a professional business valuation through our intelligent conversation. What's the name of your business?`,
     timestamp: new Date(),
     isComplete: true,
     isStreaming: false,

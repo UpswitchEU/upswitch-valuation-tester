@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { CheckCircle, Save, ArrowLeft, Building2 } from 'lucide-react';
 import { StreamingChat } from './StreamingChat';
 import { LiveValuationReport } from './LiveValuationReport';
+import { ErrorBoundary } from './ErrorBoundary';
 import { businessDataService, type BusinessProfileData } from '../services/businessDataService';
 import { api } from '../services/api';
 import { useAuth } from '../hooks/useAuth';
@@ -267,15 +268,29 @@ export const AIAssistedValuation: React.FC = () => {
           {/* Chat - Always visible */}
           {(stage === 'chat' || stage === 'results') && (
             <div className="flex-1 overflow-y-auto">
-              <StreamingChat
-                sessionId={`session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`}
-                userId={user?.id}
-                onValuationComplete={handleValuationComplete}
-                onReportUpdate={handleReportUpdate}
-                onProgressUpdate={setProgressItems}
-                className="h-full"
-                placeholder="Ask about your business valuation..."
-              />
+              <ErrorBoundary fallback={
+                <div className="flex items-center justify-center h-full">
+                  <div className="text-center">
+                    <p className="text-zinc-400 mb-4">Chat temporarily unavailable. Please refresh.</p>
+                    <button
+                      onClick={() => window.location.reload()}
+                      className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700"
+                    >
+                      Refresh
+                    </button>
+                  </div>
+                </div>
+              }>
+                <StreamingChat
+                  sessionId={`session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`}
+                  userId={user?.id}
+                  onValuationComplete={handleValuationComplete}
+                  onReportUpdate={handleReportUpdate}
+                  onProgressUpdate={setProgressItems}
+                  className="h-full"
+                  placeholder="Ask about your business valuation..."
+                />
+              </ErrorBoundary>
             </div>
           )}
 
