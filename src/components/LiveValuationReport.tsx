@@ -1,0 +1,115 @@
+import React, { useState, useEffect } from 'react';
+import { Bot } from 'lucide-react';
+import { ValuationProgressTracker } from './ValuationProgressTracker';
+
+interface ProgressItem {
+  id: string;
+  label: string;
+  status: 'completed' | 'in_progress' | 'pending';
+}
+
+interface LiveValuationReportProps {
+  htmlContent: string;
+  isGenerating: boolean;
+  progress?: number;
+  progressItems?: ProgressItem[];
+}
+
+interface ReportSection {
+  id: string;
+  title: string;
+  level: number;
+}
+
+export const LiveValuationReport: React.FC<LiveValuationReportProps> = ({
+  htmlContent,
+  isGenerating,
+  progress = 0,
+  progressItems = []
+}) => {
+  const [sections, setSections] = useState<ReportSection[]>([]);
+
+  useEffect(() => {
+    if (!htmlContent) {
+      setSections([]);
+      return;
+    }
+
+    // Parse HTML to extract sections
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(htmlContent, 'text/html');
+    const headings = doc.querySelectorAll('h2, h3');
+    
+    const extractedSections = Array.from(headings).map((h, idx) => ({
+      id: `section-${idx}`,
+      title: h.textContent || '',
+      level: h.tagName === 'H2' ? 2 : 3
+    }));
+    
+    setSections(extractedSections);
+  }, [htmlContent]);
+
+  return (
+    <div className="h-full flex flex-col bg-white">
+      {/* Progress bar */}
+      {isGenerating && (
+        <div className="h-1 bg-zinc-200">
+          <div 
+            className="h-full bg-primary-500 transition-all duration-300"
+            style={{ width: `${progress}%` }}
+          />
+        </div>
+      )}
+      
+      {/* Table of Contents */}
+      {sections.length > 0 && (
+        <div className="sticky top-0 bg-white border-b border-zinc-200 p-4">
+          <h3 className="text-sm font-semibold text-zinc-700 mb-2">Report Sections</h3>
+          <nav className="space-y-1">
+            {sections.map(section => (
+              <a
+                key={section.id}
+                href={`#${section.id}`}
+                className={`block text-xs hover:text-primary-600 ${
+                  section.level === 3 ? 'pl-4' : ''
+                }`}
+              >
+                {section.title}
+              </a>
+            ))}
+          </nav>
+        </div>
+      )}
+      
+      {/* Report content */}
+      <div className="flex-1 overflow-y-auto p-6">
+        {htmlContent ? (
+          <div 
+            className="prose prose-sm max-w-none"
+            dangerouslySetInnerHTML={{ __html: htmlContent }}
+          />
+        ) : (
+          <div className="flex flex-col items-center justify-center h-full p-6">
+            <div className="w-full max-w-md">
+              <div className="text-center mb-8">
+                <Bot className="w-12 h-12 mx-auto mb-4 text-zinc-400 opacity-50" />
+                <h3 className="text-lg font-semibold text-zinc-700 mb-2">
+                  Building Your Valuation Report
+                </h3>
+                <p className="text-sm text-zinc-500">
+                  Your report will appear here as we gather information
+                </p>
+              </div>
+              
+              {progressItems && progressItems.length > 0 && (
+                <div className="bg-zinc-50 rounded-lg p-4 border border-zinc-200">
+                  <ValuationProgressTracker items={progressItems} compact={false} />
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};

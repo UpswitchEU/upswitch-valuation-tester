@@ -6,6 +6,9 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { Send, Loader2, Bot, User } from 'lucide-react';
 import { AI_CONFIG } from '../config';
+import { streamingChatService } from '../services/chat/streamingChatService';
+import { ContextualTip } from './ContextualTip';
+import { ValuationProgressTracker } from './ValuationProgressTracker';
 
 interface Message {
   id: string;
@@ -17,11 +20,19 @@ interface Message {
   metadata?: any;
 }
 
+interface ProgressItem {
+  id: string;
+  label: string;
+  status: 'completed' | 'in_progress' | 'pending';
+}
+
 interface StreamingChatProps {
   sessionId: string;
   userId?: string;
   onMessageComplete?: (message: Message) => void;
   onValuationComplete?: (result: any) => void;
+  onReportUpdate?: (htmlContent: string, progress: number) => void;
+  onProgressUpdate?: (items: ProgressItem[]) => void;
   className?: string;
   placeholder?: string;
   disabled?: boolean;
@@ -32,6 +43,8 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
   userId,
   onMessageComplete,
   onValuationComplete,
+  onReportUpdate,
+  onProgressUpdate,
   className = '',
   placeholder = "Ask about your business valuation...",
   disabled = false
@@ -39,6 +52,15 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [isStreaming, setIsStreaming] = useState(false);
+  const [progressItems, setProgressItems] = useState<ProgressItem[]>([
+    { id: 'company', label: 'Company Information', status: 'pending' },
+    { id: 'revenue', label: 'Revenue Data', status: 'pending' },
+    { id: 'profitability', label: 'Profitability Metrics', status: 'pending' },
+    { id: 'growth', label: 'Growth Trends', status: 'pending' },
+    { id: 'market', label: 'Market Position', status: 'pending' },
+    { id: 'assets', label: 'Assets & Liabilities', status: 'pending' },
+    { id: 'industry', label: 'Industry Benchmarks', status: 'pending' }
+  ]);
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const eventSourceRef = useRef<EventSource | null>(null);
@@ -83,7 +105,9 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
     const newMessage: Message = {
       ...message,
       id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
-      timestamp: new Date()
+      timestamp: new Date(),
+      isComplete: message.isComplete ?? false,
+      isStreaming: message.isStreaming ?? false
     };
     
     setMessages(prev => [...prev, newMessage]);
@@ -91,18 +115,17 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
   }, []);
 
   const updateStreamingMessage = useCallback((content: string, isComplete: boolean = false) => {
-    if (currentStreamingMessageRef.current && currentStreamingMessageRef.current.id) {
-      setMessages(prev => prev.map(msg => 
-        msg && msg.id === currentStreamingMessageRef.current!.id
-          ? { ...msg, content: msg.content + content, isComplete }
-          : msg
-      ));
-      
-      if (isComplete) {
-        currentStreamingMessageRef.current.isComplete = true;
-        onMessageComplete?.(currentStreamingMessageRef.current);
-        currentStreamingMessageRef.current = null;
-      }
+    if (!currentStreamingMessageRef.current?.id) return;
+    
+    setMessages(prev => prev.map(msg => 
+      msg?.id === currentStreamingMessageRef.current!.id
+        ? { ...msg, content: msg.content + content, isComplete, isStreaming: !isComplete }
+        : msg
+    ).filter(Boolean)); // Remove any null entries
+    
+    if (isComplete && currentStreamingMessageRef.current) {
+      onMessageComplete?.(currentStreamingMessageRef.current);
+      currentStreamingMessageRef.current = null;
     }
   }, [onMessageComplete]);
 
@@ -119,6 +142,26 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
       case 'message_chunk':
         // Stream content
         updateStreamingMessage(data.content);
+        break;
+        
+      case 'report_update':
+        // NEW: Update live report as sections are generated
+        onReportUpdate?.(data.html, data.progress);
+        break;
+        
+      case 'progress_update':
+        // Backend sends which items are collected
+        setProgressItems(prev => {
+          const updated = prev.map(item => 
+            data.collected_items?.includes(item.id)
+              ? { ...item, status: 'completed' as const }
+              : data.current_item === item.id
+              ? { ...item, status: 'in_progress' as const }
+              : item
+          );
+          onProgressUpdate?.(updated);
+          return updated;
+        });
         break;
         
       case 'message_complete':
@@ -138,7 +181,7 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
         updateStreamingMessage('', true);
         break;
     }
-  }, [updateStreamingMessage, onValuationComplete]);
+  }, [updateStreamingMessage, onValuationComplete, onReportUpdate]);
 
   const startStreaming = useCallback(async (userInput: string) => {
     if (!userInput.trim() || isStreaming) return;
@@ -163,82 +206,21 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
     currentStreamingMessageRef.current = aiMessage;
 
     try {
-      // Close existing connection
-      if (eventSourceRef.current) {
-        eventSourceRef.current.close();
+      // Use streaming service
+      for await (const event of streamingChatService.streamConversation(
+        sessionId,
+        userInput,
+        userId
+      )) {
+        handleStreamEvent(event);
       }
-
-      // Create streaming request using fetch with ReadableStream
-      const response = await fetch(
-        `${import.meta.env.VITE_VALUATION_ENGINE_URL || 'https://web-production-8d00b.up.railway.app'}/api/v1/intelligent-conversation/stream`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            session_id: sessionId,
-            user_input: userInput,
-            user_id: userId,
-            context: {
-              message_count: messages.length,  // ✅ Safe - only count
-              conversation_stage: Math.floor(messages.length / 2)  // ✅ Safe - stage only
-              // DO NOT send message content from frontend (privacy compliance)
-            }
-          })
-        }
-      );
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      const reader = response.body?.getReader();
-      if (!reader) {
-        throw new Error('No response body reader available');
-      }
-
-      const decoder = new TextDecoder();
-      let buffer = '';
-
-      const processStream = async () => {
-        try {
-          while (true) {
-            const { done, value } = await reader.read();
-            
-            if (done) {
-              break;
-            }
-
-            buffer += decoder.decode(value, { stream: true });
-            const lines = buffer.split('\n');
-            buffer = lines.pop() || '';
-
-            for (const line of lines) {
-              if (line.startsWith('data: ')) {
-                try {
-                  const data = JSON.parse(line.slice(6));
-                  handleStreamEvent(data);
-                } catch (parseError) {
-                  console.error('Failed to parse SSE data:', parseError);
-                }
-              }
-            }
-          }
-        } catch (error) {
-          console.error('Stream processing error:', error);
-          setIsStreaming(false);
-        }
-      };
-
-      processStream();
 
     } catch (error) {
       console.error('Failed to start streaming:', error);
       setIsStreaming(false);
       handleFallbackResponse(userInput);
     }
-  }, [sessionId, userId, messages, isStreaming, addMessage, updateStreamingMessage, onValuationComplete, handleStreamEvent]);
+  }, [sessionId, userId, isStreaming, addMessage, handleStreamEvent]);
 
   const handleFallbackResponse = useCallback((_userInput: string) => {
     // Fallback response when streaming fails
@@ -264,13 +246,136 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
     }
   }, [handleSubmit]);
 
+  const getSmartFollowUps = useCallback(() => {
+    const messageCount = messages.length;
+    const lastAiMessage = messages.filter(m => m.type === 'ai').slice(-1)[0];
+    const lastAiContent = lastAiMessage?.content.toLowerCase() || '';
+    
+    // Smart responses based on AI's last question
+    if (lastAiContent.includes('revenue') || lastAiContent.includes('turnover')) {
+      return [
+        "€100K - €500K",
+        "€500K - €1M",
+        "€1M - €5M",
+        "€5M+"
+      ];
+    }
+    
+    if (lastAiContent.includes('profit') || lastAiContent.includes('ebitda')) {
+      return [
+        "10-20% margin",
+        "20-30% margin",
+        "30%+ margin",
+        "Not profitable yet"
+      ];
+    }
+    
+    if (lastAiContent.includes('industry') || lastAiContent.includes('sector')) {
+      return [
+        "Technology/SaaS",
+        "E-commerce/Retail",
+        "Professional Services",
+        "Manufacturing"
+      ];
+    }
+    
+    if (lastAiContent.includes('growth') || lastAiContent.includes('growing')) {
+      return [
+        "Growing 20%+ YoY",
+        "Growing 10-20% YoY",
+        "Stable (0-10%)",
+        "Declining"
+      ];
+    }
+    
+    if (lastAiContent.includes('employees') || lastAiContent.includes('team')) {
+      return [
+        "1-10 employees",
+        "11-50 employees",
+        "51-200 employees",
+        "200+ employees"
+      ];
+    }
+    
+    // Default contextual suggestions based on stage
+    if (messageCount <= 2) {
+      return [
+        "What is my business worth?",
+        "How do you calculate valuation?",
+        "What information do you need?"
+      ];
+    } else if (messageCount <= 5) {
+      return [
+        "Can you explain the methodology?",
+        "What are industry benchmarks?",
+        "How accurate is this valuation?"
+      ];
+    } else {
+      return [
+        "Generate full report",
+        "Compare to similar businesses",
+        "What affects my valuation?"
+      ];
+    }
+  }, [messages]);
+
+  const getContextualTip = useCallback(() => {
+    const messageCount = messages.length;
+    const lastAiMessage = messages.filter(m => m.type === 'ai').slice(-1)[0];
+    
+    // Early stage tips
+    if (messageCount <= 2) {
+      return {
+        type: 'info' as const,
+        message: '💡 Tip: Providing your annual revenue and EBITDA will significantly speed up the valuation process.'
+      };
+    }
+    
+    // Mid-conversation tips based on AI questions
+    if (lastAiMessage?.content.toLowerCase().includes('revenue')) {
+      return {
+        type: 'info' as const,
+        message: '💡 Tip: Include your last 3 years of revenue for a more accurate trend analysis.'
+      };
+    }
+    
+    if (lastAiMessage?.content.toLowerCase().includes('industry') || 
+        lastAiMessage?.content.toLowerCase().includes('sector')) {
+      return {
+        type: 'insight' as const,
+        message: '📊 Industry benchmarks will be automatically applied based on your sector.'
+      };
+    }
+    
+    // Progress-based tips
+    if (messageCount > 5 && messageCount <= 8) {
+      return {
+        type: 'success' as const,
+        message: '✅ Great progress! We have enough information to start building your valuation report.'
+      };
+    }
+    
+    if (messageCount > 8) {
+      return {
+        type: 'insight' as const,
+        message: '🎯 You can ask for the full report anytime by typing "Generate full report".'
+      };
+    }
+    
+    return null;
+  }, [messages]);
 
   return (
     <div className={`flex flex-col h-full bg-gradient-to-br from-zinc-900 via-zinc-800 to-zinc-900 rounded-lg shadow-lg ${className}`}>
 
+      {/* Progress header */}
+      <div className="border-b border-zinc-800 p-4">
+        <ValuationProgressTracker items={progressItems} compact={true} />
+      </div>
+
       {/* Messages */}
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
-        {messages.filter(msg => msg && msg.id).map((message) => (
+        {messages.map((message) => (
           <div
             key={message.id}
             className={`flex ${message.type === 'user' ? 'justify-end' : 'justify-start'}`}
@@ -351,6 +456,13 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
         <div ref={messagesEndRef} />
       </div>
 
+      {/* Contextual tip */}
+      {getContextualTip() && (
+        <div className="px-4 pb-2">
+          <ContextualTip {...getContextualTip()!} />
+        </div>
+      )}
+
       {/* Input */}
       <div className="p-4 border-t border-zinc-800">
         <form
@@ -373,20 +485,17 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
 
           {/* Action buttons row */}
           <div className="flex gap-2 flex-wrap items-center">
-            <button
-              type="button"
-              onClick={() => setInput('What is my business worth?')}
-              className="px-3 py-1.5 bg-zinc-800/50 hover:bg-zinc-700/60 border border-zinc-700/50 hover:border-zinc-600/60 rounded-full text-xs text-zinc-300 hover:text-white transition-all duration-200 hover:shadow-md hover:shadow-black/20"
-            >
-              What is my business worth?
-            </button>
-            <button
-              type="button"
-              onClick={() => setInput('How do you calculate valuation?')}
-              className="px-3 py-1.5 bg-zinc-800/50 hover:bg-zinc-700/60 border border-zinc-700/50 hover:border-zinc-600/60 rounded-full text-xs text-zinc-300 hover:text-white transition-all duration-200 hover:shadow-md hover:shadow-black/20"
-            >
-              How do you calculate valuation?
-            </button>
+            {getSmartFollowUps().map((suggestion, idx) => (
+              <button
+                key={idx}
+                type="button"
+                onClick={() => setInput(suggestion)}
+                disabled={isStreaming}
+                className="px-3 py-1.5 bg-zinc-800/50 hover:bg-zinc-700/60 border border-zinc-700/50 hover:border-zinc-600/60 rounded-full text-xs text-zinc-300 hover:text-white transition-all duration-200 hover:shadow-md hover:shadow-black/20 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {suggestion}
+              </button>
+            ))}
             
             {/* Right side with send button */}
             <div className="flex flex-grow items-center justify-end gap-2">

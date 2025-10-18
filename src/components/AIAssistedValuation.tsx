@@ -2,10 +2,17 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { TrendingUp, CheckCircle, Save, ArrowLeft, Building2 } from 'lucide-react';
 import { StreamingChat } from './StreamingChat';
+import { LiveValuationReport } from './LiveValuationReport';
 import { businessDataService, type BusinessProfileData } from '../services/businessDataService';
 import { api } from '../services/api';
 import { useAuth } from '../hooks/useAuth';
 import type { ValuationResponse } from '../types/valuation';
+
+interface ProgressItem {
+  id: string;
+  label: string;
+  status: 'completed' | 'in_progress' | 'pending';
+}
 
 type FlowStage = 'chat' | 'results';
 
@@ -20,6 +27,17 @@ export const AIAssistedValuation: React.FC = () => {
   const [businessProfile, setBusinessProfile] = useState<BusinessProfileData | null>(null);
   const [isLoadingProfile, setIsLoadingProfile] = useState(true);
   const [profileError, setProfileError] = useState<string | null>(null);
+
+  // NEW: Live HTML report state
+  const [liveHtmlReport, setLiveHtmlReport] = useState<string>('');
+  const [reportProgress, setReportProgress] = useState<number>(0);
+  const [progressItems, setProgressItems] = useState<ProgressItem[]>([]);
+
+  // NEW: Handle live report updates from streaming
+  const handleReportUpdate = useCallback((htmlContent: string, progress: number) => {
+    setLiveHtmlReport(htmlContent);
+    setReportProgress(progress);
+  }, []);
 
   // NEW: Start intelligent conversation with pre-filled data
   const startIntelligentConversation = useCallback(async (profileData: BusinessProfileData) => {
@@ -253,6 +271,8 @@ export const AIAssistedValuation: React.FC = () => {
                 sessionId={`session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`}
                 userId={user?.id}
                 onValuationComplete={handleValuationComplete}
+                onReportUpdate={handleReportUpdate}
+                onProgressUpdate={setProgressItems}
                 className="h-full"
                 placeholder="Ask about your business valuation..."
               />
@@ -261,19 +281,14 @@ export const AIAssistedValuation: React.FC = () => {
 
         </div>
 
-        {/* Right Panel: Preview/Results (40% on desktop, full width on mobile below chat) */}
+        {/* Right Panel: Live Report (40% on desktop, full width on mobile below chat) */}
         <div className="h-full min-h-[400px] lg:min-h-0 flex flex-col bg-white overflow-y-auto w-full lg:w-[40%] border-t lg:border-t-0 border-zinc-800">
-          {stage === 'chat' && !valuationResult && (
-            <div className="flex flex-col items-center justify-center h-full p-6 sm:p-8 text-center">
-              <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-zinc-100 flex items-center justify-center mb-3 sm:mb-4">
-                <TrendingUp className="w-6 h-6 sm:w-8 sm:h-8 text-zinc-400" />
-              </div>
-              <h3 className="text-base sm:text-lg font-semibold text-zinc-900 mb-2">Valuation Preview</h3>
-              <p className="text-xs sm:text-sm text-zinc-500 max-w-xs">
-                Your valuation report will appear here once the conversation is complete.
-              </p>
-            </div>
-          )}
+          <LiveValuationReport
+            htmlContent={liveHtmlReport}
+            isGenerating={stage === 'chat'}
+            progress={reportProgress}
+            progressItems={progressItems}
+          />
 
 
           {stage === 'results' && valuationResult && (
