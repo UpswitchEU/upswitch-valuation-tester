@@ -8,12 +8,10 @@ interface StreamEvent {
 
 export class StreamingChatService {
   private baseURL: string;
-  private timeout: number;
 
   constructor() {
     this.baseURL = import.meta.env.VITE_VALUATION_ENGINE_URL || 
                    'https://upswitch-valuation-engine-production.up.railway.app';
-    this.timeout = 30000;
   }
 
   async *streamConversation(

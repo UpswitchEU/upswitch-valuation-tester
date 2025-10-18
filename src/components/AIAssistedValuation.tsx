@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { TrendingUp, CheckCircle, Save, ArrowLeft, Building2 } from 'lucide-react';
+import { CheckCircle, Save, ArrowLeft, Building2 } from 'lucide-react';
 import { StreamingChat } from './StreamingChat';
 import { LiveValuationReport } from './LiveValuationReport';
 import { businessDataService, type BusinessProfileData } from '../services/businessDataService';
