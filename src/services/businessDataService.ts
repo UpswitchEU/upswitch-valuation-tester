@@ -13,6 +13,7 @@ import type {
   ConversationStartRequest,
   BusinessTypeAnalysis 
 } from '../types/valuation';
+import { serviceLogger } from '../utils/logger';
 
 export interface BusinessProfileData {
   user_id: string;
@@ -69,7 +70,7 @@ class BusinessDataService {
    */
   async fetchUserBusinessData(userId: string): Promise<BusinessProfileData | null> {
     try {
-      console.log(`📋 Fetching business profile for user: ${userId}`);
+      serviceLogger.debug('Fetching business profile for user', { userId });
       
       const response = await fetch(`${this.backendUrl}/api/users/${userId}/business-profile`, {
         method: 'GET',
@@ -81,7 +82,7 @@ class BusinessDataService {
 
       if (!response.ok) {
         if (response.status === 404) {
-          console.log('ℹ️ No business profile found for user');
+          serviceLogger.info('No business profile found for user', { userId });
           return null;
         }
         throw new Error(`Failed to fetch business profile: ${response.statusText}`);
@@ -93,7 +94,7 @@ class BusinessDataService {
         throw new Error(result.error || 'Failed to fetch business profile');
       }
 
-      console.log('✅ Business profile fetched successfully:', result.data);
+      serviceLogger.info('Business profile fetched successfully', { data: result.data });
       return result.data;
       
     } catch (error) {

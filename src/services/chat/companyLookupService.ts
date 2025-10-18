@@ -12,6 +12,7 @@
 
 import { ValuationChatController, type CompanySearchResponse, type HealthStatus } from '../../controllers/chat/valuationChatController';
 import type { CompanyFinancialData } from '../../types/registry';
+import { serviceLogger } from '../../utils/logger';
 
 export interface ChatMessage {
   id: string;
@@ -38,7 +39,7 @@ export class CompanyLookupService {
 
   constructor() {
     this.controller = new ValuationChatController();
-    console.log('💼 CompanyLookupService initialized');
+    serviceLogger.info('CompanyLookupService initialized');
   }
 
   /**
@@ -47,7 +48,8 @@ export class CompanyLookupService {
    */
   async processMessage(message: string, country: string = 'BE'): Promise<LookupResult> {
     const requestId = `lookup_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-    console.log(`💬 [${requestId}] Processing message:`, {
+    serviceLogger.debug('Processing message', {
+      requestId,
       messagePreview: message.substring(0, 100),
       country,
       timestamp: new Date().toISOString(),
@@ -68,14 +70,15 @@ export class CompanyLookupService {
 
       // Step 2: Get best match
       const bestMatch = searchResponse.results[0];
-      console.log(`🎯 [${requestId}] Best match:`, {
+      serviceLogger.info('Best match found', {
+        requestId,
         companyName: bestMatch.company_name,
         companyId: bestMatch.company_id,
       });
 
       // Step 3: Validate company ID
       if (!this.controller.isValidCompanyId(bestMatch.company_id, country)) {
-        console.log(`⚠️ [${requestId}] Mock/suggestion result detected - data sources unavailable`);
+        serviceLogger.warn('Mock/suggestion result detected - data sources unavailable', { requestId });
         
         // Filter out invalid suggestions (search strategy suggestions, not real companies)
         const realCompanies = searchResponse.results.filter(result => {
@@ -148,7 +151,8 @@ Please type the exact name or try:
           country
         );
 
-        console.log(`✅ [${requestId}] Company lookup complete:`, {
+        serviceLogger.info('Company lookup complete', {
+          requestId,
           companyName: financialData.company_name,
           yearsOfData: financialData.filing_history?.length || 0,
         });
@@ -178,7 +182,7 @@ Please type the exact name or try:
           completeness_score: 0.3, // Low score since no financials
         };
         
-        console.log(`⚠️ [${requestId}] Returning company with no financial data - will trigger conversational input`);
+        serviceLogger.warn('Returning company with no financial data - will trigger conversational input', { requestId });
         
         return {
           success: true, // Mark as success so frontend transitions to financial input

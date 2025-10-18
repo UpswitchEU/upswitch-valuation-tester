@@ -1,5 +1,6 @@
 import axios from 'axios';
 import { API_CONFIG } from '../config';
+import { serviceLogger } from '../utils/logger';
 
 // In-memory cache for company lookups
 const companyCache = new Map<string, { data: any; timestamp: number }>();
@@ -79,7 +80,7 @@ export const fetchCompanyFinancials = async (
   
   // Check if we have valid cached data
   if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
-    console.log('✅ Using cached company data');
+    serviceLogger.debug('Using cached company data');
     return cached.data;
   }
   
@@ -88,7 +89,7 @@ export const fetchCompanyFinancials = async (
     
     // Cache the result
     companyCache.set(cacheKey, { data: response.data, timestamp: Date.now() });
-    console.log('💾 Company data cached');
+    serviceLogger.debug('Company data cached');
     
     return response.data;
   } catch (error) {

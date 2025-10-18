@@ -12,6 +12,7 @@
  */
 
 import type { CompanyFinancialData } from '../../types/registry';
+import { apiLogger } from '../../utils/logger';
 
 export interface CompanySearchResult {
   company_id: string;
@@ -43,7 +44,7 @@ export class ValuationChatController {
     this.baseUrl = import.meta.env.VITE_VALUATION_ENGINE_URL || 
                    import.meta.env.VITE_VALUATION_API_URL || 
                    'https://upswitch-valuation-engine-production.up.railway.app';
-    console.log('🎮 ValuationChatController initialized with baseUrl:', this.baseUrl);
+    apiLogger.info('ValuationChatController initialized', { baseUrl: this.baseUrl });
   }
 
   /**
@@ -52,7 +53,7 @@ export class ValuationChatController {
    */
   async searchCompany(query: string, country: string = 'BE'): Promise<CompanySearchResponse> {
     const requestId = `search_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-    console.log(`🔍 [${requestId}] Searching for company:`, { query, country });
+    apiLogger.debug(`Searching for company`, { requestId, query, country });
 
     try {
       const response = await fetch(`${this.baseUrl}/api/registry/search`, {
@@ -80,7 +81,8 @@ export class ValuationChatController {
       }
 
       const data = await response.json();
-      console.log(`✅ [${requestId}] Search successful:`, {
+      apiLogger.info(`Search successful`, {
+        requestId,
         resultsCount: data.results?.length || data.length || 0,
         timestamp: new Date().toISOString()
       });
@@ -118,7 +120,7 @@ export class ValuationChatController {
     country: string = 'BE'
   ): Promise<CompanyFinancialData> {
     const requestId = `financials_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-    console.log(`📊 [${requestId}] Fetching financials:`, { companyId, country });
+    apiLogger.debug(`Fetching financials`, { requestId, companyId, country });
 
     try {
       const response = await fetch(`${this.baseUrl}/api/registry/financials`, {
@@ -146,7 +148,8 @@ export class ValuationChatController {
       }
 
       const data = await response.json();
-      console.log(`✅ [${requestId}] Financials received:`, {
+      apiLogger.info(`Financials received`, {
+        requestId,
         companyName: data.company_name,
         yearsOfData: data.filing_history?.length || 0,
         timestamp: new Date().toISOString()
@@ -187,7 +190,7 @@ export class ValuationChatController {
         requestId,
       };
 
-      console.log(`💚 [${requestId}] Health check:`, healthStatus);
+      apiLogger.info(`Health check`, { requestId, healthStatus });
       
       return healthStatus;
     } catch (error) {
