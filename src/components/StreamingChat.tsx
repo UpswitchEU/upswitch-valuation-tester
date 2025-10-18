@@ -10,6 +10,16 @@ import { streamingChatService } from '../services/chat/streamingChatService';
 import { ContextualTip } from './ContextualTip';
 import { ValuationProgressTracker } from './ValuationProgressTracker';
 
+// Type guard to ensure message is valid
+const isValidMessage = (msg: any): msg is Message => {
+  return msg !== null && 
+         msg !== undefined && 
+         typeof msg === 'object' &&
+         'id' in msg &&
+         'type' in msg &&
+         'content' in msg;
+};
+
 interface Message {
   id: string;
   type: 'user' | 'ai' | 'system';
@@ -110,18 +120,21 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
       isStreaming: message.isStreaming ?? false
     };
     
-    setMessages(prev => [...prev, newMessage]);
+    setMessages(prev => [...prev.filter(Boolean), newMessage]);
     return newMessage;
   }, []);
 
   const updateStreamingMessage = useCallback((content: string, isComplete: boolean = false) => {
     if (!currentStreamingMessageRef.current?.id) return;
     
-    setMessages(prev => prev.map(msg => 
-      msg?.id === currentStreamingMessageRef.current!.id
-        ? { ...msg, content: msg.content + content, isComplete, isStreaming: !isComplete }
-        : msg
-    ).filter(Boolean)); // Remove any null entries
+    setMessages(prev => prev
+      .filter(isValidMessage) // Use type guard - filter nulls BEFORE mapping
+      .map(msg => 
+        msg.id === currentStreamingMessageRef.current!.id
+          ? { ...msg, content: msg.content + content, isComplete, isStreaming: !isComplete }
+          : msg
+      )
+    );
     
     if (isComplete && currentStreamingMessageRef.current) {
       onMessageComplete?.(currentStreamingMessageRef.current);
@@ -219,9 +232,17 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
       console.error('Failed to start streaming:', error);
       setIsStreaming(false);
       
-      // Complete the streaming message properly
-      if (currentStreamingMessageRef.current) {
-        updateStreamingMessage('', true);
+      // Safely complete the streaming message
+      if (currentStreamingMessageRef.current?.id) {
+        setMessages(prev => prev
+          .filter(isValidMessage)
+          .map(msg => 
+            msg.id === currentStreamingMessageRef.current!.id
+              ? { ...msg, isComplete: true, isStreaming: false }
+              : msg
+          )
+        );
+        currentStreamingMessageRef.current = null;
       }
       
       // Show user-friendly error message
