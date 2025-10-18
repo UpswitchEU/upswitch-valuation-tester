@@ -261,4 +261,3 @@ When frontend documentation needs to reference backend concepts:
 
 ---
 
-**Questions?** Start with the appropriate category above, or see [../README.md](../README.md) for the main application README.

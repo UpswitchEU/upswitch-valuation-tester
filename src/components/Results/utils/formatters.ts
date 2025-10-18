@@ -1,0 +1,29 @@
+/**
+ * Currency and number formatting utilities for Results components
+ */
+
+export const formatCurrency = (value: number): string => {
+  return new Intl.NumberFormat('de-DE', {
+    style: 'currency',
+    currency: 'EUR',
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  }).format(value);
+};
+
+export const formatCurrencyCompact = (value: number): string => {
+  if (value >= 1000000) {
+    return `€${(value / 1000000).toFixed(1)}M`;
+  } else if (value >= 1000) {
+    return `€${(value / 1000).toFixed(0)}K`;
+  }
+  return formatCurrency(value);
+};
+
+export const formatPercent = (value: number): string => {
+  return `${value.toFixed(1)}%`;
+};
+
+export const formatNumber = (value: number): string => {
+  return new Intl.NumberFormat('de-DE').format(value);
+};
