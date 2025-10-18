@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { CheckCircle, Shield, MessageCircle } from 'lucide-react';
 import { DataRoomUpload } from './DataRoomUpload';
-import { ConversationUI } from './ConversationUI';
+import { StreamingChat } from './StreamingChat';
 import { useValuationStore } from '../store/useValuationStore';
 
 type Step = 1 | 2;
@@ -193,13 +193,18 @@ export const TwoStepFlow: React.FC<TwoStepFlowProps> = ({ onValuationComplete })
 
           {currentStep === 2 && (
             <div className="animate-fadeIn">
-              <ConversationUI
-                companyId={uploadedData?.company_id || uploadedData?.company_name || "BE0000000000"}
-                onComplete={handleConversationComplete}
-                onError={(err) => {
-                  console.error('Conversation error:', err);
-                  // TODO: Show error toast to user
+              <StreamingChat
+                sessionId={`session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`}
+                userId={undefined}
+                onValuationComplete={handleConversationComplete}
+                onReportUpdate={(_htmlContent, _progress) => {
+                  // Handle live report updates if needed
                 }}
+                onProgressUpdate={(_items) => {
+                  // Handle progress updates if needed
+                }}
+                className="h-full"
+                placeholder="Let's complete your valuation with some additional questions..."
               />
             </div>
           )}
