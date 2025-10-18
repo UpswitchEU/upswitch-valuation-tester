@@ -59,7 +59,18 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
   placeholder = "Ask about your business valuation...",
   disabled = false
 }) => {
-  const [messages, setMessages] = useState<Message[]>([]);
+  const [messages, setMessages] = useState<Message[]>([{
+    id: 'welcome',
+    type: 'ai',
+    content: `Hello! I'm your ${AI_CONFIG.branding.expertTitle.toLowerCase()} with ${AI_CONFIG.branding.levelIndicator.toLowerCase()} expertise. I'll help you get a professional business valuation through our intelligent conversation. What's the name of your business?`,
+    timestamp: new Date(),
+    isComplete: true,
+    isStreaming: false,
+    metadata: {
+      reasoning: "Starting with company identification to establish context for valuation",
+      help_text: "Please provide your company's legal name as it appears on official documents"
+    }
+  }]);
   const [input, setInput] = useState('');
   const [isStreaming, setIsStreaming] = useState(false);
   const [progressItems, setProgressItems] = useState<ProgressItem[]>([
@@ -85,22 +96,6 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
     scrollToBottom();
   }, [messages, scrollToBottom]);
 
-  // Initialize with welcome message
-  useEffect(() => {
-    if (messages.length === 0) {
-      setMessages([{
-        id: 'welcome',
-        type: 'ai',
-        content: `Hello! I'm your ${AI_CONFIG.branding.expertTitle.toLowerCase()} with ${AI_CONFIG.branding.levelIndicator.toLowerCase()} expertise. I'll help you get a professional business valuation through our intelligent conversation. What's the name of your business?`,
-        timestamp: new Date(),
-        isComplete: true,
-        metadata: {
-          reasoning: "Starting with company identification to establish context for valuation",
-          help_text: "Please provide your company's legal name as it appears on official documents"
-        }
-      }]);
-    }
-  }, [messages.length]);
 
   // Cleanup on unmount
   useEffect(() => {
@@ -397,7 +392,7 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
 
       {/* Messages */}
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
-        {messages.map((message) => (
+        {messages.filter(isValidMessage).map((message) => (
           <div
             key={message.id}
             className={`flex ${message.type === 'user' ? 'justify-end' : 'justify-start'}`}
