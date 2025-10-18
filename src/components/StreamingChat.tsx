@@ -218,17 +218,21 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
     } catch (error) {
       console.error('Failed to start streaming:', error);
       setIsStreaming(false);
-      handleFallbackResponse(userInput);
+      
+      // Complete the streaming message properly
+      if (currentStreamingMessageRef.current) {
+        updateStreamingMessage('', true);
+      }
+      
+      // Show user-friendly error message
+      addMessage({
+        type: 'system',
+        content: 'Connection error. Please check your internet connection and try again.',
+        isComplete: true
+      });
     }
   }, [sessionId, userId, isStreaming, addMessage, handleStreamEvent]);
 
-  const handleFallbackResponse = useCallback((_userInput: string) => {
-    // Fallback response when streaming fails
-    setTimeout(() => {
-      const fallbackResponse = "I understand you're looking for a business valuation. Let me help you with that. Could you tell me your company's annual revenue?";
-      updateStreamingMessage(fallbackResponse, true);
-    }, 1000);
-  }, [updateStreamingMessage]);
 
   const handleSubmit = useCallback((e: React.FormEvent) => {
     e.preventDefault();
@@ -323,19 +327,16 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
     const messageCount = messages.length;
     const lastAiMessage = messages.filter(m => m.type === 'ai').slice(-1)[0];
     
-    // Early stage tips
-    if (messageCount <= 2) {
-      return {
-        type: 'info' as const,
-        message: '💡 Tip: Providing your annual revenue and EBITDA will significantly speed up the valuation process.'
-      };
+    // Skip tips at the very start - only show when contextually relevant
+    if (messageCount < 2) {
+      return null;
     }
     
     // Mid-conversation tips based on AI questions
     if (lastAiMessage?.content.toLowerCase().includes('revenue')) {
       return {
         type: 'info' as const,
-        message: '💡 Tip: Include your last 3 years of revenue for a more accurate trend analysis.'
+        message: 'Tip: Include 3 years of revenue for better trend analysis'
       };
     }
     
@@ -343,7 +344,7 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
         lastAiMessage?.content.toLowerCase().includes('sector')) {
       return {
         type: 'insight' as const,
-        message: '📊 Industry benchmarks will be automatically applied based on your sector.'
+        message: 'Industry benchmarks will be applied automatically'
       };
     }
     
@@ -351,14 +352,14 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
     if (messageCount > 5 && messageCount <= 8) {
       return {
         type: 'success' as const,
-        message: '✅ Great progress! We have enough information to start building your valuation report.'
+        message: 'Great progress! Enough info to start building your report'
       };
     }
     
     if (messageCount > 8) {
       return {
         type: 'insight' as const,
-        message: '🎯 You can ask for the full report anytime by typing "Generate full report".'
+        message: 'You can request the full report anytime'
       };
     }
     
@@ -485,7 +486,7 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
 
           {/* Action buttons row */}
           <div className="flex gap-2 flex-wrap items-center">
-            {getSmartFollowUps().map((suggestion, idx) => (
+            {getSmartFollowUps().filter(Boolean).map((suggestion, idx) => (
               <button
                 key={idx}
                 type="button"
