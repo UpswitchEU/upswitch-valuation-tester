@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import type { ValuationRequest, ValuationResponse, QuickValuationRequest, ValuationFormData } from '../types/valuation';
 import { api } from '../services/api';
+import { storeLogger } from '../utils/logger';
 // import { useReportsStore } from './useReportsStore'; // Deprecated: Now saving to database
 
 interface ValuationStore {
@@ -181,7 +182,7 @@ export const useValuationStore = create<ValuationStore>((set, get) => ({
         comparables: formData.comparables || [],
       };
       
-      console.log('Sending valuation request:', request);
+      storeLogger.info('Sending valuation request', { companyName: request.company_name });
       const response = await api.calculateValuation(request);
       setResult(response);
       
@@ -190,10 +191,10 @@ export const useValuationStore = create<ValuationStore>((set, get) => ({
       try {
         const saveResult = await get().saveToBackend();
         if (saveResult) {
-          console.log('✅ Valuation auto-saved to database:', saveResult.id);
+          storeLogger.info('Valuation auto-saved to database', { valuationId: saveResult.id });
         }
       } catch (saveError) {
-        console.warn('⚠️ Failed to auto-save to database:', saveError);
+        storeLogger.warn('Failed to auto-save to database', { error: saveError });
         // Don't fail the whole operation - valuation still calculated successfully
       }
       
@@ -206,8 +207,10 @@ export const useValuationStore = create<ValuationStore>((set, get) => ({
       //   form_data: formData,
       // });
     } catch (error: any) {
-      console.error('Valuation error:', error);
-      console.error('Error response:', error.response?.data);
+      storeLogger.error('Valuation error', { 
+        error: error instanceof Error ? error.message : 'Unknown error',
+        response: error.response?.data 
+      });
       
       // Extract detailed error message
       let errorMessage = 'Failed to calculate valuation';
@@ -252,7 +255,9 @@ export const useValuationStore = create<ValuationStore>((set, get) => ({
       setLiveEstimate(response);
     } catch (error: any) {
       // Silently fail for live preview
-      console.error('Quick valuation failed:', error);
+      storeLogger.error('Quick valuation failed', {
+        error: error instanceof Error ? error.message : 'Unknown error'
+      });
     } finally {
       setIsCalculatingLive(false);
     }
@@ -266,12 +271,12 @@ export const useValuationStore = create<ValuationStore>((set, get) => ({
     const { result, formData, setSavedValuationId, setError } = get();
     
     if (!result) {
-      console.warn('⚠️ No valuation result to save');
+      storeLogger.warn('No valuation result to save');
       return null;
     }
     
     try {
-      console.log('💾 Saving valuation to backend...');
+      storeLogger.info('Saving valuation to backend');
       
       // Use environment variable for backend URL (Node.js backend for auth & saving)
       const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 
@@ -304,7 +309,7 @@ export const useValuationStore = create<ValuationStore>((set, get) => ({
       
       if (data.success && data.data?.id) {
         setSavedValuationId(data.data.id);
-        console.log('✅ Valuation saved successfully:', data.data.id);
+        storeLogger.info('Valuation saved successfully', { valuationId: data.data.id });
         
         // Notify parent window via PostMessage
         if (window.opener || window.parent !== window) {
@@ -320,13 +325,13 @@ export const useValuationStore = create<ValuationStore>((set, get) => ({
           // Try to send to opener (new window)
           if (window.opener && !window.opener.closed) {
             window.opener.postMessage(message, targetOrigin);
-            console.log('📤 PostMessage sent to opener window');
+            storeLogger.debug('PostMessage sent to opener window');
           }
           
           // Try to send to parent (iframe)
           if (window.parent !== window) {
             window.parent.postMessage(message, targetOrigin);
-            console.log('📤 PostMessage sent to parent window');
+            storeLogger.debug('PostMessage sent to parent window');
           }
         }
         
@@ -335,7 +340,9 @@ export const useValuationStore = create<ValuationStore>((set, get) => ({
         throw new Error('Invalid response from server');
       }
     } catch (error: any) {
-      console.error('❌ Failed to save valuation:', error);
+      storeLogger.error('Failed to save valuation', {
+        error: error instanceof Error ? error.message : 'Unknown error'
+      });
       setError(error.message || 'Failed to save valuation to backend');
       return null;
     }

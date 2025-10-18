@@ -35,6 +35,16 @@ export const ValuationProgressTracker: React.FC<ValuationProgressTrackerProps> =
 
   return (
     <div className="space-y-2">
+      {/* Progress announcements for screen readers */}
+      <div 
+        role="progressbar" 
+        aria-valuenow={completedCount} 
+        aria-valuemin={0} 
+        aria-valuemax={items.length}
+        aria-label={`Valuation progress: ${completedCount} of ${items.length} steps completed`}
+        className="sr-only"
+      />
+      
       <div className="flex items-center justify-between text-xs mb-3">
         <span className="font-medium text-zinc-300">Information Collected</span>
         <span className="text-zinc-400">{completedCount} of {items.length}</span>

@@ -92,7 +92,7 @@ const SIZE_CONFIG = {
   md: 'text-xs px-2 py-1 gap-1',
 };
 
-export const DataSourceBadge: React.FC<DataSourceBadgeProps> = ({
+export const DataSourceBadge: React.FC<DataSourceBadgeProps> = React.memo(({
   source,
   confidence,
   tooltip,
@@ -155,5 +155,5 @@ export const DataSourceBadge: React.FC<DataSourceBadgeProps> = ({
       )}
     </div>
   );
-};
+});
 

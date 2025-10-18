@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Send, Loader2, DollarSign } from 'lucide-react';
+import { serviceLogger } from '../utils/logger';
 
 interface ConversationalFinancialInputProps {
   companyId: string;
@@ -139,7 +140,9 @@ ${nextQ.question}
         }, 2000);
       }
     } catch (error) {
-      console.error('Financial input error:', error);
+      serviceLogger.error('Financial input error', {
+        error: error instanceof Error ? error.message : 'Unknown error'
+      });
       onError('Failed to process financial data');
     } finally {
       setIsProcessing(false);

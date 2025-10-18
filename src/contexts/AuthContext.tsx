@@ -7,6 +7,7 @@
 
 import React, { useEffect, useState, useCallback } from 'react';
 import { AuthContext, AuthContextType, User } from './AuthContextTypes';
+import { authLogger } from '../utils/logger';
 
 // =============================================================================
 // TYPES
@@ -146,14 +147,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // Compute business card data from user
   const businessCard = React.useMemo(() => {
     if (!user) {
-      console.log('ℹ️ No business card: continuing as guest user');
+      authLogger.info('No business card: continuing as guest user');
       return null;
     }
     
     // Check if user has any business profile data
     const hasBusinessData = user.company_name || user.business_type || user.industry;
     if (!hasBusinessData) {
-      console.log('❌ No business card: no business profile data', { 
+      authLogger.warn('No business card: no business profile data', { 
         hasUser: !!user, 
         companyName: user?.company_name,
         businessType: user?.business_type,
@@ -173,7 +174,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       employee_count: parseEmployeeCount(user.employee_count_range),
     };
     
-    console.log('✅ Business card computed:', card);
+    authLogger.debug('Business card computed', { card });
     return card;
   }, [user]);
 
@@ -195,12 +196,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       // First, try to check for existing session cookie (cross-subdomain)
       // This allows users already logged into upswitch.biz to be automatically authenticated
-      console.log('🔍 Checking for existing session cookie (cross-subdomain)...');
+      authLogger.debug('Checking for existing session cookie (cross-subdomain)');
       await checkSession();
       
       // If session check succeeded, we're done
       if (user) {
-        console.log('✅ Existing session found via cookie - user already authenticated');
+        authLogger.info('Existing session found via cookie - user already authenticated');
         setIsLoading(false);
         return;
       }
@@ -210,20 +211,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const token = params.get('token');
 
       if (token) {
-        console.log('🔑 Token found in URL - user coming from upswitch.biz');
-        console.log('🔄 Exchanging token for authenticated session...');
+        authLogger.info('Token found in URL - user coming from upswitch.biz');
+        authLogger.info('Exchanging token for authenticated session');
         await exchangeToken(token);
         
         // Remove token from URL for security
         const newUrl = window.location.pathname + window.location.hash;
         window.history.replaceState({}, document.title, newUrl);
-        console.log('✅ Token exchange complete - user authenticated');
+        authLogger.info('Token exchange complete - user authenticated');
       } else {
         // No token and no session - continue as guest
-        console.log('ℹ️ No token or session - continuing as guest user');
+        authLogger.info('No token or session - continuing as guest user');
       }
     } catch (err) {
-      console.error('❌ Auth initialization error:', err);
+      authLogger.error('Auth initialization error', {
+        error: err instanceof Error ? err.message : 'Unknown error'
+      });
       setError('Failed to initialize authentication');
     } finally {
       setIsLoading(false);
@@ -255,8 +258,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         // Handle nested user structure (data.data.user or data.data)
         const userData = data.data.user || data.data;
         setUser(userData);
-        console.log('✅ Authentication successful via token exchange:', userData.email);
-        console.log('✅ Token exchange - user data:', {
+        authLogger.info('Authentication successful via token exchange', { email: userData.email });
+        authLogger.debug('Token exchange - user data', {
           id: userData.id,
           email: userData.email,
           company_name: userData.company_name,
@@ -267,7 +270,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         throw new Error('Invalid response from token exchange');
       }
     } catch (err) {
-      console.error('❌ Token exchange error:', err);
+      authLogger.error('Token exchange error', {
+        error: err instanceof Error ? err.message : 'Unknown error'
+      });
       setError(err instanceof Error ? err.message : 'Token exchange failed');
       throw err;
     }
@@ -287,8 +292,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (response.ok) {
         const data = await response.json();
         
-        console.log('🔍 Session response:', data);
-        console.log('🔍 Session response structure:', {
+        authLogger.debug('Session response', { data });
+        authLogger.debug('Session response structure', {
           success: data.success,
           hasData: !!data.data,
           hasUser: !!data.user,
@@ -300,7 +305,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           // Check if user data is nested in data.data.user
           const userData = data.data.user || data.data;
           
-          console.log('🔍 User data fields (data.data):', {
+          authLogger.debug('User data fields (data.data)', {
             id: userData.id,
             email: userData.email,
             company_name: userData.company_name,
@@ -310,12 +315,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             employee_count_range: userData.employee_count_range,
             country: userData.country
           });
-          console.log('🔍 Full user object (data.data):', JSON.stringify(data.data, null, 2));
+          authLogger.debug('Full user object (data.data)', { userData: data.data });
           setUser(userData);
-          console.log('✅ Existing session found (data.data):', userData);
+          authLogger.info('Existing session found (data.data)', { userData });
         } else if (data.success && data.user) {
           // Alternative response format
-          console.log('🔍 User data fields (data.user):', {
+          authLogger.debug('User data fields (data.user)', {
             id: data.user.id,
             email: data.user.email,
             company_name: data.user.company_name,
@@ -326,21 +331,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             country: data.user.country
           });
           setUser(data.user);
-          console.log('✅ Existing session found (data.user):', data.user);
+          authLogger.info('Existing session found (data.user)', { userData: data.user });
         } else {
-          console.log('ℹ️ No existing session - response:', JSON.stringify(data));
+          authLogger.info('No existing session - response', { data });
           setUser(null);
         }
       } else if (response.status === 404 || response.status === 401) {
         // Expected: No session exists (guest user or not authenticated)
-        console.log('ℹ️ No active session - continuing as guest user');
+        authLogger.info('No active session - continuing as guest user');
         setUser(null);
       } else {
-        console.log('ℹ️ Session check failed - status:', response.status);
+        authLogger.warn('Session check failed', { status: response.status });
         setUser(null);
       }
     } catch (err) {
-      console.error('❌ Session check error:', err);
+      authLogger.error('Session check error', {
+        error: err instanceof Error ? err.message : 'Unknown error'
+      });
       setUser(null);
     }
   };
@@ -370,7 +377,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
 
       if (event.data.type === 'AUTH_REFRESH') {
-        console.log('🔄 Auth refresh requested by parent window');
+        authLogger.info('Auth refresh requested by parent window');
         refreshAuth();
       }
     };

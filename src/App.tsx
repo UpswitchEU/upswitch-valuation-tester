@@ -1,11 +1,23 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, lazy, Suspense } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Header } from './components/Header';
-import { AIAssistedValuation } from './components/AIAssistedValuation';
-import { ManualValuationFlow } from './components/ManualValuationFlow';
-import { DocumentUploadFlow } from './components/DocumentUploadFlow';
 import { ROUTE_TO_VIEW_MODE, VIEW_MODE_TO_ROUTE } from './router/routes';
 import { ScrollToTop } from './utils';
+
+// Lazy load heavy components
+const AIAssistedValuation = lazy(() => import('./components/AIAssistedValuation').then(module => ({ default: module.AIAssistedValuation })));
+const ManualValuationFlow = lazy(() => import('./components/ManualValuationFlow').then(module => ({ default: module.ManualValuationFlow })));
+const DocumentUploadFlow = lazy(() => import('./components/DocumentUploadFlow').then(module => ({ default: module.DocumentUploadFlow })));
+
+// Loading fallback component
+const LoadingFallback = () => (
+  <div className="flex items-center justify-center min-h-screen bg-zinc-950">
+    <div className="flex flex-col items-center space-y-4">
+      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-500"></div>
+      <p className="text-zinc-400">Loading valuation engine...</p>
+    </div>
+  </div>
+);
 
 type ViewMode = 'ai-assisted' | 'manual' | 'document-upload';
 
@@ -30,7 +42,9 @@ function App() {
     return (
       <div className="flex h-screen w-screen flex-col overflow-hidden bg-zinc-950">
         <ScrollToTop />
-        <AIAssistedValuation />
+        <Suspense fallback={<LoadingFallback />}>
+          <AIAssistedValuation />
+        </Suspense>
       </div>
     );
   }
@@ -40,7 +54,9 @@ function App() {
     return (
       <div className="flex h-screen w-screen flex-col overflow-hidden bg-zinc-950">
         <ScrollToTop />
-        <ManualValuationFlow />
+        <Suspense fallback={<LoadingFallback />}>
+          <ManualValuationFlow />
+        </Suspense>
       </div>
     );
   }
@@ -50,7 +66,9 @@ function App() {
     return (
       <div className="flex h-screen w-screen flex-col overflow-hidden bg-zinc-950">
         <ScrollToTop />
-        <DocumentUploadFlow />
+        <Suspense fallback={<LoadingFallback />}>
+          <DocumentUploadFlow />
+        </Suspense>
       </div>
     );
   }

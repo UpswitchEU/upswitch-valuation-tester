@@ -88,9 +88,10 @@ const CustomDropdown: React.FC<CustomDropdownProps> = ({
   dropdownRef,
 }) => {
   const [isOpen, setIsOpen] = useState(false);
-  // const [isFocused, setIsFocused] = useState(false);
+  const [focusedIndex, setFocusedIndex] = useState(-1);
   const internalRef = useRef<HTMLDivElement>(null);
   const ref = dropdownRef || internalRef;
+  const optionRefs = useRef<(HTMLButtonElement | null)[]>([]);
 
   // Find the selected option
   const selectedOption = options.find(option => option.value === value);
@@ -136,11 +137,62 @@ const CustomDropdown: React.FC<CustomDropdownProps> = ({
   };
 
   const handleKeyDown = (event: React.KeyboardEvent) => {
-    if (event.key === 'Enter' || event.key === ' ') {
-      event.preventDefault();
-      handleToggle();
+    if (!isOpen) {
+      if (event.key === 'Enter' || event.key === ' ' || event.key === 'ArrowDown') {
+        event.preventDefault();
+        setIsOpen(true);
+        setFocusedIndex(0);
+      }
+      return;
+    }
+
+    switch (event.key) {
+      case 'ArrowDown':
+        event.preventDefault();
+        setFocusedIndex(prev => {
+          const nextIndex = prev + 1;
+          return nextIndex >= options.length ? 0 : nextIndex;
+        });
+        break;
+      case 'ArrowUp':
+        event.preventDefault();
+        setFocusedIndex(prev => {
+          const prevIndex = prev - 1;
+          return prevIndex < 0 ? options.length - 1 : prevIndex;
+        });
+        break;
+      case 'Enter':
+      case ' ':
+        event.preventDefault();
+        if (focusedIndex >= 0 && focusedIndex < options.length) {
+          handleOptionSelect(options[focusedIndex].value);
+        }
+        break;
+      case 'Escape':
+        event.preventDefault();
+        setIsOpen(false);
+        setFocusedIndex(-1);
+        break;
+      case 'Home':
+        event.preventDefault();
+        setFocusedIndex(0);
+        break;
+      case 'End':
+        event.preventDefault();
+        setFocusedIndex(options.length - 1);
+        break;
     }
   };
+
+  // Focus management
+  useEffect(() => {
+    if (isOpen && focusedIndex >= 0) {
+      const optionElement = optionRefs.current[focusedIndex];
+      if (optionElement) {
+        optionElement.focus();
+      }
+    }
+  }, [focusedIndex, isOpen]);
 
   return (
     <div className={`relative ${className}`} ref={ref}>
@@ -212,24 +264,32 @@ const CustomDropdown: React.FC<CustomDropdownProps> = ({
         {/* Dropdown Options */}
         {isOpen && (
           <div className="relative z-[9999] mt-0 w-full">
-            <div className="absolute w-full bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-auto">
-              {options.map(option => (
+            <div 
+              className="absolute w-full bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-auto"
+              role="listbox"
+              aria-labelledby={`${label}-label`}
+            >
+              {options.map((option, index) => (
                 <button
                   key={option.value}
                   type="button"
+                  ref={el => optionRefs.current[index] = el}
                   onClick={() => handleOptionSelect(option.value)}
+                  onKeyDown={handleKeyDown}
                   disabled={option.disabled}
                   className={`
-                  w-full px-4 py-3 text-left text-gray-900 transition-colors
+                  w-full px-4 py-3 text-left text-gray-900 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500
                   ${
                     option.disabled
                       ? 'text-gray-400 cursor-not-allowed'
                       : 'hover:bg-gray-50 cursor-pointer'
                   }
                   ${option.value === value ? 'bg-gray-100 text-gray-900' : ''}
+                  ${index === focusedIndex ? 'bg-blue-50 ring-2 ring-blue-500' : ''}
                 `}
                   role="option"
                   aria-selected={option.value === value}
+                  tabIndex={-1}
                 >
                   {option.label}
                 </button>

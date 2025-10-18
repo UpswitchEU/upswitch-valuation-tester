@@ -2,6 +2,7 @@ import React, { useState, useCallback, useEffect } from 'react';
 import { useValuationStore } from '../store/useValuationStore';
 import { debounce } from '../utils/debounce';
 import { getSearchSuggestions, type SearchSuggestion } from '../services/registryService';
+import { serviceLogger } from '../utils/logger';
 
 /**
  * CompanyLookup Component (Phase 2)
@@ -95,7 +96,9 @@ export const CompanyLookup: React.FC = () => {
       setSuggestions(suggestionData.suggestions);
       setShowSuggestions(true);
     } catch (err) {
-      console.error('Failed to load suggestions:', err);
+      serviceLogger.error('Failed to load suggestions', {
+        error: err instanceof Error ? err.message : 'Unknown error'
+      });
       setSuggestions([]);
     } finally {
       setIsLoadingSuggestions(false);

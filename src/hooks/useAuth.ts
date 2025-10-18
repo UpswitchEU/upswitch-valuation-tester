@@ -1,5 +1,6 @@
 import { useContext, useEffect } from 'react';
 import { AuthContext } from '../contexts/AuthContextTypes';
+import { authLogger } from '../utils/logger';
 
 /**
  * Hook to access authentication context
@@ -22,7 +23,7 @@ export const useRequireAuth = () => {
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
       // Handle unauthenticated state
-      console.warn('Authentication required');
+      authLogger.warn('Authentication required');
     }
   }, [isAuthenticated, isLoading]);
 

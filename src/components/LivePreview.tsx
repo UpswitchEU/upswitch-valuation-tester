@@ -13,6 +13,7 @@ import React, { useState, useEffect } from 'react';
 import { TrendingUp, Zap, Info, Loader2 } from 'lucide-react';
 import { useValuationStore } from '../store/useValuationStore';
 import { api } from '../services/api';
+import { serviceLogger } from '../utils/logger';
 import type { QuickValuationRequest, QuickValuationResponse } from '../types/valuation';
 
 export const LivePreview: React.FC = () => {
@@ -44,7 +45,10 @@ export const LivePreview: React.FC = () => {
         const response = await api.quickValuation(quickRequest);
         setEstimate(response);
       } catch (err) {
-        console.error('Quick valuation error:', err);
+        serviceLogger.error('Quick valuation failed', {
+          error: err instanceof Error ? err.message : 'Unknown error',
+          formData: { revenue: formData.revenue, ebitda: formData.ebitda }
+        });
         setError('Unable to calculate estimate');
       } finally {
         setIsCalculating(false);

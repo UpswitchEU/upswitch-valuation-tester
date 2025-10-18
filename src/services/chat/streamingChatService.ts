@@ -1,3 +1,5 @@
+import { chatLogger } from '../../utils/logger';
+
 interface StreamEvent {
   type: 'message_start' | 'message_chunk' | 'message_complete' | 'report_update' | 'error';
   content?: string;
@@ -57,7 +59,7 @@ export class StreamingChatService {
                 yield data;
               }
             } catch (parseError) {
-              console.warn('Failed to parse SSE data:', line, parseError);
+              chatLogger.warn('Failed to parse SSE data', { line, parseError });
               // Skip malformed chunks - they'll be completed in next iteration
               continue;
             }
