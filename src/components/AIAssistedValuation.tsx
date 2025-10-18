@@ -8,6 +8,7 @@ import { businessDataService, type BusinessProfileData } from '../services/busin
 import { api } from '../services/api';
 import { useAuth } from '../hooks/useAuth';
 import type { ValuationResponse } from '../types/valuation';
+import { chatLogger } from '../utils/logger';
 
 interface ProgressItem {
   id: string;
@@ -43,7 +44,7 @@ export const AIAssistedValuation: React.FC = () => {
   // NEW: Start intelligent conversation with pre-filled data
   const startIntelligentConversation = useCallback(async (profileData: BusinessProfileData) => {
     try {
-      console.log('🤖 Starting intelligent conversation...');
+      chatLogger.info('Starting intelligent conversation');
       
       // Transform business data to conversation request
       const conversationRequest = businessDataService.transformToConversationStartRequest(profileData, {
@@ -54,7 +55,7 @@ export const AIAssistedValuation: React.FC = () => {
       // Start conversation with valuation engine
       const response = await api.startConversation(conversationRequest);
       
-      console.log('✅ Intelligent conversation started:', response);
+      chatLogger.info('Intelligent conversation started', { response });
       
       // If we have financial data from KBO lookup, go to results
       if (response.valuation_result) {
@@ -81,31 +82,31 @@ export const AIAssistedValuation: React.FC = () => {
 
         // Check if user is authenticated
         if (!isAuthenticated || !user?.id) {
-          console.log('ℹ️ No authenticated user, skipping profile fetch');
+          chatLogger.info('No authenticated user, skipping profile fetch');
           setIsLoadingProfile(false);
           return;
         }
 
         const userId = user.id;
         
-        console.log('🔍 Fetching business profile for instant valuation...');
+        chatLogger.debug('Fetching business profile for instant valuation');
         const profileData = await businessDataService.fetchUserBusinessData(userId);
         
         if (profileData) {
           setBusinessProfile(profileData);
-          console.log('✅ Business profile loaded:', profileData);
+          chatLogger.info('Business profile loaded', { profileData });
           
           // Check if we have enough data to start conversation
           if (businessDataService.hasCompleteBusinessProfile(profileData)) {
-            console.log('🚀 Starting intelligent conversation with pre-filled data...');
+            chatLogger.info('Starting intelligent conversation with pre-filled data');
             await startIntelligentConversation(profileData);
           } else {
-            console.log('⚠️ Incomplete business profile, will collect missing data');
+            chatLogger.warn('Incomplete business profile, will collect missing data');
             const missingFields = businessDataService.getMissingFields(profileData);
-            console.log('Missing fields:', missingFields);
+            chatLogger.debug('Missing fields', { missingFields });
           }
         } else {
-          console.log('ℹ️ No business profile found, starting fresh conversation');
+          chatLogger.info('No business profile found, starting fresh conversation');
         }
         
       } catch (error) {
@@ -124,7 +125,7 @@ export const AIAssistedValuation: React.FC = () => {
   const handleValuationComplete = (valuationResult: ValuationResponse) => {
     setValuationResult(valuationResult);
     setStage('results');
-    console.log('✅ Valuation complete, moving to results stage');
+    chatLogger.info('Valuation complete, moving to results stage');
   };
 
 
