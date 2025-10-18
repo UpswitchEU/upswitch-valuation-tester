@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import type { ValuationRequest, ValuationResponse, QuickValuationRequest, ValuationFormData } from '../types/valuation';
 import { api } from '../services/api';
+import { storeLogger } from '../utils/logger';
 // import { useReportsStore } from './useReportsStore'; // Deprecated: Now saving to database
 
 interface ValuationStore {
@@ -181,7 +182,7 @@ export const useValuationStore = create<ValuationStore>((set, get) => ({
         comparables: formData.comparables || [],
       };
       
-      console.log('Sending valuation request:', request);
+      storeLogger.info('Sending valuation request', { companyName: request.company_name });
       const response = await api.calculateValuation(request);
       setResult(response);
       
@@ -190,7 +191,7 @@ export const useValuationStore = create<ValuationStore>((set, get) => ({
       try {
         const saveResult = await get().saveToBackend();
         if (saveResult) {
-          console.log('✅ Valuation auto-saved to database:', saveResult.id);
+          storeLogger.info('Valuation auto-saved to database', { valuationId: saveResult.id });
         }
       } catch (saveError) {
         console.warn('⚠️ Failed to auto-save to database:', saveError);
@@ -271,7 +272,7 @@ export const useValuationStore = create<ValuationStore>((set, get) => ({
     }
     
     try {
-      console.log('💾 Saving valuation to backend...');
+      storeLogger.info('Saving valuation to backend');
       
       // Use environment variable for backend URL (Node.js backend for auth & saving)
       const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 
@@ -304,7 +305,7 @@ export const useValuationStore = create<ValuationStore>((set, get) => ({
       
       if (data.success && data.data?.id) {
         setSavedValuationId(data.data.id);
-        console.log('✅ Valuation saved successfully:', data.data.id);
+        storeLogger.info('Valuation saved successfully', { valuationId: data.data.id });
         
         // Notify parent window via PostMessage
         if (window.opener || window.parent !== window) {
@@ -320,13 +321,13 @@ export const useValuationStore = create<ValuationStore>((set, get) => ({
           // Try to send to opener (new window)
           if (window.opener && !window.opener.closed) {
             window.opener.postMessage(message, targetOrigin);
-            console.log('📤 PostMessage sent to opener window');
+            storeLogger.debug('PostMessage sent to opener window');
           }
           
           // Try to send to parent (iframe)
           if (window.parent !== window) {
             window.parent.postMessage(message, targetOrigin);
-            console.log('📤 PostMessage sent to parent window');
+            storeLogger.debug('PostMessage sent to parent window');
           }
         }
         

@@ -3,6 +3,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { Zap, Edit3, Upload, ArrowRight } from 'lucide-react';
 import { MinimalHeader } from '../components/MinimalHeader';
 import { ScrollToTop } from '../utils';
+import { generalLogger } from '../utils/logger';
 
 export const HomePage: React.FC = () => {
   const navigate = useNavigate();
@@ -15,11 +16,11 @@ export const HomePage: React.FC = () => {
     const fromMainPlatform = params.get('from') === 'upswitch';
     
     if (token && !fromMainPlatform) {
-      console.log('🔑 Token detected on homepage - redirecting to instant valuation');
+      generalLogger.info('Token detected on homepage - redirecting to instant valuation');
       // Preserve token in URL when navigating to instant
       navigate(`/instant?token=${token}`, { replace: true });
     } else if (token && fromMainPlatform) {
-      console.log('🔑 Token detected from main platform - staying on homepage for user choice');
+      generalLogger.info('Token detected from main platform - staying on homepage for user choice');
     }
   }, [navigate]);
 

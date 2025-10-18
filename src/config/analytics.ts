@@ -5,6 +5,8 @@
  * to track valuation-specific metrics and user behavior.
  */
 
+import { generalLogger } from '../utils/logger';
+
 export interface AnalyticsConfig {
   googleAnalyticsId?: string;
   hotjarId?: string;
@@ -49,7 +51,7 @@ export const trackEvent = (eventName: string, parameters?: Record<string, any>) 
 
   // Console logging for development
   if (analyticsConfig.environment === 'development') {
-    console.log(`📊 Analytics Event: ${eventName}`, parameters);
+    generalLogger.debug('Analytics event', { eventName, parameters });
   }
 };
 

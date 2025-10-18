@@ -39,3 +39,4 @@ export const chatLogger = createContextLogger('chat');
 export const apiLogger = createContextLogger('api');
 export const storeLogger = createContextLogger('store');
 export const serviceLogger = createContextLogger('service');
+export const generalLogger = createContextLogger('general');

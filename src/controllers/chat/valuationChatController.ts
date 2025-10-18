@@ -11,7 +11,8 @@
  * - Graceful fallbacks
  */
 
-import type { CompanyFinancialData } from '../../types/registry';
+import { registryService } from '../../services/registry/registryService';
+import type { CompanyFinancialData, CompanySearchResponse } from '../../services/registry/types';
 import { apiLogger } from '../../utils/logger';
 
 export interface CompanySearchResult {
@@ -21,12 +22,8 @@ export interface CompanySearchResult {
   [key: string]: any;
 }
 
-export interface CompanySearchResponse {
-  success: boolean;
-  results: CompanySearchResult[];
-  error?: string;
-  requestId: string;
-}
+// Re-export types for backward compatibility
+export type { CompanySearchResponse } from '../../services/registry/types';
 
 export interface HealthStatus {
   available: boolean;
@@ -37,67 +34,30 @@ export interface HealthStatus {
 }
 
 export class ValuationChatController {
-  private baseUrl: string;
-
   constructor() {
-    // Use environment variable or default to production Railway URL
-    this.baseUrl = import.meta.env.VITE_VALUATION_ENGINE_URL || 
-                   import.meta.env.VITE_VALUATION_API_URL || 
-                   'https://upswitch-valuation-engine-production.up.railway.app';
-    apiLogger.info('ValuationChatController initialized', { baseUrl: this.baseUrl });
+    apiLogger.info('ValuationChatController initialized - using unified registry service');
   }
 
   /**
    * Search for companies by name
-   * Adapted from Ilara's sendMessage pattern
+   * Delegates to unified registry service
    */
   async searchCompany(query: string, country: string = 'BE'): Promise<CompanySearchResponse> {
     const requestId = `search_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-    apiLogger.debug(`Searching for company`, { requestId, query, country });
+    apiLogger.debug('Searching for company', { requestId, query, country });
 
     try {
-      const response = await fetch(`${this.baseUrl}/api/registry/search`, {
-        method: 'POST',
-        headers: { 
-          'Content-Type': 'application/json',
-          'Accept': 'application/json'
-        },
-        body: JSON.stringify({ 
-          company_name: query,
-          country_code: country,
-          limit: 10
-        }),
-      });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error(`❌ [${requestId}] Search failed:`, {
-          status: response.status,
-          statusText: response.statusText,
-          error: errorText
-        });
-        
-        throw new Error(`Search failed: ${response.statusText} - ${errorText}`);
-      }
-
-      const data = await response.json();
-      apiLogger.info(`Search successful`, {
+      const response = await registryService.searchCompanies(query, country, 10);
+      apiLogger.info('Search successful', {
         requestId,
-        resultsCount: data.results?.length || data.length || 0,
+        resultsCount: response.results.length,
         timestamp: new Date().toISOString()
       });
-
-      // Handle both array response and object with results property
-      const results = Array.isArray(data) ? data : (data.results || []);
-
-      return {
-        success: true,
-        results,
-        requestId,
-      };
+      return response;
     } catch (error) {
-      console.error(`❌ [${requestId}] Search error:`, {
-        error,
+      apiLogger.error('Search error', {
+        requestId,
+        error: error instanceof Error ? error.message : 'Unknown error',
         stack: error instanceof Error ? error.stack : undefined
       });
       
@@ -113,52 +73,28 @@ export class ValuationChatController {
 
   /**
    * Fetch company financials by ID
-   * New endpoint following Ilara patterns
+   * Delegates to unified registry service
    */
   async getCompanyFinancials(
     companyId: string,
     country: string = 'BE'
   ): Promise<CompanyFinancialData> {
     const requestId = `financials_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-    apiLogger.debug(`Fetching financials`, { requestId, companyId, country });
+    apiLogger.debug('Fetching financials', { requestId, companyId, country });
 
     try {
-      const response = await fetch(`${this.baseUrl}/api/registry/financials`, {
-        method: 'POST',
-        headers: { 
-          'Content-Type': 'application/json',
-          'Accept': 'application/json'
-        },
-        body: JSON.stringify({ 
-          company_id: companyId,
-          country_code: country,
-          years: 3
-        }),
-      });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error(`❌ [${requestId}] Financials fetch failed:`, {
-          status: response.status,
-          statusText: response.statusText,
-          error: errorText
-        });
-        
-        throw new Error(`Financials fetch failed: ${response.statusText} - ${errorText}`);
-      }
-
-      const data = await response.json();
-      apiLogger.info(`Financials received`, {
+      const data = await registryService.getCompanyFinancials(companyId, country);
+      apiLogger.info('Financials received', {
         requestId,
         companyName: data.company_name,
         yearsOfData: data.filing_history?.length || 0,
         timestamp: new Date().toISOString()
       });
-
       return data;
     } catch (error) {
-      console.error(`❌ [${requestId}] Financials error:`, {
-        error,
+      apiLogger.error('Financials error', {
+        requestId,
+        error: error instanceof Error ? error.message : 'Unknown error',
         stack: error instanceof Error ? error.stack : undefined
       });
       throw error;
@@ -167,34 +103,29 @@ export class ValuationChatController {
 
   /**
    * Check backend health
-   * Directly adapted from Ilara's health monitoring
+   * Delegates to unified registry service
    */
   async checkHealth(): Promise<HealthStatus> {
     const requestId = `health_${Date.now()}`;
     
     try {
-      const response = await fetch(`${this.baseUrl}/api/health`, {
-        method: 'GET',
-        headers: { 'Accept': 'application/json' },
-        // Add timeout
-        signal: AbortSignal.timeout(5000) // 5 second timeout
-      });
-
-      const data = await response.json();
+      const healthStatus = await registryService.checkHealth();
       
-      const healthStatus: HealthStatus = {
-        available: response.ok && data.status === 'healthy',
-        status: response.ok ? (data.status || 'healthy') : 'error',
-        message: data.message,
+      const result: HealthStatus = {
+        available: healthStatus.available,
+        status: healthStatus.status as 'healthy' | 'degraded' | 'error' | 'unknown',
+        message: healthStatus.message,
         timestamp: new Date().toISOString(),
         requestId,
       };
 
-      apiLogger.info(`Health check`, { requestId, healthStatus });
-      
-      return healthStatus;
+      apiLogger.info('Health check', { requestId, healthStatus: result });
+      return result;
     } catch (error) {
-      console.warn(`⚠️ [${requestId}] Health check failed:`, error);
+      apiLogger.warn('Health check failed', { 
+        requestId, 
+        error: error instanceof Error ? error.message : 'Unknown error' 
+      });
       
       return {
         available: false,

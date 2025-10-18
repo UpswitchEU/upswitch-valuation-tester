@@ -6,6 +6,7 @@
  */
 
 import type { CompanyFinancialData, FinancialFilingYear } from '../types/registry';
+import { serviceLogger } from '../utils/logger';
 
 /**
  * Valuation Request Format (matches backend API)
@@ -258,7 +259,7 @@ export const transformRegistryDataToValuationRequest = (
   // Calculate data quality
   const dataQuality = calculateDataQuality(registryData);
   
-  console.log('📊 Data Transformation:', {
+  serviceLogger.info('Data transformation completed', {
     company: registryData.company_name,
     industry,
     businessModel,

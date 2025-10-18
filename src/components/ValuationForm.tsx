@@ -7,6 +7,7 @@ import { TARGET_COUNTRIES } from '../config/countries';
 import { BUSINESS_TYPES } from '../config/businessTypes';
 import { IndustryCode } from '../types/valuation';
 import { CustomInputField, CustomNumberInputField, CustomDropdown } from './forms';
+import { generalLogger } from '../utils/logger';
 
 /**
  * ValuationForm Component
@@ -40,7 +41,7 @@ export const ValuationForm: React.FC = () => {
 
   // Pre-fill form with business card data when authenticated
   useEffect(() => {
-    console.log('🔍 Pre-fill check:', { 
+    generalLogger.debug('Pre-fill check', { 
       isAuthenticated, 
       hasBusinessCard: !!businessCard, 
       hasPrefilledOnce,
@@ -48,7 +49,7 @@ export const ValuationForm: React.FC = () => {
     });
     
     if (isAuthenticated && businessCard && !hasPrefilledOnce) {
-      console.log('🏢 Pre-filling form with business card data:', {
+      generalLogger.info('Pre-filling form with business card data', {
         ...businessCard,
         employee_count: businessCard.employee_count ? `${businessCard.employee_count} employees` : 'not available'
       });

@@ -10,8 +10,8 @@
  * - Conversation context management
  */
 
-import { ValuationChatController, type CompanySearchResponse, type HealthStatus } from '../../controllers/chat/valuationChatController';
-import type { CompanyFinancialData } from '../../types/registry';
+import { registryService } from '../registry/registryService';
+import type { CompanySearchResponse, CompanyFinancialData } from '../registry/types';
 import { serviceLogger } from '../../utils/logger';
 
 export interface ChatMessage {
@@ -34,11 +34,9 @@ export interface LookupResult {
 }
 
 export class CompanyLookupService {
-  private controller: ValuationChatController;
   private conversationId: string | null = null;
 
   constructor() {
-    this.controller = new ValuationChatController();
     serviceLogger.info('CompanyLookupService initialized');
   }
 
@@ -57,10 +55,10 @@ export class CompanyLookupService {
 
     try {
       // Step 1: Search for company
-      const searchResponse = await this.controller.searchCompany(message, country);
+      const searchResponse = await registryService.searchCompanies(message, country);
 
       if (!searchResponse.success || searchResponse.results.length === 0) {
-        console.warn(`⚠️ [${requestId}] No companies found`);
+        serviceLogger.warn('No companies found', { requestId, message, country });
         return {
           success: false,
           message: `No companies found matching "${message}". Please try:\n• Exact company name\n• Registration number\n• Manual data entry`,
@@ -77,7 +75,7 @@ export class CompanyLookupService {
       });
 
       // Step 3: Validate company ID
-      if (!this.controller.isValidCompanyId(bestMatch.company_id, country)) {
+      if (!this.isValidCompanyId(bestMatch.company_id, country)) {
         serviceLogger.warn('Mock/suggestion result detected - data sources unavailable', { requestId });
         
         // Filter out invalid suggestions (search strategy suggestions, not real companies)
@@ -146,7 +144,7 @@ Please type the exact name or try:
 
       // Step 4: Fetch financial data
       try {
-        const financialData = await this.controller.getCompanyFinancials(
+        const financialData = await registryService.getCompanyFinancials(
           bestMatch.company_id,
           country
         );
@@ -164,7 +162,7 @@ Please type the exact name or try:
           searchResults: searchResponse,
         };
       } catch (financialError) {
-        console.error(`❌ [${requestId}] Financial data fetch failed:`, financialError);
+        serviceLogger.error('Financial data fetch failed', { requestId, error: financialError });
         
         // Financial data fetch failed, but we still have the company info
         // Create a basic company data object with the search result
@@ -193,9 +191,10 @@ Please type the exact name or try:
         };
       }
     } catch (error) {
-      console.error(`❌ [${requestId}] Lookup error:`, {
-        error,
-        stack: error instanceof Error ? error.stack : undefined,
+      serviceLogger.error('Lookup error', { 
+        requestId, 
+        error: error instanceof Error ? error.message : 'Unknown error',
+        stack: error instanceof Error ? error.stack : undefined
       });
 
       return {
@@ -210,8 +209,8 @@ Please type the exact name or try:
    * Check if the service is available
    * Adapted from Ilara's health monitoring
    */
-  async checkHealth(): Promise<HealthStatus> {
-    return this.controller.checkHealth();
+  async checkHealth(): Promise<{ available: boolean; status: string; message?: string }> {
+    return registryService.checkHealth();
   }
 
   /**
@@ -227,5 +226,28 @@ Please type the exact name or try:
    */
   getConversationId(): string | null {
     return this.conversationId;
+  }
+
+  /**
+   * Validate company ID format
+   * Helper method for pre-flight validation
+   */
+  private isValidCompanyId(companyId: string, country: string = 'BE'): boolean {
+    // Check for mock/suggestion IDs first (backend fallback when data unavailable)
+    if (!companyId || 
+        companyId.length < 3 || 
+        companyId.startsWith('suggestion_') || 
+        companyId.startsWith('mock_')) {
+      return false;
+    }
+    
+    // Belgian company numbers are 10 digits with dots: 0123.456.789
+    if (country === 'BE') {
+      const cleaned = companyId.replace(/\./g, '');
+      return /^\d{10}$/.test(cleaned);
+    }
+    
+    // Default: any non-empty string (for other countries)
+    return companyId.length > 0;
   }
 }
