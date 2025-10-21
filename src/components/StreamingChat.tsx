@@ -6,12 +6,19 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { Send, Loader2, Bot, User } from 'lucide-react';
 import { AI_CONFIG } from '../config';
+import { streamingChatService } from '../services/chat/streamingChatService';
 import { ContextualTip } from './ContextualTip';
 import { ValuationProgressTracker } from './ValuationProgressTracker';
-import { useStreamingChat } from '../hooks/useStreamingChat';
-import { useProgressTracking } from '../hooks/useProgressTracking';
-import { createWelcomeMessage, filterValidMessages, type Message } from '../utils/messageUtils';
-import { chatLogger } from '../utils/logger';
+
+interface Message {
+  id: string;
+  type: 'user' | 'ai' | 'system';
+  content: string;
+  timestamp: Date;
+  isStreaming?: boolean;
+  isComplete?: boolean;
+  metadata?: any;
+}
 
 interface ProgressItem {
   id: string;
@@ -42,37 +49,22 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
   placeholder = "Ask about your business valuation...",
   disabled = false
 }) => {
+  const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
-  
-  // Use extracted hooks
-  const {
-    messages,
-    isStreaming,
-    addMessage,
-    startStreaming,
-    stopStreaming
-  } = useStreamingChat(
-    sessionId,
-    userId,
-    onMessageComplete,
-    onValuationComplete,
-    onReportUpdate,
-    onProgressUpdate
-  );
-  
-  const {
-    items: progressItems
-  } = useProgressTracking();
+  const [isStreaming, setIsStreaming] = useState(false);
+  const [progressItems, setProgressItems] = useState<ProgressItem[]>([
+    { id: 'company', label: 'Company Information', status: 'pending' },
+    { id: 'revenue', label: 'Revenue Data', status: 'pending' },
+    { id: 'profitability', label: 'Profitability Metrics', status: 'pending' },
+    { id: 'growth', label: 'Growth Trends', status: 'pending' },
+    { id: 'market', label: 'Market Position', status: 'pending' },
+    { id: 'assets', label: 'Assets & Liabilities', status: 'pending' },
+    { id: 'industry', label: 'Industry Benchmarks', status: 'pending' }
+  ]);
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
-
-  // Initialize with welcome message
-  useEffect(() => {
-    if (messages.length === 0) {
-      const welcomeMessage = createWelcomeMessage(AI_CONFIG);
-      addMessage(welcomeMessage);
-    }
-  }, [messages.length, addMessage]);
+  const eventSourceRef = useRef<EventSource | null>(null);
+  const currentStreamingMessageRef = useRef<Message | null>(null);
 
   // Auto-scroll to bottom
   const scrollToBottom = useCallback(() => {
@@ -83,26 +75,172 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
     scrollToBottom();
   }, [messages, scrollToBottom]);
 
+  // Initialize with welcome message
+  useEffect(() => {
+    if (messages.length === 0) {
+      setMessages([{
+        id: 'welcome',
+        type: 'ai',
+        content: `Hello! I'm your ${AI_CONFIG.branding.expertTitle.toLowerCase()} with ${AI_CONFIG.branding.levelIndicator.toLowerCase()} expertise. I'll help you get a professional business valuation through our intelligent conversation. What's the name of your business?`,
+        timestamp: new Date(),
+        isComplete: true,
+        metadata: {
+          reasoning: "Starting with company identification to establish context for valuation",
+          help_text: "Please provide your company's legal name as it appears on official documents"
+        }
+      }]);
+    }
+  }, [messages.length]);
 
   // Cleanup on unmount
   useEffect(() => {
     return () => {
-      stopStreaming();
+      if (eventSourceRef.current) {
+        eventSourceRef.current.close();
+      }
     };
-  }, [stopStreaming]);
+  }, []);
 
-  const handleSubmit = useCallback(async (e: React.FormEvent) => {
+  const addMessage = useCallback((message: Omit<Message, 'id' | 'timestamp'>) => {
+    const newMessage: Message = {
+      ...message,
+      id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
+      timestamp: new Date(),
+      isComplete: message.isComplete ?? false,
+      isStreaming: message.isStreaming ?? false
+    };
+    
+    setMessages(prev => [...prev, newMessage]);
+    return newMessage;
+  }, []);
+
+  const updateStreamingMessage = useCallback((content: string, isComplete: boolean = false) => {
+    if (!currentStreamingMessageRef.current?.id) return;
+    
+    setMessages(prev => prev.map(msg => 
+      msg?.id === currentStreamingMessageRef.current!.id
+        ? { ...msg, content: msg.content + content, isComplete, isStreaming: !isComplete }
+        : msg
+    ).filter(Boolean)); // Remove any null entries
+    
+    if (isComplete && currentStreamingMessageRef.current) {
+      onMessageComplete?.(currentStreamingMessageRef.current);
+      currentStreamingMessageRef.current = null;
+    }
+  }, [onMessageComplete]);
+
+  const handleStreamEvent = useCallback((data: any) => {
+    switch (data.type) {
+      case 'typing':
+        // AI is typing
+        break;
+        
+      case 'message_start':
+        // Start of AI response
+        break;
+        
+      case 'message_chunk':
+        // Stream content
+        updateStreamingMessage(data.content);
+        break;
+        
+      case 'report_update':
+        // NEW: Update live report as sections are generated
+        onReportUpdate?.(data.html, data.progress);
+        break;
+        
+      case 'progress_update':
+        // Backend sends which items are collected
+        setProgressItems(prev => {
+          const updated = prev.map(item => 
+            data.collected_items?.includes(item.id)
+              ? { ...item, status: 'completed' as const }
+              : data.current_item === item.id
+              ? { ...item, status: 'in_progress' as const }
+              : item
+          );
+          onProgressUpdate?.(updated);
+          return updated;
+        });
+        break;
+        
+      case 'message_complete':
+        // Complete response
+        updateStreamingMessage('', true);
+        setIsStreaming(false);
+        
+        // Check for valuation result
+        if (data.metadata?.valuation_result) {
+          onValuationComplete?.(data.metadata.valuation_result);
+        }
+        break;
+        
+      case 'error':
+        console.error('Stream error:', data.content || 'An error occurred');
+        setIsStreaming(false);
+        updateStreamingMessage('', true);
+        break;
+    }
+  }, [updateStreamingMessage, onValuationComplete, onReportUpdate]);
+
+  const startStreaming = useCallback(async (userInput: string) => {
+    if (!userInput.trim() || isStreaming) return;
+
+    setIsStreaming(true);
+
+    // Add user message
+    addMessage({
+      type: 'user',
+      content: userInput,
+      isComplete: true
+    });
+
+    // Create streaming AI message
+    const aiMessage = addMessage({
+      type: 'ai',
+      content: '',
+      isStreaming: true,
+      isComplete: false
+    });
+
+    currentStreamingMessageRef.current = aiMessage;
+
+    try {
+      // Use streaming service
+      for await (const event of streamingChatService.streamConversation(
+        sessionId,
+        userInput,
+        userId
+      )) {
+        handleStreamEvent(event);
+      }
+
+    } catch (error) {
+      console.error('Failed to start streaming:', error);
+      setIsStreaming(false);
+      
+      // Complete the streaming message properly
+      if (currentStreamingMessageRef.current) {
+        updateStreamingMessage('', true);
+      }
+      
+      // Show user-friendly error message
+      addMessage({
+        type: 'system',
+        content: 'Connection error. Please check your internet connection and try again.',
+        isComplete: true
+      });
+    }
+  }, [sessionId, userId, isStreaming, addMessage, handleStreamEvent]);
+
+
+  const handleSubmit = useCallback((e: React.FormEvent) => {
     e.preventDefault();
     if (!input.trim() || isStreaming || disabled) return;
-
+    
     const userInput = input.trim();
     setInput('');
-    
-    try {
-      await startStreaming(userInput);
-    } catch (error) {
-      chatLogger.error('Failed to start streaming', { error });
-    }
+    startStreaming(userInput);
   }, [input, isStreaming, disabled, startStreaming]);
 
   const handleKeyPress = useCallback((e: React.KeyboardEvent) => {
@@ -238,7 +376,7 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
 
       {/* Messages */}
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
-        {filterValidMessages(messages).map((message) => (
+        {messages.map((message) => (
           <div
             key={message.id}
             className={`flex ${message.type === 'user' ? 'justify-end' : 'justify-start'}`}
@@ -330,7 +468,6 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
       <div className="p-4 border-t border-zinc-800">
         <form
           onSubmit={handleSubmit}
-          aria-label="Chat message form"
           className="focus-within:bg-zinc-900/30 group flex flex-col gap-3 p-4 duration-150 w-full rounded-3xl border border-zinc-700/50 bg-zinc-900/20 text-base shadow-xl transition-all ease-in-out focus-within:border-zinc-500/40 hover:border-zinc-600/30 focus-within:hover:border-zinc-500/40 backdrop-blur-sm"
         >
           {/* Textarea container */}
@@ -341,15 +478,10 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
               onKeyPress={handleKeyPress}
               placeholder={placeholder}
               disabled={disabled || isStreaming}
-              aria-label="Type your message"
-              aria-describedby="chat-help-text"
               className="flex w-full rounded-md px-3 py-3 ring-offset-background placeholder:text-zinc-400 focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 disabled:cursor-not-allowed disabled:opacity-50 resize-none text-sm leading-snug placeholder-shown:text-ellipsis placeholder-shown:whitespace-nowrap max-h-[200px] bg-transparent focus:bg-transparent flex-1 text-white"
               style={{ minHeight: '60px', height: '60px' }}
               spellCheck="false"
             />
-            <span id="chat-help-text" className="sr-only">
-              Press Enter to send, Shift+Enter for new line
-            </span>
           </div>
 
           {/* Action buttons row */}
@@ -371,13 +503,12 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
               <button
                 type="submit"
                 disabled={!input.trim() || isStreaming || disabled}
-                aria-label={isStreaming ? "Sending message..." : "Send message"}
                 className="submit-button-white flex h-8 w-8 items-center justify-center rounded-full bg-white hover:bg-zinc-100 transition-all duration-150 ease-out disabled:cursor-not-allowed disabled:opacity-50 disabled:bg-zinc-600"
               >
                 {isStreaming ? (
-                  <Loader2 className="w-4 h-4 text-zinc-900 animate-spin" aria-hidden="true" />
+                  <Loader2 className="w-4 h-4 text-zinc-900 animate-spin" />
                 ) : (
-                  <Send className="w-4 h-4 text-zinc-900" aria-hidden="true" />
+                  <Send className="w-4 h-4 text-zinc-900" />
                 )}
               </button>
             </div>
