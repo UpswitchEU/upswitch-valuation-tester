@@ -4,7 +4,7 @@ import { useValuationStore } from '../store/useValuationStore';
 import { useAuth } from '../hooks/useAuth';
 import { debounce } from '../utils/debounce';
 import { TARGET_COUNTRIES } from '../config/countries';
-import { BUSINESS_TYPES } from '../config/businessTypes';
+import { useBusinessTypes } from '../hooks/useBusinessTypes';
 import { IndustryCode } from '../types/valuation';
 import { CustomInputField, CustomNumberInputField, CustomDropdown, HistoricalDataInputs } from './forms';
 import { generalLogger } from '../utils/logger';
@@ -17,6 +17,7 @@ import { generalLogger } from '../utils/logger';
  */
 export const ValuationForm: React.FC = () => {
   const { formData, updateFormData, calculateValuation, quickValuation, isCalculating, prefillFromBusinessCard } = useValuationStore();
+  const { businessTypeOptions, loading: businessTypesLoading, error: businessTypesError } = useBusinessTypes();
   // const { addReport } = useReportsStore(); // Deprecated: Now saving to database
   const { businessCard, isAuthenticated } = useAuth();
   
@@ -262,17 +263,25 @@ export const ValuationForm: React.FC = () => {
           />
 
           {/* Business Model */}
-          <CustomDropdown
-            label="Business Model"
-            placeholder="Select your business type..."
-            options={BUSINESS_TYPES.map(type => ({
-              value: type.value,
-              label: type.label,
-            }))}
-            value={formData.business_model || 'other'}
-            onChange={(value) => updateFormData({ business_model: value })}
-            required
-          />
+          <div>
+            <CustomDropdown
+              label="Business Model"
+              placeholder={businessTypesLoading ? "Loading business types..." : "Select your business type..."}
+              options={businessTypeOptions.map(type => ({
+                value: type.value,
+                label: type.label,
+              }))}
+              value={formData.business_model || 'other'}
+              onChange={(value) => updateFormData({ business_model: value })}
+              required
+              disabled={businessTypesLoading}
+            />
+            {businessTypesError && (
+              <p className="mt-1 text-sm text-yellow-600">
+                ⚠️ Using offline business types. Some options may be limited.
+              </p>
+            )}
+          </div>
 
           {/* Founding Year */}
           <CustomNumberInputField
