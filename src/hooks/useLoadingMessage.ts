@@ -10,14 +10,13 @@ const LOADING_MESSAGES = [
 
 export const useLoadingMessage = (intervalMs: number = 2000) => {
   const [currentMessage, setCurrentMessage] = useState(LOADING_MESSAGES[0]);
-  const [messageIndex, setMessageIndex] = useState(0);
 
   useEffect(() => {
     const interval = setInterval(() => {
-      setMessageIndex((prevIndex) => {
-        const nextIndex = (prevIndex + 1) % LOADING_MESSAGES.length;
-        setCurrentMessage(LOADING_MESSAGES[nextIndex]);
-        return nextIndex;
+      setCurrentMessage((prevMessage) => {
+        const currentIndex = LOADING_MESSAGES.indexOf(prevMessage);
+        const nextIndex = (currentIndex + 1) % LOADING_MESSAGES.length;
+        return LOADING_MESSAGES[nextIndex];
       });
     }, intervalMs);
 
