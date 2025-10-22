@@ -279,9 +279,26 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   /**
+   * Helper function to check if authentication cookie exists
+   */
+  const hasAuthCookie = (): boolean => {
+    return document.cookie
+      .split(';')
+      .some(cookie => cookie.trim().startsWith('business_card='));
+  };
+
+  /**
    * Check for existing session
    */
   const checkSession = async () => {
+    // Check if we have an auth cookie before making API call
+    if (!hasAuthCookie()) {
+      authLogger.info('No business card cookie found - continuing as guest user');
+      setIsAuthenticated(false);
+      setUser(null);
+      return;
+    }
+
     try {
       const response = await fetch(`${API_URL}/api/auth/me`, {
         method: 'GET',
