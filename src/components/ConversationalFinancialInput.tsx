@@ -191,7 +191,7 @@ ${nextQ.question}
                   }`}
                 >
                   {message.isLoading ? (
-                    <div className="flex items-center gap-2 px-3 py-2 bg-zinc-600/30 rounded-lg">
+                    <div className="flex items-center gap-2">
                       <LoadingDots size="sm" color="text-green-500" />
                       <span className="text-sm text-zinc-300 animate-pulse">{loadingMessage}</span>
                     </div>

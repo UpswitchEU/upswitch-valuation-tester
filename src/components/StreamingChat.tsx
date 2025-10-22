@@ -432,7 +432,7 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
                   )}
                   
                   {message.type !== 'user' && message.isStreaming && (
-                    <div className="flex items-center gap-2 mt-3 px-3 py-2 bg-zinc-600/30 rounded-lg animate-fade-in">
+                    <div className="flex items-center gap-2 animate-fade-in">
                       <LoadingDots size="sm" color="text-zinc-400" />
                       <span className="text-sm text-zinc-300 animate-pulse">{loadingMessage}</span>
                     </div>
