@@ -4,12 +4,20 @@ interface LoadingDotsProps {
   size?: 'sm' | 'md' | 'lg';
   color?: string;
   className?: string;
+  layout?: 'inline' | 'block';
 }
+
+const DOTS_CONFIG = [
+  { delay: '0ms' },
+  { delay: '150ms' },
+  { delay: '300ms' },
+];
 
 export const LoadingDots: React.FC<LoadingDotsProps> = ({
   size = 'md',
   color = 'text-primary-400',
   className = '',
+  layout = 'inline',
 }) => {
   const sizeClasses = {
     sm: 'w-1 h-1',
@@ -18,33 +26,21 @@ export const LoadingDots: React.FC<LoadingDotsProps> = ({
   };
 
   const dotSize = sizeClasses[size];
+  const layoutClass = layout === 'block' ? 'flex-col' : 'flex-row';
 
   return (
-    <div className={`flex items-center gap-1 ${className}`}>
-      <div
-        className={`${dotSize} ${color} rounded-full animate-bounce`}
-        style={{
-          animationDelay: '0ms',
-          animationDuration: '1.4s',
-          animationTimingFunction: 'ease-in-out',
-        }}
-      />
-      <div
-        className={`${dotSize} ${color} rounded-full animate-bounce`}
-        style={{
-          animationDelay: '150ms',
-          animationDuration: '1.4s',
-          animationTimingFunction: 'ease-in-out',
-        }}
-      />
-      <div
-        className={`${dotSize} ${color} rounded-full animate-bounce`}
-        style={{
-          animationDelay: '300ms',
-          animationDuration: '1.4s',
-          animationTimingFunction: 'ease-in-out',
-        }}
-      />
+    <div className={`flex items-center gap-1 ${layoutClass} ${className}`}>
+      {DOTS_CONFIG.map((config, index) => (
+        <div
+          key={index}
+          className={`${dotSize} ${color} rounded-full animate-bounce`}
+          style={{
+            animationDelay: config.delay,
+            animationDuration: '1.4s',
+            animationTimingFunction: 'ease-in-out',
+          }}
+        />
+      ))}
     </div>
   );
 };

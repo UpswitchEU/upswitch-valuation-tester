@@ -399,11 +399,6 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
                 }`}>
                   <div className="whitespace-pre-wrap text-sm">
                     {message.content}
-                    {message.isStreaming && !message.content && (
-                      <div className="inline-flex items-center gap-1 ml-1">
-                        <LoadingDots size="sm" color="text-current" />
-                      </div>
-                    )}
                   </div>
                   
                   {/* NEW: Display reasoning if available */}
@@ -437,9 +432,9 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
                   )}
                   
                   {message.type !== 'user' && message.isStreaming && (
-                    <div className="flex items-center gap-2 mt-2 text-xs text-zinc-400 animate-fade-in">
+                    <div className="flex items-center gap-2 mt-3 px-3 py-2 bg-zinc-600/30 rounded-lg animate-fade-in">
                       <LoadingDots size="sm" color="text-zinc-400" />
-                      <span className="animate-pulse">{loadingMessage}</span>
+                      <span className="text-sm text-zinc-300 animate-pulse">{loadingMessage}</span>
                     </div>
                   )}
                 </div>
