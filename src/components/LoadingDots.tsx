@@ -33,7 +33,7 @@ export const LoadingDots: React.FC<LoadingDotsProps> = ({
       {DOTS_CONFIG.map((config, index) => (
         <div
           key={index}
-          className={`${dotSize} ${color} rounded-full animate-bounce`}
+          className={`${dotSize} ${color} bg-current rounded-full animate-bounce`}
           style={{
             animationDelay: config.delay,
             animationDuration: '1.4s',
