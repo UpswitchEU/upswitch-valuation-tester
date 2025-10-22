@@ -294,7 +294,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // Check if we have an auth cookie before making API call
     if (!hasAuthCookie()) {
       authLogger.info('No business card cookie found - continuing as guest user');
-      setIsAuthenticated(false);
       setUser(null);
       return;
     }

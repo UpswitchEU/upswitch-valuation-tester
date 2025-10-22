@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Send, Loader2, DollarSign } from 'lucide-react';
+import { Send, DollarSign } from 'lucide-react';
 import { serviceLogger } from '../utils/logger';
 import { LoadingDots } from './LoadingDots';
 import { useLoadingMessage } from '../hooks/useLoadingMessage';
