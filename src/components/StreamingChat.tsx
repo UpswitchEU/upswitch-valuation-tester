@@ -9,6 +9,8 @@ import { AI_CONFIG } from '../config';
 import { streamingChatService } from '../services/chat/streamingChatService';
 import { ContextualTip } from './ContextualTip';
 import { ValuationProgressTracker } from './ValuationProgressTracker';
+import { LoadingDots } from './LoadingDots';
+import { useLoadingMessage } from '../hooks/useLoadingMessage';
 
 interface Message {
   id: string;
@@ -52,6 +54,7 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [isStreaming, setIsStreaming] = useState(false);
+  const loadingMessage: string = useLoadingMessage();
   const [progressItems, setProgressItems] = useState<ProgressItem[]>([
     { id: 'company', label: 'Company Information', status: 'pending' },
     { id: 'revenue', label: 'Revenue Data', status: 'pending' },
@@ -432,9 +435,9 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
                   )}
                   
                   {message.type !== 'user' && message.isStreaming && (
-                    <div className="flex items-center gap-1 mt-2 text-xs text-zinc-400">
-                      <Loader2 className="w-3 h-3 animate-spin" />
-                      <span>AI is typing...</span>
+                    <div className="flex items-center gap-2 mt-2 text-xs text-zinc-400 animate-fade-in">
+                      <LoadingDots size="sm" color="text-zinc-400" />
+                      <span className="animate-pulse">{loadingMessage}</span>
                     </div>
                   )}
                 </div>

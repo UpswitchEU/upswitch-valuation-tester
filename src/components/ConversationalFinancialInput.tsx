@@ -1,6 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Send, Loader2, DollarSign } from 'lucide-react';
 import { serviceLogger } from '../utils/logger';
+import { LoadingDots } from './LoadingDots';
+import { useLoadingMessage } from '../hooks/useLoadingMessage';
 
 interface ConversationalFinancialInputProps {
   companyId: string;
@@ -21,6 +23,7 @@ export const ConversationalFinancialInput: React.FC<ConversationalFinancialInput
   onComplete,
   onError
 }) => {
+  const loadingMessage = useLoadingMessage();
   const [messages, setMessages] = useState<Message[]>([
     {
       id: '1',
@@ -188,8 +191,9 @@ ${nextQ.question}
                   }`}
                 >
                   {message.isLoading ? (
-                    <div className="flex items-center justify-center py-2">
-                      <Loader2 className="w-4 h-4 animate-spin text-green-600" />
+                    <div className="flex items-center justify-center gap-2 py-2">
+                      <LoadingDots size="sm" color="text-green-600" />
+                      <span className="text-xs text-zinc-400 animate-pulse">{loadingMessage}</span>
                     </div>
                   ) : (
                     <div 
