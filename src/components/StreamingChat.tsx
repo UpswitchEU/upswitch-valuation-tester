@@ -399,8 +399,10 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
                 }`}>
                   <div className="whitespace-pre-wrap text-sm">
                     {message.content}
-                    {message.isStreaming && (
-                      <span className="inline-block w-2 h-4 bg-current animate-pulse ml-1" />
+                    {message.isStreaming && !message.content && (
+                      <div className="inline-flex items-center gap-1 ml-1">
+                        <LoadingDots size="sm" color="text-current" />
+                      </div>
                     )}
                   </div>
                   
