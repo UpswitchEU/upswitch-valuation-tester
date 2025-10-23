@@ -78,14 +78,14 @@ export const UserDropdown: React.FC<UserDropdownProps> = ({ user, onLogout }) =>
                           import.meta.env.VITE_API_BASE_URL || 
                           'https://web-production-8d00b.up.railway.app';
         
-        const response = await fetch(`${backendUrl}/api/users/${user.id}`, {
+        const response = await fetch(`${backendUrl}/api/auth/me`, {
           credentials: 'include',
         });
 
         if (response.ok) {
           const data = await response.json();
-          if (data.success && data.data?.avatar_url) {
-            setAvatarUrl(data.data.avatar_url);
+          if (data.success && data.data?.user?.avatar_url) {
+            setAvatarUrl(data.data.user.avatar_url);
           }
         }
       } catch (error) {
