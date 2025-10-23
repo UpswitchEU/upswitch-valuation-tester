@@ -83,16 +83,7 @@ export const UserDropdown: React.FC<UserDropdownProps> = ({ user, onLogout }) =>
     await onLogout();
   };
 
-  const handleSignIn = () => {
-    setIsOpen(false);
-    // Open parent window to sign in
-    if (window.parent && window.parent !== window) {
-      window.parent.postMessage({ type: 'OPEN_LOGIN' }, '*');
-    } else {
-      // Fallback: open in same window
-      window.open('https://upswitch.biz/login', '_blank');
-    }
-  };
+  // Removed handleSignIn since Sign In menu item was removed
 
   const handleCreateAccount = () => {
     setIsOpen(false);
