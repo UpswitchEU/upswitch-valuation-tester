@@ -11,7 +11,7 @@ import { ContextualTip } from './ContextualTip';
 import { ValuationProgressTracker } from './ValuationProgressTracker';
 import { LoadingDots } from './LoadingDots';
 import { useLoadingMessage } from '../hooks/useLoadingMessage';
-import { ensureValidMessages, isValidMessage } from '../utils/messageUtils';
+// Removed complex validation imports - using simple approach like IlaraAI
 import { chatLogger } from '../utils/logger';
 
 interface Message {
@@ -80,21 +80,9 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
     scrollToBottom();
   }, [messages, scrollToBottom]);
 
-  // Monitor messages for null/undefined values
+  // Simple monitoring - just log message count changes
   useEffect(() => {
-    const invalidMessages = messages.filter(msg => !msg || !isValidMessage(msg));
-    if (invalidMessages.length > 0) {
-      chatLogger.error('Found invalid messages in state', { 
-        invalidCount: invalidMessages.length,
-        totalCount: messages.length,
-        invalidMessages 
-      });
-    }
-    
-    chatLogger.debug('Messages state updated', { 
-      count: messages.length,
-      validCount: ensureValidMessages(messages).length 
-    });
+    chatLogger.debug('Messages state updated', { count: messages.length });
   }, [messages]);
 
   // Initialize with welcome message
@@ -124,63 +112,20 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
   }, []);
 
   const addMessage = useCallback((message: Omit<Message, 'id' | 'timestamp'>) => {
-    // Validate message before creating - be less strict
-    if (!message || typeof message !== 'object') {
-      chatLogger.error('Attempted to add invalid message', { message });
-      // Return error message instead of null
-      const errorMessage: Message = {
-        id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
-        type: 'system',
-        content: 'Error: Invalid message data',
-        timestamp: new Date(),
-        isComplete: true,
-        isStreaming: false
-      };
-      setMessages(prev => [...prev, errorMessage]);
-      return errorMessage;
-    }
-    
-    // Only validate critical fields - content can be empty for streaming
-    if (!message.type || !['user', 'ai', 'system'].includes(message.type)) {
-      chatLogger.warn('Message missing or invalid type', { message });
-      // Return error message instead of null
-      const errorMessage: Message = {
-        id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
-        type: 'system',
-        content: 'Error: Invalid message type',
-        timestamp: new Date(),
-        isComplete: true,
-        isStreaming: false
-      };
-      setMessages(prev => [...prev, errorMessage]);
-      return errorMessage;
-    }
-    
+    // Simple, direct approach like IlaraAI - trust TypeScript types
     const newMessage: Message = {
       ...message,
       id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
       timestamp: new Date(),
       isComplete: message.isComplete ?? false,
       isStreaming: message.isStreaming ?? false,
-      content: message.content ?? '' // Default to empty string for streaming
+      content: message.content ?? ''
     };
     
-    chatLogger.debug('Adding message', { messageId: newMessage.id, type: newMessage.type, contentLength: newMessage.content.length });
+    chatLogger.debug('Adding message', { messageId: newMessage.id, type: newMessage.type });
     
-    setMessages(prev => {
-      const validPrev = ensureValidMessages(prev);
-      const updated = [...validPrev, newMessage];
-      const validUpdated = ensureValidMessages(updated);
-      
-      if (validUpdated.length !== updated.length) {
-        chatLogger.warn('Filtered out invalid messages during add', { 
-          original: updated.length, 
-          filtered: validUpdated.length 
-        });
-      }
-      
-      return validUpdated;
-    });
+    // Simple state update like IlaraAI - no complex validation
+    setMessages(prev => [...prev, newMessage]);
     
     return newMessage;
   }, []);
@@ -194,37 +139,12 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
     const currentMessageId = currentStreamingMessageRef.current.id;
     chatLogger.debug('Updating streaming message', { messageId: currentMessageId, contentLength: content.length, isComplete });
     
-    setMessages(prev => {
-      const validPrev = ensureValidMessages(prev);
-      
-      const updated = validPrev.map(msg => {
-        if (!msg || !isValidMessage(msg)) {
-          chatLogger.warn('Found invalid message during update', { msg });
-          return null;
-        }
-        
-        if (msg.id === currentMessageId) {
-          return { 
-            ...msg, 
-            content: msg.content + content, 
-            isComplete, 
-            isStreaming: !isComplete 
-          };
-        }
-        return msg;
-      }).filter(Boolean); // Remove any null entries
-      
-      const validUpdated = ensureValidMessages(updated);
-      
-      if (validUpdated.length !== updated.length) {
-        chatLogger.warn('Filtered out invalid messages during update', { 
-          original: updated.length, 
-          filtered: validUpdated.length 
-        });
-      }
-      
-      return validUpdated;
-    });
+    // Simple state update like IlaraAI - no complex validation
+    setMessages(prev => prev.map(msg => 
+      msg.id === currentMessageId
+        ? { ...msg, content: msg.content + content, isComplete, isStreaming: !isComplete }
+        : msg
+    ));
     
     if (isComplete && currentStreamingMessageRef.current) {
       chatLogger.debug('Completing streaming message', { messageId: currentMessageId });
@@ -232,6 +152,37 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
       currentStreamingMessageRef.current = null;
     }
   }, [onMessageComplete]);
+
+  // EventSource fallback function
+  const tryEventSourceFallback = useCallback((sessionId: string, userInput: string, userId: string | undefined, aiMessage: Message) => {
+    chatLogger.info('Attempting EventSource fallback', { sessionId });
+    
+    const eventSource = streamingChatService.streamConversationEventSource(
+      sessionId,
+      userInput,
+      userId,
+      (event) => {
+        chatLogger.info('EventSource event received', { type: event.type, hasContent: !!event.content });
+        handleStreamEvent(event);
+      },
+      (error) => {
+        chatLogger.error('EventSource error', { error: error.message });
+        setIsStreaming(false);
+        addMessage({
+          type: 'system',
+          content: 'EventSource connection failed. Please try again.',
+          isComplete: true
+        });
+      },
+      () => {
+        chatLogger.info('EventSource completed', { sessionId });
+        setIsStreaming(false);
+      }
+    );
+    
+    // Store reference for cleanup
+    eventSourceRef.current = eventSource as any;
+  }, [handleStreamEvent, addMessage]);
 
   const handleStreamEvent = useCallback((data: any) => {
     chatLogger.debug('Received stream event', { type: data.type, hasContent: !!data.content, contentLength: data.content?.length });
@@ -326,16 +277,62 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
     currentStreamingMessageRef.current = aiMessage;
 
     try {
+      chatLogger.info('Starting async generator consumption', { sessionId, userInput: userInput.substring(0, 50) + '...' });
+      let eventCount = 0;
+      let generatorTimeout: NodeJS.Timeout;
+      
+      // Set timeout to detect if generator hangs
+      generatorTimeout = setTimeout(() => {
+        chatLogger.warn('Async generator timeout - no events received in 10 seconds', { sessionId });
+        setIsStreaming(false);
+        addMessage({
+          type: 'system',
+          content: 'Streaming timeout. Please try again.',
+          isComplete: true
+        });
+      }, 10000);
+      
       // Use streaming service
       for await (const event of streamingChatService.streamConversation(
         sessionId,
         userInput,
         userId
       )) {
+        clearTimeout(generatorTimeout);
+        eventCount++;
+        chatLogger.info('Event received from generator', { 
+          eventCount, 
+          type: event.type, 
+          hasContent: !!event.content,
+          contentLength: event.content?.length,
+          sessionId: event.session_id 
+        });
         handleStreamEvent(event);
+      }
+      
+      clearTimeout(generatorTimeout);
+      chatLogger.info('Async generator completed', { 
+        totalEvents: eventCount, 
+        sessionId,
+        messageId: aiMessage.id 
+      });
+      
+      // If no events were received, try EventSource fallback
+      if (eventCount === 0) {
+        chatLogger.warn('No events received from async generator, trying EventSource fallback', { sessionId });
+        tryEventSourceFallback(sessionId, userInput, userId, aiMessage);
+        return;
       }
 
     } catch (error) {
+      chatLogger.error('Async generator error', { 
+        error: error instanceof Error ? error.message : 'Unknown error',
+        stack: error instanceof Error ? error.stack : undefined,
+        sessionId,
+        messageId: aiMessage.id,
+        userInput: userInput.substring(0, 50) + '...'
+      });
+      
       console.error('Failed to start streaming:', error);
       setIsStreaming(false);
       
@@ -372,13 +369,11 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
 
   const getSmartFollowUps = useCallback(() => {
     const messageCount = messages.length;
-    const validMessages = ensureValidMessages(messages);
-    const lastAiMessage = validMessages.filter(m => m && m.type === 'ai').slice(-1)[0];
+    const lastAiMessage = messages.filter(m => m.type === 'ai').slice(-1)[0];
     const lastAiContent = lastAiMessage?.content.toLowerCase() || '';
     
     chatLogger.debug('Getting smart follow-ups', { 
-      messageCount, 
-      validMessageCount: validMessages.length,
+      messageCount,
       lastAiMessageId: lastAiMessage?.id 
     });
     
@@ -503,14 +498,7 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
 
       {/* Messages */}
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
-        {ensureValidMessages(messages).map((message) => {
-          // Additional safety check for each message
-          if (!message || !isValidMessage(message)) {
-            chatLogger.warn('Rendering invalid message, skipping', { message });
-            return null;
-          }
-          
-          return (
+        {messages.map((message) => (
           <div
             key={message.id}
             className={`flex ${message.type === 'user' ? 'justify-end' : 'justify-start'}`}
@@ -584,8 +572,7 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
               </div>
             </div>
           </div>
-          );
-        }).filter(Boolean)}
+        ))}
         <div ref={messagesEndRef} />
       </div>
 
@@ -618,13 +605,7 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
 
           {/* Action buttons row */}
           <div className="flex gap-2 flex-wrap items-center">
-            {getSmartFollowUps().filter(Boolean).map((suggestion, idx) => {
-              if (!suggestion || typeof suggestion !== 'string') {
-                chatLogger.warn('Invalid suggestion found, skipping', { suggestion, idx });
-                return null;
-              }
-              
-              return (
+            {getSmartFollowUps().map((suggestion, idx) => (
               <button
                 key={idx}
                 type="button"
@@ -634,8 +615,7 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
               >
                 {suggestion}
               </button>
-              );
-            }).filter(Boolean)}
+            ))}
             
             {/* Right side with send button */}
             <div className="flex flex-grow items-center justify-end gap-2">
