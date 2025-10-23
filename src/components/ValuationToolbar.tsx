@@ -18,6 +18,7 @@ export const ValuationToolbar: React.FC<ValuationToolbarProps> = ({
   onTabChange,
   companyName
 }) => {
+  console.log('🔵 [ValuationToolbar] User prop received:', user);
   const { refreshAuth } = useAuth();
   const [isEditingName, setIsEditingName] = useState(false);
   const [editedName, setEditedName] = useState(valuationName);

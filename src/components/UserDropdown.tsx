@@ -8,6 +8,7 @@ interface UserDropdownProps {
 }
 
 export const UserDropdown: React.FC<UserDropdownProps> = ({ user, onLogout }) => {
+  console.log('🔵 [UserDropdown] Rendering with user:', user);
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null); // Track button position

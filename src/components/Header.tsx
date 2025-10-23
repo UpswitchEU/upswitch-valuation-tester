@@ -19,6 +19,7 @@ export const Header: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { user, refreshAuth } = useAuth();
+  console.log('🔵 [Header] User from useAuth:', user);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLLIElement>(null);
 

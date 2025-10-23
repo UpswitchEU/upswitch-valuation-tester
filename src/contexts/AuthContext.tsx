@@ -300,6 +300,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         // Handle nested user structure (data.data.user or data.data)
         const userData = data.data.user || data.data;
         setUser(userData);
+        authLogger.info('User state updated', { 
+          userId: userData.id, 
+          email: userData.email,
+          name: userData.name 
+        });
+        console.log('🔵 [AuthContext] User state set:', userData);
         authLogger.info('Authentication successful via token exchange', { email: userData.email });
         authLogger.debug('Token exchange - user data', {
           id: userData.id,
