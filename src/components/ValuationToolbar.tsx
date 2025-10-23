@@ -1,11 +1,11 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Eye, Code, Info, RefreshCw, Download, Maximize, LogOut, User } from 'lucide-react';
-// import { UserAvatar } from './UserAvatar';
+import { Eye, Code, Info, RefreshCw, Download, Maximize } from 'lucide-react';
 import { ValuationToolbarProps } from '../types/valuation';
 import { NameGenerator } from '../utils/nameGenerator';
 import { BrandedLoading } from './BrandedLoading';
 import { generalLogger } from '../utils/logger';
 import { useAuth } from '../hooks/useAuth';
+import { UserDropdown } from './UserDropdown';
 
 export const ValuationToolbar: React.FC<ValuationToolbarProps> = ({
   onRefresh,
@@ -29,9 +29,7 @@ export const ValuationToolbar: React.FC<ValuationToolbarProps> = ({
     }
     return NameGenerator.generateValuationName();
   });
-  const [showUserDropdown, setShowUserDropdown] = useState(false);
   const nameInputRef = useRef<HTMLInputElement>(null);
-  const userDropdownRef = useRef<HTMLDivElement>(null);
 
   // Focus input when editing starts
   useEffect(() => {
@@ -49,34 +47,6 @@ export const ValuationToolbar: React.FC<ValuationToolbarProps> = ({
   }, [generatedName, isEditingName]);
 
 
-  // Close user dropdown when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (userDropdownRef.current && !userDropdownRef.current.contains(event.target as Node)) {
-        setShowUserDropdown(false);
-      }
-    };
-
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
-
-  // Close dropdown on escape key
-  useEffect(() => {
-    const handleEscapeKey = (event: KeyboardEvent) => {
-      if (event.key === 'Escape' && showUserDropdown) {
-        setShowUserDropdown(false);
-      }
-    };
-
-    if (showUserDropdown) {
-      document.addEventListener('keydown', handleEscapeKey);
-    }
-
-    return () => {
-      document.removeEventListener('keydown', handleEscapeKey);
-    };
-  }, [showUserDropdown]);
 
   const handleNameEdit = () => {
     setIsEditingName(true);
@@ -122,30 +92,8 @@ export const ValuationToolbar: React.FC<ValuationToolbarProps> = ({
     onTabChange?.(tab);
   };
 
-  // Get user initials for placeholder
-  const getUserInitials = () => {
-    if (!user?.name) return '?';
-    const names = user.name.split(' ');
-    if (names.length >= 2) {
-      return `${names[0][0]}${names[1][0]}`.toUpperCase();
-    }
-    return user.name.substring(0, 2).toUpperCase();
-  };
-
-  // Computed avatar values
-  const avatarUrl = user?.avatar_url || user?.avatar;
-  const hasAvatar = !!avatarUrl;
-
-  const handleUserClick = () => {
-    // Only show dropdown for authenticated users
-    if (user) {
-      setShowUserDropdown(!showUserDropdown);
-    }
-  };
 
   const handleLogout = async () => {
-    setShowUserDropdown(false);
-    
     try {
       generalLogger.info('Logging out user');
       
@@ -295,73 +243,7 @@ export const ValuationToolbar: React.FC<ValuationToolbarProps> = ({
                     <p className="text-xs text-zinc-400">{companyName}</p>
                   )}
                 </div>
-                <div className="relative" ref={userDropdownRef}>
-                  <button
-                    onClick={handleUserClick}
-                    className="flex items-center justify-center w-10 h-10 sm:w-8 sm:h-8 rounded-full bg-gray-200 text-gray-700 text-sm font-medium hover:bg-gray-300 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
-                    aria-label={user ? `${user.name || user.email} - Account Menu` : 'Guest - Account Menu'}
-                    aria-expanded={showUserDropdown}
-                    aria-haspopup="true"
-                  >
-                    {user ? (
-                      <>
-                        {hasAvatar ? (
-                          <img
-                            src={avatarUrl || ''}
-                            alt={user?.name || 'User'}
-                            className="w-full h-full rounded-full object-cover"
-                            loading="lazy"
-                            onError={(e) => {
-                              e.currentTarget.style.display = 'none';
-                              e.currentTarget.nextElementSibling?.classList.remove('hidden');
-                            }}
-                          />
-                        ) : null}
-                        <span className={hasAvatar ? 'hidden' : 'block'}>
-                          {getUserInitials()}
-                        </span>
-                      </>
-                    ) : (
-                      <User className="w-4 h-4 text-gray-600" />
-                    )}
-                  </button>
-                  
-                  {showUserDropdown && user && (
-                    <>
-                      {/* Backdrop */}
-                      <div className="fixed inset-0 z-40" onClick={() => setShowUserDropdown(false)} aria-hidden="true" />
-                      
-                      {/* Dropdown */}
-                      <div className="absolute right-0 mt-2 w-64 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-50">
-                        {/* User Profile Header */}
-                        <div className="px-4 py-3 border-b border-gray-200">
-                          <div className="flex items-center space-x-3">
-                            <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center flex-shrink-0">
-                              <span className="text-white text-sm font-medium">{getUserInitials()}</span>
-                            </div>
-                            <div className="flex-1 min-w-0">
-                              <div className="text-sm font-medium text-gray-900 truncate">
-                                {user.name || 'User'}
-                              </div>
-                              <div className="text-xs text-gray-500 truncate">{user.email}</div>
-                            </div>
-                          </div>
-                        </div>
-                        
-                        {/* Menu Items */}
-                        <div className="py-2">
-                          <button
-                            onClick={handleLogout}
-                            className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 transition-colors flex items-center gap-2"
-                          >
-                            <LogOut className="w-4 h-4" />
-                            <span>Log Out</span>
-                          </button>
-                        </div>
-                      </div>
-                    </>
-                  )}
-                </div>
+                <UserDropdown user={user} onLogout={handleLogout} />
               </div>
             </div>
           </div>
