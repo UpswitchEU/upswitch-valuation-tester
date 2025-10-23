@@ -287,7 +287,7 @@ export const ValuationToolbar: React.FC<ValuationToolbarProps> = ({
                 <div className="relative" ref={userDropdownRef}>
                   <button
                     onClick={handleUserClick}
-                    className="flex items-center justify-center w-10 h-10 sm:w-8 sm:h-8 rounded-full bg-zinc-700 text-zinc-200 text-sm font-medium hover:bg-zinc-600 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
+                    className="flex items-center justify-center w-10 h-10 sm:w-8 sm:h-8 rounded-full bg-gray-200 text-gray-700 text-sm font-medium hover:bg-gray-300 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
                     aria-label={user ? `${user.name || user.email} - Account Menu` : 'Guest - Account Menu'}
                     aria-expanded={showUserDropdown}
                     aria-haspopup="true"
@@ -311,7 +311,7 @@ export const ValuationToolbar: React.FC<ValuationToolbarProps> = ({
                         </span>
                       </>
                     ) : (
-                      <span className="text-xs font-medium text-zinc-200">Guest</span>
+                      <span className="text-xs font-medium text-gray-700">Guest</span>
                     )}
                   </button>
                   

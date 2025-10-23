@@ -64,18 +64,9 @@ const UserAvatar: React.FC<UserAvatarProps> = React.memo(({
           flex items-center justify-center
           transition-colors duration-200
           cursor-pointer
+          bg-gray-200 hover:bg-gray-300
           focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2
         `}
-        style={{
-          backgroundColor: user ? '#3f3f46' : '#3f3f46', // zinc-700
-          borderColor: 'transparent' // No border for dark theme
-        }}
-        onMouseEnter={(e) => {
-          e.currentTarget.style.backgroundColor = '#52525b'; // zinc-600 on hover
-        }}
-        onMouseLeave={(e) => {
-          e.currentTarget.style.backgroundColor = '#3f3f46'; // zinc-700 on leave
-        }}
         aria-label={user ? `${user.name || 'User'}` : 'Guest'}
         role="button"
         tabIndex={0}
@@ -95,14 +86,14 @@ const UserAvatar: React.FC<UserAvatarProps> = React.memo(({
         ) : user ? (
           // User without avatar - show initials
           <span 
-            className={`${config.text} font-semibold text-gray-200`}
+            className={`${config.text} font-semibold text-gray-700`}
             style={{ lineHeight: 1 }}
           >
             {getUserInitials()}
           </span>
         ) : (
           // Guest user - show "Guest" text to match ValuationToolbar
-          <span className="text-xs font-medium text-zinc-200">Guest</span>
+          <span className="text-xs font-medium text-gray-700">Guest</span>
         )}
       </div>
 
