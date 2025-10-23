@@ -2,6 +2,8 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Eye, Code, Info, RefreshCw, Download, Maximize, User } from 'lucide-react';
 // import { UserAvatar } from './UserAvatar';
 import { ValuationToolbarProps } from '../types/valuation';
+import { NameGenerator } from '../utils/nameGenerator';
+import { BrandedLoading } from './BrandedLoading';
 
 export const ValuationToolbar: React.FC<ValuationToolbarProps> = ({
   onRefresh,
@@ -16,6 +18,14 @@ export const ValuationToolbar: React.FC<ValuationToolbarProps> = ({
 }) => {
   const [isEditingName, setIsEditingName] = useState(false);
   const [editedName, setEditedName] = useState(valuationName);
+  
+  // Generate unique name based on company or default
+  const [generatedName] = useState(() => {
+    if (companyName) {
+      return NameGenerator.generateFromCompany(companyName);
+    }
+    return NameGenerator.generateValuationName();
+  });
   const [showUserDropdown, setShowUserDropdown] = useState(false);
   const nameInputRef = useRef<HTMLInputElement>(null);
   const userDropdownRef = useRef<HTMLDivElement>(null);
@@ -86,7 +96,11 @@ export const ValuationToolbar: React.FC<ValuationToolbarProps> = ({
             <div className="flex flex-shrink-0 items-center gap-2" style={{ width: '23%' }}>
               <div className="relative flex items-center gap-2 group">
                 <div className="flex items-center gap-2 text-sm font-medium text-white">
-                  <div className="w-4 h-4 rounded bg-gradient-to-br from-blue-500 to-purple-600 animate-pulse"></div>
+                  {isGenerating ? (
+                    <BrandedLoading size="sm" color="white" />
+                  ) : (
+                    <div className="w-4 h-4 rounded bg-gradient-to-br from-blue-500 to-purple-600 animate-pulse"></div>
+                  )}
                   {isEditingName ? (
                     <input
                       ref={nameInputRef}
@@ -104,7 +118,7 @@ export const ValuationToolbar: React.FC<ValuationToolbarProps> = ({
                       className="hidden md:block font-semibold text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-400 hover:from-blue-300 hover:to-purple-300 transition-all duration-200 cursor-pointer hover:scale-105"
                       title="Click to edit valuation name"
                     >
-                      {editedName}
+                      {generatedName}
                     </button>
                   )}
                   <button

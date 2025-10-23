@@ -33,6 +33,7 @@ export const AIAssistedValuation: React.FC = () => {
   // Panel resize state
   const [leftPanelWidth, setLeftPanelWidth] = useState(30); // 30% default
   const [isMobile, setIsMobile] = useState(false);
+  const [mobileActivePanel, setMobileActivePanel] = useState<'chat' | 'preview'>('chat');
   
   // Mobile detection
   useEffect(() => {
@@ -46,6 +47,11 @@ export const AIAssistedValuation: React.FC = () => {
   const handleResize = useCallback((newWidth: number) => {
     const constrainedWidth = Math.max(20, Math.min(80, newWidth));
     setLeftPanelWidth(constrainedWidth);
+  }, []);
+
+  // Mobile panel switcher
+  const switchMobilePanel = useCallback((panel: 'chat' | 'preview') => {
+    setMobileActivePanel(panel);
   }, []);
   
   // NEW: Business profile data state
@@ -292,7 +298,9 @@ export const AIAssistedValuation: React.FC = () => {
       <div className="flex flex-col lg:flex-row flex-1 overflow-hidden mx-4 my-4 rounded-lg border border-zinc-800" style={{transition: 'width 150ms ease-out'}}>
         {/* Left Panel: Chat */}
         <div 
-          className="h-full flex flex-col bg-zinc-900 border-r border-zinc-800 w-full lg:w-auto"
+          className={`${
+            isMobile ? (mobileActivePanel === 'chat' ? 'w-full' : 'hidden') : ''
+          } h-full flex flex-col bg-zinc-900 border-r border-zinc-800 w-full lg:w-auto`}
           style={{ width: isMobile ? '100%' : `${leftPanelWidth}%` }}
         >
           {/* Success Banner when results are ready */}
@@ -371,7 +379,9 @@ export const AIAssistedValuation: React.FC = () => {
 
         {/* Right Panel: Live Report */}
         <div 
-          className="h-full min-h-[400px] lg:min-h-0 flex flex-col bg-white overflow-y-auto w-full lg:w-auto border-t lg:border-t-0 border-zinc-800"
+          className={`${
+            isMobile ? (mobileActivePanel === 'preview' ? 'w-full' : 'hidden') : ''
+          } h-full min-h-[400px] lg:min-h-0 flex flex-col bg-white overflow-y-auto w-full lg:w-auto border-t lg:border-t-0 border-zinc-800`}
           style={{ width: isMobile ? '100%' : `${100 - leftPanelWidth}%` }}
         >
           {/* Tab Content */}
@@ -389,11 +399,40 @@ export const AIAssistedValuation: React.FC = () => {
           )}
 
           {activeTab === 'source' && (
-            <div className="h-full bg-zinc-900 p-4 overflow-y-auto">
-              <div className="bg-zinc-800 rounded-lg p-4">
-                <h3 className="text-white font-semibold mb-4">Source Code</h3>
-                <pre className="text-zinc-300 text-sm overflow-x-auto">
-                  <code>{liveHtmlReport || 'No source code available'}</code>
+            <div className="h-full bg-white p-6 overflow-y-auto">
+              <div className="relative">
+                <button
+                  onClick={async () => {
+                    try {
+                      await navigator.clipboard.writeText(liveHtmlReport || '');
+                      // You could add a toast notification here
+                    } catch (err) {
+                      console.error('Failed to copy text:', err);
+                    }
+                  }}
+                  className="absolute top-4 right-4 p-2 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
+                  title="Copy code"
+                >
+                  <svg className="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                  </svg>
+                </button>
+                <pre
+                  className="p-4 bg-gray-50 rounded-lg overflow-auto border border-gray-200 max-h-[calc(100vh-200px)] min-h-[400px]"
+                  style={{
+                    scrollbarWidth: 'thin',
+                    scrollbarColor: '#CBD5E1 #F1F5F9',
+                  }}
+                >
+                  <code
+                    className="text-sm text-black block whitespace-pre-wrap"
+                    style={{
+                      WebkitUserSelect: 'text',
+                      userSelect: 'text',
+                    }}
+                  >
+                    {liveHtmlReport || 'No source code available'}
+                  </code>
                 </pre>
               </div>
             </div>
@@ -470,6 +509,32 @@ export const AIAssistedValuation: React.FC = () => {
         </div>
       </div>
 
+      {/* Mobile Panel Switcher */}
+      {isMobile && (
+        <div className="fixed bottom-4 left-1/2 transform -translate-x-1/2 flex gap-2 bg-zinc-800 p-1 rounded-full shadow-lg">
+          <button
+            onClick={() => switchMobilePanel('chat')}
+            className={`px-4 py-2 rounded-full transition-colors ${
+              mobileActivePanel === 'chat'
+                ? 'bg-blue-600 text-white'
+                : 'text-zinc-400 hover:text-white'
+            }`}
+          >
+            Chat
+          </button>
+          <button
+            onClick={() => switchMobilePanel('preview')}
+            className={`px-4 py-2 rounded-full transition-colors ${
+              mobileActivePanel === 'preview'
+                ? 'bg-blue-600 text-white'
+                : 'text-zinc-400 hover:text-white'
+            }`}
+          >
+            Preview
+          </button>
+        </div>
+      )}
+
       {/* Full Screen Modal */}
       <FullScreenModal
         isOpen={isFullScreen}
@@ -485,11 +550,40 @@ export const AIAssistedValuation: React.FC = () => {
           />
         )}
         {activeTab === 'source' && (
-          <div className="h-full bg-zinc-900 p-4 overflow-y-auto">
-            <div className="bg-zinc-800 rounded-lg p-4">
-              <h3 className="text-white font-semibold mb-4">Source Code</h3>
-              <pre className="text-zinc-300 text-sm overflow-x-auto">
-                <code>{liveHtmlReport || 'No source code available'}</code>
+          <div className="h-full bg-white p-6 overflow-y-auto">
+            <div className="relative">
+              <button
+                onClick={async () => {
+                  try {
+                    await navigator.clipboard.writeText(liveHtmlReport || '');
+                    // You could add a toast notification here
+                  } catch (err) {
+                    console.error('Failed to copy text:', err);
+                  }
+                }}
+                className="absolute top-4 right-4 p-2 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
+                title="Copy code"
+              >
+                <svg className="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                </svg>
+              </button>
+              <pre
+                className="p-4 bg-gray-50 rounded-lg overflow-auto border border-gray-200 max-h-[calc(100vh-200px)] min-h-[400px]"
+                style={{
+                  scrollbarWidth: 'thin',
+                  scrollbarColor: '#CBD5E1 #F1F5F9',
+                }}
+              >
+                <code
+                  className="text-sm text-black block whitespace-pre-wrap"
+                  style={{
+                    WebkitUserSelect: 'text',
+                    userSelect: 'text',
+                  }}
+                >
+                  {liveHtmlReport || 'No source code available'}
+                </code>
               </pre>
             </div>
           </div>

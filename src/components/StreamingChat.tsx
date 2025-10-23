@@ -4,7 +4,7 @@
  */
 
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { Send, Loader2, Bot, User } from 'lucide-react';
+import { Loader2, Bot, User } from 'lucide-react';
 import { AI_CONFIG } from '../config';
 import { streamingChatService } from '../services/chat/streamingChatService';
 import { ContextualTip } from './ContextualTip';
@@ -508,7 +508,16 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
                 {isStreaming ? (
                   <Loader2 className="w-4 h-4 text-zinc-900 animate-spin" />
                 ) : (
-                  <Send className="w-4 h-4 text-zinc-900" />
+                  <svg 
+                    xmlns="http://www.w3.org/2000/svg" 
+                    width="100%" 
+                    height="100%" 
+                    viewBox="0 -960 960 960" 
+                    className="shrink-0 h-5 w-5 text-black" 
+                    fill="currentColor"
+                  >
+                    <path d="M452-644 303-498q-9 9-21 8.5t-21-9.5-9-21 9-21l199-199q9-9 21-9t21 9l199 199q9 9 9 21t-9 21-21 9-21-9L512-646v372q0 13-8.5 21.5T482-244t-21.5-8.5T452-274z"/>
+                  </svg>
                 )}
               </button>
             </div>
