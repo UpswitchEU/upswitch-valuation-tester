@@ -13,6 +13,86 @@ import { useLoadingMessage } from '../hooks/useLoadingMessage';
 // Removed complex validation imports - using simple approach like IlaraAI
 import { chatLogger } from '../utils/logger';
 
+// Input validation constants
+const MAX_MESSAGE_LENGTH = 1000;
+const MIN_MESSAGE_LENGTH = 1;
+
+interface InputValidation {
+  is_valid: boolean;
+  errors: string[];
+  warnings: string[];
+  sanitized_input: string;
+  detected_pii: boolean;
+  confidence: number;
+}
+
+interface ModelPerformanceMetrics {
+  model_name: string;
+  model_version: string;
+  
+  // Latency
+  time_to_first_token_ms: number;
+  total_response_time_ms: number;
+  tokens_per_second: number;
+  
+  // Quality
+  response_coherence_score?: number;
+  response_relevance_score?: number;
+  hallucination_detected: boolean;
+  
+  // Cost
+  input_tokens: number;
+  output_tokens: number;
+  estimated_cost_usd: number;
+  
+  // Errors
+  error_occurred: boolean;
+  error_type?: string;
+  retry_count: number;
+}
+
+
+interface MessageMetadata {
+  // AI Response Metadata
+  model?: string;  // e.g., "gpt-4o-mini"
+  tokens_used?: number;
+  response_time_ms?: number;
+  confidence_score?: number;
+  
+  // Conversation Context
+  intent?: 'question' | 'answer' | 'clarification' | 'error' | 'warning';
+  topic?: string;  // e.g., "revenue", "industry", "valuation"
+  
+  // Data Collection
+  collected_field?: string;  // Which field was collected
+  field_value?: string | number;
+  validation_status?: 'valid' | 'invalid' | 'needs_clarification';
+  
+  // Quality Metrics
+  user_satisfaction?: 1 | 2 | 3 | 4 | 5;
+  was_helpful?: boolean;
+  needs_human_review?: boolean;
+  
+  // Business Context
+  valuation_result?: any;  // TODO: Type this properly
+  help_text?: string;
+  valuation_narrative?: string;
+  
+  // Tracking
+  session_phase?: 'onboarding' | 'data_collection' | 'valuation' | 'complete';
+  conversation_turn?: number;
+  
+  // Error Handling
+  error_type?: string;
+  retry_count?: number;
+  
+  // A/B Testing
+  ab_test?: {
+    test_name: string;
+    variant: 'A' | 'B' | 'C';
+  };
+}
+
 interface Message {
   id: string;
   type: 'user' | 'ai' | 'system';
@@ -20,9 +100,42 @@ interface Message {
   timestamp: Date;
   isStreaming?: boolean;
   isComplete?: boolean;
-  metadata?: any;
+  metadata?: MessageMetadata;  // ✅ TYPED
 }
 
+
+interface ConversationMetrics {
+  session_id: string;
+  user_id?: string;
+  
+  // Completion Metrics
+  started_at: Date;
+  completed_at?: Date;
+  duration_seconds?: number;
+  total_turns: number;
+  successful: boolean;
+  drop_off_point?: string;
+  
+  // Quality Metrics
+  ai_response_count: number;
+  user_message_count: number;
+  error_count: number;
+  retry_count: number;
+  avg_response_time_ms: number;
+  
+  // Business Metrics
+  valuation_generated: boolean;
+  data_completeness_percent: number;
+  collected_fields: string[];
+  
+  // Cost Metrics
+  total_tokens_used: number;
+  estimated_cost_usd: number;
+  
+  // User Experience
+  user_satisfaction_score?: number;
+  feedback_provided: boolean;
+}
 
 interface StreamingChatProps {
   sessionId: string;
@@ -48,7 +161,175 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [isStreaming, setIsStreaming] = useState(false);
+  const [conversationMetrics, setConversationMetrics] = useState<ConversationMetrics>({
+    session_id: sessionId,
+    user_id: userId,
+    started_at: new Date(),
+    total_turns: 0,
+    successful: false,
+    ai_response_count: 0,
+    user_message_count: 0,
+    error_count: 0,
+    retry_count: 0,
+    avg_response_time_ms: 0,
+    valuation_generated: false,
+    data_completeness_percent: 0,
+    collected_fields: [],
+    total_tokens_used: 0,
+    estimated_cost_usd: 0,
+    feedback_provided: false
+  });
   const loadingMessage: string = useLoadingMessage();
+  
+  // Input validation functions
+  const containsPII = (input: string): boolean => {
+    // Simple PII detection patterns
+    const piiPatterns = [
+      /\b\d{3}-\d{2}-\d{4}\b/, // SSN
+      /\b\d{4}[-\s]?\d{4}[-\s]?\d{4}[-\s]?\d{4}\b/, // Credit card
+      /\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b/, // Email
+      /\b\d{3}-\d{3}-\d{4}\b/, // Phone
+    ];
+    return piiPatterns.some(pattern => pattern.test(input));
+  };
+
+  const containsProfanity = (input: string): boolean => {
+    // Simple profanity detection (in production, use a proper library)
+    const profanityWords = ['damn', 'hell', 'shit', 'fuck', 'bitch', 'ass'];
+    const lowerInput = input.toLowerCase();
+    return profanityWords.some(word => lowerInput.includes(word));
+  };
+
+  const isValidNumber = (input: string): boolean => {
+    const num = parseFloat(input);
+    return !isNaN(num) && isFinite(num) && num >= 0;
+  };
+
+  const validateInput = useCallback(async (input: string): Promise<InputValidation> => {
+    const validation: InputValidation = {
+      is_valid: true,
+      errors: [],
+      warnings: [],
+      sanitized_input: input.trim(),
+      detected_pii: false,
+      confidence: 1.0
+    };
+    
+    // Length check
+    if (input.length > MAX_MESSAGE_LENGTH) {
+      validation.is_valid = false;
+      validation.errors.push(`Message too long (max ${MAX_MESSAGE_LENGTH} characters)`);
+    }
+    
+    if (input.length < MIN_MESSAGE_LENGTH) {
+      validation.is_valid = false;
+      validation.errors.push('Message cannot be empty');
+    }
+    
+    // PII detection
+    if (containsPII(input)) {
+      validation.detected_pii = true;
+      validation.warnings.push('Detected potential sensitive information');
+      validation.confidence = 0.7; // Lower confidence due to PII
+    }
+    
+    // Content safety
+    if (containsProfanity(input)) {
+      validation.is_valid = false;
+      validation.errors.push('Please keep conversation professional');
+    }
+    
+    // Business logic validation (if we know we're expecting a number)
+    const isNumericField = messages.length > 0 && 
+      messages[messages.length - 1]?.content?.toLowerCase().includes('revenue') ||
+      messages[messages.length - 1]?.content?.toLowerCase().includes('profit') ||
+      messages[messages.length - 1]?.content?.toLowerCase().includes('ebitda');
+    
+    if (isNumericField && !isValidNumber(input)) {
+      validation.is_valid = false;
+      validation.errors.push('Please enter a valid number');
+    }
+    
+    // Log validation results
+    chatLogger.debug('Input validation completed', {
+      sessionId,
+      isValid: validation.is_valid,
+      errorCount: validation.errors.length,
+      warningCount: validation.warnings.length,
+      detectedPII: validation.detected_pii,
+      confidence: validation.confidence
+    });
+    
+    return validation;
+  }, [messages, sessionId]);
+
+  // Model performance tracking
+  const trackModelPerformance = useCallback((metrics: ModelPerformanceMetrics) => {
+    // Log model performance
+    chatLogger.info('Model performance tracked', {
+      sessionId,
+      modelName: metrics.model_name,
+      responseTime: metrics.total_response_time_ms,
+      tokensUsed: metrics.output_tokens,
+      cost: metrics.estimated_cost_usd,
+      errorOccurred: metrics.error_occurred
+    });
+    
+    // Alert if performance is poor
+    if (metrics.total_response_time_ms > 5000) {
+      chatLogger.warn('Slow model response detected', {
+        sessionId,
+        responseTime: metrics.total_response_time_ms,
+        threshold: 5000
+      });
+    }
+    
+    if (metrics.estimated_cost_usd > 0.10) { // Alert if cost > $0.10
+      chatLogger.warn('High cost response detected', {
+        sessionId,
+        cost: metrics.estimated_cost_usd,
+        tokens: metrics.output_tokens
+      });
+    }
+    
+    // Update conversation metrics with model performance
+    setConversationMetrics(prev => ({
+      ...prev,
+      total_tokens_used: prev.total_tokens_used + metrics.output_tokens,
+      estimated_cost_usd: prev.estimated_cost_usd + metrics.estimated_cost_usd,
+      avg_response_time_ms: prev.avg_response_time_ms === 0 
+        ? metrics.total_response_time_ms 
+        : (prev.avg_response_time_ms + metrics.total_response_time_ms) / 2
+    }));
+  }, [sessionId]);
+
+  // A/B Testing functionality
+  const hashString = (str: string): number => {
+    let hash = 0;
+    for (let i = 0; i < str.length; i++) {
+      const char = str.charCodeAt(i);
+      hash = ((hash << 5) - hash) + char;
+      hash = hash & hash; // Convert to 32bit integer
+    }
+    return Math.abs(hash);
+  };
+
+  const useABTest = useCallback((testName: string): 'A' | 'B' | 'C' => {
+    const hash = hashString(`${userId || 'anonymous'}_${testName}`);
+    const variant = hash % 3;
+    const variantMap: { [key: number]: 'A' | 'B' | 'C' } = { 0: 'A', 1: 'B', 2: 'C' };
+    const selectedVariant = variantMap[variant];
+    
+    // Track A/B test assignment
+    chatLogger.info('A/B test assigned', {
+      testName,
+      variant: selectedVariant,
+      userId: userId || 'anonymous',
+      sessionId
+    });
+    
+    return selectedVariant;
+  }, [userId, sessionId]);
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const eventSourceRef = useRef<EventSource | null>(null);
@@ -64,26 +345,85 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
     scrollToBottom();
   }, [messages, scrollToBottom]);
 
+  // Analytics tracking
+  const trackConversationTurn = useCallback((message: Message) => {
+    setConversationMetrics(prev => ({
+      ...prev,
+      total_turns: prev.total_turns + 1,
+      [message.type === 'ai' ? 'ai_response_count' : 'user_message_count']: 
+        prev[message.type === 'ai' ? 'ai_response_count' : 'user_message_count'] + 1,
+      avg_response_time_ms: message.metadata?.response_time_ms 
+        ? (prev.avg_response_time_ms + message.metadata.response_time_ms) / 2 
+        : prev.avg_response_time_ms,
+      total_tokens_used: prev.total_tokens_used + (message.metadata?.tokens_used || 0),
+      estimated_cost_usd: prev.estimated_cost_usd + (message.metadata?.tokens_used || 0) * 0.00015, // GPT-4o-mini pricing
+      collected_fields: message.metadata?.collected_field 
+        ? [...prev.collected_fields, message.metadata.collected_field]
+        : prev.collected_fields
+    }));
+    
+    chatLogger.info('Conversation turn tracked', {
+      sessionId,
+      messageType: message.type,
+      turnNumber: conversationMetrics.total_turns + 1,
+      hasMetadata: !!message.metadata
+    });
+  }, [sessionId, conversationMetrics.total_turns]);
+
+  // Track conversation completion
+  const trackConversationCompletion = useCallback((successful: boolean, valuationGenerated: boolean) => {
+    setConversationMetrics(prev => ({
+      ...prev,
+      completed_at: new Date(),
+      duration_seconds: Math.floor((new Date().getTime() - prev.started_at.getTime()) / 1000),
+      successful,
+      valuation_generated: valuationGenerated,
+      data_completeness_percent: Math.min(100, (prev.collected_fields.length / 10) * 100) // Assuming 10 fields max
+    }));
+    
+    chatLogger.info('Conversation completion tracked', {
+      sessionId,
+      successful,
+      valuationGenerated,
+      totalTurns: conversationMetrics.total_turns,
+      duration: Math.floor((new Date().getTime() - conversationMetrics.started_at.getTime()) / 1000)
+    });
+  }, [sessionId, conversationMetrics.total_turns, conversationMetrics.started_at]);
+
   // Simple monitoring - just log message count changes
   useEffect(() => {
     chatLogger.debug('Messages state updated', { count: messages.length });
   }, [messages]);
 
-  // Initialize with welcome message
+  // Initialize with welcome message (A/B tested)
   useEffect(() => {
     if (messages.length === 0) {
+      const greetingVariant = useABTest('greeting_message');
+      
+      const greetingMessages = {
+        A: `Hi! I'm your AI valuation expert. Let's start with your company name.`,
+        B: `Welcome! I'll help you value your business. What's your company name?`,
+        C: `Let's value your business. What's your company name?`
+      };
+      
       setMessages([{
         id: 'welcome',
         type: 'ai',
-        content: `Hi! I'm your AI valuation expert. Let's start with your company name.`,
+        content: greetingMessages[greetingVariant],
         timestamp: new Date(),
         isComplete: true,
         metadata: {
-          help_text: "Use your legal business name as it appears on official documents"
+          help_text: "Use your legal business name as it appears on official documents",
+          session_phase: 'onboarding',
+          conversation_turn: 1,
+          ab_test: {
+            test_name: 'greeting_message',
+            variant: greetingVariant
+          }
         }
       }]);
     }
-  }, [messages.length]);
+  }, [messages.length, useABTest]);
 
   // Cleanup on unmount
   useEffect(() => {
@@ -110,8 +450,11 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
     // Simple state update like IlaraAI - no complex validation
     setMessages(prev => [...prev, newMessage]);
     
+    // Track analytics for this message
+    trackConversationTurn(newMessage);
+    
     return newMessage;
-  }, []);
+  }, [trackConversationTurn]);
 
   const updateStreamingMessage = useCallback((content: string, isComplete: boolean = false) => {
     if (!currentStreamingMessageRef.current?.id) {
@@ -199,10 +542,32 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
         updateStreamingMessage('', true);
         setIsStreaming(false);
         
+        // Track model performance if metadata is available
+        if (data.metadata) {
+          const performanceMetrics: ModelPerformanceMetrics = {
+            model_name: data.metadata.model || 'gpt-4o-mini',
+            model_version: '1.0',
+            time_to_first_token_ms: data.metadata.response_time_ms || 0,
+            total_response_time_ms: data.metadata.response_time_ms || 0,
+            tokens_per_second: data.metadata.tokens_used ? (data.metadata.tokens_used / ((data.metadata.response_time_ms || 1) / 1000)) : 0,
+            response_coherence_score: data.metadata.confidence_score,
+            response_relevance_score: data.metadata.confidence_score,
+            hallucination_detected: false, // Would need ML model to detect
+            input_tokens: 0, // Not provided by backend
+            output_tokens: data.metadata.tokens_used || 0,
+            estimated_cost_usd: (data.metadata.tokens_used || 0) * 0.00015, // GPT-4o-mini pricing
+            error_occurred: false,
+            retry_count: 0
+          };
+          trackModelPerformance(performanceMetrics);
+        }
+        
         // Check for valuation result
         if (data.metadata?.valuation_result) {
           chatLogger.info('Valuation result received', { valuationResult: data.metadata.valuation_result });
           onValuationComplete?.(data.metadata.valuation_result);
+          // Track successful completion with valuation
+          trackConversationCompletion(true, true);
         }
         break;
         
@@ -221,6 +586,8 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
             enterpriseValue: data.result.enterprise_value 
           });
           onValuationComplete?.(data.result);
+          // Track successful completion with valuation
+          trackConversationCompletion(true, true);
         }
         break;
         
@@ -392,14 +759,46 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
   }, [sessionId, userId, isStreaming, addMessage, handleStreamEvent]);
 
 
-  const handleSubmit = useCallback((e: React.FormEvent) => {
+  const handleSubmit = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
     if (!input.trim() || isStreaming || disabled) return;
     
     const userInput = input.trim();
+    
+    // Validate input before processing
+    const validation = await validateInput(userInput);
+    
+    if (!validation.is_valid) {
+      // Show validation errors to user
+      addMessage({
+        type: 'system',
+        content: `Please correct the following issues:\n${validation.errors.join('\n')}`,
+        isComplete: true,
+        metadata: {
+          intent: 'error',
+          validation_status: 'invalid',
+          error_type: 'validation_failed'
+        }
+      });
+      return;
+    }
+    
+    // Show warnings if any
+    if (validation.warnings.length > 0) {
+      addMessage({
+        type: 'system',
+        content: `Note: ${validation.warnings.join(', ')}`,
+        isComplete: true,
+        metadata: {
+          intent: 'warning',
+          validation_status: 'needs_clarification'
+        }
+      });
+    }
+    
     setInput('');
-    startStreamingWithRetry(userInput);
-  }, [input, isStreaming, disabled, startStreamingWithRetry]);
+    startStreamingWithRetry(validation.sanitized_input);
+  }, [input, isStreaming, disabled, startStreamingWithRetry, validateInput, addMessage]);
 
   const handleKeyPress = useCallback((e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
