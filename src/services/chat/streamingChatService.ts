@@ -6,6 +6,7 @@ interface StreamEvent {
   html?: string;
   progress?: number;
   metadata?: any;
+  session_id?: string;
 }
 
 export class StreamingChatService {
@@ -115,7 +116,7 @@ export class StreamingChatService {
                 chatLogger.info('Yielding SSE event', { type: data.type, content: data.content?.substring(0, 50) + '...' });
                 yield data;
               } catch (parseError) {
-                chatLogger.error('Failed to parse SSE data', { line, jsonStr, parseError: parseError.message });
+                chatLogger.error('Failed to parse SSE data', { line, jsonStr, parseError: parseError instanceof Error ? parseError.message : String(parseError) });
                 // Skip malformed chunks - they'll be completed in next iteration
                 continue;
               }

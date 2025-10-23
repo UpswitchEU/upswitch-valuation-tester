@@ -154,7 +154,7 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
   }, [onMessageComplete]);
 
   // EventSource fallback function
-  const tryEventSourceFallback = useCallback((sessionId: string, userInput: string, userId: string | undefined, aiMessage: Message) => {
+  const tryEventSourceFallback = useCallback((sessionId: string, userInput: string, userId: string | undefined, _aiMessage: Message) => {
     chatLogger.info('Attempting EventSource fallback', { sessionId });
     
     const eventSource = streamingChatService.streamConversationEventSource(
@@ -182,7 +182,7 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
     
     // Store reference for cleanup
     eventSourceRef.current = eventSource as any;
-  }, [handleStreamEvent, addMessage]);
+  }, [addMessage]);
 
   const handleStreamEvent = useCallback((data: any) => {
     chatLogger.debug('Received stream event', { type: data.type, hasContent: !!data.content, contentLength: data.content?.length });
