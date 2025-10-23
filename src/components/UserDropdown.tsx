@@ -184,11 +184,7 @@ export const UserDropdown: React.FC<UserDropdownProps> = ({ user, onLogout }) =>
       <button
         ref={buttonRef}
         onClick={handleUserClick}
-        className={`flex items-center justify-center w-10 h-10 sm:w-8 sm:h-8 rounded-full text-sm font-medium transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 ${
-          user 
-            ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white hover:from-blue-600 hover:to-purple-700' 
-            : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-        }`}
+        className="flex items-center justify-center w-10 h-10 sm:w-8 sm:h-8 rounded-full bg-gray-200 text-gray-700 text-sm font-medium hover:bg-gray-300 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
         aria-label={user ? `${user.name || user.email} - Account Menu` : 'Guest - Account Menu'}
         aria-expanded={isOpen}
         aria-haspopup="true"
@@ -235,7 +231,7 @@ export const UserDropdown: React.FC<UserDropdownProps> = ({ user, onLogout }) =>
             <div className="px-4 py-3 border-b border-zinc-800">
               {user ? (
                 <div className="flex items-center space-x-3">
-                  <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center flex-shrink-0">
+                  <div className="w-8 h-8 bg-zinc-700 rounded-full flex items-center justify-center flex-shrink-0">
                     {hasAvatar ? (
                       <img
                         src={avatarUrl || ''}

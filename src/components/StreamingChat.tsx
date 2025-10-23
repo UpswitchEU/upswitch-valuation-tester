@@ -172,7 +172,7 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
   const [collectedData, setCollectedData] = useState<Record<string, any>>({});
   const [valuationPreview, setValuationPreview] = useState<any>(null);
   const [calculateOption, setCalculateOption] = useState<any>(null);
-  const [progressSummary, setProgressSummary] = useState<any>(null);
+  // const [progressSummary, setProgressSummary] = useState<any>(null);
   const [conversationMetrics, setConversationMetrics] = useState<ConversationMetrics>({
     session_id: sessionId,
     user_id: userId,
@@ -709,7 +709,7 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
         console.log('Sections:', data.sections);
         
         // Update local state
-        setProgressSummary(data);
+        // setProgressSummary(data);
         
         // Notify parent component
         onProgressUpdate?.(data);
