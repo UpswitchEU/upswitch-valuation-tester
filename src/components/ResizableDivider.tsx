@@ -12,6 +12,7 @@ export const ResizableDivider: React.FC<ResizableDividerProps> = ({
   isMobile = false 
 }) => {
   const [isDragging, setIsDragging] = useState(false);
+  const isDraggingRef = useRef(false);
   const dividerRef = useRef<HTMLDivElement>(null);
   const startXRef = useRef<number>(0);
   const startWidthRef = useRef<number>(0);
@@ -20,6 +21,7 @@ export const ResizableDivider: React.FC<ResizableDividerProps> = ({
     if (isMobile) return;
     
     e.preventDefault();
+    isDraggingRef.current = true;
     setIsDragging(true);
     startXRef.current = e.clientX;
     startWidthRef.current = leftWidth;
@@ -30,8 +32,6 @@ export const ResizableDivider: React.FC<ResizableDividerProps> = ({
   };
 
   const handleMouseMove = (e: MouseEvent) => {
-    if (!isDragging) return;
-    
     const containerWidth = dividerRef.current?.parentElement?.offsetWidth || 100;
     const deltaX = e.clientX - startXRef.current;
     const deltaPercent = (deltaX / containerWidth) * 100;
@@ -44,6 +44,7 @@ export const ResizableDivider: React.FC<ResizableDividerProps> = ({
   };
 
   const handleMouseUp = () => {
+    isDraggingRef.current = false;
     setIsDragging(false);
     document.removeEventListener('mousemove', handleMouseMove);
     document.removeEventListener('mouseup', handleMouseUp);
