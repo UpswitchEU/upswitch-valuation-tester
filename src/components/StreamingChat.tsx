@@ -124,15 +124,36 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
   }, []);
 
   const addMessage = useCallback((message: Omit<Message, 'id' | 'timestamp'>) => {
-    // Validate message before creating
+    // Validate message before creating - be less strict
     if (!message || typeof message !== 'object') {
       chatLogger.error('Attempted to add invalid message', { message });
-      return null;
+      // Return error message instead of null
+      const errorMessage: Message = {
+        id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
+        type: 'system',
+        content: 'Error: Invalid message data',
+        timestamp: new Date(),
+        isComplete: true,
+        isStreaming: false
+      };
+      setMessages(prev => [...prev, errorMessage]);
+      return errorMessage;
     }
     
-    if (!message.type || !message.content) {
-      chatLogger.warn('Message missing required fields', { message });
-      return null;
+    // Only validate critical fields - content can be empty for streaming
+    if (!message.type || !['user', 'ai', 'system'].includes(message.type)) {
+      chatLogger.warn('Message missing or invalid type', { message });
+      // Return error message instead of null
+      const errorMessage: Message = {
+        id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
+        type: 'system',
+        content: 'Error: Invalid message type',
+        timestamp: new Date(),
+        isComplete: true,
+        isStreaming: false
+      };
+      setMessages(prev => [...prev, errorMessage]);
+      return errorMessage;
     }
     
     const newMessage: Message = {
@@ -140,16 +161,11 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
       id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
       timestamp: new Date(),
       isComplete: message.isComplete ?? false,
-      isStreaming: message.isStreaming ?? false
+      isStreaming: message.isStreaming ?? false,
+      content: message.content ?? '' // Default to empty string for streaming
     };
     
-    // Validate the complete message
-    if (!isValidMessage(newMessage)) {
-      chatLogger.error('Created invalid message', { newMessage });
-      return null;
-    }
-    
-    chatLogger.debug('Adding message', { messageId: newMessage.id, type: newMessage.type });
+    chatLogger.debug('Adding message', { messageId: newMessage.id, type: newMessage.type, contentLength: newMessage.content.length });
     
     setMessages(prev => {
       const validPrev = ensureValidMessages(prev);
@@ -218,17 +234,22 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
   }, [onMessageComplete]);
 
   const handleStreamEvent = useCallback((data: any) => {
+    chatLogger.debug('Received stream event', { type: data.type, hasContent: !!data.content, contentLength: data.content?.length });
+    
     switch (data.type) {
       case 'typing':
         // AI is typing
+        chatLogger.debug('AI typing indicator received');
         break;
         
       case 'message_start':
         // Start of AI response
+        chatLogger.debug('AI message start received');
         break;
         
       case 'message_chunk':
         // Stream content
+        chatLogger.debug('Message chunk received', { contentLength: data.content?.length });
         updateStreamingMessage(data.content);
         break;
         
@@ -254,11 +275,13 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
         
       case 'message_complete':
         // Complete response
+        chatLogger.debug('Message complete received', { hasMetadata: !!data.metadata, hasValuationResult: !!data.metadata?.valuation_result });
         updateStreamingMessage('', true);
         setIsStreaming(false);
         
         // Check for valuation result
         if (data.metadata?.valuation_result) {
+          chatLogger.info('Valuation result received', { valuationResult: data.metadata.valuation_result });
           onValuationComplete?.(data.metadata.valuation_result);
         }
         break;
@@ -274,14 +297,16 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
   const startStreaming = useCallback(async (userInput: string) => {
     if (!userInput.trim() || isStreaming) return;
 
+    chatLogger.info('Starting streaming conversation', { userInput: userInput.substring(0, 50) + '...', sessionId, userId });
     setIsStreaming(true);
 
     // Add user message
-    addMessage({
+    const userMessage = addMessage({
       type: 'user',
       content: userInput,
       isComplete: true
     });
+    chatLogger.debug('User message added', { messageId: userMessage.id });
 
     // Create streaming AI message
     const aiMessage = addMessage({
@@ -290,7 +315,14 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
       isStreaming: true,
       isComplete: false
     });
-
+    
+    if (!aiMessage) {
+      chatLogger.error('Failed to create AI message - this should not happen');
+      setIsStreaming(false);
+      return;
+    }
+    
+    chatLogger.debug('AI message created for streaming', { messageId: aiMessage.id });
     currentStreamingMessageRef.current = aiMessage;
 
     try {

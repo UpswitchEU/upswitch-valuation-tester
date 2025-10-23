@@ -280,9 +280,6 @@ export const ValuationToolbar: React.FC<ValuationToolbarProps> = ({
             <div className="flex items-center gap-1.5">
               <div className="flex items-center gap-3">
                 <div className="text-right">
-                  <p className="text-sm font-medium text-white">
-                    {isGenerating ? 'Generating...' : 'Ready'}
-                  </p>
                   {companyName && (
                     <p className="text-xs text-zinc-400">{companyName}</p>
                   )}
