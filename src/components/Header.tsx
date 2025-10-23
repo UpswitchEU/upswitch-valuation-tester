@@ -4,7 +4,9 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { ChevronDown } from 'lucide-react';
 // import { urls } from '../router'; // Removed with reports link
 // import { useReportsStore } from '../store/useReportsStore'; // Deprecated: Reports now on upswitch.biz
-import UserAvatar from './UserAvatar';
+import { UserDropdown } from './UserDropdown';
+import { useAuth } from '../hooks/useAuth';
+import { generalLogger } from '../utils/logger';
 
 /**
  * Header Component
@@ -16,6 +18,7 @@ export const Header: React.FC = () => {
   // const { reports } = useReportsStore(); // Deprecated: Reports now on upswitch.biz
   const navigate = useNavigate();
   const location = useLocation();
+  const { user, refreshAuth } = useAuth();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLLIElement>(null);
 
@@ -40,6 +43,40 @@ export const Header: React.FC = () => {
   };
 
   const currentMethod = getCurrentMethod();
+
+  const handleLogout = async () => {
+    try {
+      generalLogger.info('Logging out user');
+      
+      // Get backend URL from environment
+      const backendUrl = import.meta.env.VITE_BACKEND_URL || 
+                        import.meta.env.VITE_API_BASE_URL || 
+                        'https://web-production-8d00b.up.railway.app';
+      
+      // Call backend logout endpoint
+      const response = await fetch(`${backendUrl}/api/auth/logout`, {
+        method: 'POST',
+        credentials: 'include', // Send authentication cookie
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+      
+      if (response.ok) {
+        generalLogger.info('Logout successful');
+        // Refresh auth state to clear user data
+        await refreshAuth();
+      } else {
+        generalLogger.warn('Logout request failed', { status: response.status });
+        // Still refresh auth state in case session is already invalid
+        await refreshAuth();
+      }
+    } catch (error) {
+      generalLogger.error('Logout failed', { error });
+      // Still refresh auth state to clear local state
+      await refreshAuth();
+    }
+  };
   
   const valuationMethods = [
     { id: 'instant', label: '⚡ Instant Valuation', badge: 'Recommended', path: '/instant' },
@@ -167,7 +204,7 @@ export const Header: React.FC = () => {
             
             {/* User Avatar */}
             <li className="text-medium whitespace-nowrap box-border list-none flex items-center">
-              <UserAvatar size="md" />
+              <UserDropdown user={user} onLogout={handleLogout} />
             </li>
             
             {/* Mobile Menu Button */}

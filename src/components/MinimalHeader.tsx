@@ -1,6 +1,8 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import UserAvatar from './UserAvatar';
+import { UserDropdown } from './UserDropdown';
+import { useAuth } from '../hooks/useAuth';
+import { generalLogger } from '../utils/logger';
 
 /**
  * Minimal Header Component for Home Page
@@ -10,6 +12,42 @@ import UserAvatar from './UserAvatar';
  * No navigation links - clean landing page experience.
  */
 export const MinimalHeader: React.FC = () => {
+  const { user, refreshAuth } = useAuth();
+
+  const handleLogout = async () => {
+    try {
+      generalLogger.info('Logging out user');
+      
+      // Get backend URL from environment
+      const backendUrl = import.meta.env.VITE_BACKEND_URL || 
+                        import.meta.env.VITE_API_BASE_URL || 
+                        'https://web-production-8d00b.up.railway.app';
+      
+      // Call backend logout endpoint
+      const response = await fetch(`${backendUrl}/api/auth/logout`, {
+        method: 'POST',
+        credentials: 'include', // Send authentication cookie
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+      
+      if (response.ok) {
+        generalLogger.info('Logout successful');
+        // Refresh auth state to clear user data
+        await refreshAuth();
+      } else {
+        generalLogger.warn('Logout request failed', { status: response.status });
+        // Still refresh auth state in case session is already invalid
+        await refreshAuth();
+      }
+    } catch (error) {
+      generalLogger.error('Logout failed', { error });
+      // Still refresh auth state to clear local state
+      await refreshAuth();
+    }
+  };
+
   return (
     <>
       {/* Skip Link for Keyboard Navigation */}
@@ -47,7 +85,7 @@ export const MinimalHeader: React.FC = () => {
       
       {/* User Avatar - Right side */}
       <div className="flex items-center">
-        <UserAvatar size="md" />
+        <UserDropdown user={user} onLogout={handleLogout} />
       </div>
     </header>
     </>

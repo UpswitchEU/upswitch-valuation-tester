@@ -214,10 +214,10 @@ export const UserDropdown: React.FC<UserDropdownProps> = ({ user, onLogout }) =>
       {isOpen && (
         <>
           {/* Backdrop */}
-          <div className="fixed inset-0 z-40" onClick={() => setIsOpen(false)} aria-hidden="true" />
+          <div className="fixed inset-0 z-[60]" onClick={() => setIsOpen(false)} aria-hidden="true" />
           
           {/* Dropdown */}
-          <div className="absolute right-0 mt-2 w-64 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-50">
+          <div className="absolute right-0 mt-2 w-64 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-[70]">
             {/* User Profile Header */}
             <div className="px-4 py-3 border-b border-gray-200">
               <div className="flex items-center space-x-3">
