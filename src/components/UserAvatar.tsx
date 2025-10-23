@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import { User } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 
 interface UserAvatarProps {
@@ -63,17 +62,19 @@ const UserAvatar: React.FC<UserAvatarProps> = React.memo(({
           ${config.container}
           rounded-full
           flex items-center justify-center
-          transition-all duration-200
+          transition-colors duration-200
           cursor-pointer
-          border-2
-          shadow-sm
-          hover:shadow-md
-          hover:scale-105
           focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2
         `}
         style={{
-          backgroundColor: user ? '#6B7280' : '#6B7280',
-          borderColor: user ? '#4B5563' : '#4B5563'
+          backgroundColor: user ? '#3f3f46' : '#3f3f46', // zinc-700
+          borderColor: 'transparent' // No border for dark theme
+        }}
+        onMouseEnter={(e) => {
+          e.currentTarget.style.backgroundColor = '#52525b'; // zinc-600 on hover
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.backgroundColor = '#3f3f46'; // zinc-700 on leave
         }}
         aria-label={user ? `${user.name || 'User'}` : 'Guest'}
         role="button"
@@ -100,10 +101,8 @@ const UserAvatar: React.FC<UserAvatarProps> = React.memo(({
             {getUserInitials()}
           </span>
         ) : (
-          // Guest user - show user icon
-          <User 
-            className={`${config.icon} text-gray-200`}
-          />
+          // Guest user - show "Guest" text to match ValuationToolbar
+          <span className="text-xs font-medium text-zinc-200">Guest</span>
         )}
       </div>
 
