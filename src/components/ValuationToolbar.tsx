@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Eye, Code, Info, RefreshCw, Download, Maximize, LogOut } from 'lucide-react';
+import { Eye, Code, Info, RefreshCw, Download, Maximize, LogOut, User } from 'lucide-react';
 // import { UserAvatar } from './UserAvatar';
 import { ValuationToolbarProps } from '../types/valuation';
 import { NameGenerator } from '../utils/nameGenerator';
@@ -322,7 +322,7 @@ export const ValuationToolbar: React.FC<ValuationToolbarProps> = ({
                         </span>
                       </>
                     ) : (
-                      <span className="text-xs font-medium text-gray-700">Guest</span>
+                      <User className="w-4 h-4 text-gray-600" />
                     )}
                   </button>
                   

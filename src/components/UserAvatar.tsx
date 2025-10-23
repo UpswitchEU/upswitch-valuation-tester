@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { User } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 
 interface UserAvatarProps {
@@ -92,8 +93,8 @@ const UserAvatar: React.FC<UserAvatarProps> = React.memo(({
             {getUserInitials()}
           </span>
         ) : (
-          // Guest user - show "Guest" text to match ValuationToolbar
-          <span className="text-xs font-medium text-gray-700">Guest</span>
+          // Guest user - show User icon
+          <User className="w-4 h-4 text-gray-600" />
         )}
       </div>
 
