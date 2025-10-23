@@ -237,6 +237,24 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
         }
         break;
         
+      case 'valuation_complete':
+        // NEW: Direct valuation result from streaming endpoint
+        chatLogger.info('Valuation complete event received', { 
+          hasResult: !!data.result,
+          sessionId: data.session_id 
+        });
+        updateStreamingMessage('', true);
+        setIsStreaming(false);
+        
+        if (data.result) {
+          chatLogger.info('Processing valuation result', { 
+            valuationId: data.result.valuation_id,
+            enterpriseValue: data.result.enterprise_value 
+          });
+          onValuationComplete?.(data.result);
+        }
+        break;
+        
       case 'error':
         console.error('Stream error:', data.content || 'An error occurred');
         setIsStreaming(false);
