@@ -53,6 +53,7 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const eventSourceRef = useRef<EventSource | null>(null);
   const currentStreamingMessageRef = useRef<Message | null>(null);
+  const requestIdRef = useRef<string | null>(null);
 
   // Auto-scroll to bottom
   const scrollToBottom = useCallback(() => {
@@ -231,11 +232,18 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
         });
         
         // Show user-friendly error message
-        const userFriendlyError = data.content?.includes('rate limit') 
+        const errorMessage = data.message || data.content || 'Unknown error';
+        const userFriendlyError = errorMessage.includes('rate limit') 
           ? 'I\'m receiving too many requests right now. Please wait a moment and try again.'
-          : data.content?.includes('timeout')
+          : errorMessage.includes('timeout')
           ? 'The request took too long. Please try again with a shorter message.'
-          : 'I encountered an issue processing your request. Please try again.';
+          : errorMessage.includes('Context retrieval failed')
+          ? 'I\'m having trouble accessing your conversation history. Please try again.'
+          : errorMessage.includes('Valuation failed')
+          ? 'I encountered an issue calculating your valuation. Please try again.'
+          : errorMessage.includes('Processing failed')
+          ? 'I\'m having trouble processing your request. Please try again.'
+          : errorMessage;
         
         updateStreamingMessage(
           `I apologize, but ${userFriendlyError}`,
@@ -246,10 +254,28 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
     }
   }, [updateStreamingMessage, onValuationComplete, onReportUpdate]);
 
-  const startStreaming = useCallback(async (userInput: string) => {
+  const startStreamingWithRetry = useCallback(async (userInput: string, attempt = 0) => {
     if (!userInput.trim() || isStreaming) return;
 
-    chatLogger.info('Starting streaming conversation', { userInput: userInput.substring(0, 50) + '...', sessionId, userId });
+    // Request deduplication
+    const requestId = `${sessionId}_${Date.now()}`;
+    if (requestIdRef.current) {
+      chatLogger.warn('Request already in progress', { 
+        currentRequestId: requestIdRef.current,
+        newRequestId: requestId 
+      });
+      return;
+    }
+    requestIdRef.current = requestId;
+
+    
+    chatLogger.info('Starting streaming conversation', { 
+      userInput: userInput.substring(0, 50) + '...', 
+      sessionId, 
+      userId,
+      attempt,
+      maxRetries: 3
+    });
     setIsStreaming(true);
 
     // Add user message
@@ -331,23 +357,37 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
         stack: error instanceof Error ? error.stack : undefined,
         sessionId,
         messageId: aiMessage.id,
-        userInput: userInput.substring(0, 50) + '...'
+        userInput: userInput.substring(0, 50) + '...',
+        attempt,
+        maxRetries: 3
       });
       
-      chatLogger.error('Failed to start streaming', { 
-        error: error instanceof Error ? error.message : 'Unknown error',
-        sessionId,
-        messageId: aiMessage.id
-      });
+      // Retry logic with exponential backoff
+      if (attempt < 3) {
+        const delay = Math.min(1000 * Math.pow(2, attempt), 10000);
+        chatLogger.info('Retrying streaming conversation', { 
+          attempt: attempt + 1, 
+          delay,
+          sessionId 
+        });
+        
+        setTimeout(() => {
+          startStreamingWithRetry(userInput, attempt + 1);
+        }, delay);
+        return;
+      }
+      
+      // Max retries exceeded - show retry button
       setIsStreaming(false);
-      
-      // Show user-friendly error message
       if (currentStreamingMessageRef.current) {
         updateStreamingMessage(
-          'I apologize, but I encountered an issue starting the conversation. Please try again.',
+          'I apologize, but I\'m having trouble connecting. Please try again.',
           true
         );
       }
+    } finally {
+      // Clear request ID to allow new requests
+      requestIdRef.current = null;
     }
   }, [sessionId, userId, isStreaming, addMessage, handleStreamEvent]);
 
@@ -358,8 +398,8 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
     
     const userInput = input.trim();
     setInput('');
-    startStreaming(userInput);
-  }, [input, isStreaming, disabled, startStreaming]);
+    startStreamingWithRetry(userInput);
+  }, [input, isStreaming, disabled, startStreamingWithRetry]);
 
   const handleKeyPress = useCallback((e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
@@ -382,45 +422,35 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
     if (lastAiContent.includes('revenue') || lastAiContent.includes('turnover')) {
       return [
         "€100K - €500K",
-        "€500K - €1M",
-        "€1M - €5M",
-        "€5M+"
+        "€500K - €1M"
       ];
     }
     
     if (lastAiContent.includes('profit') || lastAiContent.includes('ebitda')) {
       return [
         "10-20% margin",
-        "20-30% margin",
-        "30%+ margin",
-        "Not profitable yet"
+        "20-30% margin"
       ];
     }
     
     if (lastAiContent.includes('industry') || lastAiContent.includes('sector')) {
       return [
         "Technology/SaaS",
-        "E-commerce/Retail",
-        "Professional Services",
-        "Manufacturing"
+        "E-commerce/Retail"
       ];
     }
     
     if (lastAiContent.includes('growth') || lastAiContent.includes('growing')) {
       return [
         "Growing 20%+ YoY",
-        "Growing 10-20% YoY",
-        "Stable (0-10%)",
-        "Declining"
+        "Growing 10-20% YoY"
       ];
     }
     
     if (lastAiContent.includes('employees') || lastAiContent.includes('team')) {
       return [
         "1-10 employees",
-        "11-50 employees",
-        "51-200 employees",
-        "200+ employees"
+        "11-50 employees"
       ];
     }
     
@@ -428,20 +458,17 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
     if (messageCount <= 2) {
       return [
         "What is my business worth?",
-        "How do you calculate valuation?",
-        "What information do you need?"
+        "How do you calculate valuation?"
       ];
     } else if (messageCount <= 5) {
       return [
         "Can you explain the methodology?",
-        "What are industry benchmarks?",
-        "How accurate is this valuation?"
+        "What are industry benchmarks?"
       ];
     } else {
       return [
         "Generate full report",
-        "Compare to similar businesses",
-        "What affects my valuation?"
+        "Compare to similar businesses"
       ];
     }
   }, [messages]);
