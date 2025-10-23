@@ -224,9 +224,24 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
         break;
         
       case 'error':
-        console.error('Stream error:', data.content || 'An error occurred');
+        chatLogger.error('Stream error received', { 
+          error: data.content,
+          sessionId,
+          timestamp: new Date().toISOString()
+        });
+        
+        // Show user-friendly error message
+        const userFriendlyError = data.content?.includes('rate limit') 
+          ? 'I\'m receiving too many requests right now. Please wait a moment and try again.'
+          : data.content?.includes('timeout')
+          ? 'The request took too long. Please try again with a shorter message.'
+          : 'I encountered an issue processing your request. Please try again.';
+        
+        updateStreamingMessage(
+          `I apologize, but ${userFriendlyError}`,
+          true
+        );
         setIsStreaming(false);
-        updateStreamingMessage('', true);
         break;
     }
   }, [updateStreamingMessage, onValuationComplete, onReportUpdate]);
@@ -319,20 +334,20 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
         userInput: userInput.substring(0, 50) + '...'
       });
       
-      console.error('Failed to start streaming:', error);
+      chatLogger.error('Failed to start streaming', { 
+        error: error instanceof Error ? error.message : 'Unknown error',
+        sessionId,
+        messageId: aiMessage.id
+      });
       setIsStreaming(false);
       
-      // Complete the streaming message properly
-      if (currentStreamingMessageRef.current) {
-        updateStreamingMessage('', true);
-      }
-      
       // Show user-friendly error message
-      addMessage({
-        type: 'system',
-        content: 'Connection error. Please check your internet connection and try again.',
-        isComplete: true
-      });
+      if (currentStreamingMessageRef.current) {
+        updateStreamingMessage(
+          'I apologize, but I encountered an issue starting the conversation. Please try again.',
+          true
+        );
+      }
     }
   }, [sessionId, userId, isStreaming, addMessage, handleStreamEvent]);
 
