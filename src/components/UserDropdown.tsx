@@ -10,16 +10,20 @@ interface UserDropdownProps {
 export const UserDropdown: React.FC<UserDropdownProps> = ({ user, onLogout }) => {
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const buttonRef = useRef<HTMLButtonElement>(null); // Track button position
 
-  // DEBUG: Log component lifecycle
-  useEffect(() => {
-    console.log('🔵 [UserDropdown] Mounted', { user: user ? 'authenticated' : 'guest' });
-    return () => console.log('🔵 [UserDropdown] Unmounted');
-  }, []);
+  // Calculate dropdown position based on button
+  const [dropdownPosition, setDropdownPosition] = useState({ top: 0, right: 0 });
 
-  // DEBUG: Log state changes
+  // Calculate dropdown position when opened
   useEffect(() => {
-    console.log('🔵 [UserDropdown] isOpen changed:', isOpen);
+    if (isOpen && buttonRef.current) {
+      const rect = buttonRef.current.getBoundingClientRect();
+      setDropdownPosition({
+        top: rect.bottom + 8, // 8px below button
+        right: window.innerWidth - rect.right, // Align right edge
+      });
+    }
   }, [isOpen]);
 
   // Close dropdown when clicking outside
@@ -70,17 +74,8 @@ export const UserDropdown: React.FC<UserDropdownProps> = ({ user, onLogout }) =>
   const avatarUrl = user?.avatar_url || user?.avatar;
   const hasAvatar = !!avatarUrl;
 
-  const handleUserClick = (e?: React.MouseEvent) => {
-    console.log('🔵 [UserDropdown] Button clicked!', {
-      currentIsOpen: isOpen,
-      willBeOpen: !isOpen,
-      event: e,
-      user: user ? 'authenticated' : 'guest'
-    });
-    setIsOpen(prev => {
-      console.log('🔵 [UserDropdown] State update:', prev, '->', !prev);
-      return !prev;
-    });
+  const handleUserClick = () => {
+    setIsOpen(prev => !prev);
   };
 
   const handleLogout = async () => {
@@ -197,16 +192,12 @@ export const UserDropdown: React.FC<UserDropdownProps> = ({ user, onLogout }) =>
 
   const menuItems = user ? authenticatedMenuItems : guestMenuItems;
 
-  // DEBUG: Log every render
-  console.log('🔵 [UserDropdown] Rendering', { isOpen, hasUser: !!user });
-
   return (
     <div ref={dropdownRef} className="relative" style={{ zIndex: 100 }}>
       {/* Avatar Button */}
       <button
+        ref={buttonRef}
         onClick={handleUserClick}
-        onMouseDown={(e) => console.log('🔵 [UserDropdown] MouseDown', e)}
-        onMouseUp={(e) => console.log('🔵 [UserDropdown] MouseUp', e)}
         className="flex items-center justify-center w-10 h-10 sm:w-8 sm:h-8 rounded-full bg-gray-200 text-gray-700 text-sm font-medium hover:bg-gray-300 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
         aria-label={user ? `${user.name || user.email} - Account Menu` : 'Guest - Account Menu'}
         aria-expanded={isOpen}
@@ -244,56 +235,46 @@ export const UserDropdown: React.FC<UserDropdownProps> = ({ user, onLogout }) =>
           
           {/* Dropdown */}
           <div 
-            className="fixed w-64 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-[9999]"
+            className="fixed w-56 bg-zinc-900 rounded-lg shadow-lg border border-zinc-800 py-2 z-[9999]"
             style={{
-              top: '60px', // Below header
-              right: '20px', // From right edge
+              top: `${dropdownPosition.top}px`,   // Dynamic position
+              right: `${dropdownPosition.right}px`, // Dynamic position
             }}
           >
-            {/* DEBUG: Visual confirmation */}
-            <div className="px-4 py-2 bg-green-100 border-b border-green-200">
-              <p className="text-sm text-green-600 font-medium">✅ Dropdown is open!</p>
-            </div>
             {/* User Profile Header */}
-            <div className="px-4 py-3 border-b border-gray-200">
-              <div className="flex items-center space-x-3">
-                <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center flex-shrink-0">
-                  {user ? (
-                    <>
-                      {hasAvatar ? (
-                        <img
-                          src={avatarUrl || ''}
-                          alt={user?.name || 'User'}
-                          className="w-full h-full rounded-full object-cover"
-                          loading="lazy"
-                          onError={(e) => {
-                            e.currentTarget.style.display = 'none';
-                            e.currentTarget.nextElementSibling?.classList.remove('hidden');
-                          }}
-                        />
-                      ) : null}
-                      <span className={hasAvatar ? 'hidden' : 'block text-white text-sm font-medium'}>
-                        {getUserInitials()}
-                      </span>
-                    </>
-                  ) : (
-                    <User className="w-4 h-4 text-white" />
-                  )}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="text-sm font-medium text-gray-900 truncate">
-                    {user ? (user.name || 'User') : 'Welcome, Guest'}
+            <div className="px-4 py-3 border-b border-zinc-800">
+              {user ? (
+                <div className="flex items-center space-x-3">
+                  <div className="w-8 h-8 bg-zinc-700 rounded-full flex items-center justify-center flex-shrink-0">
+                    {hasAvatar ? (
+                      <img
+                        src={avatarUrl || ''}
+                        alt={user?.name || 'User'}
+                        className="w-full h-full rounded-full object-cover"
+                        loading="lazy"
+                        onError={(e) => {
+                          e.currentTarget.style.display = 'none';
+                          e.currentTarget.nextElementSibling?.classList.remove('hidden');
+                        }}
+                      />
+                    ) : null}
+                    <span className={hasAvatar ? 'hidden' : 'block text-white text-sm font-medium'}>
+                      {getUserInitials()}
+                    </span>
                   </div>
-                  {user ? (
-                    <>
-                      <div className="text-xs text-gray-500 truncate">{user.email}</div>
-                      <div className="text-xs text-gray-400 capitalize">{user.role}</div>
-                    </>
-                  ) : (
-                    <div className="text-xs text-gray-500">Sign in to access your dashboard</div>
-                  )}
+                  <div className="flex-1 min-w-0">
+                    <div className="text-sm font-medium text-white truncate">
+                      {user.name || 'User'}
+                    </div>
+                    <div className="text-xs text-zinc-400 truncate">{user.email}</div>
+                  </div>
                 </div>
-              </div>
+              ) : (
+                <div className="flex flex-col">
+                  <p className="text-sm font-medium text-white">Welcome, Guest</p>
+                  <p className="text-xs text-zinc-400">Sign in to access your dashboard</p>
+                </div>
+              )}
             </div>
             
             {/* Menu Items */}
@@ -301,7 +282,7 @@ export const UserDropdown: React.FC<UserDropdownProps> = ({ user, onLogout }) =>
               {menuItems.map((item, index) => {
                 if (item.isDivider) {
                   return (
-                    <div key={index} className="h-px bg-gray-200 my-1" role="separator" />
+                    <div key={index} className="h-px bg-zinc-800 my-1" role="separator" />
                   );
                 }
 
@@ -309,6 +290,7 @@ export const UserDropdown: React.FC<UserDropdownProps> = ({ user, onLogout }) =>
                 const isFirst = index === 0;
                 const isLast = index === menuItems.length - 1;
 
+                const isLogout = item.key === 'logout';
                 return (
                   <button
                     key={index}
@@ -318,15 +300,19 @@ export const UserDropdown: React.FC<UserDropdownProps> = ({ user, onLogout }) =>
                       item.action?.();
                     }}
                     className={`
-                      w-full flex items-center gap-3 px-4 py-4 sm:py-3 text-base sm:text-sm font-medium text-gray-700 
-                      hover:bg-gray-50 transition-colors duration-150 text-left border-0 bg-transparent
+                      w-full flex items-center gap-3 px-4 py-4 sm:py-3 text-base sm:text-sm font-medium text-left border-0 bg-transparent
+                      transition-colors duration-150
                       ${isFirst ? 'rounded-t-xl' : ''}
-                      ${isLast ? 'rounded-b-xl text-gray-700 hover:bg-gray-50' : ''}
+                      ${isLast ? 'rounded-b-xl' : ''}
+                      ${isLogout 
+                        ? 'hover:bg-red-900/20 text-red-400 hover:text-red-300' 
+                        : 'hover:bg-zinc-800/50 text-zinc-300 hover:text-white'
+                      }
                     `}
                     role="menuitem"
                     tabIndex={0}
                   >
-                    {Icon && <Icon className="w-5 h-5 sm:w-4 sm:h-4 text-gray-500 flex-shrink-0" />}
+                    {Icon && <Icon className={`w-5 h-5 sm:w-4 sm:h-4 flex-shrink-0 ${isLogout ? 'text-red-400' : 'text-zinc-400'}`} />}
                     <span className="flex-1">{item.label}</span>
                   </button>
                 );
