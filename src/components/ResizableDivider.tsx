@@ -1,4 +1,5 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef } from 'react';
+import { PANEL_CONSTRAINTS, FALLBACK_CONTAINER_WIDTH } from '../constants/panelConstants';
 
 interface ResizableDividerProps {
   onResize: (leftWidth: number) => void;
@@ -20,6 +21,9 @@ export const ResizableDivider: React.FC<ResizableDividerProps> = ({
   const handleMouseDown = (e: React.MouseEvent) => {
     if (isMobile) return;
     
+    // Prevent race condition - already dragging
+    if (isDraggingRef.current) return;
+    
     e.preventDefault();
     isDraggingRef.current = true;
     setIsDragging(true);
@@ -32,14 +36,14 @@ export const ResizableDivider: React.FC<ResizableDividerProps> = ({
   };
 
   const handleMouseMove = (e: MouseEvent) => {
-    const containerWidth = dividerRef.current?.parentElement?.offsetWidth || 100;
+    const containerWidth = dividerRef.current?.parentElement?.offsetWidth || FALLBACK_CONTAINER_WIDTH;
     const deltaX = e.clientX - startXRef.current;
     const deltaPercent = (deltaX / containerWidth) * 100;
     
     const newWidth = startWidthRef.current + deltaPercent;
     
-    // Constrain between 20% and 80%
-    const constrainedWidth = Math.max(20, Math.min(80, newWidth));
+    // Constrain between MIN_WIDTH and MAX_WIDTH
+    const constrainedWidth = Math.max(PANEL_CONSTRAINTS.MIN_WIDTH, Math.min(PANEL_CONSTRAINTS.MAX_WIDTH, newWidth));
     onResize(constrainedWidth);
   };
 
@@ -50,13 +54,7 @@ export const ResizableDivider: React.FC<ResizableDividerProps> = ({
     document.removeEventListener('mouseup', handleMouseUp);
   };
 
-  // Cleanup on unmount
-  useEffect(() => {
-    return () => {
-      document.removeEventListener('mousemove', handleMouseMove);
-      document.removeEventListener('mouseup', handleMouseUp);
-    };
-  }, []);
+  // Cleanup on unmount - removed problematic cleanup since handlers already clean up in handleMouseUp
 
   if (isMobile) {
     return null; // Don't render divider on mobile

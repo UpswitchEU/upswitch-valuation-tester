@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 // import { useNavigate } from 'react-router-dom';
 import { CheckCircle, Save, Building2 } from 'lucide-react';
+import { PANEL_CONSTRAINTS, MOBILE_BREAKPOINT } from '../constants/panelConstants';
 import { StreamingChat } from './StreamingChat';
 import { LiveValuationReport } from './LiveValuationReport';
 import { ErrorBoundary } from './ErrorBoundary';
@@ -30,22 +31,44 @@ export const AIAssistedValuation: React.FC = () => {
   const [valuationResult, setValuationResult] = useState<ValuationResponse | null>(null);
   const [reportSaved, setReportSaved] = useState(false);
   
-  // Panel resize state
-  const [leftPanelWidth, setLeftPanelWidth] = useState(30); // 30% default
+  // Panel resize state with localStorage persistence
+  const [leftPanelWidth, setLeftPanelWidth] = useState(() => {
+    try {
+      const saved = localStorage.getItem('upswitch-panel-width');
+      if (saved) {
+        const parsed = parseFloat(saved);
+        if (!isNaN(parsed) && parsed >= PANEL_CONSTRAINTS.MIN_WIDTH && parsed <= PANEL_CONSTRAINTS.MAX_WIDTH) {
+          return parsed;
+        }
+      }
+    } catch (error) {
+      console.warn('Failed to load saved panel width:', error);
+    }
+    return PANEL_CONSTRAINTS.DEFAULT_WIDTH;
+  });
   const [isMobile, setIsMobile] = useState(false);
   const [mobileActivePanel, setMobileActivePanel] = useState<'chat' | 'preview'>('chat');
   
   // Mobile detection
   useEffect(() => {
-    const checkMobile = () => setIsMobile(window.innerWidth < 1024);
+    const checkMobile = () => setIsMobile(window.innerWidth < MOBILE_BREAKPOINT);
     checkMobile();
     window.addEventListener('resize', checkMobile);
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
+
+  // Save panel width to localStorage when it changes
+  useEffect(() => {
+    try {
+      localStorage.setItem('upswitch-panel-width', leftPanelWidth.toString());
+    } catch (error) {
+      console.warn('Failed to save panel width:', error);
+    }
+  }, [leftPanelWidth]);
   
   // Resize handler
   const handleResize = useCallback((newWidth: number) => {
-    const constrainedWidth = Math.max(20, Math.min(80, newWidth));
+    const constrainedWidth = Math.max(PANEL_CONSTRAINTS.MIN_WIDTH, Math.min(PANEL_CONSTRAINTS.MAX_WIDTH, newWidth));
     setLeftPanelWidth(constrainedWidth);
   }, []);
 
