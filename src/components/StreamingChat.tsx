@@ -4,7 +4,7 @@
  */
 
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { Loader2, Bot, User } from 'lucide-react';
+import { Loader2, Bot, User, CheckCircle } from 'lucide-react';
 import { AI_CONFIG } from '../config';
 import { streamingChatService } from '../services/chat/streamingChatService';
 import { ContextualTip } from './ContextualTip';
@@ -143,6 +143,10 @@ interface StreamingChatProps {
   onMessageComplete?: (message: Message) => void;
   onValuationComplete?: (result: any) => void;
   onReportUpdate?: (htmlContent: string, progress: number) => void;
+  onDataCollected?: (data: any) => void;  // NEW
+  onValuationPreview?: (data: any) => void;  // NEW
+  onCalculateOptionAvailable?: (data: any) => void;  // NEW
+  onProgressUpdate?: (data: any) => void;  // NEW
   className?: string;
   placeholder?: string;
   disabled?: boolean;
@@ -154,6 +158,10 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
   onMessageComplete,
   onValuationComplete,
   onReportUpdate,
+  onDataCollected,
+  onValuationPreview,
+  onCalculateOptionAvailable,
+  onProgressUpdate,
   className = '',
   placeholder = "Ask about your business valuation...",
   disabled = false
@@ -161,6 +169,10 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [isStreaming, setIsStreaming] = useState(false);
+  const [collectedData, setCollectedData] = useState<Record<string, any>>({});
+  // const [valuationPreview, setValuationPreview] = useState<any>(null);
+  // const [calculateOption, setCalculateOption] = useState<any>(null);
+  // const [progressSummary, setProgressSummary] = useState<any>(null);
   const [conversationMetrics, setConversationMetrics] = useState<ConversationMetrics>({
     session_id: sessionId,
     user_id: userId,
@@ -632,8 +644,84 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
         );
         setIsStreaming(false);
         break;
+        
+      case 'data_collected':
+        chatLogger.info('Data collected event received', {
+          field: data.field,
+          value: data.value,
+          completeness: data.completeness
+        });
+        
+        // Update local state
+        setCollectedData(prev => ({
+          ...prev,
+          [data.field]: data
+        }));
+        
+        // Notify parent component
+        onDataCollected?.(data);
+        break;
+        
+      case 'valuation_preview':
+        chatLogger.info('Valuation preview received', {
+          range_mid: data.range_mid,
+          confidence: data.confidence,
+          tier: data.tier
+        });
+        
+        // Update local state
+        // setValuationPreview(data);
+        
+        // Notify parent component
+        onValuationPreview?.(data);
+        break;
+        
+      case 'calculate_option':
+        chatLogger.info('Calculate option available', {
+          tier: data.tier,
+          confidence: data.confidence
+        });
+        
+        // Update local state
+        // setCalculateOption(data);
+        
+        // Notify parent component
+        onCalculateOptionAvailable?.(data);
+        break;
+        
+      case 'progress_summary':
+        chatLogger.info('Progress summary received', {
+          completeness: data.completeness,
+          next_milestone: data.next_milestone
+        });
+        
+        // Update local state
+        // setProgressSummary(data);
+        
+        // Notify parent component
+        onProgressUpdate?.(data);
+        break;
+        
+      case 'clarification_needed':
+        chatLogger.warn('Clarification needed', {
+          field: data.field,
+          concern: data.concern
+        });
+        
+        // Show clarification message
+        addMessage({
+          type: 'ai',
+          content: data.message,
+          isComplete: true,
+          metadata: {
+            intent: 'clarification',
+            collected_field: data.field,
+            validation_status: 'needs_clarification'
+          }
+        });
+        break;
     }
-  }, [updateStreamingMessage, onValuationComplete, onReportUpdate]);
+  }, [updateStreamingMessage, onValuationComplete, onReportUpdate, onDataCollected, onValuationPreview, onCalculateOptionAvailable, onProgressUpdate, addMessage]);
 
   const startStreamingWithRetry = useCallback(async (userInput: string, attempt = 0) => {
     if (!userInput.trim() || isStreaming) return;
@@ -1004,6 +1092,49 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
         ))}
         <div ref={messagesEndRef} />
       </div>
+
+      {/* Data Collection Panel */}
+      {Object.keys(collectedData).length > 0 && (
+        <div className="px-4 pb-2">
+          <div className="bg-zinc-800/50 rounded-lg p-4 border border-zinc-700/50">
+            <h4 className="text-sm font-semibold text-white mb-3 flex items-center gap-2">
+              <CheckCircle className="w-4 h-4 text-green-500" />
+              Collected Data
+            </h4>
+            <div className="grid grid-cols-2 gap-2">
+              {Object.entries(collectedData).map(([field, data]: [string, any]) => (
+                <div key={field} className="flex items-center gap-2 text-xs data-collected-item">
+                  <span className="text-zinc-400">{data.icon}</span>
+                  <span className="text-zinc-300">{data.display_name}:</span>
+                  <span className="text-white font-medium">{data.value}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Calculate Now Button - commented out for now */}
+      {/* {calculateOption && (
+        <div className="px-4 pb-2">
+          <div className="bg-primary-600/20 rounded-lg p-4 border border-primary-500/50">
+            <p className="text-sm text-white mb-3">{calculateOption.message}</p>
+            <button
+              onClick={() => {
+                // Handle calculate now action
+                chatLogger.info('Calculate now clicked', { tier: calculateOption.tier });
+                // TODO: Implement calculate now functionality
+              }}
+              className="w-full bg-primary-600 hover:bg-primary-700 text-white font-semibold py-2 px-4 rounded-lg transition-colors"
+            >
+              {calculateOption.cta}
+            </button>
+            <p className="text-xs text-zinc-400 mt-2 text-center">
+              {calculateOption.continue_message}
+            </p>
+          </div>
+        </div>
+      )} */}
 
       {/* Contextual tip */}
       {getContextualTip() && (

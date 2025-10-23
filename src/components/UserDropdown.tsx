@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { LogOut, User, Settings, Home, LogIn, UserPlus, Info } from 'lucide-react';
+import { LogOut, User, Settings, Home, UserPlus, Info } from 'lucide-react';
 import { User as UserType } from '../contexts/AuthContextTypes';
 
 interface UserDropdownProps {
@@ -166,12 +166,6 @@ export const UserDropdown: React.FC<UserDropdownProps> = ({ user, onLogout }) =>
 
   // Menu items for guest users
   const guestMenuItems = [
-    {
-      key: 'sign-in',
-      icon: LogIn,
-      label: 'Sign In',
-      action: handleSignIn,
-    },
     {
       key: 'create-account',
       icon: UserPlus,

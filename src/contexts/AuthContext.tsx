@@ -212,13 +212,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       if (token) {
         authLogger.info('Token found in URL - user coming from upswitch.biz');
-        authLogger.info('Exchanging token for authenticated session');
-        await exchangeToken(token);
         
-        // Remove token from URL for security
+        // Remove token from URL immediately to prevent multiple attempts
         const newUrl = window.location.pathname + window.location.hash;
         window.history.replaceState({}, document.title, newUrl);
-        authLogger.info('Token exchange complete - user authenticated');
+        
+        authLogger.info('Exchanging token for authenticated session');
+        try {
+          await exchangeToken(token);
+          authLogger.info('Token exchange complete - user authenticated');
+        } catch (tokenError) {
+          authLogger.error('Token exchange failed', {
+            error: tokenError instanceof Error ? tokenError.message : 'Unknown error'
+          });
+          // Don't set error state for token exchange failures - continue as guest
+          authLogger.info('Continuing as guest user after token exchange failure');
+        }
       } else {
         // No token and no session - continue as guest
         authLogger.info('No token or session - continuing as guest user');
@@ -238,6 +247,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
    */
   const exchangeToken = async (token: string) => {
     try {
+      authLogger.debug('Attempting token exchange', { 
+        apiUrl: API_URL,
+        tokenLength: token.length,
+        tokenPrefix: token.substring(0, 20) + '...'
+      });
+
       const response = await fetch(`${API_URL}/api/auth/exchange-token`, {
         method: 'POST',
         headers: {
@@ -247,12 +262,30 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         body: JSON.stringify({ token }),
       });
 
+      authLogger.debug('Token exchange response', {
+        status: response.status,
+        statusText: response.statusText,
+        ok: response.ok
+      });
+
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Token exchange failed');
+        let errorMessage = 'Token exchange failed';
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.error || errorMessage;
+          authLogger.error('Token exchange API error', {
+            status: response.status,
+            error: errorData.error,
+            timestamp: errorData.timestamp
+          });
+        } catch (parseError) {
+          authLogger.error('Failed to parse error response', { parseError });
+        }
+        throw new Error(errorMessage);
       }
 
       const data = await response.json();
+      authLogger.debug('Token exchange response data', { success: data.success });
 
       if (data.success && data.data) {
         // Handle nested user structure (data.data.user or data.data)
@@ -271,9 +304,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     } catch (err) {
       authLogger.error('Token exchange error', {
-        error: err instanceof Error ? err.message : 'Unknown error'
+        error: err instanceof Error ? err.message : 'Unknown error',
+        stack: err instanceof Error ? err.stack : undefined
       });
-      setError(err instanceof Error ? err.message : 'Token exchange failed');
+      // Don't set error state - let the app continue as guest
       throw err;
     }
   };

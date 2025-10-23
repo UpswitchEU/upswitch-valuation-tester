@@ -16,14 +16,42 @@ import { api } from '../services/api';
 import { serviceLogger } from '../utils/logger';
 import type { QuickValuationRequest, QuickValuationResponse } from '../types/valuation';
 
-export const LivePreview: React.FC = () => {
+interface LivePreviewProps {
+  valuationPreview?: any;
+  collectedData?: Record<string, any>;
+  progressSummary?: any;
+}
+
+export const LivePreview: React.FC<LivePreviewProps> = ({
+  valuationPreview,
+  collectedData,
+  progressSummary
+}) => {
   const { formData } = useValuationStore();
   const [estimate, setEstimate] = useState<QuickValuationResponse | null>(null);
   const [isCalculating, setIsCalculating] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Debounced calculation (800ms as per architecture)
+  // Use backend preview if available, otherwise use local calculation
+  const displayEstimate = valuationPreview || estimate;
+
+  // Show preview immediately when received from backend
   useEffect(() => {
+    if (valuationPreview) {
+      serviceLogger.info('Displaying backend valuation preview', {
+        range_mid: valuationPreview.range_mid,
+        confidence: valuationPreview.confidence
+      });
+    }
+  }, [valuationPreview]);
+
+  // Debounced calculation (800ms as per architecture) - only if no backend preview
+  useEffect(() => {
+    // Skip if we have backend preview
+    if (valuationPreview) {
+      return;
+    }
+
     // Only calculate if we have minimum required data
     if (!formData.revenue || !formData.ebitda || formData.revenue === 0) {
       setEstimate(null);
@@ -56,7 +84,7 @@ export const LivePreview: React.FC = () => {
     }, 800); // 800ms debounce as per architecture
 
     return () => clearTimeout(timer);
-  }, [formData.revenue, formData.ebitda, formData.industry, formData.country_code]);
+  }, [formData.revenue, formData.ebitda, formData.industry, formData.country_code, valuationPreview]);
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('en-US', {
@@ -65,6 +93,12 @@ export const LivePreview: React.FC = () => {
       minimumFractionDigits: 0,
       maximumFractionDigits: 0,
     }).format(value);
+  };
+
+  const getConfidenceColor = (confidence: number) => {
+    if (confidence >= 0.8) return 'text-green-600 bg-green-100';
+    if (confidence >= 0.6) return 'text-yellow-600 bg-yellow-100';
+    return 'text-orange-600 bg-orange-100';
   };
 
   // Don't show if no data
@@ -129,20 +163,20 @@ export const LivePreview: React.FC = () => {
           </div>
           <p className="text-sm text-red-600">{error}</p>
         </div>
-      ) : estimate ? (
+      ) : displayEstimate ? (
         <div>
           {/* Main Estimate */}
           <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200 mb-4">
             <p className="text-sm text-gray-600 mb-2 text-center">Estimated Business Value</p>
             <div className="text-center">
               <div className="text-4xl font-bold text-primary-600 mb-1">
-                {formatCurrency(estimate.equity_value_mid)}
+                {formatCurrency(displayEstimate.range_mid || displayEstimate.equity_value_mid)}
               </div>
-              {estimate.equity_value_low && estimate.equity_value_high && (
+              {(displayEstimate.range_low && displayEstimate.range_high) || (displayEstimate.equity_value_low && displayEstimate.equity_value_high) ? (
                 <p className="text-sm text-gray-500">
-                  Range: {formatCurrency(estimate.equity_value_low)} - {formatCurrency(estimate.equity_value_high)}
+                  Range: {formatCurrency(displayEstimate.range_low || displayEstimate.equity_value_low)} - {formatCurrency(displayEstimate.range_high || displayEstimate.equity_value_high)}
                 </p>
-              )}
+              ) : null}
             </div>
           </div>
 
@@ -150,15 +184,19 @@ export const LivePreview: React.FC = () => {
           <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-200 mb-4">
             <div className="flex items-center justify-between mb-2">
               <span className="text-sm font-medium text-gray-700">Confidence</span>
-              <span className="text-sm font-bold text-primary-600">{estimate.confidence || estimate.confidence_score || 70}%</span>
+              <span className={`text-sm font-bold px-2 py-1 rounded-full ${getConfidenceColor(displayEstimate.confidence || displayEstimate.confidence_score || 0.7)}`}>
+                {Math.round((displayEstimate.confidence || displayEstimate.confidence_score || 70) * 100)}%
+              </span>
             </div>
             <div className="w-full bg-gray-200 rounded-full h-2">
               <div
                 className="bg-primary-600 h-2 rounded-full transition-all duration-500"
-                style={{ width: `${estimate.confidence || estimate.confidence_score || 70}%` }}
+                style={{ width: `${(displayEstimate.confidence || displayEstimate.confidence_score || 70) * 100}%` }}
               />
             </div>
-            <p className="text-xs text-gray-500 mt-2">Quick estimate based on multiples only</p>
+            <p className="text-xs text-gray-500 mt-2">
+              {valuationPreview ? 'Real-time estimate from conversation' : 'Quick estimate based on multiples only'}
+            </p>
           </div>
 
           {/* Methodology */}
@@ -167,10 +205,51 @@ export const LivePreview: React.FC = () => {
               <Info className="w-4 h-4 text-gray-400" />
               <span className="text-sm font-medium text-gray-700">Methodology</span>
             </div>
-            <p className="text-xs text-gray-600 capitalize">{estimate.methodology || estimate.primary_method || 'Market Multiples'}</p>
+            <p className="text-xs text-gray-600 capitalize">
+              {displayEstimate.methodology || displayEstimate.primary_method || 'Market Multiples'}
+            </p>
           </div>
         </div>
       ) : null}
+
+      {/* Progress Indicator */}
+      {progressSummary && (
+        <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-200 mb-4">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-sm font-medium text-gray-700">Data Collection</span>
+            <span className="text-sm font-bold text-primary-600">
+              {progressSummary.completeness.overall.toFixed(0)}%
+            </span>
+          </div>
+          <div className="w-full bg-gray-200 rounded-full h-2 mb-2">
+            <div
+              className="bg-primary-600 h-2 rounded-full progress-bar-animation"
+              style={{ width: `${progressSummary.completeness.overall}%` }}
+            />
+          </div>
+          <p className="text-xs text-gray-500">
+            {progressSummary.next_milestone}
+          </p>
+        </div>
+      )}
+
+      {/* Collected Data */}
+      {collectedData && Object.keys(collectedData).length > 0 && (
+        <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-200 mb-4">
+          <h4 className="text-sm font-medium text-gray-700 mb-3">Collected Information</h4>
+          <div className="space-y-2">
+            {Object.entries(collectedData).map(([field, data]: [string, any]) => (
+              <div key={field} className="flex items-center justify-between text-xs data-collected-item">
+                <span className="text-gray-600 flex items-center gap-2">
+                  <span>{data.icon}</span>
+                  {data.display_name}
+                </span>
+                <span className="text-gray-900 font-medium">{data.value}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Info Box */}
       <div className="mt-4 p-3 bg-blue-50 rounded-lg border border-blue-100">

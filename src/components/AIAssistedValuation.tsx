@@ -26,6 +26,12 @@ export const AIAssistedValuation: React.FC = () => {
   const [valuationResult, setValuationResult] = useState<ValuationResponse | null>(null);
   const [reportSaved, setReportSaved] = useState(false);
   
+  // New state for lovable experience features (commented out for now)
+  // const [collectedData, setCollectedData] = useState<Record<string, any>>({});
+  // const [valuationPreview, setValuationPreview] = useState<any>(null);
+  // const [progressSummary, setProgressSummary] = useState<any>(null);
+  // const [calculateOption, setCalculateOption] = useState<any>(null);
+  
   // Panel resize state with localStorage persistence
   const [leftPanelWidth, setLeftPanelWidth] = useState(() => {
     try {
@@ -398,6 +404,10 @@ export const AIAssistedValuation: React.FC = () => {
                   userId={user?.id}
                   onValuationComplete={handleValuationComplete}
                   onReportUpdate={handleReportUpdate}
+                  // onDataCollected={handleDataCollected}
+                  // onValuationPreview={handleValuationPreview}
+                  // onCalculateOptionAvailable={handleCalculateOption}
+                  // onProgressUpdate={handleProgressUpdate}
                   className="h-full"
                   placeholder="Ask about your business valuation..."
                 />
