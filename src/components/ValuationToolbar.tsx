@@ -23,7 +23,7 @@ export const ValuationToolbar: React.FC<ValuationToolbarProps> = ({
   const [editedName, setEditedName] = useState(valuationName);
   
   // Generate unique name based on company or default
-  const [generatedName] = useState(() => {
+  const [generatedName, setGeneratedName] = useState(() => {
     if (companyName) {
       return NameGenerator.generateFromCompany(companyName);
     }
@@ -40,6 +40,13 @@ export const ValuationToolbar: React.FC<ValuationToolbarProps> = ({
       nameInputRef.current.select();
     }
   }, [isEditingName]);
+
+  // Sync editedName when generatedName changes
+  useEffect(() => {
+    if (!isEditingName) {
+      setEditedName(generatedName);
+    }
+  }, [generatedName, isEditingName]);
 
 
   // Close user dropdown when clicking outside
@@ -82,15 +89,19 @@ export const ValuationToolbar: React.FC<ValuationToolbarProps> = ({
       return;
     }
     
+    // Update the displayed name
+    setGeneratedName(editedName.trim());
     setIsEditingName(false);
     
     try {
-      // For now, just log the save - in a real implementation, this would save to backend
-      // await saveValuationName(editedName);
-      generalLogger.info('Valuation name saved', { name: editedName });
+      // Log the save for debugging
+      generalLogger.info('Valuation name saved', { name: editedName.trim() });
+      
+      // TODO: In future, persist to backend
+      // await saveValuationName(editedName.trim());
     } catch (error) {
       generalLogger.error('Failed to save valuation name', { error });
-      setEditedName(valuationName); // Revert on error
+      // Note: We don't revert here since the UI update is already done
     }
   };
 
@@ -190,7 +201,7 @@ export const ValuationToolbar: React.FC<ValuationToolbarProps> = ({
                       onChange={(e) => setEditedName(e.target.value)}
                       onBlur={handleNameSave}
                       onKeyDown={handleKeyDown}
-                      className="bg-transparent border-none outline-none text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-400 font-semibold"
+                      className="bg-transparent border-none outline-none text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-400 font-semibold text-sm"
                       style={{ minWidth: '120px' }}
                     />
                   ) : (
