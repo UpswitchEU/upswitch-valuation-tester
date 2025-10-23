@@ -284,7 +284,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const hasAuthCookie = (): boolean => {
     return document.cookie
       .split(';')
-      .some(cookie => cookie.trim().startsWith('business_card='));
+      .some(cookie => cookie.trim().startsWith('upswitch_session='));
   };
 
   /**
