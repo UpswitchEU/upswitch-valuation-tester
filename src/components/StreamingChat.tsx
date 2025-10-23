@@ -489,7 +489,7 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
   }, [messages]);
 
   return (
-    <div className={`flex flex-col h-full bg-gradient-to-br from-zinc-900 via-zinc-800 to-zinc-900 rounded-lg shadow-lg ${className}`}>
+    <div className={`flex flex-col h-full bg-zinc-900 ${className}`}>
 
       {/* Progress header */}
       <div className="border-b border-zinc-800 p-4">

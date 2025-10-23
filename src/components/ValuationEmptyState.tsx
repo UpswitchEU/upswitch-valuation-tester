@@ -5,7 +5,7 @@ export const ValuationEmptyState: React.FC = () => {
   return (
     <div className="flex flex-col items-center justify-center h-full p-8 text-center bg-white">
       <div className="p-4 rounded-full bg-white border border-gray-200 shadow-sm">
-        <FileText className="w-8 h-8 text-blue-500" />
+        <FileText className="w-8 h-8 text-zinc-400" />
       </div>
       <h3 className="mt-4 text-lg font-medium text-black bg-white">
         Reports will appear here

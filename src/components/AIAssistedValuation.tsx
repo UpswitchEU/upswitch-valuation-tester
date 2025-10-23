@@ -300,7 +300,7 @@ export const AIAssistedValuation: React.FC = () => {
         <div 
           className={`${
             isMobile ? (mobileActivePanel === 'chat' ? 'w-full' : 'hidden') : ''
-          } h-full flex flex-col bg-gradient-to-br from-zinc-900 via-zinc-800 to-zinc-900 border-r border-zinc-800 w-full lg:w-auto`}
+          } h-full flex flex-col bg-zinc-900 border-r border-zinc-800 w-full lg:w-auto`}
           style={{ 
             width: isMobile ? '100%' : `${leftPanelWidth}%`
           }}

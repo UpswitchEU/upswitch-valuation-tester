@@ -160,7 +160,7 @@ ${nextQ.question}
   };
 
   return (
-    <div className="flex h-full flex-col overflow-hidden bg-gradient-to-br from-zinc-900 via-zinc-800 to-zinc-900">
+    <div className="flex h-full flex-col overflow-hidden bg-zinc-900">
       {/* Header */}
       <div className="border-b border-zinc-700/50 bg-zinc-900/50 backdrop-blur-sm px-6 py-4 flex-shrink-0">
         <div className="flex items-center gap-3">
