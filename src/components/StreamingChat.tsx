@@ -181,8 +181,8 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
   });
   const loadingMessage: string = useLoadingMessage();
   
-  // Input validation functions
-  const containsPII = (input: string): boolean => {
+  // Input validation functions (memoized for performance)
+  const containsPII = useCallback((input: string): boolean => {
     // Simple PII detection patterns
     const piiPatterns = [
       /\b\d{3}-\d{2}-\d{4}\b/, // SSN
@@ -191,19 +191,19 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
       /\b\d{3}-\d{3}-\d{4}\b/, // Phone
     ];
     return piiPatterns.some(pattern => pattern.test(input));
-  };
+  }, []);
 
-  const containsProfanity = (input: string): boolean => {
+  const containsProfanity = useCallback((input: string): boolean => {
     // Simple profanity detection (in production, use a proper library)
     const profanityWords = ['damn', 'hell', 'shit', 'fuck', 'bitch', 'ass'];
     const lowerInput = input.toLowerCase();
     return profanityWords.some(word => lowerInput.includes(word));
-  };
+  }, []);
 
-  const isValidNumber = (input: string): boolean => {
+  const isValidNumber = useCallback((input: string): boolean => {
     const num = parseFloat(input);
     return !isNaN(num) && isFinite(num) && num >= 0;
-  };
+  }, []);
 
   const validateInput = useCallback(async (input: string): Promise<InputValidation> => {
     const validation: InputValidation = {
@@ -240,10 +240,11 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
     }
     
     // Business logic validation (if we know we're expecting a number)
-    const isNumericField = messages.length > 0 && 
+    const isNumericField = messages.length > 0 && (
       messages[messages.length - 1]?.content?.toLowerCase().includes('revenue') ||
       messages[messages.length - 1]?.content?.toLowerCase().includes('profit') ||
-      messages[messages.length - 1]?.content?.toLowerCase().includes('ebitda');
+      messages[messages.length - 1]?.content?.toLowerCase().includes('ebitda')
+    );
     
     if (isNumericField && !isValidNumber(input)) {
       validation.is_valid = false;
@@ -390,50 +391,6 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
     });
   }, [sessionId, conversationMetrics.total_turns, conversationMetrics.started_at]);
 
-  // Simple monitoring - just log message count changes
-  useEffect(() => {
-    chatLogger.debug('Messages state updated', { count: messages.length });
-  }, [messages]);
-
-  // Initialize with welcome message (A/B tested)
-  useEffect(() => {
-    if (messages.length === 0) {
-      const greetingVariant = useABTest('greeting_message');
-      
-      const greetingMessages = {
-        A: `Hi! I'm your AI valuation expert. Let's start with your company name.`,
-        B: `Welcome! I'll help you value your business. What's your company name?`,
-        C: `Let's value your business. What's your company name?`
-      };
-      
-      setMessages([{
-        id: 'welcome',
-        type: 'ai',
-        content: greetingMessages[greetingVariant],
-        timestamp: new Date(),
-        isComplete: true,
-        metadata: {
-          help_text: "Use your legal business name as it appears on official documents",
-          session_phase: 'onboarding',
-          conversation_turn: 1,
-          ab_test: {
-            test_name: 'greeting_message',
-            variant: greetingVariant
-          }
-        }
-      }]);
-    }
-  }, [messages.length, useABTest]);
-
-  // Cleanup on unmount
-  useEffect(() => {
-    return () => {
-      if (eventSourceRef.current) {
-        eventSourceRef.current.close();
-      }
-    };
-  }, []);
-
   const addMessage = useCallback((message: Omit<Message, 'id' | 'timestamp'>) => {
     // Simple, direct approach like IlaraAI - trust TypeScript types
     const newMessage: Message = {
@@ -455,6 +412,49 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
     
     return newMessage;
   }, [trackConversationTurn]);
+
+  // Simple monitoring - just log message count changes
+  useEffect(() => {
+    chatLogger.debug('Messages state updated', { count: messages.length });
+  }, [messages]);
+
+  // Initialize with welcome message (A/B tested)
+  useEffect(() => {
+    if (messages.length === 0) {
+      const greetingVariant = useABTest('greeting_message');
+      
+      const greetingMessages = {
+        A: `Hi! I'm your AI valuation expert. Let's start with your company name.`,
+        B: `Welcome! I'll help you value your business. What's your company name?`,
+        C: `Let's value your business. What's your company name?`
+      };
+      
+      // ✅ Use addMessage() instead of setMessages() for proper analytics tracking
+      addMessage({
+        type: 'ai',
+        content: greetingMessages[greetingVariant],
+        isComplete: true,
+        metadata: {
+          help_text: "Use your legal business name as it appears on official documents",
+          session_phase: 'onboarding',
+          conversation_turn: 1,
+          ab_test: {
+            test_name: 'greeting_message',
+            variant: greetingVariant
+          }
+        }
+      });
+    }
+  }, [messages.length, addMessage]);  // ✅ Add addMessage to dependencies
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (eventSourceRef.current) {
+        eventSourceRef.current.close();
+      }
+    };
+  }, []);
 
   const updateStreamingMessage = useCallback((content: string, isComplete: boolean = false) => {
     if (!currentStreamingMessageRef.current?.id) {
