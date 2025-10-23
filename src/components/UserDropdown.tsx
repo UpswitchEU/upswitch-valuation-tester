@@ -10,6 +10,8 @@ interface UserDropdownProps {
 export const UserDropdown: React.FC<UserDropdownProps> = ({ user, onLogout }) => {
   console.log('🔵 [UserDropdown] Rendering with user:', user);
   const [isOpen, setIsOpen] = useState(false);
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const [isLoadingAvatar, setIsLoadingAvatar] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null); // Track button position
 
@@ -61,6 +63,41 @@ export const UserDropdown: React.FC<UserDropdownProps> = ({ user, onLogout }) =>
     };
   }, [isOpen]);
 
+  // Load avatar from backend
+  useEffect(() => {
+    const loadAvatar = async () => {
+      if (!user?.id) {
+        setIsLoadingAvatar(false);
+        return;
+      }
+
+      setIsLoadingAvatar(true);
+
+      try {
+        const backendUrl = import.meta.env.VITE_BACKEND_URL || 
+                          import.meta.env.VITE_API_BASE_URL || 
+                          'https://web-production-8d00b.up.railway.app';
+        
+        const response = await fetch(`${backendUrl}/api/users/${user.id}`, {
+          credentials: 'include',
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          if (data.success && data.data?.avatar_url) {
+            setAvatarUrl(data.data.avatar_url);
+          }
+        }
+      } catch (error) {
+        console.error('Error loading avatar:', error);
+      } finally {
+        setIsLoadingAvatar(false);
+      }
+    };
+
+    loadAvatar();
+  }, [user?.id]);
+
   // Get user initials for placeholder
   const getUserInitials = () => {
     if (!user?.name) return '?';
@@ -71,9 +108,9 @@ export const UserDropdown: React.FC<UserDropdownProps> = ({ user, onLogout }) =>
     return user.name.substring(0, 2).toUpperCase();
   };
 
-  // Computed avatar values
-  const avatarUrl = user?.avatar_url || user?.avatar;
-  const hasAvatar = !!avatarUrl;
+  // Use loaded avatarUrl first, then fallback to user object properties
+  const displayAvatarUrl = avatarUrl || user?.avatar_url || user?.avatar;
+  const hasAvatar = !isLoadingAvatar && !!displayAvatarUrl;
 
   const handleUserClick = () => {
     setIsOpen(prev => !prev);
@@ -194,7 +231,7 @@ export const UserDropdown: React.FC<UserDropdownProps> = ({ user, onLogout }) =>
           <>
             {hasAvatar ? (
               <img
-                src={avatarUrl || ''}
+                src={displayAvatarUrl || ''}
                 alt={user?.name || 'User'}
                 className="w-full h-full rounded-full object-cover"
                 loading="lazy"
@@ -234,7 +271,7 @@ export const UserDropdown: React.FC<UserDropdownProps> = ({ user, onLogout }) =>
                   <div className="w-8 h-8 bg-zinc-700 rounded-full flex items-center justify-center flex-shrink-0">
                     {hasAvatar ? (
                       <img
-                        src={avatarUrl || ''}
+                        src={displayAvatarUrl || ''}
                         alt={user?.name || 'User'}
                         className="w-full h-full rounded-full object-cover"
                         loading="lazy"
