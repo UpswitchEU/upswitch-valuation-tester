@@ -201,7 +201,7 @@ export const ValuationToolbar: React.FC<ValuationToolbarProps> = ({
                       onChange={(e) => setEditedName(e.target.value)}
                       onBlur={handleNameSave}
                       onKeyDown={handleKeyDown}
-                      className="bg-transparent border-none outline-none text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-400 font-semibold text-sm"
+                      className="bg-transparent border-none outline-none focus:outline-none focus:ring-0 focus:border-none text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-400 font-semibold text-sm"
                       style={{ minWidth: '120px' }}
                     />
                   ) : (
