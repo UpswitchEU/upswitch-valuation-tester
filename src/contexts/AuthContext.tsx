@@ -273,6 +273,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         try {
           const errorData = await response.json();
           errorMessage = errorData.error || errorMessage;
+          
+          // Log specific error for debugging
+          if (response.status === 401) {
+            authLogger.error('Token validation failed - token may be expired or already used', {
+              status: 401,
+              error: errorData.error
+            });
+          }
+          
           authLogger.error('Token exchange API error', {
             status: response.status,
             error: errorData.error,
