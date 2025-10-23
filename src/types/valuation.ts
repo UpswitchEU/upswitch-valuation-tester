@@ -417,3 +417,21 @@ export interface OwnerProfileResponse {
   };
 }
 
+// =============================================================================
+// VALUATION TOOLBAR TYPES
+// =============================================================================
+
+export interface ValuationToolbarProps {
+  onRefresh?: () => void;
+  onDownload?: () => void;
+  onFullScreen?: () => void;
+  isGenerating?: boolean;
+  user?: any;
+  valuationName?: string;
+  valuationId?: string;
+  activeTab?: 'preview' | 'source' | 'info';
+  onTabChange?: (tab: 'preview' | 'source' | 'info') => void;
+  companyName?: string;
+  valuationMethod?: string;
+}
+

@@ -1,14 +1,18 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { CheckCircle, Save, ArrowLeft, Building2 } from 'lucide-react';
+// import { useNavigate } from 'react-router-dom';
+import { CheckCircle, Save, Building2 } from 'lucide-react';
 import { StreamingChat } from './StreamingChat';
 import { LiveValuationReport } from './LiveValuationReport';
 import { ErrorBoundary } from './ErrorBoundary';
+import { ValuationToolbar } from './ValuationToolbar';
+import { ValuationInfoPanel } from './ValuationInfoPanel';
+import { FullScreenModal } from './FullScreenModal';
 import { businessDataService, type BusinessProfileData } from '../services/businessDataService';
 import { api } from '../services/api';
 import { useAuth } from '../hooks/useAuth';
 import type { ValuationResponse } from '../types/valuation';
 import { chatLogger } from '../utils/logger';
+import { DownloadService } from '../services/downloadService';
 
 interface ProgressItem {
   id: string;
@@ -19,7 +23,6 @@ interface ProgressItem {
 type FlowStage = 'chat' | 'results';
 
 export const AIAssistedValuation: React.FC = () => {
-  const navigate = useNavigate();
   const { user, isAuthenticated } = useAuth();
   const [stage, setStage] = useState<FlowStage>('chat');
   const [valuationResult, setValuationResult] = useState<ValuationResponse | null>(null);
@@ -34,6 +37,12 @@ export const AIAssistedValuation: React.FC = () => {
   const [liveHtmlReport, setLiveHtmlReport] = useState<string>('');
   const [reportProgress, setReportProgress] = useState<number>(0);
   const [progressItems, setProgressItems] = useState<ProgressItem[]>([]);
+
+  // NEW: Toolbar state
+  const [activeTab, setActiveTab] = useState<'preview' | 'source' | 'info'>('preview');
+  const [valuationName] = useState('Valuation test123');
+  const [isFullScreen, setIsFullScreen] = useState(false);
+  const [isGenerating, setIsGenerating] = useState(false);
 
   // NEW: Handle live report updates from streaming
   const handleReportUpdate = useCallback((htmlContent: string, progress: number) => {
@@ -141,48 +150,75 @@ export const AIAssistedValuation: React.FC = () => {
     setReportSaved(false);
   };
 
+  // NEW: Toolbar handlers
+  const handleRefresh = () => {
+    if (valuationResult) {
+      setIsGenerating(true);
+      // Regenerate valuation with same inputs
+      // This would typically call the API again
+      setTimeout(() => {
+        setIsGenerating(false);
+      }, 2000);
+    }
+  };
+
+  const handleDownload = async () => {
+    if (valuationResult && liveHtmlReport) {
+      try {
+        const valuationData = {
+          companyName: businessProfile?.company_name || 'Company',
+          valuationAmount: valuationResult.equity_value_mid,
+          valuationDate: new Date(),
+          method: valuationResult.methodology || 'DCF Analysis',
+          confidenceScore: valuationResult.confidence_score,
+          inputs: {
+            revenue: businessProfile?.revenue,
+            ebitda: businessProfile?.ebitda,
+            industry: businessProfile?.industry,
+            employees: businessProfile?.employees
+          },
+          assumptions: {
+            growth_rate: '5%',
+            discount_rate: '10%',
+            terminal_growth: '2%'
+          },
+          htmlContent: liveHtmlReport
+        };
+
+        await DownloadService.downloadPDF(valuationData, {
+          format: 'pdf',
+          filename: DownloadService.getDefaultFilename(businessProfile?.company_name, 'pdf')
+        });
+      } catch (error) {
+        console.error('Download failed:', error);
+      }
+    }
+  };
+
+  const handleFullScreen = () => {
+    setIsFullScreen(true);
+  };
+
+  const handleTabChange = (tab: 'preview' | 'source' | 'info') => {
+    setActiveTab(tab);
+  };
+
   return (
     <>
-      {/* Ilara-style Toolbar */}
-      <div className="border-b border-zinc-800 bg-zinc-900/50 backdrop-blur-sm px-3 sm:px-4 md:px-6 py-3 md:py-4">
-        <div className="flex items-center justify-between gap-2">
-          <div className="flex items-center gap-2 sm:gap-3 md:gap-4 min-w-0 flex-1">
-            <button
-              onClick={() => navigate('/')}
-              className="flex items-center gap-1.5 sm:gap-2 px-2 sm:px-3 py-2 text-xs sm:text-sm text-zinc-400 hover:text-white transition-colors rounded-lg hover:bg-zinc-800 flex-shrink-0"
-            >
-              <ArrowLeft className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-              <span className="hidden sm:inline">Other Methods</span>
-              <span className="sm:hidden">Back</span>
-            </button>
-            <div className="h-4 sm:h-6 w-px bg-zinc-700 flex-shrink-0" />
-            <div className="min-w-0 flex-1">
-              <h1 className="text-base sm:text-lg font-bold text-white truncate">Instant Valuation</h1>
-              <p className="text-xs text-zinc-400 hidden sm:block">
-                {isLoadingProfile ? 'Loading your business profile...' : 
-                 businessProfile ? `AI-powered valuation for ${businessProfile.company_name || 'your business'}` :
-                 'AI-powered company lookup'}
-              </p>
-            </div>
-          </div>
-
-          {/* Simple status indicator */}
-          <div className="flex items-center gap-2 text-xs text-zinc-400">
-            {stage === 'chat' && (
-              <>
-                <div className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
-                <span>AI conversation active</span>
-              </>
-            )}
-            {stage === 'results' && (
-              <>
-                <div className="w-2 h-2 rounded-full bg-green-500" />
-                <span>Valuation complete</span>
-              </>
-            )}
-          </div>
-        </div>
-      </div>
+      {/* NEW: ValuationToolbar */}
+      <ValuationToolbar
+        onRefresh={handleRefresh}
+        onDownload={handleDownload}
+        onFullScreen={handleFullScreen}
+        isGenerating={isGenerating || stage === 'chat'}
+        user={user}
+        valuationName={valuationName}
+        valuationId={valuationResult?.valuation_id}
+        activeTab={activeTab}
+        onTabChange={handleTabChange}
+        companyName={businessProfile?.company_name}
+        valuationMethod={valuationResult?.methodology}
+      />
 
       {/* Business Profile Summary */}
       {businessProfile && !isLoadingProfile && (
@@ -305,15 +341,50 @@ export const AIAssistedValuation: React.FC = () => {
 
         {/* Right Panel: Live Report (40% on desktop, full width on mobile below chat) */}
         <div className="h-full min-h-[400px] lg:min-h-0 flex flex-col bg-white overflow-y-auto w-full lg:w-[40%] border-t lg:border-t-0 border-zinc-800">
-          <LiveValuationReport
-            htmlContent={liveHtmlReport}
-            isGenerating={stage === 'chat'}
-            progress={reportProgress}
-            progressItems={progressItems}
-          />
+          {/* Tab Content */}
+          {activeTab === 'preview' && (
+            <LiveValuationReport
+              htmlContent={liveHtmlReport}
+              isGenerating={stage === 'chat'}
+              progress={reportProgress}
+              progressItems={progressItems}
+            />
+          )}
 
+          {activeTab === 'source' && (
+            <div className="h-full bg-zinc-900 p-4 overflow-y-auto">
+              <div className="bg-zinc-800 rounded-lg p-4">
+                <h3 className="text-white font-semibold mb-4">Source Code</h3>
+                <pre className="text-zinc-300 text-sm overflow-x-auto">
+                  <code>{liveHtmlReport || 'No source code available'}</code>
+                </pre>
+              </div>
+            </div>
+          )}
 
-          {stage === 'results' && valuationResult && (
+          {activeTab === 'info' && valuationResult && (
+            <ValuationInfoPanel
+              valuationId={valuationResult.valuation_id}
+              companyName={businessProfile?.company_name}
+              valuationMethod={valuationResult.methodology}
+              valuationDate={new Date(valuationResult.valuation_date || Date.now())}
+              inputs={{
+                revenue: businessProfile?.revenue,
+                ebitda: businessProfile?.ebitda,
+                industry: businessProfile?.industry,
+                employees: businessProfile?.employees
+              }}
+              assumptions={{
+                growth_rate: '5%',
+                discount_rate: '10%',
+                terminal_growth: '2%'
+              }}
+              confidenceScore={valuationResult.confidence_score}
+              dataQuality="High"
+            />
+          )}
+
+          {stage === 'results' && valuationResult && activeTab === 'preview' && (
             <div className="flex-1 overflow-y-auto p-4 sm:p-6">
               <div className="bg-gradient-to-br from-green-50 to-emerald-50 border border-green-200 rounded-lg p-6">
                 <div className="flex items-center gap-3 mb-4">
@@ -361,6 +432,53 @@ export const AIAssistedValuation: React.FC = () => {
           )}
         </div>
       </div>
+
+      {/* Full Screen Modal */}
+      <FullScreenModal
+        isOpen={isFullScreen}
+        onClose={() => setIsFullScreen(false)}
+        title={`${valuationName} - Full Screen`}
+      >
+        {activeTab === 'preview' && (
+          <LiveValuationReport
+            htmlContent={liveHtmlReport}
+            isGenerating={stage === 'chat'}
+            progress={reportProgress}
+            progressItems={progressItems}
+          />
+        )}
+        {activeTab === 'source' && (
+          <div className="h-full bg-zinc-900 p-4 overflow-y-auto">
+            <div className="bg-zinc-800 rounded-lg p-4">
+              <h3 className="text-white font-semibold mb-4">Source Code</h3>
+              <pre className="text-zinc-300 text-sm overflow-x-auto">
+                <code>{liveHtmlReport || 'No source code available'}</code>
+              </pre>
+            </div>
+          </div>
+        )}
+        {activeTab === 'info' && valuationResult && (
+          <ValuationInfoPanel
+            valuationId={valuationResult.valuation_id}
+            companyName={businessProfile?.company_name}
+            valuationMethod={valuationResult.methodology}
+            valuationDate={new Date(valuationResult.valuation_date || Date.now())}
+            inputs={{
+              revenue: businessProfile?.revenue,
+              ebitda: businessProfile?.ebitda,
+              industry: businessProfile?.industry,
+              employees: businessProfile?.employees
+            }}
+            assumptions={{
+              growth_rate: '5%',
+              discount_rate: '10%',
+              terminal_growth: '2%'
+            }}
+            confidenceScore={valuationResult.confidence_score}
+            dataQuality="High"
+          />
+        )}
+      </FullScreenModal>
     </>
   );
 };

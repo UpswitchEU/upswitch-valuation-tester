@@ -51,15 +51,36 @@ export class StreamingChatService {
         buffer = lines.pop() || '';
 
         for (const line of lines) {
+          // Handle SSE comment lines (keepalive pings)
+          if (line.startsWith(': ')) {
+            chatLogger.debug('SSE keepalive ping received', { line });
+            continue;
+          }
+          
+          // Handle data lines
           if (line.startsWith('data: ') && line.trim().length > 6) {
             try {
               const jsonStr = line.slice(6).trim();
               if (jsonStr) {
                 const data = JSON.parse(jsonStr);
+                
+                // Handle error events
+                if (data.type === 'error') {
+                  chatLogger.error('SSE Error received', { message: data.message, sessionId: data.session_id });
+                  yield data;
+                  return; // Stop processing on error
+                }
+                
+                // Handle ping events (ignore)
+                if (data.type === 'ping') {
+                  chatLogger.debug('SSE ping received', { sessionId: data.session_id });
+                  continue;
+                }
+                
                 yield data;
               }
             } catch (parseError) {
-              chatLogger.warn('Failed to parse SSE data', { line, parseError });
+              chatLogger.debug('Failed to parse SSE data', { line, parseError });
               // Skip malformed chunks - they'll be completed in next iteration
               continue;
             }

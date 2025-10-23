@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { Zap, Edit3, Upload, ArrowRight } from 'lucide-react';
+import { Zap, Edit3, Upload, ArrowRight, ExternalLink } from 'lucide-react';
 import { MinimalHeader } from '../components/MinimalHeader';
 import { ScrollToTop } from '../utils';
 import { generalLogger } from '../utils/logger';
@@ -23,6 +23,18 @@ export const HomePage: React.FC = () => {
       generalLogger.info('Token detected from main platform - staying on homepage for user choice');
     }
   }, [navigate]);
+
+  // Handle method click with new tab logic for desktop
+  const handleMethodClick = (method: typeof valuationMethods[0]) => {
+    if (method.disabled) return;
+    
+    // Open /instant in new tab on desktop only (>= 1024px)
+    if (method.id === 'instant' && window.innerWidth >= 1024) {
+      window.open(method.path, '_blank', 'noopener,noreferrer');
+    } else {
+      navigate(method.path);
+    }
+  };
 
   const valuationMethods = [
     {
@@ -108,7 +120,7 @@ export const HomePage: React.FC = () => {
             return (
               <button
                 key={method.id}
-                onClick={() => !isDisabled && navigate(method.path)}
+                onClick={() => handleMethodClick(method)}
                 disabled={isDisabled}
                 className={`group relative bg-gradient-to-br ${method.bgGradient} rounded-xl sm:rounded-2xl border ${method.borderColor} p-6 sm:p-8 transition-all duration-300 ${
                   isDisabled 
@@ -122,6 +134,13 @@ export const HomePage: React.FC = () => {
                     <span className={`px-2 sm:px-3 py-1 rounded-full text-xs font-semibold border ${method.badgeColor}`}>
                       {method.badge}
                     </span>
+                  </div>
+                )}
+
+                {/* External Link Icon for Instant on Desktop */}
+                {method.id === 'instant' && !isDisabled && (
+                  <div className="absolute top-3 left-3 sm:top-4 sm:left-4 opacity-0 group-hover:opacity-100 transition-opacity duration-200 hidden lg:block">
+                    <ExternalLink className="w-4 h-4 text-zinc-400 group-hover:text-primary-400" />
                   </div>
                 )}
 
