@@ -17,11 +17,6 @@ import type { ValuationResponse } from '../types/valuation';
 import { chatLogger } from '../utils/logger';
 import { DownloadService } from '../services/downloadService';
 
-interface ProgressItem {
-  id: string;
-  label: string;
-  status: 'completed' | 'in_progress' | 'pending';
-}
 
 type FlowStage = 'chat' | 'results';
 
@@ -85,7 +80,6 @@ export const AIAssistedValuation: React.FC = () => {
   // NEW: Live HTML report state
   const [liveHtmlReport, setLiveHtmlReport] = useState<string>('');
   const [reportProgress, setReportProgress] = useState<number>(0);
-  const [progressItems, setProgressItems] = useState<ProgressItem[]>([]);
 
   // NEW: Toolbar state
   const [activeTab, setActiveTab] = useState<'preview' | 'source' | 'info'>('preview');
@@ -187,9 +181,19 @@ export const AIAssistedValuation: React.FC = () => {
 
 
   const handleValuationComplete = (valuationResult: ValuationResponse) => {
+    chatLogger.info('Valuation complete callback triggered', { 
+      hasResult: !!valuationResult,
+      valuationId: valuationResult?.valuation_id,
+      equityValue: valuationResult?.equity_value_mid
+    });
+    
     setValuationResult(valuationResult);
     setStage('results');
-    chatLogger.info('Valuation complete, moving to results stage');
+    
+    chatLogger.info('Valuation complete, moving to results stage', { 
+      stage: 'results',
+      hasValuationResult: !!valuationResult
+    });
   };
 
 
@@ -394,7 +398,6 @@ export const AIAssistedValuation: React.FC = () => {
                   userId={user?.id}
                   onValuationComplete={handleValuationComplete}
                   onReportUpdate={handleReportUpdate}
-                  onProgressUpdate={setProgressItems}
                   className="h-full"
                   placeholder="Ask about your business valuation..."
                 />
@@ -425,7 +428,6 @@ export const AIAssistedValuation: React.FC = () => {
                 htmlContent={liveHtmlReport}
                 isGenerating={stage === 'chat'}
                 progress={reportProgress}
-                progressItems={progressItems}
               />
             ) : (
               <ValuationEmptyState />
@@ -580,7 +582,6 @@ export const AIAssistedValuation: React.FC = () => {
             htmlContent={liveHtmlReport}
             isGenerating={stage === 'chat'}
             progress={reportProgress}
-            progressItems={progressItems}
           />
         )}
         {activeTab === 'source' && (

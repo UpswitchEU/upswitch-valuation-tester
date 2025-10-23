@@ -1,20 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { Bot } from 'lucide-react';
-import { ValuationProgressTracker } from './ValuationProgressTracker';
 import { HTMLProcessor } from '../utils/htmlProcessor';
 import { BrandedLoading } from './BrandedLoading';
 
-interface ProgressItem {
-  id: string;
-  label: string;
-  status: 'completed' | 'in_progress' | 'pending';
-}
 
 interface LiveValuationReportProps {
   htmlContent: string;
   isGenerating: boolean;
   progress?: number;
-  progressItems?: ProgressItem[];
 }
 
 interface ReportSection {
@@ -27,7 +20,6 @@ export const LiveValuationReport: React.FC<LiveValuationReportProps> = ({
   htmlContent,
   isGenerating,
   progress = 0,
-  progressItems = []
 }) => {
   const [sections, setSections] = useState<ReportSection[]>([]);
   const [processedHtml, setProcessedHtml] = useState<string>('');
@@ -122,11 +114,6 @@ export const LiveValuationReport: React.FC<LiveValuationReportProps> = ({
                 </div>
               )}
               
-              {progressItems && progressItems.length > 0 && (
-                <div className="bg-zinc-50 rounded-lg p-4 border border-zinc-200">
-                  <ValuationProgressTracker items={progressItems} compact={false} />
-                </div>
-              )}
             </div>
           </div>
         )}

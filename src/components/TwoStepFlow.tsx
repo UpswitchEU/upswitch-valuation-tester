@@ -200,9 +200,6 @@ export const TwoStepFlow: React.FC<TwoStepFlowProps> = ({ onValuationComplete })
                 onReportUpdate={(_htmlContent, _progress) => {
                   // Handle live report updates if needed
                 }}
-                onProgressUpdate={(_items) => {
-                  // Handle progress updates if needed
-                }}
                 className="h-full"
                 placeholder="Let's complete your valuation with some additional questions..."
               />

@@ -8,7 +8,6 @@ import { Loader2, Bot, User } from 'lucide-react';
 import { AI_CONFIG } from '../config';
 import { streamingChatService } from '../services/chat/streamingChatService';
 import { ContextualTip } from './ContextualTip';
-import { ValuationProgressTracker } from './ValuationProgressTracker';
 import { LoadingDots } from './LoadingDots';
 import { useLoadingMessage } from '../hooks/useLoadingMessage';
 // Removed complex validation imports - using simple approach like IlaraAI
@@ -24,11 +23,6 @@ interface Message {
   metadata?: any;
 }
 
-interface ProgressItem {
-  id: string;
-  label: string;
-  status: 'completed' | 'in_progress' | 'pending';
-}
 
 interface StreamingChatProps {
   sessionId: string;
@@ -36,7 +30,6 @@ interface StreamingChatProps {
   onMessageComplete?: (message: Message) => void;
   onValuationComplete?: (result: any) => void;
   onReportUpdate?: (htmlContent: string, progress: number) => void;
-  onProgressUpdate?: (items: ProgressItem[]) => void;
   className?: string;
   placeholder?: string;
   disabled?: boolean;
@@ -48,7 +41,6 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
   onMessageComplete,
   onValuationComplete,
   onReportUpdate,
-  onProgressUpdate,
   className = '',
   placeholder = "Ask about your business valuation...",
   disabled = false
@@ -57,15 +49,6 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
   const [input, setInput] = useState('');
   const [isStreaming, setIsStreaming] = useState(false);
   const loadingMessage: string = useLoadingMessage();
-  const [progressItems, setProgressItems] = useState<ProgressItem[]>([
-    { id: 'company', label: 'Company Information', status: 'pending' },
-    { id: 'revenue', label: 'Revenue Data', status: 'pending' },
-    { id: 'profitability', label: 'Profitability Metrics', status: 'pending' },
-    { id: 'growth', label: 'Growth Trends', status: 'pending' },
-    { id: 'market', label: 'Market Position', status: 'pending' },
-    { id: 'assets', label: 'Assets & Liabilities', status: 'pending' },
-    { id: 'industry', label: 'Industry Benchmarks', status: 'pending' }
-  ]);
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const eventSourceRef = useRef<EventSource | null>(null);
@@ -91,12 +74,11 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
       setMessages([{
         id: 'welcome',
         type: 'ai',
-        content: `Hello! I'm your ${AI_CONFIG.branding.expertTitle.toLowerCase()} with ${AI_CONFIG.branding.levelIndicator.toLowerCase()} expertise. I'll help you get a professional business valuation through our intelligent conversation. What's the name of your business?`,
+        content: `Hi! I'm your AI valuation expert. Let's start with your company name.`,
         timestamp: new Date(),
         isComplete: true,
         metadata: {
-          reasoning: "Starting with company identification to establish context for valuation",
-          help_text: "Please provide your company's legal name as it appears on official documents"
+          help_text: "Use your legal business name as it appears on official documents"
         }
       }]);
     }
@@ -209,20 +191,6 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
         onReportUpdate?.(data.html, data.progress);
         break;
         
-      case 'progress_update':
-        // Backend sends which items are collected
-        setProgressItems(prev => {
-          const updated = prev.map(item => 
-            data.collected_items?.includes(item.id)
-              ? { ...item, status: 'completed' as const }
-              : data.current_item === item.id
-              ? { ...item, status: 'in_progress' as const }
-              : item
-          );
-          onProgressUpdate?.(updated);
-          return updated;
-        });
-        break;
         
       case 'message_complete':
         // Complete response
@@ -509,10 +477,6 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
   return (
     <div className={`flex flex-col h-full bg-zinc-900 ${className}`}>
 
-      {/* Progress header */}
-      <div className="border-b border-zinc-800 p-4">
-        <ValuationProgressTracker items={progressItems} compact={true} />
-      </div>
 
       {/* Messages */}
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
@@ -538,14 +502,6 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
                     {message.content}
                   </div>
                   
-                  {/* NEW: Display reasoning if available */}
-                  {AI_CONFIG.showReasoning && message.metadata?.reasoning && (
-                    <div className="mt-2 pt-2 border-t border-zinc-600/30">
-                      <p className="text-xs text-zinc-400 italic">
-                        💡 {message.metadata.reasoning}
-                      </p>
-                    </div>
-                  )}
                   
                   {/* NEW: Display help text if available */}
                   {AI_CONFIG.showHelpText && message.metadata?.help_text && (
