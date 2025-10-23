@@ -184,3 +184,4 @@ export const ValuationInfoPanel: React.FC<ValuationInfoPanelProps> = ({
     </div>
   );
 };
+

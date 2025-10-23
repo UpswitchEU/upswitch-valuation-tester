@@ -70,3 +70,4 @@ export const FullScreenModal: React.FC<FullScreenModalProps> = ({
     </div>
   );
 };
+

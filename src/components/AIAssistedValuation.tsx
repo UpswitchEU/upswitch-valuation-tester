@@ -7,6 +7,8 @@ import { ErrorBoundary } from './ErrorBoundary';
 import { ValuationToolbar } from './ValuationToolbar';
 import { ValuationInfoPanel } from './ValuationInfoPanel';
 import { FullScreenModal } from './FullScreenModal';
+import { ResizableDivider } from './ResizableDivider';
+import { ValuationEmptyState } from './ValuationEmptyState';
 import { businessDataService, type BusinessProfileData } from '../services/businessDataService';
 import { api } from '../services/api';
 import { useAuth } from '../hooks/useAuth';
@@ -27,6 +29,24 @@ export const AIAssistedValuation: React.FC = () => {
   const [stage, setStage] = useState<FlowStage>('chat');
   const [valuationResult, setValuationResult] = useState<ValuationResponse | null>(null);
   const [reportSaved, setReportSaved] = useState(false);
+  
+  // Panel resize state
+  const [leftPanelWidth, setLeftPanelWidth] = useState(30); // 30% default
+  const [isMobile, setIsMobile] = useState(false);
+  
+  // Mobile detection
+  useEffect(() => {
+    const checkMobile = () => setIsMobile(window.innerWidth < 1024);
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+  
+  // Resize handler
+  const handleResize = useCallback((newWidth: number) => {
+    const constrainedWidth = Math.max(20, Math.min(80, newWidth));
+    setLeftPanelWidth(constrainedWidth);
+  }, []);
   
   // NEW: Business profile data state
   const [businessProfile, setBusinessProfile] = useState<BusinessProfileData | null>(null);
@@ -269,9 +289,12 @@ export const AIAssistedValuation: React.FC = () => {
       )}
 
       {/* Full-screen Split Panel - Ilara Style */}
-      <div className="flex flex-col lg:flex-row flex-1 overflow-hidden mx-2 sm:mx-4 my-2 sm:my-4 rounded-lg border border-zinc-800">
-        {/* Left Panel: Chat (60% on desktop, full width on mobile) */}
-        <div className="h-full flex flex-col bg-zinc-900 lg:border-r border-zinc-800 w-full lg:w-[60%]">
+      <div className="flex flex-col lg:flex-row flex-1 overflow-hidden mx-4 my-4 rounded-lg border border-zinc-800" style={{transition: 'width 150ms ease-out'}}>
+        {/* Left Panel: Chat */}
+        <div 
+          className="h-full flex flex-col bg-zinc-900 border-r border-zinc-800 w-full lg:w-auto"
+          style={{ width: isMobile ? '100%' : `${leftPanelWidth}%` }}
+        >
           {/* Success Banner when results are ready */}
           {stage === 'results' && valuationResult && (
             <div className="bg-gradient-to-r from-green-900/30 to-emerald-900/30 border border-green-700/50 rounded-lg sm:rounded-xl p-4 sm:p-6 m-3 sm:m-6 mb-0">
@@ -339,16 +362,30 @@ export const AIAssistedValuation: React.FC = () => {
 
         </div>
 
-        {/* Right Panel: Live Report (40% on desktop, full width on mobile below chat) */}
-        <div className="h-full min-h-[400px] lg:min-h-0 flex flex-col bg-white overflow-y-auto w-full lg:w-[40%] border-t lg:border-t-0 border-zinc-800">
+        {/* Resizable Divider */}
+        <ResizableDivider 
+          onResize={handleResize} 
+          leftWidth={leftPanelWidth}
+          isMobile={isMobile}
+        />
+
+        {/* Right Panel: Live Report */}
+        <div 
+          className="h-full min-h-[400px] lg:min-h-0 flex flex-col bg-white overflow-y-auto w-full lg:w-auto border-t lg:border-t-0 border-zinc-800"
+          style={{ width: isMobile ? '100%' : `${100 - leftPanelWidth}%` }}
+        >
           {/* Tab Content */}
           {activeTab === 'preview' && (
-            <LiveValuationReport
-              htmlContent={liveHtmlReport}
-              isGenerating={stage === 'chat'}
-              progress={reportProgress}
-              progressItems={progressItems}
-            />
+            liveHtmlReport ? (
+              <LiveValuationReport
+                htmlContent={liveHtmlReport}
+                isGenerating={stage === 'chat'}
+                progress={reportProgress}
+                progressItems={progressItems}
+              />
+            ) : (
+              <ValuationEmptyState />
+            )
           )}
 
           {activeTab === 'source' && (
