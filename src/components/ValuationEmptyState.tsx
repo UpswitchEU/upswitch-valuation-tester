@@ -10,7 +10,7 @@ export const ValuationEmptyState: React.FC = () => {
       <h3 className="mt-4 text-lg font-medium text-black bg-white">
         Reports will appear here
       </h3>
-      <p className="mt-2 text-sm text-black bg-white max-w-sm font-normal">
+      <p className="mt-2 text-sm text-black bg-white max-w-sm font-light">
         Start a conversation in the chat to generate insights and reports about your data
       </p>
     </div>
