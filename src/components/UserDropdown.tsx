@@ -129,12 +129,12 @@ export const UserDropdown: React.FC<UserDropdownProps> = ({ user, onLogout }) =>
 
   const handleLearnMore = () => {
     setIsOpen(false);
-    // Navigate to parent window about page
+    // Navigate to parent window valuation page
     if (window.parent && window.parent !== window) {
-      window.parent.postMessage({ type: 'NAVIGATE_TO_ABOUT' }, '*');
+      window.parent.postMessage({ type: 'NAVIGATE_TO_VALUATION' }, '*');
     } else {
       // Fallback: open in same window
-      window.open('https://upswitch.biz/about', '_blank');
+      window.open('https://upswitch.biz/valuation', '_blank');
     }
   };
 
