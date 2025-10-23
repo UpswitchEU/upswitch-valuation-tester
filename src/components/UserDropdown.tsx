@@ -11,6 +11,17 @@ export const UserDropdown: React.FC<UserDropdownProps> = ({ user, onLogout }) =>
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
+  // DEBUG: Log component lifecycle
+  useEffect(() => {
+    console.log('🔵 [UserDropdown] Mounted', { user: user ? 'authenticated' : 'guest' });
+    return () => console.log('🔵 [UserDropdown] Unmounted');
+  }, []);
+
+  // DEBUG: Log state changes
+  useEffect(() => {
+    console.log('🔵 [UserDropdown] isOpen changed:', isOpen);
+  }, [isOpen]);
+
   // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -59,8 +70,17 @@ export const UserDropdown: React.FC<UserDropdownProps> = ({ user, onLogout }) =>
   const avatarUrl = user?.avatar_url || user?.avatar;
   const hasAvatar = !!avatarUrl;
 
-  const handleUserClick = () => {
-    setIsOpen(!isOpen);
+  const handleUserClick = (e?: React.MouseEvent) => {
+    console.log('🔵 [UserDropdown] Button clicked!', {
+      currentIsOpen: isOpen,
+      willBeOpen: !isOpen,
+      event: e,
+      user: user ? 'authenticated' : 'guest'
+    });
+    setIsOpen(prev => {
+      console.log('🔵 [UserDropdown] State update:', prev, '->', !prev);
+      return !prev;
+    });
   };
 
   const handleLogout = async () => {
@@ -177,15 +197,21 @@ export const UserDropdown: React.FC<UserDropdownProps> = ({ user, onLogout }) =>
 
   const menuItems = user ? authenticatedMenuItems : guestMenuItems;
 
+  // DEBUG: Log every render
+  console.log('🔵 [UserDropdown] Rendering', { isOpen, hasUser: !!user });
+
   return (
-    <div ref={dropdownRef} className="relative">
+    <div ref={dropdownRef} className="relative" style={{ zIndex: 100 }}>
       {/* Avatar Button */}
       <button
         onClick={handleUserClick}
+        onMouseDown={(e) => console.log('🔵 [UserDropdown] MouseDown', e)}
+        onMouseUp={(e) => console.log('🔵 [UserDropdown] MouseUp', e)}
         className="flex items-center justify-center w-10 h-10 sm:w-8 sm:h-8 rounded-full bg-gray-200 text-gray-700 text-sm font-medium hover:bg-gray-300 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
         aria-label={user ? `${user.name || user.email} - Account Menu` : 'Guest - Account Menu'}
         aria-expanded={isOpen}
         aria-haspopup="true"
+        style={{ position: 'relative', zIndex: 101 }}
       >
         {user ? (
           <>
@@ -218,6 +244,10 @@ export const UserDropdown: React.FC<UserDropdownProps> = ({ user, onLogout }) =>
           
           {/* Dropdown */}
           <div className="absolute right-0 mt-2 w-64 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-[70]">
+            {/* DEBUG: Visual confirmation */}
+            <div className="px-4 py-2 bg-green-100 border-b border-green-200">
+              <p className="text-sm text-green-600 font-medium">✅ Dropdown is open!</p>
+            </div>
             {/* User Profile Header */}
             <div className="px-4 py-3 border-b border-gray-200">
               <div className="flex items-center space-x-3">

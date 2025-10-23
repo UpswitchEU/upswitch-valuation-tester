@@ -94,7 +94,7 @@ export const Header: React.FC = () => {
         Skip to main content
       </a>
       
-      <header className="z-40 flex px-3 sm:px-4 lg:px-6 gap-2 sm:gap-3 lg:gap-4 w-full flex-row flex-nowrap items-center justify-between h-[var(--navbar-height)] max-w-full overflow-x-hidden bg-white border-b border-gray-200 sticky top-0 shadow-sm">
+      <header className="z-40 flex px-3 sm:px-4 lg:px-6 gap-2 sm:gap-3 lg:gap-4 w-full flex-row flex-nowrap items-center justify-between h-[var(--navbar-height)] max-w-full overflow-visible bg-white border-b border-gray-200 sticky top-0 shadow-sm">
         {/* Left Side - Logo and Title */}
         <div className="flex basis-0 flex-row flex-grow flex-nowrap justify-start bg-transparent items-center no-underline text-medium whitespace-nowrap box-border">
           <Link className="flex items-center gap-1 sm:gap-1.5 flex-shrink-0" to="/">
