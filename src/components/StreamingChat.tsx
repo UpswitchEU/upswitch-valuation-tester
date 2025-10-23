@@ -1149,18 +1149,6 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
         </div>
       )}
 
-      {/* Progress Summary */}
-      {progressSummary && (
-        <div className="px-4 pb-2">
-          <div className="bg-zinc-800/50 rounded-lg p-4 border border-zinc-700/50">
-            <h4 className="text-sm font-semibold text-white mb-3">Progress Summary</h4>
-            <div className="text-xs text-zinc-300">
-              <p>Completeness: {progressSummary.completeness?.percentage || 0}%</p>
-              <p>Next Milestone: {progressSummary.next_milestone}</p>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Valuation Preview */}
       {valuationPreview && (
