@@ -128,9 +128,9 @@ export const ValuationToolbar: React.FC<ValuationToolbarProps> = ({
   };
 
   return (
-    <nav className="relative min-h-12 w-full shrink-0 flex items-center gap-2 px-4 py-2 border-b border-zinc-800/50 bg-zinc-950/50 backdrop-blur-sm">
+    <nav className="relative min-h-12 w-full shrink-0 flex items-center gap-2 px-4 py-2 border-b border-zinc-800/50 bg-zinc-950/50 backdrop-blur-sm overflow-visible">
       <div className="relative max-w-full gap-1 flex w-full shrink-0 items-center">
-        <div className="w-full overflow-x-auto whitespace-nowrap scrollbar-hide">
+        <div className="w-full overflow-visible whitespace-nowrap scrollbar-hide">
           <div className="relative flex w-full flex-shrink-0 items-center justify-between">
             {/* Left Section - Valuation Name */}
             <div className="flex flex-shrink-0 items-center gap-2" style={{ width: '23%' }}>

@@ -240,10 +240,16 @@ export const UserDropdown: React.FC<UserDropdownProps> = ({ user, onLogout }) =>
       {isOpen && (
         <>
           {/* Backdrop */}
-          <div className="fixed inset-0 z-[60]" onClick={() => setIsOpen(false)} aria-hidden="true" />
+          <div className="fixed inset-0 z-[9998]" onClick={() => setIsOpen(false)} aria-hidden="true" />
           
           {/* Dropdown */}
-          <div className="absolute right-0 mt-2 w-64 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-[70]">
+          <div 
+            className="fixed w-64 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-[9999]"
+            style={{
+              top: '60px', // Below header
+              right: '20px', // From right edge
+            }}
+          >
             {/* DEBUG: Visual confirmation */}
             <div className="px-4 py-2 bg-green-100 border-b border-green-200">
               <p className="text-sm text-green-600 font-medium">✅ Dropdown is open!</p>
