@@ -531,8 +531,22 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
         break;
         
       case 'report_update':
+        chatLogger.info('Report update received', {
+          sessionId,
+          progress: data.progress,
+          htmlLength: data.html?.length || 0,
+          hasHtml: !!data.html,
+          timestamp: new Date().toISOString()
+        });
+        
         // NEW: Update live report as sections are generated
         onReportUpdate?.(data.html, data.progress);
+        
+        chatLogger.debug('Report update processed', {
+          sessionId,
+          progress: data.progress,
+          htmlPreview: data.html?.substring(0, 100) + '...'
+        });
         break;
         
         
