@@ -170,9 +170,9 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
   const [input, setInput] = useState('');
   const [isStreaming, setIsStreaming] = useState(false);
   const [collectedData, setCollectedData] = useState<Record<string, any>>({});
-  // const [valuationPreview, setValuationPreview] = useState<any>(null);
-  // const [calculateOption, setCalculateOption] = useState<any>(null);
-  // const [progressSummary, setProgressSummary] = useState<any>(null);
+  const [valuationPreview, setValuationPreview] = useState<any>(null);
+  const [calculateOption, setCalculateOption] = useState<any>(null);
+  const [progressSummary, setProgressSummary] = useState<any>(null);
   const [conversationMetrics, setConversationMetrics] = useState<ConversationMetrics>({
     session_id: sessionId,
     user_id: userId,
@@ -652,6 +652,14 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
           completeness: data.completeness
         });
         
+        // Enhanced logging for debugging
+        console.log('Data collected:', {
+          field: data.field,
+          value: data.value,
+          display_name: data.display_name,
+          completeness: data.completeness
+        });
+        
         // Update local state
         setCollectedData(prev => ({
           ...prev,
@@ -670,7 +678,7 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
         });
         
         // Update local state
-        // setValuationPreview(data);
+        setValuationPreview(data);
         
         // Notify parent component
         onValuationPreview?.(data);
@@ -683,7 +691,7 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
         });
         
         // Update local state
-        // setCalculateOption(data);
+        setCalculateOption(data);
         
         // Notify parent component
         onCalculateOptionAvailable?.(data);
@@ -692,11 +700,16 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
       case 'progress_summary':
         chatLogger.info('Progress summary received', {
           completeness: data.completeness,
-          next_milestone: data.next_milestone
+          next_milestone: data.next_milestone,
+          sections: data.sections
         });
         
+        // Log collected fields
+        console.log('Collected fields:', data.completeness.collected_count);
+        console.log('Sections:', data.sections);
+        
         // Update local state
-        // setProgressSummary(data);
+        setProgressSummary(data);
         
         // Notify parent component
         onProgressUpdate?.(data);
@@ -1114,8 +1127,8 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
         </div>
       )}
 
-      {/* Calculate Now Button - commented out for now */}
-      {/* {calculateOption && (
+      {/* Calculate Now Button */}
+      {calculateOption && (
         <div className="px-4 pb-2">
           <div className="bg-primary-600/20 rounded-lg p-4 border border-primary-500/50">
             <p className="text-sm text-white mb-3">{calculateOption.message}</p>
@@ -1134,7 +1147,33 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
             </p>
           </div>
         </div>
-      )} */}
+      )}
+
+      {/* Progress Summary */}
+      {progressSummary && (
+        <div className="px-4 pb-2">
+          <div className="bg-zinc-800/50 rounded-lg p-4 border border-zinc-700/50">
+            <h4 className="text-sm font-semibold text-white mb-3">Progress Summary</h4>
+            <div className="text-xs text-zinc-300">
+              <p>Completeness: {progressSummary.completeness?.percentage || 0}%</p>
+              <p>Next Milestone: {progressSummary.next_milestone}</p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Valuation Preview */}
+      {valuationPreview && (
+        <div className="px-4 pb-2">
+          <div className="bg-green-600/20 rounded-lg p-4 border border-green-500/50">
+            <h4 className="text-sm font-semibold text-white mb-3">Valuation Preview</h4>
+            <div className="text-xs text-zinc-300">
+              <p>Range: ${valuationPreview.range_low?.toLocaleString()} - ${valuationPreview.range_high?.toLocaleString()}</p>
+              <p>Confidence: {valuationPreview.confidence_label}</p>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Contextual tip */}
       {getContextualTip() && (

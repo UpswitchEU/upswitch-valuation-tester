@@ -99,6 +99,30 @@ export const AIAssistedValuation: React.FC = () => {
     setReportProgress(progress);
   }, []);
 
+  // NEW: Handle data collection events
+  const handleDataCollected = useCallback((data: any) => {
+    console.log('Data collected in AIAssistedValuation:', data);
+    // Update local state if needed
+  }, []);
+
+  // NEW: Handle valuation preview events
+  const handleValuationPreview = useCallback((preview: any) => {
+    console.log('Valuation preview in AIAssistedValuation:', preview);
+    // Update local state if needed
+  }, []);
+
+  // NEW: Handle calculate option events
+  const handleCalculateOption = useCallback((option: any) => {
+    console.log('Calculate option in AIAssistedValuation:', option);
+    // Update local state if needed
+  }, []);
+
+  // NEW: Handle progress update events
+  const handleProgressUpdate = useCallback((progress: any) => {
+    console.log('Progress update in AIAssistedValuation:', progress);
+    // Update local state if needed
+  }, []);
+
   // NEW: Start intelligent conversation with pre-filled data
   const startIntelligentConversation = useCallback(async (profileData: BusinessProfileData) => {
     try {
@@ -404,10 +428,10 @@ export const AIAssistedValuation: React.FC = () => {
                   userId={user?.id}
                   onValuationComplete={handleValuationComplete}
                   onReportUpdate={handleReportUpdate}
-                  // onDataCollected={handleDataCollected}
-                  // onValuationPreview={handleValuationPreview}
-                  // onCalculateOptionAvailable={handleCalculateOption}
-                  // onProgressUpdate={handleProgressUpdate}
+                  onDataCollected={handleDataCollected}
+                  onValuationPreview={handleValuationPreview}
+                  onCalculateOptionAvailable={handleCalculateOption}
+                  onProgressUpdate={handleProgressUpdate}
                   className="h-full"
                   placeholder="Ask about your business valuation..."
                 />
