@@ -24,6 +24,7 @@ export interface User {
   
   // Profile fields
   avatar_url?: string;
+  avatar?: string;
   
   // Business card fields
   company_name?: string;

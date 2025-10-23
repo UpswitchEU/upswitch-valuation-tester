@@ -86,6 +86,39 @@ export const filterValidMessages = (messages: any[]): Message[] => {
 };
 
 /**
+ * Ensure messages array contains only valid messages
+ * Logs warnings for invalid messages found
+ */
+export const ensureValidMessages = (messages: any[]): Message[] => {
+  const validMessages = messages.filter((msg, index) => {
+    if (isValidMessage(msg)) {
+      return true;
+    } else {
+      console.warn(`Invalid message at index ${index}:`, msg);
+      return false;
+    }
+  });
+  
+  if (validMessages.length !== messages.length) {
+    console.warn(`Filtered out ${messages.length - validMessages.length} invalid messages`);
+  }
+  
+  return validMessages;
+};
+
+/**
+ * Safe message array update that prevents nulls
+ */
+export const safeUpdateMessages = (
+  currentMessages: Message[], 
+  updateFn: (messages: Message[]) => Message[]
+): Message[] => {
+  const validCurrent = ensureValidMessages(currentMessages);
+  const updated = updateFn(validCurrent);
+  return ensureValidMessages(updated);
+};
+
+/**
  * Create welcome message with AI branding
  */
 export const createWelcomeMessage = (aiConfig?: any): Message => {

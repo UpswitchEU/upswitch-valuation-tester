@@ -11,6 +11,8 @@ import { ContextualTip } from './ContextualTip';
 import { ValuationProgressTracker } from './ValuationProgressTracker';
 import { LoadingDots } from './LoadingDots';
 import { useLoadingMessage } from '../hooks/useLoadingMessage';
+import { ensureValidMessages, isValidMessage } from '../utils/messageUtils';
+import { chatLogger } from '../utils/logger';
 
 interface Message {
   id: string;
@@ -78,6 +80,23 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
     scrollToBottom();
   }, [messages, scrollToBottom]);
 
+  // Monitor messages for null/undefined values
+  useEffect(() => {
+    const invalidMessages = messages.filter(msg => !msg || !isValidMessage(msg));
+    if (invalidMessages.length > 0) {
+      chatLogger.error('Found invalid messages in state', { 
+        invalidCount: invalidMessages.length,
+        totalCount: messages.length,
+        invalidMessages 
+      });
+    }
+    
+    chatLogger.debug('Messages state updated', { 
+      count: messages.length,
+      validCount: ensureValidMessages(messages).length 
+    });
+  }, [messages]);
+
   // Initialize with welcome message
   useEffect(() => {
     if (messages.length === 0) {
@@ -105,6 +124,17 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
   }, []);
 
   const addMessage = useCallback((message: Omit<Message, 'id' | 'timestamp'>) => {
+    // Validate message before creating
+    if (!message || typeof message !== 'object') {
+      chatLogger.error('Attempted to add invalid message', { message });
+      return null;
+    }
+    
+    if (!message.type || !message.content) {
+      chatLogger.warn('Message missing required fields', { message });
+      return null;
+    }
+    
     const newMessage: Message = {
       ...message,
       id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
@@ -113,20 +143,75 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
       isStreaming: message.isStreaming ?? false
     };
     
-    setMessages(prev => [...prev, newMessage]);
+    // Validate the complete message
+    if (!isValidMessage(newMessage)) {
+      chatLogger.error('Created invalid message', { newMessage });
+      return null;
+    }
+    
+    chatLogger.debug('Adding message', { messageId: newMessage.id, type: newMessage.type });
+    
+    setMessages(prev => {
+      const validPrev = ensureValidMessages(prev);
+      const updated = [...validPrev, newMessage];
+      const validUpdated = ensureValidMessages(updated);
+      
+      if (validUpdated.length !== updated.length) {
+        chatLogger.warn('Filtered out invalid messages during add', { 
+          original: updated.length, 
+          filtered: validUpdated.length 
+        });
+      }
+      
+      return validUpdated;
+    });
+    
     return newMessage;
   }, []);
 
   const updateStreamingMessage = useCallback((content: string, isComplete: boolean = false) => {
-    if (!currentStreamingMessageRef.current?.id) return;
+    if (!currentStreamingMessageRef.current?.id) {
+      chatLogger.warn('No current streaming message to update');
+      return;
+    }
     
-    setMessages(prev => prev.map(msg => 
-      msg?.id === currentStreamingMessageRef.current!.id
-        ? { ...msg, content: msg.content + content, isComplete, isStreaming: !isComplete }
-        : msg
-    ).filter(Boolean)); // Remove any null entries
+    const currentMessageId = currentStreamingMessageRef.current.id;
+    chatLogger.debug('Updating streaming message', { messageId: currentMessageId, contentLength: content.length, isComplete });
+    
+    setMessages(prev => {
+      const validPrev = ensureValidMessages(prev);
+      
+      const updated = validPrev.map(msg => {
+        if (!msg || !isValidMessage(msg)) {
+          chatLogger.warn('Found invalid message during update', { msg });
+          return null;
+        }
+        
+        if (msg.id === currentMessageId) {
+          return { 
+            ...msg, 
+            content: msg.content + content, 
+            isComplete, 
+            isStreaming: !isComplete 
+          };
+        }
+        return msg;
+      }).filter(Boolean); // Remove any null entries
+      
+      const validUpdated = ensureValidMessages(updated);
+      
+      if (validUpdated.length !== updated.length) {
+        chatLogger.warn('Filtered out invalid messages during update', { 
+          original: updated.length, 
+          filtered: validUpdated.length 
+        });
+      }
+      
+      return validUpdated;
+    });
     
     if (isComplete && currentStreamingMessageRef.current) {
+      chatLogger.debug('Completing streaming message', { messageId: currentMessageId });
       onMessageComplete?.(currentStreamingMessageRef.current);
       currentStreamingMessageRef.current = null;
     }
@@ -255,8 +340,15 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
 
   const getSmartFollowUps = useCallback(() => {
     const messageCount = messages.length;
-    const lastAiMessage = messages.filter(m => m.type === 'ai').slice(-1)[0];
+    const validMessages = ensureValidMessages(messages);
+    const lastAiMessage = validMessages.filter(m => m && m.type === 'ai').slice(-1)[0];
     const lastAiContent = lastAiMessage?.content.toLowerCase() || '';
+    
+    chatLogger.debug('Getting smart follow-ups', { 
+      messageCount, 
+      validMessageCount: validMessages.length,
+      lastAiMessageId: lastAiMessage?.id 
+    });
     
     // Smart responses based on AI's last question
     if (lastAiContent.includes('revenue') || lastAiContent.includes('turnover')) {
@@ -379,7 +471,14 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
 
       {/* Messages */}
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
-        {messages.map((message) => (
+        {ensureValidMessages(messages).map((message) => {
+          // Additional safety check for each message
+          if (!message || !isValidMessage(message)) {
+            chatLogger.warn('Rendering invalid message, skipping', { message });
+            return null;
+          }
+          
+          return (
           <div
             key={message.id}
             className={`flex ${message.type === 'user' ? 'justify-end' : 'justify-start'}`}
@@ -453,7 +552,8 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
               </div>
             </div>
           </div>
-        ))}
+          );
+        }).filter(Boolean)}
         <div ref={messagesEndRef} />
       </div>
 
@@ -486,7 +586,13 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
 
           {/* Action buttons row */}
           <div className="flex gap-2 flex-wrap items-center">
-            {getSmartFollowUps().filter(Boolean).map((suggestion, idx) => (
+            {getSmartFollowUps().filter(Boolean).map((suggestion, idx) => {
+              if (!suggestion || typeof suggestion !== 'string') {
+                chatLogger.warn('Invalid suggestion found, skipping', { suggestion, idx });
+                return null;
+              }
+              
+              return (
               <button
                 key={idx}
                 type="button"
@@ -496,7 +602,8 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
               >
                 {suggestion}
               </button>
-            ))}
+              );
+            }).filter(Boolean)}
             
             {/* Right side with send button */}
             <div className="flex flex-grow items-center justify-end gap-2">

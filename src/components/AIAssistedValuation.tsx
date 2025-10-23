@@ -301,7 +301,10 @@ export const AIAssistedValuation: React.FC = () => {
           className={`${
             isMobile ? (mobileActivePanel === 'chat' ? 'w-full' : 'hidden') : ''
           } h-full flex flex-col bg-zinc-900 border-r border-zinc-800 w-full lg:w-auto`}
-          style={{ width: isMobile ? '100%' : `${leftPanelWidth}%` }}
+          style={{ 
+            width: isMobile ? '100%' : `${leftPanelWidth}%`,
+            backgroundColor: 'rgb(24 24 27 / var(--tw-bg-opacity, 1))'
+          }}
         >
           {/* Success Banner when results are ready */}
           {stage === 'results' && valuationResult && (
@@ -342,19 +345,28 @@ export const AIAssistedValuation: React.FC = () => {
           {/* Chat - Always visible */}
           {(stage === 'chat' || stage === 'results') && (
             <div className="flex-1 overflow-y-auto">
-              <ErrorBoundary fallback={
-                <div className="flex items-center justify-center h-full">
-                  <div className="text-center">
-                    <p className="text-zinc-400 mb-4">Chat temporarily unavailable. Please refresh.</p>
-                    <button
-                      onClick={() => window.location.reload()}
-                      className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700"
-                    >
-                      Refresh
-                    </button>
+              <ErrorBoundary 
+                componentName="StreamingChat"
+                onRetry={() => {
+                  // Clear any problematic state and reinitialize
+                  setValuationResult(null);
+                  setLiveHtmlReport('');
+                  setReportProgress(0);
+                }}
+                fallback={
+                  <div className="flex items-center justify-center h-full">
+                    <div className="text-center">
+                      <p className="text-zinc-400 mb-4">Chat temporarily unavailable. Please refresh.</p>
+                      <button
+                        onClick={() => window.location.reload()}
+                        className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700"
+                      >
+                        Refresh
+                      </button>
+                    </div>
                   </div>
-                </div>
-              }>
+                }
+              >
                 <StreamingChat
                   sessionId={`session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`}
                   userId={user?.id}

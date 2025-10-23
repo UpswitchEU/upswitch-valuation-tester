@@ -84,7 +84,10 @@ export const ManualValuationFlow: React.FC = () => {
       {/* Full-screen Split Panel - Ilara Style */}
       <div className="flex flex-col lg:flex-row flex-1 overflow-hidden mx-2 sm:mx-4 my-2 sm:my-4 rounded-lg border border-zinc-800">
         {/* Left Panel: Form (60% on desktop, full width on mobile) - Always visible */}
-        <div className="h-full flex flex-col bg-zinc-900 lg:border-r border-zinc-800 w-full lg:w-[60%]">
+        <div 
+          className="h-full flex flex-col bg-zinc-900 lg:border-r border-zinc-800 w-full lg:w-[60%]"
+          style={{ backgroundColor: 'rgb(24 24 27 / var(--tw-bg-opacity, 1))' }}
+        >
           <div className="flex-1 overflow-y-auto p-4 sm:p-6">
             <div className="max-w-4xl mx-auto">
               {/* Success Banner when results are ready */}

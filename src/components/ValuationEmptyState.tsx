@@ -8,10 +8,10 @@ export const ValuationEmptyState: React.FC = () => {
         <FileText className="w-8 h-8 text-blue-500" />
       </div>
       <h3 className="mt-4 text-lg font-medium text-black bg-white">
-        Valuation report will appear here
+        Reports will appear here
       </h3>
-      <p className="mt-2 text-sm text-black bg-white max-w-sm">
-        Start a conversation in the chat to generate your business valuation report
+      <p className="mt-2 text-sm text-black bg-white max-w-sm font-light">
+        Start a conversation in the chat to generate insights and reports about your data
       </p>
     </div>
   );
