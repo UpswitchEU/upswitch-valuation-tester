@@ -46,10 +46,57 @@ class BackendAPI {
   }
 
   /**
-   * Instant valuation - PREMIUM (requires 1 credit)
+   * AI-guided valuation - PREMIUM (requires 1 credit)
+   */
+  async calculateAIGuidedValuation(data: ValuationRequest): Promise<ValuationResponse> {
+    const response = await this.client.post('/api/valuations/calculate/ai-guided', data);
+    return response.data;
+  }
+
+  /**
+   * Instant valuation - PREMIUM (requires 1 credit) - DEPRECATED
+   * @deprecated Use calculateAIGuidedValuation instead
    */
   async calculateInstantValuation(data: ValuationRequest): Promise<ValuationResponse> {
-    const response = await this.client.post('/api/valuations/calculate/instant', data);
+    return this.calculateAIGuidedValuation(data);
+  }
+
+  /**
+   * Calculate valuation for a specific report
+   */
+  async calculateValuationForReport(
+    reportId: string,
+    data: ValuationRequest,
+    flowType: 'manual' | 'ai-guided'
+  ): Promise<ValuationResponse> {
+    const response = await this.client.post(
+      `/api/valuations/reports/${reportId}/calculate`,
+      { ...data, flowType }
+    );
+    return response.data;
+  }
+
+  /**
+   * Get existing report
+   */
+  async getReport(reportId: string): Promise<ValuationResponse> {
+    const response = await this.client.get(`/api/valuations/reports/${reportId}`);
+    return response.data;
+  }
+
+  /**
+   * Update existing report
+   */
+  async updateReport(reportId: string, data: Partial<ValuationRequest>): Promise<ValuationResponse> {
+    const response = await this.client.put(`/api/valuations/reports/${reportId}`, data);
+    return response.data;
+  }
+
+  /**
+   * Delete report
+   */
+  async deleteReport(reportId: string): Promise<{ success: boolean }> {
+    const response = await this.client.delete(`/api/valuations/reports/${reportId}`);
     return response.data;
   }
 

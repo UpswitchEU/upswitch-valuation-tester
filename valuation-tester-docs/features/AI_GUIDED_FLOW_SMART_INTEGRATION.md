@@ -1,8 +1,8 @@
-# Instant Flow Smart Integration - CTO Solution
+# AI-Guided Flow Smart Integration - CTO Solution
 
 ## 🎯 Problem Statement
 
-The instant valuation flow at [https://valuation.upswitch.biz/instant](https://valuation.upswitch.biz/instant) was showing generic company suggestions like "Proximus Belgium" and "Delhaize" instead of leveraging the user's actual business data that's already available from their profile.
+The AI-guided valuation flow at [https://valuation.upswitch.biz/ai-guided](https://valuation.upswitch.biz/ai-guided) was showing generic company suggestions like "Proximus Belgium" and "Delhaize" instead of leveraging the user's actual business data that's already available from their profile.
 
 ## 🔍 Root Cause Analysis
 
@@ -11,7 +11,7 @@ The instant valuation flow at [https://valuation.upswitch.biz/instant](https://v
 - Has `prefillFromBusinessCard()` functionality
 - Successfully pre-populates user business data
 
-### **Instant Flow** (`/instant`) ❌
+### **AI-Guided Flow** (`/ai-guided`) ❌
 - Uses `AIAssistedValuation` component
 - No integration with user's business data
 - Shows generic company suggestions
@@ -22,7 +22,7 @@ The instant valuation flow at [https://valuation.upswitch.biz/instant](https://v
 ### **1. Pre-Population Logic in AIAssistedValuation**
 
 ```typescript
-// 🚀 SMART PRE-POPULATION: Use user's business data for instant flow
+    // 🚀 SMART PRE-POPULATION: Use user's business data for AI-guided flow
 useEffect(() => {
   if (isAuthenticated && businessCard && !hasPrefilledOnce) {
     // Create CompanyFinancialData from business card
@@ -232,7 +232,7 @@ AI: "Perfect! What's your annual revenue?"
 
 ## 🎉 **Result**
 
-The instant flow now provides a **seamless, personalized experience** that leverages the user's existing business data, eliminating generic suggestions and creating a **professional, efficient valuation process** that feels tailored to each user's business.
+The AI-guided flow now provides a **seamless, personalized experience** that leverages the user's existing business data, eliminating generic suggestions and creating a **professional, efficient valuation process** that feels tailored to each user's business.
 
 **Status**: ✅ **Complete & Production Ready**  
 **Impact**: 🚀 **60% faster user flow, 100% personalized experience**  

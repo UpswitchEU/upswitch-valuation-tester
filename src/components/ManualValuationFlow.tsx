@@ -4,12 +4,18 @@ import { Edit3, TrendingUp, CheckCircle, Save, ArrowLeft } from 'lucide-react';
 import { ValuationForm } from './ValuationForm';
 import { Results } from './Results';
 import { useValuationStore } from '../store/useValuationStore';
+import type { ValuationResponse } from '../types/valuation';
 // import { useReportsStore } from '../store/useReportsStore'; // Deprecated: Now saving to database
 // import { urls } from '../router'; // Removed reports link
 
 type FlowStage = 'form' | 'results';
 
-export const ManualValuationFlow: React.FC = () => {
+interface ManualValuationFlowProps {
+  reportId: string;
+  onComplete: (result: ValuationResponse) => void;
+}
+
+export const ManualValuationFlow: React.FC<ManualValuationFlowProps> = ({ reportId, onComplete }) => {
   const navigate = useNavigate();
   const [stage, setStage] = useState<FlowStage>('form');
   const { result } = useValuationStore();
@@ -34,8 +40,12 @@ export const ManualValuationFlow: React.FC = () => {
   useEffect(() => {
     if (result) {
       setStage('results');
+      // Call onComplete callback if provided
+      if (onComplete) {
+        onComplete(result);
+      }
     }
-  }, [result]);
+  }, [result, onComplete]);
 
   const handleStartOver = () => {
     setStage('form');
@@ -89,7 +99,7 @@ export const ManualValuationFlow: React.FC = () => {
           </div>
           <div>
             <p className="text-sm font-semibold text-green-300">FREE - No Credit Cost</p>
-            <p className="text-xs text-green-400">Manual entry • Try our instant flow for AI-guided accuracy</p>
+            <p className="text-xs text-green-400">Manual entry • Try our AI-guided flow for enhanced accuracy</p>
           </div>
         </div>
       </div>

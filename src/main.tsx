@@ -1,3 +1,10 @@
+/**
+ * Delphi - UpSwitch Valuation Tester Interface
+ * The Oracle's wisdom for business insights
+ * 
+ * The home of the Oracle interface for business valuation testing
+ */
+
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import { RouterProvider } from 'react-router-dom';

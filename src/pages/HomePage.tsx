@@ -1,9 +1,10 @@
 import React, { useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { Zap, Edit3, Upload, ArrowRight, ExternalLink } from 'lucide-react';
+import { FileText, Edit3, Upload, ArrowRight, ExternalLink } from 'lucide-react';
 import { MinimalHeader } from '../components/MinimalHeader';
 import { ScrollToTop } from '../utils';
 import { generalLogger } from '../utils/logger';
+import { generateReportId } from '../utils/reportIdGenerator';
 
 export const HomePage: React.FC = () => {
   const navigate = useNavigate();
@@ -16,9 +17,10 @@ export const HomePage: React.FC = () => {
     const fromMainPlatform = params.get('from') === 'upswitch';
     
     if (token && !fromMainPlatform) {
-      generalLogger.info('Token detected on homepage - redirecting to instant valuation');
-      // Preserve token in URL when navigating to instant
-      navigate(`/instant?token=${token}`, { replace: true });
+      generalLogger.info('Token detected on homepage - redirecting to new report');
+      // Generate new report ID and redirect
+      const newReportId = generateReportId();
+      navigate(`/reports/${newReportId}?token=${token}`, { replace: true });
     } else if (token && fromMainPlatform) {
       generalLogger.info('Token detected from main platform - staying on homepage for user choice');
     }
@@ -28,8 +30,8 @@ export const HomePage: React.FC = () => {
   const handleMethodClick = (method: typeof valuationMethods[0]) => {
     if (method.disabled) return;
     
-    // Open /instant in new tab on desktop only (>= 1024px)
-    if (method.id === 'instant' && window.innerWidth >= 1024) {
+    // Open /reports/new in new tab on desktop only (>= 1024px)
+    if (method.id === 'reports' && window.innerWidth >= 1024) {
       window.open(method.path, '_blank', 'noopener,noreferrer');
     } else {
       navigate(method.path);
@@ -38,19 +40,19 @@ export const HomePage: React.FC = () => {
 
   const valuationMethods = [
     {
-      id: 'instant',
-      icon: Zap,
-      title: 'Instant Valuation',
-      description: 'Conversational AI guides you through a quick valuation with smart company search',
-      badge: 'Recommended',
-      badgeColor: 'bg-green-500/20 text-green-300 border-green-500/30',
+      id: 'reports',
+      icon: FileText,
+      title: 'New Valuation Report',
+      description: 'Create a new business valuation with your preferred method',
+      badge: 'New',
+      badgeColor: 'bg-blue-500/20 text-blue-300 border-blue-500/30',
       features: [
-        'AI-powered company search',
-        'Answer 2-4 quick questions',
-        'Results in 1-2 minutes',
-        'Verified KBO registry data'
+        'Choose between Manual or AI-Guided',
+        'Unique report URL for sharing',
+        'Professional-grade analysis',
+        'Save and revisit anytime'
       ],
-      path: '/instant',
+      path: '/reports/new',
       bgGradient: 'from-primary-900/20 via-blue-900/20 to-cyan-900/20',
       borderColor: 'border-primary-500/30 hover:border-primary-400/50',
       glowColor: 'group-hover:shadow-primary-500/20',

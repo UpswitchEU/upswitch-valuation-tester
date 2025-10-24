@@ -175,16 +175,10 @@ export const HowItWorks: React.FC = () => {
         <div className="text-center">
           <div className="inline-flex flex-col sm:flex-row gap-4">
             <Link
-              to={urls.instantValuation()}
+              to="/reports/new"
               className="px-8 py-4 bg-primary-600 text-white font-semibold rounded-lg hover:bg-primary-700 transition-colors"
             >
-              Try Instant Valuation
-            </Link>
-            <Link
-              to={urls.manualValuation()}
-              className="px-8 py-4 bg-white text-primary-600 font-semibold rounded-lg border-2 border-primary-600 hover:bg-primary-50 transition-colors"
-            >
-              Manual Entry
+              Start New Valuation
             </Link>
           </div>
         </div>

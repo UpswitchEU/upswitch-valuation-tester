@@ -87,7 +87,7 @@ export const DocumentUploadFlow: React.FC = () => {
               Document extraction is in beta with 60-70% accuracy. You'll be able to review and edit all extracted data before calculating your valuation.
               For fastest results, we recommend using{' '}
               <button 
-                onClick={() => navigate('/instant')} 
+                onClick={() => navigate('/ai-guided')} 
                 className="underline font-semibold hover:text-yellow-100 transition-colors"
               >
                 AI lookup

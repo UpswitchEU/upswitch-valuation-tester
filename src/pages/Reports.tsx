@@ -121,16 +121,10 @@ export const Reports: React.FC = () => {
               </p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
                 <Link
-                  to={urls.instantValuation()}
+                  to="/reports/new"
                   className="inline-flex items-center justify-center px-6 py-3 rounded-lg bg-primary-600 text-white font-semibold hover:bg-primary-700 transition-colors"
                 >
-                  ⚡ Instant Valuation
-                </Link>
-                <Link
-                  to={urls.manualValuation()}
-                  className="inline-flex items-center justify-center px-6 py-3 rounded-lg bg-white text-primary-600 font-semibold border-2 border-primary-600 hover:bg-primary-50 transition-colors"
-                >
-                  Manual Entry
+                  📊 New Valuation Report
                 </Link>
               </div>
             </div>

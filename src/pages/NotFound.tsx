@@ -31,7 +31,7 @@ export const NotFound: React.FC = () => {
           </Link>
           
           <Link
-            to={urls.instantValuation()}
+            to="/reports/new"
             className="block w-full px-6 py-3 bg-white text-primary-600 font-semibold rounded-lg border-2 border-primary-600 hover:bg-primary-50 transition-colors"
           >
             Start Valuation

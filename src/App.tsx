@@ -1,13 +1,21 @@
 import { useState, useEffect, lazy, Suspense } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { Routes, Route, useLocation, useNavigate } from 'react-router-dom';
 import { Header } from './components/Header';
 import { ROUTE_TO_VIEW_MODE, VIEW_MODE_TO_ROUTE } from './router/routes';
 import { ScrollToTop } from './utils';
+import { generateReportId } from './utils/reportIdGenerator';
+import UrlGeneratorService from './services/urlGenerator';
 
 // Lazy load heavy components
+const ValuationReport = lazy(() => import('./components/ValuationReport').then(module => ({ default: module.ValuationReport })));
 const AIAssistedValuation = lazy(() => import('./components/AIAssistedValuation').then(module => ({ default: module.AIAssistedValuation })));
 const ManualValuationFlow = lazy(() => import('./components/ManualValuationFlow').then(module => ({ default: module.ManualValuationFlow })));
 const DocumentUploadFlow = lazy(() => import('./components/DocumentUploadFlow').then(module => ({ default: module.DocumentUploadFlow })));
+const HomePage = lazy(() => import('./pages/HomePage').then(module => ({ default: module.HomePage })));
+const Privacy = lazy(() => import('./pages/Privacy').then(module => ({ default: module.Privacy })));
+const About = lazy(() => import('./pages/About').then(module => ({ default: module.About })));
+const HowItWorks = lazy(() => import('./pages/HowItWorks').then(module => ({ default: module.HowItWorks })));
+const NotFound = lazy(() => import('./pages/NotFound').then(module => ({ default: module.NotFound })));
 
 // Loading fallback component
 const LoadingFallback = () => (
@@ -19,72 +27,87 @@ const LoadingFallback = () => (
   </div>
 );
 
-type ViewMode = 'ai-assisted' | 'manual' | 'document-upload';
-
-function App() {
+// Legacy route redirect component
+const LegacyRedirect: React.FC = () => {
+  const navigate = useNavigate();
   const location = useLocation();
+  
+  useEffect(() => {
+    const newReportId = generateReportId();
+    // Preserve all URL parameters (query string)
+    const searchParams = new URLSearchParams(location.search);
+    const newUrl = `${UrlGeneratorService.reportById(newReportId)}${searchParams.toString() ? `?${searchParams.toString()}` : ''}`;
+    
+    navigate(newUrl, {
+      replace: true,
+      state: location.state,
+    });
+  }, [navigate, location]);
+  
+  return <LoadingFallback />;
+};
+
+// New report redirect component
+const NewReportRedirect: React.FC = () => {
   const navigate = useNavigate();
   
-  // Determine viewMode from route
-  const routeBasedViewMode = (ROUTE_TO_VIEW_MODE[location.pathname as keyof typeof ROUTE_TO_VIEW_MODE] || 'ai-assisted') as ViewMode;
-  const [viewMode] = useState<ViewMode>(routeBasedViewMode);
-  
-  // Sync URL with viewMode
   useEffect(() => {
-    const newRoute = VIEW_MODE_TO_ROUTE[viewMode];
-    if (location.pathname !== newRoute) {
-      navigate(newRoute, { replace: true });
-    }
-  }, [viewMode, navigate, location.pathname]);
+    const newReportId = generateReportId();
+    navigate(UrlGeneratorService.reportById(newReportId), { replace: true });
+  }, [navigate]);
+  
+  return <LoadingFallback />;
+};
 
-  // Full-screen Ilara-style layout for AI-assisted flow
-  if (viewMode === 'ai-assisted') {
-    return (
-      <div className="flex h-screen w-screen flex-col overflow-hidden bg-zinc-950">
-        <ScrollToTop />
-        <Suspense fallback={<LoadingFallback />}>
-          <AIAssistedValuation />
-        </Suspense>
-      </div>
-    );
-  }
-
-  // Full-screen Ilara-style layout for manual flow
-  if (viewMode === 'manual') {
-    return (
-      <div className="flex h-screen w-screen flex-col overflow-hidden bg-zinc-950">
-        <ScrollToTop />
-        <Suspense fallback={<LoadingFallback />}>
-          <ManualValuationFlow />
-        </Suspense>
-      </div>
-    );
-  }
-
-  // Full-screen Ilara-style layout for document upload flow
-  if (viewMode === 'document-upload') {
-    return (
-      <div className="flex h-screen w-screen flex-col overflow-hidden bg-zinc-950">
-        <ScrollToTop />
-        <Suspense fallback={<LoadingFallback />}>
-          <DocumentUploadFlow />
-        </Suspense>
-      </div>
-    );
-  }
-
-  // Fallback - should not reach here
+function App() {
   return (
-    <div className="min-h-screen bg-gradient-hero">
-      <ScrollToTop />
-      <Header />
-      <main className="container mx-auto px-4 py-8 max-w-7xl">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold text-white mb-4">Page Not Found</h1>
-          <p className="text-zinc-400">The requested page could not be found.</p>
-        </div>
-      </main>
-    </div>
+    <Routes>
+      {/* Main report route with unique ID */}
+      <Route path="/reports/:reportId" element={
+        <Suspense fallback={<LoadingFallback />}>
+          <ValuationReport />
+        </Suspense>
+      } />
+      
+      {/* New report creation */}
+      <Route path="/reports/new" element={<NewReportRedirect />} />
+      
+      {/* Legacy routes - redirect to new report */}
+      <Route path="/manual" element={<LegacyRedirect />} />
+      <Route path="/ai-guided" element={<LegacyRedirect />} />
+      <Route path="/instant" element={<LegacyRedirect />} />
+      
+      {/* Home redirects to new report */}
+      <Route path="/" element={
+        <Suspense fallback={<LoadingFallback />}>
+          <HomePage />
+        </Suspense>
+      } />
+      
+      {/* Info pages */}
+      <Route path="/privacy" element={
+        <Suspense fallback={<LoadingFallback />}>
+          <Privacy />
+        </Suspense>
+      } />
+      <Route path="/about" element={
+        <Suspense fallback={<LoadingFallback />}>
+          <About />
+        </Suspense>
+      } />
+      <Route path="/how-it-works" element={
+        <Suspense fallback={<LoadingFallback />}>
+          <HowItWorks />
+        </Suspense>
+      } />
+      
+      {/* 404 */}
+      <Route path="*" element={
+        <Suspense fallback={<LoadingFallback />}>
+          <NotFound />
+        </Suspense>
+      } />
+    </Routes>
   );
 }
 

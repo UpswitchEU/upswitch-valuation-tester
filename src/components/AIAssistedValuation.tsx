@@ -21,7 +21,12 @@ import { DownloadService } from '../services/downloadService';
 
 type FlowStage = 'chat' | 'results';
 
-export const AIAssistedValuation: React.FC = () => {
+interface AIAssistedValuationProps {
+  reportId: string;
+  onComplete: (result: ValuationResponse) => void;
+}
+
+export const AIAssistedValuation: React.FC<AIAssistedValuationProps> = ({ reportId, onComplete }) => {
   const { user, isAuthenticated } = useAuth();
   const [stage, setStage] = useState<FlowStage>('chat');
   const [valuationResult, setValuationResult] = useState<ValuationResponse | null>(null);
@@ -83,6 +88,7 @@ export const AIAssistedValuation: React.FC = () => {
   const [businessProfile, setBusinessProfile] = useState<BusinessProfileData | null>(null);
   const [isLoadingProfile, setIsLoadingProfile] = useState(true);
   const [profileError, setProfileError] = useState<string | null>(null);
+  const [showPreConversationSummary, setShowPreConversationSummary] = useState(false);
 
   // NEW: Live HTML report state
   const [liveHtmlReport, setLiveHtmlReport] = useState<string>('');
@@ -127,13 +133,19 @@ export const AIAssistedValuation: React.FC = () => {
   // NEW: Start intelligent conversation with pre-filled data
   const startIntelligentConversation = useCallback(async (profileData: BusinessProfileData) => {
     try {
-      chatLogger.info('Starting intelligent conversation');
+      chatLogger.info('Starting intelligent conversation with pre-filled data');
       
       // Transform business data to conversation request
       const conversationRequest = businessDataService.transformToConversationStartRequest(profileData, {
         time_commitment: 'detailed',
         focus_area: 'all'
       });
+
+      // Add user_id for intelligent triage
+      if (user?.id) {
+        conversationRequest.user_id = user.id;
+        chatLogger.info('Added user_id for intelligent triage', { userId: user.id });
+      }
 
       // Start conversation with valuation engine
       const response = await api.startConversation(conversationRequest);
@@ -182,15 +194,9 @@ export const AIAssistedValuation: React.FC = () => {
           setBusinessProfile(profileData);
           chatLogger.info('Business profile loaded', { profileData });
           
-          // Check if we have enough data to start conversation
-          if (businessDataService.hasCompleteBusinessProfile(profileData)) {
-            chatLogger.info('Starting intelligent conversation with pre-filled data');
-            await startIntelligentConversation(profileData);
-          } else {
-            chatLogger.warn('Incomplete business profile, will collect missing data');
-            const missingFields = businessDataService.getMissingFields(profileData);
-            chatLogger.debug('Missing fields', { missingFields });
-          }
+          // Show pre-conversation summary for intelligent triage
+          setShowPreConversationSummary(true);
+          chatLogger.info('Showing pre-conversation summary for intelligent triage');
         } else {
           chatLogger.info('No business profile found, starting fresh conversation');
         }
@@ -215,7 +221,8 @@ export const AIAssistedValuation: React.FC = () => {
     chatLogger.info('Valuation complete callback triggered', { 
       hasResult: !!valuationResult,
       valuationId: valuationResult?.valuation_id,
-      equityValue: valuationResult?.equity_value_mid
+      equityValue: valuationResult?.equity_value_mid,
+      reportId: reportId
     });
     
     try {
@@ -228,8 +235,8 @@ export const AIAssistedValuation: React.FC = () => {
         founding_year: new Date().getFullYear() - 5,
         current_year_data: {
           year: new Date().getFullYear(),
-          revenue: valuationResult.revenue || 1000000,
-          ebitda: valuationResult.ebitda || 200000,
+          revenue: (valuationResult as any).revenue || 1000000,
+          ebitda: (valuationResult as any).ebitda || 200000,
         },
         historical_years_data: [],
         number_of_employees: 10,
@@ -240,30 +247,40 @@ export const AIAssistedValuation: React.FC = () => {
         comparables: [],
       };
 
-      chatLogger.info('Processing instant valuation through backend (PREMIUM)', {
+      chatLogger.info('Processing AI-guided valuation through backend (PREMIUM)', {
         companyName: request.company_name,
-        flowType: 'instant'
+        flowType: 'ai-guided'
       });
 
-      // Use backend API which handles credit checks for instant flow
-      const backendResult = await backendAPI.calculateInstantValuation(request);
+      // Use backend API which handles credit checks for AI-guided flow
+      const backendResult = await backendAPI.calculateAIGuidedValuation(request);
       
-      chatLogger.info('Instant valuation completed through backend', {
+      chatLogger.info('AI-guided valuation completed through backend', {
         valuationId: backendResult.valuation_id,
-        flowType: 'instant'
+        flowType: 'ai-guided'
       });
 
       setValuationResult(backendResult);
       setStage('results');
+      
+      // Call onComplete callback if provided
+      if (onComplete) {
+        onComplete(backendResult);
+      }
     } catch (error) {
-      chatLogger.error('Failed to process instant valuation through backend', {
+      chatLogger.error('Failed to process AI-guided valuation through backend', {
         error: error instanceof Error ? error.message : 'Unknown error',
-        flowType: 'instant'
+        flowType: 'ai-guided'
       });
       
       // Fallback to original result if backend fails
       setValuationResult(valuationResult);
       setStage('results');
+      
+      // Call onComplete callback if provided
+      if (onComplete) {
+        onComplete(valuationResult);
+      }
     }
     
     chatLogger.info('Valuation complete, moving to results stage', { 
@@ -385,6 +402,95 @@ export const AIAssistedValuation: React.FC = () => {
             </div>
             <div className="text-xs text-zinc-500">
               {businessDataService.getDataCompleteness(businessProfile)}% complete
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Pre-Conversation Summary */}
+      {showPreConversationSummary && businessProfile && (
+        <div className="mx-2 sm:mx-4 mb-4">
+          <div className="bg-blue-900/20 border border-blue-700/30 rounded-lg p-4">
+            <div className="flex items-start gap-3">
+              <div className="w-8 h-8 bg-blue-500/20 rounded-full flex items-center justify-center flex-shrink-0">
+                <span className="text-blue-400 text-sm">🧠</span>
+              </div>
+              <div className="flex-1">
+                <h3 className="text-lg font-semibold text-blue-300 mb-2">Intelligent Triage Active</h3>
+                <p className="text-sm text-blue-200 mb-3">
+                  We found your business profile! We'll skip the questions we already know and only ask for missing information.
+                </p>
+                
+                {(() => {
+                  const analysis = businessDataService.getFieldAnalysis(businessProfile);
+                  
+                  return (
+                    <div className="space-y-3">
+                      <div className="flex items-center gap-2 text-sm">
+                        <span className="text-blue-300">Data completeness:</span>
+                        <span className="font-semibold text-blue-200">{analysis.completeness}%</span>
+                        <div className="flex-1 bg-zinc-700 rounded-full h-2">
+                          <div 
+                            className="bg-blue-500 h-2 rounded-full transition-all duration-300"
+                            style={{ width: `${analysis.completeness}%` }}
+                          />
+                        </div>
+                      </div>
+                      
+                      <div className="text-sm text-blue-200">
+                        <span className="text-blue-300">Estimated time:</span> {analysis.estimatedTime} minutes
+                      </div>
+                      
+                      {analysis.complete.length > 0 && (
+                        <div className="text-sm">
+                          <span className="text-blue-300">We already know:</span>
+                          <div className="flex flex-wrap gap-1 mt-1">
+                            {analysis.complete.map(field => (
+                              <span key={field} className="bg-blue-800/50 px-2 py-1 rounded text-xs">
+                                {field.replace('_', ' ')}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                      
+                      {analysis.priority.length > 0 && (
+                        <div className="text-sm">
+                          <span className="text-blue-300">We need to ask about:</span>
+                          <div className="flex flex-wrap gap-1 mt-1">
+                            {analysis.priority.map(field => (
+                              <span key={field} className="bg-orange-800/50 px-2 py-1 rounded text-xs">
+                                {field.replace('_', ' ')}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                      
+                      <div className="flex gap-2 pt-2">
+                        <button
+                          onClick={() => {
+                            setShowPreConversationSummary(false);
+                            startIntelligentConversation(businessProfile);
+                          }}
+                          className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors"
+                        >
+                          Start Smart Conversation
+                        </button>
+                        <button
+                          onClick={() => {
+                            setShowPreConversationSummary(false);
+                            // Start fresh conversation without pre-filled data
+                          }}
+                          className="px-4 py-2 bg-zinc-700 hover:bg-zinc-600 text-zinc-300 rounded-lg text-sm font-medium transition-colors"
+                        >
+                          Start Fresh
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })()}
+              </div>
             </div>
           </div>
         </div>

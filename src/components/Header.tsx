@@ -38,10 +38,13 @@ export const Header: React.FC = () => {
 
   // Determine current valuation method from URL
   const getCurrentMethod = () => {
-    if (location.pathname === '/' || location.pathname === '/instant') return 'instant';
+    if (location.pathname.startsWith('/reports/')) return 'reports';
+    if (location.pathname === '/') return 'home';
     if (location.pathname === '/manual') return 'manual';
+    if (location.pathname === '/ai-guided') return 'ai-guided';
+    if (location.pathname === '/instant') return 'instant';
     if (location.pathname === '/upload') return 'document';
-    return 'instant';
+    return 'home';
   };
 
   const currentMethod = getCurrentMethod();
@@ -81,8 +84,9 @@ export const Header: React.FC = () => {
   };
   
   const valuationMethods = [
-    { id: 'instant', label: '⚡ Instant Valuation', badge: 'Recommended', path: '/instant' },
+    { id: 'reports', label: '📊 Valuation Reports', badge: 'New', path: '/reports/new' },
     { id: 'manual', label: '📝 Manual Input', badge: null, path: '/manual' },
+    { id: 'ai-guided', label: '🤖 AI-Guided Valuation', badge: 'Recommended', path: '/ai-guided' },
     { id: 'document', label: '📄 File Upload', badge: 'Beta', path: '/upload' },
   ];
 

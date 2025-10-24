@@ -2,7 +2,7 @@
   "name": "upswitch-valuation-tester",
   "private": true,
   "version": "1.0.0",
-  "description": "Upswitch Valuation Engine - Standalone Testing App",
+  "description": "Delphi - UpSwitch Valuation Tester Interface - The Oracle's wisdom for business insights",
   "type": "module",
   "scripts": {
     "dev": "vite --host --port 3001",

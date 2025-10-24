@@ -280,6 +280,7 @@ export interface DocumentParseResult {
 // =============================================================================
 
 export interface ConversationStartRequest {
+  user_id?: string; // Add user_id for intelligent triage
   business_context?: {
     company_name?: string;
     industry?: string;

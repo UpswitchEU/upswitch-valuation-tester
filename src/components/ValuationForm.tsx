@@ -428,8 +428,8 @@ export const ValuationForm: React.FC = () => {
           <span className="text-green-300 font-medium">FREE</span>
         </div>
         <span>Manual valuation - No credit cost</span>
-        <a href="/instant" className="text-primary-400 hover:underline ml-2">
-          Try premium instant flow →
+        <a href="/ai-guided" className="text-primary-400 hover:underline ml-2">
+          Try premium AI-guided flow →
         </a>
       </div>
 

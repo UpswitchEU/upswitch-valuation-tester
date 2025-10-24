@@ -8,14 +8,19 @@ export const ROUTES = {
   // Main routes
   HOME: '/',
   
-  // Valuation methods
-  INSTANT_VALUATION: '/instant',
+  // Valuation reports with unique keys
+  REPORTS: '/reports',
+  REPORT_BY_ID: '/reports/:reportId',
+  NEW_REPORT: '/reports/new',
+  
+  // Legacy routes (will redirect to /reports/new)
   MANUAL_VALUATION: '/manual',
+  AI_GUIDED_VALUATION: '/ai-guided',
+  INSTANT_VALUATION: '/instant',
   DOCUMENT_UPLOAD: '/upload',
   
-  // Results
+  // Results (legacy)
   RESULTS: '/results/:valuationId?',
-  REPORTS: '/reports',
   
   // Info pages
   PRIVACY: '/privacy',
@@ -36,13 +41,29 @@ export const ROUTE_META = {
     title: 'Business Valuation Engine',
     description: 'Professional-grade business valuations powered by AI',
   },
-  [ROUTES.INSTANT_VALUATION]: {
-    title: 'Instant Valuation - AI-Powered',
-    description: 'Get your business valuation in 1-2 minutes with conversational AI',
+  [ROUTES.REPORTS]: {
+    title: 'Valuation Reports',
+    description: 'Your business valuation reports',
+  },
+  [ROUTES.REPORT_BY_ID]: {
+    title: 'Valuation Report',
+    description: 'View your business valuation report',
+  },
+  [ROUTES.NEW_REPORT]: {
+    title: 'New Valuation',
+    description: 'Create a new business valuation',
   },
   [ROUTES.MANUAL_VALUATION]: {
     title: 'Manual Valuation Entry',
     description: 'Enter financial data manually for full control',
+  },
+  [ROUTES.AI_GUIDED_VALUATION]: {
+    title: 'AI-Guided Valuation',
+    description: 'Get your business valuation with AI-powered conversational guidance',
+  },
+  [ROUTES.INSTANT_VALUATION]: {
+    title: 'Instant Valuation',
+    description: 'Quick AI-powered business valuation',
   },
   [ROUTES.DOCUMENT_UPLOAD]: {
     title: 'Document Upload - Beta',
@@ -70,13 +91,13 @@ export const ROUTE_META = {
  * Tab to route mapping
  */
 export const VIEW_MODE_TO_ROUTE = {
-  'ai-assisted': ROUTES.INSTANT_VALUATION,
+  'ai-assisted': ROUTES.AI_GUIDED_VALUATION,
   'manual': ROUTES.MANUAL_VALUATION,
   'document-upload': ROUTES.DOCUMENT_UPLOAD,
 } as const;
 
 export const ROUTE_TO_VIEW_MODE = {
-  [ROUTES.INSTANT_VALUATION]: 'ai-assisted',
+  [ROUTES.AI_GUIDED_VALUATION]: 'ai-assisted',
   [ROUTES.MANUAL_VALUATION]: 'manual',
   [ROUTES.DOCUMENT_UPLOAD]: 'document-upload',
 } as const;
