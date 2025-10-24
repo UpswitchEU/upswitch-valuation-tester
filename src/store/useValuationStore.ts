@@ -156,23 +156,25 @@ export const useValuationStore = create<ValuationStore>((set, get) => ({
         founding_year: foundingYear,
         current_year_data: {
           year: currentYear,
-          revenue: formData.revenue, // Use formData.revenue
-          ebitda: formData.ebitda, // Use formData.ebitda
+          revenue: Number(formData.revenue) || 0, // Ensure number type
+          ebitda: Number(formData.ebitda) || 0, // Ensure number type
           // Include optional fields if present (ensure they're non-negative where required)
-          ...(formData.current_year_data?.total_assets && formData.current_year_data.total_assets >= 0 && { total_assets: formData.current_year_data.total_assets }),
-          ...(formData.current_year_data?.total_debt && formData.current_year_data.total_debt >= 0 && { total_debt: formData.current_year_data.total_debt }),
-          ...(formData.current_year_data?.cash && formData.current_year_data.cash >= 0 && { cash: formData.current_year_data.cash }),
+          ...(formData.current_year_data?.total_assets && formData.current_year_data.total_assets >= 0 && { total_assets: Number(formData.current_year_data.total_assets) }),
+          ...(formData.current_year_data?.total_debt && formData.current_year_data.total_debt >= 0 && { total_debt: Number(formData.current_year_data.total_debt) }),
+          ...(formData.current_year_data?.cash && formData.current_year_data.cash >= 0 && { cash: Number(formData.current_year_data.cash) }),
         },
         historical_years_data: formData.historical_years_data && formData.historical_years_data.length > 0 
           ? formData.historical_years_data.map(year => ({
               ...year,
-              year: Math.min(Math.max(year.year, 2000), 2100)
+              year: Math.min(Math.max(Number(year.year), 2000), 2100),
+              revenue: Number(year.revenue) || 0,
+              ebitda: Number(year.ebitda) || 0,
             }))
           : (formData.revenue && formData.revenue > 0 && formData.ebitda && formData.ebitda > 0)
             ? [{
                 year: Math.min(currentYear - 1, 2100),
-                revenue: formData.revenue * 0.9, // Assume 10% growth
-                ebitda: formData.ebitda * 0.9,
+                revenue: Number(formData.revenue) * 0.9, // Assume 10% growth
+                ebitda: Number(formData.ebitda) * 0.9,
               }]
             : [], // Don't send historical data if current data is invalid
         number_of_employees: formData.number_of_employees && formData.number_of_employees >= 0 ? formData.number_of_employees : undefined,
@@ -183,7 +185,12 @@ export const useValuationStore = create<ValuationStore>((set, get) => ({
         comparables: formData.comparables || [],
       };
       
-      storeLogger.info('Sending manual valuation request (FREE)', { companyName: request.company_name });
+      storeLogger.info('Sending manual valuation request (FREE)', { 
+        companyName: request.company_name,
+        revenue: request.current_year_data.revenue,
+        ebitda: request.current_year_data.ebitda,
+        requestData: request
+      });
       const response = await backendAPI.calculateManualValuation(request);
       setResult(response);
       

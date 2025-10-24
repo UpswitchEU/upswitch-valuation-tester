@@ -39,18 +39,61 @@ class BackendAPI {
 
   /**
    * Manual valuation - FREE (no credit consumption)
+   * Updated to call Python engine directly
    */
   async calculateManualValuation(data: ValuationRequest): Promise<ValuationResponse> {
-    const response = await this.client.post('/api/valuations/calculate/manual', data);
-    return response.data;
+    // Call Python valuation engine directly
+    const pythonEngineUrl = import.meta.env.VITE_PYTHON_ENGINE_URL || 'https://upswitch-valuation-engine-production.up.railway.app';
+    
+    // Debug logging
+    console.log('Manual valuation request data:', {
+      company_name: data.company_name,
+      revenue: data.current_year_data?.revenue,
+      ebitda: data.current_year_data?.ebitda,
+      revenueType: typeof data.current_year_data?.revenue,
+      ebitdaType: typeof data.current_year_data?.ebitda,
+      fullData: data
+    });
+    
+    const response = await fetch(`${pythonEngineUrl}/api/v1/valuation/calculate`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(data)
+    });
+    
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('Python engine error response:', errorText);
+      throw new Error(`Python engine error: ${response.status} ${response.statusText} - ${errorText}`);
+    }
+    
+    const result = await response.json();
+    console.log('Python engine response:', result);
+    return result;
   }
 
   /**
    * AI-guided valuation - PREMIUM (requires 1 credit)
+   * Updated to call Python engine directly
    */
   async calculateAIGuidedValuation(data: ValuationRequest): Promise<ValuationResponse> {
-    const response = await this.client.post('/api/valuations/calculate/ai-guided', data);
-    return response.data;
+    // Call Python valuation engine directly
+    const pythonEngineUrl = import.meta.env.VITE_PYTHON_ENGINE_URL || 'https://upswitch-valuation-engine-production.up.railway.app';
+    const response = await fetch(`${pythonEngineUrl}/api/v1/valuation/calculate`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(data)
+    });
+    
+    if (!response.ok) {
+      throw new Error(`Python engine error: ${response.status} ${response.statusText}`);
+    }
+    
+    return response.json();
   }
 
   /**
