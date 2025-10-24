@@ -8,6 +8,7 @@ import { ErrorBoundary } from './ErrorBoundary';
 import { ValuationToolbar } from './ValuationToolbar';
 import { ValuationInfoPanel } from './ValuationInfoPanel';
 import { FullScreenModal } from './FullScreenModal';
+import { OutOfCreditsModal } from './OutOfCreditsModal';
 import { ResizableDivider } from './ResizableDivider';
 import { ValuationEmptyState } from './ValuationEmptyState';
 import { businessDataService, type BusinessProfileData } from '../services/businessDataService';
@@ -20,7 +21,7 @@ import { chatLogger } from '../utils/logger';
 import { DownloadService } from '../services/downloadService';
 
 
-type FlowStage = 'chat' | 'results';
+type FlowStage = 'chat' | 'results' | 'blocked';
 
 interface AIAssistedValuationProps {
   reportId: string;
@@ -32,6 +33,8 @@ export const AIAssistedValuation: React.FC<AIAssistedValuationProps> = ({ report
   const [stage, setStage] = useState<FlowStage>('chat');
   const [valuationResult, setValuationResult] = useState<ValuationResponse | null>(null);
   const [reportSaved, setReportSaved] = useState(false);
+  const [showOutOfCreditsModal, setShowOutOfCreditsModal] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   
   // New state for lovable experience features (commented out for now)
   // const [collectedData, setCollectedData] = useState<Record<string, any>>({});
@@ -65,14 +68,14 @@ export const AIAssistedValuation: React.FC<AIAssistedValuationProps> = ({ report
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
 
-  // Credit check for guest users
+  // Credit check for guest users - block conversation if no credits
   useEffect(() => {
     if (!isAuthenticated) {
       const hasCredits = guestCreditService.hasCredits();
       if (!hasCredits) {
-        chatLogger.warn('Guest user out of credits');
-        // TODO: Show out of credits modal
-        console.warn('Out of free credits. Sign up to get 3 more!');
+        chatLogger.warn('Guest user out of credits - blocking conversation');
+        setShowOutOfCreditsModal(true);
+        setStage('blocked');
       }
     }
   }, [isAuthenticated]);
@@ -145,6 +148,13 @@ export const AIAssistedValuation: React.FC<AIAssistedValuationProps> = ({ report
 
   // NEW: Start intelligent conversation with pre-filled data
   const startIntelligentConversation = useCallback(async (profileData: BusinessProfileData) => {
+    // CHECK CREDITS BEFORE STARTING (for guests)
+    if (!isAuthenticated && !guestCreditService.hasCredits()) {
+      chatLogger.warn('Guest user out of credits - blocking conversation start');
+      setShowOutOfCreditsModal(true);
+      return;
+    }
+    
     try {
       chatLogger.info('Starting intelligent conversation with pre-filled data');
       
@@ -239,6 +249,19 @@ export const AIAssistedValuation: React.FC<AIAssistedValuationProps> = ({ report
     });
     
     try {
+      // DEDUCT CREDIT FIRST (for guests) - before processing valuation
+      if (!isAuthenticated) {
+        const creditUsed = guestCreditService.useCredit();
+        if (!creditUsed) {
+          chatLogger.error('Failed to deduct guest credit - no credits available');
+          setError('No credits available. Please sign up to get more credits.');
+          return;
+        }
+        chatLogger.info('Guest credit deducted before valuation', { 
+          remainingCredits: guestCreditService.getCredits() 
+        });
+      }
+      
       // Convert the valuation result to a proper ValuationRequest for backend processing
       const request: ValuationRequest = {
         company_name: valuationResult.company_name || 'AI Generated Company',
@@ -276,15 +299,6 @@ export const AIAssistedValuation: React.FC<AIAssistedValuationProps> = ({ report
       setValuationResult(backendResult);
       setStage('results');
       
-      // Deduct credit for guest users
-      if (!isAuthenticated) {
-        const creditUsed = guestCreditService.useCredit();
-        chatLogger.info('Guest credit deducted', { 
-          creditUsed, 
-          remainingCredits: guestCreditService.getCredits() 
-        });
-      }
-      
       // Call onComplete callback if provided
       if (onComplete) {
         onComplete(backendResult);
@@ -295,18 +309,19 @@ export const AIAssistedValuation: React.FC<AIAssistedValuationProps> = ({ report
         flowType: 'ai-guided'
       });
       
+      // REFUND CREDIT ON ERROR (for guests)
+      if (!isAuthenticated) {
+        const currentCredits = guestCreditService.getCredits();
+        localStorage.setItem('upswitch_guest_credits', (currentCredits + 1).toString());
+        chatLogger.info('Guest credit refunded due to error', { 
+          refundedCredits: 1,
+          totalCredits: currentCredits + 1
+        });
+      }
+      
       // Fallback to original result if backend fails
       setValuationResult(valuationResult);
       setStage('results');
-      
-      // Deduct credit for guest users (even in fallback case)
-      if (!isAuthenticated) {
-        const creditUsed = guestCreditService.useCredit();
-        chatLogger.info('Guest credit deducted (fallback)', { 
-          creditUsed, 
-          remainingCredits: guestCreditService.getCredits() 
-        });
-      }
       
       // Call onComplete callback if provided
       if (onComplete) {
@@ -396,6 +411,19 @@ export const AIAssistedValuation: React.FC<AIAssistedValuationProps> = ({ report
         companyName={businessProfile?.company_name}
         valuationMethod={valuationResult?.methodology}
       />
+
+      {/* Error Display */}
+      {error && (
+        <div className="mx-2 sm:mx-4 mb-4">
+          <div className="bg-red-900/20 border border-red-700/30 rounded-lg p-4">
+            <div className="flex items-center gap-2 text-red-300">
+              <span className="text-red-400">⚠️</span>
+              <span className="font-medium">Error</span>
+            </div>
+            <p className="text-red-200 text-sm mt-1">{error}</p>
+          </div>
+        </div>
+      )}
 
       {/* PREMIUM Tier Badge */}
       <div className="mx-2 sm:mx-4 mb-2">
@@ -875,6 +903,22 @@ export const AIAssistedValuation: React.FC<AIAssistedValuationProps> = ({ report
           />
         )}
       </FullScreenModal>
+
+      {/* Out of Credits Modal */}
+      <OutOfCreditsModal
+        isOpen={showOutOfCreditsModal}
+        onClose={() => setShowOutOfCreditsModal(false)}
+        onSignUp={() => {
+          setShowOutOfCreditsModal(false);
+          // TODO: Implement actual sign-up flow
+          console.log('Sign up clicked');
+        }}
+        onTryManual={() => {
+          setShowOutOfCreditsModal(false);
+          // TODO: Switch to manual flow
+          console.log('Try manual flow clicked');
+        }}
+      />
     </>
   );
 };
