@@ -12,8 +12,9 @@ import { ResizableDivider } from './ResizableDivider';
 import { ValuationEmptyState } from './ValuationEmptyState';
 import { businessDataService, type BusinessProfileData } from '../services/businessDataService';
 import { api } from '../services/api';
+import { backendAPI } from '../services/backendApi';
 import { useAuth } from '../hooks/useAuth';
-import type { ValuationResponse } from '../types/valuation';
+import type { ValuationResponse, ValuationRequest } from '../types/valuation';
 import { chatLogger } from '../utils/logger';
 import { DownloadService } from '../services/downloadService';
 
@@ -210,15 +211,60 @@ export const AIAssistedValuation: React.FC = () => {
 
 
 
-  const handleValuationComplete = (valuationResult: ValuationResponse) => {
+  const handleValuationComplete = async (valuationResult: ValuationResponse) => {
     chatLogger.info('Valuation complete callback triggered', { 
       hasResult: !!valuationResult,
       valuationId: valuationResult?.valuation_id,
       equityValue: valuationResult?.equity_value_mid
     });
     
-    setValuationResult(valuationResult);
-    setStage('results');
+    try {
+      // Convert the valuation result to a proper ValuationRequest for backend processing
+      const request: ValuationRequest = {
+        company_name: valuationResult.company_name || 'AI Generated Company',
+        country_code: 'BE', // Default to Belgium
+        industry: 'services', // Default industry
+        business_model: 'other',
+        founding_year: new Date().getFullYear() - 5,
+        current_year_data: {
+          year: new Date().getFullYear(),
+          revenue: valuationResult.revenue || 1000000,
+          ebitda: valuationResult.ebitda || 200000,
+        },
+        historical_years_data: [],
+        number_of_employees: 10,
+        recurring_revenue_percentage: 0.8,
+        use_dcf: true,
+        use_multiples: true,
+        projection_years: 10,
+        comparables: [],
+      };
+
+      chatLogger.info('Processing instant valuation through backend (PREMIUM)', {
+        companyName: request.company_name,
+        flowType: 'instant'
+      });
+
+      // Use backend API which handles credit checks for instant flow
+      const backendResult = await backendAPI.calculateInstantValuation(request);
+      
+      chatLogger.info('Instant valuation completed through backend', {
+        valuationId: backendResult.valuation_id,
+        flowType: 'instant'
+      });
+
+      setValuationResult(backendResult);
+      setStage('results');
+    } catch (error) {
+      chatLogger.error('Failed to process instant valuation through backend', {
+        error: error instanceof Error ? error.message : 'Unknown error',
+        flowType: 'instant'
+      });
+      
+      // Fallback to original result if backend fails
+      setValuationResult(valuationResult);
+      setStage('results');
+    }
     
     chatLogger.info('Valuation complete, moving to results stage', { 
       stage: 'results',
@@ -302,6 +348,19 @@ export const AIAssistedValuation: React.FC = () => {
         companyName={businessProfile?.company_name}
         valuationMethod={valuationResult?.methodology}
       />
+
+      {/* PREMIUM Tier Badge */}
+      <div className="mx-2 sm:mx-4 mb-2">
+        <div className="flex items-center gap-2 p-3 bg-purple-900/20 border border-purple-700/30 rounded-lg">
+          <div className="w-6 h-6 bg-purple-500/20 rounded-full flex items-center justify-center">
+            <span className="text-purple-400 text-sm">✨</span>
+          </div>
+          <div>
+            <p className="text-sm font-semibold text-purple-300">PREMIUM - 1 Credit</p>
+            <p className="text-xs text-purple-400">AI-guided • Higher accuracy through intelligent data collection</p>
+          </div>
+        </div>
+      </div>
 
       {/* Business Profile Summary */}
       {businessProfile && !isLoadingProfile && (

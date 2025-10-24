@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import type { ValuationRequest, ValuationResponse, QuickValuationRequest, ValuationFormData } from '../types/valuation';
 import { api } from '../services/api';
+import { backendAPI } from '../services/backendApi';
 import { storeLogger } from '../utils/logger';
 // import { useReportsStore } from './useReportsStore'; // Deprecated: Now saving to database
 
@@ -182,8 +183,8 @@ export const useValuationStore = create<ValuationStore>((set, get) => ({
         comparables: formData.comparables || [],
       };
       
-      storeLogger.info('Sending valuation request', { companyName: request.company_name });
-      const response = await api.calculateValuation(request);
+      storeLogger.info('Sending manual valuation request (FREE)', { companyName: request.company_name });
+      const response = await backendAPI.calculateManualValuation(request);
       setResult(response);
       
       // ✅ AUTO-SAVE TO DATABASE (primary storage)

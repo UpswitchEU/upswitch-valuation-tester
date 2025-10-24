@@ -7,6 +7,7 @@ import { TARGET_COUNTRIES } from '../config/countries';
 import { useBusinessTypes } from '../hooks/useBusinessTypes';
 import { IndustryCode } from '../types/valuation';
 import { CustomInputField, CustomNumberInputField, CustomDropdown, HistoricalDataInputs } from './forms';
+import { InlineCreditBadge } from './credits/CreditBadge';
 import { generalLogger } from '../utils/logger';
 
 /**
@@ -418,6 +419,18 @@ export const ValuationForm: React.FC = () => {
           onChange={setHistoricalInputs}
           onBlur={() => {}}
         />
+      </div>
+
+      {/* Credit Indicator - Updated for manual flow */}
+      <div className="flex items-center gap-2 text-sm text-green-400 mb-4">
+        <div className="flex items-center gap-1 px-2 py-1 bg-green-900/20 border border-green-700/30 rounded">
+          <span className="text-green-400">✓</span>
+          <span className="text-green-300 font-medium">FREE</span>
+        </div>
+        <span>Manual valuation - No credit cost</span>
+        <a href="/instant" className="text-primary-400 hover:underline ml-2">
+          Try premium instant flow →
+        </a>
       </div>
 
       {/* Submit Button */}

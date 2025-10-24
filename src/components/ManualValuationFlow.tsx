@@ -81,6 +81,19 @@ export const ManualValuationFlow: React.FC = () => {
         </div>
       </div>
 
+      {/* FREE Tier Badge */}
+      <div className="mx-2 sm:mx-4 mb-2">
+        <div className="flex items-center gap-2 p-3 bg-green-900/20 border border-green-700/30 rounded-lg">
+          <div className="w-6 h-6 bg-green-500/20 rounded-full flex items-center justify-center">
+            <span className="text-green-400 text-sm">✓</span>
+          </div>
+          <div>
+            <p className="text-sm font-semibold text-green-300">FREE - No Credit Cost</p>
+            <p className="text-xs text-green-400">Manual entry • Try our instant flow for AI-guided accuracy</p>
+          </div>
+        </div>
+      </div>
+
       {/* Full-screen Split Panel - Ilara Style */}
       <div className="flex flex-col lg:flex-row flex-1 overflow-hidden mx-2 sm:mx-4 my-2 sm:my-4 rounded-lg border border-zinc-800">
         {/* Left Panel: Form (60% on desktop, full width on mobile) - Always visible */}

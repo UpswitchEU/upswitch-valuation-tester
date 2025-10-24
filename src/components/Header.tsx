@@ -5,6 +5,7 @@ import { ChevronDown } from 'lucide-react';
 // import { urls } from '../router'; // Removed with reports link
 // import { useReportsStore } from '../store/useReportsStore'; // Deprecated: Reports now on upswitch.biz
 import { UserDropdown } from './UserDropdown';
+import { CreditBadge } from './credits/CreditBadge';
 import { useAuth } from '../hooks/useAuth';
 import { generalLogger } from '../utils/logger';
 
@@ -201,6 +202,11 @@ export const Header: React.FC = () => {
                 </svg>
                 <span>Engine Connected</span>
               </div>
+            </li>
+            
+            {/* Credit Badge */}
+            <li className="text-medium whitespace-nowrap box-border list-none hidden lg:flex items-center">
+              <CreditBadge variant="compact" />
             </li>
             
             {/* User Avatar */}

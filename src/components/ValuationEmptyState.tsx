@@ -1,5 +1,5 @@
 import React from 'react';
-import { FileText } from 'lucide-react';
+import { FileText, CheckCircle } from 'lucide-react';
 
 export const ValuationEmptyState: React.FC = () => {
   return (
@@ -8,11 +8,26 @@ export const ValuationEmptyState: React.FC = () => {
         <FileText className="w-8 h-8 text-zinc-400" />
       </div>
       <h3 className="mt-4 text-lg font-medium text-black bg-white">
-        Reports will appear here
+        Start Your First Valuation
       </h3>
-      <p className="mt-2 text-sm text-black bg-white max-w-sm font-light">
-        Start a conversation in the chat to generate insights and reports about your data
+      <p className="mt-2 text-sm text-black bg-white max-w-sm font-light mb-6">
+        With unlimited access, you can:
       </p>
+      
+      <div className="space-y-2 text-sm text-gray-600 max-w-sm">
+        <div className="flex items-center gap-2">
+          <CheckCircle className="text-green-500" size={16} />
+          <span>Generate unlimited valuation reports</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <CheckCircle className="text-green-500" size={16} />
+          <span>Try different scenarios</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <CheckCircle className="text-green-500" size={16} />
+          <span>Refine your business model</span>
+        </div>
+      </div>
     </div>
   );
 };
