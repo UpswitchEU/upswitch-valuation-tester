@@ -425,18 +425,6 @@ export const AIAssistedValuation: React.FC<AIAssistedValuationProps> = ({ report
         </div>
       )}
 
-      {/* PREMIUM Tier Badge */}
-      <div className="mx-2 sm:mx-4 mb-2">
-        <div className="flex items-center gap-2 p-3 bg-purple-900/20 border border-purple-700/30 rounded-lg">
-          <div className="w-6 h-6 bg-purple-500/20 rounded-full flex items-center justify-center">
-            <span className="text-purple-400 text-sm">✨</span>
-          </div>
-          <div>
-            <p className="text-sm font-semibold text-purple-300">PREMIUM - 1 Credit</p>
-            <p className="text-xs text-purple-400">AI-guided • Higher accuracy through intelligent data collection</p>
-          </div>
-        </div>
-      </div>
 
       {/* Business Profile Summary */}
       {businessProfile && !isLoadingProfile && (
@@ -576,7 +564,7 @@ export const AIAssistedValuation: React.FC<AIAssistedValuationProps> = ({ report
       )}
 
       {/* Full-screen Split Panel - Ilara Style */}
-      <div className="flex flex-col lg:flex-row flex-1 overflow-hidden mx-4 my-4 rounded-lg border border-zinc-800" style={{transition: 'width 150ms ease-out'}}>
+      <div className="flex flex-col lg:flex-row flex-1 overflow-hidden mx-2 sm:mx-4 mb-0 rounded-lg border border-zinc-800" style={{transition: 'width 150ms ease-out'}}>
         {/* Left Panel: Chat */}
         <div 
           className={`${
