@@ -396,7 +396,7 @@ export const AIAssistedValuation: React.FC<AIAssistedValuationProps> = ({ report
   };
 
   return (
-    <>
+    <div className="flex flex-col h-full overflow-hidden">
       {/* NEW: ValuationToolbar */}
       <ValuationToolbar
         onRefresh={handleRefresh}
@@ -907,6 +907,6 @@ export const AIAssistedValuation: React.FC<AIAssistedValuationProps> = ({ report
           console.log('Try manual flow clicked');
         }}
       />
-    </>
+    </div>
   );
 };
