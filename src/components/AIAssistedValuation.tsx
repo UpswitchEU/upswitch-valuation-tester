@@ -414,7 +414,7 @@ export const AIAssistedValuation: React.FC<AIAssistedValuationProps> = ({ report
 
       {/* Error Display */}
       {error && (
-        <div className="mx-2 sm:mx-4 mb-4">
+        <div className="mx-4 mb-4">
           <div className="bg-red-900/20 border border-red-700/30 rounded-lg p-4">
             <div className="flex items-center gap-2 text-red-300">
               <span className="text-red-400">⚠️</span>
@@ -428,7 +428,7 @@ export const AIAssistedValuation: React.FC<AIAssistedValuationProps> = ({ report
 
       {/* Business Profile Summary */}
       {businessProfile && !isLoadingProfile && (
-        <div className="border-b border-zinc-800 bg-zinc-900/30 px-3 sm:px-4 md:px-6 py-3 mx-2 sm:mx-4">
+        <div className="border-b border-zinc-800 bg-zinc-900/30 px-3 sm:px-4 md:px-6 py-3 mx-4">
           <div className="flex items-center gap-3">
             <Building2 className="w-5 h-5 text-primary-400 flex-shrink-0" />
             <div className="min-w-0 flex-1">
@@ -456,7 +456,7 @@ export const AIAssistedValuation: React.FC<AIAssistedValuationProps> = ({ report
 
       {/* Pre-Conversation Summary */}
       {showPreConversationSummary && businessProfile && (
-        <div className="mx-2 sm:mx-4 mb-4">
+        <div className="mx-4 mb-4">
           <div className="bg-blue-900/20 border border-blue-700/30 rounded-lg p-4">
             <div className="flex items-start gap-3">
               <div className="w-8 h-8 bg-blue-500/20 rounded-full flex items-center justify-center flex-shrink-0">
@@ -545,7 +545,7 @@ export const AIAssistedValuation: React.FC<AIAssistedValuationProps> = ({ report
 
       {/* Error Message */}
       {profileError && (
-        <div className="border-b border-red-800 bg-red-900/20 px-3 sm:px-4 md:px-6 py-3 mx-2 sm:mx-4">
+        <div className="border-b border-red-800 bg-red-900/20 px-3 sm:px-4 md:px-6 py-3 mx-4">
           <div className="flex items-center gap-2 text-sm text-red-300">
             <span>⚠️</span>
             <span>{profileError}</span>
@@ -555,7 +555,7 @@ export const AIAssistedValuation: React.FC<AIAssistedValuationProps> = ({ report
 
       {/* Loading State */}
       {isLoadingProfile && (
-        <div className="flex items-center justify-center h-32 mx-2 sm:mx-4">
+        <div className="flex items-center justify-center h-32 mx-4">
           <div className="text-center">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-500 mx-auto mb-4"></div>
             <p className="text-zinc-400 text-sm">Loading your business profile...</p>
@@ -564,7 +564,7 @@ export const AIAssistedValuation: React.FC<AIAssistedValuationProps> = ({ report
       )}
 
       {/* Full-screen Split Panel - Ilara Style */}
-      <div className="flex flex-col lg:flex-row flex-1 overflow-hidden mx-2 sm:mx-4 mb-0 rounded-lg border border-zinc-800" style={{transition: 'width 150ms ease-out'}}>
+      <div className="flex flex-col lg:flex-row flex-1 overflow-hidden mx-4 my-4 rounded-lg border border-zinc-800" style={{transition: 'width 150ms ease-out'}}>
         {/* Left Panel: Chat */}
         <div 
           className={`${

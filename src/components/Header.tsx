@@ -112,6 +112,9 @@ export const Header: React.FC = () => {
               style={{ height: '32px', objectFit: 'contain', opacity: 1, visibility: 'visible', display: 'block' }}
             />
             
+            {/* Animated Gradient Circle - Ilara Style */}
+            <div className="w-4 h-4 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 animate-pulse ml-2"></div>
+            
             {/* App Name - Matching main site typography */}
             <span className="font-display text-lg sm:text-xl font-light text-primary-700 leading-none mt-0.5 flex-shrink-0">
               Upswitch

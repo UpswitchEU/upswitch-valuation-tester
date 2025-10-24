@@ -93,7 +93,7 @@ export const ManualValuationFlow: React.FC<ManualValuationFlowProps> = ({ onComp
 
 
       {/* Full-screen Split Panel - Ilara Style */}
-      <div className="flex flex-col lg:flex-row flex-1 overflow-hidden mx-2 sm:mx-4 my-2 sm:my-4 rounded-lg border border-zinc-800">
+      <div className="flex flex-col lg:flex-row flex-1 overflow-hidden mx-4 my-4 rounded-lg border border-zinc-800">
         {/* Left Panel: Form (60% on desktop, full width on mobile) - Always visible */}
         <div 
           className="h-full flex flex-col bg-zinc-900 lg:border-r border-zinc-800 w-full lg:w-[60%]"

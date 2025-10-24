@@ -1,15 +1,15 @@
 import React from 'react';
-import { TrendingUp } from 'lucide-react';
+import { FileText } from 'lucide-react';
 
 export const ValuationEmptyState: React.FC = () => {
   return (
-    <div className="flex flex-col items-center justify-center h-full p-8 text-center">
-      <div className="w-16 h-16 rounded-full bg-zinc-100 flex items-center justify-center mb-4">
-        <TrendingUp className="w-8 h-8 text-zinc-400" />
+    <div className="flex flex-col items-center justify-center h-full p-8 text-center bg-white">
+      <div className="p-4 rounded-full bg-white border border-gray-200 shadow-sm">
+        <FileText className="w-8 h-8 text-blue-500" />
       </div>
-      <h3 className="text-lg font-semibold text-zinc-900 mb-2">Valuation Preview</h3>
-      <p className="text-sm text-zinc-500 max-w-xs">
-        Your valuation report will appear here once you start the conversation.
+      <h3 className="mt-4 text-lg font-medium text-black bg-white">Reports will appear here</h3>
+      <p className="mt-2 text-sm text-black bg-white max-w-sm">
+        Start a conversation in the chat to generate insights and reports about your valuation
       </p>
     </div>
   );
