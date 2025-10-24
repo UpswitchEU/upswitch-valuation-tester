@@ -33,7 +33,7 @@ const LegacyRedirect: React.FC = () => {
     // Detect flow type from pathname
     if (location.pathname === '/manual') {
       searchParams.set('flow', 'manual');
-    } else if (location.pathname === '/ai-guided') {
+    } else if (location.pathname === '/ai-guided' || location.pathname === '/instant') {
       searchParams.set('flow', 'ai-guided');
     }
     

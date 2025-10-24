@@ -8,6 +8,7 @@ import { ManualValuationFlow } from './ManualValuationFlow';
 import { useAuth } from '../hooks/useAuth';
 import { guestCreditService } from '../services/guestCreditService';
 import { OutOfCreditsModal } from './OutOfCreditsModal';
+import { reportApiService } from '../services/reportApi';
 import type { ValuationResponse } from '../types/valuation';
 
 type FlowType = 'manual' | 'ai-guided' | null;
@@ -38,65 +39,59 @@ export const ValuationReport: React.FC = () => {
     
     // Check if report exists and load state
     checkReportExists(reportId);
-  }, [reportId, navigate]);
+  }, [reportId, navigate, isAuthenticated]);
 
   // Check if report exists and load appropriate state
   const checkReportExists = async (reportId: string) => {
     try {
-      // Check for flow parameter in URL
-      const searchParams = new URLSearchParams(window.location.search);
-      const flowParam = searchParams.get('flow');
-
-      if (flowParam === 'manual' || flowParam === 'ai-guided') {
-        // Validate credits for AI-guided (guests only)
-        if (flowParam === 'ai-guided' && !isAuthenticated) {
-          const hasCredits = guestCreditService.hasCredits();
-          if (!hasCredits) {
-            setShowOutOfCreditsModal(true);
-            setStage('flow-selection');
-            return;
-          }
-        }
-        
-        // Auto-select flow and skip selection screen
-        setFlowType(flowParam);
-        setStage('data-entry');
-        return;
-      }
-
-      // TODO: Implement actual report retrieval
-      // For now, always start fresh
-      // TODO: Use reportId when implementing report retrieval
-      console.log('Checking report:', reportId);
-      // const response = await backendAPI.getReport(reportId);
-      // if (response.success) {
-      //   // Report exists - load its state
-      //   if (response.data.valuation_data) {
-      //     // Report is completed - show results
-      //     setValuationResult(response.data.valuation_data);
-      //     setStage('results');
-      //   } else if (response.data.flow_type) {
-      //     // Report exists but not completed - resume flow
-      //     setFlowType(response.data.flow_type);
-      //     setStage('data-entry');
-      //   }
-      // } else {
-      //   // Report doesn't exist - start fresh
-      //   setStage('flow-selection');
-      // }
+      // Try to load existing report from backend
+      const response = await reportApiService.getReport(reportId);
       
-      // For now, always start fresh
-      setStage('flow-selection');
+      if (response.success && response.data) {
+        // Report exists - load its state
+        if (response.data.valuation_data) {
+          // Report is completed - show results
+          setValuationResult(response.data.valuation_data);
+          setStage('results');
+          return;
+        } else if (response.data.flow_type) {
+          // Report exists but not completed - resume flow
+          setFlowType(response.data.flow_type);
+          setStage('data-entry');
+          return;
+        }
+      }
     } catch (error) {
-      console.error('Failed to check report existence:', error);
-      setError('Failed to load report. Starting fresh.');
-      // On error, start fresh
+      // Report doesn't exist or error - check for flow parameter
+      console.log('Report not found, checking for flow parameter');
+    }
+    
+    // Check for flow parameter in URL
+    const searchParams = new URLSearchParams(window.location.search);
+    const flowParam = searchParams.get('flow');
+    
+    if (flowParam === 'manual' || flowParam === 'ai-guided') {
+      // Validate credits for AI-guided (guests only)
+      if (flowParam === 'ai-guided' && !isAuthenticated) {
+        // For now, use local credit check as fallback
+        const hasCredits = guestCreditService.hasCredits();
+        if (!hasCredits) {
+          setShowOutOfCreditsModal(true);
+          setStage('flow-selection');
+          return;
+        }
+      }
+      
+      // Auto-select flow and skip selection screen
+      setFlowType(flowParam);
+      setStage('data-entry');
+    } else {
       setStage('flow-selection');
     }
   };
 
   // Handle flow selection
-  const handleFlowSelection = (flow: 'manual' | 'ai-guided') => {
+  const handleFlowSelection = async (flow: 'manual' | 'ai-guided') => {
     // Check credits for AI-guided flow (guests)
     if (flow === 'ai-guided' && !isAuthenticated) {
       const hasCredits = guestCreditService.hasCredits();
@@ -108,12 +103,30 @@ export const ValuationReport: React.FC = () => {
     
     setFlowType(flow);
     setStage('data-entry');
+    
+    // Update report in backend
+    try {
+      await reportApiService.updateReport(currentReportId, {
+        flow_type: flow,
+        stage: 'data-entry'
+      });
+    } catch (error) {
+      console.error('Failed to update report flow type:', error);
+    }
   };
 
   // Handle valuation completion
-  const handleValuationComplete = (result: ValuationResponse) => {
+  const handleValuationComplete = async (result: ValuationResponse) => {
     setValuationResult(result);
     setStage('results');
+    
+    // Save completed valuation to backend
+    try {
+      await reportApiService.completeReport(currentReportId, result);
+    } catch (error) {
+      console.error('Failed to save completed valuation:', error);
+      // Don't show error to user as the valuation is already complete locally
+    }
   };
 
   // Handle restart
@@ -121,6 +134,15 @@ export const ValuationReport: React.FC = () => {
     setFlowType(null);
     setStage('flow-selection');
     setValuationResult(null);
+  };
+
+  // Save partial data during valuation process
+  const savePartialData = async (data: any) => {
+    try {
+      await reportApiService.savePartialData(currentReportId, data);
+    } catch (error) {
+      console.error('Failed to save partial data:', error);
+    }
   };
 
   // Render based on stage
@@ -186,6 +208,7 @@ export const ValuationReport: React.FC = () => {
           <ManualValuationFlow 
             reportId={currentReportId}
             onComplete={handleValuationComplete}
+            onSavePartial={savePartialData}
           />
         )}
         
@@ -193,6 +216,7 @@ export const ValuationReport: React.FC = () => {
           <AIAssistedValuation 
             reportId={currentReportId}
             onComplete={handleValuationComplete}
+            onSavePartial={savePartialData}
           />
         )}
         

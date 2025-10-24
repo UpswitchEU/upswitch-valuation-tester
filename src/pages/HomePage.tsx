@@ -40,7 +40,7 @@ export const HomePage: React.FC = () => {
 
   const valuationMethods = [
     {
-      id: 'reports',
+      id: 'ai-guided',
       icon: FileText,
       title: 'AI-Guided Valuation',
       description: 'Start with AI-powered conversational guidance for your business valuation',
@@ -52,7 +52,7 @@ export const HomePage: React.FC = () => {
         'Professional-grade analysis',
         'Save and revisit anytime'
       ],
-      path: '/reports/new?flow=ai-guided',
+      path: '/ai-guided',
       bgGradient: 'from-primary-900/20 via-blue-900/20 to-cyan-900/20',
       borderColor: 'border-primary-500/30 hover:border-primary-400/50',
       glowColor: 'group-hover:shadow-primary-500/20',
