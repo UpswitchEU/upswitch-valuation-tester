@@ -12,6 +12,7 @@ import { LoadingDots } from './LoadingDots';
 import { useLoadingMessage } from '../hooks/useLoadingMessage';
 // Removed complex validation imports - using simple approach like IlaraAI
 import { chatLogger } from '../utils/logger';
+import { useAuth } from '../hooks/useAuth';
 
 // Input validation constants
 const MAX_MESSAGE_LENGTH = 1000;
@@ -166,6 +167,9 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
   placeholder = "Ask about your business valuation...",
   disabled = false
 }) => {
+  // Get user data from AuthContext for profile integration
+  const { user } = useAuth();
+  
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [isStreaming, setIsStreaming] = useState(false);
@@ -407,40 +411,97 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
 
   // Backend-driven conversation initialization
   const [isInitializing, setIsInitializing] = useState(true);
+  const hasInitializedRef = useRef(false);
+  const abortControllerRef = useRef<AbortController | null>(null);
 
-  // Initialize conversation with backend
-  useEffect(() => {
-    const initializeConversation = async () => {
-      if (messages.length === 0 && isInitializing) {
-        try {
-          setIsInitializing(true);
+  // ✅ Initialize with retry logic
+  const initializeWithRetry = useCallback(async (attempt = 1, maxAttempts = 3) => {
+    const startTime = Date.now();
+    
+    try {
+      setIsInitializing(true);
+      
+      // Get API base URL from config
+      const API_BASE_URL = import.meta.env.VITE_VALUATION_ENGINE_URL || 
+                          import.meta.env.VITE_VALUATION_API_URL || 
+                          'https://upswitch-valuation-engine-production.up.railway.app';
+      
+      // ✅ Add timeout handling
+      const timeoutId = setTimeout(() => {
+        if (abortControllerRef.current) {
+          abortControllerRef.current.abort();
+        }
+      }, 10000); // 10 second timeout
+      
+      try {
+        // Call backend to get intelligent first question
+        const response = await fetch(`${API_BASE_URL}/api/v1/intelligent-conversation/start`, {
+          method: 'POST',
+          signal: abortControllerRef.current?.signal, // ✅ Cancellable
+          headers: {
+            'Content-Type': 'application/json',
+            ...(userId ? { 'Authorization': `Bearer ${userId}` } : {})
+          },
+          body: JSON.stringify({
+            session_id: sessionId,
+            user_id: userId || null,
+            pre_filled_data: userId ? {
+              user_id: userId,
+              company_name: user?.company_name,
+              business_type: user?.business_type,
+              industry: user?.industry,
+              founded_year: user?.founded_year,
+              years_in_operation: user?.years_in_operation,
+              employee_count_range: user?.employee_count_range,
+              city: user?.city,
+              country: user?.country,
+              company_description: user?.company_description
+            } : null
+          })
+        });
+        
+        clearTimeout(timeoutId); // Clear timeout on success
+        
+        // ✅ MUST CHECK STATUS
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+          throw new Error(`Backend initialization failed: ${response.status} - ${errorData.error || errorData.detail || 'Unknown error'}`);
+        }
+        
+        const data = await response.json();
+        
+        // ✅ VALIDATE RESPONSE STRUCTURE
+        if (!data.ai_message || !data.field_name) {
+          throw new Error('Invalid response structure from backend');
+        }
+        
+        // ✅ Check if still mounted
+        if (!abortControllerRef.current?.signal.aborted) {
+          const timeToFirstQuestion = Date.now() - startTime;
           
-          // Get API base URL from config
-          const API_BASE_URL = import.meta.env.VITE_VALUATION_ENGINE_URL || 
-                              import.meta.env.VITE_VALUATION_API_URL || 
-                              'https://upswitch-valuation-engine-production.up.railway.app';
-          
-          // Call backend to get intelligent first question
-          const response = await fetch(`${API_BASE_URL}/api/v1/intelligent-conversation/start`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              ...(userId ? { 'Authorization': `Bearer ${userId}` } : {})
-            },
-            body: JSON.stringify({
-              session_id: sessionId,
-              user_id: userId || null,
-              pre_filled_data: userId ? {
-                // Include any profile data from AuthContext
-                user_id: userId,
-                // Add other profile fields if available
-              } : null
-            })
+          // Log successful initialization
+          chatLogger.info('Conversation initialized successfully', {
+            sessionId,
+            userId,
+            isAuthenticated: !!userId,
+            firstField: data.field_name,
+            backendDriven: true,
+            attempt,
+            timeToFirstQuestionMs: timeToFirstQuestion
           });
           
-          const data = await response.json();
+          // ✅ Track success analytics
+          chatLogger.info('conversation_initialized', {
+            session_id: sessionId,
+            user_id: userId,
+            is_authenticated: !!userId,
+            time_to_first_question_ms: timeToFirstQuestion,
+            backend_driven: true,
+            first_field: data.field_name,
+            attempt,
+            has_profile_data: !!(user?.company_name || user?.business_type || user?.industry)
+          });
           
-          // Add backend's intelligent first message
           addMessage({
             type: 'ai',
             content: data.ai_message,
@@ -452,26 +513,128 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
               conversation_turn: 1
             }
           });
+        }
+        
+      } catch (error) {
+        clearTimeout(timeoutId); // Clear timeout on error
+        
+        if (error instanceof Error && error.name === 'AbortError') {
+          chatLogger.info('Initialization cancelled', { sessionId, userId });
+          return;
+        }
+        
+        // ✅ Handle timeout specifically
+        if (error instanceof Error && error.name === 'AbortError' && abortControllerRef.current?.signal.aborted) {
+          chatLogger.warn('Initialization timed out', { sessionId, userId, timeoutMs: 10000 });
           
-        } catch (error) {
-          console.error('Failed to initialize conversation:', error);
-          // Fallback to simple message if backend fails
+          // Show timeout message
+          if (!abortControllerRef.current?.signal.aborted) {
+            addMessage({
+              type: 'ai',
+              content: 'Sorry, the connection is taking too long. Let me start with a simple question: What type of business do you run?',
+              isComplete: true,
+              metadata: { collected_field: 'business_type' }
+            });
+          }
+          return;
+        }
+        
+        // ✅ Retry logic with exponential backoff
+        if (attempt < maxAttempts) {
+          const delay = Math.min(1000 * Math.pow(2, attempt - 1), 5000);
+          chatLogger.warn(`Initialization attempt ${attempt} failed, retrying in ${delay}ms`, {
+            sessionId,
+            userId,
+            error: error instanceof Error ? error.message : 'Unknown error',
+            nextAttempt: attempt + 1,
+            maxAttempts
+          });
+          
+          await new Promise(resolve => setTimeout(resolve, delay));
+          return initializeWithRetry(attempt + 1, maxAttempts);
+        }
+        
+        // ✅ All retries failed - show fallback
+        const timeElapsed = Date.now() - startTime;
+        
+        chatLogger.error('All initialization attempts failed', {
+          error: error instanceof Error ? error.message : 'Unknown error',
+          sessionId,
+          userId,
+          stack: error instanceof Error ? error.stack : undefined,
+          errorType: error instanceof Error ? error.name : 'Unknown',
+          totalAttempts: attempt,
+          timeElapsedMs: timeElapsed
+        });
+        
+        // ✅ Track failure analytics
+        chatLogger.error('conversation_initialization_failed', {
+          session_id: sessionId,
+          user_id: userId,
+          error_type: error instanceof Error ? error.name : 'Unknown',
+          error_message: error instanceof Error ? error.message : 'Unknown error',
+          time_elapsed_ms: timeElapsed,
+          fallback_used: true,
+          total_attempts: attempt,
+          has_profile_data: !!(user?.company_name || user?.business_type || user?.industry)
+        });
+        
+        // ✅ Check if still mounted before fallback
+        if (!abortControllerRef.current?.signal.aborted) {
           addMessage({
             type: 'ai',
             content: 'Welcome! Let me help you value your business. What type of business do you run?',
             isComplete: true,
-            metadata: {
-              collected_field: 'business_type'
-            }
+            metadata: { collected_field: 'business_type' }
           });
-        } finally {
+        }
+      } finally {
+        clearTimeout(timeoutId); // Ensure timeout is always cleared
+        if (!abortControllerRef.current?.signal.aborted) {
           setIsInitializing(false);
         }
       }
-    };
+    } catch (error) {
+      chatLogger.error('Unexpected error in initialization retry logic', {
+        error: error instanceof Error ? error.message : 'Unknown error',
+        sessionId,
+        userId,
+        stack: error instanceof Error ? error.stack : undefined
+      });
+      
+      // Final fallback
+      if (!abortControllerRef.current?.signal.aborted) {
+        addMessage({
+          type: 'ai',
+          content: 'Welcome! Let me help you value your business. What type of business do you run?',
+          isComplete: true,
+          metadata: { collected_field: 'business_type' }
+        });
+        setIsInitializing(false);
+      }
+    }
+  }, [sessionId, userId, addMessage]);
+
+  // Initialize conversation with backend - Fixed to prevent infinite loop
+  useEffect(() => {
+    // Prevent double initialization
+    if (hasInitializedRef.current) return;
+    if (messages.length > 0) return;
     
-    initializeConversation();
-  }, [messages.length, sessionId, userId, addMessage, isInitializing]);
+    hasInitializedRef.current = true;
+    
+    // Create abort controller for cleanup
+    abortControllerRef.current = new AbortController();
+    
+    initializeWithRetry();
+    
+    // Cleanup function
+    return () => {
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+    };
+  }, [sessionId, initializeWithRetry]); // ✅ Only sessionId - stable dependency
 
   // Cleanup on unmount
   useEffect(() => {

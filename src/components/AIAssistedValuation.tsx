@@ -297,15 +297,13 @@ export const AIAssistedValuation: React.FC<AIAssistedValuationProps> = ({ report
         flowType: 'ai-guided'
       });
 
-      // Update frontend credit count for guests (backend has already deducted)
-      if (!isAuthenticated) {
-        const currentCredits = guestCreditService.getCredits();
-        if (currentCredits > 0) {
-          guestCreditService.useCredit(); // Sync with backend deduction
-          chatLogger.info('Frontend credit count synced with backend', { 
-            remainingCredits: guestCreditService.getCredits()
-          });
-        }
+      // Update frontend credit count using backend's creditsRemaining
+      if (!isAuthenticated && (backendResult as any).creditsRemaining !== undefined) {
+        const creditsRemaining = (backendResult as any).creditsRemaining;
+        guestCreditService.setCredits(creditsRemaining);
+        chatLogger.info('Frontend credit count synced with backend', { 
+          remainingCredits: creditsRemaining
+        });
       }
 
       setValuationResult(backendResult);

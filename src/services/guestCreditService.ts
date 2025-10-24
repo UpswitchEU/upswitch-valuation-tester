@@ -53,6 +53,13 @@ export const guestCreditService = {
   },
   
   /**
+   * Set credit count directly (for backend synchronization)
+   */
+  setCredits(count: number): void {
+    localStorage.setItem(GUEST_CREDITS_KEY, Math.max(0, count).toString());
+  },
+  
+  /**
    * Get credit status for display
    */
   getCreditStatus(): {

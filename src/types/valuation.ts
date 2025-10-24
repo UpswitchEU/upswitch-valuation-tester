@@ -126,6 +126,7 @@ export interface ValuationResponse {
   company_name: string;
   timestamp?: string;
   valuation_date?: string;
+  creditsRemaining?: number; // Added for backend credit synchronization
   
   // Final results
   equity_value_low: number;
