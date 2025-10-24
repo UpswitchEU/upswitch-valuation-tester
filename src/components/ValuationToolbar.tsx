@@ -218,7 +218,7 @@ export const ValuationToolbar: React.FC<ValuationToolbarProps> = ({
                 title="Refresh"
                 disabled={isGenerating}
               >
-                <RefreshCw className={`w-4 h-4 ${isGenerating ? 'animate-spin' : ''}`} />
+                <RefreshCw className="w-4 h-4" />
               </button>
               <button
                 onClick={onDownload}
