@@ -148,16 +148,24 @@ export const useValuationStore = create<ValuationStore>((set, get) => ({
       // Ensure recurring revenue percentage is between 0 and 1
       const recurringRevenue = Math.min(Math.max(formData.recurring_revenue_percentage || 0.0, 0.0), 1.0);
       
+      // Validate required fields and ensure proper data types
+      const companyName = formData.company_name?.trim() || 'Unknown Company';
+      const countryCode = (formData.country_code || 'BE').toUpperCase().substring(0, 2);
+      const industry = formData.industry || 'services';
+      const businessModel = formData.business_model || 'other';
+      const revenue = Math.max(Number(formData.revenue) || 100000, 1); // Ensure positive revenue
+      const ebitda = Number(formData.ebitda) || 20000;
+      
       const request: ValuationRequest = {
-        company_name: formData.company_name,
-        country_code: formData.country_code || 'BE',
-        industry: formData.industry,
-        business_model: formData.business_model || 'other',
+        company_name: companyName,
+        country_code: countryCode,
+        industry: industry,
+        business_model: businessModel,
         founding_year: foundingYear,
         current_year_data: {
           year: currentYear,
-          revenue: Number(formData.revenue) || 0, // Ensure number type
-          ebitda: Number(formData.ebitda) || 0, // Ensure number type
+          revenue: revenue, // Ensure positive number
+          ebitda: ebitda,
           // Include optional fields if present (ensure they're non-negative where required)
           ...(formData.current_year_data?.total_assets && formData.current_year_data.total_assets >= 0 && { total_assets: Number(formData.current_year_data.total_assets) }),
           ...(formData.current_year_data?.total_debt && formData.current_year_data.total_debt >= 0 && { total_debt: Number(formData.current_year_data.total_debt) }),
@@ -167,14 +175,14 @@ export const useValuationStore = create<ValuationStore>((set, get) => ({
           ? formData.historical_years_data.map(year => ({
               ...year,
               year: Math.min(Math.max(Number(year.year), 2000), 2100),
-              revenue: Number(year.revenue) || 0,
+              revenue: Math.max(Number(year.revenue) || 0, 1), // Ensure positive revenue
               ebitda: Number(year.ebitda) || 0,
             }))
-          : (formData.revenue && formData.revenue > 0 && formData.ebitda && formData.ebitda > 0)
+          : (revenue > 0 && ebitda !== 0)
             ? [{
                 year: Math.min(currentYear - 1, 2100),
-                revenue: Number(formData.revenue) * 0.9, // Assume 10% growth
-                ebitda: Number(formData.ebitda) * 0.9,
+                revenue: Math.max(revenue * 0.9, 1), // Assume 10% growth, ensure positive
+                ebitda: ebitda * 0.9,
               }]
             : [], // Don't send historical data if current data is invalid
         number_of_employees: formData.number_of_employees && formData.number_of_employees >= 0 ? formData.number_of_employees : undefined,

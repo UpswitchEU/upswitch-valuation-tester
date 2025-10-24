@@ -66,6 +66,20 @@ class BackendAPI {
     if (!response.ok) {
       const errorText = await response.text();
       console.error('Python engine error response:', errorText);
+      
+      // Try to parse JSON error for better debugging
+      try {
+        const errorJson = JSON.parse(errorText);
+        console.error('Python engine validation errors:', errorJson);
+        
+        if (errorJson.errors && Array.isArray(errorJson.errors)) {
+          const validationErrors = errorJson.errors.map((err: any) => `${err.field}: ${err.message}`).join(', ');
+          throw new Error(`Validation failed: ${validationErrors}`);
+        }
+      } catch (parseError) {
+        // If not JSON, use the raw error text
+      }
+      
       throw new Error(`Python engine error: ${response.status} ${response.statusText} - ${errorText}`);
     }
     
