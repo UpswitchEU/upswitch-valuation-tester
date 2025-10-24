@@ -39,75 +39,70 @@ class BackendAPI {
 
   /**
    * Manual valuation - FREE (no credit consumption)
-   * Updated to call Python engine directly
+   * Routes through Node.js backend for analytics tracking
    */
   async calculateManualValuation(data: ValuationRequest): Promise<ValuationResponse> {
-    // Call Python valuation engine directly
-    const pythonEngineUrl = import.meta.env.VITE_PYTHON_ENGINE_URL || 'https://upswitch-valuation-engine-production.up.railway.app';
-    
-    // Debug logging
-    console.log('Manual valuation request data:', {
-      company_name: data.company_name,
-      revenue: data.current_year_data?.revenue,
-      ebitda: data.current_year_data?.ebitda,
-      revenueType: typeof data.current_year_data?.revenue,
-      ebitdaType: typeof data.current_year_data?.ebitda,
-      fullData: data
-    });
-    
-    const response = await fetch(`${pythonEngineUrl}/api/v1/valuation/calculate`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(data)
-    });
-    
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error('Python engine error response:', errorText);
+    try {
+      console.log('Manual valuation request data:', {
+        company_name: data.company_name,
+        revenue: data.current_year_data?.revenue,
+        ebitda: data.current_year_data?.ebitda,
+        revenueType: typeof data.current_year_data?.revenue,
+        ebitdaType: typeof data.current_year_data?.ebitda,
+        fullData: data
+      });
+
+      // Call Node.js backend which handles logging and proxies to Python engine
+      const response = await this.client.post('/api/valuations/calculate/manual', data);
       
-      // Try to parse JSON error for better debugging
-      try {
-        const errorJson = JSON.parse(errorText);
-        console.error('Python engine validation errors:', errorJson);
-        
-        if (errorJson.errors && Array.isArray(errorJson.errors)) {
-          const validationErrors = errorJson.errors.map((err: any) => `${err.field}: ${err.message}`).join(', ');
-          throw new Error(`Validation failed: ${validationErrors}`);
-        }
-      } catch (parseError) {
-        // If not JSON, use the raw error text
+      console.log('Backend response for manual valuation:', response.data);
+      return response.data;
+    } catch (error: any) {
+      console.error('Manual valuation failed:', error);
+      
+      // Enhanced error handling
+      if (error.response?.data?.error) {
+        throw new Error(`Backend error: ${error.response.data.error}`);
+      } else if (error.response?.status) {
+        throw new Error(`Backend error: ${error.response.status} ${error.response.statusText}`);
+      } else {
+        throw new Error(`Manual valuation failed: ${error.message}`);
       }
-      
-      throw new Error(`Python engine error: ${response.status} ${response.statusText} - ${errorText}`);
     }
-    
-    const result = await response.json();
-    console.log('Python engine response:', result);
-    return result;
   }
 
   /**
    * AI-guided valuation - PREMIUM (requires 1 credit)
-   * Updated to call Python engine directly
+   * Routes through Node.js backend for credit validation and analytics
    */
   async calculateAIGuidedValuation(data: ValuationRequest): Promise<ValuationResponse> {
-    // Call Python valuation engine directly
-    const pythonEngineUrl = import.meta.env.VITE_PYTHON_ENGINE_URL || 'https://upswitch-valuation-engine-production.up.railway.app';
-    const response = await fetch(`${pythonEngineUrl}/api/v1/valuation/calculate`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(data)
-    });
-    
-    if (!response.ok) {
-      throw new Error(`Python engine error: ${response.status} ${response.statusText}`);
+    try {
+      console.log('AI-guided valuation request data:', {
+        company_name: data.company_name,
+        revenue: data.current_year_data?.revenue,
+        ebitda: data.current_year_data?.ebitda,
+        fullData: data
+      });
+
+      // Call Node.js backend which handles credit checks and proxies to Python engine
+      const response = await this.client.post('/api/valuations/calculate/ai-guided', data);
+      
+      console.log('Backend response for AI-guided valuation:', response.data);
+      return response.data;
+    } catch (error: any) {
+      console.error('AI-guided valuation failed:', error);
+      
+      // Enhanced error handling
+      if (error.response?.data?.error) {
+        throw new Error(`Backend error: ${error.response.data.error}`);
+      } else if (error.response?.status === 402) {
+        throw new Error('Insufficient credits for AI-guided valuation');
+      } else if (error.response?.status) {
+        throw new Error(`Backend error: ${error.response.status} ${error.response.statusText}`);
+      } else {
+        throw new Error(`AI-guided valuation failed: ${error.message}`);
+      }
     }
-    
-    return response.json();
   }
 
   /**

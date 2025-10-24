@@ -119,7 +119,12 @@ export const safeUpdateMessages = (
 };
 
 /**
+ * @deprecated Use backend-driven conversation initialization instead
  * Create welcome message with AI branding
+ * 
+ * This function is deprecated because we now use the backend /start endpoint
+ * to generate intelligent, personalized first questions based on user profile
+ * and the 5-phase conversation flow.
  */
 export const createWelcomeMessage = (aiConfig?: any): Message => {
   const expertTitle = aiConfig?.branding?.expertTitle?.toLowerCase() || 'ai valuation expert';

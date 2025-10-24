@@ -249,15 +249,16 @@ export const AIAssistedValuation: React.FC<AIAssistedValuationProps> = ({ report
     });
     
     try {
-      // DEDUCT CREDIT FIRST (for guests) - before processing valuation
+      // Credit validation and deduction now handled by backend
+      // Frontend only needs to check localStorage for UI display
       if (!isAuthenticated) {
-        const creditUsed = guestCreditService.useCredit();
-        if (!creditUsed) {
-          chatLogger.error('Failed to deduct guest credit - no credits available');
+        const hasCredits = guestCreditService.hasCredits();
+        if (!hasCredits) {
+          chatLogger.error('No credits available for guest user');
           setError('No credits available. Please sign up to get more credits.');
           return;
         }
-        chatLogger.info('Guest credit deducted before valuation', { 
+        chatLogger.info('Guest user has credits, proceeding with backend validation', { 
           remainingCredits: guestCreditService.getCredits() 
         });
       }
@@ -296,6 +297,17 @@ export const AIAssistedValuation: React.FC<AIAssistedValuationProps> = ({ report
         flowType: 'ai-guided'
       });
 
+      // Update frontend credit count for guests (backend has already deducted)
+      if (!isAuthenticated) {
+        const currentCredits = guestCreditService.getCredits();
+        if (currentCredits > 0) {
+          guestCreditService.useCredit(); // Sync with backend deduction
+          chatLogger.info('Frontend credit count synced with backend', { 
+            remainingCredits: guestCreditService.getCredits()
+          });
+        }
+      }
+
       setValuationResult(backendResult);
       setStage('results');
       
@@ -309,14 +321,11 @@ export const AIAssistedValuation: React.FC<AIAssistedValuationProps> = ({ report
         flowType: 'ai-guided'
       });
       
-      // REFUND CREDIT ON ERROR (for guests)
-      if (!isAuthenticated) {
-        const currentCredits = guestCreditService.getCredits();
-        localStorage.setItem('upswitch_guest_credits', (currentCredits + 1).toString());
-        chatLogger.info('Guest credit refunded due to error', { 
-          refundedCredits: 1,
-          totalCredits: currentCredits + 1
-        });
+      // Handle credit-related errors
+      if (error instanceof Error && error.message.includes('Insufficient credits')) {
+        setError('You need 1 credit to run this valuation. Please sign up to get more credits.');
+        setShowOutOfCreditsModal(true);
+        return;
       }
       
       // Fallback to original result if backend fails

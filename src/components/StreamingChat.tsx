@@ -317,32 +317,7 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
   }, [sessionId]);
 
   // A/B Testing functionality
-  const hashString = (str: string): number => {
-    let hash = 0;
-    for (let i = 0; i < str.length; i++) {
-      const char = str.charCodeAt(i);
-      hash = ((hash << 5) - hash) + char;
-      hash = hash & hash; // Convert to 32bit integer
-    }
-    return Math.abs(hash);
-  };
 
-  const useABTest = useCallback((testName: string): 'A' | 'B' | 'C' => {
-    const hash = hashString(`${userId || 'anonymous'}_${testName}`);
-    const variant = hash % 3;
-    const variantMap: { [key: number]: 'A' | 'B' | 'C' } = { 0: 'A', 1: 'B', 2: 'C' };
-    const selectedVariant = variantMap[variant];
-    
-    // Track A/B test assignment
-    chatLogger.info('A/B test assigned', {
-      testName,
-      variant: selectedVariant,
-      userId: userId || 'anonymous',
-      sessionId
-    });
-    
-    return selectedVariant;
-  }, [userId, sessionId]);
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const eventSourceRef = useRef<EventSource | null>(null);
@@ -430,34 +405,73 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
     chatLogger.debug('Messages state updated', { count: messages.length });
   }, [messages]);
 
-  // Initialize with welcome message (A/B tested)
+  // Backend-driven conversation initialization
+  const [isInitializing, setIsInitializing] = useState(true);
+
+  // Initialize conversation with backend
   useEffect(() => {
-    if (messages.length === 0) {
-      const greetingVariant = useABTest('greeting_message');
-      
-      const greetingMessages = {
-        A: `Hi! I'm your AI valuation expert. Let's start with your company name.`,
-        B: `Welcome! I'll help you value your business. What's your company name?`,
-        C: `Let's value your business. What's your company name?`
-      };
-      
-      // ✅ Use addMessage() instead of setMessages() for proper analytics tracking
-      addMessage({
-        type: 'ai',
-        content: greetingMessages[greetingVariant],
-        isComplete: true,
-        metadata: {
-          help_text: "Use your legal business name as it appears on official documents",
-          session_phase: 'onboarding',
-          conversation_turn: 1,
-          ab_test: {
-            test_name: 'greeting_message',
-            variant: greetingVariant
-          }
+    const initializeConversation = async () => {
+      if (messages.length === 0 && isInitializing) {
+        try {
+          setIsInitializing(true);
+          
+          // Get API base URL from config
+          const API_BASE_URL = import.meta.env.VITE_VALUATION_ENGINE_URL || 
+                              import.meta.env.VITE_VALUATION_API_URL || 
+                              'https://upswitch-valuation-engine-production.up.railway.app';
+          
+          // Call backend to get intelligent first question
+          const response = await fetch(`${API_BASE_URL}/api/v1/intelligent-conversation/start`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              ...(userId ? { 'Authorization': `Bearer ${userId}` } : {})
+            },
+            body: JSON.stringify({
+              session_id: sessionId,
+              user_id: userId || null,
+              pre_filled_data: userId ? {
+                // Include any profile data from AuthContext
+                user_id: userId,
+                // Add other profile fields if available
+              } : null
+            })
+          });
+          
+          const data = await response.json();
+          
+          // Add backend's intelligent first message
+          addMessage({
+            type: 'ai',
+            content: data.ai_message,
+            isComplete: true,
+            metadata: {
+              collected_field: data.field_name,
+              help_text: data.help_text,
+              session_phase: 'data_collection',
+              conversation_turn: 1
+            }
+          });
+          
+        } catch (error) {
+          console.error('Failed to initialize conversation:', error);
+          // Fallback to simple message if backend fails
+          addMessage({
+            type: 'ai',
+            content: 'Welcome! Let me help you value your business. What type of business do you run?',
+            isComplete: true,
+            metadata: {
+              collected_field: 'business_type'
+            }
+          });
+        } finally {
+          setIsInitializing(false);
         }
-      });
-    }
-  }, [messages.length, addMessage]);  // ✅ Add addMessage to dependencies
+      }
+    };
+    
+    initializeConversation();
+  }, [messages.length, sessionId, userId, addMessage, isInitializing]);
 
   // Cleanup on unmount
   useEffect(() => {
@@ -1036,6 +1050,24 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
 
       {/* Messages */}
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
+        {/* Loading state while backend initializes */}
+        {isInitializing && messages.length === 0 && (
+          <div className="flex justify-start">
+            <div className="max-w-[80%] mr-auto">
+              <div className="flex items-start gap-3">
+                <div className="flex-shrink-0 w-8 h-8 bg-primary-600/20 rounded-full flex items-center justify-center animate-pulse">
+                  <Bot className="w-4 h-4 text-primary-400" />
+                </div>
+                <div className="rounded-lg px-4 py-2 bg-zinc-700/50 text-white">
+                  <div className="whitespace-pre-wrap text-sm text-zinc-400">
+                    Preparing your personalized valuation experience...
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+        
         {messages.map((message) => (
           <div
             key={message.id}

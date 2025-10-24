@@ -89,7 +89,8 @@ export const ValuationReport: React.FC = () => {
 
   // Handle flow selection
   const handleFlowSelection = async (flow: 'manual' | 'ai-guided') => {
-    // Check credits for AI-guided flow (guests)
+    // Credit validation now handled by backend
+    // Frontend only shows UI feedback for guests
     if (flow === 'ai-guided' && !isAuthenticated) {
       const hasCredits = guestCreditService.hasCredits();
       if (!hasCredits) {
