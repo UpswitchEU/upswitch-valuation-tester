@@ -282,18 +282,6 @@ export const ValuationForm: React.FC = () => {
         />
       </div>
 
-      {/* Credit Indicator - Updated for manual flow */}
-      <div className="flex items-center gap-2 text-sm text-green-400 mb-4">
-        <div className="flex items-center gap-1 px-2 py-1 bg-green-900/20 border border-green-700/30 rounded">
-          <span className="text-green-400">✓</span>
-          <span className="text-green-300 font-medium">FREE</span>
-        </div>
-        <span>Manual valuation - No credit cost</span>
-        <a href="/ai-guided" className="text-primary-400 hover:underline ml-2">
-          Try premium AI-guided flow →
-        </a>
-      </div>
-
       {/* Submit Button */}
       <div className="flex justify-end space-x-4">
         <button
