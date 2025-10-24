@@ -30,8 +30,8 @@ export const HomePage: React.FC = () => {
   const handleMethodClick = (method: typeof valuationMethods[0]) => {
     if (method.disabled) return;
     
-    // Open /reports/new in new tab on desktop only (>= 1024px)
-    if (method.id === 'reports' && window.innerWidth >= 1024) {
+    // Open AI-Guided Valuation in new tab on desktop only (>= 1024px)
+    if (method.id === 'ai-guided' && window.innerWidth >= 1024) {
       window.open(method.path, '_blank', 'noopener,noreferrer');
     } else {
       navigate(method.path);
@@ -139,8 +139,8 @@ export const HomePage: React.FC = () => {
                   </div>
                 )}
 
-                {/* External Link Icon for Instant on Desktop */}
-                {method.id === 'instant' && !isDisabled && (
+                {/* External Link Icon for AI-Guided on Desktop */}
+                {method.id === 'ai-guided' && !isDisabled && (
                   <div className="absolute top-3 left-3 sm:top-4 sm:left-4 opacity-0 group-hover:opacity-100 transition-opacity duration-200 hidden lg:block">
                     <ExternalLink className="w-4 h-4 text-zinc-400 group-hover:text-primary-400" />
                   </div>

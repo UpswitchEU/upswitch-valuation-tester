@@ -53,7 +53,7 @@ export const ManualValuationFlow: React.FC<ManualValuationFlowProps> = ({ onComp
   };
 
   return (
-    <>
+    <div className="flex flex-col h-full overflow-hidden">
       {/* Ilara-style Toolbar */}
       <div className="border-b border-zinc-800 bg-zinc-900/50 backdrop-blur-sm px-3 sm:px-4 md:px-6 py-3 md:py-4">
         <div className="flex items-center justify-between gap-2">
@@ -170,6 +170,6 @@ export const ManualValuationFlow: React.FC<ManualValuationFlowProps> = ({ onComp
           )}
         </div>
       </div>
-    </>
+    </div>
   );
 };

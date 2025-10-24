@@ -669,15 +669,17 @@ export const AIAssistedValuation: React.FC<AIAssistedValuationProps> = ({ report
         >
           {/* Tab Content */}
           {activeTab === 'preview' && (
-            liveHtmlReport ? (
-              <LiveValuationReport
-                htmlContent={liveHtmlReport}
-                isGenerating={stage === 'chat'}
-                progress={reportProgress}
-              />
-            ) : (
-              <ValuationEmptyState />
-            )
+            <div className="flex flex-col h-full">
+              {liveHtmlReport ? (
+                <LiveValuationReport
+                  htmlContent={liveHtmlReport}
+                  isGenerating={stage === 'chat'}
+                  progress={reportProgress}
+                />
+              ) : (
+                <ValuationEmptyState />
+              )}
+            </div>
           )}
 
           {activeTab === 'source' && (
