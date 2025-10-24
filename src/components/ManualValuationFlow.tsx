@@ -91,18 +91,6 @@ export const ManualValuationFlow: React.FC<ManualValuationFlowProps> = ({ onComp
         </div>
       </div>
 
-      {/* FREE Tier Badge */}
-      <div className="mx-2 sm:mx-4 mb-2">
-        <div className="flex items-center gap-2 p-3 bg-green-900/20 border border-green-700/30 rounded-lg">
-          <div className="w-6 h-6 bg-green-500/20 rounded-full flex items-center justify-center">
-            <span className="text-green-400 text-sm">✓</span>
-          </div>
-          <div>
-            <p className="text-sm font-semibold text-green-300">FREE - No Credit Cost</p>
-            <p className="text-xs text-green-400">Manual entry • Try our AI-guided flow for enhanced accuracy</p>
-          </div>
-        </div>
-      </div>
 
       {/* Full-screen Split Panel - Ilara Style */}
       <div className="flex flex-col lg:flex-row flex-1 overflow-hidden mx-2 sm:mx-4 my-2 sm:my-4 rounded-lg border border-zinc-800">
@@ -164,7 +152,7 @@ export const ManualValuationFlow: React.FC<ManualValuationFlowProps> = ({ onComp
         {/* Right Panel: Report Preview (40% on desktop, full width on mobile below form) */}
         <div className="h-full min-h-[400px] lg:min-h-0 flex flex-col bg-white overflow-y-auto w-full lg:w-[40%] border-t lg:border-t-0 border-zinc-800">
           {stage === 'form' && !result && (
-            <div className="flex flex-col items-center justify-center h-full p-6 sm:p-8 text-center">
+            <div className="flex flex-col items-center justify-center flex-1 p-6 sm:p-8 text-center">
               <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-zinc-100 flex items-center justify-center mb-3 sm:mb-4">
                 <TrendingUp className="w-6 h-6 sm:w-8 sm:h-8 text-zinc-400" />
               </div>
