@@ -1,4 +1,4 @@
-import React, { useCallback, useState, useEffect, useMemo } from 'react';
+import React, { useCallback, useState, useEffect } from 'react';
 import { useValuationStore } from '../store/useValuationStore';
 // import { useReportsStore } from '../store/useReportsStore'; // Deprecated: Now saving to database
 import { useAuth } from '../hooks/useAuth';
@@ -13,7 +13,6 @@ import { generalLogger } from '../utils/logger';
  * ValuationForm Component
  * 
  * Main form for entering business valuation data.
- * Supports 3 tiers: Quick, Standard, and Professional.
  */
 export const ValuationForm: React.FC = () => {
   const { formData, updateFormData, calculateValuation, quickValuation, isCalculating, prefillFromBusinessCard } = useValuationStore();
@@ -80,150 +79,13 @@ export const ValuationForm: React.FC = () => {
   //   }
   // }, [result?.valuation_id]);
 
-  // Calculate data quality score
-  const calculateDataQuality = () => {
-    let score = 0;
-    let total = 0;
-    
-    // Basic required fields (40 points)
-    if (formData.company_name) { score += 5; total += 5; }
-    if (formData.country_code) { score += 5; total += 5; }
-    if (formData.industry) { score += 10; total += 10; }
-    if (formData.business_model) { score += 10; total += 10; }
-    if (formData.founding_year) { score += 5; total += 5; }
-    if (formData.revenue && formData.revenue > 0) { score += 5; total += 5; }
-    
-    // Optional company details (5 points)
-    if (formData.number_of_employees && formData.number_of_employees > 0) { score += 5; total += 5; }
-    
-    // Current year financials (30 points)
-    if (formData.ebitda) { score += 10; total += 10; }
-    if (formData.current_year_data?.net_income) { score += 5; total += 5; }
-    if (formData.current_year_data?.total_assets) { score += 5; total += 5; }
-    if (formData.current_year_data?.total_debt) { score += 5; total += 5; }
-    if (formData.current_year_data?.cash) { score += 5; total += 5; }
-    
-    // Historical data (25 points)
-    const hasHistorical = formData.historical_years_data && formData.historical_years_data.length > 0;
-    if (hasHistorical) {
-      const years = formData.historical_years_data?.length || 0;
-      score += Math.min(years * 8, 25);
-      total += 25;
-    } else {
-      total += 25;
-    }
-    
-    return total > 0 ? Math.round((score / total) * 100) : 0;
-  };
 
-  const dataQuality = useMemo(() => calculateDataQuality(), [
-    formData.company_name,
-    formData.country_code,
-    formData.industry,
-    formData.business_model,
-    formData.founding_year,
-    formData.revenue,
-    formData.number_of_employees,
-    formData.ebitda,
-    formData.current_year_data?.net_income,
-    formData.current_year_data?.total_assets,
-    formData.current_year_data?.total_debt,
-    formData.current_year_data?.cash,
-    formData.historical_years_data?.length
-  ]);
-  
-  const hasMinimumData = useMemo(() => 
-    formData.revenue && formData.ebitda && formData.industry && formData.country_code,
-    [formData.revenue, formData.ebitda, formData.industry, formData.country_code]
-  );
 
   // Historical data is now handled by HistoricalDataInputs component
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
-      {/* Data Quality Tip */}
-      <div className="bg-gradient-to-r from-blue-900/30 to-indigo-900/30 rounded-lg border border-blue-700/50 p-4">
-        <div className="flex items-start">
-          <div className="flex-shrink-0">
-            <svg className="h-5 w-5 text-blue-400 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
-              <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
-            </svg>
-          </div>
-          <div className="ml-3 flex-1">
-            <h3 className="text-sm font-semibold text-blue-300">💡 Maximize Accuracy</h3>
-            <p className="text-sm text-blue-200 mt-1">
-              More complete data leads to higher valuation accuracy. Add historical years and complete financial details for professional-grade results.
-            </p>
-          </div>
-        </div>
-      </div>
 
-      {/* Data Quality Indicator */}
-      {hasMinimumData && (
-        <div className="bg-zinc-800 rounded-lg border border-zinc-700 p-4">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-sm font-semibold text-zinc-300">Data Completeness</span>
-            <span className={`text-lg font-bold ${
-              dataQuality >= 80 ? 'text-green-400' : 
-              dataQuality >= 60 ? 'text-blue-400' : 
-              dataQuality >= 40 ? 'text-yellow-400' : 'text-red-400'
-            }`}>
-              {dataQuality}%
-            </span>
-          </div>
-          <div className="w-full bg-zinc-700 rounded-full h-2.5 mb-3">
-            <div 
-              className={`h-2.5 rounded-full transition-all duration-500 ${
-                dataQuality >= 80 ? 'bg-gradient-to-r from-green-400 to-green-600' : 
-                dataQuality >= 60 ? 'bg-gradient-to-r from-blue-400 to-blue-600' : 
-                dataQuality >= 40 ? 'bg-gradient-to-r from-yellow-400 to-yellow-600' : 
-                'bg-gradient-to-r from-red-400 to-red-600'
-              }`}
-              style={{ width: `${dataQuality}%` }}
-            />
-          </div>
-          
-          {/* Contextual Tips */}
-          <div className="text-xs text-zinc-400 space-y-1">
-            {dataQuality < 60 && !formData.historical_years_data?.length && (
-              <p className="flex items-start">
-                <span className="text-yellow-400 mr-1.5">⚠️</span>
-                <span><strong>Add historical data</strong> (3-5 years) to improve accuracy by up to 20%</span>
-              </p>
-            )}
-            {!formData.number_of_employees && dataQuality < 80 && (
-              <p className="flex items-start">
-                <span className="text-blue-400 mr-1.5">💡</span>
-                <span><strong>Add number of employees</strong> to improve company size benchmarking</span>
-              </p>
-            )}
-            {!formData.current_year_data?.total_assets && dataQuality < 80 && (
-              <p className="flex items-start">
-                <span className="text-blue-400 mr-1.5">💡</span>
-                <span><strong>Add balance sheet data</strong> (assets, debt, cash) for full DCF analysis</span>
-              </p>
-            )}
-            {!formData.current_year_data?.net_income && dataQuality < 80 && (
-              <p className="flex items-start">
-                <span className="text-blue-400 mr-1.5">💡</span>
-                <span><strong>Add net income</strong> to enable complete financial metrics</span>
-              </p>
-            )}
-            {dataQuality >= 80 && (
-              <p className="flex items-start">
-                <span className="text-green-400 mr-1.5">✅</span>
-                <span><strong>Excellent data quality!</strong> Ready for professional-grade valuation.</span>
-              </p>
-            )}
-            {dataQuality >= 60 && dataQuality < 80 && (
-              <p className="flex items-start">
-                <span className="text-blue-400 mr-1.5">👍</span>
-                <span><strong>Good data quality.</strong> Add more historical years for even better results.</span>
-              </p>
-            )}
-          </div>
-        </div>
-      )}
 
       {/* Basic Information */}
       <div className="bg-zinc-800 rounded-lg border border-zinc-700 p-6">
