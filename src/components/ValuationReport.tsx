@@ -127,37 +127,11 @@ export const ValuationReport: React.FC = () => {
     }
   };
 
-  // Handle restart
-  const handleRestart = () => {
-    setFlowType(null);
-    setStage('flow-selection');
-    setValuationResult(null);
-  };
 
 
   // Render based on stage
   return (
     <div className="flex h-screen w-screen flex-col overflow-hidden bg-zinc-950">
-      {/* Header with report info */}
-      <div className="flex items-center justify-between p-4 border-b border-zinc-800">
-        <div className="flex items-center gap-4">
-          <h1 className="text-xl font-semibold text-white">
-            Valuation Report
-          </h1>
-          <span className="text-sm text-zinc-400 font-mono">
-            {currentReportId}
-          </span>
-        </div>
-        
-        {stage === 'results' && (
-          <button
-            onClick={handleRestart}
-            className="px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-white rounded-lg transition-colors"
-          >
-            New Valuation
-          </button>
-        )}
-      </div>
       
       {/* Main content area */}
       <div className="flex-1 overflow-hidden">
