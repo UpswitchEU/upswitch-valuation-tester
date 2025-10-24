@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { generateReportId, isValidReportId } from '../utils/reportIdGenerator';
 import UrlGeneratorService from '../services/urlGenerator';
@@ -26,23 +26,8 @@ export const ValuationReport: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [showOutOfCreditsModal, setShowOutOfCreditsModal] = useState(false);
 
-  // Validate and set report ID, then check if report exists
-  useEffect(() => {
-    if (!reportId || !isValidReportId(reportId)) {
-      // Invalid or missing report ID - generate new one
-      const newReportId = generateReportId();
-      navigate(UrlGeneratorService.reportById(newReportId), { replace: true });
-      return;
-    }
-    
-    setCurrentReportId(reportId);
-    
-    // Check if report exists and load state
-    checkReportExists(reportId);
-  }, [reportId, navigate, isAuthenticated]);
-
   // Check if report exists and load appropriate state
-  const checkReportExists = async (reportId: string) => {
+  const checkReportExists = useCallback(async (reportId: string) => {
     try {
       // Try to load existing report from backend
       const response = await reportApiService.getReport(reportId);
@@ -88,7 +73,20 @@ export const ValuationReport: React.FC = () => {
     } else {
       setStage('flow-selection');
     }
-  };
+  }, [isAuthenticated, navigate]);  // Add all dependencies
+
+  // Validate and set report ID, then check if report exists
+  useEffect(() => {
+    if (!reportId || !isValidReportId(reportId)) {
+      // Invalid or missing report ID - generate new one
+      const newReportId = generateReportId();
+      navigate(UrlGeneratorService.reportById(newReportId), { replace: true });
+      return;
+    }
+    
+    setCurrentReportId(reportId);
+    checkReportExists(reportId);
+  }, [reportId, navigate, checkReportExists]);
 
   // Handle flow selection
   const handleFlowSelection = async (flow: 'manual' | 'ai-guided') => {
@@ -136,14 +134,6 @@ export const ValuationReport: React.FC = () => {
     setValuationResult(null);
   };
 
-  // Save partial data during valuation process
-  const savePartialData = async (data: any) => {
-    try {
-      await reportApiService.savePartialData(currentReportId, data);
-    } catch (error) {
-      console.error('Failed to save partial data:', error);
-    }
-  };
 
   // Render based on stage
   return (
@@ -208,7 +198,6 @@ export const ValuationReport: React.FC = () => {
           <ManualValuationFlow 
             reportId={currentReportId}
             onComplete={handleValuationComplete}
-            onSavePartial={savePartialData}
           />
         )}
         
@@ -216,7 +205,6 @@ export const ValuationReport: React.FC = () => {
           <AIAssistedValuation 
             reportId={currentReportId}
             onComplete={handleValuationComplete}
-            onSavePartial={savePartialData}
           />
         )}
         

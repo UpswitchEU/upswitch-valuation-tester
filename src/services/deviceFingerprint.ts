@@ -70,10 +70,24 @@ class DeviceFingerprintService {
       const data = encoder.encode(fingerprintString);
       const hashBuffer = await crypto.subtle.digest('SHA-256', data);
       const hashArray = Array.from(new Uint8Array(hashBuffer));
-      return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+      const fingerprint = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+      
+      // Add entropy validation
+      if (fingerprint.length < 32) {
+        throw new Error('Fingerprint too short - possible tampering');
+      }
+      
+      return fingerprint;
     } else {
       // Fallback for older browsers
-      return this.simpleHash(fingerprintString);
+      const fingerprint = this.simpleHash(fingerprintString);
+      
+      // Add entropy validation
+      if (fingerprint.length < 8) {
+        throw new Error('Fingerprint too short - possible tampering');
+      }
+      
+      return fingerprint;
     }
   }
 
@@ -102,11 +116,14 @@ class DeviceFingerprintService {
       const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
       if (!gl) return '';
 
+      // Cast to WebGLRenderingContext for proper typing
+      const glContext = gl as WebGLRenderingContext;
+      
       return [
-        gl.getParameter(gl.VERSION),
-        gl.getParameter(gl.VENDOR),
-        gl.getParameter(gl.RENDERER),
-        gl.getParameter(gl.SHADING_LANGUAGE_VERSION)
+        glContext.getParameter(glContext.VERSION),
+        glContext.getParameter(glContext.VENDOR),
+        glContext.getParameter(glContext.RENDERER),
+        glContext.getParameter(glContext.SHADING_LANGUAGE_VERSION)
       ].join('|');
     } catch (error) {
       return '';
