@@ -28,8 +28,15 @@ const LegacyRedirect: React.FC = () => {
   
   useEffect(() => {
     const newReportId = generateReportId();
-    // Preserve all URL parameters (query string)
     const searchParams = new URLSearchParams(location.search);
+    
+    // Detect flow type from pathname
+    if (location.pathname === '/manual') {
+      searchParams.set('flow', 'manual');
+    } else if (location.pathname === '/ai-guided') {
+      searchParams.set('flow', 'ai-guided');
+    }
+    
     const newUrl = `${UrlGeneratorService.reportById(newReportId)}${searchParams.toString() ? `?${searchParams.toString()}` : ''}`;
     
     navigate(newUrl, {
@@ -44,11 +51,16 @@ const LegacyRedirect: React.FC = () => {
 // New report redirect component
 const NewReportRedirect: React.FC = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   
   useEffect(() => {
     const newReportId = generateReportId();
-    navigate(UrlGeneratorService.reportById(newReportId), { replace: true });
-  }, [navigate]);
+    // Preserve query parameters when redirecting
+    const searchParams = new URLSearchParams(location.search);
+    const newUrl = `${UrlGeneratorService.reportById(newReportId)}${searchParams.toString() ? `?${searchParams.toString()}` : ''}`;
+    
+    navigate(newUrl, { replace: true });
+  }, [navigate, location]);
   
   return <LoadingFallback />;
 };

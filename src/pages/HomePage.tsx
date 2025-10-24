@@ -42,17 +42,17 @@ export const HomePage: React.FC = () => {
     {
       id: 'reports',
       icon: FileText,
-      title: 'New Valuation Report',
-      description: 'Create a new business valuation with your preferred method',
-      badge: 'New',
+      title: 'AI-Guided Valuation',
+      description: 'Start with AI-powered conversational guidance for your business valuation',
+      badge: 'Recommended',
       badgeColor: 'bg-blue-500/20 text-blue-300 border-blue-500/30',
       features: [
-        'Choose between Manual or AI-Guided',
+        'AI-powered conversational flow',
         'Unique report URL for sharing',
         'Professional-grade analysis',
         'Save and revisit anytime'
       ],
-      path: '/reports/new',
+      path: '/reports/new?flow=ai-guided',
       bgGradient: 'from-primary-900/20 via-blue-900/20 to-cyan-900/20',
       borderColor: 'border-primary-500/30 hover:border-primary-400/50',
       glowColor: 'group-hover:shadow-primary-500/20',

@@ -43,6 +43,27 @@ export const ValuationReport: React.FC = () => {
   // Check if report exists and load appropriate state
   const checkReportExists = async (reportId: string) => {
     try {
+      // Check for flow parameter in URL
+      const searchParams = new URLSearchParams(window.location.search);
+      const flowParam = searchParams.get('flow');
+
+      if (flowParam === 'manual' || flowParam === 'ai-guided') {
+        // Validate credits for AI-guided (guests only)
+        if (flowParam === 'ai-guided' && !isAuthenticated) {
+          const hasCredits = guestCreditService.hasCredits();
+          if (!hasCredits) {
+            setShowOutOfCreditsModal(true);
+            setStage('flow-selection');
+            return;
+          }
+        }
+        
+        // Auto-select flow and skip selection screen
+        setFlowType(flowParam);
+        setStage('data-entry');
+        return;
+      }
+
       // TODO: Implement actual report retrieval
       // For now, always start fresh
       // TODO: Use reportId when implementing report retrieval

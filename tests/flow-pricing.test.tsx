@@ -6,6 +6,7 @@
 
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { BrowserRouter } from 'react-router-dom';
+import { vi } from 'vitest';
 import { ManualValuationFlow } from '../src/components/ManualValuationFlow';
 import { AIAssistedValuation } from '../src/components/AIAssistedValuation';
 import { ValuationForm } from '../src/components/ValuationForm';
@@ -17,7 +18,7 @@ const mockAuth = {
   businessCard: null
 };
 
-jest.mock('../src/hooks/useAuth', () => ({
+vi.mock('../src/hooks/useAuth', () => ({
   useAuth: () => mockAuth
 }));
 
@@ -32,21 +33,21 @@ const mockValuationStore = {
     revenue: 1000000,
     ebitda: 200000
   },
-  updateFormData: jest.fn(),
-  calculateValuation: jest.fn(),
-  quickValuation: jest.fn(),
+  updateFormData: vi.fn(),
+  calculateValuation: vi.fn(),
+  quickValuation: vi.fn(),
   isCalculating: false,
-  prefillFromBusinessCard: jest.fn()
+  prefillFromBusinessCard: vi.fn()
 };
 
-jest.mock('../src/store/useValuationStore', () => ({
+vi.mock('../src/store/useValuationStore', () => ({
   useValuationStore: () => mockValuationStore
 }));
 
 // Mock the backend API
-jest.mock('../src/services/backendApi', () => ({
+vi.mock('../src/services/backendApi', () => ({
   backendAPI: {
-    calculateManualValuation: jest.fn().mockResolvedValue({
+    calculateManualValuation: vi.fn().mockResolvedValue({
       success: true,
       data: {
         valuation_id: 'test-valuation-id',
@@ -55,7 +56,7 @@ jest.mock('../src/services/backendApi', () => ({
         flow_type: 'manual'
       }
     }),
-    calculateInstantValuation: jest.fn().mockResolvedValue({
+    calculateInstantValuation: vi.fn().mockResolvedValue({
       success: true,
       data: {
         valuation_id: 'test-valuation-id',
@@ -69,7 +70,7 @@ jest.mock('../src/services/backendApi', () => ({
 
 describe('Flow Pricing UI', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   describe('Manual Flow - FREE Badge', () => {
