@@ -14,7 +14,7 @@ type Stage = 'loading' | 'flow-selection' | 'data-entry' | 'processing' | 'resul
 export const ValuationReport: React.FC = () => {
   const { reportId } = useParams<{ reportId: string }>();
   const navigate = useNavigate();
-  const { user, isAuthenticated } = useAuth();
+  const { isAuthenticated } = useAuth();
   
   const [currentReportId, setCurrentReportId] = useState<string>('');
   const [flowType, setFlowType] = useState<FlowType>(null);
@@ -42,6 +42,8 @@ export const ValuationReport: React.FC = () => {
     try {
       // TODO: Implement actual report retrieval
       // For now, always start fresh
+      // TODO: Use reportId when implementing report retrieval
+      console.log('Checking report:', reportId);
       // const response = await backendAPI.getReport(reportId);
       // if (response.success) {
       //   // Report exists - load its state
@@ -71,6 +73,12 @@ export const ValuationReport: React.FC = () => {
 
   // Handle flow selection
   const handleFlowSelection = (flow: 'manual' | 'ai-guided') => {
+    // Check authentication for AI-guided flow
+    if (flow === 'ai-guided' && !isAuthenticated) {
+      setError('🔐 AI-Guided valuation requires authentication. Please sign in to access your business profile and get personalized insights.');
+      return;
+    }
+    
     setFlowType(flow);
     setStage('data-entry');
   };

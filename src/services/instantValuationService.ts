@@ -6,7 +6,6 @@
  */
 
 import { backendAPI } from './backendApi';
-import { api } from './api';
 import { serviceLogger } from '../utils/logger';
 import type { ValuationRequest, ValuationResponse } from '../types/valuation';
 

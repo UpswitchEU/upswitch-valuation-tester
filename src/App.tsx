@@ -1,18 +1,12 @@
-import { useState, useEffect, lazy, Suspense } from 'react';
+import { useEffect, lazy, Suspense } from 'react';
 import { Routes, Route, useLocation, useNavigate } from 'react-router-dom';
-import { Header } from './components/Header';
-import { ROUTE_TO_VIEW_MODE, VIEW_MODE_TO_ROUTE } from './router/routes';
-import { ScrollToTop } from './utils';
 import { generateReportId } from './utils/reportIdGenerator';
 import UrlGeneratorService from './services/urlGenerator';
 
 // Lazy load heavy components
 const ValuationReport = lazy(() => import('./components/ValuationReport').then(module => ({ default: module.ValuationReport })));
-const AIAssistedValuation = lazy(() => import('./components/AIAssistedValuation').then(module => ({ default: module.AIAssistedValuation })));
-const ManualValuationFlow = lazy(() => import('./components/ManualValuationFlow').then(module => ({ default: module.ManualValuationFlow })));
-const DocumentUploadFlow = lazy(() => import('./components/DocumentUploadFlow').then(module => ({ default: module.DocumentUploadFlow })));
 const HomePage = lazy(() => import('./pages/HomePage').then(module => ({ default: module.HomePage })));
-const Privacy = lazy(() => import('./pages/Privacy').then(module => ({ default: module.Privacy })));
+const PrivacyExplainer = lazy(() => import('./pages/PrivacyExplainer').then(module => ({ default: module.PrivacyExplainer })));
 const About = lazy(() => import('./pages/About').then(module => ({ default: module.About })));
 const HowItWorks = lazy(() => import('./pages/HowItWorks').then(module => ({ default: module.HowItWorks })));
 const NotFound = lazy(() => import('./pages/NotFound').then(module => ({ default: module.NotFound })));
@@ -87,7 +81,7 @@ function App() {
       {/* Info pages */}
       <Route path="/privacy" element={
         <Suspense fallback={<LoadingFallback />}>
-          <Privacy />
+          <PrivacyExplainer />
         </Suspense>
       } />
       <Route path="/about" element={

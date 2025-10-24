@@ -11,11 +11,11 @@ import type { ValuationResponse } from '../types/valuation';
 type FlowStage = 'form' | 'results';
 
 interface ManualValuationFlowProps {
-  reportId: string;
+  reportId?: string;
   onComplete: (result: ValuationResponse) => void;
 }
 
-export const ManualValuationFlow: React.FC<ManualValuationFlowProps> = ({ reportId, onComplete }) => {
+export const ManualValuationFlow: React.FC<ManualValuationFlowProps> = ({ onComplete }) => {
   const navigate = useNavigate();
   const [stage, setStage] = useState<FlowStage>('form');
   const { result } = useValuationStore();

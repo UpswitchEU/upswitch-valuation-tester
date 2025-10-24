@@ -4,7 +4,7 @@
  * Displays user's current credit status with upgrade prompts
  */
 
-import React, { useState } from 'react';
+import React from 'react';
 import { Tooltip } from '@heroui/react';
 import { useCredits } from '@/hooks/useCredits';
 
@@ -31,7 +31,6 @@ export const CreditBadge: React.FC<CreditBadgeProps> = ({
   variant = 'default'
 }) => {
   const { creditsRemaining, isPremium, isLoading } = useCredits();
-  const [isUpgradeModalOpen, setIsUpgradeModalOpen] = useState(false);
   
   // Loading state
   if (isLoading) {
@@ -135,7 +134,7 @@ export const CreditBadge: React.FC<CreditBadgeProps> = ({
       <>
         <div 
           className="block cursor-pointer hover:opacity-80 transition-opacity"
-          onClick={() => setIsUpgradeModalOpen(true)}
+          onClick={onClick}
         >
           {badgeContent}
         </div>

@@ -7,7 +7,6 @@ import { TARGET_COUNTRIES } from '../config/countries';
 import { useBusinessTypes } from '../hooks/useBusinessTypes';
 import { IndustryCode } from '../types/valuation';
 import { CustomInputField, CustomNumberInputField, CustomDropdown, HistoricalDataInputs } from './forms';
-import { InlineCreditBadge } from './credits/CreditBadge';
 import { generalLogger } from '../utils/logger';
 
 /**

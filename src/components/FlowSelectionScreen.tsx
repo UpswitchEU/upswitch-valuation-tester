@@ -1,5 +1,6 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useAuth } from '../hooks/useAuth';
+import { AuthModal } from './AuthModal';
 
 interface FlowSelectionScreenProps {
   onSelectFlow: (flow: 'manual' | 'ai-guided') => void;
@@ -7,6 +8,7 @@ interface FlowSelectionScreenProps {
 
 export const FlowSelectionScreen: React.FC<FlowSelectionScreenProps> = ({ onSelectFlow }) => {
   const { isAuthenticated } = useAuth();
+  const [showAuthModal, setShowAuthModal] = useState(false);
   return (
     <div className="flex-1 flex items-center justify-center p-4">
       <div className="max-w-4xl w-full">
@@ -49,7 +51,13 @@ export const FlowSelectionScreen: React.FC<FlowSelectionScreenProps> = ({ onSele
           
           {/* AI-Guided Flow Card */}
           <button
-            onClick={() => isAuthenticated ? onSelectFlow('ai-guided') : null}
+            onClick={() => {
+              if (isAuthenticated) {
+                onSelectFlow('ai-guided');
+              } else {
+                setShowAuthModal(true);
+              }
+            }}
             className={`group relative p-8 bg-zinc-900 border border-zinc-800 rounded-2xl transition-all ${
               isAuthenticated 
                 ? 'hover:border-purple-500/50 hover:scale-105 cursor-pointer' 
@@ -97,6 +105,17 @@ export const FlowSelectionScreen: React.FC<FlowSelectionScreenProps> = ({ onSele
           </p>
         </div>
       </div>
+      
+      {/* Authentication Modal */}
+      <AuthModal
+        isOpen={showAuthModal}
+        onClose={() => setShowAuthModal(false)}
+        onSignIn={() => {
+          setShowAuthModal(false);
+          // TODO: Implement actual sign-in flow
+          console.log('Sign in clicked');
+        }}
+      />
     </div>
   );
 };

@@ -4,7 +4,6 @@
 
 import { Link } from 'react-router-dom';
 import { Header } from '../components/Header';
-import { urls } from '../router/exports';
 import { ScrollToTop } from '../utils';
 
 export const HowItWorks: React.FC = () => {

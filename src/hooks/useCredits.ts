@@ -30,12 +30,10 @@ const UNLIMITED_CREDITS_MODE = import.meta.env.VITE_UNLIMITED_CREDITS_MODE !== '
 export const useCredits = (): CreditContextValue => {
   const [plan, setPlan] = useState<UserPlan | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
 
   const loadCredits = useCallback(async () => {
     try {
       setIsLoading(true);
-      setError(null);
       
       if (UNLIMITED_CREDITS_MODE) {
         // SOFT DISABLE: Return unlimited credits for all users
@@ -68,7 +66,6 @@ export const useCredits = (): CreditContextValue => {
       });
     } catch (err) {
       console.error('Failed to load credits:', err);
-      setError(err instanceof Error ? err.message : 'Failed to load credits');
     } finally {
       setIsLoading(false);
     }
