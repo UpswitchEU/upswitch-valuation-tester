@@ -6,6 +6,8 @@ import { FlowSelectionScreen } from './FlowSelectionScreen';
 import { AIAssistedValuation } from './AIAssistedValuation';
 import { ManualValuationFlow } from './ManualValuationFlow';
 import { useAuth } from '../hooks/useAuth';
+import { guestCreditService } from '../services/guestCreditService';
+import { OutOfCreditsModal } from './OutOfCreditsModal';
 import type { ValuationResponse } from '../types/valuation';
 
 type FlowType = 'manual' | 'ai-guided' | null;
@@ -21,6 +23,7 @@ export const ValuationReport: React.FC = () => {
   const [stage, setStage] = useState<Stage>('loading');
   const [valuationResult, setValuationResult] = useState<ValuationResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [showOutOfCreditsModal, setShowOutOfCreditsModal] = useState(false);
 
   // Validate and set report ID, then check if report exists
   useEffect(() => {
@@ -73,10 +76,13 @@ export const ValuationReport: React.FC = () => {
 
   // Handle flow selection
   const handleFlowSelection = (flow: 'manual' | 'ai-guided') => {
-    // Check authentication for AI-guided flow
+    // Check credits for AI-guided flow (guests)
     if (flow === 'ai-guided' && !isAuthenticated) {
-      setError('🔐 AI-Guided valuation requires authentication. Please sign in to access your business profile and get personalized insights.');
-      return;
+      const hasCredits = guestCreditService.hasCredits();
+      if (!hasCredits) {
+        setShowOutOfCreditsModal(true);
+        return;
+      }
     }
     
     setFlowType(flow);
@@ -210,10 +216,65 @@ export const ValuationReport: React.FC = () => {
                   </div>
                 </div>
               </div>
+              
+              {/* Expiration warning for guest users */}
+              {!isAuthenticated && (
+                <div className="mt-6 bg-orange-900/20 border border-orange-700/30 rounded-lg p-4">
+                  <div className="flex items-start gap-3">
+                    <div className="w-8 h-8 bg-orange-500/20 rounded-full flex items-center justify-center flex-shrink-0">
+                      <span className="text-orange-400 text-sm">⏰</span>
+                    </div>
+                    <div className="flex-1">
+                      <h3 className="text-lg font-semibold text-orange-300 mb-1">
+                        Report Expires in 7 Days
+                      </h3>
+                      <p className="text-sm text-orange-200 mb-3">
+                        This report will be deleted after 7 days. Sign up to save your reports forever and get 3 more free AI valuations.
+                      </p>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => {
+                            // TODO: Implement actual sign-up flow
+                            console.log('Sign up to save report');
+                          }}
+                          className="px-4 py-2 bg-orange-600 hover:bg-orange-700 text-white rounded-lg text-sm font-medium transition-colors"
+                        >
+                          Sign Up to Save Forever
+                        </button>
+                        <button
+                          onClick={() => {
+                            // TODO: Implement download functionality
+                            console.log('Download report');
+                          }}
+                          className="px-4 py-2 bg-zinc-700 hover:bg-zinc-600 text-zinc-300 rounded-lg text-sm font-medium transition-colors"
+                        >
+                          Download Report
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         )}
       </div>
+      
+      {/* Out of Credits Modal */}
+      <OutOfCreditsModal
+        isOpen={showOutOfCreditsModal}
+        onClose={() => setShowOutOfCreditsModal(false)}
+        onSignUp={() => {
+          setShowOutOfCreditsModal(false);
+          // TODO: Implement actual sign-up flow
+          console.log('Sign up clicked');
+        }}
+        onTryManual={() => {
+          setShowOutOfCreditsModal(false);
+          setFlowType('manual');
+          setStage('data-entry');
+        }}
+      />
     </div>
   );
 };

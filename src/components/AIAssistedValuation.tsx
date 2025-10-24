@@ -14,6 +14,7 @@ import { businessDataService, type BusinessProfileData } from '../services/busin
 import { api } from '../services/api';
 import { backendAPI } from '../services/backendApi';
 import { useAuth } from '../hooks/useAuth';
+import { guestCreditService } from '../services/guestCreditService';
 import type { ValuationResponse, ValuationRequest } from '../types/valuation';
 import { chatLogger } from '../utils/logger';
 import { DownloadService } from '../services/downloadService';
@@ -63,6 +64,18 @@ export const AIAssistedValuation: React.FC<AIAssistedValuationProps> = ({ report
     window.addEventListener('resize', checkMobile);
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
+
+  // Credit check for guest users
+  useEffect(() => {
+    if (!isAuthenticated) {
+      const hasCredits = guestCreditService.hasCredits();
+      if (!hasCredits) {
+        chatLogger.warn('Guest user out of credits');
+        // TODO: Show out of credits modal
+        console.warn('Out of free credits. Sign up to get 3 more!');
+      }
+    }
+  }, [isAuthenticated]);
 
   // Save panel width to localStorage when it changes
   useEffect(() => {
@@ -263,6 +276,15 @@ export const AIAssistedValuation: React.FC<AIAssistedValuationProps> = ({ report
       setValuationResult(backendResult);
       setStage('results');
       
+      // Deduct credit for guest users
+      if (!isAuthenticated) {
+        const creditUsed = guestCreditService.useCredit();
+        chatLogger.info('Guest credit deducted', { 
+          creditUsed, 
+          remainingCredits: guestCreditService.getCredits() 
+        });
+      }
+      
       // Call onComplete callback if provided
       if (onComplete) {
         onComplete(backendResult);
@@ -276,6 +298,15 @@ export const AIAssistedValuation: React.FC<AIAssistedValuationProps> = ({ report
       // Fallback to original result if backend fails
       setValuationResult(valuationResult);
       setStage('results');
+      
+      // Deduct credit for guest users (even in fallback case)
+      if (!isAuthenticated) {
+        const creditUsed = guestCreditService.useCredit();
+        chatLogger.info('Guest credit deducted (fallback)', { 
+          creditUsed, 
+          remainingCredits: guestCreditService.getCredits() 
+        });
+      }
       
       // Call onComplete callback if provided
       if (onComplete) {

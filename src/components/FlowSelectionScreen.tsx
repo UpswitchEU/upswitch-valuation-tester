@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { useAuth } from '../hooks/useAuth';
-import { AuthModal } from './AuthModal';
+import { guestCreditService } from '../services/guestCreditService';
 
 interface FlowSelectionScreenProps {
   onSelectFlow: (flow: 'manual' | 'ai-guided') => void;
@@ -8,7 +8,9 @@ interface FlowSelectionScreenProps {
 
 export const FlowSelectionScreen: React.FC<FlowSelectionScreenProps> = ({ onSelectFlow }) => {
   const { isAuthenticated } = useAuth();
-  const [showAuthModal, setShowAuthModal] = useState(false);
+  
+  // Get guest credit status
+  const guestCredits = !isAuthenticated ? guestCreditService.getCreditStatus() : null;
   return (
     <div className="flex-1 flex items-center justify-center p-4">
       <div className="max-w-4xl w-full">
@@ -51,35 +53,21 @@ export const FlowSelectionScreen: React.FC<FlowSelectionScreenProps> = ({ onSele
           
           {/* AI-Guided Flow Card */}
           <button
-            onClick={() => {
-              if (isAuthenticated) {
-                onSelectFlow('ai-guided');
-              } else {
-                setShowAuthModal(true);
-              }
-            }}
-            className={`group relative p-8 bg-zinc-900 border border-zinc-800 rounded-2xl transition-all ${
-              isAuthenticated 
-                ? 'hover:border-purple-500/50 hover:scale-105 cursor-pointer' 
-                : 'border-zinc-700 cursor-not-allowed opacity-60'
-            }`}
+            onClick={() => onSelectFlow('ai-guided')}
+            className="group relative p-8 bg-zinc-900 border border-zinc-800 rounded-2xl hover:border-purple-500/50 transition-all hover:scale-105 cursor-pointer"
           >
             <div className="flex items-center gap-2 mb-4">
               <div className="w-8 h-8 bg-purple-500/20 rounded-full flex items-center justify-center">
                 <span className="text-purple-400 text-sm">✨</span>
               </div>
-              <span className="text-sm font-semibold text-purple-300">PREMIUM - 1 Credit</span>
-              {!isAuthenticated && (
-                <span className="text-xs bg-orange-500/20 text-orange-300 px-2 py-1 rounded">Login Required</span>
-              )}
+              <span className="text-sm font-semibold text-purple-300">
+                {isAuthenticated ? 'PREMIUM - 1 Credit' : `FREE - ${guestCredits?.remaining || 0} Credits Left`}
+              </span>
             </div>
             
             <h3 className="text-2xl font-bold text-white mb-2">AI-Guided</h3>
             <p className="text-zinc-400 mb-6">
-              {isAuthenticated 
-                ? 'Let AI guide you through the process'
-                : 'Sign in to use AI-guided valuation'
-              }
+              Let AI guide you through the process
             </p>
             
             <ul className="space-y-2 text-sm text-zinc-300">
@@ -90,10 +78,8 @@ export const FlowSelectionScreen: React.FC<FlowSelectionScreenProps> = ({ onSele
             </ul>
             
             <div className="mt-6 text-center">
-              <span className={`font-medium ${
-                isAuthenticated ? 'text-purple-400' : 'text-zinc-500'
-              }`}>
-                {isAuthenticated ? 'Start AI-Guided Valuation' : 'Sign in to Continue'}
+              <span className="text-purple-400 font-medium">
+                {isAuthenticated ? 'Start AI-Guided Valuation' : `Start AI-Guided (${guestCredits?.remaining || 0} credits left)`}
               </span>
             </div>
           </button>
@@ -105,17 +91,6 @@ export const FlowSelectionScreen: React.FC<FlowSelectionScreenProps> = ({ onSele
           </p>
         </div>
       </div>
-      
-      {/* Authentication Modal */}
-      <AuthModal
-        isOpen={showAuthModal}
-        onClose={() => setShowAuthModal(false)}
-        onSignIn={() => {
-          setShowAuthModal(false);
-          // TODO: Implement actual sign-in flow
-          console.log('Sign in clicked');
-        }}
-      />
     </div>
   );
 };

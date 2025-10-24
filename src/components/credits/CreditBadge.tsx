@@ -7,6 +7,8 @@
 import React from 'react';
 import { Tooltip } from '@heroui/react';
 import { useCredits } from '@/hooks/useCredits';
+import { useAuth } from '@/hooks/useAuth';
+import { guestCreditService } from '@/services/guestCreditService';
 
 interface CreditBadgeProps {
   className?: string;
@@ -30,7 +32,11 @@ export const CreditBadge: React.FC<CreditBadgeProps> = ({
   onClick,
   variant = 'default'
 }) => {
+  const { isAuthenticated } = useAuth();
   const { creditsRemaining, isPremium, isLoading } = useCredits();
+  
+  // Get guest credits if not authenticated
+  const guestCredits = !isAuthenticated ? guestCreditService.getCreditStatus() : null;
   
   // Loading state
   if (isLoading) {
@@ -63,6 +69,63 @@ export const CreditBadge: React.FC<CreditBadgeProps> = ({
     if (showTooltip && !onClick) {
       return (
         <Tooltip content="Generate unlimited valuations" placement="bottom">
+          {badgeContent}
+        </Tooltip>
+      );
+    }
+
+    return badgeContent;
+  }
+  
+  // Guest user badge (show localStorage credits)
+  if (!isAuthenticated && guestCredits) {
+    const { remaining, total } = guestCredits;
+    const isLow = remaining <= 1;
+    const isOut = remaining === 0;
+    
+    const getGuestColorClasses = () => {
+      if (isOut) return 'bg-red-100 text-red-700 hover:bg-red-200 border-red-200';
+      if (isLow) return 'bg-yellow-100 text-yellow-700 hover:bg-yellow-200 border-yellow-200';
+      return 'bg-green-100 text-green-700 hover:bg-green-200 border-green-200';
+    };
+    
+    const getGuestIcon = () => {
+      if (isOut) return '🔒';
+      if (isLow) return '⚠️';
+      return '🎁';
+    };
+    
+    const getGuestText = () => {
+      if (isOut) return 'Out of Free Credits';
+      if (isLow) return `${remaining} Free Credit Left`;
+      return `${remaining} Free Credits`;
+    };
+    
+    const content = {
+      default: { icon: getGuestIcon(), text: getGuestText() },
+      compact: { icon: getGuestIcon(), text: `${remaining}/${total}` },
+      inline: { icon: getGuestIcon(), text: '' }
+    }[variant];
+
+    const badgeContent = (
+      <div 
+        className={`flex items-center gap-2 px-3 py-1 rounded-full text-sm font-medium transition-all duration-200 border ${getGuestColorClasses()} ${onClick ? 'cursor-pointer hover:scale-105' : ''} ${className}`}
+        onClick={onClick}
+        role={onClick ? 'button' : undefined}
+        tabIndex={onClick ? 0 : undefined}
+        aria-label={`${remaining} free AI valuations remaining`}
+      >
+        <span aria-hidden="true">{content.icon}</span>
+        {content.text && <span>{content.text}</span>}
+      </div>
+    );
+
+    if (showTooltip && !onClick) {
+      const tooltipText = isOut 
+        ? 'Sign up to get 3 more free credits' 
+        : `${remaining} free AI valuations remaining`;
+      return (
+        <Tooltip content={tooltipText} placement="bottom">
           {badgeContent}
         </Tooltip>
       );
