@@ -6,9 +6,6 @@ import UrlGeneratorService from './services/urlGenerator';
 // Lazy load heavy components
 const ValuationReport = lazy(() => import('./components/ValuationReport').then(module => ({ default: module.ValuationReport })));
 const HomePage = lazy(() => import('./pages/HomePage').then(module => ({ default: module.HomePage })));
-const PrivacyExplainer = lazy(() => import('./pages/PrivacyExplainer').then(module => ({ default: module.PrivacyExplainer })));
-const About = lazy(() => import('./pages/About').then(module => ({ default: module.About })));
-const HowItWorks = lazy(() => import('./pages/HowItWorks').then(module => ({ default: module.HowItWorks })));
 const NotFound = lazy(() => import('./pages/NotFound').then(module => ({ default: module.NotFound })));
 
 // Loading fallback component
@@ -90,22 +87,6 @@ function App() {
         </Suspense>
       } />
       
-      {/* Info pages */}
-      <Route path="/privacy" element={
-        <Suspense fallback={<LoadingFallback />}>
-          <PrivacyExplainer />
-        </Suspense>
-      } />
-      <Route path="/about" element={
-        <Suspense fallback={<LoadingFallback />}>
-          <About />
-        </Suspense>
-      } />
-      <Route path="/how-it-works" element={
-        <Suspense fallback={<LoadingFallback />}>
-          <HowItWorks />
-        </Suspense>
-      } />
       
       {/* 404 */}
       <Route path="*" element={

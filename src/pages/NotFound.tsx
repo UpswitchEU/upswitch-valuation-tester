@@ -3,7 +3,6 @@
  */
 
 import { Link } from 'react-router-dom';
-import { urls } from '../router/exports';
 import { ScrollToTop } from '../utils';
 
 export const NotFound: React.FC = () => {
@@ -24,7 +23,7 @@ export const NotFound: React.FC = () => {
 
         <div className="space-y-4">
           <Link
-            to={urls.home()}
+            to="/"
             className="block w-full px-6 py-3 bg-primary-600 text-white font-semibold rounded-lg hover:bg-primary-700 transition-colors"
           >
             Go to Home
@@ -38,20 +37,6 @@ export const NotFound: React.FC = () => {
           </Link>
         </div>
 
-        <div className="mt-8 pt-8 border-t border-gray-200">
-          <p className="text-sm text-gray-500 mb-4">Quick Links:</p>
-          <div className="flex justify-center space-x-4 text-sm">
-            <Link to={urls.howItWorks()} className="text-primary-600 hover:underline">
-              How It Works
-            </Link>
-            <Link to={urls.about()} className="text-primary-600 hover:underline">
-              About
-            </Link>
-            <Link to={urls.privacy()} className="text-primary-600 hover:underline">
-              Privacy
-            </Link>
-          </div>
-        </div>
       </div>
     </div>
   );

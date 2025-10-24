@@ -5,8 +5,6 @@
  * Provides helper functions to generate URLs with parameters.
  */
 
-import { ROUTES } from './routes';
-
 /**
  * Generate a URL from a route pattern and parameters
  */
@@ -33,28 +31,28 @@ export class UrlGenerator {
    * Home page
    */
   static home(): string {
-    return ROUTES.HOME;
+    return '/';
   }
 
   /**
    * Instant valuation (AI-assisted)
    */
   static instantValuation(): string {
-    return ROUTES.INSTANT_VALUATION;
+    return '/instant';
   }
 
   /**
    * Manual valuation entry
    */
   static manualValuation(): string {
-    return ROUTES.MANUAL_VALUATION;
+    return '/manual';
   }
 
   /**
    * Document upload
    */
   static documentUpload(): string {
-    return ROUTES.DOCUMENT_UPLOAD;
+    return '/upload';
   }
 
   /**
@@ -63,7 +61,7 @@ export class UrlGenerator {
    */
   static results(valuationId?: string): string {
     if (valuationId) {
-      return generateUrl(ROUTES.RESULTS, { valuationId });
+      return generateUrl('/results/:valuationId', { valuationId });
     }
     return '/results';
   }
@@ -72,35 +70,14 @@ export class UrlGenerator {
    * Reports page (saved valuations)
    */
   static reports(): string {
-    return ROUTES.REPORTS;
-  }
-
-  /**
-   * Privacy policy
-   */
-  static privacy(): string {
-    return ROUTES.PRIVACY;
-  }
-
-  /**
-   * About page
-   */
-  static about(): string {
-    return ROUTES.ABOUT;
-  }
-
-  /**
-   * How it works page
-   */
-  static howItWorks(): string {
-    return ROUTES.HOW_IT_WORKS;
+    return '/reports';
   }
 
   /**
    * 404 Not Found
    */
   static notFound(): string {
-    return ROUTES.NOT_FOUND;
+    return '/404';
   }
 
   /**

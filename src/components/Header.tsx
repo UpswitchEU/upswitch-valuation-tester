@@ -183,15 +183,6 @@ export const Header: React.FC = () => {
                 <span className="absolute -bottom-1 left-0 w-full h-0.5 bg-primary-600 transition-transform origin-left scale-x-0 group-hover:scale-x-100"></span>
               </Link>
             </li> */}
-            <li className="text-medium whitespace-nowrap box-border list-none">
-              <Link 
-                className="text-sm font-medium transition-colors relative group text-neutral-700 hover:text-primary-600" 
-                to="/privacy-explainer"
-              >
-                Privacy
-                <span className="absolute -bottom-1 left-0 w-full h-0.5 bg-primary-600 transition-transform origin-left scale-x-0 group-hover:scale-x-100"></span>
-              </Link>
-            </li>
           </ul>
         </div>
 
