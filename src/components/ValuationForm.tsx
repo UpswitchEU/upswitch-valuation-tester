@@ -93,7 +93,7 @@ export const ValuationForm: React.FC = () => {
           Basic Information
         </h3>
         
-        <div className="grid grid-cols-1 @lg:grid-cols-2 sm:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 @2xl:grid-cols-2 sm:grid-cols-2 gap-6">
           {/* Company Name */}
           <CustomInputField
             label="Company Name"
@@ -196,7 +196,7 @@ export const ValuationForm: React.FC = () => {
           Ownership Structure
         </h3>
         
-        <div className="grid grid-cols-1 @lg:grid-cols-2 sm:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 @2xl:grid-cols-2 sm:grid-cols-2 gap-6">
           {/* Business Type */}
           <CustomDropdown
             label="Business Structure"
@@ -233,7 +233,7 @@ export const ValuationForm: React.FC = () => {
           Current Year Financials ({Math.min(new Date().getFullYear(), 2100)})
         </h3>
         
-        <div className="grid grid-cols-1 @lg:grid-cols-2 sm:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 @2xl:grid-cols-2 sm:grid-cols-2 gap-6">
           {/* Revenue */}
           <CustomNumberInputField
             label="Revenue"
