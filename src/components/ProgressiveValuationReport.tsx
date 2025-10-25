@@ -66,18 +66,6 @@ export const ProgressiveValuationReport: React.FC<ProgressiveValuationReportProp
     ) || [];
   };
 
-  // Get section display name
-  const getSectionDisplayName = (sectionId: string): string => {
-    const names: Record<string, string> = {
-      'preview': 'Initial Estimate',
-      'dcf_basic': 'DCF Analysis',
-      'multiples': 'Market Multiples',
-      'dcf_complete': 'Complete DCF',
-      'adjustments': 'Valuation Adjustments',
-      'owner_analysis': 'Owner Analysis'
-    };
-    return names[sectionId] || sectionId.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase());
-  };
 
   // Get phase description
   const getPhaseDescription = (phase: number): string => {
