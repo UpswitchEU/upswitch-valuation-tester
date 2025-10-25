@@ -10,7 +10,6 @@ interface Suggestion {
 interface SuggestionChipsProps {
   suggestions: Suggestion[];
   originalValue: string;
-  field: string;
   onSelect: (suggestion: string) => void;
   onDismiss: () => void;
 }
@@ -18,7 +17,6 @@ interface SuggestionChipsProps {
 export const SuggestionChips: React.FC<SuggestionChipsProps> = ({
   suggestions,
   originalValue,
-  field,
   onSelect,
   onDismiss,
 }) => {
@@ -73,3 +71,4 @@ export const SuggestionChips: React.FC<SuggestionChipsProps> = ({
     </div>
   );
 };
+

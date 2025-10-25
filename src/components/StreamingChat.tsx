@@ -102,6 +102,10 @@ interface MessageMetadata {
     confidence: number;
     reason: string;
   }>;
+  selected_from_suggestions?: boolean;
+  original_suggestion?: string;
+  dismissed_suggestions?: boolean;
+  original_value?: string;
 }
 
 interface Message {
@@ -159,6 +163,8 @@ interface StreamingChatProps {
   onValuationPreview?: (data: any) => void;  // NEW
   onCalculateOptionAvailable?: (data: any) => void;  // NEW
   onProgressUpdate?: (data: any) => void;  // NEW
+  onReportSectionUpdate?: (section: string, html: string, phase: number, progress: number) => void;  // NEW: Progressive report sections
+  onReportComplete?: (html: string, valuationId: string) => void;  // NEW: Complete report
   className?: string;
   placeholder?: string;
   disabled?: boolean;
@@ -174,6 +180,8 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
   onValuationPreview,
   onCalculateOptionAvailable,
   onProgressUpdate,
+  onReportSectionUpdate,
+  onReportComplete,
   className = '',
   placeholder = "Ask about your business valuation...",
   disabled = false
@@ -1143,10 +1151,8 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
     
     // Add user message showing selection
     addMessage({
-      id: `user-${Date.now()}`,
       type: 'user',
       content: value,
-      timestamp: new Date(),
       metadata: { 
         field, 
         selected_from_suggestions: true,
@@ -1164,10 +1170,8 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
     
     // Add user message showing they kept original
     addMessage({
-      id: `user-${Date.now()}`,
       type: 'user',
       content: originalValue,
-      timestamp: new Date(),
       metadata: { 
         field, 
         dismissed_suggestions: true,
@@ -1339,7 +1343,6 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
                       <SuggestionChips
                         suggestions={message.metadata.suggestions}
                         originalValue={message.metadata.originalValue || ''}
-                        field={message.metadata.field || ''}
                         onSelect={(selected) => handleSuggestionSelect(message.metadata?.field || '', selected)}
                         onDismiss={() => handleSuggestionDismiss(message.metadata?.field || '', message.metadata?.originalValue || '')}
                       />
