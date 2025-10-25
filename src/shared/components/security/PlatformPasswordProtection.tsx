@@ -87,18 +87,6 @@ const getCookie = (name: string): string | null => {
   }
 };
 
-const deleteCookie = (name: string): boolean => {
-  try {
-    const secure = SECURITY_CONFIG.COOKIE_SECURE ? ';secure' : '';
-    const sameSite = `;samesite=${SECURITY_CONFIG.COOKIE_SAME_SITE}`;
-    document.cookie = `${name}=;expires=Thu, 01 Jan 1970 00:00:00 UTC;path=/${secure}${sameSite}`;
-    return true;
-  } catch (error) {
-    logger.error({ error }, 'Failed to delete cookie');
-    return false;
-  }
-};
-
 // Local storage for attempt tracking
 const getAttempts = (): number => {
   const attempts = localStorage.getItem('platform_attempts');
