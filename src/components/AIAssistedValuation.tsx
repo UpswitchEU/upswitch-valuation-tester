@@ -4,7 +4,8 @@ import { CheckCircle, Save, Building2 } from 'lucide-react';
 import { PANEL_CONSTRAINTS, MOBILE_BREAKPOINT } from '../constants/panelConstants';
 import { StreamingChat } from './StreamingChat';
 import { LiveValuationReport } from './LiveValuationReport';
-import { ProgressiveValuationReport } from './ProgressiveValuationReport';
+// Progressive report component - placeholder for future implementation
+// import { ProgressiveValuationReport } from './ProgressiveValuationReport';
 import { ErrorBoundary } from './ErrorBoundary';
 import { ValuationToolbar } from './ValuationToolbar';
 import { ValuationInfoPanel } from './ValuationInfoPanel';

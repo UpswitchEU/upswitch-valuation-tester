@@ -4,7 +4,7 @@
  * Similar to Lovable.dev's real-time code generation
  */
 
-import React, { useState, useCallback } from 'react';
+import React, { useState } from 'react';
 import { CheckCircle, Clock, AlertCircle, Loader2 } from 'lucide-react';
 
 interface ReportSection {
@@ -30,17 +30,15 @@ export const ProgressiveValuationReport: React.FC<ProgressiveValuationReportProp
   const [finalReport] = useState<string>('');
   const [valuationId] = useState<string>('');
 
-  const handleSectionUpdate = useCallback((_sectionId: string, _html: string, _phase: number, _progress: number) => {
-    // Placeholder for progressive report updates
-    // This will be implemented when backend supports progressive reporting
-    console.log('Progressive report section update:', _sectionId, _phase, _progress);
-  }, []);
+  // Placeholder handlers for future progressive report implementation
+  // Commented out until backend supports progressive reporting
+  // const handleSectionUpdate = useCallback((_sectionId: string, _html: string, _phase: number, _progress: number) => {
+  //   console.log('Progressive report section update:', _sectionId, _phase, _progress);
+  // }, []);
 
-  const handleReportComplete = useCallback((_html: string, _id: string) => {
-    // Placeholder for progressive report completion
-    // This will be implemented when backend supports progressive reporting
-    console.log('Progressive report complete:', _id);
-  }, []);
+  // const handleReportComplete = useCallback((_html: string, _id: string) => {
+  //   console.log('Progressive report complete:', _id);
+  // }, []);
 
   // Get pending sections for current phase
   const getPendingSections = (phase: number): string[] => {

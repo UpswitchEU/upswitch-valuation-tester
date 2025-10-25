@@ -21,12 +21,27 @@ vi.mock('../../utils/logger', () => ({
     debug: vi.fn(),
     info: vi.fn(),
     error: vi.fn(),
+    warn: vi.fn(),
   }
+}));
+
+// Mock the useAuth hook
+vi.mock('../../hooks/useAuth', () => ({
+  useAuth: vi.fn(() => ({
+    isAuthenticated: false,
+    user: null,
+    login: vi.fn(),
+    logout: vi.fn(),
+    register: vi.fn(),
+  })),
 }));
 
 // Mock fetch globally
 const mockFetch = vi.fn();
 global.fetch = mockFetch;
+
+// Mock scrollIntoView
+Element.prototype.scrollIntoView = vi.fn();
 
 describe('StreamingChat Backend-Driven Initialization', () => {
   const defaultProps = {
