@@ -173,7 +173,8 @@ interface StreamingChatProps {
   onValuationPreview?: (data: any) => void;  // NEW
   onCalculateOptionAvailable?: (data: any) => void;  // NEW
   onProgressUpdate?: (data: any) => void;  // NEW
-  onReportSectionUpdate?: (section: string, html: string, phase: number, progress: number) => void;  // NEW: Progressive report sections
+  onReportSectionUpdate?: (section: string, html: string, phase: number, progress: number, is_fallback?: boolean, is_error?: boolean, error_message?: string) => void;  // NEW: Progressive report sections
+  onSectionLoading?: (section: string, html: string, phase: number) => void;  // NEW: Section loading states
   onReportComplete?: (html: string, valuationId: string) => void;  // NEW: Complete report
   className?: string;
   placeholder?: string;
@@ -191,6 +192,7 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
   onCalculateOptionAvailable,
   onProgressUpdate,
   onReportSectionUpdate,
+  onSectionLoading,
   onReportComplete,
   className = '',
   placeholder = "Ask about your business valuation...",
@@ -779,6 +781,23 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
         });
         break;
         
+      case 'section_loading':
+        // NEW: Section loading state
+        chatLogger.info('Section loading received', {
+          sessionId,
+          section: data.section,
+          phase: data.phase,
+          htmlLength: data.html?.length || 0,
+          timestamp: new Date().toISOString()
+        });
+        
+        onSectionLoading?.(
+          data.section,
+          data.html,
+          data.phase
+        );
+        break;
+        
       case 'report_section':
         // NEW: Progressive section update
         chatLogger.info('Report section received', {
@@ -787,6 +806,8 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
           phase: data.phase,
           progress: data.progress,
           htmlLength: data.html?.length || 0,
+          is_fallback: data.is_fallback,
+          is_error: data.is_error,
           timestamp: new Date().toISOString()
         });
         
@@ -794,7 +815,10 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
           data.section,
           data.html,
           data.phase,
-          data.progress
+          data.progress,
+          data.is_fallback,
+          data.is_error,
+          data.error_message
         );
         
         chatLogger.debug('Report section processed', {

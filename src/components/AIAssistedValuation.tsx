@@ -277,11 +277,84 @@ export const AIAssistedValuation: React.FC<AIAssistedValuationProps> = ({ report
     section: string,
     html: string,
     phase: number,
-    progress: number
+    progress: number,
+    is_fallback?: boolean,
+    is_error?: boolean,
+    error_message?: string
   ) => {
-    chatLogger.info('Report section update received', { section, phase, progress, htmlLength: html.length });
-    setReportSections(prev => [...prev, { section, html, phase, progress }]);
+    chatLogger.info('Report section update received', { section, phase, progress, htmlLength: html.length, is_fallback, is_error });
+    
+    setReportSections(prevSections => {
+      // Check if section already exists
+      const existingIndex = prevSections.findIndex(
+        s => s.section === section && s.phase === phase
+      );
+      
+      if (existingIndex >= 0) {
+        // UPDATE existing section
+        const updated = [...prevSections];
+        updated[existingIndex] = {
+          ...updated[existingIndex],
+          html,
+          progress,
+          is_fallback,
+          is_error,
+          error_message,
+          timestamp: new Date()
+        };
+        return updated;
+      } else {
+        // APPEND new section
+        return [...prevSections, {
+          id: section,
+          section,
+          phase,
+          html,
+          progress,
+          is_fallback,
+          is_error,
+          error_message,
+          timestamp: new Date()
+        }];
+      }
+    });
     setReportPhase(phase);
+  }, []);
+
+  // Handle section loading event type
+  const handleSectionLoading = useCallback((
+    section: string,
+    html: string,
+    phase: number
+  ) => {
+    chatLogger.info('Section loading received', { section, phase, htmlLength: html.length });
+    
+    setReportSections(prevSections => {
+      const existingIndex = prevSections.findIndex(
+        s => s.section === section && s.phase === phase
+      );
+      
+      if (existingIndex >= 0) {
+        // Update existing with loading state
+        const updated = [...prevSections];
+        updated[existingIndex] = {
+          ...updated[existingIndex],
+          html,
+          status: 'loading'
+        };
+        return updated;
+      } else {
+        // Add new loading section
+        return [...prevSections, {
+          id: section,
+          section,
+          phase,
+          html,
+          status: 'loading',
+          timestamp: new Date()
+        }];
+      }
+    });
   }, []);
 
   const handleReportComplete = useCallback((html: string, valuationId: string) => {
@@ -798,6 +871,7 @@ export const AIAssistedValuation: React.FC<AIAssistedValuationProps> = ({ report
                   onCalculateOptionAvailable={handleCalculateOption}
                   onProgressUpdate={handleProgressUpdate}
                   onReportSectionUpdate={handleReportSectionUpdate}
+                  onSectionLoading={handleSectionLoading}
                   onReportComplete={handleReportComplete}
                   className="h-full"
                   placeholder="Ask about your business valuation..."

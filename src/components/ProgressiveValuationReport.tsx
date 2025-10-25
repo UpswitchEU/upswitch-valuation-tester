@@ -180,19 +180,95 @@ export const ProgressiveValuationReport: React.FC<ProgressiveValuationReportProp
     );
   };
 
+  // Render section header with confidence indicators
+  const renderSectionHeader = (section: ReportSection) => {
+    return (
+      <div className="flex items-center justify-between mb-4">
+        <h3 className="text-lg font-semibold text-gray-900">
+          {getSectionDisplayName(section.id)}
+        </h3>
+        <div className="flex items-center gap-2">
+          {/* Confidence Badge */}
+          {section.is_fallback ? (
+            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+              <AlertTriangle className="w-3 h-3 mr-1" />
+              Quick Estimate
+            </span>
+          ) : section.is_error ? (
+            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+              <AlertCircle className="w-3 h-3 mr-1" />
+              Error
+            </span>
+          ) : (
+            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+              <CheckCircle className="w-3 h-3 mr-1" />
+              Full Analysis
+            </span>
+          )}
+          
+          {/* Phase Badge */}
+          <span className="text-sm text-gray-500">
+            Phase {section.phase}
+          </span>
+        </div>
+      </div>
+    );
+  };
+
+  // Add confidence meter
+  const renderConfidenceMeter = (section: ReportSection) => {
+    const confidence = section.is_fallback ? 30 : section.is_error ? 0 : 85;
+    const color = confidence > 70 ? 'bg-green-500' : confidence > 40 ? 'bg-yellow-500' : 'bg-red-500';
+    
+    return (
+      <div className="mt-4 p-3 bg-gray-50 rounded-lg">
+        <div className="flex items-center justify-between mb-2">
+          <span className="text-sm font-medium text-gray-700">Confidence Level</span>
+          <span className="text-sm font-bold text-gray-900">{confidence}%</span>
+        </div>
+        <div className="w-full bg-gray-200 rounded-full h-2">
+          <div 
+            className={`${color} h-2 rounded-full transition-all duration-500`}
+            style={{ width: `${confidence}%` }}
+          />
+        </div>
+      </div>
+    );
+  };
+
+  // Get section display name
+  const getSectionDisplayName = (sectionId: string) => {
+    const sectionNames = {
+      'instant': 'Instant Preview',
+      'preview': 'Quick Preview',
+      'dcf_basic': 'DCF Analysis',
+      'multiples': 'Market Multiples',
+      'dcf_full': 'Complete DCF',
+      'adjustments': 'Risk Adjustments',
+      'owner_factor': 'Owner Analysis',
+      'complete': 'Final Valuation',
+      'intermediate': 'Intermediate Analysis',
+      'advanced': 'Advanced Analysis'
+    };
+    return sectionNames[sectionId as keyof typeof sectionNames] || sectionId.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase());
+  };
+
   // Main section renderer with fallback/error handling
   const renderSection = (section: ReportSection) => {
-    if (section.is_fallback) {
-      return renderFallbackSection(section);
-    }
-    
-    if (section.is_error) {
-      return renderErrorSection(section);
-    }
-    
-    // Normal section rendering
     return (
-      <div className="section-content" dangerouslySetInnerHTML={{ __html: section.html }} />
+      <div className="section-container mb-6">
+        {renderSectionHeader(section)}
+        
+        {section.is_fallback ? (
+          renderFallbackSection(section)
+        ) : section.is_error ? (
+          renderErrorSection(section)
+        ) : (
+          <div className="section-content" dangerouslySetInnerHTML={{ __html: section.html }} />
+        )}
+        
+        {renderConfidenceMeter(section)}
+      </div>
     );
   };
 
