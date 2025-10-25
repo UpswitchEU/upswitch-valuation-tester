@@ -91,7 +91,7 @@ export const ValuationForm: React.FC = () => {
       <div className="bg-zinc-800 rounded-lg border border-zinc-700 p-6">
         <h3 className="text-lg font-semibold text-white mb-4">Basic Information</h3>
         
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 gap-6">
           {/* Company Name */}
           <CustomInputField
             label="Company Name"
@@ -192,7 +192,7 @@ export const ValuationForm: React.FC = () => {
       <div className="bg-zinc-800 rounded-lg border border-zinc-700 p-6">
         <h3 className="text-lg font-semibold text-white mb-4">Ownership Structure</h3>
         
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 gap-6">
           {/* Business Type */}
           <CustomDropdown
             label="Business Structure"
@@ -227,7 +227,7 @@ export const ValuationForm: React.FC = () => {
       <div className="bg-zinc-800 rounded-lg border border-zinc-700 p-6">
         <h3 className="text-lg font-semibold text-white mb-4">Current Year Financials ({Math.min(new Date().getFullYear(), 2100)})</h3>
         
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 gap-6">
           {/* Revenue */}
           <CustomNumberInputField
             label="Revenue"
