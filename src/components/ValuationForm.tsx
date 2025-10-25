@@ -283,7 +283,7 @@ export const ValuationForm: React.FC = () => {
       </div>
 
       {/* Submit Button */}
-      <div className="flex justify-end space-x-4">
+      <div className="flex flex-col sm:flex-row justify-end gap-4">
         <button
           type="button"
           className="px-6 py-3 border border-zinc-600 rounded-md text-zinc-300 font-medium hover:bg-zinc-700 transition-colors"
