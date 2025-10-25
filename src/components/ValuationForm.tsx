@@ -93,7 +93,7 @@ export const ValuationForm: React.FC = () => {
           Basic Information
         </h3>
         
-        <div className="grid grid-cols-1 @3xl:grid-cols-2 sm:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 @4xl:grid-cols-2 gap-6">
           {/* Company Name */}
           <CustomInputField
             label="Company Name"
@@ -196,7 +196,7 @@ export const ValuationForm: React.FC = () => {
           Ownership Structure
         </h3>
         
-        <div className="grid grid-cols-1 @3xl:grid-cols-2 sm:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 @4xl:grid-cols-2 gap-6">
           {/* Business Type */}
           <CustomDropdown
             label="Business Structure"
@@ -233,7 +233,7 @@ export const ValuationForm: React.FC = () => {
           Current Year Financials ({Math.min(new Date().getFullYear(), 2100)})
         </h3>
         
-        <div className="grid grid-cols-1 @3xl:grid-cols-2 sm:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 @4xl:grid-cols-2 gap-6">
           {/* Revenue */}
           <CustomNumberInputField
             label="Revenue"
@@ -291,7 +291,7 @@ export const ValuationForm: React.FC = () => {
       </div>
 
       {/* Submit Button */}
-      <div className="flex flex-col sm:flex-row justify-end gap-3 sm:gap-4">
+      <div className="flex flex-col justify-end gap-4">
         <button
           type="button"
           className="px-6 py-3 border border-zinc-600 rounded-md text-zinc-300 font-medium hover:bg-zinc-700 transition-colors"
@@ -316,7 +316,7 @@ export const ValuationForm: React.FC = () => {
               <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
               </svg>
-              <span>Calculate Comprehensive Valuation</span>
+              <span>Calculate</span>
             </>
           )}
         </button>

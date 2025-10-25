@@ -30,7 +30,7 @@ export const HistoricalDataInputs: React.FC<HistoricalDataInputsProps> = ({
         const ebitda = historicalInputs[ebitdaKey] || '';
 
         return (
-          <div key={year} className="grid grid-cols-1 @2xl:grid-cols-3 sm:grid-cols-3 gap-4 p-2 @lg:p-3 bg-zinc-900 border border-zinc-700 rounded">
+          <div key={year} className="grid grid-cols-1 xl:grid-cols-3 @5xl:grid-cols-3 gap-4 p-2 @lg:p-3 bg-zinc-900 border border-zinc-700 rounded">
             <div>
               <CustomInputField
                 label="Year"
