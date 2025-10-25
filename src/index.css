@@ -2,6 +2,16 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Typing Animation Keyframes */
+@keyframes blink {
+  0%, 49% { opacity: 1; }
+  50%, 100% { opacity: 0; }
+}
+
+.animate-blink {
+  animation: blink 1s infinite;
+}
+
 @layer base {
   :root {
     --navbar-height: 4rem;

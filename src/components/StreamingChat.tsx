@@ -11,6 +11,8 @@ import { ContextualTip } from './ContextualTip';
 import { LoadingDots } from './LoadingDots';
 import { SuggestionChips } from './SuggestionChips';
 import { useLoadingMessage } from '../hooks/useLoadingMessage';
+import { useTypingAnimation } from '../hooks/useTypingAnimation';
+import { TypingCursor } from './TypingCursor';
 // Removed complex validation imports - using simple approach like IlaraAI
 import { chatLogger } from '../utils/logger';
 import { useAuth } from '../hooks/useAuth';
@@ -223,6 +225,14 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
     feedback_provided: false
   });
   const loadingMessage: string = useLoadingMessage();
+  
+  // Typing animation for smooth AI responses
+  const { displayedText, isTyping, addToBuffer, complete, reset } = useTypingAnimation({
+    baseSpeed: 50,
+    adaptiveSpeed: true,
+    punctuationPauses: true,
+    showCursor: true
+  });
   
   // Input validation functions (memoized for performance)
   const containsPII = useCallback((input: string): boolean => {
@@ -681,7 +691,10 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
     const currentMessageId = currentStreamingMessageRef.current.id;
     chatLogger.debug('Updating streaming message', { messageId: currentMessageId, contentLength: content.length, isComplete });
     
-    // Simple state update like IlaraAI - no complex validation
+    // Add content to typing animation buffer
+    addToBuffer(content);
+    
+    // Update the message content in state (for completion tracking)
     setMessages(prev => prev.map(msg => 
       msg.id === currentMessageId
         ? { ...msg, content: msg.content + content, isComplete, isStreaming: !isComplete }
@@ -690,10 +703,11 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
     
     if (isComplete && currentStreamingMessageRef.current) {
       chatLogger.debug('Completing streaming message', { messageId: currentMessageId });
+      complete(); // Complete the typing animation
       onMessageComplete?.(currentStreamingMessageRef.current);
       currentStreamingMessageRef.current = null;
     }
-  }, [onMessageComplete]);
+  }, [onMessageComplete, addToBuffer, complete]);
 
   // EventSource fallback function
   const tryEventSourceFallback = useCallback((sessionId: string, userInput: string, userId: string | undefined, _aiMessage: Message) => {
@@ -1016,10 +1030,13 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
         });
         break;
     }
-  }, [updateStreamingMessage, onValuationComplete, onReportUpdate, onDataCollected, onValuationPreview, onCalculateOptionAvailable, onProgressUpdate, addMessage]);
+  }, [updateStreamingMessage, onValuationComplete, onReportUpdate, onDataCollected, onValuationPreview, onCalculateOptionAvailable, onProgressUpdate, addMessage, reset]);
 
   const startStreamingWithRetry = useCallback(async (userInput: string, attempt = 0) => {
     if (!userInput.trim() || isStreaming) return;
+
+    // Reset typing animation for new conversation
+    reset();
 
     // Request deduplication
     const requestId = `${sessionId}_${Date.now()}`;
@@ -1429,8 +1446,15 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
                     ? 'bg-zinc-800 text-white' 
                     : 'bg-zinc-700/50 text-white'
                 }`}>
-                  <div className="whitespace-pre-wrap text-sm">
-                    {message.content}
+                  <div 
+                    className="whitespace-pre-wrap text-sm cursor-pointer" 
+                    onClick={() => isTyping && complete()}
+                    title={isTyping ? "Click to complete typing" : ""}
+                  >
+                    {message.type === 'ai' && message.isStreaming ? displayedText : message.content}
+                    {message.type === 'ai' && message.isStreaming && (
+                      <TypingCursor isVisible={isTyping} />
+                    )}
                   </div>
                   
                   {/* NEW: Display suggestion chips if available */}
