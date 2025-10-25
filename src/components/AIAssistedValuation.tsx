@@ -4,7 +4,7 @@ import { CheckCircle, Save, Building2 } from 'lucide-react';
 import { PANEL_CONSTRAINTS, MOBILE_BREAKPOINT } from '../constants/panelConstants';
 import { StreamingChat } from './StreamingChat';
 import { LiveValuationReport } from './LiveValuationReport';
-import { ProgressiveValuationReport } from './ProgressiveValuationReport';
+// import { ProgressiveValuationReport } from './ProgressiveValuationReport';
 import { ErrorBoundary } from './ErrorBoundary';
 import { ValuationToolbar } from './ValuationToolbar';
 import { ValuationInfoPanel } from './ValuationInfoPanel';
@@ -37,11 +37,11 @@ export const AIAssistedValuation: React.FC<AIAssistedValuationProps> = ({ report
   const [showOutOfCreditsModal, setShowOutOfCreditsModal] = useState(false);
   const [error, setError] = useState<string | null>(null);
   
-  // Progressive report state
-  const [reportSections, setReportSections] = useState<any[]>([]);
-  const [reportPhase, setReportPhase] = useState(0);
-  const [finalReportHtml, setFinalReportHtml] = useState<string>('');
-  const [finalValuationId, setFinalValuationId] = useState<string>('');
+  // Progressive report state (placeholder for future implementation)
+  // const [reportSections] = useState<any[]>([]);
+  // const [reportPhase] = useState(0);
+  // const [finalReportHtml] = useState<string>('');
+  // const [finalValuationId] = useState<string>('');
   
   // New state for lovable experience features (commented out for now)
   // const [collectedData, setCollectedData] = useState<Record<string, any>>({});
@@ -162,19 +162,17 @@ export const AIAssistedValuation: React.FC<AIAssistedValuationProps> = ({ report
   // Progressive report handlers
   const handleReportSectionUpdate = useCallback((
     section: string,
-    html: string,
+    _html: string,
     phase: number,
     progress: number
   ) => {
     chatLogger.info('Report section update received', { section, phase, progress });
-    setReportSections(prev => [...prev, { section, html, phase, progress }]);
-    setReportPhase(phase);
+    // Progressive report updates will be implemented when backend supports it
   }, []);
 
-  const handleReportComplete = useCallback((html: string, valuationId: string) => {
+  const handleReportComplete = useCallback((_html: string, valuationId: string) => {
     chatLogger.info('Report complete received', { valuationId });
-    setFinalReportHtml(html);
-    setFinalValuationId(valuationId);
+    // Progressive report completion will be implemented when backend supports it
     setStage('results');
   }, []);
 
@@ -711,16 +709,7 @@ export const AIAssistedValuation: React.FC<AIAssistedValuationProps> = ({ report
           {/* Tab Content */}
           {activeTab === 'preview' && (
             <div className="flex flex-col h-full">
-              {reportSections.length > 0 ? (
-                <ProgressiveValuationReport
-                  onSectionComplete={(section, phase) => {
-                    chatLogger.info('Section completed', { section, phase });
-                  }}
-                  onReportComplete={(valuationId) => {
-                    chatLogger.info('Progressive report complete', { valuationId });
-                  }}
-                />
-              ) : liveHtmlReport ? (
+              {liveHtmlReport ? (
                 <LiveValuationReport
                   htmlContent={liveHtmlReport}
                   isGenerating={stage === 'chat'}
@@ -876,22 +865,11 @@ export const AIAssistedValuation: React.FC<AIAssistedValuationProps> = ({ report
         title={`${valuationName} - Full Screen`}
       >
         {activeTab === 'preview' && (
-          reportSections.length > 0 ? (
-            <ProgressiveValuationReport
-              onSectionComplete={(section, phase) => {
-                chatLogger.info('Section completed', { section, phase });
-              }}
-              onReportComplete={(valuationId) => {
-                chatLogger.info('Progressive report complete', { valuationId });
-              }}
-            />
-          ) : (
-            <LiveValuationReport
-              htmlContent={liveHtmlReport}
-              isGenerating={stage === 'chat'}
-              progress={reportProgress}
-            />
-          )
+          <LiveValuationReport
+            htmlContent={liveHtmlReport}
+            isGenerating={stage === 'chat'}
+            progress={reportProgress}
+          />
         )}
         {activeTab === 'source' && (
           <div className="h-full bg-white p-6 overflow-y-auto">

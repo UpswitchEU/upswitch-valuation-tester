@@ -106,6 +106,14 @@ interface MessageMetadata {
   original_suggestion?: string;
   dismissed_suggestions?: boolean;
   original_value?: string;
+  
+  // Clarification System
+  clarification_value?: string;
+  clarification_field?: string;
+  needs_confirmation?: boolean;
+  clarification_confirmed?: boolean;
+  confirmed_value?: string;
+  clarification_rejected?: boolean;
 }
 
 interface Message {
@@ -988,10 +996,11 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
       case 'clarification_needed':
         chatLogger.warn('Clarification needed', {
           field: data.field,
-          concern: data.concern
+          concern: data.concern,
+          value: data.value
         });
         
-        // Show clarification message
+        // Show clarification message with confirmation options
         addMessage({
           type: 'ai',
           content: data.message,
@@ -999,7 +1008,10 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
           metadata: {
             intent: 'clarification',
             collected_field: data.field,
-            validation_status: 'needs_clarification'
+            validation_status: 'needs_clarification',
+            clarification_value: data.value,
+            clarification_field: data.field,
+            needs_confirmation: true
           }
         });
         break;
@@ -1230,6 +1242,43 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
     await startStreamingWithRetry(originalValue);
   }, [addMessage, startStreamingWithRetry]);
 
+  // Handle clarification confirmation (Yes button)
+  const handleClarificationConfirm = useCallback(async (field: string, value: string) => {
+    chatLogger.info('Clarification confirmed', { field, value });
+    
+    // Add user message showing confirmation
+    addMessage({
+      type: 'user',
+      content: 'yes',
+      metadata: { 
+        field, 
+        clarification_confirmed: true,
+        confirmed_value: value
+      }
+    });
+    
+    // Submit "yes" to backend
+    await startStreamingWithRetry('yes');
+  }, [addMessage, startStreamingWithRetry]);
+
+  // Handle clarification rejection (No button)
+  const handleClarificationReject = useCallback(async (field: string) => {
+    chatLogger.info('Clarification rejected', { field });
+    
+    // Add user message showing rejection
+    addMessage({
+      type: 'user',
+      content: 'no',
+      metadata: { 
+        field, 
+        clarification_rejected: true
+      }
+    });
+    
+    // Submit "no" to backend
+    await startStreamingWithRetry('no');
+  }, [addMessage, startStreamingWithRetry]);
+
   const getSmartFollowUps = useCallback(() => {
     const messageCount = messages.length;
     const lastAiMessage = messages.filter(m => m.type === 'ai').slice(-1)[0];
@@ -1393,6 +1442,32 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
                         onSelect={(selected) => handleSuggestionSelect(message.metadata?.field || '', selected)}
                         onDismiss={() => handleSuggestionDismiss(message.metadata?.field || '', message.metadata?.originalValue || '')}
                       />
+                    </div>
+                  )}
+                  
+                  {/* NEW: Display clarification confirmation buttons */}
+                  {message.metadata?.needs_confirmation && message.metadata?.clarification_value && (
+                    <div className="mt-3 flex gap-3">
+                      <button
+                        onClick={() => handleClarificationConfirm(
+                          message.metadata?.clarification_field || '',
+                          message.metadata?.clarification_value || ''
+                        )}
+                        className="inline-flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-all duration-200 shadow-sm hover:shadow-md"
+                      >
+                        <CheckCircle className="w-4 h-4" />
+                        <span className="text-sm font-medium">
+                          Yes, "{message.metadata.clarification_value}" is correct
+                        </span>
+                      </button>
+                      <button
+                        onClick={() => handleClarificationReject(message.metadata?.clarification_field || '')}
+                        className="inline-flex items-center gap-2 px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-all duration-200"
+                      >
+                        <span className="text-sm font-medium">
+                          No, let me provide the correct value
+                        </span>
+                      </button>
                     </div>
                   )}
                   

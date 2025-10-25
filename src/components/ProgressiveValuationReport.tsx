@@ -4,7 +4,7 @@
  * Similar to Lovable.dev's real-time code generation
  */
 
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState } from 'react';
 import { CheckCircle, Clock, AlertCircle, Loader2 } from 'lucide-react';
 
 interface ReportSection {
@@ -18,62 +18,26 @@ interface ReportSection {
 
 interface ProgressiveValuationReportProps {
   className?: string;
-  onSectionComplete?: (section: string, phase: number) => void;
-  onReportComplete?: (valuationId: string) => void;
 }
 
 export const ProgressiveValuationReport: React.FC<ProgressiveValuationReportProps> = ({
-  className = '',
-  onSectionComplete,
-  onReportComplete
+  className = ''
 }) => {
-  const [sections, setSections] = useState<ReportSection[]>([]);
-  const [currentPhase, setCurrentPhase] = useState(0);
-  const [overallProgress, setOverallProgress] = useState(0);
-  const [isGenerating, setIsGenerating] = useState(false);
-  const [finalReport, setFinalReport] = useState<string>('');
-  const [valuationId, setValuationId] = useState<string>('');
+  const [sections] = useState<ReportSection[]>([]);
+  const [currentPhase] = useState(0);
+  const [overallProgress] = useState(0);
+  const [isGenerating] = useState(false);
+  const [finalReport] = useState<string>('');
+  const [valuationId] = useState<string>('');
 
-  const handleSectionUpdate = useCallback((
-    sectionId: string,
-    html: string,
-    phase: number,
-    progress: number
-  ) => {
-    setSections(prev => {
-      // Update or add section
-      const existing = prev.find(s => s.id === sectionId);
-      if (existing) {
-        return prev.map(s => 
-          s.id === sectionId 
-            ? { ...s, html, phase, progress, timestamp: new Date(), status: 'completed' }
-            : s
-        );
-      }
-      return [...prev, { 
-        id: sectionId, 
-        phase, 
-        html, 
-        progress, 
-        timestamp: new Date(),
-        status: 'completed'
-      }];
-    });
-    
-    setCurrentPhase(Math.max(currentPhase, phase));
-    setOverallProgress(progress);
-    setIsGenerating(progress < 100);
-    
-    onSectionComplete?.(sectionId, phase);
-  }, [currentPhase, onSectionComplete]);
+  // Placeholder handlers for future implementation
+  // const handleSectionUpdate = useCallback((_sectionId: string, _html: string, _phase: number, _progress: number) => {
+  //   console.log('Progressive report section update:', _sectionId, _phase, _progress);
+  // }, []);
 
-  const handleReportComplete = useCallback((html: string, id: string) => {
-    setFinalReport(html);
-    setValuationId(id);
-    setIsGenerating(false);
-    setOverallProgress(100);
-    onReportComplete?.(id);
-  }, [onReportComplete]);
+  // const handleReportComplete = useCallback((_html: string, _id: string) => {
+  //   console.log('Progressive report complete:', _id);
+  // }, []);
 
   // Get pending sections for current phase
   const getPendingSections = (phase: number): string[] => {

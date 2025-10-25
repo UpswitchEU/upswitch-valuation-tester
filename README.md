@@ -14,6 +14,7 @@ This is a **standalone React frontend application** for testing and demonstratin
 
 - ✅ **Manual valuation entry** - Input financial data manually
 - ✅ **Real-time preview** - Live estimate as you type (800ms debounce)
+- ✅ **Progressive reports** - Real-time, section-by-section report generation
 - ✅ **Document upload** with AI parsing (Phase 2)
 - ✅ **Company lookup** with auto-fill from registries
 - ✅ **Comprehensive results** with charts and insights
@@ -33,7 +34,11 @@ Valuation Engine API (Port 8000)
     ├─ /api/v1/valuation/calculate ✅
     ├─ /api/v1/documents/parse ✅
     ├─ /api/v1/companies/lookup ✅
-    └─ /api/v1/registry/:country/:id ✅
+    ├─ /api/v1/registry/:country/:id ✅
+    └─ /api/valuations/progressive-report/* 🆕
+        ├─ /start - Start progressive report generation
+        ├─ /stream/:sessionId - Stream real-time updates
+        └─ /status/:sessionId - Get report status
 ```
 
 **Note**: This is a frontend-only application. For backend/engine documentation, see the valuation-engine docs.
@@ -80,6 +85,7 @@ curl http://localhost:8000/health
 |---------|--------|-------------|
 | Manual Entry Form | ✅ | Input financial data manually with validation |
 | Real-Time Preview | ✅ | Live valuation estimate (updates as you type) |
+| Progressive Reports | ✅ | Real-time, section-by-section report generation |
 | Registry Lookup | ✅ | Auto-fill from Companies House, KBO/BCE |
 | Document Upload | ✅ | Upload PDFs, Excel files for parsing |
 | Comprehensive Results | ✅ | Charts, metrics, DCF, multiples analysis |
@@ -282,6 +288,18 @@ Located in [docs/](./docs/):
 For valuation engine, API, architecture, and backend documentation:
 
 👉 **See**: [../upswitch-valuation-engine/docs/](../upswitch-valuation-engine/docs/README.md)
+
+### **🆕 Progressive Reports Documentation**
+
+For progressive report generation, real-time streaming, and template system:
+
+👉 **See**: [../upswitch-valuation-engine/docs/architecture/progressive-reports/](../upswitch-valuation-engine/docs/architecture/progressive-reports/ARCHITECTURE.md)
+
+**Key Components**:
+- **[Architecture Overview](../upswitch-valuation-engine/docs/architecture/progressive-reports/ARCHITECTURE.md)** - System design and 4-phase model
+- **[Frontend Integration](../upswitch-valuation-engine/docs/architecture/progressive-reports/api/FRONTEND_INTEGRATION.md)** - React component usage
+- **[Quick Start Guide](../upswitch-valuation-engine/docs/architecture/progressive-reports/guides/QUICK_START.md)** - Development setup
+- **[Template Development](../upswitch-valuation-engine/docs/architecture/progressive-reports/guides/TEMPLATE_DEVELOPMENT.md)** - Creating templates
 
 ---
 
