@@ -84,14 +84,14 @@ export const ValuationForm: React.FC = () => {
   // Historical data is now handled by HistoricalDataInputs component
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
+    <form onSubmit={handleSubmit} className="space-y-6 @container">
 
 
       {/* Basic Information */}
       <div className="bg-zinc-800 rounded-lg border border-zinc-700 p-6">
         <h3 className="text-lg font-semibold text-white mb-4">Basic Information</h3>
         
-        <div className="grid grid-cols-1 gap-6">
+        <div className="grid grid-cols-1 @lg:grid-cols-2 sm:grid-cols-2 gap-6">
           {/* Company Name */}
           <CustomInputField
             label="Company Name"
@@ -192,7 +192,7 @@ export const ValuationForm: React.FC = () => {
       <div className="bg-zinc-800 rounded-lg border border-zinc-700 p-6">
         <h3 className="text-lg font-semibold text-white mb-4">Ownership Structure</h3>
         
-        <div className="grid grid-cols-1 gap-6">
+        <div className="grid grid-cols-1 @lg:grid-cols-2 sm:grid-cols-2 gap-6">
           {/* Business Type */}
           <CustomDropdown
             label="Business Structure"

@@ -1,4 +1,5 @@
 import { heroui } from '@heroui/theme';
+import containerQueries from '@tailwindcss/container-queries';
 import forms from '@tailwindcss/forms';
 import type { Config } from 'tailwindcss';
 
@@ -60,6 +61,7 @@ const config: Config = {
   },
   darkMode: 'class',
   plugins: [
+    containerQueries,
     forms,
     heroui({
       defaultTheme: 'light',
