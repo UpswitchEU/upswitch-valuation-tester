@@ -38,6 +38,15 @@ export const AIAssistedValuation: React.FC<AIAssistedValuationProps> = ({ report
   const [showOutOfCreditsModal, setShowOutOfCreditsModal] = useState(false);
   const [error, setError] = useState<string | null>(null);
   
+  // NEW: Store session ID in component state (created once on mount)
+  const [sessionId] = useState(() => {
+    const timestamp = Date.now();
+    const randomId = Math.random().toString(36).substring(2, 15);
+    const newSessionId = `session_${timestamp}_${randomId}`;
+    console.log('[SESSION] Created new session:', newSessionId);
+    return newSessionId;
+  });
+  
   // Progressive report state - now implemented
   const [reportSections, setReportSections] = useState<any[]>([]);
   const [reportPhase, setReportPhase] = useState(0);
@@ -862,7 +871,7 @@ export const AIAssistedValuation: React.FC<AIAssistedValuationProps> = ({ report
                 }
               >
                 <StreamingChat
-                  sessionId={`session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`}
+                  sessionId={sessionId}
                   userId={user?.id}
                   onValuationComplete={handleValuationComplete}
                   onReportUpdate={handleReportUpdate}

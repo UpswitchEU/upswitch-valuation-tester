@@ -675,6 +675,15 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
     };
   }, [sessionId, initializeWithRetry]); // ✅ Only sessionId - stable dependency
 
+  // NEW: Log session lifecycle
+  useEffect(() => {
+    console.log('[SESSION] Component mounted with session:', sessionId);
+    
+    return () => {
+      console.log('[SESSION] Component unmounting, session:', sessionId);
+    };
+  }, [sessionId]);
+
   // Cleanup on unmount
   useEffect(() => {
     return () => {
@@ -1075,6 +1084,8 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
     }
     requestIdRef.current = requestId;
 
+    // NEW: Log session tracking
+    console.log('[SESSION] Sending message with session:', sessionId);
     
     chatLogger.info('Starting streaming conversation', { 
       userInput: userInput.substring(0, 50) + '...', 
