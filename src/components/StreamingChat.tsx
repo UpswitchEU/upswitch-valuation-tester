@@ -1025,7 +1025,9 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
             validation_status: 'needs_clarification',
             clarification_value: data.value,
             clarification_field: data.field,
-            needs_confirmation: true
+            needs_confirmation: true,
+            // Merge any additional metadata from backend
+            ...(data.metadata || {})
           }
         });
         break;

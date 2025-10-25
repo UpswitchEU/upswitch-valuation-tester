@@ -5,7 +5,7 @@
  */
 
 import React, { useState } from 'react';
-import { CheckCircle, Clock, AlertCircle, Loader2 } from 'lucide-react';
+import { CheckCircle, Clock, AlertCircle, Loader2, AlertTriangle } from 'lucide-react';
 
 interface ReportSection {
   id: string;
@@ -14,6 +14,9 @@ interface ReportSection {
   progress: number;
   timestamp: Date;
   status: 'loading' | 'completed' | 'error';
+  is_fallback?: boolean;
+  is_error?: boolean;
+  error_message?: string;
 }
 
 interface ProgressiveValuationReportProps {
@@ -89,7 +92,7 @@ export const ProgressiveValuationReport: React.FC<ProgressiveValuationReportProp
 
   // Render loading placeholder for pending sections
   const renderLoadingPlaceholder = (sectionId: string) => (
-    <div key={`placeholder-${sectionId}`} className="section-placeholder bg-gray-50 rounded-lg p-6 mb-4">
+    <div key={`placeholder-${sectionId}`} className="section-placeholder bg-gray-50 rounded-lg p-6 mb-4 border border-gray-200 relative overflow-hidden">
       <div className="animate-pulse">
         <div className="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
         <div className="h-4 bg-gray-200 rounded w-1/2 mb-2"></div>
@@ -99,6 +102,24 @@ export const ProgressiveValuationReport: React.FC<ProgressiveValuationReportProp
         <div className="inline-flex items-center px-3 py-1 rounded-full text-sm bg-blue-100 text-blue-800">
           <Loader2 className="animate-spin -ml-1 mr-2 h-4 w-4 text-blue-600" />
           Generating {getSectionDisplayName(sectionId)}...
+        </div>
+      </div>
+    </div>
+  );
+
+  // Render shimmer loading effect for instant preview
+  const renderShimmerPlaceholder = (sectionId: string) => (
+    <div key={`shimmer-${sectionId}`} className="section-shimmer bg-white rounded-lg p-6 mb-4 border border-gray-200 relative overflow-hidden">
+      <div className="shimmer-container">
+        <div className="shimmer-line w-3/4 h-4 bg-gray-200 rounded mb-2"></div>
+        <div className="shimmer-line w-1/2 h-4 bg-gray-200 rounded mb-2"></div>
+        <div className="shimmer-line w-2/3 h-4 bg-gray-200 rounded mb-2"></div>
+        <div className="shimmer-line w-1/3 h-4 bg-gray-200 rounded"></div>
+      </div>
+      <div className="text-center mt-4">
+        <div className="inline-flex items-center px-3 py-1 rounded-full text-sm bg-gradient-to-r from-blue-100 to-indigo-100 text-blue-800">
+          <div className="w-4 h-4 bg-blue-200 rounded-full animate-pulse mr-2"></div>
+          <span>Preparing {getSectionDisplayName(sectionId)}...</span>
         </div>
       </div>
     </div>
@@ -116,6 +137,63 @@ export const ProgressiveValuationReport: React.FC<ProgressiveValuationReportProp
       default:
         return <Clock className="h-5 w-5 text-gray-400" />;
     }
+  };
+
+  // Render fallback section
+  const renderFallbackSection = (section: ReportSection) => {
+    return (
+      <div className="section-fallback border-l-4 border-yellow-500 bg-yellow-50 rounded-lg p-4 mb-4">
+        <div className="flex items-center mb-2">
+          <AlertTriangle className="h-5 w-5 text-yellow-600 mr-2" />
+          <span className="text-sm text-yellow-800 font-medium">
+            Using industry averages - full calculation unavailable
+          </span>
+        </div>
+        <div className="text-sm text-yellow-700 mb-3">
+          This section uses simplified industry benchmarks due to limited data availability.
+        </div>
+        <div dangerouslySetInnerHTML={{ __html: section.html }} />
+      </div>
+    );
+  };
+
+  // Render error section
+  const renderErrorSection = (section: ReportSection) => {
+    return (
+      <div className="section-error bg-red-50 border border-red-200 rounded-lg p-4 mb-4">
+        <div className="flex items-center mb-2">
+          <AlertCircle className="h-5 w-5 text-red-500 mr-2" />
+          <span className="text-red-700 font-medium">Unable to generate this section</span>
+        </div>
+        {section.error_message && (
+          <p className="text-sm text-red-600 mb-3">{section.error_message}</p>
+        )}
+        <div className="text-sm text-red-600">
+          <p>This section could not be calculated. Please try:</p>
+          <ul className="list-disc list-inside mt-2 space-y-1">
+            <li>Providing additional financial information</li>
+            <li>Checking that your data is complete and accurate</li>
+            <li>Refreshing the page</li>
+          </ul>
+        </div>
+      </div>
+    );
+  };
+
+  // Main section renderer with fallback/error handling
+  const renderSection = (section: ReportSection) => {
+    if (section.is_fallback) {
+      return renderFallbackSection(section);
+    }
+    
+    if (section.is_error) {
+      return renderErrorSection(section);
+    }
+    
+    // Normal section rendering
+    return (
+      <div className="section-content" dangerouslySetInnerHTML={{ __html: section.html }} />
+    );
   };
 
   return (
@@ -164,10 +242,7 @@ export const ProgressiveValuationReport: React.FC<ProgressiveValuationReportProp
                   Phase {section.phase}
                 </span>
               </div>
-              <div 
-                className="prose max-w-none"
-                dangerouslySetInnerHTML={{ __html: section.html }}
-              />
+              {renderSection(section)}
             </div>
           ))}
       </div>
@@ -178,7 +253,7 @@ export const ProgressiveValuationReport: React.FC<ProgressiveValuationReportProp
           <h3 className="text-lg font-semibold text-gray-900 mb-4">Upcoming Sections</h3>
           <div className="space-y-4">
             {getPendingSections(currentPhase + 1).map(section => 
-              renderLoadingPlaceholder(section)
+              currentPhase === 0 ? renderShimmerPlaceholder(section) : renderLoadingPlaceholder(section)
             )}
           </div>
         </div>
@@ -215,6 +290,38 @@ export const ProgressiveValuationReport: React.FC<ProgressiveValuationReportProp
           </p>
         </div>
       )}
+
+      <style jsx>{`
+        .section-shimmer {
+          position: relative;
+          overflow: hidden;
+        }
+        
+        .section-shimmer::before {
+          content: '';
+          position: absolute;
+          top: 0;
+          left: -100%;
+          width: 100%;
+          height: 100%;
+          background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+          animation: shimmer 2s infinite;
+        }
+        
+        @keyframes shimmer {
+          0% { left: -100%; }
+          100% { left: 100%; }
+        }
+        
+        .section-placeholder {
+          animation: fadeIn 0.5s ease-in-out;
+        }
+        
+        @keyframes fadeIn {
+          from { opacity: 0; transform: translateY(10px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+      `}</style>
     </div>
   );
 };

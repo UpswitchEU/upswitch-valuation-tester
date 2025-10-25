@@ -130,6 +130,18 @@ export const AIAssistedValuation: React.FC<AIAssistedValuationProps> = ({ report
   // NEW: Live HTML report state
   const [liveHtmlReport, setLiveHtmlReport] = useState<string>('');
   const [reportProgress, setReportProgress] = useState<number>(0);
+  
+  // NEW: Optimistic UI state
+  const [collectedData, setCollectedData] = useState<Record<string, any>>({});
+  const [dataCollectionProgress, setDataCollectionProgress] = useState<number>(0);
+  const [placeholderValuation, setPlaceholderValuation] = useState<{
+    low: number;
+    mid: number;
+    high: number;
+    confidence: string;
+    note?: string;
+  } | null>(null);
+  const [showInstantPreview, setShowInstantPreview] = useState<boolean>(false);
 
   // NEW: Toolbar state
   const [activeTab, setActiveTab] = useState<'preview' | 'source' | 'info'>('preview');
@@ -143,11 +155,42 @@ export const AIAssistedValuation: React.FC<AIAssistedValuationProps> = ({ report
     setReportProgress(progress);
   }, []);
 
-  // NEW: Handle data collection events
+  // NEW: Handle data collection events with optimistic UI updates
   const handleDataCollected = useCallback((data: any) => {
     console.log('Data collected in AIAssistedValuation:', data);
-    // Update local state if needed
-  }, []);
+    
+    // IMMEDIATE: Update UI optimistically
+    setCollectedData(prev => ({
+      ...prev,
+      ...data
+    }));
+    
+    // IMMEDIATE: Show placeholder valuation for key fields
+    if (data.revenue && !isNaN(parseFloat(data.revenue))) {
+      const revenue = parseFloat(data.revenue);
+      // Quick estimate: 2-5x revenue multiple
+      const optimisticLow = revenue * 2;
+      const optimisticHigh = revenue * 5;
+      
+      // Update placeholder valuation immediately
+      setPlaceholderValuation({
+        low: optimisticLow,
+        mid: (optimisticLow + optimisticHigh) / 2,
+        high: optimisticHigh,
+        confidence: 'Preliminary',
+        note: 'Quick estimate based on revenue'
+      });
+    }
+    
+    // IMMEDIATE: Update progress indicator
+    const newProgress = Object.keys({ ...collectedData, ...data }).length;
+    setDataCollectionProgress(newProgress);
+    
+    // IMMEDIATE: Show instant preview if this is the first data
+    if (Object.keys(collectedData).length === 0) {
+      setShowInstantPreview(true);
+    }
+  }, [collectedData]);
 
   // NEW: Handle valuation preview events
   const handleValuationPreview = useCallback((preview: any) => {
@@ -166,6 +209,67 @@ export const AIAssistedValuation: React.FC<AIAssistedValuationProps> = ({ report
     console.log('Progress update in AIAssistedValuation:', progress);
     // Update local state if needed
   }, []);
+
+  // NEW: Render optimistic instant preview
+  const renderOptimisticPreview = () => {
+    if (!showInstantPreview || Object.keys(collectedData).length === 0) {
+      return null;
+    }
+
+    return (
+      <div className="optimistic-preview bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg p-6 mb-6 border border-blue-200">
+        <div className="flex items-center mb-4">
+          <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mr-4">
+            <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+            </svg>
+          </div>
+          <div>
+            <h2 className="text-2xl font-bold text-gray-900">Building Your Valuation Report</h2>
+            <p className="text-gray-600">I'm analyzing your business as we chat...</p>
+          </div>
+        </div>
+        
+        <div className="bg-white rounded-lg p-4 border border-blue-200">
+          <div className="flex justify-between items-center mb-2">
+            <h3 className="text-lg font-semibold text-gray-900">Data Collection Progress</h3>
+            <span className="text-sm text-gray-600">{Object.keys(collectedData).length}/8 fields</span>
+          </div>
+          <div className="w-full bg-gray-200 rounded-full h-2 mb-3">
+            <div 
+              className="bg-blue-600 h-2 rounded-full transition-all duration-300" 
+              style={{ width: `${(Object.keys(collectedData).length / 8) * 100}%` }}
+            ></div>
+          </div>
+          <p className="text-sm text-gray-600">
+            {Math.round((Object.keys(collectedData).length / 8) * 100)}% complete • {8 - Object.keys(collectedData).length} more questions to go
+          </p>
+        </div>
+
+        {placeholderValuation && (
+          <div className="placeholder-valuation bg-white rounded-lg p-6 mt-4 border border-gray-200">
+            <div className="text-center">
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">Estimated Value Range</h3>
+              <div className="shimmer-effect">
+                <p className="text-4xl font-bold text-blue-600 mb-2">
+                  €{placeholderValuation.low.toLocaleString()} - €{placeholderValuation.high.toLocaleString()}
+                </p>
+                <p className="text-sm text-gray-500 mb-4">
+                  Refining as you answer questions...
+                </p>
+                <div className="inline-flex items-center px-3 py-1 rounded-full text-sm bg-blue-100 text-blue-800">
+                  <svg className="animate-pulse w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd"></path>
+                  </svg>
+                  {placeholderValuation.confidence}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  };
 
 
   // Progressive report handlers - now implemented
@@ -721,6 +825,9 @@ export const AIAssistedValuation: React.FC<AIAssistedValuationProps> = ({ report
           {/* Tab Content */}
           {activeTab === 'preview' && (
             <div className="flex flex-col h-full">
+              {/* Show optimistic preview first if available */}
+              {renderOptimisticPreview()}
+              
               {reportSections.length > 0 || finalReportHtml ? (
                 <ProgressiveValuationReport
                   sections={reportSections}
@@ -734,9 +841,9 @@ export const AIAssistedValuation: React.FC<AIAssistedValuationProps> = ({ report
                   isGenerating={stage === 'chat'}
                   progress={reportProgress}
                 />
-              ) : (
+              ) : !showInstantPreview ? (
                 <ValuationEmptyState />
-              )}
+              ) : null}
             </div>
           )}
 
@@ -967,6 +1074,38 @@ export const AIAssistedValuation: React.FC<AIAssistedValuationProps> = ({ report
           console.log('Try manual flow clicked');
         }}
       />
+
+      <style jsx>{`
+        .shimmer-effect {
+          position: relative;
+          overflow: hidden;
+        }
+        
+        .shimmer-effect::before {
+          content: '';
+          position: absolute;
+          top: 0;
+          left: -100%;
+          width: 100%;
+          height: 100%;
+          background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+          animation: shimmer 2s infinite;
+        }
+        
+        @keyframes shimmer {
+          0% { left: -100%; }
+          100% { left: 100%; }
+        }
+        
+        .optimistic-preview {
+          animation: fadeIn 0.5s ease-in-out;
+        }
+        
+        @keyframes fadeIn {
+          from { opacity: 0; transform: translateY(10px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+      `}</style>
     </div>
   );
 };
