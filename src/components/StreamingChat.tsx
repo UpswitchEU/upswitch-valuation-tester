@@ -757,6 +757,53 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
         });
         break;
         
+      case 'report_section':
+        // NEW: Progressive section update
+        chatLogger.info('Report section received', {
+          sessionId,
+          section: data.section,
+          phase: data.phase,
+          progress: data.progress,
+          htmlLength: data.html?.length || 0,
+          timestamp: new Date().toISOString()
+        });
+        
+        onReportSectionUpdate?.(
+          data.section,
+          data.html,
+          data.phase,
+          data.progress
+        );
+        
+        chatLogger.debug('Report section processed', {
+          sessionId,
+          section: data.section,
+          phase: data.phase,
+          progress: data.progress,
+          htmlPreview: data.html?.substring(0, 100) + '...'
+        });
+        break;
+        
+      case 'report_complete':
+        // NEW: Final complete report
+        chatLogger.info('Report complete received', {
+          sessionId,
+          valuationId: data.valuation_id,
+          htmlLength: data.html?.length || 0,
+          progress: data.progress,
+          timestamp: new Date().toISOString()
+        });
+        
+        onReportComplete?.(data.html, data.valuation_id);
+        
+        chatLogger.debug('Report complete processed', {
+          sessionId,
+          valuationId: data.valuation_id,
+          progress: data.progress,
+          htmlPreview: data.html?.substring(0, 100) + '...'
+        });
+        break;
+        
         
       case 'message_complete':
         // Complete response
