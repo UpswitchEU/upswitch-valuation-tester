@@ -12,13 +12,16 @@ import { HeroUIProvider } from '@heroui/react';
 import { Toaster } from 'react-hot-toast';
 import { AuthProvider } from './contexts/AuthContext';
 import { router } from './router';
+import PlatformPasswordProtection from './shared/components/security/PlatformPasswordProtection';
 import './index.css';
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
     <HeroUIProvider>
       <AuthProvider>
-        <RouterProvider router={router} />
+        <PlatformPasswordProtection>
+          <RouterProvider router={router} />
+        </PlatformPasswordProtection>
       </AuthProvider>
       <Toaster
         position="top-right"

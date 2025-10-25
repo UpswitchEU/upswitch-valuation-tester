@@ -4,8 +4,8 @@ import { CheckCircle, Save, Building2 } from 'lucide-react';
 import { PANEL_CONSTRAINTS, MOBILE_BREAKPOINT } from '../constants/panelConstants';
 import { StreamingChat } from './StreamingChat';
 import { LiveValuationReport } from './LiveValuationReport';
-// Progressive report component - placeholder for future implementation
-// import { ProgressiveValuationReport } from './ProgressiveValuationReport';
+// Progressive report component - now implemented
+import { ProgressiveValuationReport } from './ProgressiveValuationReport';
 import { ErrorBoundary } from './ErrorBoundary';
 import { ValuationToolbar } from './ValuationToolbar';
 import { ValuationInfoPanel } from './ValuationInfoPanel';
@@ -38,11 +38,18 @@ export const AIAssistedValuation: React.FC<AIAssistedValuationProps> = ({ report
   const [showOutOfCreditsModal, setShowOutOfCreditsModal] = useState(false);
   const [error, setError] = useState<string | null>(null);
   
-  // Progressive report state (placeholder for future implementation)
-  // const [reportSections] = useState<any[]>([]);
-  // const [reportPhase] = useState(0);
-  // const [finalReportHtml] = useState<string>('');
-  // const [finalValuationId] = useState<string>('');
+  // Progressive report state - now implemented
+  const [reportSections, setReportSections] = useState<any[]>([]);
+  const [reportPhase, setReportPhase] = useState(0);
+  const [finalReportHtml, setFinalReportHtml] = useState<string>('');
+  const [finalValuationId, setFinalValuationId] = useState<string>('');
+  
+  // Debug: Log final valuation ID when it changes
+  useEffect(() => {
+    if (finalValuationId) {
+      console.log('Final valuation ID updated:', finalValuationId);
+    }
+  }, [finalValuationId]);
   
   // New state for lovable experience features (commented out for now)
   // const [collectedData, setCollectedData] = useState<Record<string, any>>({});
@@ -160,21 +167,25 @@ export const AIAssistedValuation: React.FC<AIAssistedValuationProps> = ({ report
     // Update local state if needed
   }, []);
 
-  // Progressive report handlers
+
+  // Progressive report handlers - now implemented
   const handleReportSectionUpdate = useCallback((
     section: string,
-    _html: string,
+    html: string,
     phase: number,
     progress: number
   ) => {
-    chatLogger.info('Report section update received', { section, phase, progress });
-    // Progressive report updates will be implemented when backend supports it
+    chatLogger.info('Report section update received', { section, phase, progress, htmlLength: html.length });
+    setReportSections(prev => [...prev, { section, html, phase, progress }]);
+    setReportPhase(phase);
   }, []);
 
-  const handleReportComplete = useCallback((_html: string, valuationId: string) => {
-    chatLogger.info('Report complete received', { valuationId });
-    // Progressive report completion will be implemented when backend supports it
+  const handleReportComplete = useCallback((html: string, valuationId: string) => {
+    chatLogger.info('Report complete received', { valuationId, htmlLength: html.length });
+    setFinalReportHtml(html);
+    setFinalValuationId(valuationId);
     setStage('results');
+    console.log('Final valuation ID set:', valuationId);
   }, []);
 
   // NEW: Start intelligent conversation with pre-filled data
@@ -710,7 +721,14 @@ export const AIAssistedValuation: React.FC<AIAssistedValuationProps> = ({ report
           {/* Tab Content */}
           {activeTab === 'preview' && (
             <div className="flex flex-col h-full">
-              {liveHtmlReport ? (
+              {reportSections.length > 0 || finalReportHtml ? (
+                <ProgressiveValuationReport
+                  sections={reportSections}
+                  phase={reportPhase}
+                  finalHtml={finalReportHtml}
+                  isGenerating={stage === 'chat'}
+                />
+              ) : liveHtmlReport ? (
                 <LiveValuationReport
                   htmlContent={liveHtmlReport}
                   isGenerating={stage === 'chat'}

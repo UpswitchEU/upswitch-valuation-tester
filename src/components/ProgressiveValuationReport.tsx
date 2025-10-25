@@ -18,16 +18,24 @@ interface ReportSection {
 
 interface ProgressiveValuationReportProps {
   className?: string;
+  sections?: any[];
+  phase?: number;
+  finalHtml?: string;
+  isGenerating?: boolean;
 }
 
 export const ProgressiveValuationReport: React.FC<ProgressiveValuationReportProps> = ({
-  className = ''
+  className = '',
+  sections: propSections = [],
+  phase: propPhase = 0,
+  finalHtml: propFinalHtml = '',
+  isGenerating: propIsGenerating = false
 }) => {
-  const [sections] = useState<ReportSection[]>([]);
-  const [currentPhase] = useState(0);
+  const [sections] = useState<ReportSection[]>(propSections);
+  const [currentPhase] = useState(propPhase);
   const [overallProgress] = useState(0);
-  const [isGenerating] = useState(false);
-  const [finalReport] = useState<string>('');
+  const [isGenerating] = useState(propIsGenerating);
+  const [finalReport] = useState<string>(propFinalHtml);
   const [valuationId] = useState<string>('');
 
   // Placeholder handlers for future progressive report implementation
