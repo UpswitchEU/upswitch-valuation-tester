@@ -355,7 +355,7 @@ export const ProgressiveValuationReport: React.FC<ProgressiveValuationReportProp
         </div>
       )}
 
-      <style jsx>{`
+      <style>{`
         .section-shimmer {
           position: relative;
           overflow: hidden;

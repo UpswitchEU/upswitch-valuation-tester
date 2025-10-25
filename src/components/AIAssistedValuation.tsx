@@ -133,7 +133,7 @@ export const AIAssistedValuation: React.FC<AIAssistedValuationProps> = ({ report
   
   // NEW: Optimistic UI state
   const [collectedData, setCollectedData] = useState<Record<string, any>>({});
-  const [dataCollectionProgress, setDataCollectionProgress] = useState<number>(0);
+  const [_dataCollectionProgress, setDataCollectionProgress] = useState<number>(0);
   const [placeholderValuation, setPlaceholderValuation] = useState<{
     low: number;
     mid: number;
@@ -1149,7 +1149,7 @@ export const AIAssistedValuation: React.FC<AIAssistedValuationProps> = ({ report
         }}
       />
 
-      <style jsx>{`
+      <style>{`
         .shimmer-effect {
           position: relative;
           overflow: hidden;
