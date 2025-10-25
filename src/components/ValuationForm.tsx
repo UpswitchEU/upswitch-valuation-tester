@@ -84,12 +84,14 @@ export const ValuationForm: React.FC = () => {
   // Historical data is now handled by HistoricalDataInputs component
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6 @container">
+    <form onSubmit={handleSubmit} className="space-y-8 @container">
 
 
       {/* Basic Information */}
-      <div className="bg-zinc-800 rounded-lg border border-zinc-700 p-6">
-        <h3 className="text-lg font-semibold text-white mb-4">Basic Information</h3>
+      <div className="space-y-4">
+        <h3 className="text-sm font-semibold text-zinc-400 uppercase tracking-wide pb-2 border-b border-zinc-700">
+          Basic Information
+        </h3>
         
         <div className="grid grid-cols-1 @lg:grid-cols-2 sm:grid-cols-2 gap-6">
           {/* Company Name */}
@@ -189,8 +191,10 @@ export const ValuationForm: React.FC = () => {
       </div>
 
       {/* Ownership Structure */}
-      <div className="bg-zinc-800 rounded-lg border border-zinc-700 p-6">
-        <h3 className="text-lg font-semibold text-white mb-4">Ownership Structure</h3>
+      <div className="space-y-4">
+        <h3 className="text-sm font-semibold text-zinc-400 uppercase tracking-wide pb-2 border-b border-zinc-700">
+          Ownership Structure
+        </h3>
         
         <div className="grid grid-cols-1 @lg:grid-cols-2 sm:grid-cols-2 gap-6">
           {/* Business Type */}
@@ -224,8 +228,10 @@ export const ValuationForm: React.FC = () => {
       </div>
 
       {/* Financial Data */}
-      <div className="bg-zinc-800 rounded-lg border border-zinc-700 p-6">
-        <h3 className="text-lg font-semibold text-white mb-4">Current Year Financials ({Math.min(new Date().getFullYear(), 2100)})</h3>
+      <div className="space-y-4">
+        <h3 className="text-sm font-semibold text-zinc-400 uppercase tracking-wide pb-2 border-b border-zinc-700">
+          Current Year Financials ({Math.min(new Date().getFullYear(), 2100)})
+        </h3>
         
         <div className="grid grid-cols-1 @lg:grid-cols-2 sm:grid-cols-2 gap-6">
           {/* Revenue */}
@@ -265,13 +271,15 @@ export const ValuationForm: React.FC = () => {
       </div>
 
       {/* Historical Data (3 Years) */}
-      <div className="bg-zinc-800 rounded-lg border border-zinc-700 p-6">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-semibold text-white">Historical Data (Optional)</h3>
+      <div className="space-y-4">
+        <div className="flex items-center justify-between pb-2 border-b border-zinc-700">
+          <h3 className="text-sm font-semibold text-zinc-400 uppercase tracking-wide">
+            Historical Data (Optional)
+          </h3>
           <span className="text-xs text-green-400 bg-green-900/30 px-2 py-1 rounded border border-green-700/50">+20% Accuracy</span>
         </div>
         
-        <p className="text-sm text-zinc-300 mb-4">
+        <p className="text-sm text-zinc-300">
           Adding 3 years of historical data enables growth rate calculation and improves valuation accuracy
         </p>
 
