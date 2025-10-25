@@ -159,3 +159,4 @@ class ProgressiveReportServiceImpl implements ProgressiveReportService {
 // Export singleton instance
 export const progressiveReportService = new ProgressiveReportServiceImpl();
 export type { ProgressiveReportSection, ProgressiveReportService };
+
