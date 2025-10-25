@@ -5,6 +5,8 @@ import { ValuationForm } from './ValuationForm';
 import { Results } from './Results';
 import { useValuationStore } from '../store/useValuationStore';
 import type { ValuationResponse } from '../types/valuation';
+import { PANEL_CONSTRAINTS, MOBILE_BREAKPOINT } from '../constants/panelConstants';
+import { ResizableDivider } from './ResizableDivider';
 // import { useReportsStore } from '../store/useReportsStore'; // Deprecated: Now saving to database
 // import { urls } from '../router'; // Removed reports link
 
@@ -21,6 +23,23 @@ export const ManualValuationFlow: React.FC<ManualValuationFlowProps> = ({ onComp
   const { result } = useValuationStore();
   // const { addReport } = useReportsStore(); // Deprecated: Now saving to database
   const [reportSaved, setReportSaved] = useState(false);
+
+  // Panel resize state with localStorage persistence
+  const [leftPanelWidth, setLeftPanelWidth] = useState(() => {
+    try {
+      const saved = localStorage.getItem('upswitch-panel-width');
+      if (saved) {
+        const parsed = parseFloat(saved);
+        if (!isNaN(parsed) && parsed >= PANEL_CONSTRAINTS.MIN_WIDTH && parsed <= PANEL_CONSTRAINTS.MAX_WIDTH) {
+          return parsed;
+        }
+      }
+    } catch (error) {
+      console.warn('Failed to load saved panel width:', error);
+    }
+    return PANEL_CONSTRAINTS.DEFAULT_WIDTH;
+  });
+  const [isMobile, setIsMobile] = useState(false);
 
   // 📝 DEPRECATED: Auto-save report to localStorage
   // Now handled by calculateValuation() → saveToBackend()
@@ -46,6 +65,40 @@ export const ManualValuationFlow: React.FC<ManualValuationFlowProps> = ({ onComp
       }
     }
   }, [result, onComplete]);
+
+  // Mobile detection
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < MOBILE_BREAKPOINT);
+    };
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+
+  // Save panel width to localStorage
+  useEffect(() => {
+    try {
+      localStorage.setItem('upswitch-panel-width', leftPanelWidth.toString());
+    } catch (error) {
+      console.warn('Failed to save panel width:', error);
+    }
+  }, [leftPanelWidth]);
+
+  // Resize handler with snap-to-default behavior
+  const handleResize = (newWidth: number) => {
+    const constrainedWidth = Math.max(
+      PANEL_CONSTRAINTS.MIN_WIDTH,
+      Math.min(PANEL_CONSTRAINTS.MAX_WIDTH, newWidth)
+    );
+    
+    // Snap to default (30%) if close (within 2% threshold)
+    if (Math.abs(constrainedWidth - PANEL_CONSTRAINTS.DEFAULT_WIDTH) < 2) {
+      setLeftPanelWidth(PANEL_CONSTRAINTS.DEFAULT_WIDTH);
+    } else {
+      setLeftPanelWidth(constrainedWidth);
+    }
+  };
 
   const handleStartOver = () => {
     setStage('form');
@@ -94,9 +147,10 @@ export const ManualValuationFlow: React.FC<ManualValuationFlowProps> = ({ onComp
 
       {/* Full-screen Split Panel - Ilara Style */}
       <div className="flex flex-col lg:flex-row flex-1 overflow-hidden mx-4 my-4 rounded-lg border border-zinc-800">
-        {/* Left Panel: Form (60% on desktop, full width on mobile) - Always visible */}
+        {/* Left Panel: Form (resizable on desktop, full width on mobile) - Always visible */}
         <div 
-          className="h-full flex flex-col bg-zinc-900 lg:border-r border-zinc-800 w-full lg:w-[60%]"
+          className="h-full flex flex-col bg-zinc-900 lg:border-r border-zinc-800 w-full lg:w-auto"
+          style={{ width: isMobile ? '100%' : `${leftPanelWidth}%` }}
         >
           <div className="flex-1 overflow-y-auto p-4 sm:p-6">
             <div className="max-w-4xl mx-auto">
@@ -149,8 +203,20 @@ export const ManualValuationFlow: React.FC<ManualValuationFlowProps> = ({ onComp
           </div>
         </div>
 
-        {/* Right Panel: Report Preview (40% on desktop, full width on mobile below form) */}
-        <div className="h-full min-h-[400px] lg:min-h-0 flex flex-col bg-white overflow-y-auto w-full lg:w-[40%] border-t lg:border-t-0 border-zinc-800">
+        {/* Resizer */}
+        {!isMobile && (
+          <ResizableDivider 
+            onResize={handleResize} 
+            leftWidth={leftPanelWidth}
+            isMobile={isMobile}
+          />
+        )}
+
+        {/* Right Panel: Report Preview (calculated width on desktop, full width on mobile below form) */}
+        <div 
+          className="h-full min-h-[400px] lg:min-h-0 flex flex-col bg-white overflow-y-auto w-full lg:w-auto border-t lg:border-t-0 border-zinc-800"
+          style={{ width: isMobile ? '100%' : `${100 - leftPanelWidth}%` }}
+        >
           {stage === 'form' && !result && (
             <div className="flex flex-col items-center justify-center flex-1 p-6 sm:p-8 text-center">
               <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-zinc-100 flex items-center justify-center mb-3 sm:mb-4">

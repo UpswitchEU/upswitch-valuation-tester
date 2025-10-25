@@ -262,16 +262,6 @@ const PlatformPasswordProtection: React.FC<PlatformPasswordProtectionProps> = ({
     }
   };
 
-  const handleLogout = () => {
-    deleteCookie(PLATFORM_COOKIE_NAME);
-    setIsAuthenticated(false);
-    setPassword('');
-    setError('');
-    clearAttempts();
-    setIsLocked(false);
-    logger.info('Platform access logged out');
-  };
-
   // Show loading state
   if (isLoading) {
     return (
@@ -372,26 +362,8 @@ const PlatformPasswordProtection: React.FC<PlatformPasswordProtectionProps> = ({
     );
   }
 
-  // Show protected content with logout option
-  return (
-    <div className="relative">
-      {/* Logout Button - Always visible for platform protection */}
-      <div className="fixed top-8 right-8 z-50">
-        <button
-          onClick={handleLogout}
-          className="w-12 h-12 bg-white/10 backdrop-blur-md border border-white/30 rounded-xl shadow-2xl flex items-center justify-center hover:bg-white/20 transition-all duration-300 group"
-          title="Logout from platform"
-        >
-          <svg className="w-6 h-6 text-white group-hover:scale-110 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-          </svg>
-        </button>
-      </div>
-      
-      {/* Protected Content */}
-      {children}
-    </div>
-  );
+  // Show protected content without logout button
+  return <>{children}</>;
 };
 
 export default PlatformPasswordProtection;
