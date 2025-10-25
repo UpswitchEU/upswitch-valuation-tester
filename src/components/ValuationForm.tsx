@@ -291,17 +291,22 @@ export const ValuationForm: React.FC = () => {
       </div>
 
       {/* Submit Button */}
-      <div className="flex flex-col justify-end gap-4">
+      <div className="flex flex-col justify-end gap-2">
+        {/* Reset Link - Subtle Secondary Action */}
         <button
           type="button"
-          className="px-6 py-3 border border-zinc-600 rounded-md text-zinc-300 font-medium hover:bg-zinc-700 transition-colors"
+          className="text-sm text-zinc-400 hover:text-zinc-200 transition-colors duration-200 flex items-center justify-center gap-2 py-2 hover:underline group"
         >
-          Reset Form
+          <svg className="h-4 w-4 group-hover:rotate-[-30deg] transition-transform duration-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+          </svg>
+          <span>Reset Form</span>
         </button>
+        {/* Calculate Button - Primary CTA */}
         <button
           type="submit"
           disabled={isCalculating || !formData.revenue || !formData.ebitda || !formData.industry || !formData.country_code}
-          className="px-6 py-3 bg-primary-600 text-white rounded-md font-medium hover:bg-primary-700 disabled:bg-zinc-700 disabled:text-zinc-500 disabled:cursor-not-allowed flex items-center space-x-2 transition-colors"
+          className="w-full px-8 py-4 bg-primary-500 text-white rounded-lg text-base font-semibold hover:bg-primary-600 active:bg-primary-700 disabled:bg-zinc-800 disabled:text-zinc-600 disabled:cursor-not-allowed flex items-center justify-center gap-3 transition-all duration-200 focus:outline-none focus:ring-4 focus:ring-primary-500/30"
         >
           {isCalculating ? (
             <>
@@ -314,7 +319,7 @@ export const ValuationForm: React.FC = () => {
           ) : (
             <>
               <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
               </svg>
               <span>Calculate</span>
             </>
