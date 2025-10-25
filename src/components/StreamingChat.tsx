@@ -9,6 +9,7 @@ import { AI_CONFIG } from '../config';
 import { streamingChatService } from '../services/chat/streamingChatService';
 import { ContextualTip } from './ContextualTip';
 import { LoadingDots } from './LoadingDots';
+import { SuggestionChips } from './SuggestionChips';
 import { useLoadingMessage } from '../hooks/useLoadingMessage';
 // Removed complex validation imports - using simple approach like IlaraAI
 import { chatLogger } from '../utils/logger';
@@ -92,11 +93,21 @@ interface MessageMetadata {
     test_name: string;
     variant: 'A' | 'B' | 'C';
   };
+  
+  // Suggestion System
+  field?: string;
+  originalValue?: string;
+  suggestions?: Array<{
+    text: string;
+    confidence: number;
+    reason: string;
+  }>;
 }
 
 interface Message {
   id: string;
-  type: 'user' | 'ai' | 'system';
+  type: 'user' | 'ai' | 'system' | 'suggestion';
+  role?: 'user' | 'assistant' | 'system';
   content: string;
   timestamp: Date;
   isStreaming?: boolean;
@@ -794,7 +805,7 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
         }
         break;
         
-      case 'error':
+      case 'error': {
         chatLogger.error('Stream error received', { 
           error: data.content,
           sessionId,
@@ -821,6 +832,7 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
         );
         setIsStreaming(false);
         break;
+      }
         
       case 'data_collected':
         chatLogger.info('Data collected event received', {
@@ -846,6 +858,32 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
         // Notify parent component
         onDataCollected?.(data);
         break;
+        
+      case 'suggestion_offered': {
+        chatLogger.info('Suggestion offered event received', {
+          field: data.field,
+          original_value: data.original_value,
+          suggestions_count: data.suggestions?.length || 0
+        });
+        
+        // Create suggestion message
+        const suggestionMessage: Message = {
+          id: `suggestion-${Date.now()}`,
+          role: 'assistant',
+          content: data.message || 'Did you mean one of these?',
+          timestamp: new Date(),
+          type: 'suggestion',
+          metadata: {
+            field: data.field,
+            originalValue: data.original_value,
+            suggestions: data.suggestions
+          }
+        };
+        
+        // Add suggestion message to chat
+        addMessage(suggestionMessage);
+        break;
+      }
         
       case 'valuation_preview':
         chatLogger.info('Valuation preview received', {
@@ -1099,6 +1137,48 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
     }
   }, [handleSubmit]);
 
+  // Handle suggestion selection
+  const handleSuggestionSelect = useCallback(async (field: string, value: string) => {
+    chatLogger.info('Suggestion selected', { field, value });
+    
+    // Add user message showing selection
+    addMessage({
+      id: `user-${Date.now()}`,
+      type: 'user',
+      content: value,
+      timestamp: new Date(),
+      metadata: { 
+        field, 
+        selected_from_suggestions: true,
+        original_suggestion: value
+      }
+    });
+    
+    // Submit directly to backend
+    await startStreamingWithRetry(value);
+  }, [addMessage, startStreamingWithRetry]);
+
+  // Handle suggestion dismissal
+  const handleSuggestionDismiss = useCallback(async (field: string, originalValue: string) => {
+    chatLogger.info('Suggestion dismissed', { field, originalValue });
+    
+    // Add user message showing they kept original
+    addMessage({
+      id: `user-${Date.now()}`,
+      type: 'user',
+      content: originalValue,
+      timestamp: new Date(),
+      metadata: { 
+        field, 
+        dismissed_suggestions: true,
+        original_value: originalValue
+      }
+    });
+    
+    // Submit directly to backend
+    await startStreamingWithRetry(originalValue);
+  }, [addMessage, startStreamingWithRetry]);
+
   const getSmartFollowUps = useCallback(() => {
     const messageCount = messages.length;
     const lastAiMessage = messages.filter(m => m.type === 'ai').slice(-1)[0];
@@ -1253,6 +1333,18 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
                     {message.content}
                   </div>
                   
+                  {/* NEW: Display suggestion chips if available */}
+                  {message.type === 'suggestion' && message.metadata?.suggestions && (
+                    <div className="mt-3">
+                      <SuggestionChips
+                        suggestions={message.metadata.suggestions}
+                        originalValue={message.metadata.originalValue || ''}
+                        field={message.metadata.field || ''}
+                        onSelect={(selected) => handleSuggestionSelect(message.metadata?.field || '', selected)}
+                        onDismiss={() => handleSuggestionDismiss(message.metadata?.field || '', message.metadata?.originalValue || '')}
+                      />
+                    </div>
+                  )}
                   
                   {/* NEW: Display help text if available */}
                   {AI_CONFIG.showHelpText && message.metadata?.help_text && (

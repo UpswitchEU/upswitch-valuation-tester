@@ -30,7 +30,7 @@ export const BrandedLoading: React.FC<BrandedLoadingProps> = ({
   return (
     <div className={`flex flex-col items-center justify-center ${className}`}>
       {/* Animated gradient dot */}
-      <div className={`${sizeClasses[size]} rounded-full bg-gradient-to-br from-blue-500 to-purple-600 animate-pulse`} />
+      <div className={`${sizeClasses[size]} rounded bg-gradient-to-br from-blue-500 to-purple-600 animate-pulse`} />
       
       {showText && (
         <div className="mt-2">

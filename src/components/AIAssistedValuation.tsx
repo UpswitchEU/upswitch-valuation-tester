@@ -89,10 +89,16 @@ export const AIAssistedValuation: React.FC<AIAssistedValuationProps> = ({ report
     }
   }, [leftPanelWidth]);
   
-  // Resize handler
+  // Resize handler with snap-to-default behavior (matching Ilara)
   const handleResize = useCallback((newWidth: number) => {
     const constrainedWidth = Math.max(PANEL_CONSTRAINTS.MIN_WIDTH, Math.min(PANEL_CONSTRAINTS.MAX_WIDTH, newWidth));
-    setLeftPanelWidth(constrainedWidth);
+    
+    // Snap to default (30%) if close (within 2% threshold)
+    if (Math.abs(constrainedWidth - PANEL_CONSTRAINTS.DEFAULT_WIDTH) < 2) {
+      setLeftPanelWidth(PANEL_CONSTRAINTS.DEFAULT_WIDTH);
+    } else {
+      setLeftPanelWidth(constrainedWidth);
+    }
   }, []);
 
   // Mobile panel switcher
