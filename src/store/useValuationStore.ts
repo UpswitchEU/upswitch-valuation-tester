@@ -215,6 +215,17 @@ export const useValuationStore = create<ValuationStore>((set, get) => ({
         fullData: response
       });
       
+      // DIAGNOSTIC: Log report data sections
+      const responseAny = response as any;
+      console.log('DIAGNOSTIC: Report data sections:', {
+        keyValueDrivers: responseAny?.key_value_drivers,
+        riskFactors: responseAny?.risk_factors,
+        financialMetrics: responseAny?.financial_metrics,
+        historicalData: responseAny?.historical_years_data,
+        transparency: responseAny?.transparency,
+        methodologyNotes: responseAny?.methodology_notes
+      });
+      
       setResult(response);
       
       // ✅ AUTO-SAVE TO DATABASE (primary storage)

@@ -1,5 +1,4 @@
 import React from 'react';
-import { CheckCircle } from 'lucide-react';
 import { useValuationStore } from '../../store/useValuationStore';
 
 // Note: Transparency components simplified to avoid type issues
@@ -32,16 +31,7 @@ export const Results: React.FC = () => {
 
   return (
     <div className="space-y-4 sm:space-y-6 mt-4 sm:mt-8">
-      {/* Success Message with Credit Info */}
-      <div className="bg-green-50 border-l-4 border-green-500 p-4 mb-6">
-        <div className="flex items-center gap-3">
-          <CheckCircle className="text-green-600" size={20} />
-          <div>
-            <p className="font-semibold text-green-900">Valuation Complete!</p>
-            <p className="text-sm text-green-700">You still have unlimited valuations remaining</p>
-          </div>
-        </div>
-      </div>
+      {/* Success banner removed - report preview shows completion status */}
 
       {/* Main Results Header */}
       <ResultsHeader result={result} />
