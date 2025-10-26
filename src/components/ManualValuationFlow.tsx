@@ -1,16 +1,19 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Edit3, TrendingUp, ArrowLeft } from 'lucide-react';
+import { Edit3, TrendingUp, Building2 } from 'lucide-react';
 import { ValuationForm } from './ValuationForm';
 import { Results } from './Results';
+import { ValuationToolbar } from './ValuationToolbar';
+import { ValuationInfoPanel } from './ValuationInfoPanel';
+import { HTMLView } from './HTMLView';
 import { useValuationStore } from '../store/useValuationStore';
+import { useAuth } from '../hooks/useAuth';
+// import { DownloadService } from '../services/downloadService';
+import { NameGenerator } from '../utils/nameGenerator';
 import type { ValuationResponse } from '../types/valuation';
 import { PANEL_CONSTRAINTS, MOBILE_BREAKPOINT } from '../constants/panelConstants';
 import { ResizableDivider } from './ResizableDivider';
 // import { useReportsStore } from '../store/useReportsStore'; // Deprecated: Now saving to database
 // import { urls } from '../router'; // Removed reports link
-
-type FlowStage = 'form' | 'results';
 
 interface ManualValuationFlowProps {
   reportId?: string;
@@ -18,9 +21,10 @@ interface ManualValuationFlowProps {
 }
 
 export const ManualValuationFlow: React.FC<ManualValuationFlowProps> = ({ onComplete }) => {
-  const navigate = useNavigate();
-  const [stage, setStage] = useState<FlowStage>('form');
-  const { result } = useValuationStore();
+  const { result, clearResult } = useValuationStore();
+  const { user } = useAuth();
+  const [activeTab, setActiveTab] = useState<'preview' | 'source' | 'info'>('preview');
+  const [valuationName, setValuationName] = useState('');
   // const { addReport } = useReportsStore(); // Deprecated: Now saving to database
   // const [reportSaved, setReportSaved] = useState(false); // Removed with success banner
 
@@ -55,16 +59,39 @@ export const ManualValuationFlow: React.FC<ManualValuationFlowProps> = ({ onComp
   //   }
   // }, [result, formData, stage, reportSaved, addReport]);
 
-  // Watch for result changes to update stage
+  // Generate valuation name from company
   useEffect(() => {
-    if (result) {
-      setStage('results');
-      // Call onComplete callback if provided
-      if (onComplete) {
-        onComplete(result);
-      }
+    if (result?.company_name) {
+      setValuationName(NameGenerator.generateFromCompany(result.company_name));
+    }
+  }, [result]);
+
+  // Watch for result changes
+  useEffect(() => {
+    if (result && onComplete) {
+      onComplete(result);
     }
   }, [result, onComplete]);
+
+  // Toolbar handlers
+  const handleRefresh = () => {
+    // Clear result and reset form
+    clearResult();
+  };
+
+  const handleDownload = async () => {
+    if (!result) return;
+    // await DownloadService.downloadPDF(result);
+    console.log('Download PDF for result:', result);
+  };
+
+  const handleFullScreen = () => {
+    document.documentElement.requestFullscreen();
+  };
+
+  const handleTabChange = (tab: 'preview' | 'source' | 'info') => {
+    setActiveTab(tab);
+  };
 
   // Mobile detection
   useEffect(() => {
@@ -107,42 +134,35 @@ export const ManualValuationFlow: React.FC<ManualValuationFlowProps> = ({ onComp
 
   return (
     <div className="flex flex-col h-full overflow-hidden">
-      {/* Ilara-style Toolbar */}
-      <div className="border-b border-zinc-800 bg-zinc-900/50 backdrop-blur-sm px-3 sm:px-4 md:px-6 py-3 md:py-4">
-        <div className="flex items-center justify-between gap-2">
-          <div className="flex items-center gap-2 sm:gap-3 md:gap-4 min-w-0 flex-1">
-            <button
-              onClick={() => navigate('/')}
-              className="flex items-center gap-1.5 sm:gap-2 px-2 sm:px-3 py-2 text-xs sm:text-sm text-zinc-400 hover:text-white transition-colors rounded-lg hover:bg-zinc-800 flex-shrink-0"
-            >
-              <ArrowLeft className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-              <span className="hidden sm:inline">Other Methods</span>
-              <span className="sm:hidden">Back</span>
-            </button>
-            <div className="h-4 sm:h-6 w-px bg-zinc-700 flex-shrink-0" />
-            <div className="min-w-0 flex-1">
-              <h1 className="text-base sm:text-lg font-bold text-white truncate">📝 Manual Input</h1>
-              <p className="text-xs text-zinc-400 hidden sm:block">Full control over your valuation data</p>
-            </div>
-          </div>
+      {/* ValuationToolbar */}
+      <ValuationToolbar
+        onRefresh={handleRefresh}
+        onDownload={handleDownload}
+        onFullScreen={handleFullScreen}
+        isGenerating={false}
+        user={user}
+        valuationName={valuationName}
+        valuationId={result?.valuation_id}
+        activeTab={activeTab}
+        onTabChange={handleTabChange}
+        companyName={result?.company_name}
+        valuationMethod="Manual Input"
+      />
 
-          {/* Stage indicator */}
-          <div className="flex items-center gap-2 sm:gap-4 md:gap-6 flex-shrink-0">
-            <div className={`flex items-center gap-1 sm:gap-1.5 md:gap-2 px-2 sm:px-2.5 md:px-3 py-1 sm:py-1.5 rounded-full text-xs font-medium ${
-              stage === 'form' ? 'bg-primary-500/20 text-primary-300' : 'bg-zinc-800 text-zinc-400'
-            }`}>
-              <Edit3 className="w-3 h-3 flex-shrink-0" />
-              <span className="hidden sm:inline">Input Data</span>
-            </div>
-            <div className={`flex items-center gap-1 sm:gap-1.5 md:gap-2 px-2 sm:px-2.5 md:px-3 py-1 sm:py-1.5 rounded-full text-xs font-medium ${
-              stage === 'results' ? 'bg-green-500/20 text-green-300' : 'bg-zinc-800 text-zinc-400'
-            }`}>
-              <TrendingUp className="w-3 h-3 flex-shrink-0" />
-              <span className="hidden sm:inline">Results</span>
+      {/* Business Profile Summary */}
+      {result && (
+        <div className="mx-4 mt-4 p-4 bg-zinc-900/50 border border-zinc-800 rounded-lg">
+          <div className="flex items-center gap-3">
+            <Building2 className="w-5 h-5 text-primary-400" />
+            <div>
+              <h3 className="text-white font-medium">{result.company_name}</h3>
+              <p className="text-sm text-zinc-400">
+                Industry • Belgium • Founded N/A
+              </p>
             </div>
           </div>
         </div>
-      </div>
+      )}
 
 
       {/* Full-screen Split Panel - Ilara Style */}
@@ -171,28 +191,53 @@ export const ManualValuationFlow: React.FC<ManualValuationFlowProps> = ({ onComp
           />
         )}
 
-        {/* Right Panel: Report Preview (calculated width on desktop, full width on mobile below form) */}
+        {/* Right Panel: Tabbed Content */}
         <div 
-          className="h-full min-h-[400px] lg:min-h-0 flex flex-col bg-white overflow-y-auto w-full lg:w-auto border-t lg:border-t-0 border-zinc-800"
+          className="h-full min-h-[400px] lg:min-h-0 flex flex-col bg-white overflow-hidden w-full lg:w-auto border-t lg:border-t-0 border-zinc-800"
           style={{ width: isMobile ? '100%' : `${100 - leftPanelWidth}%` }}
         >
-          {stage === 'form' && !result && (
-            <div className="flex flex-col items-center justify-center flex-1 p-6 sm:p-8 text-center">
-              <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-zinc-100 flex items-center justify-center mb-3 sm:mb-4">
-                <TrendingUp className="w-6 h-6 sm:w-8 sm:h-8 text-zinc-400" />
+          {/* Tab Content */}
+          <div className="flex-1 overflow-y-auto">
+            {activeTab === 'preview' && (
+              <div className="p-4 sm:p-6">
+                {result ? (
+                  <Results />
+                ) : (
+                  <div className="flex flex-col items-center justify-center h-full p-6 sm:p-8 text-center">
+                    <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-zinc-100 flex items-center justify-center mb-3 sm:mb-4">
+                      <TrendingUp className="w-6 h-6 sm:w-8 sm:h-8 text-zinc-400" />
+                    </div>
+                    <h3 className="text-base sm:text-lg font-semibold text-zinc-900 mb-2">Valuation Preview</h3>
+                    <p className="text-xs sm:text-sm text-zinc-500 max-w-xs">
+                      Your valuation report will appear here once you submit the form.
+                    </p>
+                  </div>
+                )}
               </div>
-              <h3 className="text-base sm:text-lg font-semibold text-zinc-900 mb-2">Valuation Preview</h3>
-              <p className="text-xs sm:text-sm text-zinc-500 max-w-xs">
-                Your valuation report will appear here once you submit the form.
-              </p>
-            </div>
-          )}
-
-          {result && (
-            <div className="flex-1 overflow-y-auto p-4 sm:p-6">
-              <Results />
-            </div>
-          )}
+            )}
+            
+            {activeTab === 'source' && (
+              <HTMLView result={result} />
+            )}
+            
+            {activeTab === 'info' && (
+              <div className="p-4 sm:p-6">
+                {result ? (
+                  <ValuationInfoPanel result={result} />
+                ) : (
+                  <div className="flex flex-col items-center justify-center h-full p-6 sm:p-8 text-center">
+                    <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-zinc-100 flex items-center justify-center mb-3 sm:mb-4">
+                      <Edit3 className="w-6 h-6 sm:w-8 sm:h-8 text-zinc-400" />
+                    </div>
+                    <h3 className="text-base sm:text-lg font-semibold text-zinc-900 mb-2">Calculation Details</h3>
+                    <p className="text-xs sm:text-sm text-zinc-500 max-w-xs">
+                      Detailed calculation breakdown will appear here once you submit the form.
+                    </p>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </div>

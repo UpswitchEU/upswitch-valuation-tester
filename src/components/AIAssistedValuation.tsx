@@ -1048,25 +1048,7 @@ export const AIAssistedValuation: React.FC<AIAssistedValuationProps> = ({ report
           )}
 
           {activeTab === 'info' && valuationResult && (
-            <ValuationInfoPanel
-              valuationId={valuationResult.valuation_id}
-              companyName={businessProfile?.company_name}
-              valuationMethod={valuationResult.methodology}
-              valuationDate={new Date(valuationResult.valuation_date || Date.now())}
-              inputs={{
-                revenue: businessProfile?.revenue,
-                ebitda: businessProfile?.ebitda,
-                industry: businessProfile?.industry,
-                employees: businessProfile?.employees
-              }}
-              assumptions={{
-                growth_rate: '5%',
-                discount_rate: '10%',
-                terminal_growth: '2%'
-              }}
-              confidenceScore={valuationResult.confidence_score}
-              dataQuality="High"
-            />
+            <ValuationInfoPanel result={valuationResult} />
           )}
 
           {stage === 'results' && valuationResult && activeTab === 'preview' && (
@@ -1197,25 +1179,7 @@ export const AIAssistedValuation: React.FC<AIAssistedValuationProps> = ({ report
           </div>
         )}
         {activeTab === 'info' && valuationResult && (
-          <ValuationInfoPanel
-            valuationId={valuationResult.valuation_id}
-            companyName={businessProfile?.company_name}
-            valuationMethod={valuationResult.methodology}
-            valuationDate={new Date(valuationResult.valuation_date || Date.now())}
-            inputs={{
-              revenue: businessProfile?.revenue,
-              ebitda: businessProfile?.ebitda,
-              industry: businessProfile?.industry,
-              employees: businessProfile?.employees
-            }}
-            assumptions={{
-              growth_rate: '5%',
-              discount_rate: '10%',
-              terminal_growth: '2%'
-            }}
-            confidenceScore={valuationResult.confidence_score}
-            dataQuality="High"
-          />
+          <ValuationInfoPanel result={valuationResult} />
         )}
       </FullScreenModal>
 

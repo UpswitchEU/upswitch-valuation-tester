@@ -22,6 +22,7 @@ interface ValuationStore {
   // Results
   result: ValuationResponse | null;
   setResult: (result: ValuationResponse | null) => void;
+  clearResult: () => void;
 
   // UI state
   isCalculating: boolean;
@@ -100,6 +101,7 @@ export const useValuationStore = create<ValuationStore>((set, get) => ({
   // Results
   result: null,
   setResult: (result) => set({ result }),
+  clearResult: () => set({ result: null }),
 
   // UI state
   isCalculating: false,

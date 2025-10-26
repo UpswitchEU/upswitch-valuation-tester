@@ -1,27 +1,22 @@
 import React from 'react';
 import { Calendar, Building, DollarSign, TrendingUp, FileText, Clock } from 'lucide-react';
+import { CalculationBreakdown } from './InfoTab/CalculationBreakdown';
+import { SensitivityAnalysis } from './InfoTab/SensitivityAnalysis';
+import type { ValuationResponse } from '../types/valuation';
 
 interface ValuationInfoPanelProps {
-  valuationId?: string;
-  companyName?: string;
-  valuationMethod?: string;
-  valuationDate?: Date;
-  inputs?: Record<string, any>;
-  assumptions?: Record<string, any>;
-  confidenceScore?: number;
-  dataQuality?: string;
+  result: ValuationResponse;
 }
 
 export const ValuationInfoPanel: React.FC<ValuationInfoPanelProps> = ({
-  valuationId,
-  companyName,
-  valuationMethod = 'DCF Analysis',
-  valuationDate = new Date(),
-  inputs = {},
-  assumptions = {},
-  confidenceScore = 0.85,
-  dataQuality = 'High'
+  result
 }) => {
+  const valuationId = result.valuation_id;
+  const companyName = result.company_name;
+  const valuationMethod = 'Hybrid Valuation';
+  const valuationDate = new Date();
+  const confidenceScore = result.confidence_score || 0.85;
+  const dataQuality = 'High';
   const formatDate = (date: Date) => {
     return date.toLocaleDateString('en-US', {
       year: 'numeric',
@@ -138,15 +133,33 @@ export const ValuationInfoPanel: React.FC<ValuationInfoPanelProps> = ({
             <h3 className="text-lg font-semibold text-white">Input Parameters</h3>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {Object.entries(inputs).length > 0 ? (
-              Object.entries(inputs).map(([key, value]) => (
-                <div key={key} className="flex justify-between items-center py-2 border-b border-zinc-700">
-                  <span className="text-zinc-400 capitalize">{key.replace(/([A-Z])/g, ' $1').trim()}:</span>
+            {result ? (
+              <>
+                <div className="flex justify-between items-center py-2 border-b border-zinc-700">
+                  <span className="text-zinc-400">Company:</span>
                   <span className="text-white font-medium">
-                    {typeof value === 'number' ? value.toLocaleString() : String(value)}
+                    {result.company_name || 'N/A'}
                   </span>
                 </div>
-              ))
+                <div className="flex justify-between items-center py-2 border-b border-zinc-700">
+                  <span className="text-zinc-400">Valuation ID:</span>
+                  <span className="text-white font-medium">
+                    {result.valuation_id || 'N/A'}
+                  </span>
+                </div>
+                <div className="flex justify-between items-center py-2 border-b border-zinc-700">
+                  <span className="text-zinc-400">Confidence Score:</span>
+                  <span className="text-white font-medium">
+                    {result.confidence_score ? `${(result.confidence_score * 100).toFixed(1)}%` : 'N/A'}
+                  </span>
+                </div>
+                <div className="flex justify-between items-center py-2 border-b border-zinc-700">
+                  <span className="text-zinc-400">Methodology:</span>
+                  <span className="text-white font-medium">
+                    {result.methodology || 'Hybrid'}
+                  </span>
+                </div>
+              </>
             ) : (
               <div className="col-span-2 text-zinc-400 text-center py-4">
                 No input parameters available
@@ -162,17 +175,41 @@ export const ValuationInfoPanel: React.FC<ValuationInfoPanelProps> = ({
             <h3 className="text-lg font-semibold text-white">Key Assumptions</h3>
           </div>
           <div className="space-y-3">
-            {Object.entries(assumptions).length > 0 ? (
-              Object.entries(assumptions).map(([key, value]) => (
-                <div key={key} className="flex justify-between items-start py-2 border-b border-zinc-700">
+            {result.dcf_valuation || result.multiples_valuation ? (
+              <>
+                <div className="flex justify-between items-start py-2 border-b border-zinc-700">
                   <span className="text-zinc-400 capitalize flex-1 mr-4">
-                    {key.replace(/([A-Z])/g, ' $1').trim()}:
+                    WACC:
                   </span>
                   <span className="text-white font-medium text-right">
-                    {typeof value === 'number' ? value.toLocaleString() : String(value)}
+                    {result.dcf_valuation?.wacc?.toFixed(1) || 'N/A'}%
                   </span>
                 </div>
-              ))
+                <div className="flex justify-between items-start py-2 border-b border-zinc-700">
+                  <span className="text-zinc-400 capitalize flex-1 mr-4">
+                    Terminal Growth:
+                  </span>
+                  <span className="text-white font-medium text-right">
+                    {result.dcf_valuation?.terminal_growth_rate?.toFixed(1) || 'N/A'}%
+                  </span>
+                </div>
+                <div className="flex justify-between items-start py-2 border-b border-zinc-700">
+                  <span className="text-zinc-400 capitalize flex-1 mr-4">
+                    Revenue Multiple:
+                  </span>
+                  <span className="text-white font-medium text-right">
+                    {result.multiples_valuation?.revenue_multiple?.toFixed(1) || 'N/A'}x
+                  </span>
+                </div>
+                <div className="flex justify-between items-start py-2 border-b border-zinc-700">
+                  <span className="text-zinc-400 capitalize flex-1 mr-4">
+                    EBITDA Multiple:
+                  </span>
+                  <span className="text-white font-medium text-right">
+                    {result.multiples_valuation?.ebitda_multiple?.toFixed(1) || 'N/A'}x
+                  </span>
+                </div>
+              </>
             ) : (
               <div className="text-zinc-400 text-center py-4">
                 No assumptions specified
@@ -180,6 +217,16 @@ export const ValuationInfoPanel: React.FC<ValuationInfoPanelProps> = ({
             )}
           </div>
         </div>
+      </div>
+
+      {/* Calculation Breakdown Section */}
+      <div className="border-t border-zinc-800 pt-6">
+        <CalculationBreakdown result={result} />
+      </div>
+
+      {/* Sensitivity Analysis Section */}
+      <div className="border-t border-zinc-800 pt-6">
+        <SensitivityAnalysis result={result} />
       </div>
     </div>
   );

@@ -30,8 +30,8 @@ export const HomePage: React.FC = () => {
   const handleMethodClick = (method: typeof valuationMethods[0]) => {
     if (method.disabled) return;
     
-    // Open AI-Guided Valuation in new tab on desktop only (>= 1024px)
-    if (method.id === 'ai-guided' && window.innerWidth >= 1024) {
+    // Open BOTH AI-Guided and Manual in new tab on desktop (>= 1024px)
+    if (window.innerWidth >= 1024) {
       window.open(method.path, '_blank', 'noopener,noreferrer');
     } else {
       navigate(method.path);
