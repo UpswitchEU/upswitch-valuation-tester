@@ -1,0 +1,95 @@
+/* Keyframe Animations */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideIn {
+  from {
+    max-height: 0;
+    opacity: 0;
+  }
+  to {
+    max-height: 1000px;
+    opacity: 1;
+  }
+}
+
+@keyframes scaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* Animation Classes */
+.animate-fade-in {
+  animation: fadeIn 0.3s ease-in-out;
+}
+
+.animate-slide-in {
+  animation: slideIn 0.3s ease-out;
+}
+
+.animate-scale-in {
+  animation: scaleIn 0.2s ease-out;
+}
+
+/* Staggered Animation Delays */
+.animate-stagger-1 { animation-delay: 0.05s; }
+.animate-stagger-2 { animation-delay: 0.10s; }
+.animate-stagger-3 { animation-delay: 0.15s; }
+.animate-stagger-4 { animation-delay: 0.20s; }
+.animate-stagger-5 { animation-delay: 0.25s; }
+.animate-stagger-6 { animation-delay: 0.30s; }
+.animate-stagger-7 { animation-delay: 0.35s; }
+.animate-stagger-8 { animation-delay: 0.40s; }
+
+/* Transition Utilities */
+.transition-progress {
+  transition: width 0.5s ease-out;
+}
+
+.transition-rotate {
+  transition: transform 0.3s ease-out;
+}
+
+.transition-opacity {
+  transition: opacity 0.2s ease-in-out;
+}
+
+/* Respect reduced motion preference */
+@media (prefers-reduced-motion: reduce) {
+  .animate-fade-in,
+  .animate-slide-in,
+  .animate-scale-in,
+  .animate-stagger-1,
+  .animate-stagger-2,
+  .animate-stagger-3,
+  .animate-stagger-4,
+  .animate-stagger-5,
+  .animate-stagger-6,
+  .animate-stagger-7,
+  .animate-stagger-8 {
+    animation: none;
+  }
+  
+  .transition-all,
+  .transition-colors,
+  .transition-transform,
+  .transition-progress,
+  .transition-rotate,
+  .transition-opacity {
+    transition: none;
+  }
+}

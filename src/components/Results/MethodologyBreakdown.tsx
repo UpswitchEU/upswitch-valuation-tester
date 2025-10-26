@@ -68,6 +68,7 @@ export const MethodologyBreakdown: React.FC<MethodologyBreakdownProps> = ({ resu
           <a 
             href="/docs/methodology/valuation-approach" 
             target="_blank"
+            rel="noopener noreferrer"
             className="text-sm text-blue-600 hover:text-blue-800 flex items-center gap-1 transition-colors duration-200"
           >
             Learn More
@@ -157,6 +158,7 @@ export const MethodologyBreakdown: React.FC<MethodologyBreakdownProps> = ({ resu
             <a 
               href="/docs/methodology/confidence-score" 
               target="_blank"
+              rel="noopener noreferrer"
               className="text-xs text-blue-600 hover:text-blue-800 flex items-center gap-1 transition-colors duration-200"
             >
               Learn More
