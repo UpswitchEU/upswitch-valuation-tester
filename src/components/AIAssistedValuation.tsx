@@ -931,14 +931,7 @@ export const AIAssistedValuation: React.FC<AIAssistedValuationProps> = ({ report
           {/* Chat - Always visible */}
           {(stage === 'chat' || stage === 'results') && (
             <div className="flex-1 overflow-y-auto">
-              <ErrorBoundary 
-                componentName="StreamingChat"
-                onRetry={() => {
-                  // Clear any problematic state and reinitialize
-                  setValuationResult(null);
-                  setLiveHtmlReport('');
-                  setReportProgress(0);
-                }}
+              <ErrorBoundary
                 fallback={
                   <div className="flex items-center justify-center h-full">
                     <div className="text-center">

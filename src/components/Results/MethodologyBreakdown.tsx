@@ -2,6 +2,10 @@ import React, { useState, useMemo } from 'react';
 import { formatCurrency } from './utils/formatters';
 import { ConfidenceFactor } from './ConfidenceFactor';
 import { Tooltip } from '../ui/Tooltip';
+import { DocumentationModal } from '../ui/DocumentationModal';
+import { METHODOLOGY_DOCS } from '../../content/methodologyDocs';
+import { useReducedMotion } from '../../hooks/useReducedMotion';
+import { FINANCIAL_CONSTANTS } from '../../config/financialConstants';
 import { getWeightExplanation, calculateConfidenceFactors } from './utils/weightExplanation';
 import type { ValuationResponse } from '../../types/valuation';
 
@@ -11,6 +15,8 @@ interface MethodologyBreakdownProps {
 
 export const MethodologyBreakdown: React.FC<MethodologyBreakdownProps> = ({ result }) => {
   const [showConfidenceDetails, setShowConfidenceDetails] = useState(false);
+  const [modalContent, setModalContent] = useState<string | null>(null);
+  const prefersReducedMotion = useReducedMotion();
   
   const hasDCF = result.dcf_valuation && result.dcf_valuation.equity_value > 0;
   const hasMultiples = result.multiples_valuation && result.multiples_valuation.ev_ebitda_valuation > 0;
@@ -42,12 +48,12 @@ export const MethodologyBreakdown: React.FC<MethodologyBreakdownProps> = ({ resu
     Object.keys(confidenceFactors).length;
   
   // DCF details
-  const wacc = resultAny.dcf_valuation?.wacc || resultAny.wacc || 12.1;
-  const terminalGrowth = resultAny.dcf_valuation?.terminal_growth_rate || resultAny.terminal_growth_rate || 2.9;
-  const costOfEquity = resultAny.dcf_valuation?.cost_of_equity || resultAny.cost_of_equity || 12.1;
-  const riskFreeRate = 2.5; // ECB 10-year rate
-  const marketRiskPremium = 5.5;
-  const beta = 1.2; // Industry average
+  const wacc = resultAny.dcf_valuation?.wacc || resultAny.wacc || FINANCIAL_CONSTANTS.DEFAULT_WACC;
+  const terminalGrowth = resultAny.dcf_valuation?.terminal_growth_rate || resultAny.terminal_growth_rate || FINANCIAL_CONSTANTS.DEFAULT_TERMINAL_GROWTH;
+  const costOfEquity = resultAny.dcf_valuation?.cost_of_equity || resultAny.cost_of_equity || FINANCIAL_CONSTANTS.DEFAULT_COST_OF_EQUITY;
+  const riskFreeRate = FINANCIAL_CONSTANTS.ECB_RISK_FREE_RATE;
+  const marketRiskPremium = FINANCIAL_CONSTANTS.MARKET_RISK_PREMIUM;
+  const beta = FINANCIAL_CONSTANTS.DEFAULT_BETA;
   
   // Multiples details
   const revenueMultiple = resultAny.multiples_valuation?.revenue_multiple || resultAny.revenue_multiple || 2.1;
@@ -65,17 +71,15 @@ export const MethodologyBreakdown: React.FC<MethodologyBreakdownProps> = ({ resu
       <div className="bg-white rounded-lg border border-gray-200 p-4 sm:p-6 shadow-sm">
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-lg font-semibold text-gray-900">Valuation Approach</h3>
-          <a 
-            href="/docs/methodology/valuation-approach" 
-            target="_blank"
-            rel="noopener noreferrer"
+          <button
+            onClick={() => setModalContent('valuation-approach')}
             className="text-sm text-blue-600 hover:text-blue-800 flex items-center gap-1 transition-colors duration-200"
           >
             Learn More
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
             </svg>
-          </a>
+          </button>
         </div>
         
         {dcfWeight > 0 && multiplesWeight > 0 && (
@@ -155,25 +159,23 @@ export const MethodologyBreakdown: React.FC<MethodologyBreakdownProps> = ({ resu
         <div className="flex items-center justify-between mb-4">
           <h4 className="text-lg font-semibold text-gray-900">Confidence Score: {Math.round(overallConfidence)}%</h4>
           <div className="flex items-center gap-3">
-            <a 
-              href="/docs/methodology/confidence-score" 
-              target="_blank"
-              rel="noopener noreferrer"
+            <button
+              onClick={() => setModalContent('confidence-score')}
               className="text-xs text-blue-600 hover:text-blue-800 flex items-center gap-1 transition-colors duration-200"
             >
               Learn More
               <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
               </svg>
-            </a>
+            </button>
             <button 
               onClick={() => setShowConfidenceDetails(!showConfidenceDetails)}
               className="text-sm text-blue-600 hover:text-blue-800 font-medium 
                 transition-colors duration-200 flex items-center gap-1"
             >
-              <span className={`transform transition-transform duration-300 ${
-                showConfidenceDetails ? 'rotate-90' : ''
-              }`}>
+                  <span className={`transform ${
+                    prefersReducedMotion ? '' : 'transition-rotate'
+                  } ${showConfidenceDetails ? 'rotate-90' : ''}`}>
                 ▶
               </span>
               {showConfidenceDetails ? 'Hide Details' : 'Show Details'}
@@ -189,10 +191,12 @@ export const MethodologyBreakdown: React.FC<MethodologyBreakdownProps> = ({ resu
               <span className="text-sm font-semibold text-gray-900">{confidenceFactors.data_quality}%</span>
             </div>
             <div className="w-full bg-gray-200 rounded-full h-2">
-              <div 
-                className="bg-blue-500 h-2 rounded-full transition-all duration-500 ease-out"
-                style={{ width: `${confidenceFactors.data_quality}%` }}
-              />
+                <div 
+                  className={`bg-blue-500 h-2 rounded-full ${
+                    prefersReducedMotion ? '' : 'transition-progress'
+                  }`}
+                  style={{ width: `${confidenceFactors.data_quality}%` }}
+                />
             </div>
           </div>
           
@@ -202,10 +206,12 @@ export const MethodologyBreakdown: React.FC<MethodologyBreakdownProps> = ({ resu
               <span className="text-sm font-semibold text-gray-900">{confidenceFactors.methodology_agreement}%</span>
             </div>
             <div className="w-full bg-gray-200 rounded-full h-2">
-              <div 
-                className="bg-green-500 h-2 rounded-full transition-all duration-500 ease-out"
-                style={{ width: `${confidenceFactors.methodology_agreement}%` }}
-              />
+                <div 
+                  className={`bg-green-500 h-2 rounded-full ${
+                    prefersReducedMotion ? '' : 'transition-progress'
+                  }`}
+                  style={{ width: `${confidenceFactors.methodology_agreement}%` }}
+                />
             </div>
           </div>
           
@@ -215,10 +221,12 @@ export const MethodologyBreakdown: React.FC<MethodologyBreakdownProps> = ({ resu
               <span className="text-sm font-semibold text-gray-900">{confidenceFactors.industry_benchmarks}%</span>
             </div>
             <div className="w-full bg-gray-200 rounded-full h-2">
-              <div 
-                className="bg-yellow-500 h-2 rounded-full transition-all duration-500 ease-out"
-                style={{ width: `${confidenceFactors.industry_benchmarks}%` }}
-              />
+                <div 
+                  className={`bg-yellow-500 h-2 rounded-full ${
+                    prefersReducedMotion ? '' : 'transition-progress'
+                  }`}
+                  style={{ width: `${confidenceFactors.industry_benchmarks}%` }}
+                />
             </div>
           </div>
           
@@ -228,10 +236,12 @@ export const MethodologyBreakdown: React.FC<MethodologyBreakdownProps> = ({ resu
               <span className="text-sm font-semibold text-gray-900">{confidenceFactors.company_profile}%</span>
             </div>
             <div className="w-full bg-gray-200 rounded-full h-2">
-              <div 
-                className="bg-purple-500 h-2 rounded-full transition-all duration-500 ease-out"
-                style={{ width: `${confidenceFactors.company_profile}%` }}
-              />
+                <div 
+                  className={`bg-purple-500 h-2 rounded-full ${
+                    prefersReducedMotion ? '' : 'transition-progress'
+                  }`}
+                  style={{ width: `${confidenceFactors.company_profile}%` }}
+                />
             </div>
           </div>
         </div>
@@ -306,9 +316,7 @@ export const MethodologyBreakdown: React.FC<MethodologyBreakdownProps> = ({ resu
             ].map((factor, index) => (
               <div
                 key={factor.name}
-                style={{
-                  animation: `fadeIn 0.3s ease-out ${index * 0.05}s both`
-                }}
+                className={`animate-fade-in animate-stagger-${index + 1}`}
               >
                 <ConfidenceFactor {...factor} />
               </div>
@@ -419,6 +427,14 @@ export const MethodologyBreakdown: React.FC<MethodologyBreakdownProps> = ({ resu
           Risk-free rate sourced from ECB, beta from industry comparables.
         </div>
       </div>
+
+      {/* Documentation Modal */}
+      <DocumentationModal
+        isOpen={modalContent !== null}
+        onClose={() => setModalContent(null)}
+        title={modalContent ? METHODOLOGY_DOCS[modalContent as keyof typeof METHODOLOGY_DOCS]?.title : ''}
+        content={modalContent ? METHODOLOGY_DOCS[modalContent as keyof typeof METHODOLOGY_DOCS]?.content : null}
+      />
     </div>
   );
 };

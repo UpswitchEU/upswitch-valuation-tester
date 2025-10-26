@@ -11,6 +11,7 @@ import { ValueDrivers } from './ValueDrivers';
 import { RiskFactors } from './RiskFactors';
 import { MethodologyBreakdown } from './MethodologyBreakdown';
 import { CompetitiveComparison } from './CompetitiveComparison';
+import { ErrorBoundary } from '../ErrorBoundary';
 
 /**
  * Results Component - Modular Architecture
@@ -48,7 +49,9 @@ export const Results: React.FC = () => {
       <RiskFactors result={result} />
       
       {/* Methodology Breakdown - Enhanced with transparency */}
-      <MethodologyBreakdown result={result} />
+      <ErrorBoundary fallback={<div className="p-4 bg-red-50 border border-red-200 rounded-lg text-red-700">Error loading methodology breakdown</div>}>
+        <MethodologyBreakdown result={result} />
+      </ErrorBoundary>
       
       {/* Methodology & Data Sources */}
       <CompetitiveComparison />
