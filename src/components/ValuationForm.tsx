@@ -8,7 +8,14 @@ import { useBusinessTypes } from '../hooks/useBusinessTypes';
 import { IndustryCode } from '../types/valuation';
 import { CustomInputField, CustomNumberInputField, CustomDropdown, HistoricalDataInputs } from './forms';
 import { generalLogger } from '../utils/logger';
-import { getIndustryGuidance, validateEbitdaMargin } from '../config/industryGuidance';
+import { 
+  getIndustryGuidance, 
+  validateEbitdaMargin, 
+  validateRevenue, 
+  getSubIndustryOptions, 
+  getRevenueRangeGuidance,
+  getRevenuePerEmployeeAnalysis 
+} from '../config/industryGuidance';
 
 /**
  * ValuationForm Component
@@ -123,9 +130,20 @@ export const ValuationForm: React.FC = () => {
               { value: IndustryCode.OTHER, label: 'Other' },
             ]}
             value={formData.industry || ''}
-            onChange={(value) => updateFormData({ industry: value })}
+            onChange={(value) => updateFormData({ industry: value, subIndustry: undefined })}
             required
           />
+
+          {/* Sub-Industry (Phase 2) */}
+          {formData.industry && (
+            <CustomDropdown
+              label="Sub-Industry (Optional - improves accuracy)"
+              placeholder="Select sub-industry..."
+              options={getSubIndustryOptions(formData.industry)}
+              value={formData.subIndustry || ''}
+              onChange={(value) => updateFormData({ subIndustry: value })}
+            />
+          )}
 
           {/* Business Model */}
           <div>
@@ -252,12 +270,69 @@ export const ValuationForm: React.FC = () => {
             />
             {(() => {
               const revenueGuidance = getIndustryGuidance(formData.industry || 'other', 'revenue');
+              const validation = formData.revenue && formData.industry
+                ? validateRevenue(
+                    formData.revenue,
+                    formData.industry,
+                    formData.subIndustry,
+                    formData.number_of_employees,
+                    formData.founding_year,
+                    formData.country_code
+                  )
+                : null;
+              
+              const rangeGuidance = formData.subIndustry && formData.industry
+                ? getRevenueRangeGuidance(formData.industry, formData.subIndustry, formData.number_of_employees)
+                : null;
+              
               return (
                 <div className="mt-1 text-xs text-zinc-400 space-y-1">
                   <div>💡 <strong>Tip:</strong> {revenueGuidance.tip}</div>
                   <div>ℹ️ <strong>Why:</strong> {revenueGuidance.why}</div>
                   {revenueGuidance.warning && (
                     <div className="text-yellow-400">⚠️ {revenueGuidance.warning}</div>
+                  )}
+                  
+                  {/* Sub-industry range guidance */}
+                  {rangeGuidance && (
+                    <div className="text-blue-400">
+                      📊 <strong>{rangeGuidance.message}</strong>
+                    </div>
+                  )}
+                  
+                  {/* Revenue validation */}
+                  {validation && (
+                    <div className={
+                      validation.severity === 'success' ? 'text-green-400' :
+                      validation.severity === 'warning' ? 'text-yellow-400' :
+                      validation.severity === 'error' ? 'text-red-400' :
+                      'text-blue-400'
+                    }>
+                      {validation.severity === 'success' ? '✓' :
+                       validation.severity === 'warning' ? '⚠️' :
+                       validation.severity === 'error' ? '❌' : 'ℹ️'} 
+                      {validation.message}
+                    </div>
+                  )}
+                  
+                  {/* Revenue per employee analysis */}
+                  {formData.number_of_employees && formData.revenue && (
+                    <div className="text-zinc-400">
+                      👥 <strong>Revenue per employee:</strong> 
+                      €{Math.round(formData.revenue / formData.number_of_employees).toLocaleString()}
+                      {getRevenuePerEmployeeAnalysis(
+                        formData.revenue / formData.number_of_employees,
+                        formData.industry || 'other',
+                        formData.subIndustry
+                      )}
+                    </div>
+                  )}
+                  
+                  {/* Suggestion if validation fails */}
+                  {validation?.suggestion && (
+                    <div className="text-blue-400">
+                      💡 {validation.suggestion}
+                    </div>
                   )}
                 </div>
               );

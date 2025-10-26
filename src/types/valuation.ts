@@ -104,6 +104,10 @@ export interface ValuationFormData extends Partial<ValuationRequest> {
   business_model: BusinessModel | string;
   founding_year: number;
   
+  // Phase 2: Sub-industry granularity
+  subIndustry?: string;
+  employees?: number;
+  
   // Legacy fields for backward compatibility
   revenue?: number;
   ebitda?: number;
