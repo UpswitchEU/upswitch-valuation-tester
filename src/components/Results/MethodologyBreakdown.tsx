@@ -10,7 +10,10 @@ export const MethodologyBreakdown: React.FC<MethodologyBreakdownProps> = ({ resu
   const hasDCF = result.dcf_valuation && result.dcf_valuation.equity_value > 0;
   const hasMultiples = result.multiples_valuation && result.multiples_valuation.ev_ebitda_valuation > 0;
   
-  if (!hasDCF && !hasMultiples) {
+  // Always show if we have weights, even if detailed breakdowns aren't available
+  const hasWeights = (result.dcf_weight || 0) > 0 || (result.multiples_weight || 0) > 0;
+  
+  if (!hasDCF && !hasMultiples && !hasWeights) {
     return null;
   }
 
@@ -39,28 +42,6 @@ export const MethodologyBreakdown: React.FC<MethodologyBreakdownProps> = ({ resu
 
   return (
     <div className="space-y-6">
-      {/* Competitive Advantage Header */}
-      <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border border-blue-200 p-4 sm:p-6">
-        <div className="flex items-center space-x-2 mb-3">
-          <span className="text-2xl">🏆</span>
-          <h3 className="text-lg font-semibold text-blue-900">Big 4 Methodology</h3>
-        </div>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-sm">
-          <div className="flex items-center space-x-2">
-            <span className="text-green-600">✓</span>
-            <span>Used by EY, Deloitte, PwC & KPMG</span>
-          </div>
-          <div className="flex items-center space-x-2">
-            <span className="text-blue-600">⚡</span>
-            <span>2-4 weeks → 5 seconds</span>
-          </div>
-          <div className="flex items-center space-x-2">
-            <span className="text-purple-600">🔍</span>
-            <span>100% Transparent</span>
-          </div>
-        </div>
-      </div>
-
       {/* Methodology Breakdown */}
       <div className="bg-white rounded-lg border border-gray-200 p-4 sm:p-6 shadow-sm">
         <h3 className="text-lg font-semibold text-gray-900 mb-4">How We Calculated Your Valuation</h3>
@@ -147,43 +128,9 @@ export const MethodologyBreakdown: React.FC<MethodologyBreakdownProps> = ({ resu
           </div>
         </div>
         
-        <div className="mt-4 p-3 bg-blue-50 rounded text-xs text-blue-700">
-          <strong>Source:</strong> Big 4 methodology (PwC Valuation Handbook 2024)
-        </div>
-      </div>
-
-      {/* Data Sources */}
-      <div className="bg-white rounded-lg border border-gray-200 p-4 sm:p-6 shadow-sm">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Data Sources (Verified)</h3>
-        <div className="space-y-3">
-          <div className="flex items-center justify-between p-3 bg-blue-50 rounded">
-            <div className="flex items-center space-x-2">
-              <span className="text-blue-600">📊</span>
-              <span className="text-sm font-medium text-blue-900">KBO Registry</span>
-            </div>
-            <span className="text-sm text-blue-600">95% confidence</span>
-          </div>
-          <div className="flex items-center justify-between p-3 bg-green-50 rounded">
-            <div className="flex items-center space-x-2">
-              <span className="text-green-600">🏦</span>
-              <span className="text-sm font-medium text-green-900">ECB Rates</span>
-            </div>
-            <span className="text-sm text-green-600">Real-time (updated daily)</span>
-          </div>
-          <div className="flex items-center justify-between p-3 bg-purple-50 rounded">
-            <div className="flex items-center space-x-2">
-              <span className="text-purple-600">📈</span>
-              <span className="text-sm font-medium text-purple-900">Industry Data</span>
-            </div>
-            <span className="text-sm text-purple-600">OECD benchmarks (88% confidence)</span>
-          </div>
-          <div className="flex items-center justify-between p-3 bg-orange-50 rounded">
-            <div className="flex items-center space-x-2">
-              <span className="text-orange-600">🌍</span>
-              <span className="text-sm font-medium text-orange-900">Market Data</span>
-            </div>
-            <span className="text-sm text-orange-600">FMP comparables (92% confidence)</span>
-          </div>
+        <div className="mt-4 p-3 bg-gray-50 rounded text-xs text-gray-600">
+          <strong>Note:</strong> Assumptions based on industry standards and current market conditions. 
+          Risk-free rate sourced from ECB, beta from industry comparables.
         </div>
       </div>
     </div>

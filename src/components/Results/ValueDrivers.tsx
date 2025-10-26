@@ -8,6 +8,33 @@ interface ValueDriversProps {
 }
 
 export const ValueDrivers: React.FC<ValueDriversProps> = ({ result }) => {
+  // First, try to use the key_value_drivers strings directly from the backend
+  const backendDrivers = result.key_value_drivers || [];
+  
+  // If we have backend drivers as strings, display them directly
+  if (backendDrivers.length > 0) {
+    return (
+      <div className="bg-white rounded-lg border border-gray-200 p-4 sm:p-6 shadow-sm">
+        <h3 className="text-lg font-semibold text-gray-900 mb-4">Key Value Drivers</h3>
+        
+        <div className="space-y-3">
+          {backendDrivers.map((driver, index) => (
+            <div key={index} className="flex items-start p-3 bg-green-50 rounded border border-green-200">
+              <div className="w-2 h-2 rounded-full mt-1.5 mr-3 bg-green-500 flex-shrink-0" />
+              <span className="text-sm text-gray-700">{driver}</span>
+            </div>
+          ))}
+        </div>
+        
+        <div className="mt-4 text-xs text-gray-500 bg-blue-50 p-3 rounded">
+          <strong>Note:</strong> These factors significantly influence your company's valuation. 
+          Focus on improving positive drivers and addressing negative ones.
+        </div>
+      </div>
+    );
+  }
+  
+  // Fallback: try to calculate from financial metrics
   const drivers = getValueDrivers(result);
   
   if (drivers.length === 0) {

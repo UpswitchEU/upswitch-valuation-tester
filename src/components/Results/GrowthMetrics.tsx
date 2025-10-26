@@ -49,9 +49,10 @@ export const GrowthMetrics: React.FC<GrowthMetricsProps> = ({ result }) => {
         
         <div className="text-xs text-gray-500 bg-blue-50 p-3 rounded">
           <strong>Analysis:</strong> CAGR of {formatPercent(growth.cagr)} over {growth.years || 0} year{(growth.years || 0) > 1 ? 's' : ''} indicates{' '}
-          {growth.cagr > 10 ? 'strong growth potential' : 
-           growth.cagr > 5 ? 'moderate growth' : 
-           growth.cagr > 0 ? 'slow growth' : 'declining performance'}.
+          {growth.cagr > 0.1 ? 'strong growth potential' : 
+           growth.cagr > 0.05 ? 'moderate growth' : 
+           growth.cagr > 0 ? 'slow growth' : 
+           growth.cagr === 0 ? 'stable performance with no growth' : 'declining performance'}.
         </div>
       </div>
     </div>

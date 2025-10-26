@@ -31,9 +31,7 @@ export const Results: React.FC = () => {
   }
 
   return (
-    <div className="space-y-4 sm:space-y-6 mt-4 sm:mt-8">
-      {/* Success banner removed - report preview shows completion status */}
-
+    <div className="space-y-4 sm:space-y-6">
       {/* Main Results Header */}
       <ResultsHeader result={result} />
       
@@ -52,7 +50,7 @@ export const Results: React.FC = () => {
       {/* Methodology Breakdown - Enhanced with transparency */}
       <MethodologyBreakdown result={result} />
       
-      {/* Competitive Comparison */}
+      {/* Methodology & Data Sources */}
       <CompetitiveComparison />
     </div>
   );

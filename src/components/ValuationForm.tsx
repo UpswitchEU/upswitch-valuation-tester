@@ -8,6 +8,7 @@ import { useBusinessTypes } from '../hooks/useBusinessTypes';
 import { IndustryCode } from '../types/valuation';
 import { CustomInputField, CustomNumberInputField, CustomDropdown, HistoricalDataInputs } from './forms';
 import { generalLogger } from '../utils/logger';
+import { getIndustryGuidance, validateEbitdaMargin } from '../config/industryGuidance';
 
 /**
  * ValuationForm Component
@@ -249,15 +250,18 @@ export const ValuationForm: React.FC = () => {
               formatAsCurrency
               required
             />
-            <div className="mt-1 text-xs text-zinc-400 space-y-1">
-              <div>💡 <strong>Tip:</strong> Use your most recent fiscal year</div>
-              <div>ℹ️ <strong>Why we need this:</strong> Revenue is the foundation of valuation</div>
-              {formData.revenue && (
-                <div className="text-green-400">
-                  ✓ Revenue looks good (€{formData.revenue.toLocaleString()} is typical for services companies)
+            {(() => {
+              const revenueGuidance = getIndustryGuidance(formData.industry || 'other', 'revenue');
+              return (
+                <div className="mt-1 text-xs text-zinc-400 space-y-1">
+                  <div>💡 <strong>Tip:</strong> {revenueGuidance.tip}</div>
+                  <div>ℹ️ <strong>Why:</strong> {revenueGuidance.why}</div>
+                  {revenueGuidance.warning && (
+                    <div className="text-yellow-400">⚠️ {revenueGuidance.warning}</div>
+                  )}
                 </div>
-              )}
-            </div>
+              );
+            })()}
           </div>
 
           {/* EBITDA */}
@@ -274,18 +278,29 @@ export const ValuationForm: React.FC = () => {
               formatAsCurrency
               required
             />
-            <div className="mt-1 text-xs text-zinc-400 space-y-1">
-              <div>💡 <strong>Tip:</strong> Net profit + interest + taxes + depreciation</div>
-              <div>ℹ️ <strong>Why we need this:</strong> Measures operational profitability</div>
-              {formData.revenue && formData.ebitda && (
-                <div className={formData.ebitda / formData.revenue < 0.15 ? 'text-yellow-400' : 'text-green-400'}>
-                  {formData.ebitda / formData.revenue < 0.15 ? 
-                    `⚠️ EBITDA margin is ${((formData.ebitda / formData.revenue) * 100).toFixed(1)}% (industry average is 15-20%)` :
-                    `✓ EBITDA margin looks good (${((formData.ebitda / formData.revenue) * 100).toFixed(1)}%)`
-                  }
+            {(() => {
+              const ebitdaGuidance = getIndustryGuidance(formData.industry || 'other', 'ebitda');
+              const validation = formData.revenue && formData.ebitda
+                ? validateEbitdaMargin(formData.revenue, formData.ebitda, formData.industry || 'other')
+                : null;
+              
+              return (
+                <div className="mt-1 text-xs text-zinc-400 space-y-1">
+                  <div>💡 <strong>Tip:</strong> {ebitdaGuidance.tip}</div>
+                  <div>ℹ️ <strong>Why:</strong> {ebitdaGuidance.why}</div>
+                  {validation && (
+                    <div className={
+                      validation.severity === 'success' ? 'text-green-400' :
+                      validation.severity === 'warning' ? 'text-yellow-400' :
+                      'text-blue-400'
+                    }>
+                      {validation.severity === 'success' ? '✓' :
+                       validation.severity === 'warning' ? '⚠️' : 'ℹ️'} {validation.message}
+                    </div>
+                  )}
                 </div>
-              )}
-            </div>
+              );
+            })()}
           </div>
         </div>
       </div>
