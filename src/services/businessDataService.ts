@@ -14,14 +14,22 @@ import type {
   BusinessTypeAnalysis 
 } from '../types/valuation';
 import { serviceLogger } from '../utils/logger';
+import { 
+  mapToBusinessModel, 
+  inferBusinessModelFromIndustry, 
+  inferBusinessModelFromType, 
+  isValidYear 
+} from '../utils/businessExtractionUtils';
 
 export interface BusinessProfileData {
   user_id: string;
   company_name?: string;
   industry?: string;
   business_type?: string;
+  business_model?: string;  // ADD: Business model field
   years_in_operation?: number;
   founded_year?: number;
+  company_age?: number;  // ADD: Company age field
   employee_count_range?: string;
   revenue_range?: string;
   asking_price_range?: string;
@@ -218,71 +226,8 @@ class BusinessDataService {
     return new Date().getFullYear() - 5;
   }
   
-  /**
-   * Map various business model formats to standard enum
-   */
-  private mapToBusinessModel(value: string): BusinessModel | string {
-    const mapping: Record<string, BusinessModel> = {
-      'saas': 'b2b_saas',
-      'software': 'b2b_saas',
-      'b2b': 'b2b_saas',
-      'consumer': 'b2c',
-      'retail': 'b2c',
-      'platform': 'marketplace',
-      'ecommerce': 'ecommerce',
-      'e-commerce': 'ecommerce',
-      'manufacturing': 'manufacturing',
-      'services': 'services',
-      'consulting': 'services',
-      'professional': 'services',
-    };
-    
-    return mapping[value.toLowerCase()] || value;
-  }
-  
-  /**
-   * Infer business model from industry
-   */
-  private inferBusinessModelFromIndustry(industry: string): BusinessModel | string {
-    const industryMapping: Record<string, BusinessModel> = {
-      'technology': 'b2b_saas',
-      'software': 'b2b_saas',
-      'retail': 'b2c',
-      'ecommerce': 'ecommerce',
-      'manufacturing': 'manufacturing',
-      'services': 'services',
-      'healthcare': 'services',
-      'finance': 'services',
-      'real_estate': 'services',
-      'hospitality': 'services',
-      'construction': 'services',
-    };
-    
-    return industryMapping[industry.toLowerCase()] || 'services';
-  }
-  
-  /**
-   * Infer business model from business type
-   */
-  private inferBusinessModelFromType(businessType: string): BusinessModel | string {
-    const typeMapping: Record<string, BusinessModel> = {
-      'sole-trader': 'services',
-      'company': 'services',
-      'partnership': 'services',
-      'llc': 'services',
-      'corporation': 'services',
-    };
-    
-    return typeMapping[businessType.toLowerCase()] || 'services';
-  }
-  
-  /**
-   * Validate year is reasonable
-   */
-  private isValidYear(year: number): boolean {
-    const currentYear = new Date().getFullYear();
-    return year >= 1900 && year <= currentYear;
-  }
+  // Note: mapToBusinessModel, inferBusinessModelFromIndustry, inferBusinessModelFromType, and isValidYear
+  // are now imported from businessExtractionUtils to eliminate code duplication
 
   transformToConversationStartRequest(
     businessData: BusinessProfileData,

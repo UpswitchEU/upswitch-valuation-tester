@@ -5,8 +5,14 @@ import type {
   ConversationStartResponse, 
   ConversationStepResponse, 
   ConversationContext,
-  OwnerProfileRequest 
+  OwnerProfileRequest,
+  BusinessModel  // ADD: BusinessModel import
 } from '../types/valuation';
+import { 
+  mapToBusinessModel, 
+  inferBusinessModelFromIndustry, 
+  isValidYear 
+} from '../utils/businessExtractionUtils';
 
 export interface TriageSession {
   session_id: string;
@@ -86,6 +92,29 @@ export const intelligentTriageService = {
     contextData?: Record<string, any>
   ): Promise<TriageSession> {
     try {
+      // Extract business_model if mentioned
+      if (field === 'business_model' || field === 'industry' || field === 'business_type') {
+        const extractedBusinessModel = this.extractBusinessModelFromValue(value, field);
+        if (extractedBusinessModel) {
+          // Store in context for later use
+          contextData = {
+            ...contextData,
+            extracted_business_model: extractedBusinessModel
+          };
+        }
+      }
+      
+      // Extract founding_year if mentioned
+      if (field === 'founding_year' || field === 'company_age' || field === 'years_in_operation') {
+        const extractedYear = this.extractFoundingYearFromValue(value, field);
+        if (extractedYear) {
+          contextData = {
+            ...contextData,
+            extracted_founding_year: extractedYear
+          };
+        }
+      }
+
       const request: ConversationStepRequest = {
         session_id: sessionId,
         answer: value,
@@ -127,6 +156,41 @@ export const intelligentTriageService = {
       throw new Error(`Failed to process conversation step: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   },
+
+  /**
+   * Extract business model from conversation value
+   */
+  extractBusinessModelFromValue(value: any, field: string): BusinessModel | string | null {
+    if (field === 'business_model') {
+      return this.mapToBusinessModel(String(value));
+    }
+    
+    if (field === 'industry') {
+      return this.inferBusinessModelFromIndustry(String(value));
+    }
+    
+    return null;
+  },
+  
+  /**
+   * Extract founding year from conversation value
+   */
+  extractFoundingYearFromValue(value: any, field: string): number | null {
+    if (field === 'founding_year') {
+      const year = parseInt(String(value));
+      return this.isValidYear(year) ? year : null;
+    }
+    
+    if (field === 'years_in_operation' || field === 'company_age') {
+      const years = parseInt(String(value));
+      return new Date().getFullYear() - years;
+    }
+    
+    return null;
+  },
+
+  // Note: mapToBusinessModel, inferBusinessModelFromIndustry, and isValidYear
+  // are now imported from businessExtractionUtils to eliminate code duplication
 
   /**
    * Get current conversation context

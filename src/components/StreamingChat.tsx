@@ -16,6 +16,10 @@ import { TypingCursor } from './TypingCursor';
 // Removed complex validation imports - using simple approach like IlaraAI
 import { chatLogger } from '../utils/logger';
 import { useAuth } from '../hooks/useAuth';
+import { 
+  extractBusinessModelFromInput, 
+  extractFoundingYearFromInput 
+} from '../utils/businessExtractionUtils';
 
 // Input validation constants
 const MAX_MESSAGE_LENGTH = 1000;
@@ -176,6 +180,7 @@ interface StreamingChatProps {
   onReportSectionUpdate?: (section: string, html: string, phase: number, progress: number, is_fallback?: boolean, is_error?: boolean, error_message?: string) => void;  // NEW: Progressive report sections
   onSectionLoading?: (section: string, html: string, phase: number) => void;  // NEW: Section loading states
   onReportComplete?: (html: string, valuationId: string) => void;  // NEW: Complete report
+  onContextUpdate?: (context: any) => void;  // NEW: Conversation context updates
   className?: string;
   placeholder?: string;
   disabled?: boolean;
@@ -194,12 +199,16 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
   onReportSectionUpdate,
   onSectionLoading,
   onReportComplete,
+  onContextUpdate,
   className = '',
   placeholder = "Ask about your business valuation...",
   disabled = false
 }) => {
   // Get user data from AuthContext for profile integration
   const { user } = useAuth();
+  
+  // Note: extractBusinessModelFromInput and extractFoundingYearFromInput
+  // are now imported from businessExtractionUtils to eliminate code duplication
   
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
@@ -1087,12 +1096,31 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
     // NEW: Log session tracking
     console.log('[SESSION] Sending message with session:', sessionId);
     
+    // Extract business information from user input
+    const extractedBusinessModel = extractBusinessModelFromInput(userInput);
+    const extractedFoundingYear = extractFoundingYearFromInput(userInput);
+    
+    // Update conversation context if extraction found something
+    if (extractedBusinessModel || extractedFoundingYear) {
+      const contextUpdate = {
+        extracted_business_model: extractedBusinessModel,
+        extracted_founding_year: extractedFoundingYear,
+        extraction_confidence: {
+          business_model: extractedBusinessModel ? 0.8 : 0,
+          founding_year: extractedFoundingYear ? 0.8 : 0
+        }
+      };
+      onContextUpdate?.(contextUpdate);
+    }
+    
     chatLogger.info('Starting streaming conversation', { 
       userInput: userInput.substring(0, 50) + '...', 
       sessionId, 
       userId,
       attempt,
-      maxRetries: 3
+      maxRetries: 3,
+      extractedBusinessModel,
+      extractedFoundingYear
     });
     setIsStreaming(true);
 

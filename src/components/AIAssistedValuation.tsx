@@ -37,6 +37,18 @@ export const AIAssistedValuation: React.FC<AIAssistedValuationProps> = ({ report
   const [reportSaved, setReportSaved] = useState(false);
   const [showOutOfCreditsModal, setShowOutOfCreditsModal] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [conversationContext, setConversationContext] = useState<ConversationContext | null>(null);
+  
+  // Update context when conversation progresses
+  const handleConversationUpdate = useCallback((context: ConversationContext) => {
+    setConversationContext(context);
+    
+    chatLogger.info('Conversation context updated', {
+      extractedBusinessModel: context.extracted_business_model,
+      extractedFoundingYear: context.extracted_founding_year,
+      confidence: context.extraction_confidence
+    });
+  }, []);
   
   // NEW: Store session ID in component state (created once on mount)
   const [sessionId] = useState(() => {
@@ -491,13 +503,75 @@ export const AIAssistedValuation: React.FC<AIAssistedValuationProps> = ({ report
         });
       }
       
+      // Extract business_model and founding_year from multiple sources with validation and error handling
+      let extractedBusinessModel: string;
+      let extractedFoundingYear: number;
+      
+      try {
+        // Extract business model with validation
+        const validBusinessModels = ['b2b_saas', 'b2c', 'marketplace', 'ecommerce', 'manufacturing', 'services', 'other'];
+        const rawBusinessModel = 
+          (valuationResult as any).business_model ||  // From valuation result
+          businessProfile?.business_model ||  // From business profile
+          conversationContext?.extracted_business_model ||  // From conversation
+          businessDataService.extractBusinessModel(businessProfile || {});  // Inferred
+        
+        // Validate business model against enum
+        extractedBusinessModel = validBusinessModels.includes(String(rawBusinessModel)) 
+          ? String(rawBusinessModel) 
+          : 'services';  // Safe fallback
+        
+        chatLogger.info('Business model extraction', {
+          sources: {
+            valuationResult: (valuationResult as any).business_model,
+            businessProfile: businessProfile?.business_model,
+            conversation: conversationContext?.extracted_business_model,
+            inferred: businessDataService.extractBusinessModel(businessProfile || {})
+          },
+          selected: extractedBusinessModel,
+          reason: 'validated_against_enum'
+        });
+      } catch (error) {
+        chatLogger.warn('Failed to extract business model, using fallback', { error });
+        extractedBusinessModel = 'services';  // Safe fallback
+      }
+      
+      try {
+        // Extract founding year with validation
+        const rawFoundingYear = 
+          (valuationResult as any).founding_year ||  // From valuation result
+          businessProfile?.founding_year ||  // From business profile
+          conversationContext?.extracted_founding_year ||  // From conversation
+          businessDataService.extractFoundingYear(businessProfile || {});  // Calculated
+        
+        // Validate founding year is reasonable
+        const currentYear = new Date().getFullYear();
+        extractedFoundingYear = (rawFoundingYear >= 1900 && rawFoundingYear <= currentYear) 
+          ? rawFoundingYear 
+          : currentYear - 5;  // Safe fallback
+        
+        chatLogger.info('Founding year extraction', {
+          sources: {
+            valuationResult: (valuationResult as any).founding_year,
+            businessProfile: businessProfile?.founding_year,
+            conversation: conversationContext?.extracted_founding_year,
+            inferred: businessDataService.extractFoundingYear(businessProfile || {})
+          },
+          selected: extractedFoundingYear,
+          reason: 'validated_year_range'
+        });
+      } catch (error) {
+        chatLogger.warn('Failed to extract founding year, using fallback', { error });
+        extractedFoundingYear = new Date().getFullYear() - 5;  // Safe fallback
+      }
+      
       // Convert the valuation result to a proper ValuationRequest for backend processing
       const request: ValuationRequest = {
-        company_name: valuationResult.company_name || 'AI Generated Company',
-        country_code: 'BE', // Default to Belgium
-        industry: 'services', // Default industry
-        business_model: 'other',
-        founding_year: new Date().getFullYear() - 5,
+        company_name: valuationResult.company_name || businessProfile?.company_name || 'AI Generated Company',
+        country_code: businessProfile?.country_code || 'BE',
+        industry: businessProfile?.industry || 'services',
+        business_model: extractedBusinessModel,  // ✅ Extracted from context
+        founding_year: extractedFoundingYear,  // ✅ Extracted from context
         current_year_data: {
           year: new Date().getFullYear(),
           revenue: (valuationResult as any).revenue || 1000000,
@@ -512,9 +586,18 @@ export const AIAssistedValuation: React.FC<AIAssistedValuationProps> = ({ report
         comparables: [],
       };
 
-      chatLogger.info('Processing AI-guided valuation through backend (PREMIUM)', {
+      chatLogger.info('Processing AI-guided valuation with extracted data', {
         companyName: request.company_name,
-        flowType: 'ai-guided'
+        businessModel: request.business_model,
+        foundingYear: request.founding_year,
+        extractionSource: {
+          businessModel: (valuationResult as any).business_model ? 'valuation_result' : 
+                         businessProfile?.business_model ? 'business_profile' : 
+                         conversationContext?.extracted_business_model ? 'conversation' : 'inferred',
+          foundingYear: (valuationResult as any).founding_year ? 'valuation_result' : 
+                       businessProfile?.founding_year ? 'business_profile' : 
+                       conversationContext?.extracted_founding_year ? 'conversation' : 'calculated'
+        }
       });
 
       // Use backend API which handles credit checks for AI-guided flow
@@ -882,6 +965,7 @@ export const AIAssistedValuation: React.FC<AIAssistedValuationProps> = ({ report
                   onReportSectionUpdate={handleReportSectionUpdate}
                   onSectionLoading={handleSectionLoading}
                   onReportComplete={handleReportComplete}
+                  onContextUpdate={handleConversationUpdate}
                   className="h-full"
                   placeholder="Ask about your business valuation..."
                 />
