@@ -111,6 +111,7 @@ interface MessageMetadata {
   // Tracking
   session_phase?: 'onboarding' | 'data_collection' | 'valuation' | 'complete';
   conversation_turn?: number;
+  fallback_mode?: boolean;
   
   // Error Handling
   error_type?: string;
@@ -481,29 +482,25 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
 
   // Backend-driven conversation initialization
   const [isInitializing, setIsInitializing] = useState(true);
-  const [fallbackMode, setFallbackMode] = useState(false);
-  const [currentFallbackQuestion, setCurrentFallbackQuestion] = useState(0);
   const hasInitializedRef = useRef(false);
   const abortControllerRef = useRef<AbortController | null>(null);
 
   // Fallback mode when backend is unavailable
   const useFallbackMode = useCallback(() => {
-    setFallbackMode(true);
     const firstQuestion = FALLBACK_QUESTIONS[0];
     
     // Add the fallback question as an AI message
     const fallbackMessage: Message = {
       id: `fallback-${Date.now()}`,
-      role: 'ai',
+      type: 'ai',
+      role: 'assistant',
       content: firstQuestion.question,
       timestamp: new Date(),
       metadata: {
         intent: 'question',
         topic: 'business_type',
         collected_field: firstQuestion.field,
-        input_type: firstQuestion.inputType,
         help_text: firstQuestion.helpText,
-        options: firstQuestion.options,
         fallback_mode: true
       }
     };

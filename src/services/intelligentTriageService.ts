@@ -162,11 +162,11 @@ export const intelligentTriageService = {
    */
   extractBusinessModelFromValue(value: any, field: string): BusinessModel | string | null {
     if (field === 'business_model') {
-      return this.mapToBusinessModel(String(value));
+      return mapToBusinessModel(String(value));
     }
     
     if (field === 'industry') {
-      return this.inferBusinessModelFromIndustry(String(value));
+      return inferBusinessModelFromIndustry(String(value));
     }
     
     return null;
@@ -178,7 +178,7 @@ export const intelligentTriageService = {
   extractFoundingYearFromValue(value: any, field: string): number | null {
     if (field === 'founding_year') {
       const year = parseInt(String(value));
-      return this.isValidYear(year) ? year : null;
+      return isValidYear(year) ? year : null;
     }
     
     if (field === 'years_in_operation' || field === 'company_age') {

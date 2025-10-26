@@ -15,18 +15,18 @@ import { BusinessModel } from '../types/valuation';
  */
 export function mapToBusinessModel(value: string): BusinessModel | string {
   const mapping: Record<string, BusinessModel> = {
-    'saas': 'b2b_saas',
-    'software': 'b2b_saas',
-    'b2b': 'b2b_saas',
-    'consumer': 'b2c',
-    'retail': 'b2c',
-    'platform': 'marketplace',
-    'ecommerce': 'ecommerce',
-    'e-commerce': 'ecommerce',
-    'manufacturing': 'manufacturing',
-    'services': 'services',
-    'consulting': 'services',
-    'professional': 'services',
+    'saas': BusinessModel.B2B_SAAS,
+    'software': BusinessModel.B2B_SAAS,
+    'b2b': BusinessModel.B2B_SAAS,
+    'consumer': BusinessModel.B2C,
+    'retail': BusinessModel.B2C,
+    'platform': BusinessModel.MARKETPLACE,
+    'ecommerce': BusinessModel.ECOMMERCE,
+    'e-commerce': BusinessModel.ECOMMERCE,
+    'manufacturing': BusinessModel.MANUFACTURING,
+    'services': BusinessModel.SERVICES,
+    'consulting': BusinessModel.SERVICES,
+    'professional': BusinessModel.SERVICES,
   };
   
   return mapping[value.toLowerCase()] || value;
@@ -37,20 +37,20 @@ export function mapToBusinessModel(value: string): BusinessModel | string {
  */
 export function inferBusinessModelFromIndustry(industry: string): BusinessModel | string {
   const industryMapping: Record<string, BusinessModel> = {
-    'technology': 'b2b_saas',
-    'software': 'b2b_saas',
-    'retail': 'b2c',
-    'ecommerce': 'ecommerce',
-    'manufacturing': 'manufacturing',
-    'services': 'services',
-    'healthcare': 'services',
-    'finance': 'services',
-    'real_estate': 'services',
-    'hospitality': 'services',
-    'construction': 'services',
+    'technology': BusinessModel.B2B_SAAS,
+    'software': BusinessModel.B2B_SAAS,
+    'retail': BusinessModel.B2C,
+    'ecommerce': BusinessModel.ECOMMERCE,
+    'manufacturing': BusinessModel.MANUFACTURING,
+    'services': BusinessModel.SERVICES,
+    'healthcare': BusinessModel.SERVICES,
+    'finance': BusinessModel.SERVICES,
+    'real_estate': BusinessModel.SERVICES,
+    'hospitality': BusinessModel.SERVICES,
+    'construction': BusinessModel.SERVICES,
   };
   
-  return industryMapping[industry.toLowerCase()] || 'services';
+  return industryMapping[industry.toLowerCase()] || BusinessModel.SERVICES;
 }
 
 /**
@@ -58,14 +58,14 @@ export function inferBusinessModelFromIndustry(industry: string): BusinessModel 
  */
 export function inferBusinessModelFromType(businessType: string): BusinessModel | string {
   const typeMapping: Record<string, BusinessModel> = {
-    'sole-trader': 'services',
-    'company': 'services',
-    'partnership': 'services',
-    'llc': 'services',
-    'corporation': 'services',
+    'sole-trader': BusinessModel.SERVICES,
+    'company': BusinessModel.SERVICES,
+    'partnership': BusinessModel.SERVICES,
+    'llc': BusinessModel.SERVICES,
+    'corporation': BusinessModel.SERVICES,
   };
   
-  return typeMapping[businessType.toLowerCase()] || 'services';
+  return typeMapping[businessType.toLowerCase()] || BusinessModel.SERVICES;
 }
 
 /**
@@ -80,8 +80,8 @@ export function isValidYear(year: number): boolean {
  * Validate business model against valid enum values
  */
 export function validateBusinessModel(value: string): BusinessModel | string {
-  const validBusinessModels = ['b2b_saas', 'b2c', 'marketplace', 'ecommerce', 'manufacturing', 'services', 'other'];
-  return validBusinessModels.includes(String(value)) ? value : 'services';
+  const validBusinessModels = [BusinessModel.B2B_SAAS, BusinessModel.B2C, BusinessModel.MARKETPLACE, BusinessModel.ECOMMERCE, BusinessModel.MANUFACTURING, BusinessModel.SERVICES, BusinessModel.OTHER];
+  return validBusinessModels.includes(value as BusinessModel) ? value : BusinessModel.SERVICES;
 }
 
 /**
@@ -100,12 +100,12 @@ export function extractBusinessModelFromInput(input: string): string | null {
   
   // Business model keywords
   const businessModelKeywords = {
-    'b2b_saas': ['saas', 'software as a service', 'b2b', 'enterprise software', 'subscription software'],
-    'b2c': ['b2c', 'consumer', 'retail', 'direct to consumer', 'customer'],
-    'marketplace': ['marketplace', 'platform', 'two-sided', 'multi-sided'],
-    'ecommerce': ['ecommerce', 'e-commerce', 'online store', 'online shop', 'digital store'],
-    'manufacturing': ['manufacturing', 'production', 'factory', 'assembly'],
-    'services': ['services', 'consulting', 'professional services', 'service business']
+    [BusinessModel.B2B_SAAS]: ['saas', 'software as a service', 'b2b', 'enterprise software', 'subscription software'],
+    [BusinessModel.B2C]: ['b2c', 'consumer', 'retail', 'direct to consumer', 'customer'],
+    [BusinessModel.MARKETPLACE]: ['marketplace', 'platform', 'two-sided', 'multi-sided'],
+    [BusinessModel.ECOMMERCE]: ['ecommerce', 'e-commerce', 'online store', 'online shop', 'digital store'],
+    [BusinessModel.MANUFACTURING]: ['manufacturing', 'production', 'factory', 'assembly'],
+    [BusinessModel.SERVICES]: ['services', 'consulting', 'professional services', 'service business']
   };
   
   for (const [model, keywords] of Object.entries(businessModelKeywords)) {

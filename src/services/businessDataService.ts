@@ -11,7 +11,8 @@
 import type { 
   ValuationRequest, 
   ConversationStartRequest,
-  BusinessTypeAnalysis 
+  BusinessTypeAnalysis,
+  BusinessModel
 } from '../types/valuation';
 import { serviceLogger } from '../utils/logger';
 import { 
@@ -186,17 +187,17 @@ class BusinessDataService {
   extractBusinessModel(businessData: BusinessProfileData): BusinessModel | string {
     // Priority 1: Explicit business model from data
     if (businessData.business_model) {
-      return this.mapToBusinessModel(businessData.business_model);
+      return mapToBusinessModel(businessData.business_model);
     }
     
     // Priority 2: Infer from industry
     if (businessData.industry) {
-      return this.inferBusinessModelFromIndustry(businessData.industry);
+      return inferBusinessModelFromIndustry(businessData.industry);
     }
     
     // Priority 3: Infer from business type
     if (businessData.business_type) {
-      return this.inferBusinessModelFromType(businessData.business_type);
+      return inferBusinessModelFromType(businessData.business_type);
     }
     
     // Fallback
@@ -208,8 +209,8 @@ class BusinessDataService {
    */
   extractFoundingYear(businessData: BusinessProfileData): number {
     // Priority 1: Explicit founding year
-    if (businessData.founding_year && this.isValidYear(businessData.founding_year)) {
-      return businessData.founding_year;
+    if (businessData.founded_year && isValidYear(businessData.founded_year)) {
+      return businessData.founded_year;
     }
     
     // Priority 2: Calculate from years in operation

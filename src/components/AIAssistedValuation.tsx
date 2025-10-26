@@ -18,7 +18,7 @@ import { api } from '../services/api';
 import { backendAPI } from '../services/backendApi';
 import { useAuth } from '../hooks/useAuth';
 import { guestCreditService } from '../services/guestCreditService';
-import type { ValuationResponse, ValuationRequest } from '../types/valuation';
+import type { ValuationResponse, ValuationRequest, ConversationContext } from '../types/valuation';
 import { chatLogger } from '../utils/logger';
 import { DownloadService } from '../services/downloadService';
 
@@ -514,7 +514,7 @@ export const AIAssistedValuation: React.FC<AIAssistedValuationProps> = ({ report
           (valuationResult as any).business_model ||  // From valuation result
           businessProfile?.business_model ||  // From business profile
           conversationContext?.extracted_business_model ||  // From conversation
-          businessDataService.extractBusinessModel(businessProfile || {});  // Inferred
+          (businessProfile ? businessDataService.extractBusinessModel(businessProfile) : 'services');  // Inferred
         
         // Validate business model against enum
         extractedBusinessModel = validBusinessModels.includes(String(rawBusinessModel)) 
@@ -526,7 +526,7 @@ export const AIAssistedValuation: React.FC<AIAssistedValuationProps> = ({ report
             valuationResult: (valuationResult as any).business_model,
             businessProfile: businessProfile?.business_model,
             conversation: conversationContext?.extracted_business_model,
-            inferred: businessDataService.extractBusinessModel(businessProfile || {})
+            inferred: businessProfile ? businessDataService.extractBusinessModel(businessProfile) : 'services'
           },
           selected: extractedBusinessModel,
           reason: 'validated_against_enum'
@@ -540,9 +540,9 @@ export const AIAssistedValuation: React.FC<AIAssistedValuationProps> = ({ report
         // Extract founding year with validation
         const rawFoundingYear = 
           (valuationResult as any).founding_year ||  // From valuation result
-          businessProfile?.founding_year ||  // From business profile
+          businessProfile?.founded_year ||  // From business profile
           conversationContext?.extracted_founding_year ||  // From conversation
-          businessDataService.extractFoundingYear(businessProfile || {});  // Calculated
+          (businessProfile ? businessDataService.extractFoundingYear(businessProfile) : new Date().getFullYear() - 5);  // Calculated
         
         // Validate founding year is reasonable
         const currentYear = new Date().getFullYear();
@@ -553,9 +553,9 @@ export const AIAssistedValuation: React.FC<AIAssistedValuationProps> = ({ report
         chatLogger.info('Founding year extraction', {
           sources: {
             valuationResult: (valuationResult as any).founding_year,
-            businessProfile: businessProfile?.founding_year,
+            businessProfile: businessProfile?.founded_year,
             conversation: conversationContext?.extracted_founding_year,
-            inferred: businessDataService.extractFoundingYear(businessProfile || {})
+            inferred: businessProfile ? businessDataService.extractFoundingYear(businessProfile) : new Date().getFullYear() - 5
           },
           selected: extractedFoundingYear,
           reason: 'validated_year_range'
@@ -568,7 +568,7 @@ export const AIAssistedValuation: React.FC<AIAssistedValuationProps> = ({ report
       // Convert the valuation result to a proper ValuationRequest for backend processing
       const request: ValuationRequest = {
         company_name: valuationResult.company_name || businessProfile?.company_name || 'AI Generated Company',
-        country_code: businessProfile?.country_code || 'BE',
+        country_code: businessProfile?.country || 'BE',
         industry: businessProfile?.industry || 'services',
         business_model: extractedBusinessModel,  // ✅ Extracted from context
         founding_year: extractedFoundingYear,  // ✅ Extracted from context
@@ -595,7 +595,7 @@ export const AIAssistedValuation: React.FC<AIAssistedValuationProps> = ({ report
                          businessProfile?.business_model ? 'business_profile' : 
                          conversationContext?.extracted_business_model ? 'conversation' : 'inferred',
           foundingYear: (valuationResult as any).founding_year ? 'valuation_result' : 
-                       businessProfile?.founding_year ? 'business_profile' : 
+                       businessProfile?.founded_year ? 'business_profile' : 
                        conversationContext?.extracted_founding_year ? 'conversation' : 'calculated'
         }
       });
