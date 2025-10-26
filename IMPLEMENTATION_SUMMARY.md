@@ -1,3 +1,6 @@
+> **⚠️ DEPRECATED**: This documentation has been consolidated.  
+> See: [Critical Fixes Implementation](../../docs/product/valuation-tester/implementations/critical-fixes-2025-10/README.md)
+
 # Manual Flow Implementation Summary
 
 ## Changes Made to Align with Documentation
