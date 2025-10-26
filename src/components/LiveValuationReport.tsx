@@ -104,13 +104,22 @@ export const LiveValuationReport: React.FC<LiveValuationReportProps> = ({
                 </div>
               ) : (
                 <div className="text-center mb-8">
-                  <Bot className="w-12 h-12 mx-auto mb-4 text-zinc-400 opacity-50" />
+                  <Bot className="w-16 h-16 mx-auto mb-4 text-zinc-300" />
                   <h3 className="text-lg font-semibold text-zinc-700 mb-2">
-                    Building Your Valuation Report
+                    Preview Coming Soon
                   </h3>
-                  <p className="text-sm text-zinc-500">
-                    Your report will appear here as we gather information
+                  <p className="text-sm text-zinc-500 mb-4">
+                    Your valuation preview will appear here as we collect information
                   </p>
+                  <div className="bg-zinc-50 rounded-lg p-4 text-left">
+                    <h4 className="text-sm font-medium text-zinc-700 mb-2">What you'll see:</h4>
+                    <ul className="text-xs text-zinc-600 space-y-1">
+                      <li>• Real-time valuation estimates</li>
+                      <li>• Financial analysis charts</li>
+                      <li>• Industry benchmarks</li>
+                      <li>• Professional report sections</li>
+                    </ul>
+                  </div>
                 </div>
               )}
               
