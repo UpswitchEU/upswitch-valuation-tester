@@ -54,7 +54,7 @@ const defaultFormData: ValuationFormData = {
   company_name: 'My Company', // Default company name to avoid validation error
   country_code: 'BE',
   industry: 'services', // Default to valid industry code
-  business_model: 'other', // Default business model
+  business_model: 'services', // Default business model (matches Python enum)
   founding_year: getSafeCurrentYear() - 5, // Default to 5 years ago
   business_type: 'company',
   shares_for_sale: 100,
@@ -152,7 +152,7 @@ export const useValuationStore = create<ValuationStore>((set, get) => ({
       const companyName = formData.company_name?.trim() || 'Unknown Company';
       const countryCode = (formData.country_code || 'BE').toUpperCase().substring(0, 2);
       const industry = formData.industry || 'services';
-      const businessModel = formData.business_model || 'other';
+      const businessModel = formData.business_model || 'services';
       const revenue = Math.max(Number(formData.revenue) || 100000, 1); // Ensure positive revenue
       const ebitda = Number(formData.ebitda) || 20000;
       

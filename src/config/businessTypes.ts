@@ -16,13 +16,15 @@ export interface BusinessTypeOption {
   category: string;
 }
 
-// MINIMAL FALLBACK - Only 5 most common business types
+// MINIMAL FALLBACK - Business types that match Python engine BusinessModel enum
 // This is used only when API is completely unavailable
 export const BUSINESS_TYPES_FALLBACK: BusinessTypeOption[] = [
-  { value: 'restaurant', label: '🍴 Restaurant', category: 'Food & Beverage' },
-  { value: 'saas', label: '💻 SaaS Platform', category: 'Technology' },
-  { value: 'consulting', label: '💼 Consulting', category: 'Professional Services' },
-  { value: 'retail', label: '🛍️ Retail Store', category: 'Retail' },
+  { value: 'b2b_saas', label: '💻 B2B SaaS', category: 'Technology' },
+  { value: 'b2c', label: '🛒 B2C Business', category: 'Consumer' },
+  { value: 'marketplace', label: '🏪 Marketplace', category: 'Platform' },
+  { value: 'ecommerce', label: '🛍️ E-commerce', category: 'Retail' },
+  { value: 'manufacturing', label: '🏭 Manufacturing', category: 'Production' },
+  { value: 'services', label: '💼 Services', category: 'Professional' },
   { value: 'other', label: '📦 Other', category: 'Other' }
 ];
 

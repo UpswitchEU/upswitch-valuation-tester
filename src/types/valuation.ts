@@ -100,6 +100,11 @@ export interface ValuationRequest {
 
 // Extended request type for frontend form state
 export interface ValuationFormData extends Partial<ValuationRequest> {
+  // Required fields that must be present in form data
+  business_model: BusinessModel | string;
+  founding_year: number;
+  
+  // Legacy fields for backward compatibility
   revenue?: number;
   ebitda?: number;
   business_type?: 'sole-trader' | 'company';
@@ -345,6 +350,14 @@ export interface ConversationContext {
   current_step: number;
   total_steps: number;
   methodology_selected?: string;
+  
+  // ADD: Extracted business information
+  extracted_business_model?: BusinessModel | string;
+  extracted_founding_year?: number;
+  extraction_confidence?: {
+    business_model?: number;  // 0-1 confidence score
+    founding_year?: number;
+  };
 }
 
 export interface ConversationHistory {

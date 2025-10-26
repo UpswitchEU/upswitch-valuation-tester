@@ -172,6 +172,118 @@ class BusinessDataService {
   /**
    * Transform business profile data to conversation start request
    */
+  /**
+   * Extract business model from business profile data
+   */
+  extractBusinessModel(businessData: BusinessProfileData): BusinessModel | string {
+    // Priority 1: Explicit business model from data
+    if (businessData.business_model) {
+      return this.mapToBusinessModel(businessData.business_model);
+    }
+    
+    // Priority 2: Infer from industry
+    if (businessData.industry) {
+      return this.inferBusinessModelFromIndustry(businessData.industry);
+    }
+    
+    // Priority 3: Infer from business type
+    if (businessData.business_type) {
+      return this.inferBusinessModelFromType(businessData.business_type);
+    }
+    
+    // Fallback
+    return 'services';
+  }
+  
+  /**
+   * Extract founding year from business profile data
+   */
+  extractFoundingYear(businessData: BusinessProfileData): number {
+    // Priority 1: Explicit founding year
+    if (businessData.founding_year && this.isValidYear(businessData.founding_year)) {
+      return businessData.founding_year;
+    }
+    
+    // Priority 2: Calculate from years in operation
+    if (businessData.years_in_operation) {
+      return new Date().getFullYear() - businessData.years_in_operation;
+    }
+    
+    // Priority 3: Extract from company age
+    if (businessData.company_age) {
+      return new Date().getFullYear() - businessData.company_age;
+    }
+    
+    // Fallback: 5 years ago
+    return new Date().getFullYear() - 5;
+  }
+  
+  /**
+   * Map various business model formats to standard enum
+   */
+  private mapToBusinessModel(value: string): BusinessModel | string {
+    const mapping: Record<string, BusinessModel> = {
+      'saas': 'b2b_saas',
+      'software': 'b2b_saas',
+      'b2b': 'b2b_saas',
+      'consumer': 'b2c',
+      'retail': 'b2c',
+      'platform': 'marketplace',
+      'ecommerce': 'ecommerce',
+      'e-commerce': 'ecommerce',
+      'manufacturing': 'manufacturing',
+      'services': 'services',
+      'consulting': 'services',
+      'professional': 'services',
+    };
+    
+    return mapping[value.toLowerCase()] || value;
+  }
+  
+  /**
+   * Infer business model from industry
+   */
+  private inferBusinessModelFromIndustry(industry: string): BusinessModel | string {
+    const industryMapping: Record<string, BusinessModel> = {
+      'technology': 'b2b_saas',
+      'software': 'b2b_saas',
+      'retail': 'b2c',
+      'ecommerce': 'ecommerce',
+      'manufacturing': 'manufacturing',
+      'services': 'services',
+      'healthcare': 'services',
+      'finance': 'services',
+      'real_estate': 'services',
+      'hospitality': 'services',
+      'construction': 'services',
+    };
+    
+    return industryMapping[industry.toLowerCase()] || 'services';
+  }
+  
+  /**
+   * Infer business model from business type
+   */
+  private inferBusinessModelFromType(businessType: string): BusinessModel | string {
+    const typeMapping: Record<string, BusinessModel> = {
+      'sole-trader': 'services',
+      'company': 'services',
+      'partnership': 'services',
+      'llc': 'services',
+      'corporation': 'services',
+    };
+    
+    return typeMapping[businessType.toLowerCase()] || 'services';
+  }
+  
+  /**
+   * Validate year is reasonable
+   */
+  private isValidYear(year: number): boolean {
+    const currentYear = new Date().getFullYear();
+    return year >= 1900 && year <= currentYear;
+  }
+
   transformToConversationStartRequest(
     businessData: BusinessProfileData,
     userPreferences?: {
