@@ -56,7 +56,7 @@ class BackendAPI {
       const response = await this.client.post('/api/valuations/calculate/manual', data);
       
       console.log('Backend response for manual valuation:', response.data);
-      return response.data;
+      return response.data.data; // Extract nested data from { success, data, message }
     } catch (error: any) {
       console.error('Manual valuation failed:', error);
       
@@ -88,7 +88,7 @@ class BackendAPI {
       const response = await this.client.post('/api/valuations/calculate/ai-guided', data);
       
       console.log('Backend response for AI-guided valuation:', response.data);
-      return response.data;
+      return response.data.data; // Extract nested data from { success, data, message }
     } catch (error: any) {
       console.error('AI-guided valuation failed:', error);
       
@@ -125,7 +125,7 @@ class BackendAPI {
       `/api/valuations/reports/${reportId}/calculate`,
       { ...data, flowType }
     );
-    return response.data;
+    return response.data.data; // Extract nested data from { success, data, message }
   }
 
   /**
@@ -133,7 +133,7 @@ class BackendAPI {
    */
   async getReport(reportId: string): Promise<ValuationResponse> {
     const response = await this.client.get(`/api/valuations/reports/${reportId}`);
-    return response.data;
+    return response.data.data; // Extract nested data from { success, data, message }
   }
 
   /**
@@ -141,7 +141,7 @@ class BackendAPI {
    */
   async updateReport(reportId: string, data: Partial<ValuationRequest>): Promise<ValuationResponse> {
     const response = await this.client.put(`/api/valuations/reports/${reportId}`, data);
-    return response.data;
+    return response.data.data; // Extract nested data from { success, data, message }
   }
 
   /**
@@ -157,7 +157,7 @@ class BackendAPI {
    */
   async calculateValuation(data: ValuationRequest): Promise<ValuationResponse> {
     const response = await this.client.post('/api/valuations/calculate', data);
-    return response.data;
+    return response.data.data; // Extract nested data from { success, data, message }
   }
 
   /**

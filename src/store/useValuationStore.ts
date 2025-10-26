@@ -201,8 +201,8 @@ export const useValuationStore = create<ValuationStore>((set, get) => ({
       });
       const response = await backendAPI.calculateManualValuation(request);
       
-      // DIAGNOSTIC: Log backend response structure
-      console.log('DIAGNOSTIC: Backend response:', {
+      // DIAGNOSTIC: Log backend response structure (FIXED - now extracts nested data)
+      console.log('DIAGNOSTIC: Backend response (FIXED):', {
         responseType: typeof response,
         responseKeys: Object.keys(response || {}),
         equityValues: {
