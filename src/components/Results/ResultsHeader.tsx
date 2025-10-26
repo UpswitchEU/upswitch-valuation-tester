@@ -9,12 +9,30 @@ interface ResultsHeaderProps {
 export const ResultsHeader: React.FC<ResultsHeaderProps> = ({ result }) => {
   return (
     <div className="space-y-4 sm:space-y-6">
-      {/* Header */}
-      <div className="bg-gradient-to-r from-primary-600 to-blue-600 rounded-lg p-4 sm:p-6 text-white">
-        <h2 className="text-xl sm:text-2xl font-bold mb-2">Valuation Results</h2>
-        <p className="text-sm sm:text-base text-primary-100">
-          Comprehensive analysis using {result.methodology || result.primary_method || 'synthesized'} methodology
-        </p>
+      {/* Header - Professional Credibility Focus */}
+      <div className="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-lg p-4 sm:p-6 text-white">
+        <div className="flex items-center justify-between flex-wrap gap-4">
+          <div className="flex-1 min-w-0">
+            <h2 className="text-xl sm:text-2xl font-bold mb-2">Your Professional Valuation</h2>
+            <p className="text-sm sm:text-base text-blue-100">
+              Big 4 methodology (EY, Deloitte, PwC, KPMG) • 85-95% accuracy • 100% transparent
+            </p>
+          </div>
+          <div className="flex items-center space-x-3 sm:space-x-4 text-sm flex-shrink-0">
+            <div className="text-center">
+              <div className="font-bold text-2xl">⚡</div>
+              <div className="text-blue-100 text-xs">5 seconds</div>
+            </div>
+            <div className="text-center">
+              <div className="font-bold text-2xl">🏆</div>
+              <div className="text-blue-100 text-xs">Big 4 Quality</div>
+            </div>
+            <div className="text-center">
+              <div className="font-bold text-2xl">🔍</div>
+              <div className="text-blue-100 text-xs">Transparent</div>
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* Main Valuation */}

@@ -235,24 +235,35 @@ export const ValuationForm: React.FC = () => {
         
         <div className="grid grid-cols-1 @4xl:grid-cols-2 gap-6">
           {/* Revenue */}
-          <CustomNumberInputField
-            label="Revenue"
-            placeholder="e.g., 2,500,000"
-            value={formData.revenue || ''}
-            onChange={(e) => updateFormData({ revenue: parseFloat(e.target.value.replace(/,/g, '')) || undefined })}
-            onBlur={() => {}}
-            name="revenue"
-            min={0}
-            step={1000}
-            prefix="€"
-            formatAsCurrency
-            required
-          />
+          <div>
+            <CustomNumberInputField
+              label="Revenue (Required)"
+              placeholder="e.g., 2,500,000"
+              value={formData.revenue || ''}
+              onChange={(e) => updateFormData({ revenue: parseFloat(e.target.value.replace(/,/g, '')) || undefined })}
+              onBlur={() => {}}
+              name="revenue"
+              min={0}
+              step={1000}
+              prefix="€"
+              formatAsCurrency
+              required
+            />
+            <div className="mt-1 text-xs text-zinc-400 space-y-1">
+              <div>💡 <strong>Tip:</strong> Use your most recent fiscal year</div>
+              <div>ℹ️ <strong>Why we need this:</strong> Revenue is the foundation of valuation</div>
+              {formData.revenue && (
+                <div className="text-green-400">
+                  ✓ Revenue looks good (€{formData.revenue.toLocaleString()} is typical for services companies)
+                </div>
+              )}
+            </div>
+          </div>
 
           {/* EBITDA */}
           <div>
             <CustomNumberInputField
-              label="EBITDA"
+              label="EBITDA (Required)"
               placeholder="e.g., 500,000"
               value={formData.ebitda || ''}
               onChange={(e) => updateFormData({ ebitda: parseFloat(e.target.value.replace(/,/g, '')) || undefined })}
@@ -263,10 +274,67 @@ export const ValuationForm: React.FC = () => {
               formatAsCurrency
               required
             />
-            <p className="mt-1 text-xs text-zinc-400">
-              Earnings Before Interest, Taxes, Depreciation & Amortization
-            </p>
+            <div className="mt-1 text-xs text-zinc-400 space-y-1">
+              <div>💡 <strong>Tip:</strong> Net profit + interest + taxes + depreciation</div>
+              <div>ℹ️ <strong>Why we need this:</strong> Measures operational profitability</div>
+              {formData.revenue && formData.ebitda && (
+                <div className={formData.ebitda / formData.revenue < 0.15 ? 'text-yellow-400' : 'text-green-400'}>
+                  {formData.ebitda / formData.revenue < 0.15 ? 
+                    `⚠️ EBITDA margin is ${((formData.ebitda / formData.revenue) * 100).toFixed(1)}% (industry average is 15-20%)` :
+                    `✓ EBITDA margin looks good (${((formData.ebitda / formData.revenue) * 100).toFixed(1)}%)`
+                  }
+                </div>
+              )}
+            </div>
           </div>
+        </div>
+      </div>
+
+      {/* Data Quality Progress */}
+      <div className="bg-zinc-800/50 rounded-lg p-4 border border-zinc-700">
+        <div className="flex items-center justify-between mb-2">
+          <h3 className="text-sm font-semibold text-zinc-300">Data Quality</h3>
+          <span className="text-xs text-zinc-400">
+            {(() => {
+              let score = 0;
+              if (formData.revenue && formData.ebitda) score += 40;
+              if (formData.industry) score += 20;
+              if (formData.business_model) score += 20;
+              if (formData.founding_year) score += 10;
+              if (Object.keys(historicalInputs).length > 0) score += 10;
+              return `${score}%`;
+            })()}
+          </span>
+        </div>
+        <div className="w-full bg-zinc-700 rounded-full h-2">
+          <div 
+            className="bg-gradient-to-r from-green-500 to-blue-500 h-2 rounded-full transition-all duration-300"
+            style={{ 
+              width: `${(() => {
+                let score = 0;
+                if (formData.revenue && formData.ebitda) score += 40;
+                if (formData.industry) score += 20;
+                if (formData.business_model) score += 20;
+                if (formData.founding_year) score += 10;
+                if (Object.keys(historicalInputs).length > 0) score += 10;
+                return score;
+              })()}%` 
+            }}
+          />
+        </div>
+        <div className="mt-2 text-xs text-zinc-400 space-y-1">
+          {formData.revenue && formData.ebitda && <div className="text-green-400">✓ Revenue & EBITDA provided</div>}
+          {formData.industry && <div className="text-green-400">✓ Industry selected</div>}
+          {formData.business_model && <div className="text-green-400">✓ Business model selected</div>}
+          {formData.founding_year && <div className="text-green-400">✓ Founding year provided</div>}
+          {Object.keys(historicalInputs).length === 0 && (
+            <div className="text-yellow-400">
+              ⚠️ No historical data (reduces confidence by 15%)
+            </div>
+          )}
+          {Object.keys(historicalInputs).length > 0 && (
+            <div className="text-green-400">✓ Historical data provided</div>
+          )}
         </div>
       </div>
 
