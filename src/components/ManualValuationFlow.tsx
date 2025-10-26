@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Edit3, TrendingUp, CheckCircle, Save, ArrowLeft } from 'lucide-react';
+import { Edit3, TrendingUp, ArrowLeft } from 'lucide-react';
 import { ValuationForm } from './ValuationForm';
 import { Results } from './Results';
 import { useValuationStore } from '../store/useValuationStore';
@@ -22,7 +22,7 @@ export const ManualValuationFlow: React.FC<ManualValuationFlowProps> = ({ onComp
   const [stage, setStage] = useState<FlowStage>('form');
   const { result } = useValuationStore();
   // const { addReport } = useReportsStore(); // Deprecated: Now saving to database
-  const [reportSaved, setReportSaved] = useState(false);
+  // const [reportSaved, setReportSaved] = useState(false); // Removed with success banner
 
   // Panel resize state with localStorage persistence
   const [leftPanelWidth, setLeftPanelWidth] = useState(() => {
@@ -100,10 +100,10 @@ export const ManualValuationFlow: React.FC<ManualValuationFlowProps> = ({ onComp
     }
   };
 
-  const handleStartOver = () => {
-    setStage('form');
-    setReportSaved(false);
-  };
+  // const handleStartOver = () => { // Removed with success banner
+  //   setStage('form');
+  //   setReportSaved(false);
+  // };
 
   return (
     <div className="flex flex-col h-full overflow-hidden">
@@ -154,48 +154,7 @@ export const ManualValuationFlow: React.FC<ManualValuationFlowProps> = ({ onComp
         >
           <div className="flex-1 overflow-y-auto p-4 sm:p-6">
             <div className="max-w-4xl mx-auto">
-              {/* Success Banner when results are ready */}
-              {stage === 'results' && result && (
-                <div className="bg-gradient-to-r from-green-900/30 to-emerald-900/30 border border-green-700/50 rounded-lg sm:rounded-xl p-4 sm:p-6 mb-4 sm:mb-6">
-                  <div className="flex flex-col sm:flex-row items-start justify-between gap-3 sm:gap-4">
-                    <div className="flex items-start gap-3 sm:gap-4 flex-1">
-                      <div className="w-10 h-10 sm:w-12 sm:h-12 bg-green-500/20 rounded-full flex items-center justify-center flex-shrink-0">
-                        <CheckCircle className="w-5 h-5 sm:w-6 sm:h-6 text-green-400" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <h3 className="text-base sm:text-lg font-bold text-white mb-1">
-                          Valuation Complete!
-                        </h3>
-                        <p className="text-xs sm:text-sm text-zinc-300 mb-2 sm:mb-3">
-                          <span className="hidden lg:inline">Your report is displayed on the right. You can edit values below to recalculate.</span>
-                          <span className="lg:hidden">Your report is displayed below. You can edit values to recalculate.</span>
-                        </p>
-                        {reportSaved && (
-                          <div className="flex items-center gap-2 text-xs sm:text-sm text-green-400">
-                            <Save className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                            <span className="font-medium">Auto-saved to Reports</span>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                    <div className="flex flex-col gap-2 w-full sm:w-auto flex-shrink-0">
-                      {/* DISABLED: Reports now shown on upswitch.biz */}
-                      {/* <button
-                        onClick={() => navigate(urls.reports())}
-                        className="px-4 py-2 text-sm bg-zinc-800 border border-zinc-700 text-zinc-300 rounded-lg hover:bg-zinc-700 transition-colors font-medium"
-                      >
-                        View All Reports
-                      </button> */}
-                      <button
-                        onClick={handleStartOver}
-                        className="px-4 py-2 text-xs sm:text-sm bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors font-medium whitespace-nowrap"
-                      >
-                        New Valuation
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              )}
+              {/* Success Banner removed - report preview shows completion status */}
               
               {/* Form - Always visible */}
               <ValuationForm />

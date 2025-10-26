@@ -200,6 +200,21 @@ export const useValuationStore = create<ValuationStore>((set, get) => ({
         requestData: request
       });
       const response = await backendAPI.calculateManualValuation(request);
+      
+      // DIAGNOSTIC: Log backend response structure
+      console.log('DIAGNOSTIC: Backend response:', {
+        responseType: typeof response,
+        responseKeys: Object.keys(response || {}),
+        equityValues: {
+          low: response?.equity_value_low,
+          mid: response?.equity_value_mid,
+          high: response?.equity_value_high
+        },
+        recommendedAskingPrice: response?.recommended_asking_price,
+        confidenceScore: response?.confidence_score,
+        fullData: response
+      });
+      
       setResult(response);
       
       // ✅ AUTO-SAVE TO DATABASE (primary storage)
