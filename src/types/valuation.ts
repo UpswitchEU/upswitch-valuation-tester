@@ -440,6 +440,17 @@ export interface OwnerProfileResponse {
 // VALUATION TOOLBAR TYPES
 // =============================================================================
 
+export interface ValuationInputData {
+  revenue: number;
+  ebitda: number;
+  industry: string;
+  country_code: string;
+  founding_year?: number;
+  employees?: number;
+  business_model?: string;
+  historical_years_data?: YearDataInput[];
+}
+
 export interface ValuationToolbarProps {
   onRefresh?: () => void;
   onDownload?: () => void;

@@ -2,14 +2,17 @@ import React from 'react';
 import { Calendar, Building, DollarSign, TrendingUp, FileText, Clock } from 'lucide-react';
 import { CalculationBreakdown } from './InfoTab/CalculationBreakdown';
 import { SensitivityAnalysis } from './InfoTab/SensitivityAnalysis';
-import type { ValuationResponse } from '../types/valuation';
+import type { ValuationResponse, ValuationInputData } from '../types/valuation';
+import { formatCurrency } from '../components/Results/utils/formatters';
 
 interface ValuationInfoPanelProps {
   result: ValuationResponse;
+  inputData?: ValuationInputData | null;
 }
 
 export const ValuationInfoPanel: React.FC<ValuationInfoPanelProps> = ({
-  result
+  result,
+  inputData
 }) => {
   const valuationId = result.valuation_id;
   const companyName = result.company_name;
@@ -142,21 +145,45 @@ export const ValuationInfoPanel: React.FC<ValuationInfoPanelProps> = ({
                   </span>
                 </div>
                 <div className="flex justify-between items-center py-2 border-b border-zinc-700">
-                  <span className="text-zinc-400">Valuation ID:</span>
+                  <span className="text-zinc-400">Revenue:</span>
                   <span className="text-white font-medium">
-                    {result.valuation_id || 'N/A'}
+                    {inputData?.revenue ? formatCurrency(inputData.revenue) : 'N/A'}
+                  </span>
+                </div>
+                <div className="flex justify-between items-center py-2 border-b border-zinc-700">
+                  <span className="text-zinc-400">EBITDA:</span>
+                  <span className="text-white font-medium">
+                    {inputData?.ebitda ? formatCurrency(inputData.ebitda) : 'N/A'}
+                  </span>
+                </div>
+                <div className="flex justify-between items-center py-2 border-b border-zinc-700">
+                  <span className="text-zinc-400">Industry:</span>
+                  <span className="text-white font-medium">
+                    {inputData?.industry || 'N/A'}
+                  </span>
+                </div>
+                <div className="flex justify-between items-center py-2 border-b border-zinc-700">
+                  <span className="text-zinc-400">Country:</span>
+                  <span className="text-white font-medium">
+                    {inputData?.country_code || 'N/A'}
+                  </span>
+                </div>
+                <div className="flex justify-between items-center py-2 border-b border-zinc-700">
+                  <span className="text-zinc-400">Employees:</span>
+                  <span className="text-white font-medium">
+                    {inputData?.employees?.toLocaleString() || 'N/A'}
+                  </span>
+                </div>
+                <div className="flex justify-between items-center py-2 border-b border-zinc-700">
+                  <span className="text-zinc-400">Founded:</span>
+                  <span className="text-white font-medium">
+                    {inputData?.founding_year || 'N/A'}
                   </span>
                 </div>
                 <div className="flex justify-between items-center py-2 border-b border-zinc-700">
                   <span className="text-zinc-400">Confidence Score:</span>
                   <span className="text-white font-medium">
                     {result.confidence_score ? `${(result.confidence_score * 100).toFixed(1)}%` : 'N/A'}
-                  </span>
-                </div>
-                <div className="flex justify-between items-center py-2 border-b border-zinc-700">
-                  <span className="text-zinc-400">Methodology:</span>
-                  <span className="text-white font-medium">
-                    {result.methodology || 'Hybrid'}
                   </span>
                 </div>
               </>
@@ -221,7 +248,7 @@ export const ValuationInfoPanel: React.FC<ValuationInfoPanelProps> = ({
 
       {/* Calculation Breakdown Section */}
       <div className="border-t border-zinc-800 pt-6">
-        <CalculationBreakdown result={result} />
+        <CalculationBreakdown result={result} inputData={inputData || null} />
       </div>
 
       {/* Sensitivity Analysis Section */}

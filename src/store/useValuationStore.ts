@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import type { ValuationRequest, ValuationResponse, QuickValuationRequest, ValuationFormData } from '../types/valuation';
+import type { ValuationRequest, ValuationResponse, QuickValuationRequest, ValuationFormData, ValuationInputData } from '../types/valuation';
 import { api } from '../services/api';
 import { backendAPI } from '../services/backendApi';
 import { storeLogger } from '../utils/logger';
@@ -23,6 +23,10 @@ interface ValuationStore {
   result: ValuationResponse | null;
   setResult: (result: ValuationResponse | null) => void;
   clearResult: () => void;
+  
+  // Input data storage
+  inputData: ValuationInputData | null;
+  setInputData: (data: ValuationInputData | null) => void;
 
   // UI state
   isCalculating: boolean;
@@ -102,6 +106,10 @@ export const useValuationStore = create<ValuationStore>((set, get) => ({
   result: null,
   setResult: (result) => set({ result }),
   clearResult: () => set({ result: null }),
+  
+  // Input data storage
+  inputData: null,
+  setInputData: (inputData) => set({ inputData }),
 
   // UI state
   isCalculating: false,
@@ -123,7 +131,7 @@ export const useValuationStore = create<ValuationStore>((set, get) => ({
   
   // Actions
   calculateValuation: async () => {
-    const { formData, setIsCalculating, setResult, setError } = get();
+    const { formData, setIsCalculating, setResult, setError, setInputData } = get();
     
     setIsCalculating(true);
     setError(null);
@@ -157,6 +165,20 @@ export const useValuationStore = create<ValuationStore>((set, get) => ({
       const businessModel = formData.business_model || 'services';
       const revenue = Math.max(Number(formData.revenue) || 100000, 1); // Ensure positive revenue
       const ebitda = Number(formData.ebitda) || 20000;
+      
+      // Capture input data for Info tab
+      const inputData: ValuationInputData = {
+        revenue: revenue,
+        ebitda: ebitda,
+        industry: industry,
+        country_code: countryCode,
+        founding_year: foundingYear,
+        employees: formData.number_of_employees,
+        business_model: businessModel,
+        historical_years_data: formData.historical_years_data,
+      };
+      
+      setInputData(inputData);
       
       const request: ValuationRequest = {
         company_name: companyName,

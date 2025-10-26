@@ -1,14 +1,15 @@
 import React, { useState } from 'react';
 import { ChevronDown, ChevronRight, Calculator } from 'lucide-react';
-import type { ValuationResponse } from '../../types/valuation';
+import type { ValuationResponse, ValuationInputData } from '../../types/valuation';
 import { formatCurrency, formatPercent } from '../Results/utils/formatters';
 import { FINANCIAL_CONSTANTS } from '../../config/financialConstants';
 
 interface CalculationBreakdownProps {
   result: ValuationResponse;
+  inputData: ValuationInputData | null;
 }
 
-export const CalculationBreakdown: React.FC<CalculationBreakdownProps> = ({ result }) => {
+export const CalculationBreakdown: React.FC<CalculationBreakdownProps> = ({ result, inputData }) => {
   const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set(['dcf', 'multiples']));
 
   const toggleSection = (section: string) => {
@@ -27,6 +28,10 @@ export const CalculationBreakdown: React.FC<CalculationBreakdownProps> = ({ resu
   const multiplesWeight = result.multiples_weight || 0;
   const dcfValue = result.dcf_valuation?.equity_value || 0;
   const multiplesValue = result.multiples_valuation?.ev_ebitda_valuation || 0;
+  
+  // Use real data instead of hardcoded values
+  const revenue = inputData?.revenue || 0;
+  const ebitda = inputData?.ebitda || 0;
 
   return (
     <div className="space-y-4">
@@ -97,7 +102,7 @@ export const CalculationBreakdown: React.FC<CalculationBreakdownProps> = ({ resu
                       {/* Generate 10 years of projections */}
                       {Array.from({ length: 10 }, (_, i) => {
                         const year = i + 1;
-                        const fcf = calculateProjectedFCF(result, year);
+                        const fcf = calculateProjectedFCF(result, inputData, year);
                         const discountFactor = 1 / Math.pow(1 + (result.dcf_valuation?.wacc || FINANCIAL_CONSTANTS.DEFAULT_WACC) / 100, year);
                         const pv = fcf * discountFactor;
                         return (
@@ -167,7 +172,7 @@ export const CalculationBreakdown: React.FC<CalculationBreakdownProps> = ({ resu
                 <div className="space-y-2 text-sm">
                   <div className="flex justify-between">
                     <span className="text-gray-600">Annual Revenue:</span>
-                    <span className="font-mono">{formatCurrency(1000000)}</span>
+                    <span className="font-mono">{formatCurrency(revenue)}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-600">Industry Revenue Multiple:</span>
@@ -175,7 +180,7 @@ export const CalculationBreakdown: React.FC<CalculationBreakdownProps> = ({ resu
                   </div>
                   <div className="flex justify-between font-semibold pt-2 border-t border-gray-300">
                     <span>Revenue-Based Valuation:</span>
-                    <span className="font-mono">{formatCurrency(1000000 * (result.multiples_valuation?.revenue_multiple || 2.1))}</span>
+                    <span className="font-mono">{formatCurrency(revenue * (result.multiples_valuation?.revenue_multiple || 2.1))}</span>
                   </div>
                 </div>
               </div>
@@ -186,7 +191,7 @@ export const CalculationBreakdown: React.FC<CalculationBreakdownProps> = ({ resu
                 <div className="space-y-2 text-sm">
                   <div className="flex justify-between">
                     <span className="text-gray-600">EBITDA:</span>
-                    <span className="font-mono">{formatCurrency(200000)}</span>
+                    <span className="font-mono">{formatCurrency(ebitda)}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-600">Industry EBITDA Multiple:</span>
@@ -194,7 +199,7 @@ export const CalculationBreakdown: React.FC<CalculationBreakdownProps> = ({ resu
                   </div>
                   <div className="flex justify-between font-semibold pt-2 border-t border-gray-300">
                     <span>EBITDA-Based Valuation:</span>
-                    <span className="font-mono">{formatCurrency(200000 * (result.multiples_valuation?.ebitda_multiple || 8.5))}</span>
+                    <span className="font-mono">{formatCurrency(ebitda * (result.multiples_valuation?.ebitda_multiple || 8.5))}</span>
                   </div>
                 </div>
               </div>
@@ -245,8 +250,8 @@ export const CalculationBreakdown: React.FC<CalculationBreakdownProps> = ({ resu
 };
 
 // Helper function to calculate projected FCF
-function calculateProjectedFCF(_result: ValuationResponse, year: number): number {
-  const baseFCF = 200000; // Estimate if not provided
+function calculateProjectedFCF(_result: ValuationResponse, inputData: ValuationInputData | null, year: number): number {
+  const baseFCF = inputData?.ebitda || (inputData?.revenue || 0) * 0.15; // Use real EBITDA or estimate from revenue
   const growthRate = 0.08; // 8% annual growth assumption
   return baseFCF * Math.pow(1 + growthRate, year);
 }

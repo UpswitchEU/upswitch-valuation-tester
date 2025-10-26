@@ -21,7 +21,7 @@ interface ManualValuationFlowProps {
 }
 
 export const ManualValuationFlow: React.FC<ManualValuationFlowProps> = ({ onComplete }) => {
-  const { result, clearResult } = useValuationStore();
+  const { result, clearResult, inputData } = useValuationStore();
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState<'preview' | 'source' | 'info'>('preview');
   const [valuationName, setValuationName] = useState('');
@@ -81,8 +81,14 @@ export const ManualValuationFlow: React.FC<ManualValuationFlowProps> = ({ onComp
 
   const handleDownload = async () => {
     if (!result) return;
-    // await DownloadService.downloadPDF(result);
-    console.log('Download PDF for result:', result);
+    try {
+      // Use browser print API as fallback
+      window.print();
+    } catch (error) {
+      console.error('Download failed:', error);
+      // Fallback to print
+      window.print();
+    }
   };
 
   const handleFullScreen = () => {
@@ -157,7 +163,7 @@ export const ManualValuationFlow: React.FC<ManualValuationFlowProps> = ({ onComp
             <div>
               <h3 className="text-white font-medium">{result.company_name}</h3>
               <p className="text-sm text-zinc-400">
-                Industry • Belgium • Founded N/A
+                {inputData?.industry || 'Industry'} • {inputData?.country_code || 'BE'} • Founded {inputData?.founding_year || 'N/A'}
               </p>
             </div>
           </div>
@@ -223,7 +229,7 @@ export const ManualValuationFlow: React.FC<ManualValuationFlowProps> = ({ onComp
             {activeTab === 'info' && (
               <div className="p-4 sm:p-6">
                 {result ? (
-                  <ValuationInfoPanel result={result} />
+                  <ValuationInfoPanel result={result} inputData={inputData} />
                 ) : (
                   <div className="flex flex-col items-center justify-center h-full p-6 sm:p-8 text-center">
                     <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-zinc-100 flex items-center justify-center mb-3 sm:mb-4">
