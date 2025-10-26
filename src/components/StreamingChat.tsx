@@ -25,6 +25,28 @@ import {
 const MAX_MESSAGE_LENGTH = 1000;
 const MIN_MESSAGE_LENGTH = 1;
 
+// Fallback questions for when backend is unavailable
+const FALLBACK_QUESTIONS = [
+  {
+    question: "Welcome! Let me help you value your business. What type of business do you run?",
+    field: "business_type",
+    inputType: "select",
+    options: ["Technology", "Manufacturing", "Services", "Retail", "Other"]
+  },
+  {
+    question: "What was your annual revenue last year?",
+    field: "revenue",
+    inputType: "number",
+    helpText: "Enter your total annual revenue"
+  },
+  {
+    question: "How many employees do you have?",
+    field: "employee_count",
+    inputType: "number",
+    helpText: "Enter the number of full-time employees"
+  }
+];
+
 interface InputValidation {
   is_valid: boolean;
   errors: string[];
@@ -459,8 +481,41 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
 
   // Backend-driven conversation initialization
   const [isInitializing, setIsInitializing] = useState(true);
+  const [fallbackMode, setFallbackMode] = useState(false);
+  const [currentFallbackQuestion, setCurrentFallbackQuestion] = useState(0);
   const hasInitializedRef = useRef(false);
   const abortControllerRef = useRef<AbortController | null>(null);
+
+  // Fallback mode when backend is unavailable
+  const useFallbackMode = useCallback(() => {
+    setFallbackMode(true);
+    const firstQuestion = FALLBACK_QUESTIONS[0];
+    
+    // Add the fallback question as an AI message
+    const fallbackMessage: Message = {
+      id: `fallback-${Date.now()}`,
+      role: 'ai',
+      content: firstQuestion.question,
+      timestamp: new Date(),
+      metadata: {
+        intent: 'question',
+        topic: 'business_type',
+        collected_field: firstQuestion.field,
+        input_type: firstQuestion.inputType,
+        help_text: firstQuestion.helpText,
+        options: firstQuestion.options,
+        fallback_mode: true
+      }
+    };
+    
+    setMessages([fallbackMessage]);
+    setIsInitializing(false);
+    
+    chatLogger.info('Using fallback mode - backend unavailable', {
+      session_id: sessionId,
+      question: firstQuestion.question
+    });
+  }, [sessionId]);
 
   // ✅ Initialize with retry logic
   const initializeWithRetry = useCallback(async (attempt = 1, maxAttempts = 3) => {
@@ -602,7 +657,7 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
           return initializeWithRetry(attempt + 1, maxAttempts);
         }
         
-        // ✅ All retries failed - show fallback
+        // ✅ All retries failed - use fallback mode
         const timeElapsed = Date.now() - startTime;
         
         chatLogger.error('All initialization attempts failed', {
@@ -626,6 +681,9 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
           total_attempts: attempt,
           has_profile_data: !!(user?.company_name || user?.business_type || user?.industry)
         });
+        
+        // Use fallback mode instead of showing error
+        useFallbackMode();
         
         // ✅ Check if still mounted before fallback
         if (!abortControllerRef.current?.signal.aborted) {
@@ -1480,7 +1538,7 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
           <div className="flex justify-start">
             <div className="max-w-[80%] mr-auto">
               <div className="flex items-start gap-3">
-                <div className="flex-shrink-0 w-8 h-8 bg-primary-600/20 rounded-full flex items-center justify-center animate-pulse">
+                <div className="flex-shrink-0 w-8 h-8 bg-primary-600/20 rounded-full flex items-center justify-center animate-pulse bot-avatar">
                   <Bot className="w-4 h-4 text-primary-400" />
                 </div>
                 <div className="rounded-lg px-4 py-2 bg-zinc-700/50 text-white">
@@ -1501,7 +1559,7 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
             <div className={`max-w-[80%] ${message.type === 'user' ? 'ml-auto' : 'mr-auto'}`}>
               <div className="flex items-start gap-3">
                 {message.type !== 'user' && (
-                  <div className="flex-shrink-0 w-8 h-8 bg-primary-600/20 rounded-full flex items-center justify-center">
+                  <div className="flex-shrink-0 w-8 h-8 bg-primary-600/20 rounded-full flex items-center justify-center bot-avatar">
                     <Bot className="w-4 h-4 text-primary-400" />
                   </div>
                 )}
@@ -1519,6 +1577,15 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
                     {message.type === 'ai' && message.isStreaming ? displayedText : message.content}
                     {message.type === 'ai' && message.isStreaming && (
                       <TypingCursor isVisible={isTyping} />
+                    )}
+                    
+                    {/* Typing indicator when AI is thinking */}
+                    {message.type === 'ai' && message.isStreaming && isTyping && (
+                      <div className="typing-indicator flex space-x-1 mt-2">
+                        <span className="dot"></span>
+                        <span className="dot"></span>
+                        <span className="dot"></span>
+                      </div>
                     )}
                   </div>
                   
