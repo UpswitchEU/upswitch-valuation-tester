@@ -7,7 +7,11 @@ import { TARGET_COUNTRIES } from '../config/countries';
 import { useBusinessTypes } from '../hooks/useBusinessTypes';
 import { IndustryCode } from '../types/valuation';
 import { CustomInputField, CustomNumberInputField, CustomDropdown, HistoricalDataInputs } from './forms';
+import { SearchableBusinessTypeCombobox } from './SearchableBusinessTypeCombobox';
+import { suggestionService } from '../services/businessTypeSuggestionApi';
+import type { BusinessType } from '../services/businessTypesApi';
 import { generalLogger } from '../utils/logger';
+import toast from 'react-hot-toast';
 import { 
   getIndustryGuidance, 
   validateEbitdaMargin, 
@@ -26,11 +30,13 @@ export const ValuationForm: React.FC = () => {
   const { formData, updateFormData, calculateValuation, quickValuation, isCalculating, prefillFromBusinessCard } = useValuationStore();
   const { businessTypeOptions, loading: businessTypesLoading, error: businessTypesError } = useBusinessTypes();
   // const { addReport } = useReportsStore(); // Deprecated: Now saving to database
-  const { businessCard, isAuthenticated } = useAuth();
+  const { businessCard, isAuthenticated, user } = useAuth();
   
   // Local state for historical data inputs
   const [historicalInputs, setHistoricalInputs] = useState<{[key: string]: string}>({});
   const [hasPrefilledOnce, setHasPrefilledOnce] = useState(false);
+  const [businessTypes, setBusinessTypes] = useState<BusinessType[]>([]);
+  const [selectedBusinessType, setSelectedBusinessType] = useState<BusinessType | null>(null);
 
   // Debounced quick calculation for live preview
   const debouncedQuickCalc = useCallback(
@@ -47,6 +53,40 @@ export const ValuationForm: React.FC = () => {
     debouncedQuickCalc(formData);
   }, [formData.revenue, formData.ebitda, formData.industry, formData.country_code]);
 
+  // Convert businessTypeOptions to BusinessType[] format for combobox
+  useEffect(() => {
+    if (businessTypeOptions && businessTypeOptions.length > 0) {
+      // Fetch full business types from API if needed
+      // For now, create minimal BusinessType objects from options
+      const types: BusinessType[] = businessTypeOptions.map(opt => ({
+        id: opt.value,
+        title: opt.label,
+        description: opt.label,
+        short_description: opt.label,
+        icon: opt.icon || '🏢',
+        category: opt.category || 'Other',
+        category_id: opt.category || 'other',
+        industryMapping: opt.value, // Will be updated when actual business type is selected
+        keywords: [opt.label.toLowerCase()],
+        popular: false,
+        status: 'active',
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      }));
+      setBusinessTypes(types);
+    }
+  }, [businessTypeOptions]);
+
+  // Find and set selected business type when formData.business_type_id changes
+  useEffect(() => {
+    if (formData.business_type_id && businessTypes.length > 0) {
+      const found = businessTypes.find(bt => bt.id === formData.business_type_id);
+      if (found) {
+        setSelectedBusinessType(found);
+      }
+    }
+  }, [formData.business_type_id, businessTypes]);
+
   // Pre-fill form with business card data when authenticated
   useEffect(() => {
     generalLogger.debug('Pre-fill check', { 
@@ -56,15 +96,57 @@ export const ValuationForm: React.FC = () => {
       businessCard 
     });
     
-    if (isAuthenticated && businessCard && !hasPrefilledOnce) {
+    if (isAuthenticated && businessCard && !hasPrefilledOnce && businessTypes.length > 0) {
       generalLogger.info('Pre-filling form with business card data', {
         ...businessCard,
         employee_count: businessCard.employee_count ? `${businessCard.employee_count} employees` : 'not available'
       });
+      
+      // First, use standard prefill
       prefillFromBusinessCard(businessCard);
+      
+      // Then, try to match business_type_id if available
+      if ((businessCard as any).business_type_id) {
+        const matchingType = businessTypes.find(
+          bt => bt.id === (businessCard as any).business_type_id
+        );
+        
+        if (matchingType) {
+          generalLogger.info('Found matching business type from profile', {
+            id: matchingType.id,
+            title: matchingType.title
+          });
+          
+          updateFormData({
+            business_type_id: matchingType.id,
+            business_model: matchingType.id,
+            industry: matchingType.industryMapping || businessCard.industry,
+            subIndustry: matchingType.category,
+          });
+        }
+      } else if (businessCard.industry) {
+        // Fallback: Try to find matching business type by industry
+        const matchingType = businessTypes.find(
+          bt => bt.industryMapping === businessCard.industry
+        );
+        
+        if (matchingType) {
+          generalLogger.info('Found matching business type by industry', {
+            id: matchingType.id,
+            title: matchingType.title,
+            industry: businessCard.industry
+          });
+          
+          updateFormData({
+            business_type_id: matchingType.id,
+            business_model: matchingType.id,
+          });
+        }
+      }
+      
       setHasPrefilledOnce(true);
     }
-  }, [isAuthenticated, businessCard, hasPrefilledOnce, prefillFromBusinessCard]);
+  }, [isAuthenticated, businessCard, hasPrefilledOnce, prefillFromBusinessCard, businessTypes, updateFormData]);
 
   const handleSubmit = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
@@ -113,54 +195,58 @@ export const ValuationForm: React.FC = () => {
             required
           />
 
-          {/* Industry */}
-          <CustomDropdown
-            label="Industry"
-            placeholder="Select industry..."
-            options={[
-              { value: IndustryCode.TECHNOLOGY, label: 'Technology' },
-              { value: IndustryCode.MANUFACTURING, label: 'Manufacturing' },
-              { value: IndustryCode.RETAIL, label: 'Retail' },
-              { value: IndustryCode.SERVICES, label: 'Services' },
-              { value: IndustryCode.HEALTHCARE, label: 'Healthcare' },
-              { value: IndustryCode.FINANCE, label: 'Finance' },
-              { value: IndustryCode.REAL_ESTATE, label: 'Real Estate' },
-              { value: IndustryCode.HOSPITALITY, label: 'Hospitality' },
-              { value: IndustryCode.CONSTRUCTION, label: 'Construction' },
-              { value: IndustryCode.OTHER, label: 'Other' },
-            ]}
-            value={formData.industry || ''}
-            onChange={(value) => updateFormData({ industry: value, subIndustry: undefined })}
-            required
-          />
-
-          {/* Sub-Industry (Phase 2) */}
-          {formData.industry && (
-            <CustomDropdown
-              label="Sub-Industry (Optional - improves accuracy)"
-              placeholder="Select sub-industry..."
-              options={getSubIndustryOptions(formData.industry)}
-              value={formData.subIndustry || ''}
-              onChange={(value) => updateFormData({ subIndustry: value })}
-            />
-          )}
-
-          {/* Business Model */}
-          <div>
-            <CustomDropdown
-              label="Business Model"
-              placeholder={businessTypesLoading ? "Loading business types..." : "Select your business type..."}
-              options={businessTypeOptions.map(type => ({
-                value: type.value,
-                label: type.label,
-              }))}
-              value={formData.business_model || 'other'}
-              onChange={(value) => updateFormData({ business_model: value })}
+          {/* Business Type Selector - replaces Industry, Sub-Industry, and Business Model */}
+          <div className="@4xl:col-span-2">
+            <SearchableBusinessTypeCombobox
+              value={formData.business_type_id}
+              businessTypes={businessTypes}
+              onChange={(businessType) => {
+                generalLogger.info('Business type selected', {
+                  id: businessType.id,
+                  title: businessType.title,
+                  industryMapping: businessType.industryMapping
+                });
+                
+                updateFormData({
+                  business_type_id: businessType.id,
+                  business_model: businessType.id, // Use business type id as business model
+                  industry: businessType.industryMapping || IndustryCode.SERVICES,
+                  subIndustry: businessType.category || undefined,
+                });
+              }}
+              onSuggest={async (suggestion) => {
+                generalLogger.info('Business type suggested', { suggestion });
+                
+                try {
+                  await suggestionService.submitSuggestion({
+                    suggestion,
+                    user_id: user?.id,
+                    context: {
+                      industry: formData.industry,
+                      search_query: suggestion,
+                      description: `User searched for: ${suggestion}`
+                    }
+                  });
+                  
+                  toast.success(
+                    `Thanks! We'll review "${suggestion}" and add it to our database soon.`,
+                    { duration: 5000 }
+                  );
+                } catch (error) {
+                  generalLogger.error('Failed to submit suggestion', { error });
+                  toast.success(
+                    `Thanks for the suggestion! We've logged "${suggestion}" for review.`,
+                    { duration: 5000 }
+                  );
+                }
+              }}
+              placeholder="Search for your business type..."
               required
+              loading={businessTypesLoading}
               disabled={businessTypesLoading}
             />
             {businessTypesError && (
-              <p className="mt-1 text-sm text-yellow-600">
+              <p className="mt-2 text-sm text-yellow-400">
                 ⚠️ Using offline business types. Some options may be limited.
               </p>
             )}

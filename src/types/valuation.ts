@@ -104,9 +104,16 @@ export interface ValuationFormData extends Partial<ValuationRequest> {
   business_model: BusinessModel | string;
   founding_year: number;
   
+  // NEW: Primary business type ID from PostgreSQL
+  business_type_id?: string;
+  
   // Phase 2: Sub-industry granularity
   subIndustry?: string;
   employees?: number;
+  
+  // Internal preferences (not sent to backend)
+  _internal_dcf_preference?: number;
+  _internal_multiples_preference?: number;
   
   // Legacy fields for backward compatibility
   revenue?: number;
