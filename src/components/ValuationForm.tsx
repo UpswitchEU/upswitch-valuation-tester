@@ -9,7 +9,6 @@ import { IndustryCode } from '../types/valuation';
 import { CustomInputField, CustomNumberInputField, CustomDropdown, HistoricalDataInputs } from './forms';
 import { SearchableBusinessTypeCombobox } from './SearchableBusinessTypeCombobox';
 import { suggestionService } from '../services/businessTypeSuggestionApi';
-import type { BusinessType } from '../services/businessTypesApi';
 import { generalLogger } from '../utils/logger';
 import toast from 'react-hot-toast';
 import WaitlistForm from './WaitlistForm';
@@ -18,7 +17,6 @@ import {
   getIndustryGuidance, 
   validateEbitdaMargin, 
   validateRevenue, 
-  getSubIndustryOptions, 
   getRevenueRangeGuidance,
   getRevenuePerEmployeeAnalysis 
 } from '../config/industryGuidance';
@@ -30,7 +28,7 @@ import {
  */
 export const ValuationForm: React.FC = () => {
   const { formData, updateFormData, calculateValuation, quickValuation, isCalculating, prefillFromBusinessCard } = useValuationStore();
-  const { businessTypes, businessTypeOptions, loading: businessTypesLoading, error: businessTypesError } = useBusinessTypes();
+  const { businessTypes, loading: businessTypesLoading, error: businessTypesError } = useBusinessTypes();
   // const { addReport } = useReportsStore(); // Deprecated: Now saving to database
   const { businessCard, isAuthenticated, user } = useAuth();
   

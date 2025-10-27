@@ -193,7 +193,10 @@ export const OwnerDependencySection: React.FC<OwnerDependencySectionProps> = ({ 
             {/* Calculate multiple impact */}
             {(() => {
               const preAdjustmentValue = result.equity_value_mid / (1 + odResult.valuation_adjustment);
-              const ebitda = result.financial_metrics?.ebitda || 0;
+              // Calculate EBITDA from revenue and margin if not directly available
+              const revenue = result.dcf_valuation?.fcf_projections?.[0]?.revenue || 0;
+              const ebitdaMargin = result.financial_metrics?.ebitda_margin || 0;
+              const ebitda = revenue * ebitdaMargin;
               const multipleImpact = calculateOwnerDependencyMultipleImpact(
                 preAdjustmentValue,
                 result.equity_value_mid,
@@ -277,7 +280,10 @@ export const OwnerDependencySection: React.FC<OwnerDependencySectionProps> = ({ 
           
           {showCalculation && (() => {
             const preAdjustmentValue = result.equity_value_mid / (1 + odResult.valuation_adjustment);
-            const ebitda = result.financial_metrics?.ebitda || 0;
+            // Calculate EBITDA from revenue and margin if not directly available
+            const revenue = result.dcf_valuation?.fcf_projections?.[0]?.revenue || 0;
+            const ebitdaMargin = result.financial_metrics?.ebitda_margin || 0;
+            const ebitda = revenue * ebitdaMargin;
             const multipleImpact = calculateOwnerDependencyMultipleImpact(
               preAdjustmentValue,
               result.equity_value_mid,

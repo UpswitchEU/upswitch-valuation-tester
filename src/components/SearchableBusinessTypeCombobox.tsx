@@ -238,7 +238,7 @@ export const SearchableBusinessTypeCombobox: React.FC<SearchableBusinessTypeComb
               )}
 
               {/* Grouped results */}
-              {Object.entries(groupedTypes).map(([category, types], categoryIndex) => (
+              {Object.entries(groupedTypes).map(([category, types]) => (
                 <div key={category}>
                   {query && (
                     <div className="sticky top-0 bg-zinc-900 px-4 py-2 text-xs font-semibold text-zinc-400 uppercase tracking-wide border-b border-zinc-700">
@@ -246,7 +246,7 @@ export const SearchableBusinessTypeCombobox: React.FC<SearchableBusinessTypeComb
                     </div>
                   )}
                   
-                  {types.map((type, typeIndex) => {
+                  {types.map((type) => {
                     const globalIndex = filteredTypes.findIndex(t => t.id === type.id);
                     const isHighlighted = globalIndex === highlightedIndex;
                     

@@ -122,7 +122,10 @@ export const TransparentCalculationView: React.FC<TransparentCalculationViewProp
       {/* Owner Dependency Impact in Final Summary */}
       {result.owner_dependency_result && (() => {
         const preAdjustmentValue = result.equity_value_mid / (1 + result.owner_dependency_result.valuation_adjustment);
-        const ebitda = result.financial_metrics?.ebitda || 0;
+        // Calculate EBITDA from revenue and margin if not directly available
+        const revenue = result.dcf_valuation?.fcf_projections?.[0]?.revenue || 0;
+        const ebitdaMargin = result.financial_metrics?.ebitda_margin || 0;
+        const ebitda = revenue * ebitdaMargin;
         const multipleImpact = calculateOwnerDependencyMultipleImpact(
           preAdjustmentValue,
           result.equity_value_mid,
