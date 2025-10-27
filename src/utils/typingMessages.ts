@@ -38,6 +38,24 @@ const TYPING_MESSAGES: TypingMessages = {
   thinking: 'AI is thinking...',
 };
 
+const THINKING_MESSAGES: TypingMessages = {
+  // Input processing
+  analyzing_input: 'Analyzing your business...',
+  extracting_data: 'Processing your information...',
+  validating: 'Validating data...',
+  
+  // Business analysis
+  analyzing_business_type: 'Understanding your business model...',
+  analyzing_market: 'Researching market conditions...',
+  
+  // Calculation preparation
+  calculating: 'Running calculations...',
+  preparing_valuation: 'Preparing valuation models...',
+  
+  // Default
+  default: 'AI is thinking...',
+};
+
 /**
  * Get user-friendly typing message based on backend context
  * @param context - Backend event context (e.g., "analyzing_financials")
@@ -45,11 +63,25 @@ const TYPING_MESSAGES: TypingMessages = {
  */
 export const getTypingMessage = (context?: string): string => {
   if (!context) {
-    return 'AI is thinking...';
+    return 'AI is typing...';
   }
   
   // Return mapped message or default
-  return TYPING_MESSAGES[context] || 'AI is thinking...';
+  return TYPING_MESSAGES[context] || 'AI is typing...';
+};
+
+/**
+ * Get user-friendly thinking message based on backend context
+ * @param context - Backend event context (e.g., "analyzing_input")
+ * @returns User-friendly message to display
+ */
+export const getThinkingMessage = (context?: string): string => {
+  if (!context) {
+    return THINKING_MESSAGES.default;
+  }
+  
+  // Return mapped message or default
+  return THINKING_MESSAGES[context] || THINKING_MESSAGES.default;
 };
 
 /**

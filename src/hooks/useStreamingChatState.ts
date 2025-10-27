@@ -44,6 +44,7 @@ export interface StreamingChatState {
   input: string;
   isStreaming: boolean;
   isTyping: boolean;
+  isThinking: boolean;
   typingContext?: string;
   collectedData: Record<string, any>;
   valuationPreview: any;
@@ -65,6 +66,7 @@ export interface StreamingChatState {
   setInput: React.Dispatch<React.SetStateAction<string>>;
   setIsStreaming: React.Dispatch<React.SetStateAction<boolean>>;
   setIsTyping: React.Dispatch<React.SetStateAction<boolean>>;
+  setIsThinking: React.Dispatch<React.SetStateAction<boolean>>;
   setTypingContext: React.Dispatch<React.SetStateAction<string | undefined>>;
   setCollectedData: React.Dispatch<React.SetStateAction<Record<string, any>>>;
   setValuationPreview: React.Dispatch<React.SetStateAction<any>>;
@@ -85,6 +87,7 @@ export const useStreamingChatState = (sessionId: string, userId?: string): Strea
   const [input, setInput] = useState('');
   const [isStreaming, setIsStreaming] = useState(false);
   const [isTyping, setIsTyping] = useState(false);
+  const [isThinking, setIsThinking] = useState(false);
   const [typingContext, setTypingContext] = useState<string | undefined>(undefined);
   const [collectedData, setCollectedData] = useState<Record<string, any>>({});
   const [valuationPreview, setValuationPreview] = useState<any>(null);
@@ -124,6 +127,7 @@ export const useStreamingChatState = (sessionId: string, userId?: string): Strea
     input,
     isStreaming,
     isTyping,
+    isThinking,
     typingContext,
     collectedData,
     valuationPreview,
@@ -145,6 +149,7 @@ export const useStreamingChatState = (sessionId: string, userId?: string): Strea
     setInput,
     setIsStreaming,
     setIsTyping,
+    setIsThinking,
     setTypingContext,
     setCollectedData,
     setValuationPreview,

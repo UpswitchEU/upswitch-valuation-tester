@@ -145,6 +145,7 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
     },
     setIsStreaming: state.setIsStreaming,
     setIsTyping: state.setIsTyping,
+    setIsThinking: state.setIsThinking,
     setTypingContext: state.setTypingContext,
     setCollectedData: state.setCollectedData,
     setValuationPreview: state.setValuationPreview,
@@ -172,6 +173,9 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
     state.messages,
     state.setMessages,
     state.setIsStreaming,
+    state.setIsTyping,
+    state.setIsThinking,
+    state.setTypingContext,
     state.setCollectedData,
     state.setValuationPreview,
     state.setCalculateOption,
@@ -253,7 +257,8 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
     // Track conversation turn
     trackConversationCompletion(false, false);
     
-    // Show typing indicator immediately (optimistic UI)
+    // Show thinking state immediately (optimistic UI)
+    state.setIsThinking(true);
     state.setIsTyping(true);
     state.setTypingContext(undefined); // Will be updated by backend events
     
@@ -466,7 +471,7 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
         {/* Typing Indicator - Separate bubble */}
         {state.isTyping && (
           <div className="flex justify-start">
-            <TypingIndicator context={state.typingContext} />
+            <TypingIndicator context={state.typingContext} isThinking={state.isThinking} />
           </div>
         )}
         
@@ -528,7 +533,7 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
       <div className="p-4 border-t border-zinc-800">
         <form
           onSubmit={handleSubmit}
-          className="focus-within:bg-zinc-900/30 group flex flex-col gap-3 p-4 duration-150 w-full rounded-3xl bg-zinc-900/20 text-base shadow-xl transition-all ease-in-out backdrop-blur-sm"
+          className="focus-within:bg-zinc-900/30 group flex flex-col gap-3 p-4 duration-150 w-full rounded-3xl border border-zinc-700/50 bg-zinc-900/20 text-base shadow-xl transition-all ease-in-out focus-within:border-zinc-500/40 hover:border-zinc-600/30 focus-within:hover:border-zinc-500/40 backdrop-blur-sm"
         >
           {/* Textarea container */}
           <div className="relative flex items-center">
@@ -543,8 +548,8 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
               }}
               placeholder={placeholder}
               disabled={disabled || state.isStreaming}
-              className="flex w-full rounded-md px-3 py-3 ring-offset-background placeholder:text-zinc-400 focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 disabled:cursor-not-allowed disabled:opacity-50 resize-none text-sm leading-snug placeholder-shown:text-ellipsis placeholder-shown:whitespace-nowrap max-h-[200px] bg-transparent focus:bg-transparent flex-1 text-white"
-              style={{ minHeight: '60px', height: '60px' }}
+              className="flex w-full rounded-md px-3 py-3 ring-offset-background placeholder:text-zinc-400 focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 disabled:cursor-not-allowed disabled:opacity-50 resize-none text-base leading-snug placeholder-shown:text-ellipsis placeholder-shown:whitespace-nowrap max-h-[200px] bg-transparent focus:bg-transparent flex-1 text-white"
+              style={{ minHeight: '80px', height: '80px' }}
               spellCheck="false"
             />
           </div>

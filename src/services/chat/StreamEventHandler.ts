@@ -30,6 +30,7 @@ export interface StreamEventHandlerCallbacks {
   updateStreamingMessage: (content: string, isComplete?: boolean) => void;
   setIsStreaming: (streaming: boolean) => void;
   setIsTyping?: (typing: boolean) => void;
+  setIsThinking?: (thinking: boolean) => void;
   setTypingContext?: (context?: string) => void;
   setCollectedData: React.Dispatch<React.SetStateAction<Record<string, any>>>;
   setValuationPreview: React.Dispatch<React.SetStateAction<any>>;
@@ -141,7 +142,8 @@ export class StreamEventHandler {
    */
   private handleMessageStart(_data: any): void {
     chatLogger.debug('AI message start received');
-    // Hide typing indicator when message starts streaming
+    // Hide thinking state and typing indicator when message starts streaming
+    this.callbacks.setIsThinking?.(false);
     this.callbacks.setIsTyping?.(false);
     this.callbacks.setTypingContext?.(undefined);
   }
@@ -380,13 +382,16 @@ export class StreamEventHandler {
   }
 
   /**
-   * Handle progress update events (for typing context)
+   * Handle progress update events (for typing context and thinking state)
    */
   private handleProgressUpdate(data: any): void {
     chatLogger.debug('Progress update received', {
       currentStep: data.current_step,
       progress: data.progress
     });
+    
+    // Set thinking state when progress update arrives
+    this.callbacks.setIsThinking?.(true);
     
     // Update typing context based on current step
     if (data.current_step) {

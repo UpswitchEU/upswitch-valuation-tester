@@ -1,13 +1,14 @@
 import React from 'react';
-import { Bot } from 'lucide-react';
-import { getTypingMessage } from '../utils/typingMessages';
+import { Bot, Brain } from 'lucide-react';
+import { getTypingMessage, getThinkingMessage } from '../utils/typingMessages';
 
 interface TypingIndicatorProps {
   context?: string;
+  isThinking?: boolean;
 }
 
-export const TypingIndicator: React.FC<TypingIndicatorProps> = ({ context }) => {
-  const message = getTypingMessage(context);
+export const TypingIndicator: React.FC<TypingIndicatorProps> = ({ context, isThinking = false }) => {
+  const message = isThinking ? getThinkingMessage(context) : getTypingMessage(context);
   
   return (
     <>
@@ -42,6 +43,21 @@ export const TypingIndicator: React.FC<TypingIndicatorProps> = ({ context }) => 
         .typing-dot-3 {
           animation-delay: 0.4s;
         }
+        
+        @keyframes brain-pulse {
+          0%, 100% {
+            opacity: 0.6;
+            transform: scale(1);
+          }
+          50% {
+            opacity: 1;
+            transform: scale(1.1);
+          }
+        }
+        
+        .brain-pulse {
+          animation: brain-pulse 2s ease-in-out infinite;
+        }
       `}</style>
       
       <div className="max-w-[80%] mr-auto">
@@ -51,15 +67,20 @@ export const TypingIndicator: React.FC<TypingIndicatorProps> = ({ context }) => 
             <Bot className="w-4 h-4 text-primary-400" />
           </div>
           
-          {/* Typing Bubble */}
+          {/* Typing/Thinking Bubble */}
           <div className="rounded-lg px-4 py-3 bg-zinc-700/50 text-white">
             <div className="flex items-center gap-2">
-              {/* Animated Dots */}
-              <div className="flex gap-1">
-                <span className="typing-dot typing-dot-1 w-2 h-2 bg-zinc-400 rounded-full"></span>
-                <span className="typing-dot typing-dot-2 w-2 h-2 bg-zinc-400 rounded-full"></span>
-                <span className="typing-dot typing-dot-3 w-2 h-2 bg-zinc-400 rounded-full"></span>
-              </div>
+              {isThinking ? (
+                /* Thinking State - Brain Icon with Pulse */
+                <Brain className="w-4 h-4 text-primary-400 brain-pulse" />
+              ) : (
+                /* Typing State - Animated Dots */
+                <div className="flex gap-1">
+                  <span className="typing-dot typing-dot-1 w-2 h-2 bg-zinc-400 rounded-full"></span>
+                  <span className="typing-dot typing-dot-2 w-2 h-2 bg-zinc-400 rounded-full"></span>
+                  <span className="typing-dot typing-dot-3 w-2 h-2 bg-zinc-400 rounded-full"></span>
+                </div>
+              )}
               
               {/* Contextual Message */}
               <span className="text-sm text-zinc-300">{message}</span>
