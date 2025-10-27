@@ -1,4 +1,5 @@
-import React from 'react';
+import React, { useState } from 'react';
+import { FileText, TrendingUp, Users, Target, BarChart3, Database, CheckCircle } from 'lucide-react';
 import type { ValuationResponse, ValuationInputData } from '../../types/valuation';
 import { InputDataSection } from './InputDataSection';
 import { DCFTransparencySection } from './DCFTransparencySection';
@@ -14,14 +15,83 @@ interface TransparentCalculationViewProps {
   inputData: ValuationInputData | null;
 }
 
+// Define sections for navigation (McKinsey/Bain structure)
+const SECTIONS = [
+  { id: 'summary', title: 'Executive Summary', icon: FileText },
+  { id: 'input-data', title: 'Input Data', icon: Database },
+  { id: 'dcf-calculation', title: 'DCF Analysis', icon: TrendingUp },
+  { id: 'multiples-calculation', title: 'Market Multiples', icon: BarChart3 },
+  { id: 'weighting-logic', title: 'Methodology Weighting', icon: Target },
+  { id: 'owner-dependency', title: 'Owner Dependency', icon: Users },
+  { id: 'range-calculation', title: 'Valuation Range', icon: BarChart3 },
+  { id: 'data-provenance', title: 'Confidence & Quality', icon: CheckCircle }
+];
+
 export const TransparentCalculationView: React.FC<TransparentCalculationViewProps> = ({
   result,
   inputData,
 }) => {
+  const [activeSection, setActiveSection] = useState('summary');
+
+  const scrollToSection = (sectionId: string) => {
+    const element = document.getElementById(sectionId);
+    if (element) {
+      element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      setActiveSection(sectionId);
+    }
+  };
+
   return (
-    <div className="space-y-8 bg-white">
+    <div className="relative">
+      {/* Sticky Table of Contents - Hidden on mobile */}
+      <div className="hidden lg:block fixed left-0 top-20 w-64 h-[calc(100vh-5rem)] overflow-y-auto bg-white border-r border-gray-200 p-4 z-10">
+        <div className="mb-4">
+          <h3 className="text-sm font-semibold text-gray-900 mb-2 uppercase tracking-wide">
+            Contents
+          </h3>
+          <div className="text-xs text-gray-500 mb-4">
+            {SECTIONS.length} Sections
+          </div>
+        </div>
+        <nav className="space-y-1">
+          {SECTIONS.map((section, index) => {
+            const Icon = section.icon;
+            const isActive = activeSection === section.id;
+            return (
+              <button
+                key={section.id}
+                onClick={() => scrollToSection(section.id)}
+                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all ${
+                  isActive
+                    ? 'bg-blue-50 text-blue-700 font-semibold shadow-sm'
+                    : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'
+                }`}
+              >
+                <span className="text-xs text-gray-400 font-mono">{String(index + 1).padStart(2, '0')}</span>
+                <Icon className={`w-4 h-4 ${isActive ? 'text-blue-600' : 'text-gray-400'}`} />
+                <span className="flex-1 text-left">{section.title}</span>
+              </button>
+            );
+          })}
+        </nav>
+
+        {/* Academic Citation */}
+        <div className="mt-6 pt-6 border-t border-gray-200">
+          <div className="text-xs text-gray-500 space-y-2">
+            <p className="font-semibold text-gray-700">Methodology Standards:</p>
+            <ul className="space-y-1">
+              <li>• Damodaran (2012)</li>
+              <li>• Big 4 Frameworks</li>
+              <li>• IVSC Guidelines</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      {/* Main Content - Offset for navigation */}
+      <div className="lg:ml-64 space-y-8 bg-white p-6">
       {/* Introduction */}
-      <div className="bg-gradient-to-r from-blue-50 via-purple-50 to-indigo-50 border-2 border-blue-500 rounded-lg p-6">
+      <div id="summary" className="bg-gradient-to-r from-blue-50 via-purple-50 to-indigo-50 border-2 border-blue-500 rounded-lg p-6">
         <h1 className="text-3xl font-bold text-gray-900 mb-3">
           Complete Calculation Transparency
         </h1>
@@ -137,6 +207,7 @@ export const TransparentCalculationView: React.FC<TransparentCalculationViewProp
             <li>Big 4 Methodology - EY, Deloitte, PwC, KPMG standards</li>
           </ul>
         </div>
+      </div>
       </div>
     </div>
   );

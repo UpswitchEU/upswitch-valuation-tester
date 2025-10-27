@@ -372,6 +372,19 @@ export const AIAssistedValuation: React.FC<AIAssistedValuationProps> = ({ report
     return Math.round((collectedFields.length / requiredFields.length) * 100);
   }, []);
 
+  // NEW: Handle HTML preview updates from streaming conversation
+  const handleHtmlPreviewUpdate = useCallback((html: string, previewType: string) => {
+    console.log('📊 Updating HTML preview from streaming:', { previewType, htmlLength: html.length });
+    setPreviewHtml(html);
+    setIsGeneratingPreview(false);
+    
+    // Update progress based on preview type
+    if (previewType === 'progressive_25') setPreviewProgress(25);
+    else if (previewType === 'progressive_50') setPreviewProgress(50);
+    else if (previewType === 'progressive_75') setPreviewProgress(75);
+    else if (previewType === 'progressive_100') setPreviewProgress(100);
+  }, []);
+
   // NEW: Handle valuation preview events
   const handleValuationPreview = useCallback((preview: any) => {
     console.log('Valuation preview in AIAssistedValuation:', preview);
@@ -1123,6 +1136,7 @@ export const AIAssistedValuation: React.FC<AIAssistedValuationProps> = ({ report
                   onSectionLoading={handleSectionLoading}
                   onReportComplete={handleReportComplete}
                   onContextUpdate={handleConversationUpdate}
+                  onHtmlPreviewUpdate={handleHtmlPreviewUpdate}
                   className="h-full"
                   placeholder="Ask about your business valuation..."
                 />

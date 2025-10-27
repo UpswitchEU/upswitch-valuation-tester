@@ -204,6 +204,7 @@ interface StreamingChatProps {
   onSectionLoading?: (section: string, html: string, phase: number) => void;  // NEW: Section loading states
   onReportComplete?: (html: string, valuationId: string) => void;  // NEW: Complete report
   onContextUpdate?: (context: any) => void;  // NEW: Conversation context updates
+  onHtmlPreviewUpdate?: (html: string, previewType: string) => void;  // NEW: HTML preview updates
   className?: string;
   placeholder?: string;
   disabled?: boolean;
@@ -223,6 +224,7 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
   onSectionLoading,
   onReportComplete,
   onContextUpdate,
+  onHtmlPreviewUpdate,
   className = '',
   placeholder = "Ask about your business valuation...",
   disabled = false
@@ -1128,8 +1130,23 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
           }
         });
         break;
+        
+      case 'html_preview':
+        // NEW: HTML preview event from streaming conversation
+        chatLogger.info('HTML preview event received', {
+          sessionId,
+          preview_type: data.preview_type,
+          html_length: data.html?.length || 0,
+          timestamp: new Date().toISOString()
+        });
+        
+        // Call parent callback to update preview
+        if (onHtmlPreviewUpdate) {
+          onHtmlPreviewUpdate(data.html, data.preview_type);
+        }
+        break;
     }
-  }, [updateStreamingMessage, onValuationComplete, onReportUpdate, onDataCollected, onValuationPreview, onCalculateOptionAvailable, onProgressUpdate, addMessage, reset]);
+  }, [updateStreamingMessage, onValuationComplete, onReportUpdate, onDataCollected, onValuationPreview, onCalculateOptionAvailable, onProgressUpdate, addMessage, reset, onHtmlPreviewUpdate]);
 
   const startStreamingWithRetry = useCallback(async (userInput: string, attempt = 0) => {
     if (!userInput.trim() || isStreaming) return;
