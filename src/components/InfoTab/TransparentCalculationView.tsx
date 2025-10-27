@@ -223,7 +223,13 @@ const FinalSynthesisSection: React.FC<{
             <div className="grid grid-cols-2 gap-4 text-sm">
               <div className="flex items-center justify-between p-2 bg-gray-50 rounded">
                 <span className="text-gray-700">Confidence Score:</span>
-                <span className="font-bold text-green-600">{((result.confidence_score || 0.8) * 100).toFixed(1)}%</span>
+                <span className="font-bold text-green-600">
+                  {(() => {
+                    const rawScore = result.confidence_score || 80;
+                    const score = rawScore >= 1 ? rawScore : rawScore * 100;
+                    return `${score.toFixed(1)}%`;
+                  })()}
+                </span>
               </div>
               <div className="flex items-center justify-between p-2 bg-gray-50 rounded">
                 <span className="text-gray-700">Data Quality:</span>

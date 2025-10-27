@@ -18,7 +18,9 @@ export const RangeCalculationSection: React.FC<RangeCalculationSectionProps> = (
   const equityValueLow = result.equity_value_low;
   const equityValueHigh = result.equity_value_high;
   
-  const confidenceScore = (result.confidence_score || 0.8) * 100;
+  // Backend returns confidence_score as integer 0-100, not decimal 0-1
+  const rawScore = result.confidence_score || 80;
+  const confidenceScore = rawScore >= 1 ? rawScore : rawScore * 100;
   const confidenceLevel = confidenceScore >= 80 ? 'HIGH' : confidenceScore >= 60 ? 'MEDIUM' : 'LOW';
   
   // Calculate spreads

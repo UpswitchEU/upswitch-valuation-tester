@@ -11,6 +11,45 @@ interface WeightingLogicSectionProps {
 export const WeightingLogicSection: React.FC<WeightingLogicSectionProps> = ({ result, inputData }) => {
   const dcfWeight = result.dcf_weight || 0;
   const multiplesWeight = result.multiples_weight || 0;
+  
+  // Show critical warning if both methodologies failed
+  if (dcfWeight === 0 && multiplesWeight === 0) {
+    return (
+      <div className="space-y-6">
+        <div className="bg-red-50 border-2 border-red-500 rounded-lg p-6">
+          <div className="flex items-start gap-3">
+            <div className="p-2 bg-red-100 rounded-lg">
+              <TrendingUp className="w-6 h-6 text-red-600" />
+            </div>
+            <div className="flex-1">
+              <h2 className="text-xl font-bold text-red-900 mb-2">
+                ⚠️ CRITICAL: Both Valuation Methodologies Failed
+              </h2>
+              <p className="text-gray-800 mb-4">
+                Neither DCF nor Market Multiples calculations could be completed. This valuation may be using fallback estimates.
+              </p>
+              <div className="bg-white rounded-lg p-4 border border-red-300 mb-4">
+                <p className="font-semibold text-gray-900 mb-2">Required Actions:</p>
+                <ul className="list-disc list-inside space-y-2 text-sm text-gray-700">
+                  <li>Verify all financial data is complete and accurate</li>
+                  <li>Ensure historical data is provided (at least 2 years recommended)</li>
+                  <li>Check that EBITDA and revenue values are positive and realistic</li>
+                  <li>Consider providing additional financial details (cash, debt, assets)</li>
+                  <li>Contact support if this issue persists</li>
+                </ul>
+              </div>
+              <div className="bg-yellow-50 rounded-lg p-4 border border-yellow-300">
+                <p className="text-sm text-gray-800">
+                  <strong>⚠️ Disclaimer:</strong> The displayed valuation range (€{result.equity_value_low?.toLocaleString()} - €{result.equity_value_high?.toLocaleString()}) 
+                  may be based on simplified calculations or industry averages. For accurate results, please review your input data and try again.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
   const dcfValue = result.dcf_valuation?.equity_value || 0;
   const multiplesValue = result.multiples_valuation?.adjusted_equity_value || 0;
   

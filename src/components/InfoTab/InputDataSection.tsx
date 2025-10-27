@@ -10,6 +10,10 @@ interface InputDataSectionProps {
 
 export const InputDataSection: React.FC<InputDataSectionProps> = ({ result, inputData }) => {
   // Extract confidence breakdown
+  // Backend returns confidence_score as integer 0-100, not decimal 0-1
+  const rawScore = result.confidence_score || 80;
+  const normalizedScore = rawScore >= 1 ? rawScore : rawScore * 100;
+  
   const confidenceBreakdown: ConfidenceBreakdown = result.transparency?.confidence_breakdown || {
     data_quality: 85,
     historical_data: 67,
@@ -19,7 +23,7 @@ export const InputDataSection: React.FC<InputDataSectionProps> = ({ result, inpu
     market_conditions: 75,
     geographic_data: 92,
     business_model_clarity: 88,
-    overall_score: Math.round((result.confidence_score || 0.8) * 100)
+    overall_score: Math.round(normalizedScore)
   };
 
   const getDataSource = (field: string): { source: string; icon: JSX.Element; color: string } => {

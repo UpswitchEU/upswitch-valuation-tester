@@ -28,8 +28,33 @@ export const DCFTransparencySection: React.FC<DCFTransparencySectionProps> = ({ 
   
   if (dcfWeight === 0) {
     return (
-      <div className="bg-gray-50 border border-gray-200 rounded-lg p-6">
-        <p className="text-gray-600">DCF methodology not used in this valuation.</p>
+      <div className="bg-yellow-50 border-2 border-yellow-400 rounded-lg p-6">
+        <div className="flex items-start gap-3">
+          <div className="p-2 bg-yellow-100 rounded-lg">
+            <TrendingUp className="w-6 h-6 text-yellow-600" />
+          </div>
+          <div className="flex-1">
+            <h3 className="text-lg font-bold text-gray-900 mb-2">
+              ⚠️ DCF Methodology Not Available
+            </h3>
+            <p className="text-gray-700 mb-3">
+              The Discounted Cash Flow (DCF) valuation could not be calculated for this business.
+            </p>
+            <div className="bg-white rounded-lg p-4 border border-yellow-300">
+              <p className="font-semibold text-gray-900 mb-2">Possible reasons:</p>
+              <ul className="list-disc list-inside space-y-1 text-sm text-gray-700">
+                <li>Insufficient historical cash flow data</li>
+                <li>Negative or unstable EBITDA margins</li>
+                <li>Missing financial data required for projections</li>
+                <li>Business model not suitable for DCF analysis</li>
+              </ul>
+            </div>
+            <p className="text-sm text-gray-600 mt-3">
+              <strong>Note:</strong> The valuation is based on {result.multiples_weight > 0 ? 'Market Multiples methodology' : 'alternative methods'}. 
+              For more accurate results, consider providing additional financial data.
+            </p>
+          </div>
+        </div>
       </div>
     );
   }

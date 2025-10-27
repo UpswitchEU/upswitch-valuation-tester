@@ -176,6 +176,9 @@ export const useValuationStore = create<ValuationStore>((set, get) => ({
         employees: formData.number_of_employees,
         business_model: businessModel,
         historical_years_data: formData.historical_years_data,
+        total_debt: formData.current_year_data?.total_debt,
+        cash: formData.current_year_data?.cash,
+        // Metrics will be populated from response after valuation
       };
       
       setInputData(inputData);
@@ -251,6 +254,14 @@ export const useValuationStore = create<ValuationStore>((set, get) => ({
       });
       
       setResult(response);
+      
+      // Update inputData with metrics from response
+      if (response.financial_metrics && inputData) {
+        setInputData({
+          ...inputData,
+          metrics: response.financial_metrics as any // Type assertion: backend metrics may have different fields than input metrics
+        });
+      }
       
       // ✅ AUTO-SAVE TO DATABASE (primary storage)
       // This will also send PostMessage to parent window (upswitch.biz)

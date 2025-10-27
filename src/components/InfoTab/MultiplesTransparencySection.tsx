@@ -24,11 +24,36 @@ export const MultiplesTransparencySection: React.FC<MultiplesTransparencySection
   };
 
   const multiplesWeight = result.multiples_weight || 0;
-  
+
   if (multiplesWeight === 0) {
     return (
-      <div className="bg-gray-50 border border-gray-200 rounded-lg p-6">
-        <p className="text-gray-600">Market Multiples methodology not used in this valuation.</p>
+      <div className="bg-yellow-50 border-2 border-yellow-400 rounded-lg p-6">
+        <div className="flex items-start gap-3">
+          <div className="p-2 bg-yellow-100 rounded-lg">
+            <BarChart3 className="w-6 h-6 text-yellow-600" />
+          </div>
+          <div className="flex-1">
+            <h3 className="text-lg font-bold text-gray-900 mb-2">
+              ⚠️ Market Multiples Methodology Not Available
+            </h3>
+            <p className="text-gray-700 mb-3">
+              The Market Multiples valuation could not be calculated for this business.
+            </p>
+            <div className="bg-white rounded-lg p-4 border border-yellow-300">
+              <p className="font-semibold text-gray-900 mb-2">Possible reasons:</p>
+              <ul className="list-disc list-inside space-y-1 text-sm text-gray-700">
+                <li>No comparable companies found in the industry</li>
+                <li>Insufficient market data for {inputData?.country_code || 'this region'}</li>
+                <li>Business type too unique for market comparisons</li>
+                <li>Limited public market data available</li>
+              </ul>
+            </div>
+            <p className="text-sm text-gray-600 mt-3">
+              <strong>Note:</strong> The valuation is based on {result.dcf_weight > 0 ? 'DCF methodology' : 'alternative methods'}. 
+              Market multiples provide valuable benchmarking but may not be available for all business types.
+            </p>
+          </div>
+        </div>
       </div>
     );
   }
