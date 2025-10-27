@@ -83,6 +83,23 @@
     @apply bg-white/80 backdrop-blur-sm border border-white/20;
   }
   
+  /* Seamless textarea - completely remove borders like Ilara */
+  .textarea-seamless {
+    border: none !important;
+    outline: none !important;
+    box-shadow: none !important;
+    -webkit-appearance: none !important;
+    -moz-appearance: none !important;
+    appearance: none !important;
+  }
+  
+  .textarea-seamless:focus {
+    border: none !important;
+    outline: none !important;
+    box-shadow: none !important;
+    ring: none !important;
+  }
+  
   /* Data collection animations */
   .data-collected-item {
     animation: slideIn 0.3s ease-out;
