@@ -191,7 +191,7 @@ export const useConversationInitializer = (
             has_profile_data: !!(callbacks.user?.company_name || callbacks.user?.business_type || callbacks.user?.industry)
           });
           
-          callbacks.addMessage({
+          const message: Omit<Message, 'id' | 'timestamp'> = {
             type: 'ai',
             content: data.ai_message,
             isComplete: true,
@@ -201,7 +201,8 @@ export const useConversationInitializer = (
               session_phase: 'data_collection',
               conversation_turn: 1
             }
-          });
+          };
+          const { newMessage } = callbacks.addMessage(message);
         }
         
       } catch (error) {
@@ -218,12 +219,13 @@ export const useConversationInitializer = (
           
           // Show timeout message
           if (!abortControllerRef.current?.signal.aborted) {
-            callbacks.addMessage({
+            const timeoutMessage: Omit<Message, 'id' | 'timestamp'> = {
               type: 'ai',
               content: 'Sorry, the connection is taking too long. Let me start with a simple question: What type of business do you run?',
               isComplete: true,
               metadata: { collected_field: 'business_type' }
-            });
+            };
+            callbacks.addMessage(timeoutMessage);
           }
           return;
         }
@@ -273,12 +275,13 @@ export const useConversationInitializer = (
         
         // Check if still mounted before fallback
         if (!abortControllerRef.current?.signal.aborted) {
-          callbacks.addMessage({
+          const welcomeMessage: Omit<Message, 'id' | 'timestamp'> = {
             type: 'ai',
             content: 'Welcome! Let me help you value your business. What type of business do you run?',
             isComplete: true,
             metadata: { collected_field: 'business_type' }
-          });
+          };
+          callbacks.addMessage(welcomeMessage);
         }
       } finally {
         clearTimeout(timeoutId); // Ensure timeout is always cleared
@@ -296,12 +299,13 @@ export const useConversationInitializer = (
       
       // Final fallback
       if (!abortControllerRef.current?.signal.aborted && callbacks) {
-        callbacks.addMessage({
+        const finalFallbackMessage: Omit<Message, 'id' | 'timestamp'> = {
           type: 'ai',
           content: 'Welcome! Let me help you value your business. What type of business do you run?',
           isComplete: true,
           metadata: { collected_field: 'business_type' }
-        });
+        };
+        callbacks.addMessage(finalFallbackMessage);
         setIsInitializing(false);
       }
     }

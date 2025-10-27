@@ -11,7 +11,7 @@ import { Message } from '../../hooks/useStreamingChatState';
 
 export interface StreamingManagerCallbacks {
   setIsStreaming: (streaming: boolean) => void;
-  addMessage: (message: Message) => Message;
+  addMessage: (message: Omit<Message, 'id' | 'timestamp'>) => { updatedMessages: Message[], newMessage: Message };
   updateStreamingMessage: (content: string, isComplete?: boolean) => void;
   onContextUpdate?: (context: any) => void;
   extractBusinessModelFromInput: (input: string) => string | null;
@@ -107,20 +107,22 @@ export class StreamingManager {
     callbacks.setIsStreaming(true);
 
     // Add user message
-    const userMessage = callbacks.addMessage({
+    const userMessageData: Omit<Message, 'id' | 'timestamp'> = {
       type: 'user',
       content: userInput,
       isComplete: true
-    });
+    };
+    const { newMessage: userMessage } = callbacks.addMessage(userMessageData);
     chatLogger.debug('User message added', { messageId: userMessage.id });
 
     // Create streaming AI message
-    const aiMessage = callbacks.addMessage({
+    const aiMessageData: Omit<Message, 'id' | 'timestamp'> = {
       type: 'ai',
       content: '',
       isStreaming: true,
       isComplete: false
-    });
+    };
+    const { newMessage: aiMessage } = callbacks.addMessage(aiMessageData);
     
     if (!aiMessage) {
       chatLogger.error('Failed to create AI message - this should not happen');

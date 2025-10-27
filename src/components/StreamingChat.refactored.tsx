@@ -24,7 +24,7 @@ import {
 
 // Import extracted modules
 import { useStreamingChatState, Message } from '../hooks/useStreamingChatState';
-import { StreamEventHandler, StreamEventHandlerCallbacks } from '../services/chat/StreamEventHandler';
+import { StreamEventHandler } from '../services/chat/StreamEventHandler';
 import { InputValidator } from '../utils/validation/InputValidator';
 import { useConversationInitializer } from '../hooks/useConversationInitializer';
 import { StreamingManager } from '../services/chat/StreamingManager';
@@ -87,19 +87,19 @@ export const StreamingChatRefactored: React.FC<StreamingChatProps> = ({
   // Use extracted conversation initializer
   const { isInitializing } = useConversationInitializer(sessionId, userId, {
     addMessage: (message) => {
-      const newMessages = messageManager.addMessage(state.messages, message);
-      state.setMessages(newMessages);
-      return newMessages[newMessages.length - 1];
+      const { updatedMessages, newMessage } = messageManager.addMessage(state.messages, message);
+      state.setMessages(updatedMessages);
+      return newMessage;
     },
     setMessages: state.setMessages,
     user
   });
   
   // Use extracted metrics tracking
-  const { metrics, trackModelPerformance, trackConversationCompletion } = useConversationMetrics(sessionId, userId);
+  const { trackModelPerformance, trackConversationCompletion } = useConversationMetrics(sessionId, userId);
   
   // Typing animation for smooth AI responses
-  const { displayedText, isTyping, addToBuffer, complete, reset } = useTypingAnimation({
+  const { displayedText, isTyping, addToBuffer, complete } = useTypingAnimation({
     baseSpeed: 50,
     adaptiveSpeed: true,
     punctuationPauses: true,
@@ -155,9 +155,9 @@ export const StreamingChatRefactored: React.FC<StreamingChatProps> = ({
     setValuationPreview: state.setValuationPreview,
     setCalculateOption: state.setCalculateOption,
     addMessage: (message) => {
-      const newMessages = messageManager.addMessage(state.messages, message);
-      state.setMessages(newMessages);
-      return newMessages[newMessages.length - 1];
+      const { updatedMessages, newMessage } = messageManager.addMessage(state.messages, message);
+      state.setMessages(updatedMessages);
+      return newMessage;
     },
     trackModelPerformance,
     trackConversationCompletion,
@@ -198,9 +198,9 @@ export const StreamingChatRefactored: React.FC<StreamingChatProps> = ({
   
   // Add message helper
   const addMessage = useCallback((message: Omit<Message, 'id' | 'timestamp'>) => {
-    const newMessages = messageManager.addMessage(state.messages, message);
-    state.setMessages(newMessages);
-    return newMessages[newMessages.length - 1];
+    const { updatedMessages, newMessage } = messageManager.addMessage(state.messages, message);
+    state.setMessages(updatedMessages);
+    return newMessage;
   }, [state.messages, state.setMessages, messageManager]);
   
   // Update streaming message helper
@@ -378,7 +378,7 @@ export const StreamingChatRefactored: React.FC<StreamingChatProps> = ({
     // Return contextual tip based on current conversation state
     if (state.messages.length === 0) {
       return {
-        type: 'info',
+        type: 'info' as const,
         title: 'Welcome!',
         message: 'I\'ll help you get a business valuation. Let\'s start with some basic information about your company.',
         icon: '💡'

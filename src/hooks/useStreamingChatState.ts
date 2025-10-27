@@ -51,11 +51,11 @@ export interface StreamingChatState {
   // Refs
   refs: {
     messagesEndRef: React.RefObject<HTMLDivElement>;
-    eventSourceRef: React.RefObject<EventSource | null>;
-    currentStreamingMessageRef: React.RefObject<Message | null>;
-    requestIdRef: React.RefObject<string | null>;
-    hasInitializedRef: React.RefObject<boolean>;
-    abortControllerRef: React.RefObject<AbortController | null>;
+    eventSourceRef: React.MutableRefObject<EventSource | null>;
+    currentStreamingMessageRef: React.MutableRefObject<Message | null>;
+    requestIdRef: React.MutableRefObject<string | null>;
+    hasInitializedRef: React.MutableRefObject<boolean>;
+    abortControllerRef: React.MutableRefObject<AbortController | null>;
   };
   
   // Setters

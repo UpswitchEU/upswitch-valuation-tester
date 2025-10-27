@@ -28,15 +28,13 @@ import {
  */
 export const ValuationForm: React.FC = () => {
   const { formData, updateFormData, calculateValuation, quickValuation, isCalculating, prefillFromBusinessCard } = useValuationStore();
-  const { businessTypeOptions, loading: businessTypesLoading, error: businessTypesError } = useBusinessTypes();
+  const { businessTypes, businessTypeOptions, loading: businessTypesLoading, error: businessTypesError } = useBusinessTypes();
   // const { addReport } = useReportsStore(); // Deprecated: Now saving to database
   const { businessCard, isAuthenticated, user } = useAuth();
   
   // Local state for historical data inputs
   const [historicalInputs, setHistoricalInputs] = useState<{[key: string]: string}>({});
   const [hasPrefilledOnce, setHasPrefilledOnce] = useState(false);
-  const [businessTypes, setBusinessTypes] = useState<BusinessType[]>([]);
-  const [selectedBusinessType, setSelectedBusinessType] = useState<BusinessType | null>(null);
 
   // Debounced quick calculation for live preview
   const debouncedQuickCalc = useCallback(
@@ -53,39 +51,8 @@ export const ValuationForm: React.FC = () => {
     debouncedQuickCalc(formData);
   }, [formData.revenue, formData.ebitda, formData.industry, formData.country_code]);
 
-  // Convert businessTypeOptions to BusinessType[] format for combobox
-  useEffect(() => {
-    if (businessTypeOptions && businessTypeOptions.length > 0) {
-      // Fetch full business types from API if needed
-      // For now, create minimal BusinessType objects from options
-      const types: BusinessType[] = businessTypeOptions.map(opt => ({
-        id: opt.value,
-        title: opt.label,
-        description: opt.label,
-        short_description: opt.label,
-        icon: opt.icon || '🏢',
-        category: opt.category || 'Other',
-        category_id: opt.category || 'other',
-        industryMapping: opt.value, // Will be updated when actual business type is selected
-        keywords: [opt.label.toLowerCase()],
-        popular: false,
-        status: 'active',
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
-      }));
-      setBusinessTypes(types);
-    }
-  }, [businessTypeOptions]);
-
-  // Find and set selected business type when formData.business_type_id changes
-  useEffect(() => {
-    if (formData.business_type_id && businessTypes.length > 0) {
-      const found = businessTypes.find(bt => bt.id === formData.business_type_id);
-      if (found) {
-        setSelectedBusinessType(found);
-      }
-    }
-  }, [formData.business_type_id, businessTypes]);
+  // businessTypes now comes directly from useBusinessTypes() hook with full PostgreSQL metadata
+  // No conversion needed - preserves dcfPreference, multiplesPreference, keywords, etc.
 
   // Pre-fill form with business card data when authenticated
   useEffect(() => {
@@ -146,7 +113,7 @@ export const ValuationForm: React.FC = () => {
       
       setHasPrefilledOnce(true);
     }
-  }, [isAuthenticated, businessCard, hasPrefilledOnce, prefillFromBusinessCard, businessTypes, updateFormData]);
+  }, [isAuthenticated, businessCard, hasPrefilledOnce, prefillFromBusinessCard, businessTypes]);
 
   const handleSubmit = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();

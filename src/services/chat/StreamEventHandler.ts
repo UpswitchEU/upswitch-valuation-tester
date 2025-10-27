@@ -454,7 +454,7 @@ export class StreamEventHandler {
     });
     
     // Show clarification message with confirmation options
-    this.callbacks.addMessage({
+    const clarificationMessage: Omit<Message, 'id' | 'timestamp'> = {
       type: 'ai',
       content: data.message,
       isComplete: true,
@@ -468,7 +468,8 @@ export class StreamEventHandler {
         // Merge any additional metadata from backend
         ...(data.metadata || {})
       }
-    });
+    };
+    const { newMessage } = this.callbacks.addMessage(clarificationMessage);
   }
 
   /**
