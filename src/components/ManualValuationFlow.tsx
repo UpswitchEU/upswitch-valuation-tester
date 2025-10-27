@@ -211,9 +211,11 @@ export const ManualValuationFlow: React.FC<ManualValuationFlowProps> = ({ onComp
           {/* Tab Content */}
           <div className="flex-1 overflow-y-auto">
             {activeTab === 'preview' && (
-              <div className="p-4 sm:p-6">
+              <div className="h-full">
                 {result ? (
-                  <Results />
+                  <div className="p-4 sm:p-6">
+                    <Results />
+                  </div>
                 ) : (
                   <div className="flex flex-col items-center justify-center h-full p-6 sm:p-8 text-center">
                     <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-zinc-100 flex items-center justify-center mb-3 sm:mb-4">
@@ -233,9 +235,11 @@ export const ManualValuationFlow: React.FC<ManualValuationFlowProps> = ({ onComp
             )}
             
             {activeTab === 'info' && (
-              <div className="p-4 sm:p-6">
+              <div className="h-full">
                 {result ? (
-                  <ValuationInfoPanel result={result} inputData={inputData} />
+                  <div className="p-4 sm:p-6">
+                    <ValuationInfoPanel result={result} inputData={inputData} />
+                  </div>
                 ) : (
                   <div className="flex flex-col items-center justify-center h-full p-6 sm:p-8 text-center">
                     <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-zinc-100 flex items-center justify-center mb-3 sm:mb-4">
