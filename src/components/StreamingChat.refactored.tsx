@@ -324,6 +324,83 @@ export const StreamingChatRefactored: React.FC<StreamingChatProps> = ({
   useEffect(() => {
     scrollToBottom();
   }, [state.messages, scrollToBottom]);
+
+  // Handle suggestion selection
+  const handleSuggestionSelect = useCallback(async (field: string, selected: string) => {
+    chatLogger.info('Suggestion selected', { field, selected });
+    state.setInput(selected);
+  }, [state.setInput]);
+
+  // Handle suggestion dismiss
+  const handleSuggestionDismiss = useCallback(async (field: string, originalValue: string) => {
+    chatLogger.info('Suggestion dismissed', { field, originalValue });
+    // Keep original value in input
+    state.setInput(originalValue);
+  }, [state.setInput]);
+
+  // Handle clarification confirmation
+  const handleClarificationConfirm = useCallback(async (field: string, value: string) => {
+    chatLogger.info('Clarification confirmed', { field, value });
+    
+    // Add user message showing confirmation
+    addMessage({
+      type: 'user',
+      content: 'yes',
+      isComplete: true,
+      metadata: {
+        intent: 'confirmation',
+        collected_field: field,
+        confirmation_value: value,
+        validation_status: 'confirmed'
+      }
+    });
+  }, [addMessage]);
+
+  // Handle clarification rejection
+  const handleClarificationReject = useCallback(async (field: string) => {
+    chatLogger.info('Clarification rejected', { field });
+    
+    // Add user message showing rejection
+    addMessage({
+      type: 'user',
+      content: 'no',
+      isComplete: true,
+      metadata: {
+        intent: 'rejection',
+        collected_field: field,
+        validation_status: 'rejected'
+      }
+    });
+  }, [addMessage]);
+
+  // Get contextual tip
+  const getContextualTip = useCallback(() => {
+    // Return contextual tip based on current conversation state
+    if (state.messages.length === 0) {
+      return {
+        type: 'info',
+        title: 'Welcome!',
+        message: 'I\'ll help you get a business valuation. Let\'s start with some basic information about your company.',
+        icon: '💡'
+      };
+    }
+    return null;
+  }, [state.messages.length]);
+
+  // Get smart follow-ups
+  const getSmartFollowUps = useCallback(() => {
+    // Return smart follow-up suggestions based on current conversation state
+    const lastMessage = state.messages[state.messages.length - 1];
+    if (!lastMessage) return [];
+    
+    if (lastMessage.metadata?.collected_field === 'business_type') {
+      return ['SaaS', 'E-commerce', 'Manufacturing', 'Services'];
+    }
+    if (lastMessage.metadata?.collected_field === 'revenue') {
+      return ['$100K - $500K', '$500K - $1M', '$1M - $5M', '$5M+'];
+    }
+    return [];
+  }, [state.messages]);
   
   // Cleanup on unmount
   useEffect(() => {
@@ -335,80 +412,266 @@ export const StreamingChatRefactored: React.FC<StreamingChatProps> = ({
   }, [state.refs.eventSourceRef]);
   
   return (
-    <div className={`flex flex-col h-full ${className}`}>
+    <div className={`flex flex-col h-full bg-zinc-900 ${className}`}>
       {/* Messages Container */}
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
+        {/* Loading state while backend initializes */}
+        {isInitializing && state.messages.length === 0 && (
+          <div className="flex justify-start">
+            <div className="max-w-[80%] mr-auto">
+              <div className="flex items-start gap-3">
+                <div className="flex-shrink-0 w-8 h-8 bg-primary-600/20 rounded-full flex items-center justify-center animate-pulse bot-avatar">
+                  <Bot className="w-4 h-4 text-primary-400" />
+                </div>
+                <div className="rounded-lg px-4 py-2 bg-zinc-700/50 text-white">
+                  <div className="whitespace-pre-wrap text-sm text-zinc-400">
+                    Preparing your personalized valuation experience...
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+        
         {state.messages.map((message) => (
           <div
             key={message.id}
             className={`flex ${message.type === 'user' ? 'justify-end' : 'justify-start'}`}
           >
-            <div
-              className={`max-w-[80%] rounded-lg px-4 py-2 ${
-                message.type === 'user'
-                  ? 'bg-primary-600 text-white'
-                  : message.type === 'system'
-                  ? 'bg-yellow-100 text-yellow-800 border border-yellow-300'
-                  : 'bg-gray-100 text-gray-900'
-              }`}
-            >
-              <div className="flex items-center space-x-2 mb-1">
-                {message.type === 'ai' && <Bot className="w-4 h-4" />}
-                {message.type === 'user' && <User className="w-4 h-4" />}
-                {message.type === 'system' && <CheckCircle className="w-4 h-4" />}
-                <span className="text-xs opacity-70">
-                  {message.timestamp.toLocaleTimeString()}
-                </span>
+            <div className={`max-w-[80%] ${message.type === 'user' ? 'ml-auto' : 'mr-auto'}`}>
+              <div className="flex items-start gap-3">
+                {message.type !== 'user' && (
+                  <div className="flex-shrink-0 w-8 h-8 bg-primary-600/20 rounded-full flex items-center justify-center bot-avatar">
+                    <Bot className="w-4 h-4 text-primary-400" />
+                  </div>
+                )}
+                
+                <div className={`rounded-lg px-4 py-2 ${
+                  message.type === 'user' 
+                    ? 'bg-zinc-800 text-white' 
+                    : 'bg-zinc-700/50 text-white'
+                }`}>
+                  <div 
+                    className="whitespace-pre-wrap text-sm cursor-pointer" 
+                    onClick={() => isTyping && complete()}
+                    title={isTyping ? "Click to complete typing" : ""}
+                  >
+                    {message.type === 'ai' && message.isStreaming ? displayedText : message.content}
+                    {message.type === 'ai' && message.isStreaming && (
+                      <TypingCursor isVisible={isTyping} />
+                    )}
+                  </div>
+                  
+                  {/* Display suggestion chips if available */}
+                  {message.type === 'suggestion' && message.metadata?.suggestions && (
+                    <div className="mt-3">
+                      <SuggestionChips
+                        suggestions={message.metadata.suggestions}
+                        originalValue={message.metadata.originalValue || ''}
+                        onSelect={(selected) => handleSuggestionSelect(message.metadata?.field || '', selected)}
+                        onDismiss={() => handleSuggestionDismiss(message.metadata?.field || '', message.metadata?.originalValue || '')}
+                      />
+                    </div>
+                  )}
+                  
+                  {/* Display clarification confirmation buttons */}
+                  {message.metadata?.needs_confirmation && message.metadata?.clarification_value && (
+                    <div className="mt-3 flex gap-3">
+                      <button
+                        onClick={() => handleClarificationConfirm(
+                          message.metadata?.clarification_field || '',
+                          message.metadata?.clarification_value || ''
+                        )}
+                        className="inline-flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-all duration-200 shadow-sm hover:shadow-md"
+                      >
+                        <CheckCircle className="w-4 h-4" />
+                        <span className="text-sm font-medium">
+                          Yes, "{message.metadata.clarification_value}" is correct
+                        </span>
+                      </button>
+                      <button
+                        onClick={() => handleClarificationReject(message.metadata?.clarification_field || '')}
+                        className="inline-flex items-center gap-2 px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-all duration-200"
+                      >
+                        <span className="text-sm font-medium">
+                          No, let me provide the correct value
+                        </span>
+                      </button>
+                    </div>
+                  )}
+                  
+                  {/* Display help text if available */}
+                  {AI_CONFIG.showHelpText && message.metadata?.help_text && (
+                    <div className="mt-1">
+                      <p className="text-xs text-primary-400">
+                        ℹ️ {message.metadata.help_text}
+                      </p>
+                    </div>
+                  )}
+                  
+                  {/* Display valuation narrative if available */}
+                  {AI_CONFIG.showNarratives && message.metadata?.valuation_narrative && (
+                    <div className="mt-3 p-3 bg-primary-600/10 rounded-lg">
+                      <h4 className="text-sm font-semibold text-primary-300 mb-2">
+                        Why this valuation?
+                      </h4>
+                      <div className="text-sm text-primary-200 whitespace-pre-wrap">
+                        {message.metadata.valuation_narrative}
+                      </div>
+                    </div>
+                  )}
+                  
+                  {message.type !== 'user' && message.isStreaming && (
+                    <div className="flex items-center gap-2 animate-fade-in">
+                      <LoadingDots size="sm" color="text-white" />
+                      <span className="text-sm text-zinc-300 animate-pulse">{loadingMessage}</span>
+                    </div>
+                  )}
+                </div>
+                
+                {message.type === 'user' && (
+                  <div className="flex-shrink-0 w-8 h-8 bg-zinc-700 rounded-full flex items-center justify-center">
+                    <User className="w-4 h-4 text-zinc-400" />
+                  </div>
+                )}
               </div>
-              <div className="whitespace-pre-wrap">
-                {message.type === 'ai' && message.isStreaming ? displayedText : message.content}
-                {message.type === 'ai' && message.isStreaming && <TypingCursor />}
+              
+              <div className={`text-xs text-zinc-500 mt-1 ${
+                message.type === 'user' ? 'text-right' : 'text-left'
+              }`}>
+                {message.timestamp.toLocaleTimeString()}
               </div>
             </div>
           </div>
         ))}
         
-        {/* Loading indicator */}
-        {state.isStreaming && (
-          <div className="flex justify-start">
-            <div className="bg-gray-100 rounded-lg px-4 py-2">
-              <LoadingDots />
-            </div>
-          </div>
-        )}
-        
-        {/* Initialization loading */}
-        {isInitializing && (
-          <div className="flex justify-center">
-            <div className="bg-gray-100 rounded-lg px-4 py-2 flex items-center space-x-2">
-              <Loader2 className="w-4 h-4 animate-spin" />
-              <span>Initializing conversation...</span>
-            </div>
-          </div>
-        )}
-        
         <div ref={state.refs.messagesEndRef} />
       </div>
-      
+
+      {/* Data Collection Panel */}
+      {Object.keys(state.collectedData).length > 0 && (
+        <div className="px-4 pb-2">
+          <div className="bg-zinc-800/50 rounded-lg p-4 border border-zinc-700/50">
+            <h4 className="text-sm font-semibold text-white mb-3 flex items-center gap-2">
+              <CheckCircle className="w-4 h-4 text-green-500" />
+              Collected Data
+            </h4>
+            <div className="grid grid-cols-2 gap-2">
+              {Object.entries(state.collectedData).map(([field, data]: [string, any]) => (
+                <div key={field} className="flex items-center gap-2 text-xs data-collected-item">
+                  <span className="text-zinc-400">{data.icon}</span>
+                  <span className="text-zinc-300">{data.display_name}:</span>
+                  <span className="text-white font-medium">{data.value}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Calculate Now Button */}
+      {state.calculateOption && (
+        <div className="px-4 pb-2">
+          <div className="bg-primary-600/20 rounded-lg p-4 border border-primary-500/50">
+            <p className="text-sm text-white mb-3">{state.calculateOption.message}</p>
+            <button
+              onClick={() => {
+                // Handle calculate now action
+                chatLogger.info('Calculate now clicked', { tier: state.calculateOption.tier });
+                // TODO: Implement calculate now functionality
+              }}
+              className="w-full bg-primary-600 hover:bg-primary-700 text-white font-semibold py-2 px-4 rounded-lg transition-colors"
+            >
+              {state.calculateOption.cta}
+            </button>
+            <p className="text-xs text-zinc-400 mt-2 text-center">
+              {state.calculateOption.continue_message}
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* Valuation Preview */}
+      {state.valuationPreview && (
+        <div className="px-4 pb-2">
+          <div className="bg-green-600/20 rounded-lg p-4 border border-green-500/50">
+            <h4 className="text-sm font-semibold text-white mb-3">Valuation Preview</h4>
+            <div className="text-xs text-zinc-300">
+              <p>Range: ${state.valuationPreview.range_low?.toLocaleString()} - ${state.valuationPreview.range_high?.toLocaleString()}</p>
+              <p>Confidence: {state.valuationPreview.confidence_label}</p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Contextual tip */}
+      {getContextualTip() && (
+        <div className="px-4 pb-2">
+          <ContextualTip {...getContextualTip()!} />
+        </div>
+      )}
+
       {/* Input Form */}
-      <div className="border-t border-gray-200 p-4">
-        <form onSubmit={handleSubmit} className="flex space-x-2">
-          <textarea
-            value={state.input}
-            onChange={(e) => state.setInput(e.target.value)}
-            onKeyPress={handleKeyPress}
-            placeholder={placeholder}
-            disabled={disabled || state.isStreaming}
-            className="flex-1 rounded-md px-3 py-3 ring-offset-background placeholder:text-zinc-400 focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 disabled:cursor-not-allowed disabled:opacity-50 resize-none text-sm leading-snug placeholder-shown:text-ellipsis placeholder-shown:whitespace-nowrap max-h-[200px] bg-transparent focus:bg-transparent text-gray-900 border border-gray-300"
-            style={{ minHeight: '60px', height: '60px' }}
-          />
-          <button
-            type="submit"
-            disabled={disabled || state.isStreaming || !state.input.trim()}
-            className="px-4 py-2 bg-primary-600 text-white rounded-md hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {state.isStreaming ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Send'}
-          </button>
+      <div className="p-4 border-t border-zinc-800">
+        <form
+          onSubmit={handleSubmit}
+          className="focus-within:bg-zinc-900/30 group flex flex-col gap-3 p-4 duration-150 w-full rounded-3xl border border-zinc-700/50 bg-zinc-900/20 text-base shadow-xl transition-all ease-in-out focus-within:border-zinc-500/40 hover:border-zinc-600/30 focus-within:hover:border-zinc-500/40 backdrop-blur-sm"
+        >
+          {/* Textarea container */}
+          <div className="relative flex items-center">
+            <textarea
+              value={state.input}
+              onChange={(e) => state.setInput(e.target.value)}
+              onKeyPress={handleKeyPress}
+              placeholder={placeholder}
+              disabled={disabled || state.isStreaming}
+              className="flex w-full rounded-md px-3 py-3 ring-offset-background placeholder:text-zinc-400 focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 disabled:cursor-not-allowed disabled:opacity-50 resize-none text-sm leading-snug placeholder-shown:text-ellipsis placeholder-shown:whitespace-nowrap max-h-[200px] bg-transparent focus:bg-transparent flex-1 text-white border-none"
+              style={{ minHeight: '60px', height: '60px' }}
+              spellCheck="false"
+            />
+          </div>
+
+          {/* Action buttons row */}
+          <div className="flex gap-2 flex-wrap items-center">
+            {getSmartFollowUps().map((suggestion, idx) => (
+              <button
+                key={idx}
+                type="button"
+                onClick={() => state.setInput(suggestion)}
+                disabled={state.isStreaming}
+                className="px-3 py-1.5 bg-zinc-800/50 hover:bg-zinc-700/60 border border-zinc-700/50 hover:border-zinc-600/60 rounded-full text-xs text-zinc-300 hover:text-white transition-all duration-200 hover:shadow-md hover:shadow-black/20 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {suggestion}
+              </button>
+            ))}
+            
+            {/* Right side with send button */}
+            <div className="flex flex-grow items-center justify-end gap-2">
+              <button
+                type="submit"
+                disabled={!state.input.trim() || state.isStreaming || disabled}
+                className="submit-button-white flex h-8 w-8 items-center justify-center rounded-full bg-white hover:bg-zinc-100 transition-all duration-150 ease-out disabled:cursor-not-allowed disabled:opacity-50 disabled:bg-zinc-600"
+              >
+                {state.isStreaming ? (
+                  <Loader2 className="w-4 h-4 text-zinc-900 animate-spin" />
+                ) : (
+                  <svg 
+                    className="w-4 h-4 text-zinc-900" 
+                    fill="none" 
+                    stroke="currentColor" 
+                    viewBox="0 0 24 24"
+                  >
+                    <path 
+                      strokeLinecap="round" 
+                      strokeLinejoin="round" 
+                      strokeWidth={2} 
+                      d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" 
+                    />
+                  </svg>
+                )}
+              </button>
+            </div>
+          </div>
         </form>
       </div>
     </div>
