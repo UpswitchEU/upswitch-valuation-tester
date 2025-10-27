@@ -4,8 +4,14 @@
  * Fetches business types from the main backend API with caching.
  * Falls back to hardcoded data if API is unavailable.
  * 
+ * Enhanced with Phase 2 features:
+ * - Full business type metadata
+ * - Dynamic questions
+ * - Real-time validation
+ * - Benchmark comparison
+ * 
  * @author UpSwitch CTO Team
- * @version 1.0.0
+ * @version 2.0.0
  */
 
 import axios, { AxiosInstance } from 'axios';
@@ -158,6 +164,163 @@ class BusinessTypesApiService {
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString()
     }));
+  }
+
+  // ==========================================================================
+  // PHASE 2: ENHANCED METADATA METHODS
+  // ==========================================================================
+
+  /**
+   * Get full business type with all metadata
+   * Includes: questions, validations, benchmarks, metadata
+   */
+  async getBusinessTypeFull(businessTypeId: string): Promise<any> {
+    try {
+      console.log(`[BusinessTypesApi] Fetching full metadata for: ${businessTypeId}`);
+      
+      const response = await this.api.get(`/types/${businessTypeId}/full`);
+      
+      if (response.data.success && response.data.data) {
+        console.log(`[BusinessTypesApi] Full metadata loaded`, {
+          businessTypeId,
+          questionsCount: response.data.data.questions?.length || 0,
+          validationsCount: response.data.data.validations?.length || 0,
+          benchmarksCount: response.data.data.benchmarks?.length || 0,
+        });
+        return response.data.data;
+      }
+      
+      return null;
+    } catch (error) {
+      console.error(`[BusinessTypesApi] Failed to fetch full metadata:`, error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get dynamic questions for a business type
+   */
+  async getBusinessTypeQuestions(
+    businessTypeId: string,
+    options?: {
+      flow_type?: 'manual' | 'ai_guided';
+      phase?: string;
+      existing_data?: Record<string, any>;
+    }
+  ): Promise<any> {
+    try {
+      console.log(`[BusinessTypesApi] Fetching questions for: ${businessTypeId}`, options);
+      
+      const params: any = {};
+      
+      if (options?.flow_type) {
+        params.flow_type = options.flow_type;
+      }
+      
+      if (options?.phase) {
+        params.phase = options.phase;
+      }
+      
+      if (options?.existing_data) {
+        params.existing_data = JSON.stringify(options.existing_data);
+      }
+      
+      const response = await this.api.get(`/types/${businessTypeId}/questions`, { params });
+      
+      if (response.data.success && response.data.data) {
+        console.log(`[BusinessTypesApi] Questions loaded`, {
+          businessTypeId,
+          totalQuestions: response.data.data.questions?.length || 0,
+          requiredQuestions: response.data.data.total_required || 0,
+          estimatedTime: response.data.data.estimated_time,
+        });
+        return response.data.data;
+      }
+      
+      return null;
+    } catch (error) {
+      console.error(`[BusinessTypesApi] Failed to fetch questions:`, error);
+      throw error;
+    }
+  }
+
+  /**
+   * Validate user data against business-type-specific rules
+   */
+  async validateBusinessTypeData(
+    businessTypeId: string,
+    data: Record<string, any>
+  ): Promise<any> {
+    try {
+      console.log(`[BusinessTypesApi] Validating data for: ${businessTypeId}`, {
+        dataKeys: Object.keys(data),
+      });
+      
+      const response = await this.api.post(`/types/${businessTypeId}/validate`, { data });
+      
+      if (response.data.success && response.data.data) {
+        console.log(`[BusinessTypesApi] Validation complete`, {
+          businessTypeId,
+          valid: response.data.data.valid,
+          errorsCount: response.data.data.errors?.length || 0,
+          warningsCount: response.data.data.warnings?.length || 0,
+          suggestionsCount: response.data.data.suggestions?.length || 0,
+        });
+        return response.data.data;
+      }
+      
+      return null;
+    } catch (error) {
+      console.error(`[BusinessTypesApi] Validation failed:`, error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get industry benchmarks for a business type
+   */
+  async getBusinessTypeBenchmarks(
+    businessTypeId: string,
+    options?: {
+      country?: string;
+      metrics?: string[];
+      user_data?: Record<string, number>;
+    }
+  ): Promise<any> {
+    try {
+      console.log(`[BusinessTypesApi] Fetching benchmarks for: ${businessTypeId}`, options);
+      
+      const params: any = {};
+      
+      if (options?.country) {
+        params.country = options.country;
+      }
+      
+      if (options?.metrics && options.metrics.length > 0) {
+        params.metrics = options.metrics.join(',');
+      }
+      
+      if (options?.user_data) {
+        params.user_data = JSON.stringify(options.user_data);
+      }
+      
+      const response = await this.api.get(`/types/${businessTypeId}/benchmarks`, { params });
+      
+      if (response.data.success && response.data.data) {
+        console.log(`[BusinessTypesApi] Benchmarks loaded`, {
+          businessTypeId,
+          benchmarksCount: Object.keys(response.data.data.benchmarks || {}).length,
+          dataSource: response.data.data.data_source,
+          year: response.data.data.year,
+        });
+        return response.data.data;
+      }
+      
+      return null;
+    } catch (error) {
+      console.error(`[BusinessTypesApi] Failed to fetch benchmarks:`, error);
+      throw error;
+    }
   }
 }
 
