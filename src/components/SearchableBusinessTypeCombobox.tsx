@@ -173,17 +173,23 @@ export const SearchableBusinessTypeCombobox: React.FC<SearchableBusinessTypeComb
 
   return (
     <div ref={wrapperRef} className="relative">
-      {/* Label */}
-      <label className="block text-sm font-semibold text-gray-700 mb-2">
-        Business Type {required && <span className="text-red-400">*</span>}
-      </label>
-
-      {/* Input */}
+      {/* Input Container with Floating Label */}
       <div className="relative">
-        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-          <Search className="h-5 w-5 text-gray-500" />
+        {/* Floating Label - Always visible at top */}
+        <label className={`
+          absolute left-4 top-2 text-xs text-gray-700 pointer-events-none font-medium
+          ${disabled ? 'text-gray-400' : ''}
+          ${required ? "after:content-['*'] after:text-red-500 after:ml-1" : ''}
+        `}>
+          Business Type
+        </label>
+
+        {/* Search Icon */}
+        <div className="absolute left-4 top-1/2 transform -translate-y-1/2 mt-1 pointer-events-none">
+          <Search className="h-4 w-4 text-gray-500" />
         </div>
         
+        {/* Input Field */}
         <input
           ref={inputRef}
           type="text"
@@ -198,7 +204,14 @@ export const SearchableBusinessTypeCombobox: React.FC<SearchableBusinessTypeComb
           placeholder={placeholder}
           disabled={disabled || loading}
           required={required}
-          className="w-full h-14 pl-10 pr-10 pt-6 pb-2 bg-white border border-gray-300 rounded-xl text-base text-black placeholder:text-gray-400 focus:outline-none focus:border-gray-900 focus:ring-0 hover:border-gray-500 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+          className="
+            w-full h-14 pl-10 pr-20 pt-6 pb-2 text-base 
+            border border-gray-300 rounded-xl 
+            focus:outline-none focus:border-gray-900 focus:ring-0
+            hover:border-gray-500 transition-all duration-200 ease-in-out
+            disabled:opacity-50 disabled:cursor-not-allowed
+            bg-white text-gray-900 placeholder:text-gray-400
+          "
         />
 
         {/* Clear button */}
@@ -206,15 +219,15 @@ export const SearchableBusinessTypeCombobox: React.FC<SearchableBusinessTypeComb
           <button
             type="button"
             onClick={handleClear}
-            className="absolute inset-y-0 right-10 flex items-center pr-2"
+            className="absolute right-10 top-1/2 transform -translate-y-1/2 flex items-center"
           >
-            <X className="h-4 w-4 text-gray-400 hover:text-gray-600" />
+            <X className="h-4 w-4 text-gray-400 hover:text-gray-600 transition-colors" />
           </button>
         )}
 
         {/* Dropdown indicator */}
-        <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
-          <ChevronDown className={`h-5 w-5 text-gray-500 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+        <div className="absolute right-3 top-1/2 transform -translate-y-1/2 pointer-events-none">
+          <ChevronDown className={`h-4 w-4 text-gray-500 transition-transform duration-150 ${isOpen ? 'rotate-180' : ''}`} />
         </div>
       </div>
 
