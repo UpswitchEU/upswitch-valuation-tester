@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { FileText, TrendingUp, Users, Target, BarChart3, Database, CheckCircle } from 'lucide-react';
+import { FileText, TrendingUp, Users, Target, BarChart3, Database, CheckCircle, AlertTriangle } from 'lucide-react';
 import type { ValuationResponse, ValuationInputData } from '../../types/valuation';
 import { InputDataSection } from './InputDataSection';
 import { DCFTransparencySection } from './DCFTransparencySection';
@@ -9,6 +9,7 @@ import { WeightingLogicSection } from './WeightingLogicSection';
 import { RangeCalculationSection } from './RangeCalculationSection';
 import { DataProvenanceSection } from './DataProvenanceSection';
 import { formatCurrency } from '../Results/utils/formatters';
+import { calculateOwnerDependencyMultipleImpact } from '../../utils/valuationFormatters';
 
 interface TransparentCalculationViewProps {
   result: ValuationResponse;
@@ -117,6 +118,47 @@ export const TransparentCalculationView: React.FC<TransparentCalculationViewProp
           </div>
         </div>
       </div>
+
+      {/* Owner Dependency Impact in Final Summary */}
+      {result.owner_dependency_result && (() => {
+        const preAdjustmentValue = result.equity_value_mid / (1 + result.owner_dependency_result.valuation_adjustment);
+        const ebitda = result.financial_metrics?.ebitda || 0;
+        const multipleImpact = calculateOwnerDependencyMultipleImpact(
+          preAdjustmentValue,
+          result.equity_value_mid,
+          ebitda
+        );
+        
+        return (
+          <div className="bg-orange-50 border-l-4 border-orange-400 p-4 my-4">
+            <div className="flex items-start">
+              <AlertTriangle className="w-5 h-5 text-orange-600 mt-0.5 mr-3" />
+              <div className="flex-1">
+                <h4 className="text-sm font-semibold text-orange-900">
+                  Owner Dependency Adjustment Applied
+                </h4>
+                <div className="mt-2 text-sm text-orange-800">
+                  <div className="flex items-center gap-2">
+                    <span className="font-semibold">{multipleImpact.percentageFormat}</span>
+                    {multipleImpact.isApplicable && (
+                      <>
+                        <span>|</span>
+                        <span className="font-semibold">{multipleImpact.multipleFormat}</span>
+                        <span className="text-xs text-orange-600">
+                          ({multipleImpact.baseMultiple}x → {multipleImpact.adjustedMultiple}x)
+                        </span>
+                      </>
+                    )}
+                  </div>
+                  <div className="mt-1 text-xs">
+                    {result.owner_dependency_result.risk_level} risk level
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
 
       {/* Section divider */}
       <div className="border-t-4 border-gray-300"></div>

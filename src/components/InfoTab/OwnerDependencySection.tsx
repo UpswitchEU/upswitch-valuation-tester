@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { AlertTriangle, CheckCircle, XCircle, Info, ChevronDown, ChevronUp, TrendingDown, Shield } from 'lucide-react';
 import type { ValuationResponse } from '../../types/valuation';
+import { calculateOwnerDependencyMultipleImpact, formatCurrency } from '../../utils/valuationFormatters';
 
 interface OwnerDependencySectionProps {
   result: ValuationResponse;
@@ -8,6 +9,7 @@ interface OwnerDependencySectionProps {
 
 export const OwnerDependencySection: React.FC<OwnerDependencySectionProps> = ({ result }) => {
   const [expandedFactors, setExpandedFactors] = useState<Set<string>>(new Set());
+  const [showCalculation, setShowCalculation] = useState(false);
   
   const odResult = result.owner_dependency_result;
   
@@ -184,15 +186,53 @@ export const OwnerDependencySection: React.FC<OwnerDependencySectionProps> = ({ 
             </div>
           </div>
           
-          {/* Valuation Adjustment */}
+          {/* Valuation Adjustment - Dual Format */}
           <div className="text-center">
             <div className="text-sm text-gray-600 mb-2">Valuation Adjustment</div>
-            <div className="text-5xl font-bold text-red-600">
-              {(odResult.valuation_adjustment * 100).toFixed(1)}%
-            </div>
-            <div className="text-sm text-gray-700 mt-2">
-              Applied to equity value
-            </div>
+            
+            {/* Calculate multiple impact */}
+            {(() => {
+              const preAdjustmentValue = result.equity_value_mid / (1 + odResult.valuation_adjustment);
+              const ebitda = result.financial_metrics?.ebitda || 0;
+              const multipleImpact = calculateOwnerDependencyMultipleImpact(
+                preAdjustmentValue,
+                result.equity_value_mid,
+                ebitda
+              );
+              
+              return (
+                <>
+                  {/* Primary Display - Both Formats */}
+                  <div className="flex items-center justify-center gap-3 mb-2">
+                    <div className="text-4xl font-bold text-red-600">
+                      {multipleImpact.percentageFormat}
+                    </div>
+                    {multipleImpact.isApplicable && (
+                      <>
+                        <div className="text-2xl text-gray-400">|</div>
+                        <div className="text-4xl font-bold text-red-600">
+                          {multipleImpact.multipleFormat}
+                        </div>
+                      </>
+                    )}
+                  </div>
+                  
+                  {/* Detailed Breakdown */}
+                  {multipleImpact.isApplicable && (
+                    <div className="text-xs text-gray-600 space-y-1 mt-3">
+                      <div>{multipleImpact.baseMultiple}x → {multipleImpact.adjustedMultiple}x</div>
+                      <div className="text-gray-500">EBITDA multiple impact</div>
+                    </div>
+                  )}
+                  
+                  {!multipleImpact.isApplicable && (
+                    <div className="text-xs text-gray-500 mt-2">
+                      Multiple format not applicable (pre-revenue/negative EBITDA)
+                    </div>
+                  )}
+                </>
+              );
+            })()}
           </div>
           
           {/* Risk Level Indicator */}
@@ -221,6 +261,95 @@ export const OwnerDependencySection: React.FC<OwnerDependencySectionProps> = ({ 
           <div className="text-sm text-gray-700 whitespace-pre-line">
             {odResult.explanation}
           </div>
+        </div>
+        
+        {/* Calculation Details - Expandable */}
+        <div className="mt-6 pt-6 border-t border-gray-300">
+          <button
+            onClick={() => setShowCalculation(!showCalculation)}
+            className="flex items-center justify-between w-full text-left"
+          >
+            <h4 className="text-sm font-semibold text-gray-900">
+              How is this calculated?
+            </h4>
+            {showCalculation ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
+          </button>
+          
+          {showCalculation && (() => {
+            const preAdjustmentValue = result.equity_value_mid / (1 + odResult.valuation_adjustment);
+            const ebitda = result.financial_metrics?.ebitda || 0;
+            const multipleImpact = calculateOwnerDependencyMultipleImpact(
+              preAdjustmentValue,
+              result.equity_value_mid,
+              ebitda
+            );
+            
+            return (
+              <div className="mt-4 space-y-3 text-sm">
+                <div className="bg-white rounded-lg p-4 border border-gray-200">
+                  <div className="font-semibold text-gray-900 mb-3">Multiple Impact Calculation</div>
+                  <div className="space-y-2 text-gray-700">
+                    <div className="flex justify-between">
+                      <span>Pre-adjustment valuation:</span>
+                      <span className="font-mono">{formatCurrency(preAdjustmentValue)}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>EBITDA:</span>
+                      <span className="font-mono">{formatCurrency(ebitda)}</span>
+                    </div>
+                    <div className="flex justify-between border-t pt-2">
+                      <span>Base multiple:</span>
+                      <span className="font-mono font-semibold">{multipleImpact.baseMultiple}x</span>
+                    </div>
+                    <div className="flex justify-between text-xs text-gray-500">
+                      <span>({formatCurrency(preAdjustmentValue)} ÷ {formatCurrency(ebitda)})</span>
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="bg-red-50 rounded-lg p-4 border border-red-200">
+                  <div className="font-semibold text-gray-900 mb-3">After Owner Dependency Adjustment</div>
+                  <div className="space-y-2 text-gray-700">
+                    <div className="flex justify-between">
+                      <span>Adjusted valuation:</span>
+                      <span className="font-mono">{formatCurrency(result.equity_value_mid)}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>EBITDA:</span>
+                      <span className="font-mono">{formatCurrency(ebitda)}</span>
+                    </div>
+                    <div className="flex justify-between border-t pt-2">
+                      <span>Adjusted multiple:</span>
+                      <span className="font-mono font-semibold">{multipleImpact.adjustedMultiple}x</span>
+                    </div>
+                    <div className="flex justify-between text-xs text-gray-500">
+                      <span>({formatCurrency(result.equity_value_mid)} ÷ {formatCurrency(ebitda)})</span>
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                  <div className="font-semibold text-gray-900 mb-2">Impact Summary</div>
+                  <div className="space-y-1 text-gray-700">
+                    <div className="flex justify-between">
+                      <span>Percentage impact:</span>
+                      <span className="font-mono font-semibold text-red-600">{multipleImpact.percentageFormat}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Multiple impact:</span>
+                      <span className="font-mono font-semibold text-red-600">{multipleImpact.multipleFormat}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Value reduction:</span>
+                      <span className="font-mono font-semibold text-red-600">
+                        {formatCurrency(result.equity_value_mid - preAdjustmentValue)}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            );
+          })()}
         </div>
       </div>
       

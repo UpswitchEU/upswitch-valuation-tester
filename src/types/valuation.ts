@@ -593,3 +593,13 @@ export interface ValuationToolbarProps {
   valuationMethod?: string;
 }
 
+// NEW: Dual format display type
+export interface ValuationAdjustmentDisplay {
+  percentageFormat: string;
+  multipleFormat: string;
+  baseMultiple: number;
+  adjustedMultiple: number;
+  multipleImpact: number;
+  isApplicable: boolean;
+}
+
