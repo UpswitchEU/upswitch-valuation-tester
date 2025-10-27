@@ -1,14 +1,14 @@
 import React from 'react';
-import { Bot, Brain } from 'lucide-react';
-import { getTypingMessage, getThinkingMessage } from '../utils/typingMessages';
+import { Bot } from 'lucide-react';
 
 interface TypingIndicatorProps {
   context?: string;
   isThinking?: boolean;
 }
 
-export const TypingIndicator: React.FC<TypingIndicatorProps> = ({ context, isThinking = false }) => {
-  const message = isThinking ? getThinkingMessage(context) : getTypingMessage(context);
+export const TypingIndicator: React.FC<TypingIndicatorProps> = () => {
+  // Always show "AI is thinking..." for both states
+  const message = "AI is thinking...";
   
   return (
     <>
@@ -44,20 +44,6 @@ export const TypingIndicator: React.FC<TypingIndicatorProps> = ({ context, isThi
           animation-delay: 0.4s;
         }
         
-        @keyframes brain-pulse {
-          0%, 100% {
-            opacity: 0.6;
-            transform: scale(1);
-          }
-          50% {
-            opacity: 1;
-            transform: scale(1.1);
-          }
-        }
-        
-        .brain-pulse {
-          animation: brain-pulse 2s ease-in-out infinite;
-        }
       `}</style>
       
       <div className="max-w-[80%] mr-auto">
@@ -67,22 +53,17 @@ export const TypingIndicator: React.FC<TypingIndicatorProps> = ({ context, isThi
             <Bot className="w-4 h-4 text-primary-400" />
           </div>
           
-          {/* Typing/Thinking Bubble */}
+          {/* AI Thinking Bubble - Always show animated dots */}
           <div className="rounded-lg px-4 py-3 bg-zinc-700/50 text-white">
             <div className="flex items-center gap-2">
-              {isThinking ? (
-                /* Thinking State - Brain Icon with Pulse */
-                <Brain className="w-4 h-4 text-primary-400 brain-pulse" />
-              ) : (
-                /* Typing State - Animated Dots */
-                <div className="flex gap-1">
-                  <span className="typing-dot typing-dot-1 w-2 h-2 bg-zinc-400 rounded-full"></span>
-                  <span className="typing-dot typing-dot-2 w-2 h-2 bg-zinc-400 rounded-full"></span>
-                  <span className="typing-dot typing-dot-3 w-2 h-2 bg-zinc-400 rounded-full"></span>
-                </div>
-              )}
+              {/* Always show animated dots for both thinking and typing */}
+              <div className="flex gap-1">
+                <span className="typing-dot typing-dot-1 w-2 h-2 bg-zinc-400 rounded-full"></span>
+                <span className="typing-dot typing-dot-2 w-2 h-2 bg-zinc-400 rounded-full"></span>
+                <span className="typing-dot typing-dot-3 w-2 h-2 bg-zinc-400 rounded-full"></span>
+              </div>
               
-              {/* Contextual Message */}
+              {/* Always show "AI is thinking..." */}
               <span className="text-sm text-zinc-300">{message}</span>
             </div>
           </div>

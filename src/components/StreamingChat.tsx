@@ -471,7 +471,7 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
         {/* Typing Indicator - Separate bubble */}
         {state.isTyping && (
           <div className="flex justify-start">
-            <TypingIndicator context={state.typingContext} isThinking={state.isThinking} />
+            <TypingIndicator />
           </div>
         )}
         
