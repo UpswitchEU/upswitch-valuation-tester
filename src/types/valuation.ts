@@ -130,6 +130,68 @@ export interface QuickValuationRequest {
 // Quick valuation uses same response format as full valuation
 export type QuickValuationResponse = ValuationResponse;
 
+// Transparency-related interfaces
+export interface TransparencyData {
+  data_sources: DataSource[];
+  calculation_steps: CalculationStep[];
+  comparable_companies?: ComparableCompany[];
+  confidence_breakdown: ConfidenceBreakdown;
+  range_methodology: RangeMethodology;
+}
+
+export interface DataSource {
+  name: string;
+  value: any;
+  source: string;
+  timestamp: string;
+  confidence: number;
+  api_url?: string;
+  cache_status?: string;
+}
+
+export interface CalculationStep {
+  step_number: number;
+  description: string;
+  formula: string;
+  inputs: Record<string, any>;
+  outputs: Record<string, any>;
+  explanation: string;
+}
+
+export interface ComparableCompany {
+  name: string;
+  country: string;
+  revenue: number;
+  ebitda_multiple?: number;
+  revenue_multiple?: number;
+  similarity_score: number;
+  source: string;
+}
+
+export interface ConfidenceBreakdown {
+  data_quality: number;
+  historical_data: number;
+  methodology_agreement: number;
+  industry_benchmarks: number;
+  company_profile: number;
+  market_conditions: number;
+  geographic_data: number;
+  business_model_clarity: number;
+  overall_score: number;
+}
+
+export interface RangeMethodology {
+  mid_point: number;
+  confidence_level: string;
+  base_spread: number;
+  asymmetric_adjustment: boolean;
+  downside_factor: number;
+  upside_factor: number;
+  low_value: number;
+  high_value: number;
+  academic_source: string;
+}
+
 export interface ValuationResponse {
   valuation_id: string;
   company_name: string;
@@ -147,6 +209,9 @@ export interface ValuationResponse {
   confidence_score: number;
   overall_confidence: string;
   confidence?: number; // Alias for confidence_score
+  
+  // Transparency data
+  transparency?: TransparencyData;
   
   // Methodology
   primary_method?: string;
