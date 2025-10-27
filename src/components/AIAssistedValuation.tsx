@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 // import { useNavigate } from 'react-router-dom';
 import { CheckCircle, Save, Building2, X } from 'lucide-react';
 import { PANEL_CONSTRAINTS, MOBILE_BREAKPOINT } from '../constants/panelConstants';
@@ -7,7 +7,7 @@ import { LiveValuationReport } from './LiveValuationReport';
 // Progressive report component - now implemented
 import { ProgressiveValuationReport } from './ProgressiveValuationReport';
 // NEW: HTML Preview component (IlaraAI-style)
-import { HTMLPreviewPanel } from './HTMLPreviewPanel';
+import { HTMLPreviewPanel, type HTMLPreviewPanelRef } from './HTMLPreviewPanel';
 import { ErrorBoundary } from './ErrorBoundary';
 import { ValuationToolbar } from './ValuationToolbar';
 import { ValuationInfoPanel } from './ValuationInfoPanel';
@@ -44,6 +44,9 @@ export const AIAssistedValuation: React.FC<AIAssistedValuationProps> = ({ report
   const [error, setError] = useState<string | null>(null);
   const [conversationContext, setConversationContext] = useState<ConversationContext | null>(null);
   const [inputData, setInputData] = useState<ValuationInputData | null>(null);
+  
+  // Ref for HTMLPreviewPanel (progressive report system)
+  const htmlPreviewPanelRef = useRef<HTMLPreviewPanelRef>(null);
   
   // Owner Dependency state
   const [showOwnerDependencyModal, setShowOwnerDependencyModal] = useState(false);
@@ -563,6 +566,54 @@ export const AIAssistedValuation: React.FC<AIAssistedValuationProps> = ({ report
         }];
       }
     });
+  }, []);
+
+  // Handle section complete event type (new progressive report system)
+  const handleSectionComplete = useCallback((event: {
+    sectionId: string;
+    sectionName: string;
+    html: string;
+    progress: number;
+    phase?: number;
+  }) => {
+    chatLogger.info('✅ Section complete received', {
+      sectionId: event.sectionId,
+      sectionName: event.sectionName,
+      progress: event.progress,
+      htmlLength: event.html.length
+    });
+    
+    // Update report sections with completed section
+    setReportSections(prevSections => {
+      const existingIndex = prevSections.findIndex(
+        s => s.id === event.sectionId || s.section === event.sectionId
+      );
+      
+      if (existingIndex >= 0) {
+        // Update existing section with complete state
+        const updated = [...prevSections];
+        updated[existingIndex] = {
+          ...updated[existingIndex],
+          html: event.html,
+          status: 'complete',
+          timestamp: new Date()
+        };
+        return updated;
+      } else {
+        // Add new complete section
+        return [...prevSections, {
+          id: event.sectionId,
+          section: event.sectionId,
+          phase: event.phase || 0,
+          html: event.html,
+          status: 'complete',
+          timestamp: new Date()
+        }];
+      }
+    });
+    
+    // Update overall progress
+    setPreviewProgress(event.progress);
   }, []);
 
   const handleReportComplete = useCallback((html: string, valuationId: string) => {
@@ -1162,6 +1213,7 @@ export const AIAssistedValuation: React.FC<AIAssistedValuationProps> = ({ report
                   onProgressUpdate={handleProgressUpdate}
                   onReportSectionUpdate={handleReportSectionUpdate}
                   onSectionLoading={handleSectionLoading}
+                  onSectionComplete={handleSectionComplete}
                   onReportComplete={handleReportComplete}
                   onContextUpdate={handleConversationUpdate}
                   onHtmlPreviewUpdate={handleHtmlPreviewUpdate}
@@ -1197,9 +1249,12 @@ export const AIAssistedValuation: React.FC<AIAssistedValuationProps> = ({ report
               {/* NEW: HTML Preview (IlaraAI-style) */}
               {previewHtml ? (
                 <HTMLPreviewPanel
+                  ref={htmlPreviewPanelRef}
                   htmlContent={previewHtml}
                   isGenerating={isGeneratingPreview}
                   progress={previewProgress}
+                  onSectionLoading={(event) => htmlPreviewPanelRef.current?.handleSectionLoading(event)}
+                  onSectionComplete={(event) => htmlPreviewPanelRef.current?.handleSectionComplete(event)}
                 />
               ) : reportSections.length > 0 || finalReportHtml ? (
                 <ProgressiveValuationReport

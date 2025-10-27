@@ -38,6 +38,7 @@ export interface StreamEventHandlerCallbacks {
   onValuationComplete?: (result: any) => void;
   onReportUpdate?: (html: string, progress: number) => void;
   onSectionLoading?: (section: string, html: string, phase: number) => void;
+  onSectionComplete?: (event: { sectionId: string; sectionName: string; html: string; progress: number; phase?: number }) => void;
   onReportSectionUpdate?: (section: string, html: string, phase: number, progress: number, is_fallback?: boolean, is_error?: boolean, error_message?: string) => void;
   onReportComplete?: (html: string, valuationId: string) => void;
   onDataCollected?: (data: any) => void;
@@ -91,6 +92,8 @@ export class StreamEventHandler {
         return this.handleReportUpdate(data);
       case 'section_loading':
         return this.handleSectionLoading(data);
+      case 'section_complete':
+        return this.handleSectionComplete(data);
       case 'report_section':
         return this.handleReportSection(data);
       case 'report_complete':
@@ -183,6 +186,39 @@ export class StreamEventHandler {
       data.html,
       data.phase
     );
+  }
+
+  /**
+   * Handle section complete events (new progressive report system)
+   * 
+   * This is the new event type emitted by StreamingHTMLGenerator
+   * for jaw-dropping Lovable.dev-style section-by-section rendering.
+   */
+  private handleSectionComplete(data: any): void {
+    chatLogger.info('✅ Section complete received', {
+      sessionId: this.sessionId,
+      sectionId: data.section_id,
+      sectionName: data.section_name,
+      progress: data.progress,
+      htmlLength: data.html?.length || 0,
+      timestamp: new Date().toISOString()
+    });
+    
+    // Call the new onSectionComplete callback
+    this.callbacks.onSectionComplete?.({
+      sectionId: data.section_id,
+      sectionName: data.section_name,
+      html: data.html,
+      progress: data.progress,
+      phase: data.phase
+    });
+    
+    chatLogger.debug('Section complete processed', {
+      sessionId: this.sessionId,
+      sectionId: data.section_id,
+      progress: data.progress,
+      htmlPreview: data.html?.substring(0, 100) + '...'
+    });
   }
 
   /**
