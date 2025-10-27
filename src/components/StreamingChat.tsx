@@ -9,11 +9,9 @@ import React, { useCallback, useMemo, useEffect } from 'react';
 import { Loader2, Bot, User, CheckCircle } from 'lucide-react';
 import { AI_CONFIG } from '../config';
 import { ContextualTip } from './ContextualTip';
-import { LoadingDots } from './LoadingDots';
 import { SuggestionChips } from './SuggestionChips';
 import { useLoadingMessage } from '../hooks/useLoadingMessage';
 import { useTypingAnimation } from '../hooks/useTypingAnimation';
-import { TypingCursor } from './TypingCursor';
 import { chatLogger } from '../utils/logger';
 import { useAuth } from '../hooks/useAuth';
 // Note: Business extraction utilities available if needed
@@ -278,11 +276,6 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
     );
   }, [state.input, state.isStreaming, state.setIsStreaming, disabled, sessionId, userId, inputValidator, addMessage, updateStreamingMessage, onHtmlPreviewUpdate, trackConversationCompletion, streamingManager, eventHandler]);
   
-  // Handle input change
-  const handleInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    state.setInput(e.target.value);
-  }, [state.setInput]);
-  
   // Handle suggestion selection
   const handleSuggestionSelect = useCallback((suggestion: string) => {
     state.setInput(suggestion);
@@ -362,13 +355,13 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
   const smartFollowUps = getSmartFollowUps();
   
   return (
-    <div className={`flex flex-col h-full bg-white ${className}`}>
+    <div className={`flex flex-col h-full bg-gradient-to-br from-zinc-900 via-zinc-800 to-zinc-900 rounded-lg shadow-lg ${className}`}>
       {/* Messages Container */}
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
         {/* Loading state for initialization */}
         {isInitializing && state.messages.length === 0 && (
           <div className="flex items-center justify-center py-8">
-            <div className="flex items-center space-x-2 text-gray-600">
+            <div className="flex items-center space-x-2 text-zinc-400">
               <Loader2 className="h-5 w-5 animate-spin" />
               <span>{loadingMessage}</span>
             </div>
@@ -381,85 +374,116 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
             key={message.id}
             className={`flex ${message.type === 'user' ? 'justify-end' : 'justify-start'}`}
           >
-            <div
-              className={`max-w-[80%] rounded-lg px-4 py-2 ${
-                message.type === 'user'
-                  ? 'bg-blue-500 text-white'
-                  : message.type === 'ai'
-                  ? 'bg-gray-100 text-gray-900'
-                  : 'bg-yellow-100 text-yellow-900'
-              }`}
-            >
-              {/* Message header with avatar */}
-              <div className="flex items-center space-x-2 mb-1">
-                {message.type === 'ai' && <Bot className="h-4 w-4" />}
-                {message.type === 'user' && <User className="h-4 w-4" />}
-                <span className="text-xs opacity-70">
-                  {message.timestamp.toLocaleTimeString()}
-                </span>
+            <div className={`max-w-[80%] ${message.type === 'user' ? 'ml-auto' : 'mr-auto'}`}>
+              <div className="flex items-start gap-3">
+                {/* AI Icon */}
+                {message.type !== 'user' && (
+                  <div className="flex-shrink-0 w-8 h-8 bg-primary-600/20 rounded-full flex items-center justify-center">
+                    <Bot className="w-4 h-4 text-primary-400" />
+                  </div>
+                )}
+                
+                {/* Message bubble */}
+                <div className={`rounded-lg px-4 py-2 ${
+                  message.type === 'user' 
+                    ? 'bg-zinc-800 text-white' 
+                    : 'bg-zinc-700/50 text-white'
+                }`}>
+                  {/* Message content */}
+                  <div className="whitespace-pre-wrap text-sm">
+                    {message.content}
+                    {message.isStreaming && (
+                      <span className="inline-block w-2 h-4 bg-current animate-pulse ml-1" />
+                    )}
+                  </div>
+              
+                  
+                  {/* Suggestion chips */}
+                  {message.type === 'suggestion' && message.metadata?.suggestions && (
+                    <SuggestionChips
+                      suggestions={message.metadata.suggestions}
+                      originalValue={message.metadata.originalValue || ''}
+                      onSelect={handleSuggestionSelect}
+                      onDismiss={handleSuggestionDismiss}
+                    />
+                  )}
+                  
+                  {/* Clarification confirmation buttons */}
+                  {message.metadata?.needs_confirmation && (
+                    <div className="flex space-x-2 mt-2">
+                      <button
+                        onClick={() => handleClarificationConfirm(message.id)}
+                        className="px-3 py-1 bg-green-500 text-white text-xs rounded hover:bg-green-600"
+                      >
+                        <CheckCircle className="h-3 w-3 inline mr-1" />
+                        Confirm
+                      </button>
+                      <button
+                        onClick={() => handleClarificationReject(message.id)}
+                        className="px-3 py-1 bg-red-500 text-white text-xs rounded hover:bg-red-600"
+                      >
+                        Reject
+                      </button>
+                    </div>
+                  )}
+                  
+                  {/* Help text */}
+                  {AI_CONFIG.showHelpText && message.metadata?.help_text && (
+                    <div className="mt-1">
+                      <p className="text-xs text-primary-400">
+                        ℹ️ {message.metadata.help_text}
+                      </p>
+                    </div>
+                  )}
+                  
+                  {/* Valuation narrative */}
+                  {AI_CONFIG.showNarratives && message.metadata?.valuation_narrative && (
+                    <div className="mt-3 p-3 bg-primary-600/10 rounded-lg">
+                      <h4 className="text-sm font-semibold text-primary-300 mb-2">
+                        Why this valuation?
+                      </h4>
+                      <div className="text-sm text-primary-200 whitespace-pre-wrap">
+                        {message.metadata.valuation_narrative}
+                      </div>
+                    </div>
+                  )}
+                  
+                  {/* Streaming indicator */}
+                  {message.type !== 'user' && message.isStreaming && (
+                    <div className="flex items-center gap-1 mt-2 text-xs text-zinc-400">
+                      <Loader2 className="w-3 h-3 animate-spin" />
+                      <span>AI is typing...</span>
+                    </div>
+                  )}
+                </div>
+                
+                {/* User Icon */}
+                {message.type === 'user' && (
+                  <div className="flex-shrink-0 w-8 h-8 bg-zinc-700 rounded-full flex items-center justify-center">
+                    <User className="w-4 h-4 text-zinc-400" />
+                  </div>
+                )}
               </div>
               
-              {/* Message content */}
-              <div className="whitespace-pre-wrap">
-                {message.content}
-                {message.isStreaming && <TypingCursor isVisible={true} />}
+              {/* Timestamp */}
+              <div className={`text-xs text-zinc-500 mt-1 ${
+                message.type === 'user' ? 'text-right' : 'text-left'
+              }`}>
+                {message.timestamp.toLocaleTimeString()}
               </div>
-              
-              {/* Suggestion chips */}
-              {message.type === 'suggestion' && message.metadata?.suggestions && (
-                <SuggestionChips
-                  suggestions={message.metadata.suggestions}
-                  originalValue={message.metadata.originalValue || ''}
-                  onSelect={handleSuggestionSelect}
-                  onDismiss={handleSuggestionDismiss}
-                />
-              )}
-              
-              {/* Clarification confirmation buttons */}
-              {message.metadata?.needs_confirmation && (
-                <div className="flex space-x-2 mt-2">
-                  <button
-                    onClick={() => handleClarificationConfirm(message.id)}
-                    className="px-3 py-1 bg-green-500 text-white text-xs rounded hover:bg-green-600"
-                  >
-                    <CheckCircle className="h-3 w-3 inline mr-1" />
-                    Confirm
-                  </button>
-                  <button
-                    onClick={() => handleClarificationReject(message.id)}
-                    className="px-3 py-1 bg-red-500 text-white text-xs rounded hover:bg-red-600"
-                  >
-                    Reject
-                  </button>
-                </div>
-              )}
-              
-              {/* Help text */}
-              {AI_CONFIG.showHelpText && message.metadata?.help_text && (
-                <div className="mt-2 text-xs text-gray-600 bg-gray-50 p-2 rounded">
-                  💡 {message.metadata.help_text}
-                </div>
-              )}
-              
-              {/* Valuation narrative */}
-              {AI_CONFIG.showNarratives && message.metadata?.valuation_narrative && (
-                <div className="mt-2 text-sm text-blue-700 bg-blue-50 p-2 rounded">
-                  📈 {message.metadata.valuation_narrative}
-                </div>
-              )}
             </div>
           </div>
         ))}
         
         {/* Data Collection Panel */}
         {Object.keys(state.collectedData).length > 0 && (
-          <div className="bg-gray-50 p-4 rounded-lg">
-            <h3 className="font-semibold text-gray-900 mb-2">Collected Data</h3>
+          <div className="bg-zinc-800/50 p-4 rounded-lg border border-zinc-700/50">
+            <h3 className="font-semibold text-white mb-2">Collected Data</h3>
             <div className="space-y-2">
               {Object.entries(state.collectedData).map(([key, value]) => (
                 <div key={key} className="flex justify-between text-sm">
-                  <span className="font-medium capitalize">{key.replace(/_/g, ' ')}:</span>
-                  <span className="text-gray-600">{String(value)}</span>
+                  <span className="font-medium capitalize text-zinc-300">{key.replace(/_/g, ' ')}:</span>
+                  <span className="text-zinc-400">{String(value)}</span>
                 </div>
               ))}
             </div>
@@ -474,7 +498,7 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
                 // Handle calculate now
                 chatLogger.info('Calculate now clicked', { sessionId });
               }}
-              className="px-6 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600"
+              className="px-6 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
             >
               Calculate Now
             </button>
@@ -483,34 +507,11 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
         
         {/* Valuation Preview */}
         {state.valuationPreview && (
-          <div className="bg-green-50 p-4 rounded-lg">
-            <h3 className="font-semibold text-green-900 mb-2">Valuation Preview</h3>
-            <div className="text-2xl font-bold text-green-700">
+          <div className="bg-primary-600/10 p-4 rounded-lg border border-primary-600/30">
+            <h3 className="font-semibold text-primary-300 mb-2">Valuation Preview</h3>
+            <div className="text-2xl font-bold text-primary-200">
               ${state.valuationPreview.value?.toLocaleString()}
             </div>
-          </div>
-        )}
-        
-        {/* Contextual Tip */}
-        {contextualTip && (
-          <ContextualTip
-            type={contextualTip.type}
-            message={contextualTip.message}
-          />
-        )}
-        
-        {/* Smart Follow-up buttons */}
-        {smartFollowUps.length > 0 && (
-          <div className="flex flex-wrap gap-2">
-            {smartFollowUps.map((followUp, index) => (
-              <button
-                key={index}
-                onClick={() => handleSuggestionSelect(followUp)}
-                className="px-3 py-1 bg-gray-200 text-gray-700 rounded-full text-sm hover:bg-gray-300"
-              >
-                {followUp}
-              </button>
-            ))}
           </div>
         )}
         
@@ -518,26 +519,75 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
         <div ref={state.refs.messagesEndRef} />
       </div>
       
-      {/* Input Form */}
-      <form onSubmit={handleSubmit} className="p-4 border-t bg-white">
-        <div className="flex space-x-2">
-          <input
-            type="text"
-            value={state.input}
-            onChange={handleInputChange}
-            placeholder={placeholder}
-            disabled={disabled || state.isStreaming}
-            className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
+      {/* Contextual Tip */}
+      {contextualTip && (
+        <div className="px-4 pb-2">
+          <ContextualTip
+            type={contextualTip.type}
+            message={contextualTip.message}
           />
-          <button
-            type="submit"
-            disabled={disabled || state.isStreaming || !state.input.trim()}
-            className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {state.isStreaming ? <LoadingDots /> : 'Send'}
-          </button>
         </div>
-      </form>
+      )}
+      
+      {/* Input Form */}
+      <div className="p-4 border-t border-zinc-800">
+        <form
+          onSubmit={handleSubmit}
+          className="focus-within:bg-zinc-900/30 group flex flex-col gap-3 p-4 duration-150 w-full rounded-3xl border border-zinc-700/50 bg-zinc-900/20 text-base shadow-xl transition-all ease-in-out focus-within:border-zinc-500/40 hover:border-zinc-600/30 focus-within:hover:border-zinc-500/40 backdrop-blur-sm"
+        >
+          {/* Textarea container */}
+          <div className="relative flex items-center">
+            <textarea
+              value={state.input}
+              onChange={(e) => state.setInput(e.target.value)}
+              onKeyPress={(e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                  e.preventDefault();
+                  handleSubmit(e);
+                }
+              }}
+              placeholder={placeholder}
+              disabled={disabled || state.isStreaming}
+              className="flex w-full rounded-md px-3 py-3 ring-offset-background placeholder:text-zinc-400 focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 disabled:cursor-not-allowed disabled:opacity-50 resize-none text-sm leading-snug placeholder-shown:text-ellipsis placeholder-shown:whitespace-nowrap max-h-[200px] bg-transparent focus:bg-transparent flex-1 text-white"
+              style={{ minHeight: '60px', height: '60px' }}
+              spellCheck="false"
+            />
+          </div>
+
+          {/* Action buttons row */}
+          <div className="flex gap-2 flex-wrap items-center">
+            {smartFollowUps.filter(Boolean).map((suggestion, idx) => (
+              <button
+                key={idx}
+                type="button"
+                onClick={() => state.setInput(suggestion)}
+                disabled={state.isStreaming}
+                className="px-3 py-1.5 bg-zinc-800/50 hover:bg-zinc-700/60 border border-zinc-700/50 hover:border-zinc-600/60 rounded-full text-xs text-zinc-300 hover:text-white transition-all duration-200 hover:shadow-md hover:shadow-black/20 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {suggestion}
+              </button>
+            ))}
+            
+            {/* Right side with send button */}
+            <div className="flex flex-grow items-center justify-end gap-2">
+              <button
+                type="submit"
+                disabled={!state.input.trim() || state.isStreaming || disabled}
+                className="submit-button-white flex h-8 w-8 items-center justify-center rounded-full bg-white hover:bg-zinc-100 transition-all duration-150 ease-out disabled:cursor-not-allowed disabled:opacity-50 disabled:bg-zinc-600"
+              >
+                {state.isStreaming ? (
+                  <Loader2 className="w-4 h-4 text-zinc-900 animate-spin" />
+                ) : (
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-zinc-900">
+                    <line x1="22" y1="2" x2="11" y2="13"></line>
+                    <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+                  </svg>
+                )}
+              </button>
+            </div>
+          </div>
+        </form>
+      </div>
     </div>
   );
 };
