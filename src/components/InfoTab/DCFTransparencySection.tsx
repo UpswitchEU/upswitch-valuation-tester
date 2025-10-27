@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { TrendingUp, ChevronDown, ChevronRight, Calculator } from 'lucide-react';
+import { TrendingUp, ChevronDown, ChevronRight } from 'lucide-react';
 import type { ValuationResponse, ValuationInputData } from '../../types/valuation';
 import { formatCurrency, formatPercent } from '../Results/utils/formatters';
 import { FINANCIAL_CONSTANTS } from '../../config/financialConstants';
@@ -343,7 +343,7 @@ const FCFProjectionTable: React.FC<{
   result: ValuationResponse;
   inputData: ValuationInputData | null;
   wacc: number;
-}> = ({ result, inputData, wacc }) => {
+}> = ({ inputData, wacc }) => {
   const baseFCF = inputData?.ebitda || (inputData?.revenue || 0) * 0.15;
   const growthRate = 0.08;
 

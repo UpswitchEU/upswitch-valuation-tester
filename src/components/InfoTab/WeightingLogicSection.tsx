@@ -55,7 +55,7 @@ export const WeightingLogicSection: React.FC<WeightingLogicSectionProps> = ({ re
     },
     {
       name: 'Growth Trajectory',
-      value: result.financial_metrics?.revenue_growth_rate ? `${(result.financial_metrics.revenue_growth_rate * 100).toFixed(0)}% CAGR` : '15% CAGR',
+      value: result.financial_metrics?.revenue_growth ? `${(result.financial_metrics.revenue_growth * 100).toFixed(0)}% CAGR` : '15% CAGR',
       preference: 'DCF',
       adjustment: '+15%',
       reason: 'High growth better captured by DCF projections',

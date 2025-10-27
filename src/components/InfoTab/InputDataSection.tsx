@@ -117,8 +117,8 @@ export const InputDataSection: React.FC<InputDataSectionProps> = ({ result, inpu
           />
           <DataField
             label="Growth Rate"
-            value={result.financial_metrics?.revenue_growth_rate 
-              ? formatPercent(result.financial_metrics.revenue_growth_rate * 100)
+            value={result.financial_metrics?.revenue_growth 
+              ? formatPercent(result.financial_metrics.revenue_growth * 100)
               : 'N/A'}
             source={{ source: 'Calculated from Historical Data', icon: <CheckCircle className="w-4 h-4" />, color: 'text-purple-600' }}
           />

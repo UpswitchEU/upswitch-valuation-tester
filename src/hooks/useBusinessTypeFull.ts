@@ -13,7 +13,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { businessTypesApiService } from '../services/businessTypesApi';
-import { generalLogger } from '../utils/loggers';
+import { logger as generalLogger } from '../utils/loggers';
 
 // ============================================================================
 // TYPES

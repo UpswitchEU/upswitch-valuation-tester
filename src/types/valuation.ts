@@ -324,13 +324,6 @@ export interface ValuationResponse {
   key_value_drivers: string[];
   value_drivers?: string[]; // Alias for key_value_drivers
   risk_factors: string[];
-  
-  // Transparency data
-  transparency?: {
-    validation_report?: any;
-    calculation_steps?: Record<string, any>;
-    industry_benchmarks?: Record<string, any>;
-  };
 }
 
 export interface CompanyLookupResult {
@@ -514,6 +507,28 @@ export interface ValuationInputData {
   employees?: number;
   business_model?: string;
   historical_years_data?: YearDataInput[];
+  total_debt?: number;
+  cash?: number;
+  metrics?: {
+    gross_margin: number;
+    ebitda_margin: number;
+    ebit_margin: number;
+    net_margin: number;
+    return_on_assets: number;
+    return_on_equity: number;
+    current_ratio: number;
+    quick_ratio: number;
+    cash_ratio: number;
+    debt_to_equity: number;
+    debt_to_assets: number;
+    interest_coverage: number;
+    asset_turnover: number;
+    inventory_turnover: number;
+    receivables_turnover: number;
+    payables_turnover: number;
+    revenue_growth: number;
+    financial_health_description: string;
+  };
 }
 
 export interface ValuationToolbarProps {
