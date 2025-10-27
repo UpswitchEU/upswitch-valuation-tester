@@ -350,11 +350,11 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
       const field = lastMessage.metadata.collected_field;
       switch (field) {
         case 'business_type':
-          return ['Technology', 'Manufacturing', 'Services', 'Retail'];
+          return ['SaaS Platform', 'E-commerce Store', 'Consulting Firm', 'Digital Agency'];
         case 'revenue':
-          return ['$1M - $5M', '$5M - $10M', '$10M - $50M', '$50M+'];
+          return ['$1M - $5M ARR', '$5M - $10M ARR', '$10M - $50M ARR', '$50M+ ARR'];
         case 'employee_count':
-          return ['1-10', '11-50', '51-200', '200+'];
+          return ['1-10 team', '11-50 team', '51-200 team', '200+ team'];
         default:
           return [];
       }
@@ -367,7 +367,7 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
   const smartFollowUps = getSmartFollowUps();
   
   return (
-    <div className={`flex flex-col h-full bg-gradient-to-br from-zinc-900 via-zinc-800 to-zinc-900 rounded-lg shadow-lg ${className}`}>
+    <div className={`flex h-full flex-col overflow-hidden flex-1 ${className}`}>
       {/* Messages Container */}
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
         {/* Messages */}
@@ -547,9 +547,9 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
                   handleSubmit(e);
                 }
               }}
-              placeholder={placeholder}
+              placeholder="Ask about trends, campaigns, market insights..."
               disabled={disabled || state.isStreaming}
-              className="flex w-full rounded-md px-3 py-3 ring-offset-background placeholder:text-zinc-400 focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 disabled:cursor-not-allowed disabled:opacity-50 resize-none text-base leading-snug placeholder-shown:text-ellipsis placeholder-shown:whitespace-nowrap max-h-[200px] bg-transparent focus:bg-transparent flex-1 text-white"
+              className="textarea-seamless flex w-full rounded-md px-3 py-3 ring-offset-background placeholder:text-zinc-400 focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 disabled:cursor-not-allowed disabled:opacity-50 resize-none text-base leading-snug placeholder-shown:text-ellipsis placeholder-shown:whitespace-nowrap md:text-base max-h-[200px] bg-transparent focus:bg-transparent flex-1 text-white"
               style={{ minHeight: '80px', height: '80px' }}
               spellCheck="false"
             />
