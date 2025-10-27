@@ -78,7 +78,6 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
   onReportComplete,
   onHtmlPreviewUpdate,
   className = '',
-  placeholder = "Ask about your business valuation...",
   disabled = false
 }) => {
   // Get user data from AuthContext
