@@ -79,6 +79,83 @@ curl http://localhost:8000/health
 
 ---
 
+## 🧠 Business Type Intelligence Integration (NEW - January 2025)
+
+### Overview
+Frontend now features dynamic question flows, real-time validation, and enhanced business type selection powered by PostgreSQL intelligence.
+
+### New Components
+
+**Core Components (5):**
+1. `src/components/BusinessTypeSelector.tsx` - Enhanced type selector with metadata
+2. `src/components/DynamicQuestionFlow.tsx` - Orchestrates question flow
+3. `src/components/DynamicQuestionRenderer.tsx` - Renders individual questions
+4. `src/components/ValidationMessage.tsx` - Real-time validation feedback
+5. `src/components/PhaseProgress.tsx` - Visual progress indicator
+
+### New Hooks
+
+**Data Fetching (3):**
+1. `src/hooks/useBusinessTypeFull.ts` - Fetch complete business type metadata
+2. `src/hooks/useRealTimeValidation.ts` - Real-time validation
+3. `src/hooks/useBusinessTypeQuestions.ts` - Dynamic questions
+
+### API Integration
+
+**Backend Endpoints:**
+- `GET /api/business-types/types/:id/full` - Complete metadata
+- `GET /api/business-types/types/:id/questions` - Dynamic questions
+- `POST /api/business-types/types/:id/validate` - Validation
+- `GET /api/business-types/types/:id/benchmarks` - Benchmarks
+
+### Usage Example
+
+```typescript
+import { useBusinessTypeFull } from '@/hooks/useBusinessTypeFull';
+
+function BusinessTypeForm({ typeId }: { typeId: string }) {
+  const { data, loading, error } = useBusinessTypeFull(typeId);
+  
+  if (loading) return <Loading />;
+  if (error) return <Error message={error} />;
+  
+  return (
+    <div>
+      <h2>{data.title}</h2>
+      <p>Questions: {data.questions.length}</p>
+      <p>Benchmarks: {data.benchmarks.length}</p>
+      
+      {data.questions.map(q => (
+        <DynamicQuestion key={q.id} question={q} />
+      ))}
+    </div>
+  );
+}
+```
+
+### API Service
+
+**Updated:** `src/services/businessTypesApi.ts`
+
+```typescript
+// Fetch complete metadata
+const bakeryData = await businessTypesApi.getBusinessTypeFull('bakery');
+// Returns: {questions: [...], validations: [...], benchmarks: [...]}
+
+// Real-time validation
+const validation = await businessTypesApi.validateBusinessTypeData('bakery', {
+  revenue: 450000,
+  ebitda: 60000
+});
+// Returns: {valid: true, errors: [], warnings: [...]}
+```
+
+### Documentation
+- [Component Documentation](/docs/components/BUSINESS_TYPE_INTELLIGENCE_COMPONENTS.md)
+- [API Integration](/docs/api/BUSINESS_TYPE_INTELLIGENCE_API.md)
+
+---
+
 ## 📦 What's Included
 
 ### **Core Features** ✅
