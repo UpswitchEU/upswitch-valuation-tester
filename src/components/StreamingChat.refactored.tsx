@@ -1,9 +1,8 @@
 /**
- * StreamingChat Refactored - Lightweight orchestrator component
+ * StreamingChat - Lightweight orchestrator component
  * 
- * This is the refactored version of StreamingChat.tsx that uses extracted modules
- * to reduce complexity and improve maintainability. The main component is now
- * ~300 lines instead of 1,817 lines.
+ * This component uses extracted modules to reduce complexity and improve maintainability.
+ * The main component is now ~300 lines instead of 1,817 lines.
  */
 
 import React, { useCallback, useMemo, useEffect } from 'react';
@@ -59,7 +58,7 @@ export interface StreamingChatProps {
  * most functionality to specialized modules. This reduces complexity
  * and improves maintainability.
  */
-export const StreamingChatRefactored: React.FC<StreamingChatProps> = ({
+export const StreamingChat: React.FC<StreamingChatProps> = ({
   sessionId,
   userId,
   onMessageComplete,

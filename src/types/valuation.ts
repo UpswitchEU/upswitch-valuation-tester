@@ -402,6 +402,7 @@ export interface ConversationStartRequest {
     business_model?: string;
     country_code?: string;
     founding_year?: number;
+    business_type_id?: string; // NEW: PostgreSQL business type ID
   };
   user_preferences?: {
     preferred_methodology?: string;

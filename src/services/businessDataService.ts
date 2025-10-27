@@ -28,6 +28,7 @@ export interface BusinessProfileData {
   industry?: string;
   business_type?: string;
   business_model?: string;  // ADD: Business model field
+  business_type_id?: string;  // NEW: PostgreSQL business type ID
   years_in_operation?: number;
   founded_year?: number;
   company_age?: number;  // ADD: Company age field
@@ -245,6 +246,7 @@ class BusinessDataService {
         business_model: businessData.business_type,
         country_code: businessData.country || 'BE',
         founding_year: businessData.founded_year,
+        business_type_id: businessData.business_type_id, // NEW: Pass business_type_id through
       },
       user_preferences: userPreferences,
     };
@@ -270,6 +272,13 @@ class BusinessDataService {
 
     if (businessData.founded_year) {
       preFilledData.founding_year = businessData.founded_year;
+    }
+
+    if (businessData.business_type_id) {
+      preFilledData.business_type_id = businessData.business_type_id;
+      serviceLogger.info('AI Flow: business_type_id included in pre-filled data', {
+        business_type_id: businessData.business_type_id
+      });
     }
 
     if (businessData.years_in_operation) {
