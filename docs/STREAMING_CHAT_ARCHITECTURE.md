@@ -322,3 +322,4 @@ The refactored StreamingChat architecture provides:
 - **Enhanced code reusability**
 
 This architecture serves as a template for refactoring other large components in the codebase and demonstrates best practices for React component design.
+

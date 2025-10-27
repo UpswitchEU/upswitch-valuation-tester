@@ -195,3 +195,4 @@ The MessageManager integrates seamlessly with:
 - Typing animations
 - Auto-scroll functionality
 - Message rendering components
+
