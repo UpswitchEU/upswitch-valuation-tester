@@ -29,6 +29,8 @@ export interface ModelPerformanceMetrics {
 export interface StreamEventHandlerCallbacks {
   updateStreamingMessage: (content: string, isComplete?: boolean) => void;
   setIsStreaming: (streaming: boolean) => void;
+  setIsTyping?: (typing: boolean) => void;
+  setTypingContext?: (context?: string) => void;
   setCollectedData: React.Dispatch<React.SetStateAction<Record<string, any>>>;
   setValuationPreview: React.Dispatch<React.SetStateAction<any>>;
   setCalculateOption: React.Dispatch<React.SetStateAction<any>>;
@@ -114,6 +116,8 @@ export class StreamEventHandler {
         return this.handleCalculateOption(data);
       case 'progress_summary':
         return this.handleProgressSummary(data);
+      case 'progress_update':
+        return this.handleProgressUpdate(data);
       case 'clarification_needed':
         return this.handleClarificationNeeded(data);
       case 'html_preview':
@@ -128,7 +132,8 @@ export class StreamEventHandler {
    */
   private handleTyping(_data: any): void {
     chatLogger.debug('AI typing indicator received');
-    // Typing indicator is handled by the typing animation hook
+    // Show typing indicator
+    this.callbacks.setIsTyping?.(true);
   }
 
   /**
@@ -136,7 +141,9 @@ export class StreamEventHandler {
    */
   private handleMessageStart(_data: any): void {
     chatLogger.debug('AI message start received');
-    // Message start is handled by the streaming message logic
+    // Hide typing indicator when message starts streaming
+    this.callbacks.setIsTyping?.(false);
+    this.callbacks.setTypingContext?.(undefined);
   }
 
   /**
@@ -370,6 +377,24 @@ export class StreamEventHandler {
       true
     );
     this.callbacks.setIsStreaming(false);
+  }
+
+  /**
+   * Handle progress update events (for typing context)
+   */
+  private handleProgressUpdate(data: any): void {
+    chatLogger.debug('Progress update received', {
+      currentStep: data.current_step,
+      progress: data.progress
+    });
+    
+    // Update typing context based on current step
+    if (data.current_step) {
+      this.callbacks.setTypingContext?.(data.current_step);
+    }
+    
+    // Notify parent component for progress tracking
+    this.callbacks.onProgressUpdate?.(data);
   }
 
   /**

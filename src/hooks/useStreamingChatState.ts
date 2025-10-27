@@ -43,6 +43,8 @@ export interface StreamingChatState {
   messages: Message[];
   input: string;
   isStreaming: boolean;
+  isTyping: boolean;
+  typingContext?: string;
   collectedData: Record<string, any>;
   valuationPreview: any;
   calculateOption: any;
@@ -62,6 +64,8 @@ export interface StreamingChatState {
   setMessages: React.Dispatch<React.SetStateAction<Message[]>>;
   setInput: React.Dispatch<React.SetStateAction<string>>;
   setIsStreaming: React.Dispatch<React.SetStateAction<boolean>>;
+  setIsTyping: React.Dispatch<React.SetStateAction<boolean>>;
+  setTypingContext: React.Dispatch<React.SetStateAction<string | undefined>>;
   setCollectedData: React.Dispatch<React.SetStateAction<Record<string, any>>>;
   setValuationPreview: React.Dispatch<React.SetStateAction<any>>;
   setCalculateOption: React.Dispatch<React.SetStateAction<any>>;
@@ -80,6 +84,8 @@ export const useStreamingChatState = (sessionId: string, userId?: string): Strea
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [isStreaming, setIsStreaming] = useState(false);
+  const [isTyping, setIsTyping] = useState(false);
+  const [typingContext, setTypingContext] = useState<string | undefined>(undefined);
   const [collectedData, setCollectedData] = useState<Record<string, any>>({});
   const [valuationPreview, setValuationPreview] = useState<any>(null);
   const [calculateOption, setCalculateOption] = useState<any>(null);
@@ -117,6 +123,8 @@ export const useStreamingChatState = (sessionId: string, userId?: string): Strea
     messages,
     input,
     isStreaming,
+    isTyping,
+    typingContext,
     collectedData,
     valuationPreview,
     calculateOption,
@@ -136,6 +144,8 @@ export const useStreamingChatState = (sessionId: string, userId?: string): Strea
     setMessages,
     setInput,
     setIsStreaming,
+    setIsTyping,
+    setTypingContext,
     setCollectedData,
     setValuationPreview,
     setCalculateOption,

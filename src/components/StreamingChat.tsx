@@ -6,11 +6,11 @@
  */
 
 import React, { useCallback, useMemo, useEffect } from 'react';
-import { Loader2, Bot, User, CheckCircle } from 'lucide-react';
+import { Bot, User, CheckCircle, Loader2 } from 'lucide-react';
 import { AI_CONFIG } from '../config';
 import { ContextualTip } from './ContextualTip';
 import { SuggestionChips } from './SuggestionChips';
-import { useLoadingMessage } from '../hooks/useLoadingMessage';
+import { TypingIndicator } from './TypingIndicator';
 import { useTypingAnimation } from '../hooks/useTypingAnimation';
 import { chatLogger } from '../utils/logger';
 import { useAuth } from '../hooks/useAuth';
@@ -92,7 +92,7 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
   const messageManager = useMemo(() => new MessageManager(), []);
   
   // Use extracted conversation initializer
-  const { isInitializing } = useConversationInitializer(sessionId, userId, {
+  useConversationInitializer(sessionId, userId, {
     addMessage: (message) => {
       const { updatedMessages, newMessage } = messageManager.addMessage(state.messages, message);
       state.setMessages(updatedMessages);
@@ -113,7 +113,6 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
     showCursor: true
   });
   
-  const loadingMessage: string = useLoadingMessage();
   const streamingManager = useMemo(() => new StreamingManager(
     state.refs.requestIdRef,
     state.refs.currentStreamingMessageRef
@@ -145,6 +144,8 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
       }
     },
     setIsStreaming: state.setIsStreaming,
+    setIsTyping: state.setIsTyping,
+    setTypingContext: state.setTypingContext,
     setCollectedData: state.setCollectedData,
     setValuationPreview: state.setValuationPreview,
     setCalculateOption: state.setCalculateOption,
@@ -252,6 +253,10 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
     // Track conversation turn
     trackConversationCompletion(false, false);
     
+    // Show typing indicator immediately (optimistic UI)
+    state.setIsTyping(true);
+    state.setTypingContext(undefined); // Will be updated by backend events
+    
     // Start streaming conversation
     await streamingManager.startStreaming(
       sessionId,
@@ -272,6 +277,7 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
       (error: Error) => {
         chatLogger.error('Streaming error', { error: error.message, sessionId });
         state.setIsStreaming(false);
+        state.setIsTyping(false); // Hide typing indicator on error
       }
     );
   }, [state.input, state.isStreaming, state.setIsStreaming, disabled, sessionId, userId, inputValidator, addMessage, updateStreamingMessage, onHtmlPreviewUpdate, trackConversationCompletion, streamingManager, eventHandler]);
@@ -358,16 +364,6 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
     <div className={`flex flex-col h-full bg-gradient-to-br from-zinc-900 via-zinc-800 to-zinc-900 rounded-lg shadow-lg ${className}`}>
       {/* Messages Container */}
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
-        {/* Loading state for initialization */}
-        {isInitializing && state.messages.length === 0 && (
-          <div className="flex items-center justify-center py-8">
-            <div className="flex items-center space-x-2 text-zinc-400">
-              <Loader2 className="h-5 w-5 animate-spin" />
-              <span>{loadingMessage}</span>
-            </div>
-          </div>
-        )}
-        
         {/* Messages */}
         {state.messages.map((message) => (
           <div
@@ -447,14 +443,6 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
                       </div>
                     </div>
                   )}
-                  
-                  {/* Streaming indicator */}
-                  {message.type !== 'user' && message.isStreaming && (
-                    <div className="flex items-center gap-1 mt-2 text-xs text-zinc-400">
-                      <Loader2 className="w-3 h-3 animate-spin" />
-                      <span>AI is typing...</span>
-                    </div>
-                  )}
                 </div>
                 
                 {/* User Icon */}
@@ -474,6 +462,13 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
             </div>
           </div>
         ))}
+        
+        {/* Typing Indicator - Separate bubble */}
+        {state.isTyping && (
+          <div className="flex justify-start">
+            <TypingIndicator context={state.typingContext} />
+          </div>
+        )}
         
         {/* Data Collection Panel */}
         {Object.keys(state.collectedData).length > 0 && (
@@ -533,7 +528,7 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
       <div className="p-4 border-t border-zinc-800">
         <form
           onSubmit={handleSubmit}
-          className="focus-within:bg-zinc-900/30 group flex flex-col gap-3 p-4 duration-150 w-full rounded-3xl border border-zinc-700/50 bg-zinc-900/20 text-base shadow-xl transition-all ease-in-out focus-within:border-zinc-500/40 hover:border-zinc-600/30 focus-within:hover:border-zinc-500/40 backdrop-blur-sm"
+          className="focus-within:bg-zinc-900/30 group flex flex-col gap-3 p-4 duration-150 w-full rounded-3xl bg-zinc-900/20 text-base shadow-xl transition-all ease-in-out backdrop-blur-sm"
         >
           {/* Textarea container */}
           <div className="relative flex items-center">
