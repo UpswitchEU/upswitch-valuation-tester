@@ -329,13 +329,14 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
       };
     }
     
-    const lastMessage = state.messages[state.messages.length - 1];
-    if (lastMessage?.type === 'ai' && lastMessage.metadata?.collected_field) {
-      return {
-        type: 'insight' as const,
-        message: `📊 We're collecting information about your ${lastMessage.metadata.collected_field}. This helps us provide an accurate valuation.`
-      };
-    }
+    // Removed tooltip for collected fields - keeping for potential future use
+    // const lastMessage = state.messages[state.messages.length - 1];
+    // if (lastMessage?.type === 'ai' && lastMessage.metadata?.collected_field) {
+    //   return {
+    //     type: 'insight' as const,
+    //     message: `📊 We're collecting information about your ${lastMessage.metadata.collected_field}. This helps us provide an accurate valuation.`
+    //   };
+    // }
     
     return null;
   }, [state.messages]);
