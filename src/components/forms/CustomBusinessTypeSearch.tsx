@@ -31,7 +31,6 @@ export const CustomBusinessTypeSearch: React.FC<CustomBusinessTypeSearchProps> =
   const [isOpen, setIsOpen] = useState(false);
   const [selectedType, setSelectedType] = useState<BusinessType | null>(null);
   const [highlightedIndex, setHighlightedIndex] = useState(0);
-  const [isFocused, setIsFocused] = useState(false);
   const wrapperRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -171,13 +170,11 @@ export const CustomBusinessTypeSearch: React.FC<CustomBusinessTypeSearchProps> =
 
   // Handle focus
   const handleFocus = useCallback(() => {
-    setIsFocused(true);
     setIsOpen(true);
   }, []);
 
   // Handle blur
   const handleBlur = useCallback(() => {
-    setIsFocused(false);
     // Delay closing to allow for click events
     setTimeout(() => {
       setIsOpen(false);
@@ -196,21 +193,17 @@ export const CustomBusinessTypeSearch: React.FC<CustomBusinessTypeSearchProps> =
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // Determine if label should float
-  const shouldFloatLabel = isFocused || query || selectedType;
-
   return (
     <div className={`relative ${className}`} ref={wrapperRef}>
-      {/* Label */}
-      <label className="block text-sm font-semibold text-gray-700 mb-2">
-        {label} {required && <span className="text-red-400">*</span>}
-      </label>
-
-      {/* Input Container */}
-      <div className="relative">
+      {/* Input Container - Match CustomInputField pattern */}
+      <div className={`relative border rounded-xl shadow-sm transition-all duration-200 ${
+        disabled 
+          ? 'border-gray-200 bg-gray-50' 
+          : 'border-gray-300 bg-white hover:border-gray-400 focus-within:border-gray-900'
+      }`}>
         {/* Search Icon */}
-        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-          <Search className="h-5 w-5 text-gray-500" />
+        <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 z-10">
+          <Search className="h-4 w-4" />
         </div>
 
         {/* Input Field */}
@@ -222,46 +215,43 @@ export const CustomBusinessTypeSearch: React.FC<CustomBusinessTypeSearchProps> =
           onFocus={handleFocus}
           onBlur={handleBlur}
           onKeyDown={handleKeyDown}
-          placeholder={placeholder}
+          placeholder={placeholder || " "}
           disabled={disabled || loading}
           required={required}
-          className={`
-            w-full h-14 pl-10 pr-10 pt-6 pb-2 
-            bg-white border border-gray-300 rounded-xl 
-            text-base text-black placeholder:text-gray-400 
-            focus:outline-none focus:border-gray-900 focus:ring-0 
-            hover:border-gray-500 transition-all duration-200 
-            disabled:opacity-50 disabled:cursor-not-allowed
-            ${isFocused ? 'border-gray-900' : ''}
-          `}
+          className="
+            w-full h-14 px-4 pt-6 pb-2 text-base pl-10 pr-20
+            border-none rounded-xl 
+            focus:outline-none focus:ring-0
+            transition-all duration-200 ease-in-out
+            disabled:cursor-not-allowed disabled:text-gray-400
+            bg-transparent text-gray-900
+          "
         />
-
-        {/* Floating Label */}
-        <div className={`
-          absolute left-10 top-0 pointer-events-none transition-all duration-200 ease-in-out
-          ${shouldFloatLabel 
-            ? 'transform -translate-y-2 text-xs text-gray-500' 
-            : 'transform translate-y-4 text-base text-gray-400'
-          }
-        `}>
-          {label}
-        </div>
 
         {/* Clear Button */}
         {selectedType && !disabled && (
           <button
             type="button"
             onClick={handleClear}
-            className="absolute inset-y-0 right-10 flex items-center pr-2"
+            className="absolute right-10 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors z-10"
           >
-            <X className="h-4 w-4 text-gray-400 hover:text-gray-600" />
+            <X className="h-4 w-4" />
           </button>
         )}
 
         {/* Dropdown Indicator */}
-        <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
-          <ChevronDown className={`h-5 w-5 text-gray-500 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+        <div className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 z-10 pointer-events-none">
+          <ChevronDown className={`h-4 w-4 transition-transform duration-150 ${isOpen ? 'rotate-180' : ''}`} />
         </div>
+
+        {/* Label - Fixed at top like CustomInputField */}
+        <label className={`
+          absolute left-4 top-2 text-xs text-gray-600 font-medium pointer-events-none
+          ${disabled ? 'text-gray-400' : ''}
+        `}>
+          {label}
+          {required && <span className="text-red-500 ml-1">*</span>}
+        </label>
       </div>
 
       {/* Loading State */}
