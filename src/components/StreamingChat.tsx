@@ -44,6 +44,7 @@ export interface StreamingChatProps {
   onProgressUpdate?: (data: any) => void;
   onReportSectionUpdate?: (section: string, html: string, phase: number, progress: number, is_fallback?: boolean, is_error?: boolean, error_message?: string) => void;
   onSectionLoading?: (section: string, html: string, phase: number) => void;
+  onSectionComplete?: (event: { sectionId: string; sectionName: string; html: string; progress: number; phase?: number }) => void;
   onReportComplete?: (html: string, valuationId: string) => void;
   onContextUpdate?: (context: any) => void;
   onHtmlPreviewUpdate?: (html: string, previewType: string) => void;
@@ -75,8 +76,8 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
   onProgressUpdate,
   onReportSectionUpdate,
   onSectionLoading,
+  onSectionComplete,
   onReportComplete,
-  onContextUpdate,
   onHtmlPreviewUpdate,
   className = '',
   placeholder = "Ask about your business valuation...",
@@ -107,7 +108,7 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
   const { trackModelPerformance, trackConversationCompletion } = useConversationMetrics(sessionId, userId);
   
   // Typing animation for smooth AI responses
-  const { displayedText, isTyping, addToBuffer, complete } = useTypingAnimation({
+  const { complete } = useTypingAnimation({
     baseSpeed: 50,
     adaptiveSpeed: true,
     punctuationPauses: true,
@@ -149,7 +150,7 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
     setCollectedData: state.setCollectedData,
     setValuationPreview: state.setValuationPreview,
     setCalculateOption: state.setCalculateOption,
-    addMessage: (message) => {
+    addMessage: (message: Omit<Message, 'id' | 'timestamp'>) => {
       const { updatedMessages, newMessage } = messageManager.addMessage(state.messages, message);
       state.setMessages(updatedMessages);
       return { updatedMessages, newMessage };
@@ -159,6 +160,7 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
     onValuationComplete,
     onReportUpdate,
     onSectionLoading,
+    onSectionComplete,
     onReportSectionUpdate,
     onReportComplete,
     onDataCollected,
@@ -179,6 +181,7 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
     onValuationComplete,
     onReportUpdate,
     onSectionLoading,
+    onSectionComplete,
     onReportSectionUpdate,
     onReportComplete,
     onDataCollected,
@@ -250,11 +253,11 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
     trackConversationCompletion(false, false);
     
     // Start streaming conversation
-    await streamingManager.startStreamingWithRetry(
+    await streamingManager.startStreaming(
       sessionId,
       userInput,
       userId,
-      eventHandler.handleStreamEvent
+      eventHandler.handleEvent.bind(eventHandler)
     );
   }, [state.input, state.isStreaming, disabled, sessionId, userId, inputValidator, addMessage, trackConversationCompletion, streamingManager, eventHandler]);
   
@@ -310,7 +313,7 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
     const lastMessage = state.messages[state.messages.length - 1];
     if (lastMessage?.type === 'ai' && lastMessage.metadata?.collected_field) {
       return {
-        type: 'tip' as const,
+        type: 'insight' as const,
         title: 'Data Collection',
         message: `We're collecting information about your ${lastMessage.metadata.collected_field}. This helps us provide an accurate valuation.`,
         icon: '📊'
@@ -386,13 +389,14 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
               {/* Message content */}
               <div className="whitespace-pre-wrap">
                 {message.content}
-                {message.isStreaming && <TypingCursor />}
+                {message.isStreaming && <TypingCursor isVisible={true} />}
               </div>
               
               {/* Suggestion chips */}
               {message.type === 'suggestion' && message.metadata?.suggestions && (
                 <SuggestionChips
                   suggestions={message.metadata.suggestions}
+                  originalValue={message.metadata.originalValue || ''}
                   onSelect={handleSuggestionSelect}
                   onDismiss={handleSuggestionDismiss}
                 />

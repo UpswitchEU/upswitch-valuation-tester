@@ -1,4 +1,4 @@
-import React, { useEffect, useImperativeHandle, forwardRef } from 'react';
+import { useImperativeHandle, forwardRef } from 'react';
 import { Loader2 } from 'lucide-react';
 import { useProgressiveReport } from '../hooks/useProgressiveReport';
 import { ProgressBar } from './valuation/ProgressBar';

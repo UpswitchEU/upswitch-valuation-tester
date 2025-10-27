@@ -460,6 +460,7 @@ export interface ConversationContext {
   current_step: number;
   total_steps: number;
   methodology_selected?: string;
+  collected_data?: Record<string, any>;
   
   // ADD: Extracted business information
   extracted_business_model?: BusinessModel | string;

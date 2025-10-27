@@ -234,28 +234,6 @@ export const AIAssistedValuation: React.FC<AIAssistedValuationProps> = ({ report
       console.warn('Failed to save panel width:', error);
     }
   }, [leftPanelWidth]);
-
-  // NEW: Progressive preview generation at data collection milestones
-  useEffect(() => {
-    if (conversationContext?.collected_data) {
-      const dataCompleteness = calculateCompleteness(conversationContext.collected_data);
-      
-      // Trigger preview at 25%, 50%, 75%, 100% thresholds
-      if (dataCompleteness >= 25 && dataCompleteness < 50 && !previewGenerated25) {
-        generateProgressivePreview(conversationContext.collected_data);
-        setPreviewGenerated25(true);
-      } else if (dataCompleteness >= 50 && dataCompleteness < 75 && !previewGenerated50) {
-        generateProgressivePreview(conversationContext.collected_data);
-        setPreviewGenerated50(true);
-      } else if (dataCompleteness >= 75 && dataCompleteness < 100 && !previewGenerated75) {
-        generateProgressivePreview(conversationContext.collected_data);
-        setPreviewGenerated75(true);
-      } else if (dataCompleteness >= 100 && !previewGenerated100) {
-        generateProgressivePreview(conversationContext.collected_data);
-        setPreviewGenerated100(true);
-      }
-    }
-  }, [conversationContext?.collected_data, calculateCompleteness, generateProgressivePreview, previewGenerated25, previewGenerated50, previewGenerated75, previewGenerated100]);
   
   // Resize handler with snap-to-default behavior (matching Ilara)
   const handleResize = useCallback((newWidth: number) => {
@@ -359,8 +337,9 @@ export const AIAssistedValuation: React.FC<AIAssistedValuationProps> = ({ report
         founding_year: collectedData.founding_year || new Date().getFullYear() - 5,
         number_of_employees: collectedData.number_of_employees || 10,
         current_year_data: {
+          year: new Date().getFullYear(),
           revenue: collectedData.current_year_data?.revenue || collectedData.revenue || 0,
-          ebitda: collectedData.current_year_data?.ebitda || collectedData.ebitda || 0
+          ebitda: collectedData.current_year_data?.ebitda || 0
         },
         historical_years_data: collectedData.historical_years_data || []
       };
@@ -420,6 +399,28 @@ export const AIAssistedValuation: React.FC<AIAssistedValuationProps> = ({ report
     console.log('Progress update in AIAssistedValuation:', progress);
     // Update local state if needed
   }, []);
+
+  // NEW: Progressive preview generation at data collection milestones
+  useEffect(() => {
+    if (conversationContext?.collected_data) {
+      const dataCompleteness = calculateCompleteness(conversationContext.collected_data);
+      
+      // Trigger preview at 25%, 50%, 75%, 100% thresholds
+      if (dataCompleteness >= 25 && dataCompleteness < 50 && !previewGenerated25) {
+        generateProgressivePreview(conversationContext.collected_data);
+        setPreviewGenerated25(true);
+      } else if (dataCompleteness >= 50 && dataCompleteness < 75 && !previewGenerated50) {
+        generateProgressivePreview(conversationContext.collected_data);
+        setPreviewGenerated50(true);
+      } else if (dataCompleteness >= 75 && dataCompleteness < 100 && !previewGenerated75) {
+        generateProgressivePreview(conversationContext.collected_data);
+        setPreviewGenerated75(true);
+      } else if (dataCompleteness >= 100 && !previewGenerated100) {
+        generateProgressivePreview(conversationContext.collected_data);
+        setPreviewGenerated100(true);
+      }
+    }
+  }, [conversationContext?.collected_data, calculateCompleteness, generateProgressivePreview, previewGenerated25, previewGenerated50, previewGenerated75, previewGenerated100]);
 
   // NEW: Render optimistic instant preview
   const renderOptimisticPreview = () => {
