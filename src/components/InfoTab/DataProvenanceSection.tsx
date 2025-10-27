@@ -1,5 +1,5 @@
-import React from 'react';
-import { Database, CheckCircle, Clock, AlertCircle } from 'lucide-react';
+import React, { useState } from 'react';
+import { Database, CheckCircle, Clock, AlertCircle, ChevronDown, ChevronUp } from 'lucide-react';
 import type { ValuationResponse, ValuationInputData, DataSource as DataSourceType } from '../../types/valuation';
 import { formatCurrency } from '../Results/utils/formatters';
 
@@ -10,6 +10,17 @@ interface DataProvenanceSectionProps {
 
 export const DataProvenanceSection: React.FC<DataProvenanceSectionProps> = ({ result, inputData }) => {
   const isPreviewMode = !result.transparency;
+  const [expandedFactors, setExpandedFactors] = useState<Set<string>>(new Set());
+  
+  const toggleFactor = (factorName: string) => {
+    const newExpanded = new Set(expandedFactors);
+    if (newExpanded.has(factorName)) {
+      newExpanded.delete(factorName);
+    } else {
+      newExpanded.add(factorName);
+    }
+    setExpandedFactors(newExpanded);
+  };
   
   // Get data sources from transparency data or create defaults
   const dataSources: DataSourceType[] = result.transparency?.data_sources || [
@@ -254,6 +265,119 @@ export const DataProvenanceSection: React.FC<DataProvenanceSectionProps> = ({ re
           />
         </div>
       </div>
+
+      {/* NEW: 8-Factor Confidence Breakdown */}
+      {(() => {
+        const confidenceSteps = result.transparency?.calculation_steps?.filter(
+          step => step.description.startsWith("Confidence Factor:")
+        ) || [];
+
+        const overallConfidenceStep = result.transparency?.calculation_steps?.find(
+          step => step.description === "Overall Confidence Score"
+        );
+
+        if (confidenceSteps.length > 0) {
+          return (
+            <div className="mt-8">
+              <h3 className="text-xl font-semibold text-gray-900 mb-4">
+                8-Factor Confidence Breakdown
+              </h3>
+              <p className="text-gray-700 mb-4">
+                Our confidence score is calculated from 8 independent factors, each measuring a different 
+                aspect of data quality and valuation reliability.
+              </p>
+              
+              <div className="space-y-3">
+                {confidenceSteps.map((step, i) => {
+                  const factorName = step.description.replace("Confidence Factor: ", "");
+                  const factorScore = Object.values(step.outputs)[0] as number;
+                  const scoreColor = factorScore >= 85 ? 'text-green-600 bg-green-50' : 
+                                    factorScore >= 70 ? 'text-blue-600 bg-blue-50' : 
+                                    factorScore >= 50 ? 'text-yellow-600 bg-yellow-50' : 'text-red-600 bg-red-50';
+                  const isExpanded = expandedFactors.has(factorName);
+                  
+                  return (
+                    <div
+                      key={i}
+                      className="bg-white border-2 border-gray-200 rounded-lg overflow-hidden hover:border-blue-300 transition-colors"
+                    >
+                      <div
+                        className="p-4 cursor-pointer"
+                        onClick={() => toggleFactor(factorName)}
+                      >
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-3">
+                            <div className={`px-3 py-1 rounded-full font-bold text-xl ${scoreColor}`}>
+                              {factorScore.toFixed(0)}
+                            </div>
+                            <div>
+                              <h4 className="font-semibold text-gray-900">{factorName}</h4>
+                              <p className="text-sm text-gray-600">
+                                {factorScore >= 85 ? 'Excellent' : 
+                                 factorScore >= 70 ? 'Good' : 
+                                 factorScore >= 50 ? 'Moderate' : 'Limited'}
+                              </p>
+                            </div>
+                          </div>
+                          {isExpanded ? (
+                            <ChevronUp className="w-5 h-5 text-gray-400" />
+                          ) : (
+                            <ChevronDown className="w-5 h-5 text-gray-400" />
+                          )}
+                        </div>
+                      </div>
+                      
+                      {isExpanded && (
+                        <div className="px-4 pb-4 border-t border-gray-200 pt-4">
+                          {/* Formula */}
+                          <div className="bg-gray-50 rounded-lg p-4 mb-3">
+                            <div className="text-xs font-semibold text-gray-500 uppercase mb-1">Formula</div>
+                            <div className="font-mono text-sm text-gray-800">{step.formula}</div>
+                          </div>
+                          
+                          {/* Inputs */}
+                          <div className="bg-blue-50 rounded-lg p-4 mb-3">
+                            <div className="text-xs font-semibold text-blue-700 uppercase mb-2">Input Values</div>
+                            <div className="grid grid-cols-2 gap-2 text-sm">
+                              {Object.entries(step.inputs).map(([key, value]) => (
+                                <div key={key} className="flex justify-between">
+                                  <span className="text-gray-600">{key.replace(/_/g, ' ')}:</span>
+                                  <span className="font-semibold text-gray-900">
+                                    {typeof value === 'number' ? value.toFixed(2) : String(value)}
+                                  </span>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                          
+                          {/* Explanation */}
+                          <div className="text-sm text-gray-700 leading-relaxed">
+                            {step.explanation}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+              
+              {/* Overall Calculation */}
+              {overallConfidenceStep && (
+                <div className="mt-6 bg-gradient-to-r from-blue-50 to-purple-50 border-2 border-blue-400 rounded-lg p-6">
+                  <h4 className="font-semibold text-lg text-gray-900 mb-3">Overall Confidence Calculation</h4>
+                  <div className="font-mono text-sm bg-white rounded p-3 mb-3 overflow-x-auto">
+                    {overallConfidenceStep.formula}
+                  </div>
+                  <div className="text-sm text-gray-700">
+                    {overallConfidenceStep.explanation}
+                  </div>
+                </div>
+              )}
+            </div>
+          );
+        }
+        return null;
+      })()}
     </div>
   );
 };

@@ -249,6 +249,61 @@ export const DCFTransparencySection: React.FC<DCFTransparencySectionProps> = ({ 
         </div>
       </ExpandableSection>
 
+      {/* NEW: FCF Projection Assumptions */}
+      {(() => {
+        const fcfAssumptions = result.transparency?.calculation_steps?.find(
+          step => step.description === "FCF Projection Assumptions"
+        );
+
+        if (fcfAssumptions) {
+          return (
+            <div className="bg-blue-50 border-2 border-blue-300 rounded-lg p-6">
+              <h3 className="text-xl font-semibold text-gray-900 mb-4">
+                📊 FCF Projection Assumptions
+              </h3>
+              
+              {/* Key Assumptions Grid */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+                <div className="bg-white rounded-lg p-4 border border-blue-200">
+                  <div className="text-3xl mb-2">💰</div>
+                  <div className="text-xs text-gray-600 mb-1">Base Revenue</div>
+                  <div className="text-lg font-bold text-gray-900">
+                    {formatCurrency(fcfAssumptions.inputs.base_revenue)}
+                  </div>
+                </div>
+                <div className="bg-white rounded-lg p-4 border border-blue-200">
+                  <div className="text-3xl mb-2">📈</div>
+                  <div className="text-xs text-gray-600 mb-1">EBITDA Margin</div>
+                  <div className="text-lg font-bold text-gray-900">
+                    {formatPercent(fcfAssumptions.inputs.base_margin * 100)}
+                  </div>
+                </div>
+                <div className="bg-white rounded-lg p-4 border border-blue-200">
+                  <div className="text-3xl mb-2">🚀</div>
+                  <div className="text-xs text-gray-600 mb-1">Initial Growth</div>
+                  <div className="text-lg font-bold text-green-600">
+                    {formatPercent(fcfAssumptions.inputs.initial_growth_rate * 100)}
+                  </div>
+                </div>
+                <div className="bg-white rounded-lg p-4 border border-blue-200">
+                  <div className="text-3xl mb-2">🎯</div>
+                  <div className="text-xs text-gray-600 mb-1">Terminal Growth</div>
+                  <div className="text-lg font-bold text-blue-600">
+                    {formatPercent(fcfAssumptions.inputs.terminal_growth_rate * 100)}
+                  </div>
+                </div>
+              </div>
+              
+              {/* Detailed Explanation */}
+              <div className="bg-white rounded-lg p-4 text-sm text-gray-700 whitespace-pre-line border border-blue-200">
+                {fcfAssumptions.explanation}
+              </div>
+            </div>
+          );
+        }
+        return null;
+      })()}
+
       {/* FCF Projections */}
       <ExpandableSection
         title="2. Free Cash Flow Projections (10 Years)"
@@ -257,6 +312,58 @@ export const DCFTransparencySection: React.FC<DCFTransparencySectionProps> = ({ 
         onToggle={() => toggleSection('fcf')}
         color="green"
       >
+        {/* NEW: Enhanced FCF Table with Year-by-Year Breakdown */}
+        {(() => {
+          const fcfYearSteps = result.transparency?.calculation_steps?.filter(
+            step => step.description.startsWith("FCF Year") && step.description.includes("Projection")
+          ) || [];
+
+          if (fcfYearSteps.length > 0) {
+            return (
+              <div className="mb-6">
+                <h4 className="font-semibold text-gray-900 mb-3">Year-by-Year FCF Breakdown</h4>
+                <div className="overflow-x-auto">
+                  <table className="w-full border-collapse">
+                    <thead>
+                      <tr className="bg-blue-600 text-white">
+                        <th className="p-3 text-left">Year</th>
+                        <th className="p-3 text-right">Previous FCF</th>
+                        <th className="p-3 text-right">Growth Rate</th>
+                        <th className="p-3 text-right">Projected FCF</th>
+                        <th className="p-3 text-right">Cumulative Growth</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {fcfYearSteps.map((yearStep, i) => (
+                        <tr key={i} className={i % 2 === 0 ? 'bg-gray-50' : 'bg-white'}>
+                          <td className="p-3 font-semibold text-gray-900">Year {yearStep.inputs.year}</td>
+                          <td className="p-3 text-right text-gray-900">
+                            {formatCurrency(yearStep.inputs.previous_fcf)}
+                          </td>
+                          <td className="p-3 text-right">
+                            <span className={`font-semibold ${
+                              yearStep.inputs.growth_rate > 0 ? 'text-green-600' : 'text-red-600'
+                            }`}>
+                              {formatPercent(yearStep.inputs.growth_rate * 100)}
+                            </span>
+                          </td>
+                          <td className="p-3 text-right font-bold text-blue-600">
+                            {formatCurrency(yearStep.outputs.fcf)}
+                          </td>
+                          <td className="p-3 text-right text-gray-700">
+                            {formatPercent(yearStep.outputs.cumulative_growth * 100)}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            );
+          }
+          return null;
+        })()}
+        
         <FCFProjectionTable result={result} inputData={inputData} wacc={wacc} />
       </ExpandableSection>
 

@@ -174,6 +174,82 @@ export const WeightingLogicSection: React.FC<WeightingLogicSectionProps> = ({ re
         </div>
       </div>
 
+      {/* NEW: Dynamic Weighting Decision from Transparency */}
+      {(() => {
+        const weightingStep = result.transparency?.calculation_steps?.find(
+          step => step.description === "Dynamic Weighting Decision"
+        );
+        
+        if (weightingStep && weightingStep.inputs.factors) {
+          return (
+            <div className="bg-gradient-to-r from-blue-50 to-purple-50 border-2 border-blue-400 rounded-lg p-6">
+              <h3 className="text-xl font-semibold text-gray-900 mb-4">
+                Why These Weights?
+              </h3>
+              
+              {/* Weighting Factors */}
+              <div className="space-y-4 mb-6">
+                {weightingStep.inputs.factors.map((factor: any, i: number) => (
+                  <div key={i} className="flex items-center justify-between bg-white rounded-lg p-4 border border-blue-200 hover:border-blue-400 transition-colors">
+                    <div className="flex-1">
+                      <div className="font-semibold text-gray-900">{factor.name}</div>
+                      <div className="text-sm text-gray-600 mt-1">{factor.reason}</div>
+                    </div>
+                    <div className="flex items-center space-x-3">
+                      <div className={`text-2xl font-bold ${
+                        factor.impact > 0 ? 'text-green-600' : 
+                        factor.impact < 0 ? 'text-red-600' : 
+                        'text-gray-500'
+                      }`}>
+                        {factor.impact > 0 ? '+' : ''}{(factor.impact * 100).toFixed(0)}%
+                      </div>
+                      <div className="text-sm text-gray-500 min-w-[100px] text-right">
+                        {factor.impact > 0 ? '→ DCF' : factor.impact < 0 ? '→ Multiples' : 'Neutral'}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              
+              {/* Visual Weight Bars */}
+              <div className="space-y-3 mb-4">
+                <div>
+                  <div className="flex justify-between text-sm mb-1">
+                    <span className="font-semibold text-blue-700">DCF Weight</span>
+                    <span className="font-bold text-blue-900">{(dcfWeight * 100).toFixed(0)}%</span>
+                  </div>
+                  <div className="w-full bg-gray-200 rounded-full h-4">
+                    <div 
+                      className="bg-gradient-to-r from-blue-500 to-blue-600 h-4 rounded-full transition-all duration-500"
+                      style={{ width: `${dcfWeight * 100}%` }}
+                    />
+                  </div>
+                </div>
+                
+                <div>
+                  <div className="flex justify-between text-sm mb-1">
+                    <span className="font-semibold text-purple-700">Multiples Weight</span>
+                    <span className="font-bold text-purple-900">{(multiplesWeight * 100).toFixed(0)}%</span>
+                  </div>
+                  <div className="w-full bg-gray-200 rounded-full h-4">
+                    <div 
+                      className="bg-gradient-to-r from-purple-500 to-purple-600 h-4 rounded-full transition-all duration-500"
+                      style={{ width: `${multiplesWeight * 100}%` }}
+                    />
+                  </div>
+                </div>
+              </div>
+              
+              {/* Explanation */}
+              <div className="text-sm text-gray-700 bg-white rounded p-3 border border-blue-200">
+                {weightingStep.explanation}
+              </div>
+            </div>
+          );
+        }
+        return null;
+      })()}
+
       {/* Factor Analysis */}
       <div className="space-y-4">
         <h3 className="text-lg font-semibold text-gray-900">Factor-by-Factor Analysis</h3>
