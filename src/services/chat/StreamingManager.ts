@@ -29,12 +29,12 @@ export interface StreamingManagerCallbacks {
  * - Timeout handling
  */
 export class StreamingManager {
-  private requestIdRef: React.RefObject<string | null>;
-  private currentStreamingMessageRef: React.RefObject<Message | null>;
+  private requestIdRef: React.MutableRefObject<string | null>;
+  private currentStreamingMessageRef: React.MutableRefObject<Message | null>;
 
   constructor(
-    requestIdRef: React.RefObject<string | null>,
-    currentStreamingMessageRef: React.RefObject<Message | null>
+    requestIdRef: React.MutableRefObject<string | null>,
+    currentStreamingMessageRef: React.MutableRefObject<Message | null>
   ) {
     this.requestIdRef = requestIdRef;
     this.currentStreamingMessageRef = currentStreamingMessageRef;

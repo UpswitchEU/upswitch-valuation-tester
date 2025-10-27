@@ -44,7 +44,7 @@ export interface UserProfile {
 }
 
 export interface ConversationInitializerCallbacks {
-  addMessage: (message: Message) => void;
+  addMessage: (message: Omit<Message, 'id' | 'timestamp'>) => { updatedMessages: Message[], newMessage: Message };
   setMessages: React.Dispatch<React.SetStateAction<Message[]>>;
   user?: UserProfile;
 }
@@ -202,7 +202,7 @@ export const useConversationInitializer = (
               conversation_turn: 1
             }
           };
-          const { newMessage } = callbacks.addMessage(message);
+          callbacks.addMessage(message);
         }
         
       } catch (error) {

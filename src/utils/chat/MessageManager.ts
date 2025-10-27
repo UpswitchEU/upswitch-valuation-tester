@@ -23,12 +23,12 @@ export class MessageManager {
    * 
    * @param messages - Current messages array
    * @param newMessage - Message to add (without id and timestamp)
-   * @returns Updated messages array with new message
+   * @returns Object containing updated messages array and the new message
    */
   addMessage(
     messages: Message[],
     newMessage: Omit<Message, 'id' | 'timestamp'>
-  ): Message[] {
+  ): { updatedMessages: Message[], newMessage: Message } {
     const message: Message = {
       ...newMessage,
       id: this.generateMessageId(),
@@ -41,7 +41,8 @@ export class MessageManager {
       contentLength: message.content.length
     });
     
-    return [...messages, message];
+    const updatedMessages = [...messages, message];
+    return { updatedMessages, newMessage: message };
   }
 
   /**

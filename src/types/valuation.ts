@@ -80,6 +80,17 @@ export interface ValuationRequest {
   reason_for_selling?: string;
   city?: string;
   
+  // NEW: PostgreSQL business type integration
+  business_type_id?: string; // PostgreSQL business type ID
+  business_context?: {
+    dcfPreference?: number; // 0-1: Weight for DCF methodology
+    multiplesPreference?: number; // 0-1: Weight for Multiples methodology
+    ownerDependencyImpact?: number; // 0-1: Key person risk impact
+    keyMetrics?: string[]; // Industry-specific metrics
+    typicalEmployeeRange?: { min: number; max: number };
+    typicalRevenueRange?: { min: number; max: number };
+  };
+  
   // Optional market context overrides
   government_bond_yield?: number;
   long_term_gdp_growth?: number;
@@ -111,9 +122,13 @@ export interface ValuationFormData extends Partial<ValuationRequest> {
   subIndustry?: string;
   employees?: number;
   
-  // Internal preferences (not sent to backend)
+  // Internal preferences (stored locally, sent in business_context)
   _internal_dcf_preference?: number;
   _internal_multiples_preference?: number;
+  _internal_owner_dependency_impact?: number;
+  _internal_key_metrics?: string[];
+  _internal_typical_employee_range?: { min: number; max: number };
+  _internal_typical_revenue_range?: { min: number; max: number };
   
   // Legacy fields for backward compatibility
   revenue?: number;

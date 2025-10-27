@@ -171,7 +171,12 @@ export const ValuationForm: React.FC = () => {
                 generalLogger.info('Business type selected', {
                   id: businessType.id,
                   title: businessType.title,
-                  industryMapping: businessType.industryMapping
+                  industryMapping: businessType.industryMapping,
+                  metadata: {
+                    dcfPreference: businessType.dcfPreference,
+                    multiplesPreference: businessType.multiplesPreference,
+                    ownerDependencyImpact: businessType.ownerDependencyImpact
+                  }
                 });
                 
                 updateFormData({
@@ -179,6 +184,13 @@ export const ValuationForm: React.FC = () => {
                   business_model: businessType.id, // Use business type id as business model
                   industry: businessType.industryMapping || IndustryCode.SERVICES,
                   subIndustry: businessType.category || undefined,
+                  // Store metadata for business context
+                  _internal_dcf_preference: businessType.dcfPreference,
+                  _internal_multiples_preference: businessType.multiplesPreference,
+                  _internal_owner_dependency_impact: businessType.ownerDependencyImpact,
+                  _internal_key_metrics: businessType.keyMetrics,
+                  _internal_typical_employee_range: businessType.typicalEmployeeRange,
+                  _internal_typical_revenue_range: businessType.typicalRevenueRange,
                 });
               }}
               onSuggest={async (suggestion) => {

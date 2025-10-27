@@ -32,7 +32,7 @@ export interface StreamEventHandlerCallbacks {
   setCollectedData: React.Dispatch<React.SetStateAction<Record<string, any>>>;
   setValuationPreview: React.Dispatch<React.SetStateAction<any>>;
   setCalculateOption: React.Dispatch<React.SetStateAction<any>>;
-  addMessage: (message: Message) => void;
+  addMessage: (message: Omit<Message, 'id' | 'timestamp'>) => { updatedMessages: Message[], newMessage: Message };
   trackModelPerformance: (metrics: ModelPerformanceMetrics) => void;
   trackConversationCompletion: (success: boolean, hasValuation: boolean) => void;
   onValuationComplete?: (result: any) => void;
@@ -123,7 +123,7 @@ export class StreamEventHandler {
   /**
    * Handle typing indicator events
    */
-  private handleTyping(data: any): void {
+  private handleTyping(_data: any): void {
     chatLogger.debug('AI typing indicator received');
     // Typing indicator is handled by the typing animation hook
   }
@@ -131,7 +131,7 @@ export class StreamEventHandler {
   /**
    * Handle message start events
    */
-  private handleMessageStart(data: any): void {
+  private handleMessageStart(_data: any): void {
     chatLogger.debug('AI message start received');
     // Message start is handled by the streaming message logic
   }
@@ -469,7 +469,7 @@ export class StreamEventHandler {
         ...(data.metadata || {})
       }
     };
-    const { newMessage } = this.callbacks.addMessage(clarificationMessage);
+    this.callbacks.addMessage(clarificationMessage);
   }
 
   /**

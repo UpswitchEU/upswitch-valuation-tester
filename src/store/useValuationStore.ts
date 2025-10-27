@@ -218,12 +218,24 @@ export const useValuationStore = create<ValuationStore>((set, get) => ({
         use_multiples: true,
         projection_years: 10,
         comparables: formData.comparables || [],
+        // NEW: Include PostgreSQL business type ID and context metadata
+        business_type_id: formData.business_type_id,
+        business_context: formData.business_type_id ? {
+          dcfPreference: formData._internal_dcf_preference,
+          multiplesPreference: formData._internal_multiples_preference,
+          ownerDependencyImpact: formData._internal_owner_dependency_impact,
+          keyMetrics: formData._internal_key_metrics,
+          typicalEmployeeRange: formData._internal_typical_employee_range,
+          typicalRevenueRange: formData._internal_typical_revenue_range,
+        } : undefined,
       };
       
       storeLogger.info('Sending manual valuation request (FREE)', { 
         companyName: request.company_name,
         revenue: request.current_year_data.revenue,
         ebitda: request.current_year_data.ebitda,
+        business_type_id: request.business_type_id,
+        business_context: request.business_context,
         requestData: request
       });
       const response = await backendAPI.calculateManualValuation(request);

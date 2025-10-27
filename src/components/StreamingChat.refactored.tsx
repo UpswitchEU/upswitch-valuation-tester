@@ -26,7 +26,7 @@ import {
 import { useStreamingChatState, Message } from '../hooks/useStreamingChatState';
 import { StreamEventHandler } from '../services/chat/StreamEventHandler';
 import { InputValidator } from '../utils/validation/InputValidator';
-import { useConversationInitializer } from '../hooks/useConversationInitializer';
+import { useConversationInitializer, UserProfile } from '../hooks/useConversationInitializer';
 import { StreamingManager } from '../services/chat/StreamingManager';
 import { useConversationMetrics } from '../hooks/useConversationMetrics';
 import { MessageManager } from '../utils/chat/MessageManager';
@@ -84,15 +84,19 @@ export const StreamingChatRefactored: React.FC<StreamingChatProps> = ({
   // Use extracted state management hook
   const state = useStreamingChatState(sessionId, userId);
   
+  // Initialize services (must be before hooks that use them)
+  const inputValidator = useMemo(() => new InputValidator(), []);
+  const messageManager = useMemo(() => new MessageManager(), []);
+  
   // Use extracted conversation initializer
   const { isInitializing } = useConversationInitializer(sessionId, userId, {
     addMessage: (message) => {
       const { updatedMessages, newMessage } = messageManager.addMessage(state.messages, message);
       state.setMessages(updatedMessages);
-      return newMessage;
+      return { updatedMessages, newMessage };
     },
     setMessages: state.setMessages,
-    user
+    user: user as UserProfile | undefined
   });
   
   // Use extracted metrics tracking
@@ -107,10 +111,6 @@ export const StreamingChatRefactored: React.FC<StreamingChatProps> = ({
   });
   
   const loadingMessage: string = useLoadingMessage();
-  
-  // Initialize services
-  const inputValidator = useMemo(() => new InputValidator(), []);
-  const messageManager = useMemo(() => new MessageManager(), []);
   const streamingManager = useMemo(() => new StreamingManager(
     state.refs.requestIdRef,
     state.refs.currentStreamingMessageRef
@@ -157,7 +157,7 @@ export const StreamingChatRefactored: React.FC<StreamingChatProps> = ({
     addMessage: (message) => {
       const { updatedMessages, newMessage } = messageManager.addMessage(state.messages, message);
       state.setMessages(updatedMessages);
-      return newMessage;
+      return { updatedMessages, newMessage };
     },
     trackModelPerformance,
     trackConversationCompletion,
@@ -200,7 +200,7 @@ export const StreamingChatRefactored: React.FC<StreamingChatProps> = ({
   const addMessage = useCallback((message: Omit<Message, 'id' | 'timestamp'>) => {
     const { updatedMessages, newMessage } = messageManager.addMessage(state.messages, message);
     state.setMessages(updatedMessages);
-    return newMessage;
+    return { updatedMessages, newMessage };
   }, [state.messages, state.setMessages, messageManager]);
   
   // Update streaming message helper

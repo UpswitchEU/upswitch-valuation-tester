@@ -1,0 +1,51 @@
+
+> upswitch-valuation-tester@1.0.0 build
+> tsc && vite build
+
+src/components/AIAssistedValuation.tsx(237,30): error TS2339: Property 'collected_data' does not exist on type 'ConversationContext'.
+src/components/AIAssistedValuation.tsx(238,74): error TS2339: Property 'collected_data' does not exist on type 'ConversationContext'.
+src/components/AIAssistedValuation.tsx(242,56): error TS2339: Property 'collected_data' does not exist on type 'ConversationContext'.
+src/components/AIAssistedValuation.tsx(245,56): error TS2339: Property 'collected_data' does not exist on type 'ConversationContext'.
+src/components/AIAssistedValuation.tsx(248,56): error TS2339: Property 'collected_data' does not exist on type 'ConversationContext'.
+src/components/AIAssistedValuation.tsx(251,56): error TS2339: Property 'collected_data' does not exist on type 'ConversationContext'.
+src/components/AIAssistedValuation.tsx(255,28): error TS2339: Property 'collected_data' does not exist on type 'ConversationContext'.
+src/components/AIAssistedValuation.tsx(255,44): error TS2448: Block-scoped variable 'calculateCompleteness' used before its declaration.
+src/components/AIAssistedValuation.tsx(255,44): error TS2454: Variable 'calculateCompleteness' is used before being assigned.
+src/components/AIAssistedValuation.tsx(255,67): error TS2448: Block-scoped variable 'generateProgressivePreview' used before its declaration.
+src/components/AIAssistedValuation.tsx(255,67): error TS2454: Variable 'generateProgressivePreview' is used before being assigned.
+src/components/AIAssistedValuation.tsx(358,9): error TS2741: Property 'year' is missing in type '{ revenue: number; ebitda: any; }' but required in type 'YearDataInput'.
+src/components/AIAssistedValuation.tsx(360,76): error TS2339: Property 'ebitda' does not exist on type 'Partial<ValuationRequest>'.
+src/components/SearchableBusinessTypeCombobox.tsx(241,69): error TS6133: 'categoryIndex' is declared but its value is never read.
+src/components/SearchableBusinessTypeCombobox.tsx(249,37): error TS6133: 'typeIndex' is declared but its value is never read.
+src/components/StreamingChat.refactored.tsx(90,15): error TS2339: Property 'updatedMessages' does not exist on type 'Message[]'.
+src/components/StreamingChat.refactored.tsx(90,32): error TS2339: Property 'newMessage' does not exist on type 'Message[]'.
+src/components/StreamingChat.refactored.tsx(95,5): error TS2322: Type 'User | null' is not assignable to type 'UserProfile | undefined'.
+  Type 'null' is not assignable to type 'UserProfile | undefined'.
+src/components/StreamingChat.refactored.tsx(158,15): error TS2339: Property 'updatedMessages' does not exist on type 'Message[]'.
+src/components/StreamingChat.refactored.tsx(158,32): error TS2339: Property 'newMessage' does not exist on type 'Message[]'.
+src/components/StreamingChat.refactored.tsx(201,13): error TS2339: Property 'updatedMessages' does not exist on type 'Message[]'.
+src/components/StreamingChat.refactored.tsx(201,30): error TS2339: Property 'newMessage' does not exist on type 'Message[]'.
+src/components/ValuationForm.tsx(12,1): error TS6133: 'BusinessType' is declared but its value is never read.
+src/components/ValuationForm.tsx(19,3): error TS6133: 'getSubIndustryOptions' is declared but its value is never read.
+src/components/ValuationForm.tsx(31,26): error TS6133: 'businessTypeOptions' is declared but its value is never read.
+src/hooks/useConversationInitializer.ts(205,17): error TS6133: 'newMessage' is declared but its value is never read.
+src/hooks/useConversationInitializer.ts(205,19): error TS2339: Property 'newMessage' does not exist on type 'void'.
+src/hooks/useConversationInitializer.ts(205,55): error TS2345: Argument of type 'Omit<Message, "id" | "timestamp">' is not assignable to parameter of type 'Message'.
+  Type 'Omit<Message, "id" | "timestamp">' is missing the following properties from type 'Message': id, timestamp
+src/hooks/useConversationInitializer.ts(228,34): error TS2345: Argument of type 'Omit<Message, "id" | "timestamp">' is not assignable to parameter of type 'Message'.
+  Type 'Omit<Message, "id" | "timestamp">' is missing the following properties from type 'Message': id, timestamp
+src/hooks/useConversationInitializer.ts(284,32): error TS2345: Argument of type 'Omit<Message, "id" | "timestamp">' is not assignable to parameter of type 'Message'.
+  Type 'Omit<Message, "id" | "timestamp">' is missing the following properties from type 'Message': id, timestamp
+src/hooks/useConversationInitializer.ts(308,30): error TS2345: Argument of type 'Omit<Message, "id" | "timestamp">' is not assignable to parameter of type 'Message'.
+  Type 'Omit<Message, "id" | "timestamp">' is missing the following properties from type 'Message': id, timestamp
+src/services/chat/StreamEventHandler.ts(126,24): error TS6133: 'data' is declared but its value is never read.
+src/services/chat/StreamEventHandler.ts(134,30): error TS6133: 'data' is declared but its value is never read.
+src/services/chat/StreamEventHandler.ts(472,11): error TS6133: 'newMessage' is declared but its value is never read.
+src/services/chat/StreamEventHandler.ts(472,13): error TS2339: Property 'newMessage' does not exist on type 'void'.
+src/services/chat/StreamEventHandler.ts(472,54): error TS2345: Argument of type 'Omit<Message, "id" | "timestamp">' is not assignable to parameter of type 'Message'.
+  Type 'Omit<Message, "id" | "timestamp">' is missing the following properties from type 'Message': id, timestamp
+src/services/chat/StreamingManager.ts(75,23): error TS2540: Cannot assign to 'current' because it is a read-only property.
+src/services/chat/StreamingManager.ts(134,37): error TS2540: Cannot assign to 'current' because it is a read-only property.
+src/services/chat/StreamingManager.ts(182,25): error TS2540: Cannot assign to 'current' because it is a read-only property.
+src/services/chat/StreamingManager.ts(302,23): error TS2540: Cannot assign to 'current' because it is a read-only property.
+src/services/chat/StreamingManager.ts(316,37): error TS2540: Cannot assign to 'current' because it is a read-only property.
