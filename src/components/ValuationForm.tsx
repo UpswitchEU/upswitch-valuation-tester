@@ -11,8 +11,6 @@ import { SearchableBusinessTypeCombobox } from './SearchableBusinessTypeCombobox
 import { suggestionService } from '../services/businessTypeSuggestionApi';
 import { generalLogger } from '../utils/logger';
 import toast from 'react-hot-toast';
-import WaitlistForm from './WaitlistForm';
-import { analytics } from '../services/analytics';
 import { 
   getIndustryGuidance, 
   validateEbitdaMargin, 
@@ -441,45 +439,6 @@ export const ValuationForm: React.FC = () => {
                 </div>
               );
             })()}
-            
-            {/* EBITDA Normalization Educational Alert */}
-            <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-              <div className="flex items-start space-x-3">
-                <div className="flex-shrink-0">
-                  <div className="w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center">
-                    <span className="text-blue-600 text-sm">💡</span>
-                  </div>
-                </div>
-                <div className="flex-1">
-                  <h4 className="text-sm font-semibold text-blue-900 mb-2">
-                    Is your EBITDA normalized?
-                  </h4>
-                  <p className="text-sm text-blue-800 mb-3">
-                    Many SME owners report EBITDA that includes personal expenses, above/below market owner salary, 
-                    one-time costs, or related party transactions. Normalizing EBITDA typically increases valuation by 5-15%.
-                  </p>
-                  <div className="flex items-center space-x-4">
-                    <a 
-                      href="/guides/ebitda-normalization" 
-                      target="_blank" 
-                      rel="noopener noreferrer"
-                      className="text-sm text-blue-600 hover:text-blue-800 font-medium underline"
-                      onClick={() => analytics.trackEbitdaInterest('learn_more_clicked')}
-                    >
-                      Learn More About EBITDA Normalization →
-                    </a>
-                  </div>
-                  
-                  {/* Waitlist Form */}
-                  <div className="mt-4">
-                    <WaitlistForm
-                      feature="AI-Guided EBITDA Normalization"
-                      description="Upload your P&L and let our AI guide you through normalization"
-                    />
-                  </div>
-                </div>
-              </div>
-            </div>
           </div>
         </div>
       </div>

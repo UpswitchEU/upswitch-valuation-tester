@@ -174,14 +174,14 @@ export const SearchableBusinessTypeCombobox: React.FC<SearchableBusinessTypeComb
   return (
     <div ref={wrapperRef} className="relative">
       {/* Label */}
-      <label className="block text-sm font-semibold text-zinc-200 mb-2">
+      <label className="block text-sm font-semibold text-gray-700 mb-2">
         Business Type {required && <span className="text-red-400">*</span>}
       </label>
 
       {/* Input */}
       <div className="relative">
         <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-          <Search className="h-5 w-5 text-zinc-400" />
+          <Search className="h-5 w-5 text-gray-500" />
         </div>
         
         <input
@@ -198,7 +198,7 @@ export const SearchableBusinessTypeCombobox: React.FC<SearchableBusinessTypeComb
           placeholder={placeholder}
           disabled={disabled || loading}
           required={required}
-          className="w-full pl-10 pr-10 py-2.5 bg-zinc-800 border border-zinc-700 rounded-lg text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed"
+          className="w-full h-14 pl-10 pr-10 pt-6 pb-2 bg-white border border-gray-300 rounded-xl text-base text-black placeholder:text-gray-400 focus:outline-none focus:border-gray-900 focus:ring-0 hover:border-gray-500 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
         />
 
         {/* Clear button */}
@@ -208,31 +208,31 @@ export const SearchableBusinessTypeCombobox: React.FC<SearchableBusinessTypeComb
             onClick={handleClear}
             className="absolute inset-y-0 right-10 flex items-center pr-2"
           >
-            <X className="h-4 w-4 text-zinc-400 hover:text-zinc-200" />
+            <X className="h-4 w-4 text-gray-400 hover:text-gray-600" />
           </button>
         )}
 
         {/* Dropdown indicator */}
         <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
-          <ChevronDown className={`h-5 w-5 text-zinc-400 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+          <ChevronDown className={`h-5 w-5 text-gray-500 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
         </div>
       </div>
 
       {/* Loading state */}
       {loading && (
-        <div className="mt-2 text-sm text-zinc-400">
+        <div className="mt-2 text-sm text-gray-500">
           Loading business types...
         </div>
       )}
 
       {/* Dropdown */}
       {isOpen && !loading && (
-        <div className="absolute z-50 w-full mt-2 bg-zinc-800 border border-zinc-700 rounded-lg shadow-xl max-h-96 overflow-y-auto">
+        <div className="absolute z-50 w-full mt-2 bg-white border border-gray-300 rounded-lg shadow-xl max-h-96 overflow-y-auto">
           {filteredTypes.length > 0 ? (
             <>
               {/* Popular types section (when no query) */}
               {!query && businessTypes.filter(bt => bt.popular).length > 0 && (
-                <div className="sticky top-0 bg-zinc-900 px-4 py-2 text-xs font-semibold text-zinc-400 uppercase tracking-wide border-b border-zinc-700">
+                <div className="sticky top-0 bg-gray-50 px-4 py-2 text-xs font-semibold text-gray-600 uppercase tracking-wide border-b border-gray-200">
                   Popular Types
                 </div>
               )}
@@ -241,7 +241,7 @@ export const SearchableBusinessTypeCombobox: React.FC<SearchableBusinessTypeComb
               {Object.entries(groupedTypes).map(([category, types]) => (
                 <div key={category}>
                   {query && (
-                    <div className="sticky top-0 bg-zinc-900 px-4 py-2 text-xs font-semibold text-zinc-400 uppercase tracking-wide border-b border-zinc-700">
+                    <div className="sticky top-0 bg-gray-50 px-4 py-2 text-xs font-semibold text-gray-600 uppercase tracking-wide border-b border-gray-200">
                       {category}
                     </div>
                   )}
@@ -258,8 +258,8 @@ export const SearchableBusinessTypeCombobox: React.FC<SearchableBusinessTypeComb
                         onMouseEnter={() => setHighlightedIndex(globalIndex)}
                         className={`w-full text-left px-4 py-3 transition-colors ${
                           isHighlighted
-                            ? 'bg-primary-600 text-white'
-                            : 'text-zinc-200 hover:bg-zinc-700'
+                            ? 'bg-blue-50 text-gray-900'
+                            : 'text-gray-900 hover:bg-gray-100'
                         }`}
                       >
                         <div className="flex items-start gap-3">
@@ -267,7 +267,7 @@ export const SearchableBusinessTypeCombobox: React.FC<SearchableBusinessTypeComb
                           <div className="flex-1 min-w-0">
                             <div className="font-semibold">{type.title}</div>
                             <div className={`text-sm mt-0.5 line-clamp-2 ${
-                              isHighlighted ? 'text-white/90' : 'text-zinc-400'
+                              isHighlighted ? 'text-gray-700' : 'text-gray-500'
                             }`}>
                               {type.short_description || type.description}
                             </div>
@@ -287,7 +287,7 @@ export const SearchableBusinessTypeCombobox: React.FC<SearchableBusinessTypeComb
           ) : (
             /* No results - show suggestion option */
             <div className="px-4 py-8 text-center">
-              <p className="text-zinc-400 mb-4">
+              <p className="text-gray-500 mb-4">
                 No business types found for "{query}"
               </p>
               {onSuggest && query.trim() && (
@@ -307,11 +307,11 @@ export const SearchableBusinessTypeCombobox: React.FC<SearchableBusinessTypeComb
 
       {/* Selected type info */}
       {selectedType && !isOpen && (
-        <div className="mt-2 text-sm text-zinc-400 bg-zinc-800/50 border border-zinc-700 rounded-lg p-3">
+        <div className="mt-2 text-sm text-gray-500 bg-gray-50 border border-gray-200 rounded-lg p-3">
           <div className="flex items-start gap-2">
             <span className="text-lg">{selectedType.icon}</span>
             <div className="flex-1">
-              <div className="text-zinc-200 font-medium">{selectedType.description}</div>
+              <div className="text-gray-700 font-medium">{selectedType.description}</div>
               <div className="mt-1 text-xs">
                 <span className="font-semibold">Industry:</span> {selectedType.industryMapping}
                 {selectedType.category && (
