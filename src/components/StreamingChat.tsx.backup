@@ -1,21 +1,8 @@
 /**
  * StreamingChat Component - Real-time AI conversation with streaming responses
  * Inspired by IlaraAI Mercury MCPChatUI architecture
- * 
- * REFACTORED: This file now exports the refactored version for better maintainability.
- * The original implementation is preserved in StreamingChat.tsx.backup
  */
 
-// Export refactored version as default
-export { StreamingChatRefactored as StreamingChat } from './StreamingChat.refactored';
-
-// Re-export types
-export type { StreamingChatProps } from './StreamingChat.refactored';
-
-// Export original implementation for comparison
-export { StreamingChatOriginal };
-
-// Legacy implementation below (preserved for reference)
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { Loader2, Bot, User, CheckCircle } from 'lucide-react';
 import { AI_CONFIG } from '../config';
@@ -223,7 +210,7 @@ interface StreamingChatProps {
   disabled?: boolean;
 }
 
-const StreamingChatOriginal: React.FC<StreamingChatProps> = ({
+export const StreamingChat: React.FC<StreamingChatProps> = ({
   sessionId,
   userId,
   onMessageComplete,
