@@ -3,6 +3,7 @@ import type { ValuationResponse, ValuationInputData } from '../../types/valuatio
 import { InputDataSection } from './InputDataSection';
 import { DCFTransparencySection } from './DCFTransparencySection';
 import { MultiplesTransparencySection } from './MultiplesTransparencySection';
+import { OwnerDependencySection } from './OwnerDependencySection';
 import { WeightingLogicSection } from './WeightingLogicSection';
 import { RangeCalculationSection } from './RangeCalculationSection';
 import { DataProvenanceSection } from './DataProvenanceSection';
@@ -77,6 +78,14 @@ export const TransparentCalculationView: React.FC<TransparentCalculationViewProp
       {/* Section 4: Methodology Weighting Logic */}
       <div id="weighting-logic">
         <WeightingLogicSection result={result} inputData={inputData} />
+      </div>
+
+      {/* Section divider */}
+      <div className="border-t-4 border-gray-300"></div>
+
+      {/* Section 4.5: Owner Dependency Analysis (12 factors) */}
+      <div id="owner-dependency">
+        <OwnerDependencySection result={result} />
       </div>
 
       {/* Section divider */}

@@ -213,6 +213,31 @@ export interface ValuationResponse {
   // Transparency data
   transparency?: TransparencyData;
   
+  // Owner Dependency Assessment (Phase 4: 12-factor analysis)
+  owner_dependency_result?: {
+    factors: {
+      client_concentration: string;
+      operational_knowledge: string;
+      sales_relationship: string;
+      technical_expertise: string;
+      industry_network: string;
+      decision_making: string;
+      brand_reputation: string;
+      process_documentation: string;
+      team_capability: string;
+      succession_planning: string;
+      business_scalability: string;
+      contract_transferability: string;
+    };
+    overall_score: number;
+    risk_level: string;
+    valuation_adjustment: number;
+    explanation: string;
+    key_risks: string[];
+    recommendations: string[];
+  };
+  owner_dependency_adjustment?: number;
+  
   // Methodology
   primary_method?: string;
   methodology?: string;

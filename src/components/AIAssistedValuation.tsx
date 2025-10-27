@@ -6,6 +6,8 @@ import { StreamingChat } from './StreamingChat';
 import { LiveValuationReport } from './LiveValuationReport';
 // Progressive report component - now implemented
 import { ProgressiveValuationReport } from './ProgressiveValuationReport';
+// NEW: HTML Preview component (IlaraAI-style)
+import { HTMLPreviewPanel } from './HTMLPreviewPanel';
 import { ErrorBoundary } from './ErrorBoundary';
 import { ValuationToolbar } from './ValuationToolbar';
 import { ValuationInfoPanel } from './ValuationInfoPanel';
@@ -146,6 +148,15 @@ export const AIAssistedValuation: React.FC<AIAssistedValuationProps> = ({ report
   const [finalReportHtml, setFinalReportHtml] = useState<string>('');
   const [finalValuationId, setFinalValuationId] = useState<string>('');
   
+  // HTML preview state for IlaraAI-style preview
+  const [previewHtml, setPreviewHtml] = useState<string>('');
+  const [previewProgress, setPreviewProgress] = useState<number>(0);
+  const [isGeneratingPreview, setIsGeneratingPreview] = useState(false);
+  const [previewGenerated25, setPreviewGenerated25] = useState(false);
+  const [previewGenerated50, setPreviewGenerated50] = useState(false);
+  const [previewGenerated75, setPreviewGenerated75] = useState(false);
+  const [previewGenerated100, setPreviewGenerated100] = useState(false);
+  
   // Debug: Log final valuation ID when it changes
   useEffect(() => {
     if (finalValuationId) {
@@ -205,6 +216,28 @@ export const AIAssistedValuation: React.FC<AIAssistedValuationProps> = ({ report
       console.warn('Failed to save panel width:', error);
     }
   }, [leftPanelWidth]);
+
+  // NEW: Progressive preview generation at data collection milestones
+  useEffect(() => {
+    if (conversationContext?.collected_data) {
+      const dataCompleteness = calculateCompleteness(conversationContext.collected_data);
+      
+      // Trigger preview at 25%, 50%, 75%, 100% thresholds
+      if (dataCompleteness >= 25 && dataCompleteness < 50 && !previewGenerated25) {
+        generateProgressivePreview(conversationContext.collected_data);
+        setPreviewGenerated25(true);
+      } else if (dataCompleteness >= 50 && dataCompleteness < 75 && !previewGenerated50) {
+        generateProgressivePreview(conversationContext.collected_data);
+        setPreviewGenerated50(true);
+      } else if (dataCompleteness >= 75 && dataCompleteness < 100 && !previewGenerated75) {
+        generateProgressivePreview(conversationContext.collected_data);
+        setPreviewGenerated75(true);
+      } else if (dataCompleteness >= 100 && !previewGenerated100) {
+        generateProgressivePreview(conversationContext.collected_data);
+        setPreviewGenerated100(true);
+      }
+    }
+  }, [conversationContext?.collected_data, calculateCompleteness, generateProgressivePreview, previewGenerated25, previewGenerated50, previewGenerated75, previewGenerated100]);
   
   // Resize handler with snap-to-default behavior (matching Ilara)
   const handleResize = useCallback((newWidth: number) => {
@@ -287,12 +320,57 @@ export const AIAssistedValuation: React.FC<AIAssistedValuationProps> = ({ report
     // IMMEDIATE: Update progress indicator
     const newProgress = Object.keys({ ...collectedData, ...data }).length;
     setDataCollectionProgress(newProgress);
-    
     // IMMEDIATE: Show instant preview if this is the first data
     if (Object.keys(collectedData).length === 0) {
       setShowInstantPreview(true);
     }
   }, [collectedData]);
+
+  // NEW: Progressive HTML preview generation (IlaraAI-style)
+  const generateProgressivePreview = useCallback(async (collectedData: Partial<ValuationRequest>) => {
+    setIsGeneratingPreview(true);
+    try {
+      console.log('Generating progressive preview with data:', collectedData);
+      
+      // Convert collected data to ValuationRequest format
+      const previewRequest: ValuationRequest = {
+        company_name: collectedData.company_name || 'Unknown Company',
+        industry: collectedData.industry || 'services',
+        country_code: collectedData.country_code || 'BE',
+        business_model: collectedData.business_model || 'services',
+        founding_year: collectedData.founding_year || new Date().getFullYear() - 5,
+        number_of_employees: collectedData.number_of_employees || 10,
+        current_year_data: {
+          revenue: collectedData.current_year_data?.revenue || collectedData.revenue || 0,
+          ebitda: collectedData.current_year_data?.ebitda || collectedData.ebitda || 0
+        },
+        historical_years_data: collectedData.historical_years_data || []
+      };
+
+      const response = await backendAPI.generatePreviewHtml(previewRequest);
+      setPreviewHtml(response.html);
+      setPreviewProgress(response.completeness_percent);
+      
+      console.log('Progressive preview generated:', {
+        htmlLength: response.html.length,
+        completeness: response.completeness_percent
+      });
+    } catch (error) {
+      console.error('Progressive preview generation failed:', error);
+    } finally {
+      setIsGeneratingPreview(false);
+    }
+  }, []);
+
+  // Calculate data completeness percentage
+  const calculateCompleteness = useCallback((data: Record<string, any>): number => {
+    const requiredFields = ['company_name', 'revenue', 'ebitda', 'industry', 'country_code'];
+    const collectedFields = requiredFields.filter(field => {
+      const value = data[field] || data.current_year_data?.[field];
+      return value !== undefined && value !== null && value !== '';
+    });
+    return Math.round((collectedFields.length / requiredFields.length) * 100);
+  }, []);
 
   // NEW: Handle valuation preview events
   const handleValuationPreview = useCallback((preview: any) => {
@@ -1074,7 +1152,14 @@ export const AIAssistedValuation: React.FC<AIAssistedValuationProps> = ({ report
               {/* Show optimistic preview first if available */}
               {renderOptimisticPreview()}
               
-              {reportSections.length > 0 || finalReportHtml ? (
+              {/* NEW: HTML Preview (IlaraAI-style) */}
+              {previewHtml ? (
+                <HTMLPreviewPanel
+                  htmlContent={previewHtml}
+                  isGenerating={isGeneratingPreview}
+                  progress={previewProgress}
+                />
+              ) : reportSections.length > 0 || finalReportHtml ? (
                 <ProgressiveValuationReport
                   sections={reportSections}
                   phase={reportPhase}

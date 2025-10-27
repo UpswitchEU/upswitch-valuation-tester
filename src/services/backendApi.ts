@@ -177,6 +177,41 @@ class BackendAPI {
   }
 
   /**
+   * Generate HTML preview for AI-guided valuation (FREE - no credit deduction)
+   */
+  async generatePreviewHtml(data: ValuationRequest): Promise<{ html: string; completeness_percent: number }> {
+    try {
+      console.log('Generating HTML preview for:', {
+        company_name: data.company_name,
+        revenue: data.current_year_data?.revenue,
+        ebitda: data.current_year_data?.ebitda
+      });
+
+      // Call Node.js backend for HTML preview (no credit deduction)
+      const response = await this.client.post('/api/valuations/calculate/ai-guided/preview', data);
+      
+      console.log('HTML preview response:', {
+        success: response.data.success,
+        htmlLength: response.data.data?.html?.length || 0,
+        completeness: response.data.data?.completeness_percent
+      });
+      
+      return response.data.data; // Extract nested data from { success, data, message }
+    } catch (error: any) {
+      console.error('HTML preview generation failed:', error);
+      
+      // Enhanced error handling
+      if (error.response?.data?.error) {
+        throw new Error(`Preview error: ${error.response.data.error}`);
+      } else if (error.response?.status) {
+        throw new Error(`Preview error: ${error.response.status} ${error.response.statusText}`);
+      } else {
+        throw new Error(`HTML preview generation failed: ${error.message}`);
+      }
+    }
+  }
+
+  /**
    * Health check
    */
   async health(): Promise<{ status: string }> {
