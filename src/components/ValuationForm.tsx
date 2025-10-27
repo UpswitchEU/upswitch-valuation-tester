@@ -6,8 +6,7 @@ import { debounce } from '../utils/debounce';
 import { TARGET_COUNTRIES } from '../config/countries';
 import { useBusinessTypes } from '../hooks/useBusinessTypes';
 import { IndustryCode } from '../types/valuation';
-import { CustomInputField, CustomNumberInputField, CustomDropdown, HistoricalDataInputs } from './forms';
-import { SearchableBusinessTypeCombobox } from './SearchableBusinessTypeCombobox';
+import { CustomInputField, CustomNumberInputField, CustomDropdown, HistoricalDataInputs, CustomBusinessTypeSearch } from './forms';
 import { suggestionService } from '../services/businessTypeSuggestionApi';
 import { generalLogger } from '../utils/logger';
 import toast from 'react-hot-toast';
@@ -162,7 +161,7 @@ export const ValuationForm: React.FC = () => {
 
           {/* Business Type Selector - replaces Industry, Sub-Industry, and Business Model */}
           <div className="@4xl:col-span-2">
-            <SearchableBusinessTypeCombobox
+            <CustomBusinessTypeSearch
               value={formData.business_type_id}
               businessTypes={businessTypes}
               onChange={(businessType) => {
