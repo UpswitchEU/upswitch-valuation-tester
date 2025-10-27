@@ -122,7 +122,7 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
   ), [state.refs.requestIdRef, state.refs.currentStreamingMessageRef]);
   
   // Create event handler with all callbacks
-  const eventHandler = useMemo(() => new StreamEventHandler({
+  const eventHandler = useMemo(() => new StreamEventHandler(sessionId, {
     updateStreamingMessage: (content: string, isComplete: boolean = false) => {
       if (!state.refs.currentStreamingMessageRef.current?.id) {
         chatLogger.warn('No current streaming message to update');
@@ -169,6 +169,7 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
     onProgressUpdate,
     onHtmlPreviewUpdate
   }), [
+    sessionId,
     state.messages,
     state.setMessages,
     state.setIsStreaming,
@@ -176,6 +177,7 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
     state.setValuationPreview,
     state.setCalculateOption,
     messageManager,
+    complete,
     trackModelPerformance,
     trackConversationCompletion,
     onValuationComplete,
@@ -231,7 +233,7 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
     state.setInput('');
     
     // Validate input
-    const validation = await inputValidator.validateInput(userInput, sessionId);
+    const validation = await inputValidator.validateInput(userInput, state.messages, sessionId);
     if (!validation.is_valid) {
       chatLogger.warn('Input validation failed', { 
         sessionId, 
@@ -257,9 +259,24 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
       sessionId,
       userInput,
       userId,
-      eventHandler.handleEvent.bind(eventHandler)
+      {
+        setIsStreaming: state.setIsStreaming,
+        addMessage,
+        updateStreamingMessage,
+        onContextUpdate: (context: any) => {
+          // Handle context updates if needed
+          onHtmlPreviewUpdate?.(context.html || '', context.preview_type || 'progressive');
+        },
+        extractBusinessModelFromInput: (_input: string) => null,
+        extractFoundingYearFromInput: (_input: string) => null
+      },
+      eventHandler.handleEvent.bind(eventHandler),
+      (error: Error) => {
+        chatLogger.error('Streaming error', { error: error.message, sessionId });
+        state.setIsStreaming(false);
+      }
     );
-  }, [state.input, state.isStreaming, disabled, sessionId, userId, inputValidator, addMessage, trackConversationCompletion, streamingManager, eventHandler]);
+  }, [state.input, state.isStreaming, state.setIsStreaming, disabled, sessionId, userId, inputValidator, addMessage, updateStreamingMessage, onHtmlPreviewUpdate, trackConversationCompletion, streamingManager, eventHandler]);
   
   // Handle input change
   const handleInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
@@ -304,9 +321,7 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
     if (state.messages.length === 0) {
       return {
         type: 'info' as const,
-        title: 'Welcome!',
-        message: 'I\'ll help you get a business valuation. Let\'s start with some basic information about your company.',
-        icon: '💡'
+        message: '💡 Welcome! I\'ll help you get a business valuation. Let\'s start with some basic information about your company.'
       };
     }
     
@@ -314,9 +329,7 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
     if (lastMessage?.type === 'ai' && lastMessage.metadata?.collected_field) {
       return {
         type: 'insight' as const,
-        title: 'Data Collection',
-        message: `We're collecting information about your ${lastMessage.metadata.collected_field}. This helps us provide an accurate valuation.`,
-        icon: '📊'
+        message: `📊 We're collecting information about your ${lastMessage.metadata.collected_field}. This helps us provide an accurate valuation.`
       };
     }
     
@@ -482,9 +495,7 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
         {contextualTip && (
           <ContextualTip
             type={contextualTip.type}
-            title={contextualTip.title}
             message={contextualTip.message}
-            icon={contextualTip.icon}
           />
         )}
         

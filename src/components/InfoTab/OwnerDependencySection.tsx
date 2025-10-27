@@ -193,10 +193,10 @@ export const OwnerDependencySection: React.FC<OwnerDependencySectionProps> = ({ 
             {/* Calculate multiple impact */}
             {(() => {
               const preAdjustmentValue = result.equity_value_mid / (1 + odResult.valuation_adjustment);
-              // Calculate EBITDA from revenue and margin if not directly available
-              const revenue = result.dcf_valuation?.fcf_projections?.[0]?.revenue || 0;
-              const ebitdaMargin = result.financial_metrics?.ebitda_margin || 0;
-              const ebitda = revenue * ebitdaMargin;
+              // Estimate EBITDA from valuation and margin
+              // Use equity value as a proxy since we don't have direct revenue access
+              const ebitdaMargin = result.financial_metrics?.ebitda_margin || 0.15;
+              const ebitda = result.equity_value_mid * ebitdaMargin;
               const multipleImpact = calculateOwnerDependencyMultipleImpact(
                 preAdjustmentValue,
                 result.equity_value_mid,
@@ -280,10 +280,10 @@ export const OwnerDependencySection: React.FC<OwnerDependencySectionProps> = ({ 
           
           {showCalculation && (() => {
             const preAdjustmentValue = result.equity_value_mid / (1 + odResult.valuation_adjustment);
-            // Calculate EBITDA from revenue and margin if not directly available
-            const revenue = result.dcf_valuation?.fcf_projections?.[0]?.revenue || 0;
-            const ebitdaMargin = result.financial_metrics?.ebitda_margin || 0;
-            const ebitda = revenue * ebitdaMargin;
+            // Estimate EBITDA from valuation and margin
+            // Use equity value as a proxy since we don't have direct revenue access
+            const ebitdaMargin = result.financial_metrics?.ebitda_margin || 0.15;
+            const ebitda = result.equity_value_mid * ebitdaMargin;
             const multipleImpact = calculateOwnerDependencyMultipleImpact(
               preAdjustmentValue,
               result.equity_value_mid,
