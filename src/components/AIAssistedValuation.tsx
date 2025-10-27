@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 // import { useNavigate } from 'react-router-dom';
-import { CheckCircle, Save, Building2, X } from 'lucide-react';
+import { CheckCircle, Save, Building2 } from 'lucide-react';
 import { PANEL_CONSTRAINTS, MOBILE_BREAKPOINT } from '../constants/panelConstants';
 import { StreamingChat } from './StreamingChat';
 import { LiveValuationReport } from './LiveValuationReport';
@@ -15,8 +15,6 @@ import { FullScreenModal } from './FullScreenModal';
 import { OutOfCreditsModal } from './OutOfCreditsModal';
 import { ResizableDivider } from './ResizableDivider';
 import { ValuationEmptyState } from './ValuationEmptyState';
-import { OwnerDependencyQuestions, type OwnerDependencyFactors } from './OwnerDependencyQuestions';
-import { useProfileData } from '../hooks/useProfileData';
 import { businessDataService, type BusinessProfileData } from '../services/businessDataService';
 import { api } from '../services/api';
 import { backendAPI } from '../services/backendApi';
@@ -36,7 +34,6 @@ interface AIAssistedValuationProps {
 
 export const AIAssistedValuation: React.FC<AIAssistedValuationProps> = ({ reportId, onComplete }) => {
   const { user, isAuthenticated } = useAuth();
-  const { profileData, hasOwnerDependency } = useProfileData();
   const [stage, setStage] = useState<FlowStage>('chat');
   const [valuationResult, setValuationResult] = useState<ValuationResponse | null>(null);
   const [reportSaved, setReportSaved] = useState(false);
@@ -48,9 +45,6 @@ export const AIAssistedValuation: React.FC<AIAssistedValuationProps> = ({ report
   // Ref for HTMLPreviewPanel (progressive report system)
   const htmlPreviewPanelRef = useRef<HTMLPreviewPanelRef>(null);
   
-  // Owner Dependency state
-  const [showOwnerDependencyModal, setShowOwnerDependencyModal] = useState(false);
-  const [ownerDependencyFactors, setOwnerDependencyFactors] = useState<OwnerDependencyFactors | null>(null);
   
   // Update context when conversation progresses
   const handleConversationUpdate = useCallback((context: ConversationContext) => {
@@ -63,13 +57,6 @@ export const AIAssistedValuation: React.FC<AIAssistedValuationProps> = ({ report
     });
   }, []);
   
-  // Auto-populate owner dependency from profile if available
-  useEffect(() => {
-    if (hasOwnerDependency && profileData?.owner_dependency_assessment) {
-      setOwnerDependencyFactors(profileData.owner_dependency_assessment);
-      chatLogger.info('[AIFlow] Pre-populated Owner Dependency from profile');
-    }
-  }, [hasOwnerDependency, profileData]);
 
   // Extract input data from business profile and conversation context
   const extractInputData = useCallback((businessProfile: BusinessProfileData | null, conversationContext: ConversationContext | null, valuationResult: ValuationResponse | null): ValuationInputData | null => {
@@ -957,18 +944,6 @@ export const AIAssistedValuation: React.FC<AIAssistedValuationProps> = ({ report
     setActiveTab(tab);
   };
   
-  // Handler for Owner Dependency completion
-  const handleOwnerDependencyComplete = useCallback((factors: OwnerDependencyFactors) => {
-    setOwnerDependencyFactors(factors);
-    setShowOwnerDependencyModal(false);
-    chatLogger.info('[AIFlow] Owner Dependency assessment completed', { factors });
-  }, []);
-  
-  // Handler for Owner Dependency skip
-  const handleOwnerDependencySkip = useCallback(() => {
-    setShowOwnerDependencyModal(false);
-    chatLogger.info('[AIFlow] Owner Dependency assessment skipped');
-  }, []);
 
   return (
     <div className="flex flex-col h-full overflow-hidden">
@@ -1467,73 +1442,6 @@ export const AIAssistedValuation: React.FC<AIAssistedValuationProps> = ({ report
           console.log('Try manual flow clicked');
         }}
       />
-
-      {/* Owner Dependency Modal */}
-      {showOwnerDependencyModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4 overflow-y-auto">
-          <div className="bg-white rounded-xl shadow-2xl max-w-5xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between z-10">
-              <div>
-                <h2 className="text-2xl font-bold text-gray-900">Owner Dependency Assessment</h2>
-                <p className="text-sm text-gray-600 mt-1">Optional: Improve valuation accuracy by 15-20%</p>
-              </div>
-              <button
-                onClick={() => setShowOwnerDependencyModal(false)}
-                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-                aria-label="Close modal"
-              >
-                <X className="w-6 h-6 text-gray-500" />
-              </button>
-            </div>
-            <div className="p-6">
-              <OwnerDependencyQuestions
-                onComplete={handleOwnerDependencyComplete}
-                onSkip={handleOwnerDependencySkip}
-                prefillData={profileData?.owner_dependency_assessment}
-              />
-            </div>
-          </div>
-        </div>
-      )}
-      
-      {/* Owner Dependency Banner (show during chat if not completed) */}
-      {stage === 'chat' && !ownerDependencyFactors && !hasOwnerDependency && (
-        <div className="fixed bottom-6 right-6 max-w-md bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-lg shadow-2xl p-4 z-40 animate-slide-up">
-          <div className="flex items-start gap-3">
-            <div className="flex-shrink-0">
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-            </div>
-            <div className="flex-1">
-              <h4 className="font-semibold mb-1">Enhance Your Valuation</h4>
-              <p className="text-sm text-white/90 mb-3">
-                Complete a quick 12-question assessment to account for owner dependency risk (can impact value by up to 40%)
-              </p>
-              <div className="flex gap-2">
-                <button
-                  onClick={() => setShowOwnerDependencyModal(true)}
-                  className="px-4 py-2 bg-white text-purple-600 rounded-lg text-sm font-medium hover:bg-gray-100 transition-colors"
-                >
-                  Start Assessment (3 min)
-                </button>
-                <button
-                  onClick={() => {
-                    // Hide banner permanently for this session
-                    const banner = document.querySelector('.animate-slide-up');
-                    if (banner) {
-                      (banner as HTMLElement).style.display = 'none';
-                    }
-                  }}
-                  className="px-4 py-2 text-white/90 hover:text-white text-sm font-medium transition-colors"
-                >
-                  Maybe Later
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
 
       <style>{`
         .shimmer-effect {

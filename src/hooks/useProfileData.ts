@@ -1,5 +1,8 @@
 import { useState, useEffect } from 'react';
-import type { OwnerDependencyFactors } from '../components/OwnerDependencyQuestions';
+
+// Note: Owner Dependency UI has been removed. This hook is kept for backward compatibility
+// and future backend integration, but the assessment is now handled conversationally.
+type OwnerDependencyFactors = Record<string, any>;
 
 interface ProfileData {
   owner_dependency_assessment?: OwnerDependencyFactors;

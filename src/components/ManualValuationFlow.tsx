@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Edit3, TrendingUp, Building2, X } from 'lucide-react';
+import { Edit3, TrendingUp, Building2 } from 'lucide-react';
 import { ValuationForm } from './ValuationForm';
 import { Results } from './Results';
 import { ValuationToolbar } from './ValuationToolbar';
@@ -7,13 +7,11 @@ import { ValuationInfoPanel } from './ValuationInfoPanel';
 import { HTMLView } from './HTMLView';
 import { useValuationStore } from '../store/useValuationStore';
 import { useAuth } from '../hooks/useAuth';
-import { useProfileData } from '../hooks/useProfileData';
 // import { DownloadService } from '../services/downloadService';
 import { NameGenerator } from '../utils/nameGenerator';
 import type { ValuationResponse } from '../types/valuation';
 import { PANEL_CONSTRAINTS, MOBILE_BREAKPOINT } from '../constants/panelConstants';
 import { ResizableDivider } from './ResizableDivider';
-import { OwnerDependencyQuestions, type OwnerDependencyFactors } from './OwnerDependencyQuestions';
 // import { useReportsStore } from '../store/useReportsStore'; // Deprecated: Now saving to database
 // import { urls } from '../router'; // Removed reports link
 
@@ -25,15 +23,12 @@ interface ManualValuationFlowProps {
 export const ManualValuationFlow: React.FC<ManualValuationFlowProps> = ({ onComplete }) => {
   const { result, clearResult, inputData } = useValuationStore();
   const { user } = useAuth();
-  const { profileData, hasOwnerDependency } = useProfileData();
   const [activeTab, setActiveTab] = useState<'preview' | 'source' | 'info'>('preview');
   const [valuationName, setValuationName] = useState('');
   // const { addReport } = useReportsStore(); // Deprecated: Now saving to database
   // const [reportSaved, setReportSaved] = useState(false); // Removed with success banner
   
   // Owner Dependency state
-  const [showOwnerDependencyModal, setShowOwnerDependencyModal] = useState(false);
-  const [ownerDependencyFactors, setOwnerDependencyFactors] = useState<OwnerDependencyFactors | null>(null);
 
   // Panel resize state with localStorage persistence
   const [leftPanelWidth, setLeftPanelWidth] = useState(() => {
@@ -80,14 +75,6 @@ export const ManualValuationFlow: React.FC<ManualValuationFlowProps> = ({ onComp
     }
   }, [result, onComplete]);
   
-  // Auto-populate owner dependency from profile if available
-  useEffect(() => {
-    if (hasOwnerDependency && profileData?.owner_dependency_assessment) {
-      setOwnerDependencyFactors(profileData.owner_dependency_assessment);
-      console.log('[ManualFlow] Pre-populated Owner Dependency from profile');
-    }
-  }, [hasOwnerDependency, profileData]);
-
   // Toolbar handlers
   const handleRefresh = () => {
     // Clear result and reset form
@@ -154,17 +141,8 @@ export const ManualValuationFlow: React.FC<ManualValuationFlowProps> = ({ onComp
   // };
 
   // Handler for Owner Dependency completion
-  const handleOwnerDependencyComplete = (factors: OwnerDependencyFactors) => {
-    setOwnerDependencyFactors(factors);
-    setShowOwnerDependencyModal(false);
-    console.log('[ManualFlow] Owner Dependency assessment completed', factors);
-  };
   
   // Handler for Owner Dependency skip
-  const handleOwnerDependencySkip = () => {
-    setShowOwnerDependencyModal(false);
-    console.log('[ManualFlow] Owner Dependency assessment skipped');
-  };
 
   return (
     <div className="flex flex-col h-full overflow-hidden">
@@ -274,73 +252,6 @@ export const ManualValuationFlow: React.FC<ManualValuationFlowProps> = ({ onComp
           </div>
         </div>
       </div>
-      
-      {/* Owner Dependency Modal */}
-      {showOwnerDependencyModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4 overflow-y-auto">
-          <div className="bg-white rounded-xl shadow-2xl max-w-5xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between z-10">
-              <div>
-                <h2 className="text-2xl font-bold text-gray-900">Owner Dependency Assessment</h2>
-                <p className="text-sm text-gray-600 mt-1">Optional: Improve valuation accuracy by 15-20%</p>
-              </div>
-              <button
-                onClick={() => setShowOwnerDependencyModal(false)}
-                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-                aria-label="Close modal"
-              >
-                <X className="w-6 h-6 text-gray-500" />
-              </button>
-            </div>
-            <div className="p-6">
-              <OwnerDependencyQuestions
-                onComplete={handleOwnerDependencyComplete}
-                onSkip={handleOwnerDependencySkip}
-                prefillData={profileData?.owner_dependency_assessment}
-              />
-            </div>
-          </div>
-        </div>
-      )}
-      
-      {/* Owner Dependency Banner (show in form section if not completed) */}
-      {!result && !ownerDependencyFactors && !hasOwnerDependency && (
-        <div className="fixed bottom-6 right-6 max-w-md bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-lg shadow-2xl p-4 z-40 animate-slide-up">
-          <div className="flex items-start gap-3">
-            <div className="flex-shrink-0">
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-            </div>
-            <div className="flex-1">
-              <h4 className="font-semibold mb-1">Enhance Your Valuation</h4>
-              <p className="text-sm text-white/90 mb-3">
-                Complete a quick 12-question assessment to account for owner dependency risk (can impact value by up to 40%)
-              </p>
-              <div className="flex gap-2">
-                <button
-                  onClick={() => setShowOwnerDependencyModal(true)}
-                  className="px-4 py-2 bg-white text-purple-600 rounded-lg text-sm font-medium hover:bg-gray-100 transition-colors"
-                >
-                  Start Assessment (3 min)
-                </button>
-                <button
-                  onClick={() => {
-                    // Hide banner permanently for this session
-                    const banner = document.querySelector('.animate-slide-up');
-                    if (banner) {
-                      (banner as HTMLElement).style.display = 'none';
-                    }
-                  }}
-                  className="px-4 py-2 text-white/90 hover:text-white text-sm font-medium transition-colors"
-                >
-                  Maybe Later
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
       
       <style>{`
         @keyframes slide-up {
