@@ -23,10 +23,10 @@ export const SECURITY_CONFIG = {
   LOCKOUT_DURATION: 15 * 60 * 1000, // 15 minutes lockout
   
   // Security Headers
+  // Note: X-Frame-Options must be set as HTTP header (see vercel.json), not meta tag
   SECURITY_HEADERS: {
     'X-Robots-Tag': 'noindex, nofollow, noarchive, nosnippet',
     'X-Content-Type-Options': 'nosniff',
-    'X-Frame-Options': 'DENY',
     'X-XSS-Protection': '1; mode=block',
   },
   

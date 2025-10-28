@@ -64,6 +64,7 @@ export interface StreamEventHandlerCallbacks {
  */
 export class StreamEventHandler {
   private sessionId: string;
+  private hasStartedMessage: boolean = false;
 
   constructor(
     sessionId: string,
@@ -78,13 +79,16 @@ export class StreamEventHandler {
    * @param data - Event data from SSE stream
    */
   handleEvent(data: any): void {
+    // Defensive parsing: extract event type from multiple possible locations
+    const eventType = data?.type || data?.event || 'unknown';
+    
     chatLogger.debug('Received stream event', { 
-      type: data.type, 
+      type: eventType, 
       hasContent: !!data.content, 
       contentLength: data.content?.length 
     });
     
-    switch (data.type) {
+    switch (eventType) {
       case 'typing':
         return this.handleTyping(data);
       case 'message_start':
@@ -123,8 +127,21 @@ export class StreamEventHandler {
         return this.handleClarificationNeeded(data);
       case 'html_preview':
         return this.handleHtmlPreview(data);
+      case 'unknown':
+        // Treat unknown events as errors with a readable fallback
+        return this.handleError({
+          ...data,
+          message: data.message || data.content || 'An unexpected event occurred',
+          content: data.content || 'Unknown event type'
+        });
       default:
-        chatLogger.warn('Unknown event type', { type: data.type });
+        // Fallback for truly unrecognized event types
+        chatLogger.warn('Unrecognized event type, treating as error', { type: eventType });
+        return this.handleError({
+          ...data,
+          message: `Unrecognized event: ${eventType}`,
+          content: data.content || 'An unexpected error occurred'
+        });
     }
   }
 
@@ -142,6 +159,8 @@ export class StreamEventHandler {
    */
   private handleMessageStart(_data: any): void {
     chatLogger.debug('AI message start received');
+    // Mark that we've started a message
+    this.hasStartedMessage = true;
     // Hide thinking state and typing indicator when message starts streaming
     this.callbacks.setIsThinking?.(false);
     this.callbacks.setIsTyping?.(false);
@@ -352,13 +371,23 @@ export class StreamEventHandler {
 
   /**
    * Handle error events
+   * 
+   * Gracefully handles errors even if they arrive as the first event,
+   * preserving the user's message bubble and displaying a system error.
    */
   private handleError(data: any): void {
     chatLogger.error('Stream error received', { 
       error: data.content,
       sessionId: this.sessionId,
+      hasStartedMessage: this.hasStartedMessage,
       timestamp: new Date().toISOString()
     });
+    
+    // Stop all streaming/thinking/typing states
+    this.callbacks.setIsStreaming(false);
+    this.callbacks.setIsTyping?.(false);
+    this.callbacks.setIsThinking?.(false);
+    this.callbacks.setTypingContext?.(undefined);
     
     // Show user-friendly error message
     const errorMessage = data.message || data.content || 'Unknown error';
@@ -374,11 +403,21 @@ export class StreamEventHandler {
       ? 'I\'m having trouble processing your request. Please try again.'
       : errorMessage;
     
-    this.callbacks.updateStreamingMessage(
-      `I apologize, but ${userFriendlyError}`,
-      true
-    );
-    this.callbacks.setIsStreaming(false);
+    // If no AI message was started yet, add a compact system message
+    // This preserves the user's message bubble
+    if (!this.hasStartedMessage) {
+      this.callbacks.addMessage({
+        type: 'system',
+        content: `Error: ${userFriendlyError}`,
+        isComplete: true
+      });
+    } else {
+      // If we were already streaming, append the error to the current message
+      this.callbacks.updateStreamingMessage(
+        `\n\nI apologize, but ${userFriendlyError}`,
+        true
+      );
+    }
   }
 
   /**
