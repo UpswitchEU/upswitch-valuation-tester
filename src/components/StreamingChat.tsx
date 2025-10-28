@@ -6,7 +6,7 @@
  */
 
 import React, { useCallback, useMemo, useEffect } from 'react';
-import { Bot, User, CheckCircle, Loader2 } from 'lucide-react';
+import { Bot, CheckCircle, Loader2 } from 'lucide-react';
 import { AI_CONFIG } from '../config';
 import { ContextualTip } from './ContextualTip';
 import { SuggestionChips } from './SuggestionChips';
@@ -376,94 +376,92 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
             className={`flex ${message.type === 'user' ? 'justify-end' : 'justify-start'}`}
           >
             <div className={`max-w-[80%] ${message.type === 'user' ? 'ml-auto' : 'mr-auto'}`}>
-              <div className="flex items-start gap-3">
-                {/* AI Icon */}
-                {message.type !== 'user' && (
+              {message.type === 'user' ? (
+                // User message - simple structure without avatar
+                <div className="flex flex-col gap-1">
+                  <div className="rounded-lg px-4 py-3 bg-zinc-800 text-white">
+                    <div className="whitespace-pre-wrap text-sm">
+                      {message.content}
+                    </div>
+                  </div>
+                  <div className="text-xs text-zinc-500 text-right">
+                    {message.timestamp.toLocaleTimeString()}
+                  </div>
+                </div>
+              ) : (
+                // AI message - with bot avatar
+                <div className="flex items-start gap-3">
                   <div className="flex-shrink-0 w-8 h-8 bg-primary-600/20 rounded-full flex items-center justify-center">
                     <Bot className="w-4 h-4 text-primary-400" />
                   </div>
-                )}
-                
-                {/* Message bubble */}
-                <div className={`rounded-lg px-4 py-2 ${
-                  message.type === 'user' 
-                    ? 'bg-zinc-800 text-white' 
-                    : 'bg-zinc-700/50 text-white'
-                }`}>
-                  {/* Message content */}
-                  <div className="whitespace-pre-wrap text-sm">
-                    {message.content}
-                    {message.isStreaming && (
-                      <span className="inline-block w-2 h-4 bg-current animate-pulse ml-1" />
+                  
+                  <div className="rounded-lg px-4 py-3 bg-zinc-700/50 text-white">
+                    <div className="whitespace-pre-wrap text-sm">
+                      {message.content}
+                      {message.isStreaming && (
+                        <span className="inline-block w-2 h-4 bg-current animate-pulse ml-1" />
+                      )}
+                    </div>
+                    
+                    {/* Suggestion chips */}
+                    {message.type === 'suggestion' && message.metadata?.suggestions && (
+                      <SuggestionChips
+                        suggestions={message.metadata.suggestions}
+                        originalValue={message.metadata.originalValue || ''}
+                        onSelect={handleSuggestionSelect}
+                        onDismiss={handleSuggestionDismiss}
+                      />
+                    )}
+                    
+                    {/* Clarification confirmation buttons */}
+                    {message.metadata?.needs_confirmation && (
+                      <div className="flex space-x-2 mt-2">
+                        <button
+                          onClick={() => handleClarificationConfirm(message.id)}
+                          className="px-3 py-1 bg-green-500 text-white text-xs rounded hover:bg-green-600"
+                        >
+                          <CheckCircle className="h-3 w-3 inline mr-1" />
+                          Confirm
+                        </button>
+                        <button
+                          onClick={() => handleClarificationReject(message.id)}
+                          className="px-3 py-1 bg-red-500 text-white text-xs rounded hover:bg-red-600"
+                        >
+                          Reject
+                        </button>
+                      </div>
+                    )}
+                    
+                    {/* Help text */}
+                    {AI_CONFIG.showHelpText && message.metadata?.help_text && (
+                      <div className="mt-1">
+                        <p className="text-xs text-primary-400">
+                          ℹ️ {message.metadata.help_text}
+                        </p>
+                      </div>
+                    )}
+                    
+                    {/* Valuation narrative */}
+                    {AI_CONFIG.showNarratives && message.metadata?.valuation_narrative && (
+                      <div className="mt-3 p-3 bg-primary-600/10 rounded-lg">
+                        <h4 className="text-sm font-semibold text-primary-300 mb-2">
+                          Why this valuation?
+                        </h4>
+                        <div className="text-sm text-primary-200 whitespace-pre-wrap">
+                          {message.metadata.valuation_narrative}
+                        </div>
+                      </div>
                     )}
                   </div>
-              
-                  
-                  {/* Suggestion chips */}
-                  {message.type === 'suggestion' && message.metadata?.suggestions && (
-                    <SuggestionChips
-                      suggestions={message.metadata.suggestions}
-                      originalValue={message.metadata.originalValue || ''}
-                      onSelect={handleSuggestionSelect}
-                      onDismiss={handleSuggestionDismiss}
-                    />
-                  )}
-                  
-                  {/* Clarification confirmation buttons */}
-                  {message.metadata?.needs_confirmation && (
-                    <div className="flex space-x-2 mt-2">
-                      <button
-                        onClick={() => handleClarificationConfirm(message.id)}
-                        className="px-3 py-1 bg-green-500 text-white text-xs rounded hover:bg-green-600"
-                      >
-                        <CheckCircle className="h-3 w-3 inline mr-1" />
-                        Confirm
-                      </button>
-                      <button
-                        onClick={() => handleClarificationReject(message.id)}
-                        className="px-3 py-1 bg-red-500 text-white text-xs rounded hover:bg-red-600"
-                      >
-                        Reject
-                      </button>
-                    </div>
-                  )}
-                  
-                  {/* Help text */}
-                  {AI_CONFIG.showHelpText && message.metadata?.help_text && (
-                    <div className="mt-1">
-                      <p className="text-xs text-primary-400">
-                        ℹ️ {message.metadata.help_text}
-                      </p>
-                    </div>
-                  )}
-                  
-                  {/* Valuation narrative */}
-                  {AI_CONFIG.showNarratives && message.metadata?.valuation_narrative && (
-                    <div className="mt-3 p-3 bg-primary-600/10 rounded-lg">
-                      <h4 className="text-sm font-semibold text-primary-300 mb-2">
-                        Why this valuation?
-                      </h4>
-                      <div className="text-sm text-primary-200 whitespace-pre-wrap">
-                        {message.metadata.valuation_narrative}
-                      </div>
-                    </div>
-                  )}
                 </div>
-                
-                {/* User Icon */}
-                {message.type === 'user' && (
-                  <div className="flex-shrink-0 w-8 h-8 bg-zinc-700 rounded-full flex items-center justify-center">
-                    <User className="w-4 h-4 text-zinc-400" />
-                  </div>
-                )}
-              </div>
+              )}
               
-              {/* Timestamp */}
-              <div className={`text-xs text-zinc-500 mt-1 ${
-                message.type === 'user' ? 'text-right' : 'text-left'
-              }`}>
-                {message.timestamp.toLocaleTimeString()}
-              </div>
+              {/* Timestamp for AI messages */}
+              {message.type !== 'user' && (
+                <div className="text-xs text-zinc-500 mt-1 text-left ml-11">
+                  {message.timestamp.toLocaleTimeString()}
+                </div>
+              )}
             </div>
           </div>
         ))}

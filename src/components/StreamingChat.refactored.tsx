@@ -438,108 +438,112 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
             className={`flex ${message.type === 'user' ? 'justify-end' : 'justify-start'}`}
           >
             <div className={`max-w-[80%] ${message.type === 'user' ? 'ml-auto' : 'mr-auto'}`}>
-              <div className="flex items-start gap-3">
-                {message.type !== 'user' && (
+              {message.type === 'user' ? (
+                // User message - simple structure without avatar
+                <div className="flex flex-col gap-1">
+                  <div className="rounded-lg px-4 py-3 bg-zinc-800 text-white">
+                    <div className="whitespace-pre-wrap text-sm">
+                      {message.content}
+                    </div>
+                  </div>
+                  <div className="text-xs text-zinc-500 text-right">
+                    {message.timestamp.toLocaleTimeString()}
+                  </div>
+                </div>
+              ) : (
+                // AI message - with bot avatar
+                <div className="flex items-start gap-3">
                   <div className="flex-shrink-0 w-8 h-8 bg-primary-600/20 rounded-full flex items-center justify-center bot-avatar">
                     <Bot className="w-4 h-4 text-primary-400" />
                   </div>
-                )}
-                
-                <div className={`rounded-lg px-4 py-2 ${
-                  message.type === 'user' 
-                    ? 'bg-zinc-800 text-white' 
-                    : 'bg-zinc-700/50 text-white'
-                }`}>
-                  <div 
-                    className="whitespace-pre-wrap text-sm cursor-pointer" 
-                    onClick={() => isTyping && complete()}
-                    title={isTyping ? "Click to complete typing" : ""}
-                  >
-                    {message.type === 'ai' && message.isStreaming ? displayedText : message.content}
-                    {message.type === 'ai' && message.isStreaming && (
-                      <TypingCursor isVisible={isTyping} />
+                  
+                  <div className="rounded-lg px-4 py-3 bg-zinc-700/50 text-white">
+                    <div 
+                      className="whitespace-pre-wrap text-sm cursor-pointer" 
+                      onClick={() => isTyping && complete()}
+                      title={isTyping ? "Click to complete typing" : ""}
+                    >
+                      {message.type === 'ai' && message.isStreaming ? displayedText : message.content}
+                      {message.type === 'ai' && message.isStreaming && (
+                        <TypingCursor isVisible={isTyping} />
+                      )}
+                    </div>
+                    
+                    {/* Display suggestion chips if available */}
+                    {message.type === 'suggestion' && message.metadata?.suggestions && (
+                      <div className="mt-3">
+                        <SuggestionChips
+                          suggestions={message.metadata.suggestions}
+                          originalValue={message.metadata.originalValue || ''}
+                          onSelect={(selected) => handleSuggestionSelect(message.metadata?.field || '', selected)}
+                          onDismiss={() => handleSuggestionDismiss(message.metadata?.field || '', message.metadata?.originalValue || '')}
+                        />
+                      </div>
+                    )}
+                    
+                    {/* Display clarification confirmation buttons */}
+                    {message.metadata?.needs_confirmation && message.metadata?.clarification_value && (
+                      <div className="mt-3 flex gap-3">
+                        <button
+                          onClick={() => handleClarificationConfirm(
+                            message.metadata?.clarification_field || '',
+                            message.metadata?.clarification_value || ''
+                          )}
+                          className="inline-flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-all duration-200 shadow-sm hover:shadow-md"
+                        >
+                          <CheckCircle className="w-4 h-4" />
+                          <span className="text-sm font-medium">
+                            Yes, "{message.metadata.clarification_value}" is correct
+                          </span>
+                        </button>
+                        <button
+                          onClick={() => handleClarificationReject(message.metadata?.clarification_field || '')}
+                          className="inline-flex items-center gap-2 px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-all duration-200"
+                        >
+                          <span className="text-sm font-medium">
+                            No, let me provide the correct value
+                          </span>
+                        </button>
+                      </div>
+                    )}
+                    
+                    {/* Display help text if available */}
+                    {AI_CONFIG.showHelpText && message.metadata?.help_text && (
+                      <div className="mt-1">
+                        <p className="text-xs text-primary-400">
+                          ℹ️ {message.metadata.help_text}
+                        </p>
+                      </div>
+                    )}
+                    
+                    {/* Display valuation narrative if available */}
+                    {AI_CONFIG.showNarratives && message.metadata?.valuation_narrative && (
+                      <div className="mt-3 p-3 bg-primary-600/10 rounded-lg">
+                        <h4 className="text-sm font-semibold text-primary-300 mb-2">
+                          Why this valuation?
+                        </h4>
+                        <div className="text-sm text-primary-200 whitespace-pre-wrap">
+                          {message.metadata.valuation_narrative}
+                        </div>
+                      </div>
+                    )}
+                    
+                    {message.type !== 'user' && message.isStreaming && (
+                      <div className="flex items-center gap-2 animate-fade-in">
+                        <LoadingDots size="sm" color="text-white" />
+                        <span className="text-sm text-zinc-300 animate-pulse">{loadingMessage}</span>
+                      </div>
                     )}
                   </div>
-                  
-                  {/* Display suggestion chips if available */}
-                  {message.type === 'suggestion' && message.metadata?.suggestions && (
-                    <div className="mt-3">
-                      <SuggestionChips
-                        suggestions={message.metadata.suggestions}
-                        originalValue={message.metadata.originalValue || ''}
-                        onSelect={(selected) => handleSuggestionSelect(message.metadata?.field || '', selected)}
-                        onDismiss={() => handleSuggestionDismiss(message.metadata?.field || '', message.metadata?.originalValue || '')}
-                      />
-                    </div>
-                  )}
-                  
-                  {/* Display clarification confirmation buttons */}
-                  {message.metadata?.needs_confirmation && message.metadata?.clarification_value && (
-                    <div className="mt-3 flex gap-3">
-                      <button
-                        onClick={() => handleClarificationConfirm(
-                          message.metadata?.clarification_field || '',
-                          message.metadata?.clarification_value || ''
-                        )}
-                        className="inline-flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-all duration-200 shadow-sm hover:shadow-md"
-                      >
-                        <CheckCircle className="w-4 h-4" />
-                        <span className="text-sm font-medium">
-                          Yes, "{message.metadata.clarification_value}" is correct
-                        </span>
-                      </button>
-                      <button
-                        onClick={() => handleClarificationReject(message.metadata?.clarification_field || '')}
-                        className="inline-flex items-center gap-2 px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-all duration-200"
-                      >
-                        <span className="text-sm font-medium">
-                          No, let me provide the correct value
-                        </span>
-                      </button>
-                    </div>
-                  )}
-                  
-                  {/* Display help text if available */}
-                  {AI_CONFIG.showHelpText && message.metadata?.help_text && (
-                    <div className="mt-1">
-                      <p className="text-xs text-primary-400">
-                        ℹ️ {message.metadata.help_text}
-                      </p>
-                    </div>
-                  )}
-                  
-                  {/* Display valuation narrative if available */}
-                  {AI_CONFIG.showNarratives && message.metadata?.valuation_narrative && (
-                    <div className="mt-3 p-3 bg-primary-600/10 rounded-lg">
-                      <h4 className="text-sm font-semibold text-primary-300 mb-2">
-                        Why this valuation?
-                      </h4>
-                      <div className="text-sm text-primary-200 whitespace-pre-wrap">
-                        {message.metadata.valuation_narrative}
-                      </div>
-                    </div>
-                  )}
-                  
-                  {message.type !== 'user' && message.isStreaming && (
-                    <div className="flex items-center gap-2 animate-fade-in">
-                      <LoadingDots size="sm" color="text-white" />
-                      <span className="text-sm text-zinc-300 animate-pulse">{loadingMessage}</span>
-                    </div>
-                  )}
                 </div>
-                
-                {message.type === 'user' && (
-                  <div className="flex-shrink-0 w-8 h-8 bg-zinc-700 rounded-full flex items-center justify-center">
-                    <User className="w-4 h-4 text-zinc-400" />
-                  </div>
-                )}
-              </div>
+              )}
               
-              <div className={`text-xs text-zinc-500 mt-1 ${
-                message.type === 'user' ? 'text-right' : 'text-left'
-              }`}>
-                {message.timestamp.toLocaleTimeString()}
-              </div>
+              {/* Timestamp for AI messages */}
+              {message.type !== 'user' && (
+                <div className="text-xs text-zinc-500 mt-1 text-left ml-11">
+                  {message.timestamp.toLocaleTimeString()}
+                </div>
+              )}
             </div>
           </div>
         ))}
