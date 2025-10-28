@@ -43,6 +43,7 @@ export class StreamingChatService {
       
       const response = await fetch(`${this.baseURL}/api/valuations/conversation/stream`, {
         method: 'POST',
+        credentials: 'include', // Send cookies automatically for auth
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(requestBody)
       });

@@ -126,9 +126,9 @@ export const useConversationInitializer = (
         const response = await fetch(`${API_BASE_URL}/api/valuations/conversation/start`, {
           method: 'POST',
           signal: abortControllerRef.current?.signal, // Cancellable
+          credentials: 'include', // Send cookies automatically for auth
           headers: {
-            'Content-Type': 'application/json',
-            ...(userId ? { 'Authorization': `Bearer ${userId}` } : {})
+            'Content-Type': 'application/json'
           },
           body: JSON.stringify({
             session_id: sessionId,
