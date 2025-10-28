@@ -8,7 +8,6 @@
 import React, { useCallback, useMemo, useEffect } from 'react';
 import { Bot, CheckCircle, Loader2 } from 'lucide-react';
 import { AI_CONFIG } from '../config';
-import { ContextualTip } from './ContextualTip';
 import { SuggestionChips } from './SuggestionChips';
 import { TypingIndicator } from './TypingIndicator';
 import { useTypingAnimation } from '../hooks/useTypingAnimation';
@@ -318,27 +317,6 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
     scrollToBottom();
   }, [state.messages, scrollToBottom]);
   
-  // Get contextual tip
-  const getContextualTip = useCallback(() => {
-    // Return contextual tip based on current conversation state
-    if (state.messages.length === 0) {
-      return {
-        type: 'info' as const,
-        message: '💡 Welcome! I\'ll help you get a business valuation. Let\'s start with some basic information about your company.'
-      };
-    }
-    
-    // Removed tooltip for collected fields - keeping for potential future use
-    // const lastMessage = state.messages[state.messages.length - 1];
-    // if (lastMessage?.type === 'ai' && lastMessage.metadata?.collected_field) {
-    //   return {
-    //     type: 'insight' as const,
-    //     message: `📊 We're collecting information about your ${lastMessage.metadata.collected_field}. This helps us provide an accurate valuation.`
-    //   };
-    // }
-    
-    return null;
-  }, [state.messages]);
   
   // Get smart follow-ups
   const getSmartFollowUps = useCallback(() => {
@@ -362,7 +340,6 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
     return [];
   }, [state.messages]);
   
-  const contextualTip = getContextualTip();
   const smartFollowUps = getSmartFollowUps();
   
   return (
@@ -518,14 +495,6 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
       </div>
       
       {/* Contextual Tip */}
-      {contextualTip && (
-        <div className="px-4 pb-2">
-          <ContextualTip
-            type={contextualTip.type}
-            message={contextualTip.message}
-          />
-        </div>
-      )}
       
       {/* Input Form */}
       <div className="p-4 border-t border-zinc-800">

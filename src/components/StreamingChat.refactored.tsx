@@ -6,9 +6,8 @@
  */
 
 import React, { useCallback, useMemo, useEffect } from 'react';
-import { Loader2, Bot, User, CheckCircle } from 'lucide-react';
+import { Loader2, Bot, CheckCircle } from 'lucide-react';
 import { AI_CONFIG } from '../config';
-import { ContextualTip } from './ContextualTip';
 import { LoadingDots } from './LoadingDots';
 import { SuggestionChips } from './SuggestionChips';
 import { useLoadingMessage } from '../hooks/useLoadingMessage';
@@ -372,19 +371,6 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
     });
   }, [addMessage]);
 
-  // Get contextual tip
-  const getContextualTip = useCallback(() => {
-    // Return contextual tip based on current conversation state
-    if (state.messages.length === 0) {
-      return {
-        type: 'info' as const,
-        title: 'Welcome!',
-        message: 'I\'ll help you get a business valuation. Let\'s start with some basic information about your company.',
-        icon: '💡'
-      };
-    }
-    return null;
-  }, [state.messages.length]);
 
   // Get smart follow-ups
   const getSmartFollowUps = useCallback(() => {
@@ -528,7 +514,7 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
                       </div>
                     )}
                     
-                    {message.type !== 'user' && message.isStreaming && (
+                    {message.isStreaming && (
                       <div className="flex items-center gap-2 animate-fade-in">
                         <LoadingDots size="sm" color="text-white" />
                         <span className="text-sm text-zinc-300 animate-pulse">{loadingMessage}</span>
@@ -607,12 +593,6 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
         </div>
       )}
 
-      {/* Contextual tip */}
-      {getContextualTip() && (
-        <div className="px-4 pb-2">
-          <ContextualTip {...getContextualTip()!} />
-        </div>
-      )}
 
       {/* Input Form */}
       <div className="p-4 border-t border-zinc-800">
