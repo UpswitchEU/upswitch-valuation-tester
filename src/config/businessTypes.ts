@@ -25,6 +25,9 @@ export const BUSINESS_TYPES_FALLBACK: BusinessTypeOption[] = [
   { value: 'ecommerce', label: '🛍️ E-commerce', category: 'Retail' },
   { value: 'manufacturing', label: '🏭 Manufacturing', category: 'Production' },
   { value: 'services', label: '💼 Services', category: 'Professional' },
+  { value: 'bakery', label: '🥐 Bakery', category: 'Food & Beverage' },
+  { value: 'restaurant', label: '🍽️ Restaurant', category: 'Food & Beverage' },
+  { value: 'cafe', label: '☕ Cafe', category: 'Food & Beverage' },
   { value: 'other', label: '📦 Other', category: 'Other' }
 ];
 
