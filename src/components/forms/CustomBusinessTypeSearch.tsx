@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { Search, ChevronDown, Lightbulb, X } from 'lucide-react';
+import { ChevronDown, Lightbulb, X } from 'lucide-react';
 import type { BusinessType } from '../../services/businessTypesApi';
 
 interface CustomBusinessTypeSearchProps {
@@ -201,11 +201,6 @@ export const CustomBusinessTypeSearch: React.FC<CustomBusinessTypeSearchProps> =
           ? 'border-gray-200 bg-gray-50' 
           : 'border-gray-300 bg-white hover:border-gray-400 focus-within:border-gray-900'
       }`}>
-        {/* Search Icon */}
-        <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 z-10">
-          <Search className="h-4 w-4" />
-        </div>
-
         {/* Input Field */}
         <input
           ref={inputRef}
@@ -219,7 +214,7 @@ export const CustomBusinessTypeSearch: React.FC<CustomBusinessTypeSearchProps> =
           disabled={disabled || loading}
           required={required}
           className="
-            w-full h-14 px-4 pt-6 pb-2 text-base pl-10 pr-20
+            w-full h-14 px-4 pt-6 pb-2 text-base pr-20
             border-none rounded-xl 
             focus:outline-none focus:ring-0
             transition-all duration-200 ease-in-out
