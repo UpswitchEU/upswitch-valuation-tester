@@ -22,9 +22,8 @@ class ValuationAPI {
 
   constructor() {
     this.client = axios.create({
-      baseURL: import.meta.env.VITE_VALUATION_ENGINE_URL || 
-               import.meta.env.VITE_VALUATION_API_URL || 
-               'https://upswitch-valuation-engine-production.up.railway.app',
+      baseURL: import.meta.env.VITE_BACKEND_URL || 
+               'https://api.upswitch.biz',
       timeout: 30000,
       headers: {
         'Content-Type': 'application/json',
@@ -94,13 +93,13 @@ class ValuationAPI {
 
   // Start intelligent conversation
   async startConversation(data: ConversationStartRequest): Promise<ConversationStartResponse> {
-    const response = await this.client.post('/api/v1/intelligent-conversation/start', data);
+    const response = await this.client.post('/api/valuations/conversation/start', data);
     return response.data;
   }
 
   // Process conversation step
   async conversationStep(data: ConversationStepRequest): Promise<ConversationStepResponse> {
-    const response = await this.client.post('/api/v1/intelligent-conversation/step', data);
+    const response = await this.client.post('/api/valuations/conversation/step', data);
     return response.data;
   }
 

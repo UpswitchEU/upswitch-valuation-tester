@@ -13,8 +13,8 @@ export class StreamingChatService {
   private baseURL: string;
 
   constructor() {
-    this.baseURL = import.meta.env.VITE_VALUATION_ENGINE_URL || 
-                   'https://upswitch-valuation-engine-production.up.railway.app';
+    this.baseURL = import.meta.env.VITE_BACKEND_URL || 
+                   'https://api.upswitch.biz';
   }
 
   async *streamConversation(
@@ -37,11 +37,11 @@ export class StreamingChatService {
       };
       
       chatLogger.debug('SSE request details', { 
-        url: `${this.baseURL}/api/v1/intelligent-conversation/stream`,
+        url: `${this.baseURL}/api/valuations/conversation/stream`,
         body: requestBody 
       });
       
-      const response = await fetch(`${this.baseURL}/api/v1/intelligent-conversation/stream`, {
+      const response = await fetch(`${this.baseURL}/api/valuations/conversation/stream`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(requestBody)

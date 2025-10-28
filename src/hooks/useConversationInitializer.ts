@@ -111,9 +111,8 @@ export const useConversationInitializer = (
       setIsInitializing(true);
       
       // Get API base URL from config
-      const API_BASE_URL = import.meta.env.VITE_VALUATION_ENGINE_URL || 
-                          import.meta.env.VITE_VALUATION_API_URL || 
-                          'https://upswitch-valuation-engine-production.up.railway.app';
+      const API_BASE_URL = import.meta.env.VITE_BACKEND_URL || 
+                          'https://api.upswitch.biz';
       
       // Add timeout handling
       const timeoutId = setTimeout(() => {
@@ -124,7 +123,7 @@ export const useConversationInitializer = (
       
       try {
         // Call backend to get intelligent first question
-        const response = await fetch(`${API_BASE_URL}/api/v1/intelligent-conversation/start`, {
+        const response = await fetch(`${API_BASE_URL}/api/valuations/conversation/start`, {
           method: 'POST',
           signal: abortControllerRef.current?.signal, // Cancellable
           headers: {
