@@ -47,6 +47,7 @@ export interface ConversationInitializerCallbacks {
   addMessage: (message: Omit<Message, 'id' | 'timestamp'>) => { updatedMessages: Message[], newMessage: Message };
   setMessages: React.Dispatch<React.SetStateAction<Message[]>>;
   user?: UserProfile;
+  onSessionIdUpdate?: (sessionId: string) => void;
 }
 
 /**
@@ -209,6 +210,9 @@ export const useConversationInitializer = (
           backendSessionId: pythonSessionId,
           isAuthenticated: !!userId
         });
+        
+        // Update parent component with Python session ID
+        callbacks.onSessionIdUpdate?.(pythonSessionId);
         
         // Validate response structure
         if (!data.ai_message || !data.field_name) {

@@ -5,7 +5,7 @@
  * The main component is now ~300 lines instead of 1,817 lines.
  */
 
-import React, { useCallback, useMemo, useEffect } from 'react';
+import React, { useCallback, useMemo, useEffect, useState } from 'react';
 import { Bot, CheckCircle, Loader2 } from 'lucide-react';
 import { AI_CONFIG } from '../config';
 import { SuggestionChips } from './SuggestionChips';
@@ -82,6 +82,9 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
   // Get user data from AuthContext
   const { user } = useAuth();
   
+  // Track Python-generated session ID separately from client session ID
+  const [pythonSessionId, setPythonSessionId] = useState<string | null>(null);
+  
   // Use extracted state management hook
   const state = useStreamingChatState(sessionId, userId);
   
@@ -97,7 +100,14 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
       return { updatedMessages, newMessage };
     },
     setMessages: state.setMessages,
-    user: user as UserProfile | undefined
+    user: user as UserProfile | undefined,
+    onSessionIdUpdate: (newSessionId) => {
+      chatLogger.info('Updating to Python session ID', {
+        clientSessionId: sessionId,
+        pythonSessionId: newSessionId
+      });
+      setPythonSessionId(newSessionId);
+    }
   });
   
   // Use extracted metrics tracking
@@ -260,9 +270,10 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
     state.setIsTyping(true);
     state.setTypingContext(undefined); // Will be updated by backend events
     
-    // Start streaming conversation
+    // Start streaming conversation using Python session ID if available
+    const effectiveSessionId = pythonSessionId || sessionId;
     await streamingManager.startStreaming(
-      sessionId,
+      effectiveSessionId,
       userInput,
       userId,
       {
@@ -283,7 +294,7 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
         state.setIsTyping(false); // Hide typing indicator on error
       }
     );
-  }, [state.input, state.isStreaming, state.setIsStreaming, disabled, sessionId, userId, inputValidator, addMessage, updateStreamingMessage, onHtmlPreviewUpdate, trackConversationCompletion, streamingManager, eventHandler]);
+  }, [state.input, state.isStreaming, state.setIsStreaming, disabled, sessionId, pythonSessionId, userId, inputValidator, addMessage, updateStreamingMessage, onHtmlPreviewUpdate, trackConversationCompletion, streamingManager, eventHandler]);
   
   // Handle suggestion selection
   const handleSuggestionSelect = useCallback((suggestion: string) => {
