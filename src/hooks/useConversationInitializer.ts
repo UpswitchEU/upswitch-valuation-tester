@@ -131,9 +131,31 @@ export const useConversationInitializer = (
             'Content-Type': 'application/json'
           },
           body: JSON.stringify({
-            session_id: sessionId,
-            user_id: userId || null
-            // Temporarily removed pre_filled_data to test validation
+            user_id: userId || null,
+            // Python backend generates session_id - don't send it
+            business_context: userId ? {
+              company_name: callbacks.user?.company_name,
+              industry: callbacks.user?.industry,
+              business_type: callbacks.user?.business_type,
+              country_code: callbacks.user?.country || 'BE',
+              founding_year: callbacks.user?.founded_year
+            } : undefined,
+            pre_filled_data: userId ? {
+              user_id: userId,
+              company_name: callbacks.user?.company_name,
+              business_type: callbacks.user?.business_type,
+              industry: callbacks.user?.industry,
+              founded_year: callbacks.user?.founded_year,
+              years_in_operation: callbacks.user?.years_in_operation,
+              employee_count_range: callbacks.user?.employee_count_range,
+              city: callbacks.user?.city,
+              country: callbacks.user?.country,
+              company_description: callbacks.user?.company_description
+            } : undefined,
+            user_preferences: {
+              time_commitment: 'detailed',
+              focus_area: 'all'
+            }
           })
         });
         
@@ -147,8 +169,14 @@ export const useConversationInitializer = (
             statusText: response.statusText,
             errorBody: errorBody,
             requestBody: {
-              session_id: sessionId,
               user_id: userId || null,
+              business_context: userId ? {
+                company_name: callbacks.user?.company_name,
+                industry: callbacks.user?.industry,
+                business_type: callbacks.user?.business_type,
+                country_code: callbacks.user?.country || 'BE',
+                founding_year: callbacks.user?.founded_year
+              } : undefined,
               pre_filled_data: userId ? {
                 user_id: userId,
                 company_name: callbacks.user?.company_name,
@@ -160,13 +188,27 @@ export const useConversationInitializer = (
                 city: callbacks.user?.city,
                 country: callbacks.user?.country,
                 company_description: callbacks.user?.company_description
-              } : null
+              } : undefined,
+              user_preferences: {
+                time_commitment: 'detailed',
+                focus_area: 'all'
+              }
             }
           });
           throw new Error(`HTTP ${response.status}: ${errorBody}`);
         }
         
         const data = await response.json();
+        
+        // Python backend returns the session_id - use it
+        const pythonSessionId = data.session_id;
+        
+        // Log session ID transition
+        chatLogger.info('Received session ID from Python backend', {
+          clientSessionId: sessionId,
+          backendSessionId: pythonSessionId,
+          isAuthenticated: !!userId
+        });
         
         // Validate response structure
         if (!data.ai_message || !data.field_name) {
