@@ -132,19 +132,8 @@ export const useConversationInitializer = (
           },
           body: JSON.stringify({
             session_id: sessionId,
-            user_id: userId || null,
-            pre_filled_data: userId ? {
-              user_id: userId,
-              company_name: callbacks.user?.company_name,
-              business_type: callbacks.user?.business_type,
-              industry: callbacks.user?.industry,
-              founded_year: callbacks.user?.founded_year,
-              years_in_operation: callbacks.user?.years_in_operation,
-              employee_count_range: callbacks.user?.employee_count_range,
-              city: callbacks.user?.city,
-              country: callbacks.user?.country,
-              company_description: callbacks.user?.company_description
-            } : null
+            user_id: userId || null
+            // Temporarily removed pre_filled_data to test validation
           })
         });
         
@@ -152,8 +141,29 @@ export const useConversationInitializer = (
         
         // Check response status
         if (!response.ok) {
-          const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
-          throw new Error(`Backend initialization failed: ${response.status} - ${errorData.error || errorData.detail || 'Unknown error'}`);
+          const errorBody = await response.text();
+          chatLogger.error('Conversation start failed', {
+            status: response.status,
+            statusText: response.statusText,
+            errorBody: errorBody,
+            requestBody: {
+              session_id: sessionId,
+              user_id: userId || null,
+              pre_filled_data: userId ? {
+                user_id: userId,
+                company_name: callbacks.user?.company_name,
+                business_type: callbacks.user?.business_type,
+                industry: callbacks.user?.industry,
+                founded_year: callbacks.user?.founded_year,
+                years_in_operation: callbacks.user?.years_in_operation,
+                employee_count_range: callbacks.user?.employee_count_range,
+                city: callbacks.user?.city,
+                country: callbacks.user?.country,
+                company_description: callbacks.user?.company_description
+              } : null
+            }
+          });
+          throw new Error(`HTTP ${response.status}: ${errorBody}`);
         }
         
         const data = await response.json();
