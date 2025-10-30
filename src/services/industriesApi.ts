@@ -73,7 +73,7 @@ class IndustriesApiService {
    */
   async getIndustryStats(): Promise<IndustryStatsResponse> {
     try {
-      const response = await fetch('/api/v1/industries/stats');
+      const response = await fetch('https://api.upswitch.biz/api/v1/industries/stats');
       
       if (!response.ok) {
         throw new Error(`Failed to fetch industry stats: ${response.statusText}`);
@@ -141,7 +141,7 @@ class IndustriesApiService {
    */
   private async fetchIndustries(): Promise<IndustryListResponse> {
     try {
-      const response = await fetch('/api/v1/industries');
+      const response = await fetch('https://api.upswitch.biz/api/v1/industries');
       
       if (!response.ok) {
         throw new Error(`Failed to fetch industries: ${response.statusText}`);
