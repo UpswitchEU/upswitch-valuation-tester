@@ -34,7 +34,6 @@ export const ValuationForm: React.FC = () => {
   const [hasPrefilledOnce, setHasPrefilledOnce] = useState(false);
   
   // Industry validation state
-  const [validIndustries, setValidIndustries] = useState<Set<string>>(new Set());
   const [industryValidationError, setIndustryValidationError] = useState<string | null>(null);
   const [isValidatingIndustry, setIsValidatingIndustry] = useState(false);
 
@@ -48,20 +47,6 @@ export const ValuationForm: React.FC = () => {
     []
   );
 
-  // Load valid industries on mount
-  useEffect(() => {
-    const loadValidIndustries = async () => {
-      try {
-        const response = await industriesApi.getIndustries();
-        setValidIndustries(new Set(response.industries));
-      } catch (error) {
-        console.error('Failed to load valid industries:', error);
-        // Don't show error to user, just log it
-      }
-    };
-    
-    loadValidIndustries();
-  }, []);
 
   // Validate industry field
   const validateIndustry = useCallback(async (industry: string) => {

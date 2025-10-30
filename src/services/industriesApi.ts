@@ -157,6 +157,3 @@ class IndustriesApiService {
 
 // Export singleton instance
 export const industriesApi = new IndustriesApiService();
-
-// Export types
-export type { IndustryListResponse, IndustryStatsResponse };
