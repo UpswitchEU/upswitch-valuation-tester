@@ -1,6 +1,6 @@
+import { AlertCircle, CheckCircle, ChevronDown, ChevronUp, Clock, Database } from 'lucide-react';
 import React, { useState } from 'react';
-import { Database, CheckCircle, Clock, AlertCircle, ChevronDown, ChevronUp } from 'lucide-react';
-import type { ValuationResponse, ValuationInputData, DataSource as DataSourceType } from '../../types/valuation';
+import type { DataSource as DataSourceType, ValuationInputData, ValuationResponse } from '../../types/valuation';
 import { formatCurrency } from '../Results/utils/formatters';
 
 interface DataProvenanceSectionProps {
