@@ -1,22 +1,22 @@
-import React, { useCallback, useState, useEffect } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { useValuationStore } from '../store/useValuationStore';
 // import { useReportsStore } from '../store/useReportsStore'; // Deprecated: Now saving to database
-import { useAuth } from '../hooks/useAuth';
-import { debounce } from '../utils/debounce';
-import { TARGET_COUNTRIES } from '../config/countries';
-import { useBusinessTypes } from '../hooks/useBusinessTypes';
-import { IndustryCode } from '../types/valuation';
-import { CustomInputField, CustomNumberInputField, CustomDropdown, HistoricalDataInputs, CustomBusinessTypeSearch } from './forms';
-import { suggestionService } from '../services/businessTypeSuggestionApi';
-import { generalLogger } from '../utils/logger';
 import toast from 'react-hot-toast';
-import { 
-  getIndustryGuidance, 
-  validateEbitdaMargin, 
-  validateRevenue, 
-  getRevenueRangeGuidance,
-  getRevenuePerEmployeeAnalysis 
+import { TARGET_COUNTRIES } from '../config/countries';
+import {
+    getIndustryGuidance,
+    getRevenuePerEmployeeAnalysis,
+    getRevenueRangeGuidance,
+    validateEbitdaMargin,
+    validateRevenue
 } from '../config/industryGuidance';
+import { useAuth } from '../hooks/useAuth';
+import { useBusinessTypes } from '../hooks/useBusinessTypes';
+import { suggestionService } from '../services/businessTypeSuggestionApi';
+import { IndustryCode } from '../types/valuation';
+import { debounce } from '../utils/debounce';
+import { generalLogger } from '../utils/logger';
+import { CustomBusinessTypeSearch, CustomDropdown, CustomInputField, CustomNumberInputField, HistoricalDataInputs } from './forms';
 
 /**
  * ValuationForm Component
@@ -84,14 +84,14 @@ export const ValuationForm: React.FC = () => {
           updateFormData({
             business_type_id: matchingType.id,
             business_model: matchingType.id,
-            industry: matchingType.industryMapping || businessCard.industry,
+            industry: matchingType.industry || matchingType.industryMapping || businessCard.industry,
             subIndustry: matchingType.category,
           });
         }
       } else if (businessCard.industry) {
         // Fallback: Try to find matching business type by industry
         const matchingType = businessTypes.find(
-          bt => bt.industryMapping === businessCard.industry
+          bt => bt.industry === businessCard.industry || bt.industryMapping === businessCard.industry
         );
         
         if (matchingType) {
@@ -169,6 +169,7 @@ export const ValuationForm: React.FC = () => {
                   id: businessType.id,
                   title: businessType.title,
                   industryMapping: businessType.industryMapping,
+                  industry: businessType.industry,
                   metadata: {
                     dcfPreference: businessType.dcfPreference,
                     multiplesPreference: businessType.multiplesPreference,
@@ -179,7 +180,7 @@ export const ValuationForm: React.FC = () => {
                 updateFormData({
                   business_type_id: businessType.id,
                   business_model: businessType.id, // Use business type id as business model
-                  industry: businessType.industryMapping || IndustryCode.SERVICES,
+                  industry: businessType.industry || businessType.industryMapping || IndustryCode.SERVICES,
                   subIndustry: businessType.category || undefined,
                   // Store metadata for business context
                   _internal_dcf_preference: businessType.dcfPreference,

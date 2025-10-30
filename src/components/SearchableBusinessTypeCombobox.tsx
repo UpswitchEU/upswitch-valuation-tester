@@ -1,5 +1,5 @@
-import React, { useState, useRef, useEffect } from 'react';
 import { ChevronDown, Lightbulb, X } from 'lucide-react';
+import React, { useEffect, useRef, useState } from 'react';
 import type { BusinessType } from '../services/businessTypesApi';
 
 interface SearchableBusinessTypeComboboxProps {
@@ -325,7 +325,7 @@ export const SearchableBusinessTypeCombobox: React.FC<SearchableBusinessTypeComb
             <div className="flex-1">
               <div className="text-gray-700 font-medium">{selectedType.description}</div>
               <div className="mt-1 text-xs">
-                <span className="font-semibold">Industry:</span> {selectedType.industryMapping}
+                <span className="font-semibold">Industry:</span> {selectedType.industry || selectedType.industryMapping}
                 {selectedType.category && (
                   <> • <span className="font-semibold">Category:</span> {selectedType.category}</>
                 )}

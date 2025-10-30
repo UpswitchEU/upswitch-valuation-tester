@@ -1,5 +1,5 @@
-import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { ChevronDown, Lightbulb, X } from 'lucide-react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import type { BusinessType } from '../../services/businessTypesApi';
 
 interface CustomBusinessTypeSearchProps {
@@ -63,7 +63,8 @@ export const CustomBusinessTypeSearch: React.FC<CustomBusinessTypeSearchProps> =
       .filter(bt => 
         bt.title.toLowerCase().includes(searchTerm) ||
         bt.description?.toLowerCase().includes(searchTerm) ||
-        bt.industryMapping?.toLowerCase().includes(searchTerm)
+        bt.industryMapping?.toLowerCase().includes(searchTerm) ||
+        bt.industry?.toLowerCase().includes(searchTerm)
       )
       .sort((a, b) => {
         // Prioritize exact matches
@@ -347,7 +348,7 @@ export const CustomBusinessTypeSearch: React.FC<CustomBusinessTypeSearchProps> =
             <div className="flex-1">
               <div className="text-gray-700 font-medium">{selectedType.description}</div>
               <div className="mt-1 text-xs">
-                <span className="font-semibold">Industry:</span> {selectedType.industryMapping}
+                <span className="font-semibold">Industry:</span> {selectedType.industry || selectedType.industryMapping}
                 {selectedType.category && (
                   <> • <span className="font-semibold">Category:</span> {selectedType.category}</>
                 )}

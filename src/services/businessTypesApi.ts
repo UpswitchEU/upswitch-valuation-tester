@@ -15,8 +15,8 @@
  */
 
 import axios, { AxiosInstance } from 'axios';
-import { businessTypesCache } from './cache/businessTypesCache';
 import { BUSINESS_TYPES_FALLBACK, BusinessTypeOption as ConfigBusinessTypeOption } from '../config/businessTypes';
+import { businessTypesCache } from './cache/businessTypesCache';
 
 // ============================================================================
 // TYPES
@@ -31,6 +31,7 @@ export interface BusinessType {
   category: string;
   category_id: string;
   industryMapping: string;
+  industry?: string;
   keywords: string[];
   popular: boolean;
   dcfPreference?: number;
