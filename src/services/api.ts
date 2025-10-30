@@ -1,21 +1,21 @@
 import axios, { AxiosInstance } from 'axios';
-import { apiLogger } from '../utils/logger';
 import type {
-  ValuationRequest,
-  ValuationResponse,
-  QuickValuationRequest,
-  CompanyLookupResult,
-  DocumentParseResult,
-  ConversationStartRequest,
-  ConversationStartResponse,
-  ConversationStepRequest,
-  ConversationStepResponse,
-  ConversationContext,
-  BusinessTypeAnalysis,
-  MethodologyRecommendation,
-  OwnerProfileRequest,
-  OwnerProfileResponse,
+    BusinessTypeAnalysis,
+    CompanyLookupResult,
+    ConversationContext,
+    ConversationStartRequest,
+    ConversationStartResponse,
+    ConversationStepRequest,
+    ConversationStepResponse,
+    DocumentParseResult,
+    MethodologyRecommendation,
+    OwnerProfileRequest,
+    OwnerProfileResponse,
+    QuickValuationRequest,
+    ValuationRequest,
+    ValuationResponse,
 } from '../types/valuation';
+import { apiLogger } from '../utils/logger';
 
 class ValuationAPI {
   private client: AxiosInstance;

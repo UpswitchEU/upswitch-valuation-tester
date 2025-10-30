@@ -6,8 +6,8 @@
  */
 
 import axios, { AxiosInstance } from 'axios';
-import { apiLogger } from '../utils/logger';
 import type { ValuationRequest, ValuationResponse } from '../types/valuation';
+import { apiLogger } from '../utils/logger';
 
 class BackendAPI {
   private client: AxiosInstance;
