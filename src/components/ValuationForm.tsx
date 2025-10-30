@@ -13,7 +13,7 @@ import {
 import { useAuth } from '../hooks/useAuth';
 import { useBusinessTypes } from '../hooks/useBusinessTypes';
 import { suggestionService } from '../services/businessTypeSuggestionApi';
-import { IndustryCode } from '../types/valuation';
+import { industriesApi } from '../services/industriesApi';
 import { debounce } from '../utils/debounce';
 import { generalLogger } from '../utils/logger';
 import { CustomBusinessTypeSearch, CustomDropdown, CustomInputField, CustomNumberInputField, HistoricalDataInputs } from './forms';
@@ -32,6 +32,11 @@ export const ValuationForm: React.FC = () => {
   // Local state for historical data inputs
   const [historicalInputs, setHistoricalInputs] = useState<{[key: string]: string}>({});
   const [hasPrefilledOnce, setHasPrefilledOnce] = useState(false);
+  
+  // Industry validation state
+  const [validIndustries, setValidIndustries] = useState<Set<string>>(new Set());
+  const [industryValidationError, setIndustryValidationError] = useState<string | null>(null);
+  const [isValidatingIndustry, setIsValidatingIndustry] = useState(false);
 
   // Debounced quick calculation for live preview
   const debouncedQuickCalc = useCallback(
@@ -42,6 +47,51 @@ export const ValuationForm: React.FC = () => {
     }, 500),
     []
   );
+
+  // Load valid industries on mount
+  useEffect(() => {
+    const loadValidIndustries = async () => {
+      try {
+        const response = await industriesApi.getIndustries();
+        setValidIndustries(new Set(response.industries));
+      } catch (error) {
+        console.error('Failed to load valid industries:', error);
+        // Don't show error to user, just log it
+      }
+    };
+    
+    loadValidIndustries();
+  }, []);
+
+  // Validate industry field
+  const validateIndustry = useCallback(async (industry: string) => {
+    if (!industry) {
+      setIndustryValidationError(null);
+      return;
+    }
+
+    setIsValidatingIndustry(true);
+    setIndustryValidationError(null);
+
+    try {
+      const isValid = await industriesApi.isValidIndustry(industry);
+      if (!isValid) {
+        setIndustryValidationError(`"${industry}" is not a recognized industry classification. This may affect valuation accuracy.`);
+      }
+    } catch (error) {
+      console.error('Industry validation error:', error);
+      // Don't show error to user, just log it
+    } finally {
+      setIsValidatingIndustry(false);
+    }
+  }, []);
+
+  // Validate industry when it changes
+  useEffect(() => {
+    if (formData.industry) {
+      validateIndustry(formData.industry);
+    }
+  }, [formData.industry, validateIndustry]);
 
   // Trigger live preview on field changes
   useEffect(() => {
@@ -177,10 +227,17 @@ export const ValuationForm: React.FC = () => {
                   }
                 });
                 
+                // Validate that business type has industry classification
+                if (!businessType.industry && !businessType.industryMapping) {
+                  console.error('Business type missing industry classification:', businessType);
+                  toast.error('Selected business type has no industry classification. Please contact support.');
+                  return;
+                }
+
                 updateFormData({
                   business_type_id: businessType.id,
                   business_model: businessType.id, // Use business type id as business model
-                  industry: businessType.industry || businessType.industryMapping || IndustryCode.SERVICES,
+                  industry: businessType.industry || businessType.industryMapping,
                   subIndustry: businessType.category || undefined,
                   // Store metadata for business context
                   _internal_dcf_preference: businessType.dcfPreference,
@@ -478,7 +535,17 @@ export const ValuationForm: React.FC = () => {
         </div>
         <div className="mt-2 text-xs text-zinc-400 space-y-1">
           {formData.revenue && formData.ebitda && <div className="text-green-400">✓ Revenue & EBITDA provided</div>}
-          {formData.industry && <div className="text-green-400">✓ Industry selected</div>}
+          {formData.industry && (
+            <div className="text-green-400">
+              ✓ Industry selected
+              {isValidatingIndustry && <span className="ml-2 text-yellow-400">(validating...)</span>}
+            </div>
+          )}
+          {industryValidationError && (
+            <div className="text-yellow-400">
+              ⚠️ {industryValidationError}
+            </div>
+          )}
           {formData.business_model && <div className="text-green-400">✓ Business model selected</div>}
           {formData.founding_year && <div className="text-green-400">✓ Founding year provided</div>}
           {Object.keys(historicalInputs).length === 0 && (

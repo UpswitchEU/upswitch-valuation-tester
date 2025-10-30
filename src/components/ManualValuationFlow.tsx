@@ -1,16 +1,16 @@
-import React, { useState, useEffect } from 'react';
-import { Edit3, TrendingUp, Building2 } from 'lucide-react';
-import { ValuationForm } from './ValuationForm';
-import { Results } from './Results';
-import { ValuationToolbar } from './ValuationToolbar';
-import { ValuationInfoPanel } from './ValuationInfoPanel';
-import { HTMLView } from './HTMLView';
-import { useValuationStore } from '../store/useValuationStore';
+import { Edit3, TrendingUp } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
 import { useAuth } from '../hooks/useAuth';
+import { useValuationStore } from '../store/useValuationStore';
+import { HTMLView } from './HTMLView';
+import { Results } from './Results';
+import { ValuationForm } from './ValuationForm';
+import { ValuationInfoPanel } from './ValuationInfoPanel';
+import { ValuationToolbar } from './ValuationToolbar';
 // import { DownloadService } from '../services/downloadService';
-import { NameGenerator } from '../utils/nameGenerator';
+import { MOBILE_BREAKPOINT, PANEL_CONSTRAINTS } from '../constants/panelConstants';
 import type { ValuationResponse } from '../types/valuation';
-import { PANEL_CONSTRAINTS, MOBILE_BREAKPOINT } from '../constants/panelConstants';
+import { NameGenerator } from '../utils/nameGenerator';
 import { ResizableDivider } from './ResizableDivider';
 // import { useReportsStore } from '../store/useReportsStore'; // Deprecated: Now saving to database
 // import { urls } from '../router'; // Removed reports link
@@ -161,20 +161,6 @@ export const ManualValuationFlow: React.FC<ManualValuationFlowProps> = ({ onComp
         valuationMethod="Manual Input"
       />
 
-      {/* Business Profile Summary */}
-      {result && (
-        <div className="mx-4 mt-4 p-4 bg-zinc-900/50 border border-zinc-800 rounded-lg">
-          <div className="flex items-center gap-3">
-            <Building2 className="w-5 h-5 text-primary-400" />
-            <div>
-              <h3 className="text-white font-medium">{result.company_name}</h3>
-              <p className="text-sm text-zinc-400">
-                {inputData?.industry || 'Industry'} • {inputData?.country_code || 'BE'} • Founded {inputData?.founding_year || 'N/A'}
-              </p>
-            </div>
-          </div>
-        </div>
-      )}
 
 
       {/* Full-screen Split Panel - Ilara Style */}

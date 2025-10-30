@@ -1,15 +1,15 @@
+import { AlertTriangle, BarChart3, CheckCircle, Database, FileText, Target, TrendingUp, Users } from 'lucide-react';
 import React, { useState } from 'react';
-import { FileText, TrendingUp, Users, Target, BarChart3, Database, CheckCircle, AlertTriangle } from 'lucide-react';
-import type { ValuationResponse, ValuationInputData } from '../../types/valuation';
-import { InputDataSection } from './InputDataSection';
+import type { ValuationInputData, ValuationResponse } from '../../types/valuation';
+import { calculateOwnerDependencyMultipleImpact } from '../../utils/valuationFormatters';
+import { formatCurrency } from '../Results/utils/formatters';
+import { DataProvenanceSection } from './DataProvenanceSection';
 import { DCFTransparencySection } from './DCFTransparencySection';
+import { InputDataSection } from './InputDataSection';
 import { MultiplesTransparencySection } from './MultiplesTransparencySection';
 import { OwnerDependencySection } from './OwnerDependencySection';
-import { WeightingLogicSection } from './WeightingLogicSection';
 import { RangeCalculationSection } from './RangeCalculationSection';
-import { DataProvenanceSection } from './DataProvenanceSection';
-import { formatCurrency } from '../Results/utils/formatters';
-import { calculateOwnerDependencyMultipleImpact } from '../../utils/valuationFormatters';
+import { WeightingLogicSection } from './WeightingLogicSection';
 
 interface TransparentCalculationViewProps {
   result: ValuationResponse;
@@ -44,53 +44,48 @@ export const TransparentCalculationView: React.FC<TransparentCalculationViewProp
 
   return (
     <div className="relative">
-      {/* Sticky Table of Contents - Hidden on mobile */}
-      <div className="hidden lg:block fixed left-0 top-20 w-64 h-[calc(100vh-5rem)] overflow-y-auto bg-white border-r border-gray-200 p-4 z-10">
-        <div className="mb-4">
-          <h3 className="text-sm font-semibold text-gray-900 mb-2 uppercase tracking-wide">
-            Contents
-          </h3>
-          <div className="text-xs text-gray-500 mb-4">
-            {SECTIONS.length} Sections
+      {/* Sticky Horizontal Navigation */}
+      <div className="sticky top-0 z-20 bg-white border-b border-gray-200 shadow-sm">
+        <div className="px-4 py-3">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-sm font-semibold text-gray-900 uppercase tracking-wide">
+              Report Contents
+            </h3>
+            <div className="text-xs text-gray-500">
+              {SECTIONS.length} Sections
+            </div>
           </div>
-        </div>
-        <nav className="space-y-1">
-          {SECTIONS.map((section, index) => {
-            const Icon = section.icon;
-            const isActive = activeSection === section.id;
-            return (
-              <button
-                key={section.id}
-                onClick={() => scrollToSection(section.id)}
-                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all ${
-                  isActive
-                    ? 'bg-blue-50 text-blue-700 font-semibold shadow-sm'
-                    : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'
-                }`}
-              >
-                <span className="text-xs text-gray-400 font-mono">{String(index + 1).padStart(2, '0')}</span>
-                <Icon className={`w-4 h-4 ${isActive ? 'text-blue-600' : 'text-gray-400'}`} />
-                <span className="flex-1 text-left">{section.title}</span>
-              </button>
-            );
-          })}
-        </nav>
-
-        {/* Academic Citation */}
-        <div className="mt-6 pt-6 border-t border-gray-200">
-          <div className="text-xs text-gray-500 space-y-2">
-            <p className="font-semibold text-gray-700">Methodology Standards:</p>
-            <ul className="space-y-1">
-              <li>• Damodaran (2012)</li>
-              <li>• Big 4 Frameworks</li>
-              <li>• IVSC Guidelines</li>
-            </ul>
+          
+          {/* Horizontal Navigation */}
+          <div className="overflow-x-auto">
+            <nav className="flex space-x-1 min-w-max">
+              {SECTIONS.map((section, index) => {
+                const Icon = section.icon;
+                const isActive = activeSection === section.id;
+                return (
+                  <button
+                    key={section.id}
+                    onClick={() => scrollToSection(section.id)}
+                    className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-all whitespace-nowrap ${
+                      isActive
+                        ? 'bg-blue-50 text-blue-700 font-semibold shadow-sm border border-blue-200'
+                        : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900 border border-transparent'
+                    }`}
+                  >
+                    <span className="text-xs text-gray-400 font-mono">{String(index + 1).padStart(2, '0')}</span>
+                    <Icon className={`w-4 h-4 ${isActive ? 'text-blue-600' : 'text-gray-400'}`} />
+                    <span className="hidden sm:inline">{section.title}</span>
+                    <span className="sm:hidden">{section.title.split(' ')[0]}</span>
+                  </button>
+                );
+              })}
+            </nav>
           </div>
         </div>
       </div>
 
-      {/* Main Content - Offset for navigation */}
-      <div className="lg:ml-64 space-y-8 bg-white p-6">
+      {/* Main Content */}
+      <div className="space-y-8 bg-white p-6">
       {/* Introduction */}
       <div id="summary" className="bg-gradient-to-r from-blue-50 via-purple-50 to-indigo-50 border-2 border-blue-500 rounded-lg p-6">
         <h1 className="text-3xl font-bold text-gray-900 mb-3">
@@ -404,6 +399,39 @@ const FinalSynthesisSection: React.FC<{
               <strong>European Market Focus:</strong> Data sources, multiples, and adjustments specifically 
               optimized for European SME market dynamics.
             </p>
+          </div>
+        </div>
+      </div>
+
+      {/* Academic Citation */}
+      <div className="mt-8 pt-6 border-t border-gray-200 bg-gray-50 rounded-lg p-4">
+        <div className="text-xs text-gray-600 space-y-2">
+          <p className="font-semibold text-gray-800 mb-2">Methodology Standards:</p>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+              <p className="font-medium text-gray-700 mb-1">Academic Foundation:</p>
+              <ul className="space-y-1">
+                <li>• Damodaran (2012)</li>
+                <li>• McKinsey Valuation</li>
+                <li>• Koller & Goedhart</li>
+              </ul>
+            </div>
+            <div>
+              <p className="font-medium text-gray-700 mb-1">Professional Standards:</p>
+              <ul className="space-y-1">
+                <li>• Big 4 Frameworks</li>
+                <li>• IVSC Guidelines</li>
+                <li>• AICPA Standards</li>
+              </ul>
+            </div>
+            <div>
+              <p className="font-medium text-gray-700 mb-1">Regulatory Compliance:</p>
+              <ul className="space-y-1">
+                <li>• EU Accounting Directives</li>
+                <li>• IFRS 13 Fair Value</li>
+                <li>• Basel III Guidelines</li>
+              </ul>
+            </div>
           </div>
         </div>
       </div>
