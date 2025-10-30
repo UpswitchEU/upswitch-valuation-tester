@@ -47,7 +47,7 @@ export interface CacheStats {
 // ============================================================================
 
 const CACHE_CONFIG = {
-  VERSION: '1.0.0',
+  VERSION: '1.1.0',
   TTL: 24 * 60 * 60 * 1000, // 24 hours in milliseconds
   KEYS: {
     BUSINESS_TYPES: 'upswitch_valuation_tester_business_types_cache',

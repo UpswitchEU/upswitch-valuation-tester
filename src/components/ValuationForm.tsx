@@ -239,6 +239,7 @@ export const ValuationForm: React.FC = () => {
             name="founding_year"
             min={1900}
             max={new Date().getFullYear()}
+            showArrows={true}
             required
           />
 
