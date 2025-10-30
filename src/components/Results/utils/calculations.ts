@@ -17,32 +17,58 @@ export const calculateOwnershipAdjustment = (result: ValuationResponse) => {
 };
 
 export const calculateGrowthMetrics = (result: ValuationResponse) => {
-  // Check if we have historical data or financial metrics
+  // Check if we have financial metrics (preferred - comes from backend calculation)
   const resultAny = result as any;
-  const hasHistoricalData = resultAny.historical_years_data && resultAny.historical_years_data.length > 0;
   const hasFinancialMetrics = resultAny.financial_metrics && Object.keys(resultAny.financial_metrics).length > 0;
   
-  if (!hasHistoricalData && !hasFinancialMetrics) {
-    return { cagr: 0, hasHistoricalData: false, years: 0 };
-  }
-  
-  // Calculate CAGR from historical data if available
-  if (hasHistoricalData && resultAny.historical_years_data) {
-    const years = resultAny.historical_years_data.length;
-    const firstYear = resultAny.historical_years_data[0];
-    const lastYear = resultAny.historical_years_data[years - 1];
+  // Primary: use revenue_cagr_3y from financial_metrics (backend calculated)
+  if (hasFinancialMetrics && resultAny.financial_metrics) {
+    const metrics = resultAny.financial_metrics;
     
-    if (firstYear && lastYear && firstYear.revenue > 0) {
-      const cagr = Math.pow(lastYear.revenue / firstYear.revenue, 1 / (years - 1)) - 1;
-      return { cagr, hasHistoricalData: true, years };
+    // Backend returns revenue_cagr_3y as percentage (e.g., 29.1 for 29.1%)
+    // Convert to decimal (0.291) for frontend calculations
+    if (metrics.revenue_cagr_3y !== undefined && metrics.revenue_cagr_3y !== null) {
+      // Check if it's already in decimal format (< 1) or percentage format (>= 1)
+      const cagrDecimal = metrics.revenue_cagr_3y >= 1 
+        ? metrics.revenue_cagr_3y / 100  // Convert percentage to decimal
+        : metrics.revenue_cagr_3y;        // Already decimal
+      
+      // Determine years from historical data if available, otherwise use 2 (most common)
+      const hasHistoricalData = resultAny.historical_years_data && resultAny.historical_years_data.length > 0;
+      const years = hasHistoricalData ? resultAny.historical_years_data.length : 2;
+      
+      return { 
+        cagr: cagrDecimal, 
+        hasHistoricalData: true, 
+        years 
+      };
+    }
+    
+    // Fallback to other metrics if revenue_cagr_3y not available
+    if (metrics.cagr !== undefined && metrics.cagr !== null) {
+      const cagrDecimal = metrics.cagr >= 1 ? metrics.cagr / 100 : metrics.cagr;
+      return { cagr: cagrDecimal, hasHistoricalData: true, years: 3 };
+    }
+    
+    if (metrics.revenue_growth !== undefined && metrics.revenue_growth !== null) {
+      const growthDecimal = metrics.revenue_growth >= 1 ? metrics.revenue_growth / 100 : metrics.revenue_growth;
+      return { cagr: growthDecimal, hasHistoricalData: true, years: 2 };
     }
   }
   
-  // Fallback: use financial metrics if available
-  if (hasFinancialMetrics && resultAny.financial_metrics) {
-    const metrics = resultAny.financial_metrics;
-    const cagr = metrics.cagr || metrics.growth_rate || 0;
-    return { cagr, hasHistoricalData: true, years: 3 }; // Assume 3 years for financial metrics
+  // Secondary: calculate CAGR from historical data if available (fallback)
+  const hasHistoricalData = resultAny.historical_years_data && resultAny.historical_years_data.length > 0;
+  if (hasHistoricalData && resultAny.historical_years_data && resultAny.current_year_data) {
+    const years = resultAny.historical_years_data.length;
+    const firstYear = resultAny.historical_years_data[0];
+    const currentYear = resultAny.current_year_data;
+    
+    if (firstYear && currentYear && firstYear.revenue > 0 && currentYear.revenue > 0) {
+      // Calculate CAGR: (current_year / first_year)^(1/periods) - 1
+      const periods = years; // Number of periods between first historical and current
+      const cagr = Math.pow(currentYear.revenue / firstYear.revenue, 1 / periods) - 1;
+      return { cagr, hasHistoricalData: true, years: periods };
+    }
   }
   
   return { cagr: 0, hasHistoricalData: false, years: 0 };

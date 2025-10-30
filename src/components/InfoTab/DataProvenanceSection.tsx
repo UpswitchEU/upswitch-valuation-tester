@@ -201,8 +201,14 @@ export const DataProvenanceSection: React.FC<DataProvenanceSectionProps> = ({ re
           />
           <CalculatedMetric
             label="Revenue CAGR"
-            value={result.financial_metrics?.revenue_growth 
-              ? `${(result.financial_metrics.revenue_growth * 100).toFixed(1)}%`
+            value={result.financial_metrics?.revenue_cagr_3y !== undefined && result.financial_metrics?.revenue_cagr_3y !== null
+              ? `${(result.financial_metrics.revenue_cagr_3y >= 1 
+                    ? result.financial_metrics.revenue_cagr_3y 
+                    : result.financial_metrics.revenue_cagr_3y * 100).toFixed(1)}%`
+              : result.financial_metrics?.revenue_growth !== undefined && result.financial_metrics?.revenue_growth !== null
+              ? `${(result.financial_metrics.revenue_growth >= 1 
+                    ? result.financial_metrics.revenue_growth 
+                    : result.financial_metrics.revenue_growth * 100).toFixed(1)}%`
               : 'N/A'}
             formula="(Ending Value / Beginning Value)^(1/years) - 1"
             inputs="Based on historical revenue data (if available)"
