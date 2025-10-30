@@ -34,6 +34,58 @@ interface CacheEntry {
   version: string;
 }
 
+// Fallback industry list (core industries if API fails)
+const FALLBACK_INDUSTRIES = [
+  'technology',
+  'manufacturing',
+  'retail',
+  'services',
+  'healthcare',
+  'finance',
+  'real_estate',
+  'hospitality',
+  'construction',
+  'food-production',
+  'food-services',
+  'professional-services',
+  'other'
+];
+
+/**
+ * Normalize API response to expected format
+ * Handles both array response (Python backend) and object response (structured)
+ */
+function normalizeIndustriesResponse(data: any): IndustryListResponse {
+  // If already in correct format, return as-is
+  if (data && typeof data === 'object' && Array.isArray(data.industries)) {
+    return {
+      industries: data.industries,
+      count: data.count || data.industries.length,
+      last_updated: data.last_updated || new Date().toISOString(),
+      description: data.description || 'Valid industry classifications'
+    };
+  }
+
+  // If it's an array (Python backend format), wrap it
+  if (Array.isArray(data)) {
+    return {
+      industries: data,
+      count: data.length,
+      last_updated: new Date().toISOString(),
+      description: 'Valid industry classifications from database'
+    };
+  }
+
+  // Invalid format - use fallback
+  console.warn('Invalid industries response format, using fallback:', data);
+  return {
+    industries: FALLBACK_INDUSTRIES,
+    count: FALLBACK_INDUSTRIES.length,
+    last_updated: new Date().toISOString(),
+    description: 'Fallback industry list (API returned invalid format)'
+  };
+}
+
 class IndustriesApiService {
   private cache: CacheEntry | null = null;
   private pendingRequest: Promise<IndustryListResponse> | null = null;
@@ -90,12 +142,24 @@ class IndustriesApiService {
    * Check if industry is valid
    */
   async isValidIndustry(industry: string): Promise<boolean> {
+    if (!industry || typeof industry !== 'string') {
+      return false;
+    }
+
     try {
-      const industries = await this.getIndustries();
-      return industries.industries.includes(industry.toLowerCase());
+      const industriesData = await this.getIndustries();
+      
+      // Validate response structure
+      if (!industriesData || !industriesData.industries || !Array.isArray(industriesData.industries)) {
+        console.warn('Invalid industries data structure, using fallback for validation');
+        return FALLBACK_INDUSTRIES.includes(industry.toLowerCase());
+      }
+
+      return industriesData.industries.includes(industry.toLowerCase());
     } catch (error) {
       console.error('Error validating industry:', error);
-      return false;
+      // Use fallback list for validation on error
+      return FALLBACK_INDUSTRIES.includes(industry.toLowerCase());
     }
   }
 
@@ -103,16 +167,33 @@ class IndustriesApiService {
    * Get industry suggestions based on partial input
    */
   async getIndustrySuggestions(partial: string): Promise<string[]> {
+    if (!partial || typeof partial !== 'string') {
+      return [];
+    }
+
     try {
-      const industries = await this.getIndustries();
-      const lowerPartial = partial.toLowerCase();
+      const industriesData = await this.getIndustries();
       
-      return industries.industries
+      // Validate response structure
+      if (!industriesData || !industriesData.industries || !Array.isArray(industriesData.industries)) {
+        console.warn('Invalid industries data structure, using fallback for suggestions');
+        const lowerPartial = partial.toLowerCase();
+        return FALLBACK_INDUSTRIES
+          .filter(industry => industry.includes(lowerPartial))
+          .slice(0, 10);
+      }
+
+      const lowerPartial = partial.toLowerCase();
+      return industriesData.industries
         .filter(industry => industry.includes(lowerPartial))
         .slice(0, 10); // Limit to 10 suggestions
     } catch (error) {
       console.error('Error getting industry suggestions:', error);
-      return [];
+      // Return fallback suggestions on error
+      const lowerPartial = partial.toLowerCase();
+      return FALLBACK_INDUSTRIES
+        .filter(industry => industry.includes(lowerPartial))
+        .slice(0, 10);
     }
   }
 
@@ -144,13 +225,31 @@ class IndustriesApiService {
       const response = await fetch('https://api.upswitch.biz/api/v1/industries');
       
       if (!response.ok) {
-        throw new Error(`Failed to fetch industries: ${response.statusText}`);
+        throw new Error(`Failed to fetch industries: ${response.status} ${response.statusText}`);
       }
 
-      return await response.json();
-    } catch (error) {
-      console.error('Error fetching industries:', error);
-      throw error;
+      const data = await response.json();
+      
+      // Normalize response (handle both array and object formats)
+      const normalized = normalizeIndustriesResponse(data);
+      
+      // Validate normalized response
+      if (!normalized.industries || !Array.isArray(normalized.industries) || normalized.industries.length === 0) {
+        console.warn('API returned empty or invalid industries list, using fallback');
+        return normalizeIndustriesResponse(FALLBACK_INDUSTRIES);
+      }
+
+      return normalized;
+    } catch (error: any) {
+      console.error('Error fetching industries:', {
+        message: error?.message,
+        status: error?.response?.status,
+        url: 'https://api.upswitch.biz/api/v1/industries'
+      });
+      
+      // Return fallback on error to prevent complete failure
+      console.info('Using fallback industry list due to API error');
+      return normalizeIndustriesResponse(FALLBACK_INDUSTRIES);
     }
   }
 }
