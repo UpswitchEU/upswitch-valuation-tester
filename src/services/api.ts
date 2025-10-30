@@ -24,7 +24,7 @@ class ValuationAPI {
     this.client = axios.create({
       baseURL: import.meta.env.VITE_BACKEND_URL || 
                'https://api.upswitch.biz',
-      timeout: 30000,
+      timeout: 90000, // 90 seconds - allows for Python processing (60-70s) + buffer
       headers: {
         'Content-Type': 'application/json',
       },
@@ -51,7 +51,7 @@ class ValuationAPI {
 
   // Quick valuation (fast multiples-only calculation for live preview)
   async quickValuation(data: QuickValuationRequest): Promise<ValuationResponse> {
-    const response = await this.client.post('/api/v1/valuation/quick', data);
+    const response = await this.client.post('/api/valuations/quick', data);
     return response.data;
   }
 

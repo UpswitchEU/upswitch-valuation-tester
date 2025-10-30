@@ -17,7 +17,7 @@ class BackendAPI {
       baseURL: import.meta.env.VITE_BACKEND_URL || 
                import.meta.env.VITE_API_BASE_URL || 
                'https://web-production-8d00b.up.railway.app',
-      timeout: 30000,
+      timeout: 90000, // 90 seconds for manual valuations
       headers: {
         'Content-Type': 'application/json',
       },
