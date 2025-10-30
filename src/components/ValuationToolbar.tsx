@@ -238,11 +238,6 @@ export const ValuationToolbar: React.FC<ValuationToolbarProps> = ({
             {/* Right Section - User Info */}
             <div className="flex items-center gap-1.5">
               <div className="flex items-center gap-3">
-                <div className="text-right">
-                  {companyName && (
-                    <p className="text-xs text-zinc-400">{companyName}</p>
-                  )}
-                </div>
                 <UserDropdown user={user} onLogout={handleLogout} />
               </div>
             </div>
