@@ -130,11 +130,13 @@ export class BusinessTypesCacheService {
       }
 
       this.updateStats(true);
-      console.log('[BusinessTypesCache] Data cached successfully', {
-        businessTypes: data.businessTypes.length,
-        categories: data.categories.length,
+      if (import.meta.env.DEV) {
+        console.log('[BusinessTypesCache] Data cached successfully', {
+          businessTypes: data.businessTypes.length,
+          categories: data.categories.length,
         popularTypes: data.popularTypes.length
-      });
+        });
+      }
     } catch (error) {
       console.error('[BusinessTypesCache] Failed to cache data:', error);
       this.updateStats(false);
@@ -157,7 +159,9 @@ export class BusinessTypesCacheService {
       
       // Check if cache is expired
       if (this.isExpired(cacheEntry)) {
-        console.log('[BusinessTypesCache] Cache expired, removing');
+        if (import.meta.env.DEV) {
+          console.log('[BusinessTypesCache] Cache expired, removing');
+        }
         this.clearBusinessTypes();
         this.updateStats(false);
         return null;
@@ -165,7 +169,9 @@ export class BusinessTypesCacheService {
 
       // Check version compatibility
       if (cacheEntry.version !== CACHE_CONFIG.VERSION) {
-        console.log('[BusinessTypesCache] Version mismatch, clearing cache');
+        if (import.meta.env.DEV) {
+          console.log('[BusinessTypesCache] Version mismatch, clearing cache');
+        }
         this.clearBusinessTypes();
         this.updateStats(false);
         return null;
@@ -178,16 +184,18 @@ export class BusinessTypesCacheService {
       const hitRate = this.stats.hitCount / (this.stats.hitCount + this.stats.missCount);
       const cacheSize = this.getCacheSize();
       
-      console.log('[BusinessTypesCache] Cache hit', {
-        businessTypes: cacheEntry.data.businessTypes.length,
-        categories: cacheEntry.data.categories.length,
-        popularTypes: cacheEntry.data.popularTypes.length,
+      if (import.meta.env.DEV) {
+        console.log('[BusinessTypesCache] Cache hit', {
+          businessTypes: cacheEntry.data.businessTypes.length,
+          categories: cacheEntry.data.categories.length,
+          popularTypes: cacheEntry.data.popularTypes.length,
         age: cacheAge,
         size: cacheSize,
         hitRate: hitRate.toFixed(2),
         totalHits: this.stats.hitCount,
         totalMisses: this.stats.missCount
-      });
+        });
+      }
 
       return cacheEntry.data;
     } catch (error) {

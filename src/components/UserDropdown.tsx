@@ -1,5 +1,5 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { LogOut, User, Settings, Home, UserPlus, Info } from 'lucide-react';
+import { Home, Info, LogOut, Settings, User, UserPlus } from 'lucide-react';
+import React, { useEffect, useRef, useState } from 'react';
 import { User as UserType } from '../contexts/AuthContextTypes';
 
 interface UserDropdownProps {
@@ -8,7 +8,6 @@ interface UserDropdownProps {
 }
 
 export const UserDropdown: React.FC<UserDropdownProps> = ({ user, onLogout }) => {
-  console.log('🔵 [UserDropdown] Rendering with user:', user);
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null); // Track button position

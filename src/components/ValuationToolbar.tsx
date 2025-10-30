@@ -1,10 +1,10 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { Eye, Code, Info, RefreshCw, Download, Maximize } from 'lucide-react';
+import { Code, Download, Eye, Info, Maximize, RefreshCw } from 'lucide-react';
+import React, { useEffect, useRef, useState } from 'react';
+import { useAuth } from '../hooks/useAuth';
 import { ValuationToolbarProps } from '../types/valuation';
+import { generalLogger } from '../utils/logger';
 import { NameGenerator } from '../utils/nameGenerator';
 import { BrandedLoading } from './BrandedLoading';
-import { generalLogger } from '../utils/logger';
-import { useAuth } from '../hooks/useAuth';
 import { UserDropdown } from './UserDropdown';
 
 export const ValuationToolbar: React.FC<ValuationToolbarProps> = ({
@@ -18,7 +18,6 @@ export const ValuationToolbar: React.FC<ValuationToolbarProps> = ({
   onTabChange,
   companyName
 }) => {
-  console.log('🔵 [ValuationToolbar] User prop received:', user);
   const { refreshAuth } = useAuth();
   const [isEditingName, setIsEditingName] = useState(false);
   const [editedName, setEditedName] = useState(valuationName);

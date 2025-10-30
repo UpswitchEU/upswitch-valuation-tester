@@ -184,17 +184,25 @@
 // Temporary mock implementation
 export const reportApiService = {
   async savePartialData(reportId: string, data: any): Promise<void> {
-    console.log('Mock savePartialData called:', { reportId, data });
+    if (import.meta.env.DEV) {
+      console.log('Mock savePartialData called:', { reportId, data });
+    }
   },
   async getReport(reportId: string): Promise<any> {
-    console.log('Mock getReport called:', { reportId });
+    if (import.meta.env.DEV) {
+      console.log('Mock getReport called:', { reportId });
+    }
     return { success: false, data: null };
   },
   async updateReport(reportId: string, data: any): Promise<any> {
-    console.log('Mock updateReport called:', { reportId, data });
+    if (import.meta.env.DEV) {
+      console.log('Mock updateReport called:', { reportId, data });
+    }
     return { success: true, data };
   },
   async completeReport(reportId: string, data: any): Promise<void> {
-    console.log('Mock completeReport called:', { reportId, data });
+    if (import.meta.env.DEV) {
+      console.log('Mock completeReport called:', { reportId, data });
+    }
   }
 };

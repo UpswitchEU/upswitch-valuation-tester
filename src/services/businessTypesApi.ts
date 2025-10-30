@@ -90,17 +90,21 @@ class BusinessTypesApiService {
       if (businessTypesCache.hasValidCache()) {
         const cachedData = await businessTypesCache.getBusinessTypes();
         if (cachedData) {
-          console.log('[BusinessTypesAPI] Serving from cache', {
-            businessTypes: cachedData.businessTypes.length,
-            categories: cachedData.categories.length,
-            popularTypes: cachedData.popularTypes.length
-          });
+          if (import.meta.env.DEV) {
+            console.log('[BusinessTypesAPI] Serving from cache', {
+              businessTypes: cachedData.businessTypes.length,
+              categories: cachedData.categories.length,
+              popularTypes: cachedData.popularTypes.length
+            });
+          }
           return cachedData.businessTypes;
         }
       }
 
       // Fetch from API
-      console.log('[BusinessTypesAPI] Fetching from API');
+      if (import.meta.env.DEV) {
+        console.log('[BusinessTypesAPI] Fetching from API');
+      }
       const [typesResponse, categoriesResponse] = await Promise.all([
         this.api.get('/types', { params: { limit: 200 } }),
         this.api.get('/categories')
@@ -117,7 +121,9 @@ class BusinessTypesApiService {
           popularTypes: businessTypes.filter((bt: BusinessType) => bt.popular)
         });
         
-        console.log('[BusinessTypesAPI] Fetched and cached', businessTypes.length, 'business types');
+        if (import.meta.env.DEV) {
+          console.log('[BusinessTypesAPI] Fetched and cached', businessTypes.length, 'business types');
+        }
         return businessTypes;
       }
       
@@ -126,7 +132,9 @@ class BusinessTypesApiService {
       console.error('[BusinessTypesAPI] Failed to fetch business types:', error);
       
       // Return hardcoded fallback
-      console.log('[BusinessTypesAPI] Using hardcoded fallback data');
+      if (import.meta.env.DEV) {
+        console.log('[BusinessTypesAPI] Using hardcoded fallback data');
+      }
       return this.getHardcodedBusinessTypes();
     }
   }
@@ -177,17 +185,21 @@ class BusinessTypesApiService {
    */
   async getBusinessTypeFull(businessTypeId: string): Promise<any> {
     try {
-      console.log(`[BusinessTypesApi] Fetching full metadata for: ${businessTypeId}`);
+      if (import.meta.env.DEV) {
+        console.log(`[BusinessTypesApi] Fetching full metadata for: ${businessTypeId}`);
+      }
       
       const response = await this.api.get(`/types/${businessTypeId}/full`);
       
       if (response.data.success && response.data.data) {
-        console.log(`[BusinessTypesApi] Full metadata loaded`, {
-          businessTypeId,
-          questionsCount: response.data.data.questions?.length || 0,
+        if (import.meta.env.DEV) {
+          console.log(`[BusinessTypesApi] Full metadata loaded`, {
+            businessTypeId,
+            questionsCount: response.data.data.questions?.length || 0,
           validationsCount: response.data.data.validations?.length || 0,
           benchmarksCount: response.data.data.benchmarks?.length || 0,
-        });
+          });
+        }
         return response.data.data;
       }
       
@@ -210,7 +222,9 @@ class BusinessTypesApiService {
     }
   ): Promise<any> {
     try {
-      console.log(`[BusinessTypesApi] Fetching questions for: ${businessTypeId}`, options);
+      if (import.meta.env.DEV) {
+        console.log(`[BusinessTypesApi] Fetching questions for: ${businessTypeId}`, options);
+      }
       
       const params: any = {};
       
@@ -229,12 +243,14 @@ class BusinessTypesApiService {
       const response = await this.api.get(`/types/${businessTypeId}/questions`, { params });
       
       if (response.data.success && response.data.data) {
-        console.log(`[BusinessTypesApi] Questions loaded`, {
-          businessTypeId,
-          totalQuestions: response.data.data.questions?.length || 0,
+        if (import.meta.env.DEV) {
+          console.log(`[BusinessTypesApi] Questions loaded`, {
+            businessTypeId,
+            totalQuestions: response.data.data.questions?.length || 0,
           requiredQuestions: response.data.data.total_required || 0,
           estimatedTime: response.data.data.estimated_time,
-        });
+          });
+        }
         return response.data.data;
       }
       
