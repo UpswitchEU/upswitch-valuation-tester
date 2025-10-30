@@ -509,6 +509,7 @@ export const ValuationForm: React.FC = () => {
           historicalInputs={historicalInputs}
           onChange={setHistoricalInputs}
           onBlur={() => {}}
+          foundingYear={formData.founding_year}
         />
       </div>
 
