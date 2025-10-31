@@ -8,6 +8,55 @@ interface DataProvenanceSectionProps {
   inputData: ValuationInputData | null;
 }
 
+/**
+ * Calculate user data completeness score based on filled fields
+ * 
+ * @param data User input data
+ * @returns Completeness score (0-100)
+ * 
+ * Weighting:
+ * - Required fields (revenue, EBITDA, industry, country) = 60%
+ * - Optional fields (history, employees, etc.) = 40%
+ * 
+ * Rationale: Required fields are essential for basic valuation,
+ * optional fields improve accuracy but aren't critical for calculation.
+ */
+function calculateUserDataCompleteness(data: ValuationInputData | null): number {
+  if (!data) return 0;
+  
+  // Required fields (always needed for basic valuation)
+  const requiredFields = [
+    data.revenue,
+    data.ebitda,
+    data.industry,
+    data.country_code
+  ];
+  
+  // Optional fields (improve valuation accuracy)
+  const optionalFields = [
+    data.founding_year,
+    data.employees,
+    data.business_model,
+    data.historical_years_data && data.historical_years_data.length > 0,
+    data.total_debt,
+    data.cash,
+    data.metrics
+  ];
+  
+  // Count filled fields (empty string '' does not count as filled)
+  const requiredFilled = requiredFields.filter(f => f !== null && f !== undefined && f !== '').length;
+  const optionalFilled = optionalFields.filter(f => f !== null && f !== undefined && f !== false).length;
+  
+  // Weighting: Required fields = 60%, Optional fields = 40%
+  const REQUIRED_WEIGHT = 60;
+  const OPTIONAL_WEIGHT = 40;
+  
+  const requiredScore = (requiredFilled / requiredFields.length) * REQUIRED_WEIGHT;
+  const optionalScore = (optionalFilled / optionalFields.length) * OPTIONAL_WEIGHT;
+  
+  return requiredScore + optionalScore;
+}
+
 export const DataProvenanceSection: React.FC<DataProvenanceSectionProps> = ({ result, inputData }) => {
   const [expandedFactors, setExpandedFactors] = useState<Set<string>>(new Set());
   
@@ -106,46 +155,24 @@ export const DataProvenanceSection: React.FC<DataProvenanceSectionProps> = ({ re
   }
   
   // Get data sources from transparency data (ONLY REAL DATA)
-  const dataSources: DataSourceType[] = result.transparency.data_sources;
+  const dataSources: DataSourceType[] = result.transparency?.data_sources || [];
 
-  // Calculate overall data quality from REAL data
-  const externalDataConfidence = dataSources.reduce((sum, ds) => sum + ds.confidence, 0) / dataSources.length;
+  // CRITICAL FIX: Calculate external data confidence with division by zero protection
+  // Defense in depth - even though early return checks length > 0, protect against future changes
+  const externalDataConfidence = dataSources.length > 0
+    ? dataSources.reduce((sum, ds) => sum + ds.confidence, 0) / dataSources.length
+    : 0; // Should never reach this due to early return, but defensive
   
-  // Calculate user data completeness based on ACTUAL filled fields (NO MOCK DATA)
-  const calculateUserDataCompleteness = (data: ValuationInputData | null): number => {
-    if (!data) return 0;
-    
-    // Required fields (always needed)
-    const requiredFields = [
-      data.revenue,
-      data.ebitda,
-      data.industry,
-      data.country_code
-    ];
-    
-    // Optional fields (improve quality)
-    const optionalFields = [
-      data.founding_year,
-      data.employees,
-      data.business_model,
-      data.historical_years_data && data.historical_years_data.length > 0,
-      data.total_debt,
-      data.cash,
-      data.metrics
-    ];
-    
-    const requiredFilled = requiredFields.filter(f => f !== null && f !== undefined && f !== '').length;
-    const optionalFilled = optionalFields.filter(f => f !== null && f !== undefined && f !== false).length;
-    
-    // Required fields worth 60%, optional fields worth 40%
-    const requiredScore = (requiredFilled / requiredFields.length) * 60;
-    const optionalScore = (optionalFilled / optionalFields.length) * 40;
-    
-    return requiredScore + optionalScore;
-  };
-  
+  // Calculate user data completeness using top-level function (NO MOCK DATA)
   const userDataCompleteness = calculateUserDataCompleteness(inputData);
-  const overallQuality = (externalDataConfidence * 0.6 + userDataCompleteness * 0.4);
+  
+  // CRITICAL FIX: Validate no NaN values before calculating overall quality
+  // NaN can occur from division by zero or invalid data
+  const safeExternalConfidence = isFinite(externalDataConfidence) ? externalDataConfidence : 0;
+  const safeUserCompleteness = isFinite(userDataCompleteness) ? userDataCompleteness : 0;
+  
+  // Overall quality: External data = 60%, User data = 40%
+  const overallQuality = (safeExternalConfidence * 0.6 + safeUserCompleteness * 0.4);
 
   // If we reach here, we have REAL data from backend
   return (
