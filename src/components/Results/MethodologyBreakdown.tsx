@@ -1,13 +1,13 @@
-import React, { useState, useMemo } from 'react';
-import { formatCurrency } from './utils/formatters';
-import { ConfidenceFactor } from './ConfidenceFactor';
-import { Tooltip } from '../ui/Tooltip';
-import { DocumentationModal } from '../ui/DocumentationModal';
+import React, { useMemo, useState } from 'react';
+import { FINANCIAL_CONSTANTS } from '../../config/financialConstants';
 import { METHODOLOGY_DOCS } from '../../content/methodologyDocs';
 import { useReducedMotion } from '../../hooks/useReducedMotion';
-import { FINANCIAL_CONSTANTS } from '../../config/financialConstants';
-import { getWeightExplanation, calculateConfidenceFactors } from './utils/weightExplanation';
 import type { ValuationResponse } from '../../types/valuation';
+import { DocumentationModal } from '../ui/DocumentationModal';
+import { Tooltip } from '../ui/Tooltip';
+import { ConfidenceFactor } from './ConfidenceFactor';
+import { formatCurrency } from './utils/formatters';
+import { calculateConfidenceFactors, getWeightExplanation } from './utils/weightExplanation';
 
 interface MethodologyBreakdownProps {
   result: ValuationResponse;
@@ -85,24 +85,47 @@ export const MethodologyBreakdown: React.FC<MethodologyBreakdownProps> = ({ resu
         {dcfWeight > 0 && multiplesWeight > 0 && (
           <div className="mb-4">
             <p className="text-gray-700 mb-3">This valuation combines two methodologies:</p>
-            <ul className="space-y-2 text-sm text-gray-600">
-              <li className="flex items-center">
-                <span className="w-2 h-2 bg-blue-500 rounded-full mr-3"></span>
-                <strong>
-                  <Tooltip content="Discounted Cash Flow - a valuation method that projects future cash flows and discounts them to present value">
-                    DCF
-                  </Tooltip>:
-                </strong> {(dcfWeight * 100).toFixed(1)}% - Projects future cash flows and discounts to present value using <Tooltip content="Weighted Average Cost of Capital - the rate used to discount future cash flows to present value">WACC</Tooltip>
-              </li>
-              <li className="flex items-center">
-                <span className="w-2 h-2 bg-green-500 rounded-full mr-3"></span>
-                <strong>
-                  <Tooltip content="Valuation ratios based on comparable public companies or transactions">
-                    Market Multiples
-                  </Tooltip>:
-                </strong> {(multiplesWeight * 100).toFixed(1)}% - Compares to similar companies using revenue and <Tooltip content="Earnings Before Interest, Taxes, Depreciation, and Amortization - a measure of operating profitability">EBITDA</Tooltip> multiples
-              </li>
-            </ul>
+            <div className="space-y-3">
+              <div className="flex items-start gap-3">
+                <span className="w-2 h-2 bg-blue-500 rounded-full mt-2 flex-shrink-0"></span>
+                <div className="flex-1">
+                  <div className="flex items-baseline gap-2 mb-1">
+                    <strong className="text-gray-900">
+                      <Tooltip content="Discounted Cash Flow - a valuation method that projects future cash flows and discounts them to present value">
+                        DCF
+                      </Tooltip>
+                    </strong>
+                    <span className="text-gray-700">{(dcfWeight * 100).toFixed(1)}%</span>
+                  </div>
+                  <p className="text-sm text-gray-600 leading-relaxed">
+                    Projects future cash flows and discounts to present value using{' '}
+                    <Tooltip content="Weighted Average Cost of Capital - the rate used to discount future cash flows to present value">
+                      <span className="cursor-help border-b border-dotted border-gray-400">WACC</span>
+                    </Tooltip>
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-start gap-3">
+                <span className="w-2 h-2 bg-green-500 rounded-full mt-2 flex-shrink-0"></span>
+                <div className="flex-1">
+                  <div className="flex items-baseline gap-2 mb-1">
+                    <strong className="text-gray-900">
+                      <Tooltip content="Valuation ratios based on comparable public companies or transactions">
+                        Market Multiples
+                      </Tooltip>
+                    </strong>
+                    <span className="text-gray-700">{(multiplesWeight * 100).toFixed(1)}%</span>
+                  </div>
+                  <p className="text-sm text-gray-600 leading-relaxed">
+                    Compares to similar companies using revenue and{' '}
+                    <Tooltip content="Earnings Before Interest, Taxes, Depreciation, and Amortization - a measure of operating profitability">
+                      <span className="cursor-help border-b border-dotted border-gray-400">EBITDA</span>
+                    </Tooltip>{' '}
+                    multiples
+                  </p>
+                </div>
+              </div>
+            </div>
           </div>
         )}
         
