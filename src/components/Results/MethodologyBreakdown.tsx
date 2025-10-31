@@ -48,9 +48,16 @@ export const MethodologyBreakdown: React.FC<MethodologyBreakdownProps> = ({ resu
     Object.keys(confidenceFactors).length;
   
   // DCF details
-  const wacc = resultAny.dcf_valuation?.wacc || resultAny.wacc || FINANCIAL_CONSTANTS.DEFAULT_WACC;
-  const terminalGrowth = resultAny.dcf_valuation?.terminal_growth_rate || resultAny.terminal_growth_rate || FINANCIAL_CONSTANTS.DEFAULT_TERMINAL_GROWTH;
-  const costOfEquity = resultAny.dcf_valuation?.cost_of_equity || resultAny.cost_of_equity || FINANCIAL_CONSTANTS.DEFAULT_COST_OF_EQUITY;
+  // Backend returns rates as decimals (0.091 = 9.1%), constants are percentages (12.1 = 12.1%)
+  const waccRaw = resultAny.dcf_valuation?.wacc ?? resultAny.wacc ?? (FINANCIAL_CONSTANTS.DEFAULT_WACC / 100);
+  const wacc = waccRaw < 1 ? waccRaw * 100 : waccRaw; // Convert decimal to percentage if needed
+  
+  const terminalGrowthRaw = resultAny.dcf_valuation?.terminal_growth_rate ?? resultAny.terminal_growth_rate ?? (FINANCIAL_CONSTANTS.DEFAULT_TERMINAL_GROWTH / 100);
+  const terminalGrowth = terminalGrowthRaw < 1 ? terminalGrowthRaw * 100 : terminalGrowthRaw;
+  
+  const costOfEquityRaw = resultAny.dcf_valuation?.cost_of_equity ?? resultAny.cost_of_equity ?? (FINANCIAL_CONSTANTS.DEFAULT_COST_OF_EQUITY / 100);
+  const costOfEquity = costOfEquityRaw < 1 ? costOfEquityRaw * 100 : costOfEquityRaw;
+  
   const riskFreeRate = FINANCIAL_CONSTANTS.ECB_RISK_FREE_RATE;
   const marketRiskPremium = FINANCIAL_CONSTANTS.MARKET_RISK_PREMIUM;
   const beta = FINANCIAL_CONSTANTS.DEFAULT_BETA;
@@ -373,6 +380,11 @@ export const MethodologyBreakdown: React.FC<MethodologyBreakdownProps> = ({ resu
             <div className="text-sm text-blue-700 space-y-1">
               <div>• <Tooltip content="Weighted Average Cost of Capital - the rate used to discount future cash flows to present value">WACC</Tooltip> (Discount Rate): {wacc.toFixed(1)}%</div>
               <div>• <Tooltip content="The assumed constant growth rate of cash flows beyond the projection period">Terminal Growth</Tooltip>: {terminalGrowth.toFixed(1)}%</div>
+              {terminalGrowth < 0.1 && (
+                <div className="text-xs text-blue-700 mt-1 italic">
+                  Terminal growth of 0% reflects conservative assumptions for mature market conditions.
+                </div>
+              )}
               <div>• Projection Period: 10 years</div>
               <div>• <Tooltip content="The return required by equity investors, calculated using the Capital Asset Pricing Model (CAPM)">Cost of Equity</Tooltip>: {costOfEquity.toFixed(1)}%</div>
             </div>
