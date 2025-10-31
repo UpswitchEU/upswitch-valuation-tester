@@ -1,6 +1,8 @@
 import { BarChart3, ChevronDown, ChevronUp, TrendingUp } from 'lucide-react';
 import React, { useState } from 'react';
+import { VARIANCE_THRESHOLDS, getVarianceMessage } from '../../config/valuationConfig';
 import type { ValuationInputData, ValuationResponse } from '../../types/valuation';
+import { calculateVariance } from '../../utils/calculationHelpers';
 import { DCFTransparencySection } from './DCFTransparencySection';
 import { MultiplesTransparencySection } from './MultiplesTransparencySection';
 
@@ -18,11 +20,41 @@ interface ValuationMethodsSectionProps {
 export const ValuationMethodsSection: React.FC<ValuationMethodsSectionProps> = ({ result, inputData }) => {
   const [expandedMethod, setExpandedMethod] = useState<'dcf' | 'multiples' | 'both'>('both');
   
-  const dcfWeight = result.dcf_weight || 0;
-  const multiplesWeight = result.multiples_weight || 0;
+  // Error handling: Validate result object
+  if (!result) {
+    return (
+      <div className="bg-red-50 border-2 border-red-300 rounded-lg p-6">
+        <p className="text-red-800 font-semibold">Error: Valuation result is missing</p>
+        <p className="text-red-600 text-sm mt-2">Unable to display valuation methods. Please try refreshing the page.</p>
+      </div>
+    );
+  }
   
-  const dcfValue = result.dcf_valuation?.equity_value || 0;
-  const multiplesValue = result.multiples_valuation?.adjusted_equity_value || 0;
+  // Safe extraction with defaults and validation
+  const dcfWeight = typeof result.dcf_weight === 'number' && isFinite(result.dcf_weight) ? result.dcf_weight : 0;
+  const multiplesWeight = typeof result.multiples_weight === 'number' && isFinite(result.multiples_weight) ? result.multiples_weight : 0;
+  
+  const dcfValue = result.dcf_valuation?.equity_value && isFinite(result.dcf_valuation.equity_value) 
+    ? result.dcf_valuation.equity_value 
+    : 0;
+  const multiplesValue = result.multiples_valuation?.adjusted_equity_value && isFinite(result.multiples_valuation.adjusted_equity_value)
+    ? result.multiples_valuation.adjusted_equity_value 
+    : 0;
+  
+  // Check if we have at least one valid methodology
+  const hasValidMethodology = (dcfWeight > 0 && dcfValue > 0) || (multiplesWeight > 0 && multiplesValue > 0);
+  
+  if (!hasValidMethodology) {
+    return (
+      <div className="bg-yellow-50 border-2 border-yellow-400 rounded-lg p-6">
+        <p className="text-yellow-900 font-semibold">No valuation methods available</p>
+        <p className="text-yellow-800 text-sm mt-2">
+          Neither DCF nor Market Multiples valuation could be calculated. 
+          This may be due to insufficient data or calculation errors.
+        </p>
+      </div>
+    );
+  }
 
   const toggleMethod = (method: 'dcf' | 'multiples') => {
     if (expandedMethod === method) {
@@ -153,39 +185,59 @@ export const ValuationMethodsSection: React.FC<ValuationMethodsSectionProps> = (
       </div>
 
       {/* Methodology Comparison (only if both methods used) */}
-      {dcfWeight > 0 && multiplesWeight > 0 && (
-        <div className="bg-white border-2 border-gray-300 rounded-lg p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Cross-Validation</h3>
-          
-          <div className="space-y-4">
-            <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-              <span className="text-gray-700">DCF Valuation:</span>
-              <span className="font-mono font-semibold text-blue-600">
-                €{dcfValue.toLocaleString('de-DE', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
-              </span>
-            </div>
+      {dcfWeight > 0 && multiplesWeight > 0 && (() => {
+        // Safe variance calculation with error handling
+        const variance = calculateVariance(dcfValue, multiplesValue);
+        const varianceMessage = getVarianceMessage(variance);
+        const isGoodVariance = variance !== null && variance < VARIANCE_THRESHOLDS.WARNING_THRESHOLD;
+
+        return (
+          <div className="bg-white border-2 border-gray-300 rounded-lg p-6">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">Cross-Validation</h3>
             
-            <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-              <span className="text-gray-700">Multiples Valuation:</span>
-              <span className="font-mono font-semibold text-green-600">
-                €{multiplesValue.toLocaleString('de-DE', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
-              </span>
-            </div>
-            
-            <div className="flex items-center justify-between p-4 bg-gradient-to-r from-blue-50 to-green-50 rounded-lg border-2 border-gray-400">
-              <span className="font-semibold text-gray-900">Variance:</span>
-              <span className="font-mono font-bold text-gray-900">
-                {Math.abs(((dcfValue - multiplesValue) / ((dcfValue + multiplesValue) / 2)) * 100).toFixed(1)}%
-              </span>
-            </div>
-            
-            <div className="text-xs text-gray-600 bg-blue-50 p-3 rounded">
-              <strong>Note:</strong> Variance below 50% indicates strong methodological agreement. 
-              Higher variance suggests data quality issues or unique business characteristics requiring additional analysis.
+            <div className="space-y-4">
+              <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                <span className="text-gray-700">DCF Valuation:</span>
+                <span className="font-mono font-semibold text-blue-600">
+                  €{dcfValue.toLocaleString('de-DE', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+                </span>
+              </div>
+              
+              <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                <span className="text-gray-700">Multiples Valuation:</span>
+                <span className="font-mono font-semibold text-green-600">
+                  €{multiplesValue.toLocaleString('de-DE', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+                </span>
+              </div>
+              
+              <div className={`flex items-center justify-between p-4 rounded-lg border-2 ${
+                isGoodVariance ? 'bg-gradient-to-r from-blue-50 to-green-50 border-gray-400' : 'bg-yellow-50 border-yellow-400'
+              }`}>
+                <span className="font-semibold text-gray-900">Variance:</span>
+                <span className="font-mono font-bold text-gray-900">
+                  {variance !== null ? `${variance.toFixed(1)}%` : 'N/A'}
+                </span>
+              </div>
+              
+              <div className={`text-xs p-3 rounded ${
+                isGoodVariance ? 'text-gray-600 bg-blue-50' : 'text-yellow-800 bg-yellow-50'
+              }`}>
+                <strong>{varianceMessage}</strong>
+                {variance !== null && (
+                  <>
+                    {' '}
+                    {variance < VARIANCE_THRESHOLDS.EXCELLENT
+                      ? `Variance below ${VARIANCE_THRESHOLDS.EXCELLENT}% indicates excellent alignment between methodologies.`
+                      : variance < VARIANCE_THRESHOLDS.GOOD
+                      ? `Variance below ${VARIANCE_THRESHOLDS.GOOD}% indicates acceptable agreement between methodologies.`
+                      : `Variance above ${VARIANCE_THRESHOLDS.GOOD}% suggests reviewing assumptions or data quality.`}
+                  </>
+                )}
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
     </div>
   );
 };
