@@ -76,14 +76,9 @@ export const MultiplesTransparencySection: React.FC<MultiplesTransparencySection
   const revenueMultiple = adjustedRevenueMultiple;
   const ebitdaMultiple = adjustedEbitdaMultiple;
   
-  // Get comparable companies (mock data if not provided)
-  const comparableCompanies: ComparableCompany[] = result.transparency?.comparable_companies || [
-    { name: 'CompanyA BV', country: 'Belgium', revenue: 5000000, ebitda_multiple: 9.1, revenue_multiple: 2.3, similarity_score: 87, source: 'KBO Database' },
-    { name: 'CompanyB GmbH', country: 'Germany', revenue: 3000000, ebitda_multiple: 8.8, revenue_multiple: 2.2, similarity_score: 84, source: 'OECD Database' },
-    { name: 'CompanyC SAS', country: 'France', revenue: 4500000, ebitda_multiple: 8.9, revenue_multiple: 2.4, similarity_score: 82, source: 'OECD Database' },
-    { name: 'CompanyD AB', country: 'Sweden', revenue: 2800000, ebitda_multiple: 8.6, revenue_multiple: 2.1, similarity_score: 80, source: 'OECD Database' },
-    { name: 'CompanyE SpA', country: 'Italy', revenue: 3500000, ebitda_multiple: 8.7, revenue_multiple: 2.2, similarity_score: 78, source: 'FMP Data' },
-  ];
+  // CRITICAL: NO MOCK DATA - Only use real backend comparable companies
+  const comparableCompanies: ComparableCompany[] = result.transparency?.comparable_companies || [];
+  const hasComparableCompanies = comparableCompanies.length > 0;
 
   return (
     <div className="space-y-6">
@@ -248,13 +243,27 @@ export const MultiplesTransparencySection: React.FC<MultiplesTransparencySection
       {/* Comparable Companies */}
       <ExpandableSection
         title="2. Comparable Companies Detail"
-        value={`Top ${comparableCompanies.length} companies`}
+        value={hasComparableCompanies ? `Top ${comparableCompanies.length} companies` : 'Not available from backend'}
         isExpanded={expandedSections.has('comparables')}
         onToggle={() => toggleSection('comparables')}
         color="blue"
       >
-        <div className="space-y-4">
-          {comparableCompanies.map((company, index) => (
+        {!hasComparableCompanies ? (
+          <div className="bg-blue-50 border-2 border-blue-300 rounded-lg p-6">
+            <h4 className="font-semibold text-blue-900 mb-2">Comparable Companies Data Not Available</h4>
+            <p className="text-sm text-blue-800 mb-3">
+              Detailed comparable company information is not currently provided by the backend. 
+              The valuation uses aggregated industry multiples from reliable sources (OECD, FMP) 
+              but individual company details are not yet tracked in transparency data.
+            </p>
+            <p className="text-xs text-blue-700 font-medium">
+              ℹ️ The multiples used in your valuation are still accurate and based on real market data. 
+              This section will show specific companies once the transparency layer is fully integrated.
+            </p>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {comparableCompanies.map((company, index) => (
             <div key={index} className="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
               <div className="flex items-start justify-between mb-3">
                 <div className="flex items-center gap-2">
@@ -301,7 +310,10 @@ export const MultiplesTransparencySection: React.FC<MultiplesTransparencySection
               </div>
             </div>
           ))}
+          </div>
+        )}
 
+        {hasComparableCompanies && (
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mt-6">
             <h4 className="font-semibold text-gray-900 mb-3">Data Sources Summary</h4>
             <div className="space-y-2 text-sm">
@@ -319,7 +331,7 @@ export const MultiplesTransparencySection: React.FC<MultiplesTransparencySection
               </div>
             </div>
           </div>
-        </div>
+        )}
       </ExpandableSection>
 
       {/* Enterprise & Equity Value */}

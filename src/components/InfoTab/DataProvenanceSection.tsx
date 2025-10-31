@@ -21,52 +21,133 @@ export const DataProvenanceSection: React.FC<DataProvenanceSectionProps> = ({ re
     setExpandedFactors(newExpanded);
   };
   
-  // Check if we have real data or using mock data
+  // CRITICAL: NO MOCK DATA - Only use real backend data
   const hasRealDataSources = !!result.transparency?.data_sources && result.transparency.data_sources.length > 0;
   
-  // Get data sources from transparency data or create example defaults for preview
-  const dataSources: DataSourceType[] = result.transparency?.data_sources || [
-    {
-      name: 'Risk-Free Rate',
-      value: '2.5%',
-      source: 'European Central Bank (ECB)',
-      timestamp: '2025-10-27 09:00:00 UTC',
-      confidence: 95,
-      api_url: 'https://api.ecb.europa.eu/stats/...',
-      cache_status: 'Fresh (< 24 hours)'
-    },
-    {
-      name: 'Industry Multiples',
-      value: 'Various',
-      source: 'OECD Industry Database',
-      timestamp: '2025-10-20 00:00:00 UTC',
-      confidence: 92,
-      cache_status: 'Acceptable (7 days)'
-    },
-    {
-      name: 'Market Data',
-      value: 'Real-time comparables',
-      source: 'Financial Modeling Prep (FMP)',
-      timestamp: '2025-10-27 14:30:00 UTC',
-      confidence: 88,
-      api_url: 'https://financialmodelingprep.com/api/v3/...',
-      cache_status: 'Live'
-    },
-    {
-      name: 'Comparable Companies',
-      value: 'Belgian SMEs',
-      source: 'KBO Database',
-      timestamp: '2025-10-25 02:00:00 UTC',
-      confidence: 98,
-      cache_status: 'Recent (2 days)'
-    }
-  ];
+  // If no transparency data from backend, show "Not Available" instead of mock data
+  if (!hasRealDataSources) {
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center gap-3 pb-4 border-b-2 border-gray-200">
+          <div className="p-2 bg-teal-100 rounded-lg">
+            <Database className="w-6 h-6 text-teal-600" />
+          </div>
+          <div className="flex-1">
+            <h2 className="text-2xl font-bold text-gray-900">
+              Data Provenance & Quality Audit
+            </h2>
+            <p className="text-sm text-gray-600">
+              Complete audit trail of all data sources used in valuation
+            </p>
+          </div>
+        </div>
 
-  // Calculate overall data quality
+        {/* Not Available Message */}
+        <div className="bg-blue-50 border-2 border-blue-300 rounded-lg p-6">
+          <div className="flex items-start gap-3">
+            <AlertCircle className="w-6 h-6 text-blue-600 flex-shrink-0 mt-0.5" />
+            <div className="flex-1">
+              <h3 className="text-lg font-semibold text-blue-900 mb-2">
+                Data Provenance Not Currently Available
+              </h3>
+              <p className="text-sm text-blue-800 mb-3">
+                This feature tracks every data source used in your valuation, including:
+              </p>
+              <ul className="text-sm text-blue-800 space-y-1 ml-4 mb-3">
+                <li>• Risk-free rates from European Central Bank (ECB)</li>
+                <li>• Industry multiples from OECD databases</li>
+                <li>• Market data from Financial Modeling Prep (FMP)</li>
+                <li>• Comparable companies from KBO registry</li>
+                <li>• Timestamps of when each data point was fetched</li>
+                <li>• Confidence scores for data quality</li>
+              </ul>
+              <p className="text-sm text-blue-800 font-medium">
+                ℹ️ This transparency layer is being integrated with the backend calculation engine. 
+                Once complete, you'll see the exact sources and timestamps for all data used in your valuation.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* What's Already Transparent */}
+        <div className="bg-gradient-to-br from-green-50 to-emerald-50 border-2 border-green-500 rounded-lg p-6">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">
+            ✅ What's Already Fully Transparent
+          </h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="bg-white rounded-lg p-4 border border-green-300">
+              <h4 className="font-semibold text-green-900 mb-2">DCF Calculations</h4>
+              <p className="text-sm text-gray-700">
+                Complete breakdown of cash flow projections, WACC calculation, and terminal value
+              </p>
+            </div>
+            <div className="bg-white rounded-lg p-4 border border-green-300">
+              <h4 className="font-semibold text-green-900 mb-2">Market Multiples</h4>
+              <p className="text-sm text-gray-700">
+                Industry multiples, adjustments, and final valuation from comparable companies
+              </p>
+            </div>
+            <div className="bg-white rounded-lg p-4 border border-green-300">
+              <h4 className="font-semibold text-green-900 mb-2">Financial Metrics</h4>
+              <p className="text-sm text-gray-700">
+                All financial ratios, growth rates, and profitability metrics calculated from your data
+              </p>
+            </div>
+            <div className="bg-white rounded-lg p-4 border border-green-300">
+              <h4 className="font-semibold text-green-900 mb-2">Confidence Scoring</h4>
+              <p className="text-sm text-gray-700">
+                8-factor confidence breakdown showing exactly how we assess data quality
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+  
+  // Get data sources from transparency data (ONLY REAL DATA)
+  const dataSources: DataSourceType[] = result.transparency.data_sources;
+
+  // Calculate overall data quality from REAL data
   const externalDataConfidence = dataSources.reduce((sum, ds) => sum + ds.confidence, 0) / dataSources.length;
-  const userDataCompleteness = 85; // Could be calculated based on filled fields
+  
+  // Calculate user data completeness based on ACTUAL filled fields (NO MOCK DATA)
+  const calculateUserDataCompleteness = (data: ValuationInputData | null): number => {
+    if (!data) return 0;
+    
+    // Required fields (always needed)
+    const requiredFields = [
+      data.revenue,
+      data.ebitda,
+      data.industry,
+      data.country_code
+    ];
+    
+    // Optional fields (improve quality)
+    const optionalFields = [
+      data.founding_year,
+      data.employees,
+      data.business_model,
+      data.historical_years_data && data.historical_years_data.length > 0,
+      data.total_debt,
+      data.cash,
+      data.metrics
+    ];
+    
+    const requiredFilled = requiredFields.filter(f => f !== null && f !== undefined && f !== '').length;
+    const optionalFilled = optionalFields.filter(f => f !== null && f !== undefined && f !== false).length;
+    
+    // Required fields worth 60%, optional fields worth 40%
+    const requiredScore = (requiredFilled / requiredFields.length) * 60;
+    const optionalScore = (optionalFilled / optionalFields.length) * 40;
+    
+    return requiredScore + optionalScore;
+  };
+  
+  const userDataCompleteness = calculateUserDataCompleteness(inputData);
   const overallQuality = (externalDataConfidence * 0.6 + userDataCompleteness * 0.4);
 
+  // If we reach here, we have REAL data from backend
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-3 pb-4 border-b-2 border-gray-200">
@@ -74,49 +155,14 @@ export const DataProvenanceSection: React.FC<DataProvenanceSectionProps> = ({ re
           <Database className="w-6 h-6 text-teal-600" />
         </div>
         <div className="flex-1">
-          <div className="flex items-center gap-2 mb-1">
-            <h2 className="text-2xl font-bold text-gray-900">
-              Data Provenance & Quality Audit
-            </h2>
-            {!hasRealDataSources && (
-              <span className="px-3 py-1 bg-yellow-100 text-yellow-800 text-xs font-bold rounded-full border border-yellow-400">
-                EXAMPLE DATA
-              </span>
-            )}
-          </div>
+          <h2 className="text-2xl font-bold text-gray-900">
+            Data Provenance & Quality Audit
+          </h2>
           <p className="text-sm text-gray-600">
-            {hasRealDataSources 
-              ? 'Complete audit trail of all data sources'
-              : 'Preview of data provenance tracking (showing example data sources)'}
+            Complete audit trail of all data sources used in your valuation
           </p>
         </div>
       </div>
-
-      {/* Warning banner for example data */}
-      {!hasRealDataSources && (
-        <div className="bg-yellow-50 border-2 border-yellow-400 rounded-lg p-4">
-          <div className="flex items-start gap-3">
-            <AlertCircle className="w-6 h-6 text-yellow-600 flex-shrink-0 mt-0.5" />
-            <div className="flex-1">
-              <h4 className="font-semibold text-yellow-900 mb-1">Example Data Sources Shown</h4>
-              <p className="text-sm text-yellow-800 mb-2">
-                The data sources displayed below are <strong>example placeholders</strong> to demonstrate 
-                the provenance tracking system. In production, this section will show:
-              </p>
-              <ul className="text-sm text-yellow-800 space-y-1 ml-4">
-                <li>• Real-time API calls to ECB, OECD, and financial data providers</li>
-                <li>• Actual timestamps of when data was fetched</li>
-                <li>• Live cache status and data freshness indicators</li>
-                <li>• Confidence scores based on actual data quality metrics</li>
-              </ul>
-              <p className="text-xs text-yellow-700 mt-3 font-medium">
-                ⚠️ Do not rely on the specific values shown below for investment decisions. 
-                They are for demonstration purposes only.
-              </p>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Overall Data Quality */}
       <div className="bg-gradient-to-br from-teal-50 to-cyan-50 border-2 border-teal-500 rounded-lg p-6">
