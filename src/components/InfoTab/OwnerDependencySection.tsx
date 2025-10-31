@@ -1,5 +1,5 @@
+import { AlertTriangle, CheckCircle, ChevronDown, ChevronUp, Info, Shield, TrendingDown, XCircle } from 'lucide-react';
 import React, { useState } from 'react';
-import { AlertTriangle, CheckCircle, XCircle, Info, ChevronDown, ChevronUp, TrendingDown, Shield } from 'lucide-react';
 import type { ValuationResponse } from '../../types/valuation';
 import { calculateOwnerDependencyMultipleImpact, formatCurrency } from '../../utils/valuationFormatters';
 

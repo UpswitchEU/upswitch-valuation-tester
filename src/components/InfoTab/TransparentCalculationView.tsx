@@ -1,9 +1,8 @@
-import { AlertTriangle, BarChart3, CheckCircle, Database, FileText, Target, TrendingUp, Users } from 'lucide-react';
+import { AlertTriangle, BarChart3, Database, FileText, Target, TrendingUp, Users } from 'lucide-react';
 import React, { useState } from 'react';
 import type { ValuationInputData, ValuationResponse } from '../../types/valuation';
 import { calculateOwnerDependencyMultipleImpact } from '../../utils/valuationFormatters';
 import { formatCurrency } from '../Results/utils/formatters';
-import { DataProvenanceSection } from './DataProvenanceSection';
 import { DCFTransparencySection } from './DCFTransparencySection';
 import { InputDataSection } from './InputDataSection';
 import { MultiplesTransparencySection } from './MultiplesTransparencySection';

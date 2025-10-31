@@ -1,7 +1,7 @@
 import React from 'react';
-import { formatPercent } from './utils/formatters';
-import { calculateGrowthMetrics } from './utils/calculations';
 import type { ValuationResponse } from '../../types/valuation';
+import { calculateGrowthMetrics } from './utils/calculations';
+import { formatPercent } from './utils/formatters';
 
 interface GrowthMetricsProps {
   result: ValuationResponse;

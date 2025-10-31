@@ -1,6 +1,6 @@
+import { BarChart3, Building2, ChevronDown, ChevronRight } from 'lucide-react';
 import React, { useState } from 'react';
-import { BarChart3, ChevronDown, ChevronRight, Building2 } from 'lucide-react';
-import type { ValuationResponse, ValuationInputData, ComparableCompany } from '../../types/valuation';
+import type { ComparableCompany, ValuationInputData, ValuationResponse } from '../../types/valuation';
 import { formatCurrency } from '../Results/utils/formatters';
 
 interface MultiplesTransparencySectionProps {

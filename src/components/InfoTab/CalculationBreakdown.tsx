@@ -1,8 +1,8 @@
+import { Calculator, ChevronDown, ChevronRight } from 'lucide-react';
 import React, { useState } from 'react';
-import { ChevronDown, ChevronRight, Calculator } from 'lucide-react';
-import type { ValuationResponse, ValuationInputData } from '../../types/valuation';
-import { formatCurrency, formatPercent } from '../Results/utils/formatters';
 import { FINANCIAL_CONSTANTS } from '../../config/financialConstants';
+import type { ValuationInputData, ValuationResponse } from '../../types/valuation';
+import { formatCurrency, formatPercent } from '../Results/utils/formatters';
 
 interface CalculationBreakdownProps {
   result: ValuationResponse;
