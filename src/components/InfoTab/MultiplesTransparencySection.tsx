@@ -382,10 +382,23 @@ export const MultiplesTransparencySection: React.FC<MultiplesTransparencySection
                 ({formatCurrency(revenue * adjustedRevenueMultiple)} × 0.6) + ({formatCurrency(ebitda * adjustedEbitdaMultiple)} × 0.4)
               </p>
               {(() => {
-                // CRITICAL FIX: Calculate weighted average correctly
-                const revenueBasedEV = revenue * adjustedRevenueMultiple;
-                const ebitdaBasedEV = ebitda * adjustedEbitdaMultiple;
+                // CRITICAL FIX: Calculate weighted average correctly with null/NaN validation
+                // P0: Add defensive checks to prevent NaN propagation
+                const safeRevenueMultiple = isFinite(adjustedRevenueMultiple) && adjustedRevenueMultiple >= 0 
+                  ? adjustedRevenueMultiple 
+                  : 0;
+                const safeEbitdaMultiple = isFinite(adjustedEbitdaMultiple) && adjustedEbitdaMultiple >= 0 
+                  ? adjustedEbitdaMultiple 
+                  : 0;
+                const safeRevenue = isFinite(revenue) && revenue >= 0 ? revenue : 0;
+                const safeEbitda = isFinite(ebitda) && ebitda >= 0 ? ebitda : 0;
+                
+                const revenueBasedEV = safeRevenue * safeRevenueMultiple;
+                const ebitdaBasedEV = safeEbitda * safeEbitdaMultiple;
                 const weightedAverageEV = (revenueBasedEV * 0.6) + (ebitdaBasedEV * 0.4);
+                
+                // Validate final result
+                const isValidEV = isFinite(weightedAverageEV) && weightedAverageEV >= 0;
                 
                 return (
                   <>
@@ -395,10 +408,13 @@ export const MultiplesTransparencySection: React.FC<MultiplesTransparencySection
                     <div className="pt-2 border-t border-gray-300">
                       <div className="flex justify-between text-base font-semibold">
                         <span className="text-gray-900">Enterprise Value (Calculated):</span>
-                        <span className="text-green-600">{formatCurrency(weightedAverageEV)}</span>
+                        <span className="text-green-600">
+                          {isValidEV ? formatCurrency(weightedAverageEV) : 'N/A'}
+                        </span>
                       </div>
                       {/* Show backend value if different */}
-                      {multiplesValuation?.ev_ebitda_valuation && 
+                      {isValidEV && multiplesValuation?.ev_ebitda_valuation && 
+                       isFinite(multiplesValuation.ev_ebitda_valuation) &&
                        Math.abs(weightedAverageEV - multiplesValuation.ev_ebitda_valuation) > 1000 && (
                         <div className="mt-2 pt-2 border-t border-gray-200">
                           <div className="flex justify-between text-xs">
@@ -483,26 +499,4 @@ const ExpandableSection: React.FC<{
     </div>
   );
 };
-
-const MultipleAdjustment: React.FC<{
-  label: string;
-  value: string;
-  reason: string;
-  reference: string;
-  calculation: string;
-}> = ({ label, value, reason, reference, calculation }) => (
-  <div className="bg-gray-50 p-3 rounded border-l-4 border-blue-400">
-    <div className="flex justify-between items-start mb-2">
-      <span className="font-medium text-gray-900">{label}:</span>
-      <span className={`font-semibold px-2 py-1 rounded text-sm ${
-        value.startsWith('+') ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
-      }`}>
-        {value}
-      </span>
-    </div>
-    <p className="text-xs text-gray-700 mb-1"><strong>Reason:</strong> {reason}</p>
-    <p className="text-xs text-gray-600 mb-1"><strong>Reference:</strong> {reference}</p>
-    <p className="text-xs font-mono text-gray-800 bg-white px-2 py-1 rounded"><strong>Calculation:</strong> {calculation}</p>
-  </div>
-);
 

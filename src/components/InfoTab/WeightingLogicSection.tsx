@@ -1,6 +1,7 @@
 import { Scale, TrendingDown, TrendingUp } from 'lucide-react';
 import React from 'react';
 import type { ValuationInputData, ValuationResponse } from '../../types/valuation';
+import { calculateVariance } from '../../utils/calculationHelpers';
 import { formatCurrency, formatPercent } from '../Results/utils/formatters';
 
 interface WeightingLogicSectionProps {
@@ -53,11 +54,9 @@ export const WeightingLogicSection: React.FC<WeightingLogicSectionProps> = ({ re
   const dcfValue = result.dcf_valuation?.equity_value || 0;
   const multiplesValue = result.multiples_valuation?.adjusted_equity_value || 0;
   
-  // Calculate variance - CRITICAL FIX: Use standard variance formula (same as Cross-Validation section)
-  // Formula: |value1 - value2| / ((value1 + value2) / 2)
-  const variance = dcfValue > 0 && multiplesValue > 0
-    ? Math.abs(dcfValue - multiplesValue) / ((dcfValue + multiplesValue) / 2)
-    : 0;
+  // Calculate variance - CRITICAL FIX: Use existing utility function for consistency
+  // Returns null for invalid cases, default to 0 for display
+  const variance = (calculateVariance(dcfValue, multiplesValue) ?? 0) / 100; // Convert from percentage to decimal
 
   // Factor analysis (simplified - in real implementation, this would come from backend)
   const factors = [
