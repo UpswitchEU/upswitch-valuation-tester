@@ -2,6 +2,7 @@ import { AlertTriangle, BarChart3, Database, FileText, Target, Users } from 'luc
 import React, { useState } from 'react';
 import type { ValuationInputData, ValuationResponse } from '../../types/valuation';
 import { calculateOwnerDependencyMultipleImpact } from '../../utils/valuationFormatters';
+import { ErrorBoundary } from '../ErrorBoundary';
 import { formatCurrency } from '../Results/utils/formatters';
 import { InputDataSection } from './InputDataSection';
 import { OwnerDependencySection } from './OwnerDependencySection';
@@ -188,7 +189,9 @@ export const TransparentCalculationView: React.FC<TransparentCalculationViewProp
 
       {/* Section 2: Valuation Methods (Combined DCF + Market Multiples) */}
       <div id="valuation-methods">
-        <ValuationMethodsSection result={result} inputData={inputData} />
+        <ErrorBoundary componentName="Valuation Methods">
+          <ValuationMethodsSection result={result} inputData={inputData} />
+        </ErrorBoundary>
       </div>
 
       {/* Section divider */}

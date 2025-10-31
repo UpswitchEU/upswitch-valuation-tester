@@ -1,10 +1,22 @@
 import { BarChart3, ChevronDown, ChevronUp, TrendingUp } from 'lucide-react';
-import React, { useState } from 'react';
-import { VARIANCE_THRESHOLDS, getVarianceMessage } from '../../config/valuationConfig';
+import React, { lazy, Suspense, useState } from 'react';
+import { getVarianceMessage, VARIANCE_THRESHOLDS } from '../../config/valuationConfig';
 import type { ValuationInputData, ValuationResponse } from '../../types/valuation';
 import { calculateVariance } from '../../utils/calculationHelpers';
-import { DCFTransparencySection } from './DCFTransparencySection';
-import { MultiplesTransparencySection } from './MultiplesTransparencySection';
+
+// Lazy load detailed sections for better performance
+const DCFTransparencySection = lazy(() => import('./DCFTransparencySection').then(m => ({ default: m.DCFTransparencySection })));
+const MultiplesTransparencySection = lazy(() => import('./MultiplesTransparencySection').then(m => ({ default: m.MultiplesTransparencySection })));
+
+// Loading fallback component
+const SectionLoader: React.FC = () => (
+  <div className="flex items-center justify-center p-8">
+    <div className="flex items-center gap-3 text-gray-600">
+      <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
+      <span className="text-sm">Loading detailed calculations...</span>
+    </div>
+  </div>
+);
 
 interface ValuationMethodsSectionProps {
   result: ValuationResponse;
@@ -110,6 +122,9 @@ export const ValuationMethodsSection: React.FC<ValuationMethodsSectionProps> = (
                 <button
                   onClick={() => toggleMethod('dcf')}
                   className="text-sm text-blue-600 hover:text-blue-800 font-medium flex items-center gap-1"
+                  aria-expanded={expandedMethod !== 'multiples'}
+                  aria-controls="dcf-details"
+                  aria-label="Toggle DCF methodology details"
                 >
                   {expandedMethod === 'multiples' ? 'Show Details' : 'Hide Details'}
                   {expandedMethod === 'multiples' ? <ChevronDown className="w-4 h-4" /> : <ChevronUp className="w-4 h-4" />}
@@ -143,6 +158,9 @@ export const ValuationMethodsSection: React.FC<ValuationMethodsSectionProps> = (
                 <button
                   onClick={() => toggleMethod('multiples')}
                   className="text-sm text-green-600 hover:text-green-800 font-medium flex items-center gap-1"
+                  aria-expanded={expandedMethod !== 'dcf'}
+                  aria-controls="multiples-details"
+                  aria-label="Toggle Market Multiples methodology details"
                 >
                   {expandedMethod === 'dcf' ? 'Show Details' : 'Hide Details'}
                   {expandedMethod === 'dcf' ? <ChevronDown className="w-4 h-4" /> : <ChevronUp className="w-4 h-4" />}
@@ -171,15 +189,31 @@ export const ValuationMethodsSection: React.FC<ValuationMethodsSectionProps> = (
       <div className="space-y-6">
         {/* DCF Detailed Breakdown */}
         {dcfWeight > 0 && expandedMethod !== 'multiples' && (
-          <div className="bg-blue-50 rounded-lg p-6 border border-blue-200">
-            <DCFTransparencySection result={result} inputData={inputData} />
+          <div 
+            id="dcf-details"
+            role="region"
+            aria-labelledby="dcf-heading"
+            className="bg-blue-50 rounded-lg p-6 border border-blue-200"
+          >
+            <h3 id="dcf-heading" className="sr-only">DCF Methodology Details</h3>
+            <Suspense fallback={<SectionLoader />}>
+              <DCFTransparencySection result={result} inputData={inputData} />
+            </Suspense>
           </div>
         )}
 
         {/* Multiples Detailed Breakdown */}
         {multiplesWeight > 0 && expandedMethod !== 'dcf' && (
-          <div className="bg-green-50 rounded-lg p-6 border border-green-200">
-            <MultiplesTransparencySection result={result} inputData={inputData} />
+          <div 
+            id="multiples-details"
+            role="region"
+            aria-labelledby="multiples-heading"
+            className="bg-green-50 rounded-lg p-6 border border-green-200"
+          >
+            <h3 id="multiples-heading" className="sr-only">Market Multiples Methodology Details</h3>
+            <Suspense fallback={<SectionLoader />}>
+              <MultiplesTransparencySection result={result} inputData={inputData} />
+            </Suspense>
           </div>
         )}
       </div>
