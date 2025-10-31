@@ -134,38 +134,35 @@ export const MultiplesTransparencySection: React.FC<MultiplesTransparencySection
               <div className="bg-gray-50 p-3 rounded">
                 <div className="flex justify-between mb-1">
                   <span className="text-gray-600">Base Industry Multiple:</span>
-                  <span className="font-mono font-semibold">4.5x</span>
+                  <span className="font-mono font-semibold">{baseRevenueMultiple.toFixed(2)}x</span>
                 </div>
                 <div className="text-xs text-gray-600">
-                  <p>Source: OECD Industry Data - Q4 2025</p>
-                  <p>Based on: 156 European companies in sector</p>
-                  <p>Confidence: 98%</p>
+                  <p>Source: Industry benchmark data from backend</p>
+                  <p>Based on comparable companies in sector</p>
+                  <p>Confidence: Based on data quality</p>
                 </div>
               </div>
 
-              <MultipleAdjustment
-                label="Size Adjustment"
-                value="-15%"
-                reason={`Company revenue ${formatCurrency(revenue)} (SME tier)`}
-                reference="Damodaran SME discount table"
-                calculation="4.5x × 0.85 = 3.825x"
-              />
-
-              <MultipleAdjustment
-                label="Growth Adjustment"
-                value="+20%"
-                reason="15% revenue CAGR (above industry 8%)"
-                reference="Growth premium for high-growth companies"
-                calculation="3.825x × 1.20 = 4.59x"
-              />
-
-              <MultipleAdjustment
-                label="Profitability Adjustment"
-                value="+10%"
-                reason={`${ebitda > 0 && revenue > 0 ? ((ebitda / revenue) * 100).toFixed(0) : '20'}% EBITDA margin (industry avg 15%)`}
-                reference="Profitability premium adjustment"
-                calculation="4.59x × 1.10 = 5.05x"
-              />
+              {/* CRITICAL FIX: Show actual adjustment factor from backend, not fake step-by-step */}
+              <div className="bg-blue-50 p-3 rounded border-l-4 border-blue-400">
+                <div className="flex justify-between items-start mb-2">
+                  <span className="font-medium text-gray-900">Total Adjustment Factor:</span>
+                  <span className={`font-semibold px-2 py-1 rounded text-sm ${
+                    totalAdjustmentFactor >= 1.0 
+                      ? 'bg-green-100 text-green-700' 
+                      : 'bg-red-100 text-red-700'
+                  }`}>
+                    {totalAdjustmentFactor >= 1.0 ? '+' : ''}{((totalAdjustmentFactor - 1.0) * 100).toFixed(1)}%
+                  </span>
+                </div>
+                <p className="text-xs text-gray-700 mb-1">
+                  <strong>Note:</strong> This represents the net adjustment applied to the base multiple.
+                  The backend applies size, growth, profitability, and other adjustments based on company characteristics.
+                </p>
+                <p className="text-xs text-gray-600 mb-1">
+                  Individual adjustment breakdowns are calculated internally and combined into this total factor.
+                </p>
+              </div>
 
               <div className="bg-green-100 p-4 rounded-lg border border-green-300 mt-4">
                 <div className="flex justify-between items-center">
@@ -193,35 +190,32 @@ export const MultiplesTransparencySection: React.FC<MultiplesTransparencySection
                   <span className="font-mono font-semibold">{baseEbitdaMultiple.toFixed(1)}x</span>
                 </div>
                 <div className="text-xs text-gray-600">
-                  <p>Source: FMP Market Data - Real-time</p>
-                  <p>Based on: 89 comparable companies</p>
-                  <p>Confidence: 88%</p>
+                  <p>Source: Industry benchmark data from backend</p>
+                  <p>Based on comparable companies in sector</p>
+                  <p>Confidence: Based on data quality</p>
                 </div>
               </div>
 
-              <MultipleAdjustment
-                label="Size Adjustment"
-                value="-15%"
-                reason="SME size discount"
-                reference="Standard SME valuation adjustment"
-                calculation="8.5x × 0.85 = 7.225x"
-              />
-
-              <MultipleAdjustment
-                label="Growth Adjustment"
-                value="+20%"
-                reason="High growth trajectory"
-                reference="Growth-adjusted multiples"
-                calculation="7.225x × 1.20 = 8.67x"
-              />
-
-              <MultipleAdjustment
-                label="Profitability Adjustment"
-                value="+6%"
-                reason="Above-average margins"
-                reference="Margin premium"
-                calculation="8.67x × 1.06 = 9.2x"
-              />
+              {/* CRITICAL FIX: Show actual adjustment factor from backend, not fake step-by-step */}
+              <div className="bg-blue-50 p-3 rounded border-l-4 border-blue-400">
+                <div className="flex justify-between items-start mb-2">
+                  <span className="font-medium text-gray-900">Total Adjustment Factor:</span>
+                  <span className={`font-semibold px-2 py-1 rounded text-sm ${
+                    totalAdjustmentFactor >= 1.0 
+                      ? 'bg-green-100 text-green-700' 
+                      : 'bg-red-100 text-red-700'
+                  }`}>
+                    {totalAdjustmentFactor >= 1.0 ? '+' : ''}{((totalAdjustmentFactor - 1.0) * 100).toFixed(1)}%
+                  </span>
+                </div>
+                <p className="text-xs text-gray-700 mb-1">
+                  <strong>Note:</strong> This represents the net adjustment applied to the base multiple.
+                  The backend applies size, growth, profitability, and other adjustments based on company characteristics.
+                </p>
+                <p className="text-xs text-gray-600 mb-1">
+                  Individual adjustment breakdowns are calculated internally and combined into this total factor.
+                </p>
+              </div>
 
               <div className="bg-green-100 p-4 rounded-lg border border-green-300 mt-4">
                 <div className="flex justify-between items-center">
@@ -385,17 +379,41 @@ export const MultiplesTransparencySection: React.FC<MultiplesTransparencySection
                 (Revenue × 60%) + (EBITDA × 40%)
               </p>
               <p className="text-gray-700">
-                ({formatCurrency(revenue * revenueMultiple)} × 0.6) + ({formatCurrency(ebitda * ebitdaMultiple)} × 0.4)
+                ({formatCurrency(revenue * adjustedRevenueMultiple)} × 0.6) + ({formatCurrency(ebitda * adjustedEbitdaMultiple)} × 0.4)
               </p>
-              <p className="text-gray-700">
-                {formatCurrency(revenue * revenueMultiple * 0.6)} + {formatCurrency(ebitda * ebitdaMultiple * 0.4)}
-              </p>
-              <div className="pt-2 border-t border-gray-300">
-                <div className="flex justify-between text-base font-semibold">
-                  <span className="text-gray-900">Enterprise Value:</span>
-                  <span className="text-green-600">{formatCurrency(multiplesValuation?.ev_ebitda_valuation || 0)}</span>
-                </div>
-              </div>
+              {(() => {
+                // CRITICAL FIX: Calculate weighted average correctly
+                const revenueBasedEV = revenue * adjustedRevenueMultiple;
+                const ebitdaBasedEV = ebitda * adjustedEbitdaMultiple;
+                const weightedAverageEV = (revenueBasedEV * 0.6) + (ebitdaBasedEV * 0.4);
+                
+                return (
+                  <>
+                    <p className="text-gray-700">
+                      {formatCurrency(revenueBasedEV * 0.6)} + {formatCurrency(ebitdaBasedEV * 0.4)}
+                    </p>
+                    <div className="pt-2 border-t border-gray-300">
+                      <div className="flex justify-between text-base font-semibold">
+                        <span className="text-gray-900">Enterprise Value (Calculated):</span>
+                        <span className="text-green-600">{formatCurrency(weightedAverageEV)}</span>
+                      </div>
+                      {/* Show backend value if different */}
+                      {multiplesValuation?.ev_ebitda_valuation && 
+                       Math.abs(weightedAverageEV - multiplesValuation.ev_ebitda_valuation) > 1000 && (
+                        <div className="mt-2 pt-2 border-t border-gray-200">
+                          <div className="flex justify-between text-xs">
+                            <span className="text-gray-600">Backend Value (may use different weights):</span>
+                            <span className="text-gray-600 font-mono">{formatCurrency(multiplesValuation.ev_ebitda_valuation)}</span>
+                          </div>
+                          <p className="text-xs text-blue-600 mt-1">
+                            ℹ️ Backend may use different weighting (e.g., 50/50 or EBITDA-only) based on data quality
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  </>
+                );
+              })()}
             </div>
           </div>
 

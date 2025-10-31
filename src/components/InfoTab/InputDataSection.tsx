@@ -1,6 +1,6 @@
+import { AlertCircle, CheckCircle, Database } from 'lucide-react';
 import React from 'react';
-import { Database, CheckCircle, AlertCircle } from 'lucide-react';
-import type { ValuationResponse, ValuationInputData, ConfidenceBreakdown } from '../../types/valuation';
+import type { ConfidenceBreakdown, ValuationInputData, ValuationResponse } from '../../types/valuation';
 import { formatCurrency, formatPercent } from '../Results/utils/formatters';
 
 interface InputDataSectionProps {
@@ -121,9 +121,26 @@ export const InputDataSection: React.FC<InputDataSectionProps> = ({ result, inpu
           />
           <DataField
             label="Growth Rate"
-            value={result.financial_metrics?.revenue_growth 
-              ? formatPercent(result.financial_metrics.revenue_growth * 100)
-              : 'N/A'}
+            value={(() => {
+              // CRITICAL FIX: Handle inconsistent backend format (same logic as GrowthMetrics)
+              // Backend may return as decimal (0.291) or percentage (11.11)
+              const growthValue = result.financial_metrics?.revenue_cagr_3y ?? result.financial_metrics?.revenue_growth;
+              
+              if (!growthValue && growthValue !== 0) return 'N/A';
+              
+              // Format detection: if < 1.0, treat as decimal; if >= 1.0 and < 100, treat as percentage
+              let growthPercentage: number;
+              if (growthValue < 1.0) {
+                growthPercentage = growthValue * 100; // Decimal format
+              } else if (growthValue >= 1.0 && growthValue < 100) {
+                growthPercentage = growthValue; // Percentage format
+              } else {
+                // >= 100 likely indicates error, but display it with warning in UI
+                growthPercentage = growthValue;
+              }
+              
+              return formatPercent(growthPercentage);
+            })()}
             source={{ source: 'Calculated from Historical Data', icon: <CheckCircle className="w-4 h-4" />, color: 'text-purple-600' }}
           />
         </div>

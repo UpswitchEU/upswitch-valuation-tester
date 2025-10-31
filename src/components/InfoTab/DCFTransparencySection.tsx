@@ -231,21 +231,44 @@ export const DCFTransparencySection: React.FC<DCFTransparencySectionProps> = ({ 
           {/* Step 5: Final WACC Calculation */}
           <div className="bg-gradient-to-br from-blue-100 to-indigo-100 border-2 border-blue-500 rounded-lg p-4">
             <h4 className="font-semibold text-gray-900 mb-3">Step 5: WACC Calculation</h4>
-            <div className="space-y-2 font-mono text-sm">
-              <p className="text-gray-700">
-                WACC = ({formatPercent(equityWeight * 100)} × {formatPercent(costOfEquity * 100)}) + 
-                ({formatPercent(debtWeight * 100)} × {formatPercent(costOfDebt * 100)} × 0.75)
-              </p>
-              <p className="text-gray-700">
-                WACC = {formatPercent(equityWeight * costOfEquity * 100)} + {formatPercent(debtWeight * costOfDebt * 0.75 * 100)}
-              </p>
-              <p className="text-xl font-bold text-blue-600">
-                WACC = {formatPercent(wacc * 100)}
-              </p>
-            </div>
-            <p className="text-xs text-gray-600 mt-3">
-              <strong>Source:</strong> Brigham & Houston (2019), "Fundamentals of Financial Management", Chapter 10
-            </p>
+            {(() => {
+              // CRITICAL FIX: Calculate WACC from displayed components to ensure math consistency
+              const calculatedWacc = (equityWeight * costOfEquity) + (debtWeight * costOfDebt * 0.75);
+              const equityComponent = equityWeight * costOfEquity;
+              const debtComponent = debtWeight * costOfDebt * 0.75;
+              
+              return (
+                <>
+                  <div className="space-y-2 font-mono text-sm">
+                    <p className="text-gray-700">
+                      WACC = ({formatPercent(equityWeight * 100)} × {formatPercent(costOfEquity * 100)}) + 
+                      ({formatPercent(debtWeight * 100)} × {formatPercent(costOfDebt * 100)} × 0.75)
+                    </p>
+                    <p className="text-gray-700">
+                      WACC = {formatPercent(equityComponent * 100)} + {formatPercent(debtComponent * 100)}
+                    </p>
+                    <p className="text-xl font-bold text-blue-600">
+                      WACC = {formatPercent(calculatedWacc * 100)}
+                    </p>
+                    {/* Show backend value if different */}
+                    {Math.abs(calculatedWacc - wacc) > 0.001 && (
+                      <div className="mt-3 pt-3 border-t border-blue-300">
+                        <p className="text-xs text-blue-700 mb-1">
+                          <strong>Note:</strong> Backend uses WACC = {formatPercent(wacc * 100)}
+                        </p>
+                        <p className="text-xs text-blue-600">
+                          ℹ️ Backend may use more sophisticated capital structure calculation (actual debt/equity ratios, 
+                          tax optimization, etc.). This simplified calculation is for transparency demonstration.
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                  <p className="text-xs text-gray-600 mt-3">
+                    <strong>Source:</strong> Brigham & Houston (2019), "Fundamentals of Financial Management", Chapter 10
+                  </p>
+                </>
+              );
+            })()}
           </div>
         </div>
       </ExpandableSection>
