@@ -62,8 +62,19 @@ export const MultiplesTransparencySection: React.FC<MultiplesTransparencySection
   const revenue = inputData?.revenue || 0;
   const ebitda = inputData?.ebitda || 0;
   
-  const revenueMultiple = multiplesValuation?.revenue_multiple || 2.1;
-  const ebitdaMultiple = multiplesValuation?.ebitda_multiple || 8.5;
+  // Backend returns unadjusted base multiples and adjustment factors
+  const baseRevenueMultiple = multiplesValuation?.revenue_multiple || 2.1;
+  const baseEbitdaMultiple = multiplesValuation?.ebitda_multiple || 8.5;
+  
+  // Calculate adjusted multiples: base × (1 + total_adjustment)
+  // total_adjustment is the net adjustment % (e.g., -0.15 for -15%)
+  const totalAdjustmentFactor = 1.0 + (multiplesValuation?.total_adjustment || 0);
+  const adjustedRevenueMultiple = baseRevenueMultiple * totalAdjustmentFactor;
+  const adjustedEbitdaMultiple = baseEbitdaMultiple * totalAdjustmentFactor;
+  
+  // For display purposes, use adjusted multiples
+  const revenueMultiple = adjustedRevenueMultiple;
+  const ebitdaMultiple = adjustedEbitdaMultiple;
   
   // Get comparable companies (mock data if not provided)
   const comparableCompanies: ComparableCompany[] = result.transparency?.comparable_companies || [
@@ -167,7 +178,10 @@ export const MultiplesTransparencySection: React.FC<MultiplesTransparencySection
                   <span className="text-2xl font-bold text-green-600">{revenueMultiple.toFixed(2)}x</span>
                 </div>
                 <p className="text-xs text-gray-600 mt-2 font-mono">
-                  Calculation: 4.5 × 0.85 × 1.20 × 1.10 ≈ {revenueMultiple.toFixed(2)}x
+                  Calculation: {baseRevenueMultiple.toFixed(2)}x × {totalAdjustmentFactor.toFixed(3)} = {revenueMultiple.toFixed(2)}x
+                </p>
+                <p className="text-xs text-gray-500 mt-1">
+                  (Base multiple × Total adjustment factor = Adjusted multiple)
                 </p>
               </div>
             </div>
@@ -181,7 +195,7 @@ export const MultiplesTransparencySection: React.FC<MultiplesTransparencySection
               <div className="bg-gray-50 p-3 rounded">
                 <div className="flex justify-between mb-1">
                   <span className="text-gray-600">Base Industry Multiple:</span>
-                  <span className="font-mono font-semibold">8.5x</span>
+                  <span className="font-mono font-semibold">{baseEbitdaMultiple.toFixed(1)}x</span>
                 </div>
                 <div className="text-xs text-gray-600">
                   <p>Source: FMP Market Data - Real-time</p>
@@ -220,7 +234,10 @@ export const MultiplesTransparencySection: React.FC<MultiplesTransparencySection
                   <span className="text-2xl font-bold text-green-600">{ebitdaMultiple.toFixed(1)}x</span>
                 </div>
                 <p className="text-xs text-gray-600 mt-2 font-mono">
-                  Calculation: 8.5 × 0.85 × 1.20 × 1.06 ≈ {ebitdaMultiple.toFixed(1)}x
+                  Calculation: {baseEbitdaMultiple.toFixed(1)}x × {totalAdjustmentFactor.toFixed(3)} = {ebitdaMultiple.toFixed(1)}x
+                </p>
+                <p className="text-xs text-gray-500 mt-1">
+                  (Base multiple × Total adjustment factor = Adjusted multiple)
                 </p>
               </div>
             </div>

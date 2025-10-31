@@ -60,10 +60,11 @@ export const DCFTransparencySection: React.FC<DCFTransparencySectionProps> = ({ 
   }
 
   const dcfValuation = result.dcf_valuation;
-  const wacc = (dcfValuation?.wacc || FINANCIAL_CONSTANTS.DEFAULT_WACC) / 100;
-  const costOfEquity = (dcfValuation?.cost_of_equity || FINANCIAL_CONSTANTS.DEFAULT_COST_OF_EQUITY) / 100;
-  const costOfDebt = (dcfValuation?.cost_of_debt || 0.045);
-  const terminalGrowth = (dcfValuation?.terminal_growth_rate || FINANCIAL_CONSTANTS.DEFAULT_TERMINAL_GROWTH) / 100;
+  // Backend returns values as decimals (e.g., 0.091 = 9.1%), not percentages
+  const wacc = dcfValuation?.wacc || (FINANCIAL_CONSTANTS.DEFAULT_WACC / 100);
+  const costOfEquity = dcfValuation?.cost_of_equity || (FINANCIAL_CONSTANTS.DEFAULT_COST_OF_EQUITY / 100);
+  const costOfDebt = dcfValuation?.cost_of_debt || 0.045;
+  const terminalGrowth = dcfValuation?.terminal_growth_rate || (FINANCIAL_CONSTANTS.DEFAULT_TERMINAL_GROWTH / 100);
 
   // Calculate capital structure (simplified)
   const totalDebt = inputData?.total_debt || 0;

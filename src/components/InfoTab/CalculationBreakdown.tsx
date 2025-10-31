@@ -62,7 +62,7 @@ export const CalculationBreakdown: React.FC<CalculationBreakdownProps> = ({ resu
                 <div className="space-y-2 text-sm">
                   <div className="flex justify-between">
                     <span className="text-gray-600">Cost of Equity (CAPM):</span>
-                    <span className="font-mono">{formatPercent(result.dcf_valuation?.cost_of_equity || FINANCIAL_CONSTANTS.DEFAULT_COST_OF_EQUITY)}</span>
+                    <span className="font-mono">{formatPercent((result.dcf_valuation?.cost_of_equity || FINANCIAL_CONSTANTS.DEFAULT_COST_OF_EQUITY / 100) * 100)}</span>
                   </div>
                   <div className="ml-4 space-y-1 text-xs text-gray-500">
                     <div className="flex justify-between">

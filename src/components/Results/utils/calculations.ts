@@ -25,13 +25,11 @@ export const calculateGrowthMetrics = (result: ValuationResponse) => {
   if (hasFinancialMetrics && resultAny.financial_metrics) {
     const metrics = resultAny.financial_metrics;
     
-    // Backend returns revenue_cagr_3y as percentage (e.g., 29.1 for 29.1%)
-    // Convert to decimal (0.291) for frontend calculations
+    // Backend returns revenue_cagr_3y as decimal (e.g., 0.291 for 29.1% or 11.11 for 1111.1%)
+    // Keep as decimal for internal use, will be converted to percentage for display
     if (metrics.revenue_cagr_3y !== undefined && metrics.revenue_cagr_3y !== null) {
-      // Check if it's already in decimal format (< 1) or percentage format (>= 1)
-      const cagrDecimal = metrics.revenue_cagr_3y >= 1 
-        ? metrics.revenue_cagr_3y / 100  // Convert percentage to decimal
-        : metrics.revenue_cagr_3y;        // Already decimal
+      // Backend always returns as decimal, no conversion needed
+      const cagrDecimal = metrics.revenue_cagr_3y;
       
       // Determine years from historical data if available, otherwise use 2 (most common)
       const hasHistoricalData = resultAny.historical_years_data && resultAny.historical_years_data.length > 0;
@@ -44,15 +42,15 @@ export const calculateGrowthMetrics = (result: ValuationResponse) => {
       };
     }
     
-    // Fallback to other metrics if revenue_cagr_3y not available
+    // Fallback to other metrics if revenue_cagr_3y not available  
     if (metrics.cagr !== undefined && metrics.cagr !== null) {
-      const cagrDecimal = metrics.cagr >= 1 ? metrics.cagr / 100 : metrics.cagr;
-      return { cagr: cagrDecimal, hasHistoricalData: true, years: 3 };
+      // Backend returns as decimal
+      return { cagr: metrics.cagr, hasHistoricalData: true, years: 3 };
     }
     
     if (metrics.revenue_growth !== undefined && metrics.revenue_growth !== null) {
-      const growthDecimal = metrics.revenue_growth >= 1 ? metrics.revenue_growth / 100 : metrics.revenue_growth;
-      return { cagr: growthDecimal, hasHistoricalData: true, years: 2 };
+      // Backend returns as decimal
+      return { cagr: metrics.revenue_growth, hasHistoricalData: true, years: 2 };
     }
   }
   

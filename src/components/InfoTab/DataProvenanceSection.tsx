@@ -9,7 +9,6 @@ interface DataProvenanceSectionProps {
 }
 
 export const DataProvenanceSection: React.FC<DataProvenanceSectionProps> = ({ result, inputData }) => {
-  const isPreviewMode = !result.transparency;
   const [expandedFactors, setExpandedFactors] = useState<Set<string>>(new Set());
   
   const toggleFactor = (factorName: string) => {
@@ -72,37 +71,14 @@ export const DataProvenanceSection: React.FC<DataProvenanceSectionProps> = ({ re
           <Database className="w-6 h-6 text-teal-600" />
         </div>
         <div className="flex-1">
-          <div className="flex items-center gap-3">
-            <h2 className="text-2xl font-bold text-gray-900">
-              Data Provenance & Quality Audit
-            </h2>
-            {isPreviewMode && (
-              <span className="px-3 py-1 bg-blue-100 text-blue-800 text-sm font-semibold rounded-full border border-blue-300">
-                PREVIEW
-              </span>
-            )}
-          </div>
+          <h2 className="text-2xl font-bold text-gray-900">
+            Data Provenance & Quality Audit
+          </h2>
           <p className="text-sm text-gray-600">
             Complete audit trail of all data sources
-            {isPreviewMode && ' (Full tracking coming soon)'}
           </p>
         </div>
       </div>
-      
-      {isPreviewMode && (
-        <div className="bg-blue-50 border-2 border-blue-300 rounded-lg p-4">
-          <div className="flex items-start gap-3">
-            <AlertCircle className="w-5 h-5 text-blue-600 mt-0.5" />
-            <div>
-              <p className="font-semibold text-blue-900 mb-1">Preview Mode Active</p>
-              <p className="text-sm text-blue-800">
-                This section displays representative data examples. Full data provenance with real-time 
-                API timestamps and source attribution will be available in the next release.
-              </p>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Overall Data Quality */}
       <div className="bg-gradient-to-br from-teal-50 to-cyan-50 border-2 border-teal-500 rounded-lg p-6">

@@ -13,38 +13,9 @@ export const OwnerDependencySection: React.FC<OwnerDependencySectionProps> = ({ 
   
   const odResult = result.owner_dependency_result;
   
-  // If no owner dependency assessment
+  // If no owner dependency assessment, don't render the section at all
   if (!odResult) {
-    return (
-      <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border-2 border-blue-300 rounded-lg p-6">
-        <div className="flex items-start space-x-4">
-          <div className="flex-shrink-0">
-            <Info className="w-8 h-8 text-blue-600" />
-          </div>
-          <div className="flex-1">
-            <h3 className="text-lg font-semibold text-blue-900 mb-2">
-              Owner Dependency Assessment Not Completed
-            </h3>
-            <p className="text-blue-800 mb-4">
-              Complete the Owner Dependency assessment (Phase 4) to get a more accurate valuation 
-              that accounts for key person risk. This assessment evaluates 12 critical factors 
-              that can impact business value by up to 40%.
-            </p>
-            <div className="bg-white rounded-lg p-4">
-              <h4 className="font-semibold text-gray-900 mb-2">What's Included:</h4>
-              <ul className="space-y-1 text-sm text-gray-700">
-                <li>• Client concentration analysis</li>
-                <li>• Operational knowledge dependency</li>
-                <li>• Sales relationship assessment</li>
-                <li>• Team capability evaluation</li>
-                <li>• Succession planning review</li>
-                <li>• And 7 more critical factors</li>
-              </ul>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
+    return null;
   }
   
   const toggleFactor = (factor: string) => {

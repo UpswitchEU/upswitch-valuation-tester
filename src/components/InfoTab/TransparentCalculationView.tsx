@@ -16,16 +16,15 @@ interface TransparentCalculationViewProps {
   inputData: ValuationInputData | null;
 }
 
-// Define sections for navigation (McKinsey/Bain structure)
-const SECTIONS = [
-  { id: 'summary', title: 'Executive Summary', icon: FileText },
-  { id: 'input-data', title: 'Input Data', icon: Database },
-  { id: 'dcf-calculation', title: 'DCF Analysis', icon: TrendingUp },
-  { id: 'multiples-calculation', title: 'Market Multiples', icon: BarChart3 },
-  { id: 'weighting-logic', title: 'Methodology Weighting', icon: Target },
-  { id: 'owner-dependency', title: 'Owner Dependency', icon: Users },
-  { id: 'range-calculation', title: 'Valuation Range', icon: BarChart3 },
-  { id: 'data-provenance', title: 'Confidence & Quality', icon: CheckCircle }
+// Define all possible sections for navigation (McKinsey/Bain structure)
+const ALL_SECTIONS = [
+  { id: 'summary', title: 'Executive Summary', icon: FileText, required: true },
+  { id: 'input-data', title: 'Input Data', icon: Database, required: true },
+  { id: 'dcf-calculation', title: 'DCF Analysis', icon: TrendingUp, required: true },
+  { id: 'multiples-calculation', title: 'Market Multiples', icon: BarChart3, required: true },
+  { id: 'weighting-logic', title: 'Methodology Weighting', icon: Target, required: true },
+  { id: 'owner-dependency', title: 'Owner Dependency', icon: Users, required: false },
+  { id: 'range-calculation', title: 'Valuation Range', icon: BarChart3, required: true }
 ];
 
 export const TransparentCalculationView: React.FC<TransparentCalculationViewProps> = ({
@@ -33,6 +32,13 @@ export const TransparentCalculationView: React.FC<TransparentCalculationViewProp
   inputData,
 }) => {
   const [activeSection, setActiveSection] = useState('summary');
+
+  // Determine which sections to show based on available data
+  const SECTIONS = ALL_SECTIONS.filter(section => {
+    if (section.required) return true;
+    if (section.id === 'owner-dependency') return !!result.owner_dependency_result;
+    return true;
+  });
 
   const scrollToSection = (sectionId: string) => {
     const element = document.getElementById(sectionId);
@@ -193,33 +199,21 @@ export const TransparentCalculationView: React.FC<TransparentCalculationViewProp
       {/* Section divider */}
       <div className="border-t-4 border-gray-300"></div>
 
-      {/* Section 4.5: Owner Dependency Analysis (12 factors) */}
-      <div id="owner-dependency">
-        <OwnerDependencySection result={result} />
-      </div>
-
-      {/* Section divider */}
-      <div className="border-t-4 border-gray-300"></div>
+      {/* Section 4.5: Owner Dependency Analysis (12 factors) - Only if available */}
+      {result.owner_dependency_result && (
+        <>
+          <div id="owner-dependency">
+            <OwnerDependencySection result={result} />
+          </div>
+          
+          {/* Section divider */}
+          <div className="border-t-4 border-gray-300"></div>
+        </>
+      )}
 
       {/* Section 5: Range Calculation (Low/Mid/High) */}
       <div id="range-calculation">
         <RangeCalculationSection result={result} inputData={inputData} />
-      </div>
-
-      {/* Section divider */}
-      <div className="border-t-4 border-gray-300"></div>
-
-      {/* Section 6: Final Valuation Synthesis */}
-      <div id="final-synthesis">
-        <FinalSynthesisSection result={result} inputData={inputData} />
-      </div>
-
-      {/* Section divider */}
-      <div className="border-t-4 border-gray-300"></div>
-
-      {/* Section 7: Data Provenance & Quality */}
-      <div id="data-provenance">
-        <DataProvenanceSection result={result} inputData={inputData} />
       </div>
 
       {/* Footer with academic references */}
