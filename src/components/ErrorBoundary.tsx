@@ -10,6 +10,7 @@ interface Props {
 interface State {
   hasError: boolean;
   error: Error | null;
+  retryCount: number;
 }
 
 /**
@@ -26,11 +27,12 @@ interface State {
 export class ErrorBoundary extends Component<Props, State> {
   constructor(props: Props) {
     super(props);
-    this.state = { hasError: false, error: null };
+    this.state = { hasError: false, error: null, retryCount: 0 };
   }
 
-  static getDerivedStateFromError(error: Error): State {
+  static getDerivedStateFromError(error: Error): Partial<State> {
     // Update state so the next render will show the fallback UI
+    // Note: We preserve retryCount by only updating hasError and error
     return { hasError: true, error };
   }
 
@@ -45,7 +47,11 @@ export class ErrorBoundary extends Component<Props, State> {
   }
 
   handleReset = () => {
-    this.setState({ hasError: false, error: null });
+    this.setState((prevState) => ({
+      hasError: false,
+      error: null,
+      retryCount: prevState.retryCount + 1
+    }));
   };
 
   render() {
@@ -57,6 +63,9 @@ export class ErrorBoundary extends Component<Props, State> {
 
       // Default fallback UI
       const componentName = this.props.componentName || 'Component';
+      const { retryCount } = this.state;
+      const MAX_RETRIES = 2;
+      const canRetry = retryCount < MAX_RETRIES;
       
       return (
         <div className="bg-red-50 border-2 border-red-300 rounded-lg p-6">
@@ -78,13 +87,40 @@ export class ErrorBoundary extends Component<Props, State> {
                 )}
               </p>
               
+              {/* Retry count warning */}
+              {retryCount > 0 && canRetry && (
+                <div className="mb-3 text-xs text-red-700 bg-red-100 p-2 rounded border border-red-200">
+                  <strong>⚠️ This error has occurred {retryCount} time{retryCount > 1 ? 's' : ''}.</strong>
+                  {' '}If it persists after another attempt, please reload the page.
+                </div>
+              )}
+              
+              {/* Max retries reached warning */}
+              {!canRetry && (
+                <div className="mb-3 text-xs text-red-800 bg-red-100 p-2 rounded border border-red-300">
+                  <strong>❌ Maximum retry attempts reached ({MAX_RETRIES}).</strong>
+                  {' '}This appears to be a persistent error. Please reload the page or contact support if the issue continues.
+                </div>
+              )}
+              
               <div className="flex gap-3">
-                <button
-                  onClick={this.handleReset}
-                  className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 text-sm font-medium transition-colors"
-                >
-                  Try Again
-                </button>
+                {canRetry ? (
+                  <button
+                    onClick={this.handleReset}
+                    className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 text-sm font-medium transition-colors"
+                  >
+                    Try Again {retryCount > 0 && `(${retryCount}/${MAX_RETRIES})`}
+                  </button>
+                ) : (
+                  <button
+                    onClick={this.handleReset}
+                    disabled
+                    className="px-4 py-2 bg-gray-300 text-gray-500 rounded cursor-not-allowed text-sm font-medium"
+                    title="Maximum retry attempts reached"
+                  >
+                    Try Again (Max Reached)
+                  </button>
+                )}
                 <button
                   onClick={() => window.location.reload()}
                   className="px-4 py-2 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 text-sm font-medium transition-colors"

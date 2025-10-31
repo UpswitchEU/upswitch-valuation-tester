@@ -43,18 +43,28 @@ export const ValuationMethodsSection: React.FC<ValuationMethodsSectionProps> = (
   }
   
   // Safe extraction with defaults and validation
+  // Note: Using explicit null/undefined checks to avoid falsy value bug with 0
   const dcfWeight = typeof result.dcf_weight === 'number' && isFinite(result.dcf_weight) ? result.dcf_weight : 0;
   const multiplesWeight = typeof result.multiples_weight === 'number' && isFinite(result.multiples_weight) ? result.multiples_weight : 0;
   
-  const dcfValue = result.dcf_valuation?.equity_value && isFinite(result.dcf_valuation.equity_value) 
+  // CRITICAL FIX: Explicit null/undefined check to avoid treating 0 as falsy
+  // Using !== undefined && !== null instead of && to handle zero valuations correctly
+  const dcfValue = result.dcf_valuation?.equity_value !== undefined && 
+                   result.dcf_valuation?.equity_value !== null &&
+                   isFinite(result.dcf_valuation.equity_value)
     ? result.dcf_valuation.equity_value 
-    : 0;
-  const multiplesValue = result.multiples_valuation?.adjusted_equity_value && isFinite(result.multiples_valuation.adjusted_equity_value)
+    : null;
+    
+  const multiplesValue = result.multiples_valuation?.adjusted_equity_value !== undefined &&
+                         result.multiples_valuation?.adjusted_equity_value !== null &&
+                         isFinite(result.multiples_valuation.adjusted_equity_value)
     ? result.multiples_valuation.adjusted_equity_value 
-    : 0;
+    : null;
   
   // Check if we have at least one valid methodology
-  const hasValidMethodology = (dcfWeight > 0 && dcfValue > 0) || (multiplesWeight > 0 && multiplesValue > 0);
+  // Allow zero or positive values, reject only null/undefined
+  const hasValidMethodology = (dcfWeight > 0 && dcfValue !== null && dcfValue >= 0) || 
+                              (multiplesWeight > 0 && multiplesValue !== null && multiplesValue >= 0);
   
   if (!hasValidMethodology) {
     return (
@@ -114,7 +124,7 @@ export const ValuationMethodsSection: React.FC<ValuationMethodsSectionProps> = (
             {dcfWeight > 0 ? (
               <>
                 <div className="text-2xl font-bold text-gray-900 mb-2">
-                  €{dcfValue.toLocaleString('de-DE', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+                  €{(dcfValue ?? 0).toLocaleString('de-DE', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
                 </div>
                 <p className="text-xs text-gray-600 mb-3">
                   Projects future cash flows and discounts to present value using WACC
@@ -150,7 +160,7 @@ export const ValuationMethodsSection: React.FC<ValuationMethodsSectionProps> = (
             {multiplesWeight > 0 ? (
               <>
                 <div className="text-2xl font-bold text-gray-900 mb-2">
-                  €{multiplesValue.toLocaleString('de-DE', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+                  €{(multiplesValue ?? 0).toLocaleString('de-DE', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
                 </div>
                 <p className="text-xs text-gray-600 mb-3">
                   Compares to similar companies using revenue and EBITDA multiples
@@ -219,8 +229,8 @@ export const ValuationMethodsSection: React.FC<ValuationMethodsSectionProps> = (
       </div>
 
       {/* Methodology Comparison (only if both methods used) */}
-      {dcfWeight > 0 && multiplesWeight > 0 && (() => {
-        // Safe variance calculation with error handling
+      {dcfWeight > 0 && multiplesWeight > 0 && dcfValue !== null && multiplesValue !== null && (() => {
+        // Safe variance calculation with error handling and null coalescing
         const variance = calculateVariance(dcfValue, multiplesValue);
         const varianceMessage = getVarianceMessage(variance);
         const isGoodVariance = variance !== null && variance < VARIANCE_THRESHOLDS.WARNING_THRESHOLD;

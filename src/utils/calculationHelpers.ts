@@ -12,20 +12,37 @@
  * 
  * Edge cases handled:
  * - Both values are 0 → returns 0
- * - One value is 0 → uses non-zero value as reference
  * - Values are undefined/null/NaN → returns null
+ * - Negative values → returns null (data quality issue in valuation context)
+ * - Average is zero (e.g., 100 and -100) → returns null
  * - Result is Infinity → returns null
  * 
- * @param value1 First value
- * @param value2 Second value
+ * @param value1 First value (must be non-negative in valuation context)
+ * @param value2 Second value (must be non-negative in valuation context)
+ * @param options Optional settings { allowNegative: false }
  * @returns Variance percentage (0-100+) or null if cannot calculate
  */
-export function calculateVariance(value1: number, value2: number): number | null {
-  // Validate inputs
+export function calculateVariance(
+  value1: number | null | undefined,
+  value2: number | null | undefined,
+  options: { allowNegative?: boolean } = {}
+): number | null {
+  const { allowNegative = false } = options;
+
+  // Validate inputs - explicit null/undefined/NaN checks
   if (
     value1 === undefined || value1 === null || isNaN(value1) ||
     value2 === undefined || value2 === null || isNaN(value2)
   ) {
+    return null;
+  }
+
+  // CRITICAL FIX: Reject negative values in valuation context (data quality issue)
+  if (!allowNegative && (value1 < 0 || value2 < 0)) {
+    console.warn(
+      `[calculateVariance] Negative valuation detected: value1=${value1}, value2=${value2}. ` +
+      `This indicates a data quality issue. Returning null.`
+    );
     return null;
   }
 
@@ -34,19 +51,28 @@ export function calculateVariance(value1: number, value2: number): number | null
     return 0;
   }
 
-  // Calculate average (base for variance)
+  // Calculate average (base for variance calculation)
   const average = (value1 + value2) / 2;
 
-  // Average is zero (shouldn't happen if we checked both zero above, but defensive)
+  // Average is zero (e.g., value1=100, value2=-100 with allowNegative=true)
+  // This indicates offsetting values - variance calculation is undefined
   if (average === 0) {
+    console.warn(
+      `[calculateVariance] Average is zero: value1=${value1}, value2=${value2}. ` +
+      `Cannot calculate meaningful variance. Returning null.`
+    );
     return null;
   }
 
-  // Calculate variance
+  // Calculate variance as percentage
   const variance = Math.abs((value1 - value2) / average) * 100;
 
-  // Check for Infinity or NaN in result
+  // Check for Infinity or NaN in result (defensive)
   if (!isFinite(variance)) {
+    console.warn(
+      `[calculateVariance] Non-finite variance: ${variance}. ` +
+      `value1=${value1}, value2=${value2}. Returning null.`
+    );
     return null;
   }
 
@@ -104,28 +130,30 @@ export function getVarianceStatus(
 /**
  * Safe division with fallback
  * 
- * @param numerator Numerator
- * @param denominator Denominator
+ * Handles division edge cases: division by zero, NaN, Infinity
+ * 
+ * @param numerator Numerator (accepts number, null, undefined)
+ * @param denominator Denominator (accepts number, null, undefined)
  * @param fallback Fallback value if division is invalid (default 0)
  * @returns Result or fallback
  */
 export function safeDivide(
-  numerator: number,
-  denominator: number,
+  numerator: number | null | undefined,
+  denominator: number | null | undefined,
   fallback: number = 0
 ): number {
+  // Explicit validation for all invalid cases
   if (
-    denominator === 0 ||
-    isNaN(numerator) ||
-    isNaN(denominator) ||
-    !isFinite(numerator) ||
-    !isFinite(denominator)
+    numerator === null || numerator === undefined || isNaN(numerator) || !isFinite(numerator) ||
+    denominator === null || denominator === undefined || isNaN(denominator) || !isFinite(denominator) ||
+    denominator === 0
   ) {
     return fallback;
   }
 
   const result = numerator / denominator;
 
+  // Defensive check: ensure result is finite
   if (!isFinite(result)) {
     return fallback;
   }
