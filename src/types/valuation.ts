@@ -214,6 +214,14 @@ export interface RangeMethodology {
   academic_source: string;
 }
 
+export interface ValidationWarning {
+  type: 'wacc' | 'cagr' | 'growth_consistency' | 'methodology_variance' | 'data_quality';
+  severity: 'critical' | 'high' | 'medium' | 'low';
+  message: string;
+  details?: string;
+  recommended_action?: string;
+}
+
 export interface ValuationResponse {
   valuation_id: string;
   company_name: string;
@@ -231,6 +239,9 @@ export interface ValuationResponse {
   confidence_score: number;
   overall_confidence: string;
   confidence?: number; // Alias for confidence_score
+  
+  // Validation warnings (from backend sanity checks)
+  validation_warnings?: ValidationWarning[];
   
   // Transparency data
   transparency?: TransparencyData;

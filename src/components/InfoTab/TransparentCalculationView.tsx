@@ -6,6 +6,7 @@ import { formatCurrency } from '../Results/utils/formatters';
 import { InputDataSection } from './InputDataSection';
 import { OwnerDependencySection } from './OwnerDependencySection';
 import { RangeCalculationSection } from './RangeCalculationSection';
+import { ValidationWarnings } from './ValidationWarnings';
 import { ValuationMethodsSection } from './ValuationMethodsSection';
 import { WeightingLogicSection } from './WeightingLogicSection';
 
@@ -164,6 +165,18 @@ export const TransparentCalculationView: React.FC<TransparentCalculationViewProp
 
       {/* Section divider */}
       <div className="border-t-4 border-gray-300"></div>
+
+      {/* Validation Warnings - Prominently displayed if any exist */}
+      {result.validation_warnings && result.validation_warnings.length > 0 && (
+        <>
+          <div id="validation-warnings">
+            <ValidationWarnings warnings={result.validation_warnings} />
+          </div>
+          
+          {/* Section divider */}
+          <div className="border-t-4 border-gray-300"></div>
+        </>
+      )}
 
       {/* Section 1: Input Data Summary */}
       <div id="input-data">

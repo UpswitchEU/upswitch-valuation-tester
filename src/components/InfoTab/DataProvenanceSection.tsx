@@ -21,7 +21,10 @@ export const DataProvenanceSection: React.FC<DataProvenanceSectionProps> = ({ re
     setExpandedFactors(newExpanded);
   };
   
-  // Get data sources from transparency data or create defaults
+  // Check if we have real data or using mock data
+  const hasRealDataSources = !!result.transparency?.data_sources && result.transparency.data_sources.length > 0;
+  
+  // Get data sources from transparency data or create example defaults for preview
   const dataSources: DataSourceType[] = result.transparency?.data_sources || [
     {
       name: 'Risk-Free Rate',
@@ -71,14 +74,49 @@ export const DataProvenanceSection: React.FC<DataProvenanceSectionProps> = ({ re
           <Database className="w-6 h-6 text-teal-600" />
         </div>
         <div className="flex-1">
-          <h2 className="text-2xl font-bold text-gray-900">
-            Data Provenance & Quality Audit
-          </h2>
+          <div className="flex items-center gap-2 mb-1">
+            <h2 className="text-2xl font-bold text-gray-900">
+              Data Provenance & Quality Audit
+            </h2>
+            {!hasRealDataSources && (
+              <span className="px-3 py-1 bg-yellow-100 text-yellow-800 text-xs font-bold rounded-full border border-yellow-400">
+                EXAMPLE DATA
+              </span>
+            )}
+          </div>
           <p className="text-sm text-gray-600">
-            Complete audit trail of all data sources
+            {hasRealDataSources 
+              ? 'Complete audit trail of all data sources'
+              : 'Preview of data provenance tracking (showing example data sources)'}
           </p>
         </div>
       </div>
+
+      {/* Warning banner for example data */}
+      {!hasRealDataSources && (
+        <div className="bg-yellow-50 border-2 border-yellow-400 rounded-lg p-4">
+          <div className="flex items-start gap-3">
+            <AlertCircle className="w-6 h-6 text-yellow-600 flex-shrink-0 mt-0.5" />
+            <div className="flex-1">
+              <h4 className="font-semibold text-yellow-900 mb-1">Example Data Sources Shown</h4>
+              <p className="text-sm text-yellow-800 mb-2">
+                The data sources displayed below are <strong>example placeholders</strong> to demonstrate 
+                the provenance tracking system. In production, this section will show:
+              </p>
+              <ul className="text-sm text-yellow-800 space-y-1 ml-4">
+                <li>• Real-time API calls to ECB, OECD, and financial data providers</li>
+                <li>• Actual timestamps of when data was fetched</li>
+                <li>• Live cache status and data freshness indicators</li>
+                <li>• Confidence scores based on actual data quality metrics</li>
+              </ul>
+              <p className="text-xs text-yellow-700 mt-3 font-medium">
+                ⚠️ Do not rely on the specific values shown below for investment decisions. 
+                They are for demonstration purposes only.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Overall Data Quality */}
       <div className="bg-gradient-to-br from-teal-50 to-cyan-50 border-2 border-teal-500 rounded-lg p-6">
