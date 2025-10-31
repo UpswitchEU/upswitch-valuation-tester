@@ -1,6 +1,6 @@
+import { BarChart3, ChevronDown, ChevronUp, TrendingUp } from 'lucide-react';
 import React, { useState } from 'react';
-import { BarChart3, TrendingUp, ChevronDown, ChevronUp } from 'lucide-react';
-import type { ValuationResponse, ValuationInputData } from '../../types/valuation';
+import type { ValuationInputData, ValuationResponse } from '../../types/valuation';
 import { DCFTransparencySection } from './DCFTransparencySection';
 import { MultiplesTransparencySection } from './MultiplesTransparencySection';
 

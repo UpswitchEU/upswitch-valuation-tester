@@ -1,13 +1,12 @@
-import { AlertTriangle, BarChart3, Database, FileText, Target, TrendingUp, Users } from 'lucide-react';
+import { AlertTriangle, BarChart3, Database, FileText, Target, Users } from 'lucide-react';
 import React, { useState } from 'react';
 import type { ValuationInputData, ValuationResponse } from '../../types/valuation';
 import { calculateOwnerDependencyMultipleImpact } from '../../utils/valuationFormatters';
 import { formatCurrency } from '../Results/utils/formatters';
-import { DCFTransparencySection } from './DCFTransparencySection';
 import { InputDataSection } from './InputDataSection';
-import { MultiplesTransparencySection } from './MultiplesTransparencySection';
 import { OwnerDependencySection } from './OwnerDependencySection';
 import { RangeCalculationSection } from './RangeCalculationSection';
+import { ValuationMethodsSection } from './ValuationMethodsSection';
 import { WeightingLogicSection } from './WeightingLogicSection';
 
 interface TransparentCalculationViewProps {
@@ -16,14 +15,14 @@ interface TransparentCalculationViewProps {
 }
 
 // Define all possible sections for navigation (McKinsey/Bain structure)
+// Consolidated from 8 sections to 7 for better flow and reduced redundancy
 const ALL_SECTIONS = [
   { id: 'summary', title: 'Executive Summary', icon: FileText, required: true },
   { id: 'input-data', title: 'Input Data', icon: Database, required: true },
-  { id: 'dcf-calculation', title: 'DCF Analysis', icon: TrendingUp, required: true },
-  { id: 'multiples-calculation', title: 'Market Multiples', icon: BarChart3, required: true },
-  { id: 'weighting-logic', title: 'Methodology Weighting', icon: Target, required: true },
+  { id: 'valuation-methods', title: 'Valuation Methods', icon: BarChart3, required: true },
+  { id: 'methodology-weighting', title: 'Methodology Weighting', icon: Target, required: true },
   { id: 'owner-dependency', title: 'Owner Dependency', icon: Users, required: false },
-  { id: 'range-calculation', title: 'Valuation Range', icon: BarChart3, required: true }
+  { id: 'range-confidence', title: 'Range & Confidence', icon: Target, required: true }
 ];
 
 export const TransparentCalculationView: React.FC<TransparentCalculationViewProps> = ({
@@ -174,31 +173,23 @@ export const TransparentCalculationView: React.FC<TransparentCalculationViewProp
       {/* Section divider */}
       <div className="border-t-4 border-gray-300"></div>
 
-      {/* Section 2: DCF Calculation Deep Dive */}
-      <div id="dcf-calculation">
-        <DCFTransparencySection result={result} inputData={inputData} />
+      {/* Section 2: Valuation Methods (Combined DCF + Market Multiples) */}
+      <div id="valuation-methods">
+        <ValuationMethodsSection result={result} inputData={inputData} />
       </div>
 
       {/* Section divider */}
       <div className="border-t-4 border-gray-300"></div>
 
-      {/* Section 3: Multiples Calculation Deep Dive */}
-      <div id="multiples-calculation">
-        <MultiplesTransparencySection result={result} inputData={inputData} />
-      </div>
-
-      {/* Section divider */}
-      <div className="border-t-4 border-gray-300"></div>
-
-      {/* Section 4: Methodology Weighting Logic */}
-      <div id="weighting-logic">
+      {/* Section 3: Methodology Weighting Logic */}
+      <div id="methodology-weighting">
         <WeightingLogicSection result={result} inputData={inputData} />
       </div>
 
       {/* Section divider */}
       <div className="border-t-4 border-gray-300"></div>
 
-      {/* Section 4.5: Owner Dependency Analysis (12 factors) - Only if available */}
+      {/* Section 4: Owner Dependency Analysis (12 factors) - Only if available */}
       {result.owner_dependency_result && (
         <>
           <div id="owner-dependency">
@@ -210,8 +201,8 @@ export const TransparentCalculationView: React.FC<TransparentCalculationViewProp
         </>
       )}
 
-      {/* Section 5: Range Calculation (Low/Mid/High) */}
-      <div id="range-calculation">
+      {/* Section 5: Range & Confidence (Combined Range Calculation + Confidence Scoring) */}
+      <div id="range-confidence">
         <RangeCalculationSection result={result} inputData={inputData} />
       </div>
 

@@ -1,6 +1,6 @@
+import { AlertTriangle, Target } from 'lucide-react';
 import React from 'react';
-import { Target, AlertTriangle } from 'lucide-react';
-import type { ValuationResponse, ValuationInputData, RangeMethodology } from '../../types/valuation';
+import type { RangeMethodology, ValuationInputData, ValuationResponse } from '../../types/valuation';
 import { formatCurrency, formatPercent } from '../Results/utils/formatters';
 
 interface RangeCalculationSectionProps {
@@ -53,9 +53,11 @@ export const RangeCalculationSection: React.FC<RangeCalculationSectionProps> = (
         </div>
         <div>
           <h2 className="text-2xl font-bold text-gray-900">
-            Valuation Range Calculation (Low/Mid/High)
+            Valuation Range & Confidence Analysis
           </h2>
-          <p className="text-sm text-gray-600">Complete methodology for determining valuation ranges</p>
+          <p className="text-sm text-gray-600">
+            Complete methodology for determining valuation ranges (Low/Mid/High) and confidence scoring
+          </p>
         </div>
       </div>
 
