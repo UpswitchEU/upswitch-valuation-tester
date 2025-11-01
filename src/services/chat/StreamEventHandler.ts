@@ -49,6 +49,7 @@ export interface StreamEventHandlerCallbacks {
   onCalculateOptionAvailable?: (data: any) => void;
   onProgressUpdate?: (data: any) => void;
   onHtmlPreviewUpdate?: (html: string, previewType: string) => void;
+  onStreamStart?: () => void; // CRITICAL FIX: Callback to reset event handler state when new stream starts
 }
 
 /**
@@ -72,6 +73,21 @@ export class StreamEventHandler {
     private callbacks: StreamEventHandlerCallbacks
   ) {
     this.sessionId = sessionId;
+  }
+  
+  /**
+   * Reset event handler state for a new stream
+   * CRITICAL FIX: Resets flags when a new stream starts, not just when message completes
+   * This prevents the second message from appearing empty
+   */
+  reset(): void {
+    chatLogger.info('🔄 Resetting StreamEventHandler state for new stream', {
+      sessionId: this.sessionId,
+      hadStartedMessage: this.hasStartedMessage,
+      hadLock: this.messageCreationLock
+    });
+    this.hasStartedMessage = false;
+    this.messageCreationLock = false;
   }
   
   /**

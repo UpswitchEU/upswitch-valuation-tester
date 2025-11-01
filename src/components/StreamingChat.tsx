@@ -135,9 +135,13 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
   // Track active streaming requests for cleanup
   const activeRequestRef = useRef<{ abort: () => void } | null>(null);
   
+  // CRITICAL FIX: Store event handler in ref so onStreamStart callback can access it
+  const eventHandlerRef = useRef<StreamEventHandler | null>(null);
+  
   // Create event handler with all callbacks
   // CRITICAL FIX: Removed state.messages from dependencies to prevent recreation on every update
-  const eventHandler = useMemo(() => new StreamEventHandler(sessionId, {
+  const eventHandler = useMemo(() => {
+    const handler = new StreamEventHandler(sessionId, {
     updateStreamingMessage: (content: string, isComplete: boolean = false) => {
       // CRITICAL FIX: Thread-safe message creation
       // Prevents duplicate messages when updateStreamingMessage called before message_start
@@ -291,8 +295,18 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
     onValuationPreview,
     onCalculateOptionAvailable,
     onProgressUpdate,
-    onHtmlPreviewUpdate
-  }), [
+    onHtmlPreviewUpdate,
+    onStreamStart: () => {
+      // CRITICAL FIX: Reset event handler state when new stream starts
+      // This ensures hasStartedMessage and messageCreationLock are reset for each new message
+      // Direct access to handler since callback is created in same scope
+      handler.reset();
+      chatLogger.info('🔄 Stream start callback - reset event handler state');
+    }
+  });
+    eventHandlerRef.current = handler;
+    return handler;
+  }, [
     // CRITICAL FIX: Removed state.messages from dependencies - using messagesRef instead
     // This prevents eventHandler from being recreated on every message update
     sessionId,
@@ -373,31 +387,64 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
   
   // Update streaming message helper
   // CRITICAL FIX: Use functional state update to prevent stale state during rapid streaming
+  // ENHANCED: More resilient to ref synchronization issues - can find message even if refs are slightly out of sync
   const updateStreamingMessage = useCallback((content: string, isComplete: boolean = false) => {
-    if (!state.refs.currentStreamingMessageRef.current?.id) {
-      chatLogger.warn('No current streaming message to update');
-      return;
-    }
+    // CRITICAL FIX: Check ref first, but fallback to finding message in state if ref is out of sync
+    let currentMessageId: string | null = null;
     
-    const currentMessageId = state.refs.currentStreamingMessageRef.current.id;
+    if (state.refs.currentStreamingMessageRef.current?.id) {
+      currentMessageId = state.refs.currentStreamingMessageRef.current.id;
+    } else {
+      // ENHANCED: If ref doesn't have message, find it in the current messages array
+      // This handles cases where refs are slightly out of sync
+      const currentMessages = messagesRef.current;
+      const streamingMessage = currentMessages.find(
+        msg => msg.type === 'ai' && msg.isStreaming && !msg.isComplete
+      );
+      
+      if (streamingMessage) {
+        chatLogger.debug('Found streaming message in state when ref was missing', {
+          messageId: streamingMessage.id
+        });
+        state.refs.currentStreamingMessageRef.current = streamingMessage;
+        currentMessageId = streamingMessage.id;
+      } else {
+        chatLogger.warn('No current streaming message to update', {
+          contentLength: content.length,
+          isComplete,
+          totalMessages: currentMessages.length
+        });
+        return;
+      }
+    }
     
     // CRITICAL FIX: Use functional update to ensure we always work with latest messages
     // This prevents lost updates during rapid streaming chunks
     state.setMessages(prevMessages => {
       const updatedMessages = messageManager.updateStreamingMessage(
         prevMessages,  // Always latest state
-        currentMessageId,
+        currentMessageId!,
         content,
         isComplete
       );
       // Update ref immediately for eventHandler access
       messagesRef.current = updatedMessages;
+      
+      // Ensure ref still points to the correct message after update
+      const updatedMessage = updatedMessages.find(msg => msg.id === currentMessageId);
+      if (updatedMessage) {
+        state.refs.currentStreamingMessageRef.current = updatedMessage;
+      }
+      
       return updatedMessages;
     });
     
     if (isComplete) {
       complete();
-      onMessageComplete?.(state.refs.currentStreamingMessageRef.current);
+      const completedMessage = state.refs.currentStreamingMessageRef.current;
+      if (completedMessage) {
+        onMessageComplete?.(completedMessage);
+      }
       state.refs.currentStreamingMessageRef.current = null;
     }
   }, [state.setMessages, state.refs.currentStreamingMessageRef, messageManager, complete, onMessageComplete]);
@@ -485,7 +532,13 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
           onHtmlPreviewUpdate?.(context.html || '', context.preview_type || 'progressive');
         },
         extractBusinessModelFromInput: (_input: string) => null,
-        extractFoundingYearFromInput: (_input: string) => null
+        extractFoundingYearFromInput: (_input: string) => null,
+        onStreamStart: () => {
+          // CRITICAL FIX: Reset event handler state when new stream starts
+          // This ensures hasStartedMessage and messageCreationLock are reset for each new message
+          eventHandler.reset();
+          chatLogger.info('🔄 Stream start - reset event handler state');
+        }
       },
       (event) => {
         try {

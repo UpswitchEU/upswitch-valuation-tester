@@ -16,6 +16,7 @@ export interface StreamingManagerCallbacks {
   onContextUpdate?: (context: any) => void;
   extractBusinessModelFromInput: (input: string) => string | null;
   extractFoundingYearFromInput: (input: string) => number | null;
+  onStreamStart?: () => void; // CRITICAL FIX: Callback to reset event handler state when new stream starts
 }
 
 /**
@@ -104,6 +105,10 @@ export class StreamingManager {
       extractedBusinessModel,
       extractedFoundingYear
     });
+    
+    // CRITICAL FIX: Reset event handler state before starting new stream
+    // This ensures hasStartedMessage and messageCreationLock are reset for the new message
+    callbacks.onStreamStart?.();
     
     callbacks.setIsStreaming(true);
 
