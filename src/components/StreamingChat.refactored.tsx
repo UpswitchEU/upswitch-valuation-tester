@@ -324,15 +324,48 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
         extractFoundingYearFromInput
       },
       (event) => {
-        // ENHANCED LOGGING: Log ALL events before handling
-        chatLogger.info('📥 Event received in StreamingChat', { 
-          type: event?.type, 
-          hasContent: !!event?.content,
-          contentLength: event?.content?.length,
-          sessionId: event?.session_id,
-          fullEvent: JSON.stringify(event).substring(0, 300)
-        });
-        eventHandler.handleEvent(event);
+        try {
+          // ENHANCED LOGGING: Log ALL events before handling
+          chatLogger.info('📥 Event received in StreamingChat', { 
+            type: event?.type, 
+            hasContent: !!event?.content,
+            contentLength: event?.content?.length,
+            sessionId: event?.session_id,
+            fullEvent: JSON.stringify(event).substring(0, 300)
+          });
+          
+          // CRITICAL FIX: Ensure eventHandler exists and handleEvent is callable
+          if (!eventHandler) {
+            chatLogger.error('❌ eventHandler is null/undefined', { sessionId });
+            console.error('❌ eventHandler is null/undefined', { sessionId });
+            return;
+          }
+          
+          if (typeof eventHandler.handleEvent !== 'function') {
+            chatLogger.error('❌ eventHandler.handleEvent is not a function', { 
+              sessionId,
+              eventHandlerType: typeof eventHandler,
+              hasHandleEvent: 'handleEvent' in eventHandler
+            });
+            console.error('❌ eventHandler.handleEvent is not a function', { eventHandler });
+            return;
+          }
+          
+          chatLogger.info('🎯 About to call eventHandler.handleEvent', { 
+            type: event?.type,
+            sessionId: event?.session_id
+          });
+          eventHandler.handleEvent(event);
+          chatLogger.debug('✅ eventHandler.handleEvent completed', { type: event?.type });
+        } catch (error) {
+          chatLogger.error('❌ Error in onEvent callback', { 
+            error: error instanceof Error ? error.message : String(error),
+            stack: error instanceof Error ? error.stack : undefined,
+            eventType: event?.type,
+            sessionId: event?.session_id
+          });
+          console.error('❌ Error in onEvent callback:', error, { event });
+        }
       },
       (error) => {
         chatLogger.error('Streaming error', { error: error.message });
@@ -605,31 +638,44 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
             </h4>
             <div className="grid grid-cols-2 gap-2">
               {Object.entries(state.collectedData).map(([field, data]: [string, any]) => {
-                // Defensive: Ensure value is always a string to prevent "[object Object]" rendering
-                // MEMORY FIX: Limit JSON stringify size
-                // SECURITY FIX: Sanitize sensitive data
+                // CRITICAL FIX: Handle multiple data structures
+                // Data can be: {value: string} OR just a string OR {field, value, ...}
                 const MAX_DISPLAY_SIZE = 200;
                 
                 let displayValue: string;
-                if (data?.value == null) {
-                  displayValue = 'Not provided';
-                } else if (typeof data.value === 'object' && data.value !== null) {
-                  try {
-                    const jsonStr = JSON.stringify(data.value, null, 0);
-                    // Truncate if too large
-                    displayValue = jsonStr.length > MAX_DISPLAY_SIZE 
-                      ? jsonStr.substring(0, MAX_DISPLAY_SIZE - 3) + '...'
-                      : jsonStr;
-                  } catch (e) {
-                    // Handle circular references
-                    displayValue = `[Complex object: ${data.value.constructor?.name || 'Object'}]`;
+                
+                // Handle case where data itself is a string
+                if (typeof data === 'string') {
+                  displayValue = data.length > MAX_DISPLAY_SIZE 
+                    ? data.substring(0, MAX_DISPLAY_SIZE - 3) + '...'
+                    : data;
+                }
+                // Handle case where data is an object with value property
+                else if (data && typeof data === 'object') {
+                  // Extract value - could be nested
+                  const rawValue = data.value !== undefined ? data.value : data;
+                  
+                  if (rawValue == null) {
+                    displayValue = 'Not provided';
+                  } else if (typeof rawValue === 'object' && rawValue !== null) {
+                    // Object value - convert to JSON
+                    try {
+                      const jsonStr = JSON.stringify(rawValue, null, 0);
+                      displayValue = jsonStr.length > MAX_DISPLAY_SIZE 
+                        ? jsonStr.substring(0, MAX_DISPLAY_SIZE - 3) + '...'
+                        : jsonStr;
+                    } catch (e) {
+                      displayValue = `[Complex object: ${rawValue.constructor?.name || 'Object'}]`;
+                    }
+                  } else {
+                    displayValue = String(rawValue);
+                    // Truncate long strings
+                    if (displayValue.length > MAX_DISPLAY_SIZE) {
+                      displayValue = displayValue.substring(0, MAX_DISPLAY_SIZE - 3) + '...';
+                    }
                   }
                 } else {
-                  displayValue = String(data.value);
-                  // Truncate long strings
-                  if (displayValue.length > MAX_DISPLAY_SIZE) {
-                    displayValue = displayValue.substring(0, MAX_DISPLAY_SIZE - 3) + '...';
-                  }
+                  displayValue = String(data ?? 'Not provided');
                 }
                 
                 // Null safety for icon and display_name
