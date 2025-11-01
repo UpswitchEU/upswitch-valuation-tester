@@ -4,8 +4,8 @@
  * Similar to Lovable.dev's real-time code generation
  */
 
-import React, { useState } from 'react';
-import { CheckCircle, Clock, AlertCircle, Loader2, AlertTriangle } from 'lucide-react';
+import { AlertCircle, AlertTriangle, CheckCircle, Clock, Loader2 } from 'lucide-react';
+import React from 'react';
 
 interface ReportSection {
   id: string;
@@ -29,17 +29,17 @@ interface ProgressiveValuationReportProps {
 
 export const ProgressiveValuationReport: React.FC<ProgressiveValuationReportProps> = ({
   className = '',
-  sections: propSections = [],
-  phase: propPhase = 0,
-  finalHtml: propFinalHtml = '',
-  isGenerating: propIsGenerating = false
+  sections = [],
+  phase = 0,
+  finalHtml = '',
+  isGenerating = false
 }) => {
-  const [sections] = useState<ReportSection[]>(propSections);
-  const [currentPhase] = useState(propPhase);
-  const [overallProgress] = useState(0);
-  const [isGenerating] = useState(propIsGenerating);
-  const [finalReport] = useState<string>(propFinalHtml);
-  const [valuationId] = useState<string>('');
+  // Use props directly instead of useState to prevent stale data
+  const currentPhase = phase;
+  const finalReport = finalHtml;
+  const overallProgress = sections.length > 0 
+    ? sections.reduce((sum, s) => sum + (s.progress || 0), 0) / sections.length 
+    : 0;
 
   // Placeholder handlers for future progressive report implementation
   // Commented out until backend supports progressive reporting
@@ -391,4 +391,5 @@ export const ProgressiveValuationReport: React.FC<ProgressiveValuationReportProp
 };
 
 // Export the component and types
-export type { ReportSection, ProgressiveValuationReportProps };
+export type { ProgressiveValuationReportProps, ReportSection };
+

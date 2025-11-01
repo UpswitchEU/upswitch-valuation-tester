@@ -38,11 +38,11 @@ export class StreamingChatService {
       };
       
       chatLogger.debug('SSE request details', { 
-        url: `${this.baseURL}/api/valuations/conversation/stream`,
+        url: `${this.baseURL}/api/v1/intelligent-conversation/stream`,
         body: requestBody 
       });
       
-      const response = await fetch(`${this.baseURL}/api/valuations/conversation/stream`, {
+      const response = await fetch(`${this.baseURL}/api/v1/intelligent-conversation/stream`, {
         method: 'POST',
         credentials: 'include', // Send cookies automatically for auth
         headers: { 'Content-Type': 'application/json' },

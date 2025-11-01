@@ -5,7 +5,7 @@
  * Centralizes all initialization logic including backend calls, retry mechanisms, and fallback handling.
  */
 
-import { useState, useRef, useCallback, useEffect } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { chatLogger } from '../utils/logger';
 import { Message } from './useStreamingChatState';
 
@@ -124,7 +124,7 @@ export const useConversationInitializer = (
       
       try {
         // Call backend to get intelligent first question
-        const response = await fetch(`${API_BASE_URL}/api/valuations/conversation/start`, {
+        const response = await fetch(`${API_BASE_URL}/api/v1/intelligent-conversation/start`, {
           method: 'POST',
           signal: abortControllerRef.current?.signal, // Cancellable
           credentials: 'include', // Send cookies automatically for auth
