@@ -91,9 +91,9 @@ export const TransparentCalculationView: React.FC<TransparentCalculationViewProp
       </div>
 
       {/* Main Content */}
-      <div className="space-y-8 bg-white p-6">
+      <div className="space-y-4 sm:space-y-6 bg-white p-4 sm:p-6">
       {/* Introduction */}
-      <div id="summary" className="bg-gradient-to-r from-blue-50 via-purple-50 to-indigo-50 border-2 border-blue-500 rounded-lg p-6">
+      <div id="summary" className="bg-gradient-to-r from-blue-50 via-purple-50 to-indigo-50 border-2 border-blue-500 rounded-lg p-4 sm:p-6">
         <h1 className="text-3xl font-bold text-gray-900 mb-3">
           Complete Calculation Transparency
         </h1>
@@ -223,7 +223,7 @@ export const TransparentCalculationView: React.FC<TransparentCalculationViewProp
       </div>
 
       {/* Footer with academic references */}
-      <div className="bg-gray-50 border-2 border-gray-300 rounded-lg p-6 mt-8">
+      <div className="bg-gray-50 border-2 border-gray-300 rounded-lg p-4 sm:p-6 mt-6">
         <h3 className="text-lg font-semibold text-gray-900 mb-3">Academic & Industry Standards</h3>
         <div className="text-sm text-gray-700 space-y-2">
           <p><strong>Valuation Methodology:</strong></p>

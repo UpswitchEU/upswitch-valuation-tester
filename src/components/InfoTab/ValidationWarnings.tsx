@@ -138,7 +138,7 @@ export const ValidationWarnings: React.FC<ValidationWarningsProps> = ({ warnings
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       {/* Header */}
       <div className="flex items-center gap-3 pb-4 border-b-2 border-gray-200">
         <div className="p-2 bg-red-100 rounded-lg">

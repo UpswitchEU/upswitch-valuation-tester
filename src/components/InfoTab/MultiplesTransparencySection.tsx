@@ -27,7 +27,7 @@ export const MultiplesTransparencySection: React.FC<MultiplesTransparencySection
 
   if (multiplesWeight === 0) {
     return (
-      <div className="bg-yellow-50 border-2 border-yellow-400 rounded-lg p-6">
+      <div className="bg-yellow-50 border-2 border-yellow-400 rounded-lg p-4 sm:p-6">
         <div className="flex items-start gap-3">
           <div className="p-2 bg-yellow-100 rounded-lg">
             <BarChart3 className="w-6 h-6 text-yellow-600" />
@@ -243,7 +243,7 @@ export const MultiplesTransparencySection: React.FC<MultiplesTransparencySection
         color="blue"
       >
         {!hasComparableCompanies ? (
-          <div className="bg-blue-50 border-2 border-blue-300 rounded-lg p-6">
+          <div className="bg-blue-50 border-2 border-blue-300 rounded-lg p-4 sm:p-6">
             <h4 className="font-semibold text-blue-900 mb-2">Comparable Companies Data Not Available</h4>
             <p className="text-sm text-blue-800 mb-3">
               Detailed comparable company information is not currently provided by the backend. 
@@ -329,7 +329,7 @@ export const MultiplesTransparencySection: React.FC<MultiplesTransparencySection
       </ExpandableSection>
 
       {/* Enterprise & Equity Value */}
-      <div className="bg-gradient-to-br from-green-50 to-emerald-50 border-2 border-green-500 rounded-lg p-6">
+      <div className="bg-gradient-to-br from-green-50 to-emerald-50 border-2 border-green-500 rounded-lg p-4 sm:p-6">
         <h3 className="text-lg font-semibold text-gray-900 mb-4">3. Enterprise & Equity Value (Multiples)</h3>
         
         <div className="space-y-4">
@@ -492,7 +492,7 @@ const ExpandableSection: React.FC<{
         <span className="font-mono font-semibold text-gray-700">{value}</span>
       </button>
       {isExpanded && (
-        <div className="p-6 bg-white border-t border-gray-200">
+        <div className="p-4 sm:p-6 bg-white border-t border-gray-200">
           {children}
         </div>
       )}

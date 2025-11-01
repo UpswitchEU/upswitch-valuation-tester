@@ -51,7 +51,7 @@ export const InputDataSection: React.FC<InputDataSectionProps> = ({ result, inpu
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <div className="flex items-center gap-3 pb-4 border-b-2 border-gray-200">
         <div className="p-2 bg-blue-100 rounded-lg">
           <Database className="w-6 h-6 text-blue-600" />
@@ -63,7 +63,7 @@ export const InputDataSection: React.FC<InputDataSectionProps> = ({ result, inpu
       </div>
 
       {/* Company Information */}
-      <div className="bg-white border border-gray-200 rounded-lg p-6">
+      <div className="bg-white border border-gray-200 rounded-lg p-4 sm:p-6">
         <h3 className="text-lg font-semibold text-gray-900 mb-4">Company Information</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <DataField
@@ -100,7 +100,7 @@ export const InputDataSection: React.FC<InputDataSectionProps> = ({ result, inpu
       </div>
 
       {/* Financial Metrics */}
-      <div className="bg-white border border-gray-200 rounded-lg p-6">
+      <div className="bg-white border border-gray-200 rounded-lg p-4 sm:p-6">
         <h3 className="text-lg font-semibold text-gray-900 mb-4">Financial Metrics</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <DataField
@@ -132,7 +132,7 @@ export const InputDataSection: React.FC<InputDataSectionProps> = ({ result, inpu
       </div>
 
       {/* Data Quality Breakdown */}
-      <div className="bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-6">
+      <div className="bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-4 sm:p-6">
         <h3 className="text-lg font-semibold text-gray-900 mb-4">Data Quality Assessment (8 Factors)</h3>
         <div className="space-y-3">
           <QualityFactor

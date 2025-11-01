@@ -46,7 +46,7 @@ export const RangeCalculationSection: React.FC<RangeCalculationSectionProps> = (
   const companySize = revenue < 50000000 ? 'SME' : revenue < 500000000 ? 'Mid-Market' : 'Enterprise';
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <div className="flex items-center gap-3 pb-4 border-b-2 border-gray-200">
         <div className="p-2 bg-orange-100 rounded-lg">
           <Target className="w-6 h-6 text-orange-600" />
@@ -62,7 +62,7 @@ export const RangeCalculationSection: React.FC<RangeCalculationSectionProps> = (
       </div>
 
       {/* Step 1: Weighted Mid-Point */}
-      <div className="bg-white border-2 border-gray-300 rounded-lg p-6">
+      <div className="bg-white border-2 border-gray-300 rounded-lg p-4 sm:p-6">
         <h3 className="text-lg font-semibold text-gray-900 mb-4">Step 1: Weighted Mid-Point Calculation</h3>
         
         <div className="bg-gray-50 p-4 rounded-lg border-l-4 border-blue-500 mb-4">
@@ -99,7 +99,7 @@ export const RangeCalculationSection: React.FC<RangeCalculationSectionProps> = (
       </div>
 
       {/* Step 2: Confidence Analysis */}
-      <div className="bg-gradient-to-br from-blue-50 to-indigo-50 border-2 border-blue-500 rounded-lg p-6">
+      <div className="bg-gradient-to-br from-blue-50 to-indigo-50 border-2 border-blue-500 rounded-lg p-4 sm:p-6">
         <h3 className="text-lg font-semibold text-gray-900 mb-4">Step 2: Confidence Score Analysis</h3>
         
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
@@ -131,7 +131,7 @@ export const RangeCalculationSection: React.FC<RangeCalculationSectionProps> = (
       </div>
 
       {/* Step 3: Range Spread Determination */}
-      <div className="bg-white border-2 border-gray-300 rounded-lg p-6">
+      <div className="bg-white border-2 border-gray-300 rounded-lg p-4 sm:p-6">
         <h3 className="text-lg font-semibold text-gray-900 mb-4">Step 3: Range Spread Determination (Big 4 Methodology)</h3>
         
         <div className="space-y-4">
@@ -172,7 +172,7 @@ export const RangeCalculationSection: React.FC<RangeCalculationSectionProps> = (
       </div>
 
       {/* Step 4: Asymmetric Range Adjustment */}
-      <div className="bg-gradient-to-br from-orange-50 to-red-50 border-2 border-orange-500 rounded-lg p-6">
+      <div className="bg-gradient-to-br from-orange-50 to-red-50 border-2 border-orange-500 rounded-lg p-4 sm:p-6">
         <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
           <AlertTriangle className="w-6 h-6 text-orange-600" />
           Step 4: Asymmetric Range Adjustment (SME Risk Modeling)
@@ -239,7 +239,7 @@ export const RangeCalculationSection: React.FC<RangeCalculationSectionProps> = (
       </div>
 
       {/* Step 5: Final Range */}
-      <div className="bg-gradient-to-br from-purple-50 to-indigo-50 border-2 border-purple-500 rounded-lg p-6">
+      <div className="bg-gradient-to-br from-purple-50 to-indigo-50 border-2 border-purple-500 rounded-lg p-4 sm:p-6">
         <h3 className="text-lg font-semibold text-gray-900 mb-4">Step 5: Final Valuation Range</h3>
         
         <div className="space-y-4">

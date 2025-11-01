@@ -31,6 +31,7 @@ export interface StreamingManagerCallbacks {
 export class StreamingManager {
   private requestIdRef: React.MutableRefObject<string | null>;
   private currentStreamingMessageRef: React.MutableRefObject<Message | null>;
+  private currentAbortController: AbortController | null = null;
 
   constructor(
     requestIdRef: React.MutableRefObject<string | null>,
@@ -127,13 +128,18 @@ export class StreamingManager {
     chatLogger.debug('AI message created for streaming', { messageId: aiMessage.id });
     this.currentStreamingMessageRef.current = aiMessage;
 
+    // CRITICAL FIX: Create AbortController for this request
+    this.currentAbortController = new AbortController();
+    const abortSignal = this.currentAbortController.signal;
+    
     try {
       await this.streamWithAsyncGenerator(
         sessionId,
         userInput,
         userId,
         onEvent,
-        aiMessage
+        aiMessage,
+        abortSignal
       );
     } catch (error) {
       chatLogger.error('Async generator error', { 
@@ -172,20 +178,23 @@ export class StreamingManager {
       
       onError(error instanceof Error ? error : new Error('Unknown streaming error'));
     } finally {
-      // Clear request ID to allow new requests
+      // Clear request ID and abort controller to allow new requests
       this.requestIdRef.current = null;
+      this.currentAbortController = null;
     }
   }
 
   /**
    * Stream using async generator (primary method)
+   * CRITICAL FIX: Added AbortSignal support for proper cleanup
    */
   private async streamWithAsyncGenerator(
     sessionId: string,
     userInput: string,
     userId: string | undefined,
     onEvent: (event: any) => void,
-    aiMessage: Message
+    aiMessage: Message,
+    abortSignal?: AbortSignal
   ): Promise<void> {
     chatLogger.info('Starting async generator consumption', { 
       sessionId, 
@@ -206,8 +215,16 @@ export class StreamingManager {
       for await (const event of streamingChatService.streamConversation(
         sessionId,
         userInput,
-        userId
+        userId,
+        abortSignal
       )) {
+        // CRITICAL FIX: Check if request was aborted
+        if (abortSignal?.aborted) {
+          chatLogger.info('Stream aborted via AbortSignal', { sessionId });
+          clearTimeout(generatorTimeout);
+          throw new Error('Stream aborted');
+        }
+        
         clearTimeout(generatorTimeout);
         eventCount++;
         chatLogger.info('Event received from generator', { 
@@ -309,9 +326,14 @@ export class StreamingManager {
 
   /**
    * Clear current request (useful for cleanup)
+   * CRITICAL FIX: Also aborts any ongoing requests
    */
   clearCurrentRequest(): void {
     this.requestIdRef.current = null;
+    if (this.currentAbortController) {
+      this.currentAbortController.abort();
+      this.currentAbortController = null;
+    }
   }
 
   /**

@@ -6,7 +6,7 @@
  */
 
 import { Bot, CheckCircle, Loader2 } from 'lucide-react';
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { startTransition, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { AI_CONFIG } from '../config';
 import { useAuth } from '../hooks/useAuth';
 import { useTypingAnimation } from '../hooks/useTypingAnimation';
@@ -126,15 +126,28 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
     state.refs.currentStreamingMessageRef
   ), [state.refs.requestIdRef, state.refs.currentStreamingMessageRef]);
   
+  // Use ref for messages to avoid recreating eventHandler on every message update
+  const messagesRef = useRef(state.messages);
+  useEffect(() => {
+    messagesRef.current = state.messages;
+  }, [state.messages]);
+  
+  // Track active streaming requests for cleanup
+  const activeRequestRef = useRef<{ abort: () => void } | null>(null);
+  
   // Create event handler with all callbacks
+  // CRITICAL FIX: Removed state.messages from dependencies to prevent recreation on every update
   const eventHandler = useMemo(() => new StreamEventHandler(sessionId, {
     updateStreamingMessage: (content: string, isComplete: boolean = false) => {
       // CRITICAL FIX: Thread-safe message creation
       // Prevents duplicate messages when updateStreamingMessage called before message_start
       // RACE CONDITION FIX: Check both ref and state to avoid duplicates
+      // PERFORMANCE FIX: Use ref for current messages to avoid closure issues
+      const currentMessages = messagesRef.current;
+      
       if (!state.refs.currentStreamingMessageRef.current?.id) {
         // Check if message already exists in state (race condition protection)
-        const existingMessage = state.messages.find(
+        const existingMessage = currentMessages.find(
           msg => msg.type === 'ai' && msg.isStreaming && !msg.isComplete
         );
         
@@ -149,13 +162,16 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
           chatLogger.warn('No current streaming message - creating one as fallback', { 
             contentLength: content.length 
           });
-          const { updatedMessages, newMessage } = messageManager.addMessage(state.messages, {
+          const { updatedMessages, newMessage } = messageManager.addMessage(currentMessages, {
             type: 'ai',
             content: content,
             isStreaming: !isComplete,
             isComplete: isComplete || false
           });
-          state.setMessages(updatedMessages);
+          // Use startTransition for non-urgent updates to prevent UI blocking
+          startTransition(() => {
+            state.setMessages(updatedMessages);
+          });
           if (newMessage) {
             state.refs.currentStreamingMessageRef.current = newMessage;
           }
@@ -165,12 +181,15 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
         if (state.refs.currentStreamingMessageRef.current?.id) {
           const currentMessageId = state.refs.currentStreamingMessageRef.current.id;
           const updatedMessages = messageManager.updateStreamingMessage(
-            state.messages,
+            messagesRef.current,
             currentMessageId,
             content,
             isComplete
           );
-          state.setMessages(updatedMessages);
+          // Use startTransition for batched updates
+          startTransition(() => {
+            state.setMessages(updatedMessages);
+          });
           
           if (isComplete && state.refs.currentStreamingMessageRef.current) {
             chatLogger.debug('Completing streaming message', { messageId: currentMessageId });
@@ -189,14 +208,17 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
         isComplete 
       });
       
-      // Update the message content in state
+      // Update the message content in state using batched updates
       const updatedMessages = messageManager.updateStreamingMessage(
-        state.messages,
+        messagesRef.current,
         currentMessageId,
         content,
         isComplete
       );
-      state.setMessages(updatedMessages);
+      // Use startTransition to batch state updates and prevent UI blocking
+      startTransition(() => {
+        state.setMessages(updatedMessages);
+      });
       
       // Complete the message if needed
       if (isComplete && state.refs.currentStreamingMessageRef.current) {
@@ -214,8 +236,11 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
     setValuationPreview: state.setValuationPreview,
     setCalculateOption: state.setCalculateOption,
     addMessage: (message: Omit<Message, 'id' | 'timestamp'>) => {
-      const { updatedMessages, newMessage } = messageManager.addMessage(state.messages, message);
-      state.setMessages(updatedMessages);
+      const { updatedMessages, newMessage } = messageManager.addMessage(messagesRef.current, message);
+      // Use startTransition for batched state updates
+      startTransition(() => {
+        state.setMessages(updatedMessages);
+      });
       return { updatedMessages, newMessage };
     },
     trackModelPerformance,
@@ -232,8 +257,10 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
     onProgressUpdate,
     onHtmlPreviewUpdate
   }), [
+    // CRITICAL FIX: Removed state.messages from dependencies - using messagesRef instead
+    // This prevents eventHandler from being recreated on every message update
     sessionId,
-    state.messages,
+    state.refs.currentStreamingMessageRef,
     state.setMessages,
     state.setIsStreaming,
     state.setIsTyping,
@@ -256,7 +283,8 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
     onValuationPreview,
     onCalculateOptionAvailable,
     onProgressUpdate,
-    onHtmlPreviewUpdate
+    onHtmlPreviewUpdate,
+    onMessageComplete
   ]);
   
   // Add message helper
@@ -431,11 +459,37 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
     messageManager.scrollToBottom(state.refs.messagesEndRef);
   }, [messageManager, state.refs.messagesEndRef]);
   
-  // Auto-scroll when messages change
+  // Auto-scroll when messages change - debounced to prevent excessive scrolling
   useEffect(() => {
-    scrollToBottom();
-  }, [state.messages, scrollToBottom]);
+    const timeoutId = setTimeout(() => {
+      scrollToBottom();
+    }, 100); // Debounce scroll updates
+    return () => clearTimeout(timeoutId);
+  }, [state.messages.length, scrollToBottom]); // Only depend on length, not full array
   
+  // CRITICAL FIX: Cleanup on unmount to prevent memory leaks
+  useEffect(() => {
+    return () => {
+      // Abort streaming on unmount
+      if (streamingManager) {
+        streamingManager.clearCurrentRequest();
+      }
+      // Close any active SSE connections
+      if (state.refs.eventSourceRef.current) {
+        state.refs.eventSourceRef.current.close();
+        state.refs.eventSourceRef.current = null;
+      }
+      // Abort any pending requests
+      if (state.refs.abortControllerRef.current) {
+        state.refs.abortControllerRef.current.abort();
+      }
+      // Clear active request reference
+      if (activeRequestRef.current) {
+        activeRequestRef.current.abort();
+        activeRequestRef.current = null;
+      }
+    };
+  }, [streamingManager, state.refs.eventSourceRef, state.refs.abortControllerRef]);
   
   // Get smart follow-ups
   const getSmartFollowUps = useCallback(() => {
@@ -466,100 +520,16 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
       {/* Messages Container */}
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
         {/* Messages */}
+        {/* PERFORMANCE FIX: Memoized message component to prevent unnecessary re-renders */}
         {state.messages.map((message) => (
-          <div
+          <MessageItem
             key={message.id}
-            className={`flex ${message.type === 'user' ? 'justify-end' : 'justify-start'}`}
-          >
-            <div className={`max-w-[80%] ${message.type === 'user' ? 'ml-auto' : 'mr-auto'}`}>
-              {message.type === 'user' ? (
-                // User message - simple structure without avatar
-                <div className="flex flex-col gap-1">
-                  <div className="rounded-lg px-4 py-3 bg-zinc-800 text-white">
-                    <div className="whitespace-pre-wrap text-sm">
-                      {message.content}
-                    </div>
-                  </div>
-                  <div className="text-xs text-zinc-500 text-right">
-                    {message.timestamp.toLocaleTimeString()}
-                  </div>
-                </div>
-              ) : (
-                // AI message - with bot avatar
-                <div className="flex items-start gap-3">
-                  <div className="flex-shrink-0 w-8 h-8 bg-primary-600/20 rounded-full flex items-center justify-center">
-                    <Bot className="w-4 h-4 text-primary-400" />
-                  </div>
-                  
-                  <div className="rounded-lg px-4 py-3 bg-zinc-700/50 text-white">
-                    <div className="whitespace-pre-wrap text-sm">
-                      {message.content}
-                      {message.isStreaming && (
-                        <span className="inline-block w-2 h-4 bg-current animate-pulse ml-1" />
-                      )}
-                    </div>
-                    
-                    {/* Suggestion chips */}
-                    {message.type === 'suggestion' && message.metadata?.suggestions && (
-                      <SuggestionChips
-                        suggestions={message.metadata.suggestions}
-                        originalValue={message.metadata.originalValue || ''}
-                        onSelect={handleSuggestionSelect}
-                        onDismiss={handleSuggestionDismiss}
-                      />
-                    )}
-                    
-                    {/* Clarification confirmation buttons */}
-                    {message.metadata?.needs_confirmation && (
-                      <div className="flex space-x-2 mt-2">
-                        <button
-                          onClick={() => handleClarificationConfirm(message.id)}
-                          className="px-3 py-1 bg-green-500 text-white text-xs rounded hover:bg-green-600"
-                        >
-                          <CheckCircle className="h-3 w-3 inline mr-1" />
-                          Confirm
-                        </button>
-                        <button
-                          onClick={() => handleClarificationReject(message.id)}
-                          className="px-3 py-1 bg-red-500 text-white text-xs rounded hover:bg-red-600"
-                        >
-                          Reject
-                        </button>
-                      </div>
-                    )}
-                    
-                    {/* Help text */}
-                    {AI_CONFIG.showHelpText && message.metadata?.help_text && (
-                      <div className="mt-1">
-                        <p className="text-xs text-primary-400">
-                          ℹ️ {message.metadata.help_text}
-                        </p>
-                      </div>
-                    )}
-                    
-                    {/* Valuation narrative */}
-                    {AI_CONFIG.showNarratives && message.metadata?.valuation_narrative && (
-                      <div className="mt-3 p-3 bg-primary-600/10 rounded-lg">
-                        <h4 className="text-sm font-semibold text-primary-300 mb-2">
-                          Why this valuation?
-                        </h4>
-                        <div className="text-sm text-primary-200 whitespace-pre-wrap">
-                          {message.metadata.valuation_narrative}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )}
-              
-              {/* Timestamp for AI messages */}
-              {message.type !== 'user' && (
-                <div className="text-xs text-zinc-500 mt-1 text-left ml-11">
-                  {message.timestamp.toLocaleTimeString()}
-                </div>
-              )}
-            </div>
-          </div>
+            message={message}
+            onSuggestionSelect={handleSuggestionSelect}
+            onSuggestionDismiss={handleSuggestionDismiss}
+            onClarificationConfirm={handleClarificationConfirm}
+            onClarificationReject={handleClarificationReject}
+          />
         ))}
         
         {/* Typing Indicator - Separate bubble */}
@@ -662,5 +632,120 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
     </div>
   );
 };
+
+// PERFORMANCE FIX: Memoized message item component to prevent unnecessary re-renders
+interface MessageItemProps {
+  message: Message;
+  onSuggestionSelect: (suggestion: string) => void;
+  onSuggestionDismiss: () => void;
+  onClarificationConfirm: (messageId: string) => void;
+  onClarificationReject: (messageId: string) => void;
+}
+
+const MessageItem = React.memo<MessageItemProps>(({
+  message,
+  onSuggestionSelect,
+  onSuggestionDismiss,
+  onClarificationConfirm,
+  onClarificationReject
+}) => {
+  return (
+    <div
+      className={`flex ${message.type === 'user' ? 'justify-end' : 'justify-start'}`}
+    >
+            <div className={`max-w-[80%] ${message.type === 'user' ? 'ml-auto' : 'mr-auto'}`}>
+              {message.type === 'user' ? (
+                // User message - simple structure without avatar
+                <div className="flex flex-col gap-1">
+                  <div className="rounded-lg px-4 py-3 bg-zinc-800 text-white">
+                    <div className="whitespace-pre-wrap text-sm">
+                      {message.content}
+                    </div>
+                  </div>
+                  <div className="text-xs text-zinc-500 text-right">
+                    {message.timestamp.toLocaleTimeString()}
+                  </div>
+                </div>
+              ) : (
+                // AI message - with bot avatar
+                <div className="flex items-start gap-3">
+                  <div className="flex-shrink-0 w-8 h-8 bg-primary-600/20 rounded-full flex items-center justify-center">
+                    <Bot className="w-4 h-4 text-primary-400" />
+                  </div>
+                  
+                  <div className="rounded-lg px-4 py-3 bg-zinc-700/50 text-white">
+                    <div className="whitespace-pre-wrap text-sm">
+                      {message.content}
+                      {message.isStreaming && (
+                        <span className="inline-block w-2 h-4 bg-current animate-pulse ml-1" />
+                      )}
+                    </div>
+                    
+                    {/* Suggestion chips */}
+                    {message.type === 'suggestion' && message.metadata?.suggestions && (
+                      <SuggestionChips
+                        suggestions={message.metadata.suggestions}
+                        originalValue={message.metadata.originalValue || ''}
+                        onSelect={onSuggestionSelect}
+                        onDismiss={onSuggestionDismiss}
+                      />
+                    )}
+                    
+                    {/* Clarification confirmation buttons */}
+                    {message.metadata?.needs_confirmation && (
+                      <div className="flex space-x-2 mt-2">
+                        <button
+                          onClick={() => onClarificationConfirm(message.id)}
+                          className="px-3 py-1 bg-green-500 text-white text-xs rounded hover:bg-green-600"
+                        >
+                          <CheckCircle className="h-3 w-3 inline mr-1" />
+                          Confirm
+                        </button>
+                        <button
+                          onClick={() => onClarificationReject(message.id)}
+                          className="px-3 py-1 bg-red-500 text-white text-xs rounded hover:bg-red-600"
+                        >
+                          Reject
+                        </button>
+                      </div>
+                    )}
+                    
+                    {/* Help text */}
+                    {AI_CONFIG.showHelpText && message.metadata?.help_text && (
+                      <div className="mt-1">
+                        <p className="text-xs text-primary-400">
+                          ℹ️ {message.metadata.help_text}
+                        </p>
+                      </div>
+                    )}
+                    
+                    {/* Valuation narrative */}
+                    {AI_CONFIG.showNarratives && message.metadata?.valuation_narrative && (
+                      <div className="mt-3 p-3 bg-primary-600/10 rounded-lg">
+                        <h4 className="text-sm font-semibold text-primary-300 mb-2">
+                          Why this valuation?
+                        </h4>
+                        <div className="text-sm text-primary-200 whitespace-pre-wrap">
+                          {message.metadata.valuation_narrative}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+              
+              {/* Timestamp for AI messages */}
+              {message.type !== 'user' && (
+                <div className="text-xs text-zinc-500 mt-1 text-left ml-11">
+                  {message.timestamp.toLocaleTimeString()}
+                </div>
+              )}
+            </div>
+          </div>
+  );
+});
+
+// Display name for React DevTools
+MessageItem.displayName = 'MessageItem';
 
 export default StreamingChat;

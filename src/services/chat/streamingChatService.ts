@@ -20,7 +20,8 @@ export class StreamingChatService {
   async *streamConversation(
     sessionId: string,
     userInput: string,
-    userId?: string
+    userId?: string,
+    abortSignal?: AbortSignal
   ): AsyncGenerator<StreamEvent> {
     try {
       chatLogger.info('Starting streaming conversation', { 
@@ -45,7 +46,8 @@ export class StreamingChatService {
         method: 'POST',
         credentials: 'include', // Send cookies automatically for auth
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(requestBody)
+        body: JSON.stringify(requestBody),
+        signal: abortSignal // CRITICAL FIX: Support abort signal for cleanup
       });
 
       chatLogger.info('SSE response received', { 
@@ -67,6 +69,13 @@ export class StreamingChatService {
       let buffer = '';
 
       while (true) {
+        // CRITICAL FIX: Check if aborted before reading
+        if (abortSignal?.aborted) {
+          chatLogger.info('SSE stream aborted', { sessionId });
+          reader.cancel();
+          break;
+        }
+        
         const { done, value } = await reader.read();
         if (done) {
           chatLogger.info('SSE stream completed - reader done');
@@ -130,7 +139,12 @@ export class StreamingChatService {
         }
       }
     } catch (error) {
-      // Yield error event instead of throwing
+      // CRITICAL FIX: Don't yield error if aborted (expected behavior)
+      if (error instanceof Error && error.name === 'AbortError') {
+        chatLogger.info('SSE stream aborted (expected)', { sessionId });
+        return;
+      }
+      // Yield error event instead of throwing for other errors
       yield {
         type: 'error',
         content: error instanceof Error ? error.message : 'Connection failed'

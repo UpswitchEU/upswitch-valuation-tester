@@ -5,7 +5,14 @@
  * Consolidates all useState hooks and refs into a single, reusable custom hook.
  */
 
-import { useState, useRef } from 'react';
+import { useCallback, useRef, useState } from 'react';
+
+// CRITICAL FIX: Message window management constants
+// Limits message history to prevent unbounded growth and token limit issues
+const MAX_MESSAGES = 100; // Maximum messages to keep in state
+const PRUNE_THRESHOLD = 120; // When to trigger pruning
+const KEEP_RECENT = 50; // Keep most recent N messages when pruning
+const KEEP_FIRST = 10; // Keep first N messages (initial context)
 
 // Re-export types for convenience
 export interface Message {
@@ -84,6 +91,47 @@ export interface StreamingChatState {
 export const useStreamingChatState = (sessionId: string, userId?: string): StreamingChatState => {
   // Core state variables
   const [messages, setMessages] = useState<Message[]>([]);
+  
+  /**
+   * CRITICAL FIX: Message window management
+   * Prunes messages when conversation gets too long to prevent:
+   * - Unbounded memory growth
+   * - Context window limit issues
+   * - Increased API costs
+   */
+  const pruneMessages = useCallback((messageList: Message[]): Message[] => {
+    if (messageList.length <= MAX_MESSAGES) {
+      return messageList;
+    }
+    
+    // Keep first messages (initial context) and most recent messages
+    const firstMessages = messageList.slice(0, KEEP_FIRST);
+    const recentMessages = messageList.slice(-KEEP_RECENT);
+    
+    // Combine, removing duplicates
+    const prunedMessages = [
+      ...firstMessages,
+      ...recentMessages.filter(msg => !firstMessages.find(fm => fm.id === msg.id))
+    ];
+    
+    console.warn(`Message pruning: ${messageList.length} -> ${prunedMessages.length} messages`, {
+      sessionId,
+      keptFirst: firstMessages.length,
+      keptRecent: recentMessages.length,
+      removed: messageList.length - prunedMessages.length
+    });
+    
+    return prunedMessages;
+  }, [sessionId]);
+  
+  // Wrapper for setMessages that includes pruning
+  const setMessagesWithPruning = useCallback((newMessages: Message[] | ((prev: Message[]) => Message[])) => {
+    setMessages(prev => {
+      const updated = typeof newMessages === 'function' ? newMessages(prev) : newMessages;
+      // Only prune if we exceed threshold to avoid unnecessary work
+      return updated.length >= PRUNE_THRESHOLD ? pruneMessages(updated) : updated;
+    });
+  }, [pruneMessages]);
   const [input, setInput] = useState('');
   const [isStreaming, setIsStreaming] = useState(false);
   const [isTyping, setIsTyping] = useState(false);
@@ -145,7 +193,8 @@ export const useStreamingChatState = (sessionId: string, userId?: string): Strea
     },
     
     // State setters
-    setMessages,
+    // CRITICAL FIX: Use pruned setter for messages to prevent unbounded growth
+    setMessages: setMessagesWithPruning,
     setInput,
     setIsStreaming,
     setIsTyping,

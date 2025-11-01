@@ -1,7 +1,8 @@
 import { AlertCircle, CheckCircle, ChevronDown, ChevronUp, Clock, Database } from 'lucide-react';
 import React, { useState } from 'react';
 import type { DataSource as DataSourceType, ValuationInputData, ValuationResponse } from '../../types/valuation';
-import { formatCurrency } from '../Results/utils/formatters';
+import { formatGrowthRate } from '../../utils/growthFormatHelpers';
+import { formatCurrency, formatPercent } from '../Results/utils/formatters';
 
 interface DataProvenanceSectionProps {
   result: ValuationResponse;
@@ -76,7 +77,7 @@ export const DataProvenanceSection: React.FC<DataProvenanceSectionProps> = ({ re
   // If no transparency data from backend, show "Not Available" instead of mock data
   if (!hasRealDataSources) {
     return (
-      <div className="space-y-6">
+      <div className="space-y-4">
         <div className="flex items-center gap-3 pb-4 border-b-2 border-gray-200">
           <div className="p-2 bg-teal-100 rounded-lg">
             <Database className="w-6 h-6 text-teal-600" />
@@ -92,7 +93,7 @@ export const DataProvenanceSection: React.FC<DataProvenanceSectionProps> = ({ re
         </div>
 
         {/* Not Available Message */}
-        <div className="bg-blue-50 border-2 border-blue-300 rounded-lg p-6">
+        <div className="bg-blue-50 border-2 border-blue-300 rounded-lg p-4 sm:p-6">
           <div className="flex items-start gap-3">
             <AlertCircle className="w-6 h-6 text-blue-600 flex-shrink-0 mt-0.5" />
             <div className="flex-1">
@@ -119,7 +120,7 @@ export const DataProvenanceSection: React.FC<DataProvenanceSectionProps> = ({ re
         </div>
 
         {/* What's Already Transparent */}
-        <div className="bg-gradient-to-br from-green-50 to-emerald-50 border-2 border-green-500 rounded-lg p-6">
+        <div className="bg-gradient-to-br from-green-50 to-emerald-50 border-2 border-green-500 rounded-lg p-4 sm:p-6">
           <h3 className="text-lg font-semibold text-gray-900 mb-4">
             ✅ What's Already Fully Transparent
           </h3>
@@ -176,7 +177,7 @@ export const DataProvenanceSection: React.FC<DataProvenanceSectionProps> = ({ re
 
   // If we reach here, we have REAL data from backend
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <div className="flex items-center gap-3 pb-4 border-b-2 border-gray-200">
         <div className="p-2 bg-teal-100 rounded-lg">
           <Database className="w-6 h-6 text-teal-600" />
@@ -192,7 +193,7 @@ export const DataProvenanceSection: React.FC<DataProvenanceSectionProps> = ({ re
       </div>
 
       {/* Overall Data Quality */}
-      <div className="bg-gradient-to-br from-teal-50 to-cyan-50 border-2 border-teal-500 rounded-lg p-6">
+      <div className="bg-gradient-to-br from-teal-50 to-cyan-50 border-2 border-teal-500 rounded-lg p-4 sm:p-6">
         <h3 className="text-lg font-semibold text-gray-900 mb-4">Overall Data Quality Summary</h3>
         <div className="grid grid-cols-3 gap-4 mb-4">
           <QualityMetric
@@ -242,7 +243,7 @@ export const DataProvenanceSection: React.FC<DataProvenanceSectionProps> = ({ re
       </div>
 
       {/* User Input Data */}
-      <div className="bg-white border-2 border-gray-300 rounded-lg p-6">
+      <div className="bg-white border-2 border-gray-300 rounded-lg p-4 sm:p-6">
         <h3 className="text-lg font-semibold text-gray-900 mb-4">User Input Data</h3>
         <div className="space-y-3">
           <UserInputRow
@@ -275,7 +276,7 @@ export const DataProvenanceSection: React.FC<DataProvenanceSectionProps> = ({ re
       </div>
 
       {/* Calculated Metrics */}
-      <div className="bg-white border-2 border-gray-300 rounded-lg p-6">
+      <div className="bg-white border-2 border-gray-300 rounded-lg p-4 sm:p-6">
         <h3 className="text-lg font-semibold text-gray-900 mb-4">Calculated Metrics</h3>
         <div className="space-y-3">
           <CalculatedMetric
@@ -288,15 +289,10 @@ export const DataProvenanceSection: React.FC<DataProvenanceSectionProps> = ({ re
           />
           <CalculatedMetric
             label="Revenue CAGR"
-            value={result.financial_metrics?.revenue_cagr_3y !== undefined && result.financial_metrics?.revenue_cagr_3y !== null
-              ? `${(result.financial_metrics.revenue_cagr_3y >= 1 
-                    ? result.financial_metrics.revenue_cagr_3y 
-                    : result.financial_metrics.revenue_cagr_3y * 100).toFixed(1)}%`
-              : result.financial_metrics?.revenue_growth !== undefined && result.financial_metrics?.revenue_growth !== null
-              ? `${(result.financial_metrics.revenue_growth >= 1 
-                    ? result.financial_metrics.revenue_growth 
-                    : result.financial_metrics.revenue_growth * 100).toFixed(1)}%`
-              : 'N/A'}
+            value={formatGrowthRate(
+              result.financial_metrics?.revenue_cagr_3y ?? result.financial_metrics?.revenue_growth,
+              formatPercent
+            )}
             formula="(Ending Value / Beginning Value)^(1/years) - 1"
             inputs="Based on historical revenue data (if available)"
           />
@@ -318,7 +314,7 @@ export const DataProvenanceSection: React.FC<DataProvenanceSectionProps> = ({ re
       </div>
 
       {/* Data Freshness Timeline */}
-      <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border-2 border-blue-500 rounded-lg p-6">
+      <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border-2 border-blue-500 rounded-lg p-4 sm:p-6">
         <h3 className="text-lg font-semibold text-gray-900 mb-4">Data Freshness Timeline</h3>
         <div className="space-y-3">
           {dataSources.map((source, index) => (
@@ -333,7 +329,7 @@ export const DataProvenanceSection: React.FC<DataProvenanceSectionProps> = ({ re
       </div>
 
       {/* Data Quality Assurance */}
-      <div className="bg-white border-2 border-gray-300 rounded-lg p-6">
+      <div className="bg-white border-2 border-gray-300 rounded-lg p-4 sm:p-6">
         <h3 className="text-lg font-semibold text-gray-900 mb-4">Data Quality Assurance</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <QAItem
@@ -456,7 +452,7 @@ export const DataProvenanceSection: React.FC<DataProvenanceSectionProps> = ({ re
               
               {/* Overall Calculation */}
               {overallConfidenceStep && (
-                <div className="mt-6 bg-gradient-to-r from-blue-50 to-purple-50 border-2 border-blue-400 rounded-lg p-6">
+                <div className="mt-6 bg-gradient-to-r from-blue-50 to-purple-50 border-2 border-blue-400 rounded-lg p-4 sm:p-6">
                   <h4 className="font-semibold text-lg text-gray-900 mb-3">Overall Confidence Calculation</h4>
                   <div className="font-mono text-sm bg-white rounded p-3 mb-3 overflow-x-auto">
                     {overallConfidenceStep.formula}

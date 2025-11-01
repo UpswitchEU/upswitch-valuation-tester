@@ -144,7 +144,7 @@ export const OwnerDependencySection: React.FC<OwnerDependencySectionProps> = ({ 
       </div>
       
       {/* Overall Score Card */}
-      <div className={`${riskColors.bg} border-2 ${riskColors.border} rounded-lg p-6`}>
+      <div className={`${riskColors.bg} border-2 ${riskColors.border} rounded-lg p-4 sm:p-6`}>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {/* Dependency Score */}
           <div className="text-center">
@@ -388,7 +388,7 @@ export const OwnerDependencySection: React.FC<OwnerDependencySectionProps> = ({ 
       
       {/* Key Risks */}
       {odResult.key_risks && odResult.key_risks.length > 0 && (
-        <div className="bg-yellow-50 border-2 border-yellow-400 rounded-lg p-6">
+        <div className="bg-yellow-50 border-2 border-yellow-400 rounded-lg p-4 sm:p-6">
           <div className="flex items-start space-x-3">
             <AlertTriangle className="w-6 h-6 text-yellow-700 flex-shrink-0 mt-1" />
             <div className="flex-1">
@@ -408,7 +408,7 @@ export const OwnerDependencySection: React.FC<OwnerDependencySectionProps> = ({ 
       
       {/* Recommendations */}
       {odResult.recommendations && odResult.recommendations.length > 0 && (
-        <div className="bg-blue-50 border-2 border-blue-300 rounded-lg p-6">
+        <div className="bg-blue-50 border-2 border-blue-300 rounded-lg p-4 sm:p-6">
           <div className="flex items-start space-x-3">
             <CheckCircle className="w-6 h-6 text-blue-700 flex-shrink-0 mt-1" />
             <div className="flex-1">

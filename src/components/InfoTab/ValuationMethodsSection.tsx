@@ -35,7 +35,7 @@ export const ValuationMethodsSection: React.FC<ValuationMethodsSectionProps> = (
   // Error handling: Validate result object
   if (!result) {
     return (
-      <div className="bg-red-50 border-2 border-red-300 rounded-lg p-6">
+      <div className="bg-red-50 border-2 border-red-300 rounded-lg p-4 sm:p-6">
         <p className="text-red-800 font-semibold">Error: Valuation result is missing</p>
         <p className="text-red-600 text-sm mt-2">Unable to display valuation methods. Please try refreshing the page.</p>
       </div>
@@ -68,7 +68,7 @@ export const ValuationMethodsSection: React.FC<ValuationMethodsSectionProps> = (
   
   if (!hasValidMethodology) {
     return (
-      <div className="bg-yellow-50 border-2 border-yellow-400 rounded-lg p-6">
+      <div className="bg-yellow-50 border-2 border-yellow-400 rounded-lg p-4 sm:p-6">
         <p className="text-yellow-900 font-semibold">No valuation methods available</p>
         <p className="text-yellow-800 text-sm mt-2">
           Neither DCF nor Market Multiples valuation could be calculated. 
@@ -89,7 +89,7 @@ export const ValuationMethodsSection: React.FC<ValuationMethodsSectionProps> = (
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       {/* Section Header */}
       <div className="flex items-center gap-3 pb-4 border-b-2 border-gray-200">
         <div className="p-2 bg-gradient-to-r from-blue-100 to-green-100 rounded-lg">
@@ -105,7 +105,7 @@ export const ValuationMethodsSection: React.FC<ValuationMethodsSectionProps> = (
       </div>
 
       {/* Methodology Overview */}
-      <div className="bg-gradient-to-br from-blue-50 via-purple-50 to-green-50 border-2 border-gray-300 rounded-lg p-6">
+      <div className="bg-gradient-to-br from-blue-50 via-purple-50 to-green-50 border-2 border-gray-300 rounded-lg p-4 sm:p-6">
         <h3 className="text-lg font-semibold text-gray-900 mb-4">Dual Methodology Approach</h3>
         
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
@@ -196,14 +196,14 @@ export const ValuationMethodsSection: React.FC<ValuationMethodsSectionProps> = (
       </div>
 
       {/* Detailed Breakdowns */}
-      <div className="space-y-6">
+      <div className="space-y-4">
         {/* DCF Detailed Breakdown */}
         {dcfWeight > 0 && expandedMethod !== 'multiples' && (
           <div 
             id="dcf-details"
             role="region"
             aria-labelledby="dcf-heading"
-            className="bg-blue-50 rounded-lg p-6 border border-blue-200"
+            className="bg-blue-50 rounded-lg p-4 sm:p-6 border border-blue-200"
           >
             <h3 id="dcf-heading" className="sr-only">DCF Methodology Details</h3>
             <Suspense fallback={<SectionLoader />}>
@@ -218,7 +218,7 @@ export const ValuationMethodsSection: React.FC<ValuationMethodsSectionProps> = (
             id="multiples-details"
             role="region"
             aria-labelledby="multiples-heading"
-            className="bg-green-50 rounded-lg p-6 border border-green-200"
+            className="bg-green-50 rounded-lg p-4 sm:p-6 border border-green-200"
           >
             <h3 id="multiples-heading" className="sr-only">Market Multiples Methodology Details</h3>
             <Suspense fallback={<SectionLoader />}>
@@ -236,7 +236,7 @@ export const ValuationMethodsSection: React.FC<ValuationMethodsSectionProps> = (
         const isGoodVariance = variance !== null && variance < VARIANCE_THRESHOLDS.WARNING_THRESHOLD;
 
         return (
-          <div className="bg-white border-2 border-gray-300 rounded-lg p-6">
+          <div className="bg-white border-2 border-gray-300 rounded-lg p-4 sm:p-6">
             <h3 className="text-lg font-semibold text-gray-900 mb-4">Cross-Validation</h3>
             
             <div className="space-y-4">

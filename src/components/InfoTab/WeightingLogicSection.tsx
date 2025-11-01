@@ -2,6 +2,7 @@ import { Scale, TrendingDown, TrendingUp } from 'lucide-react';
 import React from 'react';
 import type { ValuationInputData, ValuationResponse } from '../../types/valuation';
 import { calculateVariance } from '../../utils/calculationHelpers';
+import { formatGrowthRate } from '../../utils/growthFormatHelpers';
 import { formatCurrency, formatPercent } from '../Results/utils/formatters';
 
 interface WeightingLogicSectionProps {
@@ -16,8 +17,8 @@ export const WeightingLogicSection: React.FC<WeightingLogicSectionProps> = ({ re
   // Show critical warning if both methodologies failed
   if (dcfWeight === 0 && multiplesWeight === 0) {
     return (
-      <div className="space-y-6">
-        <div className="bg-red-50 border-2 border-red-500 rounded-lg p-6">
+      <div className="space-y-4">
+        <div className="bg-red-50 border-2 border-red-500 rounded-lg p-4 sm:p-6">
           <div className="flex items-start gap-3">
             <div className="p-2 bg-red-100 rounded-lg">
               <TrendingUp className="w-6 h-6 text-red-600" />
@@ -58,6 +59,12 @@ export const WeightingLogicSection: React.FC<WeightingLogicSectionProps> = ({ re
   // Returns null for invalid cases, default to 0 for display
   const variance = (calculateVariance(dcfValue, multiplesValue) ?? 0) / 100; // Convert from percentage to decimal
 
+  // Calculate growth rate for use in rationale text
+  const growthRateDisplay = formatGrowthRate(
+    result.financial_metrics?.revenue_cagr_3y ?? result.financial_metrics?.revenue_growth,
+    formatPercent
+  );
+
   // Factor analysis (simplified - in real implementation, this would come from backend)
   const factors = [
     {
@@ -94,7 +101,10 @@ export const WeightingLogicSection: React.FC<WeightingLogicSectionProps> = ({ re
     },
     {
       name: 'Growth Trajectory',
-      value: result.financial_metrics?.revenue_growth ? `${(result.financial_metrics.revenue_growth * 100).toFixed(0)}% CAGR` : '15% CAGR',
+      value: formatGrowthRate(
+        result.financial_metrics?.revenue_cagr_3y ?? result.financial_metrics?.revenue_growth,
+        formatPercent
+      ) + ' CAGR',
       preference: 'DCF',
       adjustment: '+15%',
       reason: 'High growth better captured by DCF projections',
@@ -127,7 +137,7 @@ export const WeightingLogicSection: React.FC<WeightingLogicSectionProps> = ({ re
   ];
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <div className="flex items-center gap-3 pb-4 border-b-2 border-gray-200">
         <div className="p-2 bg-purple-100 rounded-lg">
           <Scale className="w-6 h-6 text-purple-600" />
@@ -141,7 +151,7 @@ export const WeightingLogicSection: React.FC<WeightingLogicSectionProps> = ({ re
       </div>
 
       {/* Current Weights Display */}
-      <div className="bg-gradient-to-r from-blue-50 via-purple-50 to-green-50 border border-purple-200 rounded-lg p-6">
+      <div className="bg-gradient-to-r from-blue-50 via-purple-50 to-green-50 border border-purple-200 rounded-lg p-4 sm:p-6">
         <h3 className="text-lg font-semibold text-gray-900 mb-4">Final Methodology Weights</h3>
         <div className="grid grid-cols-2 gap-6">
           <div className="bg-white rounded-lg p-4 border-2 border-blue-500">
@@ -182,7 +192,7 @@ export const WeightingLogicSection: React.FC<WeightingLogicSectionProps> = ({ re
         
         if (weightingStep && weightingStep.inputs.factors) {
           return (
-            <div className="bg-gradient-to-r from-blue-50 to-purple-50 border-2 border-blue-400 rounded-lg p-6">
+            <div className="bg-gradient-to-r from-blue-50 to-purple-50 border-2 border-blue-400 rounded-lg p-4 sm:p-6">
               <h3 className="text-xl font-semibold text-gray-900 mb-4">
                 Why These Weights?
               </h3>
@@ -259,7 +269,7 @@ export const WeightingLogicSection: React.FC<WeightingLogicSectionProps> = ({ re
       </div>
 
       {/* Methodology Variance */}
-      <div className={`border-2 rounded-lg p-6 ${
+      <div className={`border-2 rounded-lg p-4 sm:p-6 ${
         variance < 0.15 ? 'bg-green-50 border-green-500' :
         variance < 0.30 ? 'bg-yellow-50 border-yellow-500' :
         'bg-red-50 border-red-500'
@@ -308,7 +318,7 @@ export const WeightingLogicSection: React.FC<WeightingLogicSectionProps> = ({ re
       </div>
 
       {/* Rationale */}
-      <div className="bg-gradient-to-br from-purple-50 to-indigo-50 border-2 border-purple-500 rounded-lg p-6">
+      <div className="bg-gradient-to-br from-purple-50 to-indigo-50 border-2 border-purple-500 rounded-lg p-4 sm:p-6">
         <h3 className="text-lg font-semibold text-gray-900 mb-4">Weighting Rationale</h3>
         <div className="space-y-3 text-sm text-gray-700">
           <p>
@@ -316,7 +326,7 @@ export const WeightingLogicSection: React.FC<WeightingLogicSectionProps> = ({ re
           </p>
           <ul className="list-disc list-inside space-y-1 ml-4">
             <li>Technology/SaaS industry benefits from cash flow projections</li>
-            <li>High growth trajectory (15% CAGR) better captured by DCF</li>
+            <li>High growth trajectory ({growthRateDisplay} CAGR) better captured by DCF</li>
             <li>Good data completeness supports detailed modeling</li>
           </ul>
           

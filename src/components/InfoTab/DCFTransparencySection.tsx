@@ -28,7 +28,7 @@ export const DCFTransparencySection: React.FC<DCFTransparencySectionProps> = ({ 
   
   if (dcfWeight === 0) {
     return (
-      <div className="bg-yellow-50 border-2 border-yellow-400 rounded-lg p-6">
+      <div className="bg-yellow-50 border-2 border-yellow-400 rounded-lg p-4 sm:p-6">
         <div className="flex items-start gap-3">
           <div className="p-2 bg-yellow-100 rounded-lg">
             <TrendingUp className="w-6 h-6 text-yellow-600" />
@@ -104,7 +104,7 @@ export const DCFTransparencySection: React.FC<DCFTransparencySectionProps> = ({ 
         onToggle={() => toggleSection('wacc')}
         color="blue"
       >
-        <div className="space-y-6">
+        <div className="space-y-4">
           {/* Formula */}
           <div className="bg-gray-50 p-4 rounded-lg border-l-4 border-blue-500">
             <p className="font-mono text-sm text-gray-900 mb-2">
@@ -281,7 +281,7 @@ export const DCFTransparencySection: React.FC<DCFTransparencySectionProps> = ({ 
 
         if (fcfAssumptions) {
           return (
-            <div className="bg-blue-50 border-2 border-blue-300 rounded-lg p-6">
+            <div className="bg-blue-50 border-2 border-blue-300 rounded-lg p-4 sm:p-6">
               <h3 className="text-xl font-semibold text-gray-900 mb-4">
                 📊 FCF Projection Assumptions
               </h3>
@@ -403,7 +403,7 @@ export const DCFTransparencySection: React.FC<DCFTransparencySectionProps> = ({ 
       </ExpandableSection>
 
       {/* Final DCF Value */}
-      <div className="bg-gradient-to-br from-blue-50 to-indigo-50 border-2 border-blue-500 rounded-lg p-6">
+      <div className="bg-gradient-to-br from-blue-50 to-indigo-50 border-2 border-blue-500 rounded-lg p-4 sm:p-6">
         <h3 className="text-lg font-semibold text-gray-900 mb-4">4. Enterprise & Equity Value (DCF)</h3>
         <div className="space-y-3">
           <div className="flex justify-between items-center py-2 border-b border-blue-200">
@@ -467,7 +467,7 @@ const ExpandableSection: React.FC<{
         <span className="font-mono font-semibold text-gray-700">{value}</span>
       </button>
       {isExpanded && (
-        <div className="p-6 bg-white border-t border-gray-200">
+        <div className="p-4 sm:p-6 bg-white border-t border-gray-200">
           {children}
         </div>
       )}
