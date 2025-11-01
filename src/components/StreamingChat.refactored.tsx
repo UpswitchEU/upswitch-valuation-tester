@@ -323,7 +323,17 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
         extractBusinessModelFromInput,
         extractFoundingYearFromInput
       },
-      (event) => eventHandler.handleEvent(event),
+      (event) => {
+        // ENHANCED LOGGING: Log ALL events before handling
+        chatLogger.info('📥 Event received in StreamingChat', { 
+          type: event?.type, 
+          hasContent: !!event?.content,
+          contentLength: event?.content?.length,
+          sessionId: event?.session_id,
+          fullEvent: JSON.stringify(event).substring(0, 300)
+        });
+        eventHandler.handleEvent(event);
+      },
       (error) => {
         chatLogger.error('Streaming error', { error: error.message });
         state.setIsStreaming(false);

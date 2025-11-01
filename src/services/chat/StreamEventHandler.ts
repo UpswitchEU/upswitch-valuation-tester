@@ -113,6 +113,15 @@ export class StreamEventHandler {
     // Defensive parsing: extract event type from multiple possible locations
     const eventType = data?.type || data?.event || 'unknown';
     
+    // ENHANCED LOGGING: Always log to trace event flow
+    chatLogger.info('🎯 handleEvent called', { 
+      type: eventType, 
+      hasContent: !!data.content, 
+      contentLength: data.content?.length,
+      hasMessage: !!data.message,
+      fullData: JSON.stringify(data).substring(0, 200) // First 200 chars for debugging
+    });
+    
     chatLogger.debug('Received stream event', { 
       type: eventType, 
       hasContent: !!data.content, 
@@ -196,7 +205,7 @@ export class StreamEventHandler {
    * Handle message start events
    */
   private handleMessageStart(_data: any): void {
-    chatLogger.debug('AI message start received');
+    chatLogger.info('📨 AI message start received - hiding thinking, preparing for chunks');
     // Mark that we've started a message
     this.hasStartedMessage = true;
     // Hide thinking state and typing indicator when message starts streaming
@@ -206,16 +215,20 @@ export class StreamEventHandler {
     
     // CRITICAL FIX: Ensure message exists if message_start comes before chunks
     // Some backends might send message_start but frontend hasn't created message yet
-    chatLogger.debug('Message start - ensuring message exists', { hasStarted: this.hasStartedMessage });
+    chatLogger.info('Message start - ensuring message exists', { hasStarted: this.hasStartedMessage });
+    this.ensureMessageExists().catch(err => {
+      chatLogger.error('Failed to ensure message exists on message_start', { error: err });
+    });
   }
 
   /**
    * Handle message chunk events
    */
   private handleMessageChunk(data: any): void {
-    chatLogger.debug('Message chunk received', { 
+    chatLogger.info('📝 Message chunk received', { 
       contentLength: data.content?.length,
-      content: data.content?.substring(0, 50)
+      content: data.content?.substring(0, 50),
+      hasStartedMessage: this.hasStartedMessage
     });
     
     // CRITICAL FIX: Thread-safe message creation
@@ -232,6 +245,16 @@ export class StreamEventHandler {
     
     // Sanitize content to ensure it's a string
     const content = data.content != null ? String(data.content) : '';
+    
+    if (!content) {
+      chatLogger.warn('⚠️ Empty message chunk received - skipping update');
+      return;
+    }
+    
+    chatLogger.info('✅ Updating streaming message with chunk', { 
+      contentLength: content.length,
+      contentPreview: content.substring(0, 100)
+    });
     
     // Update streaming message
     this.callbacks.updateStreamingMessage(content);
