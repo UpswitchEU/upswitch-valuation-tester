@@ -296,9 +296,8 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
     if (!state.input.trim() || state.isStreaming || disabled) return;
     
     const userInput = state.input.trim();
-    state.setInput('');
     
-    // Validate input
+    // FIX: Validate BEFORE clearing input
     const validation = await inputValidator.validateInput(userInput, state.messages, sessionId);
     if (!validation.is_valid) {
       chatLogger.warn('Input validation failed', { 
@@ -307,15 +306,26 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
         warnings: validation.warnings 
       });
       
-      // Show validation error to user
+      // FIX: Show error but DON'T clear input - let user see their mistake
       const errorMessage: Omit<Message, 'id' | 'timestamp'> = {
         type: 'system',
         content: validation.errors.join(', '),
         isComplete: true
       };
       addMessage(errorMessage);
-      return;
+      return; // Exit early, input still visible
     }
+    
+    // FIX: Add user message IMMEDIATELY (before clearing)
+    const userMessageData: Omit<Message, 'id' | 'timestamp'> = {
+      type: 'user',
+      content: userInput,
+      isComplete: true
+    };
+    addMessage(userMessageData);
+    
+    // FIX: Clear input ONLY after message is successfully added
+    state.setInput('');
     
     // Track conversation turn
     trackConversationCompletion(false, false);

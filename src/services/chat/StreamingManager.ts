@@ -106,14 +106,8 @@ export class StreamingManager {
     
     callbacks.setIsStreaming(true);
 
-    // Add user message
-    const userMessageData: Omit<Message, 'id' | 'timestamp'> = {
-      type: 'user',
-      content: userInput,
-      isComplete: true
-    };
-    const { newMessage: userMessage } = callbacks.addMessage(userMessageData);
-    chatLogger.debug('User message added', { messageId: userMessage.id });
+    // FIX: User message is already added in handleSubmit, no need to add it again here
+    // This prevents duplicate user messages in the UI
 
     // Create streaming AI message
     const aiMessageData: Omit<Message, 'id' | 'timestamp'> = {
