@@ -288,11 +288,15 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
   ]);
   
   // Add message helper
+  // CRITICAL FIX: Use messagesRef.current instead of state.messages to avoid stale closure
   const addMessage = useCallback((message: Omit<Message, 'id' | 'timestamp'>) => {
-    const { updatedMessages, newMessage } = messageManager.addMessage(state.messages, message);
-    state.setMessages(updatedMessages);
+    const { updatedMessages, newMessage } = messageManager.addMessage(messagesRef.current, message);
+    // Use startTransition for non-urgent state updates to prevent UI blocking
+    startTransition(() => {
+      state.setMessages(updatedMessages);
+    });
     return { updatedMessages, newMessage };
-  }, [state.messages, state.setMessages, messageManager]);
+  }, [state.setMessages, messageManager]);
   
   // Update streaming message helper
   const updateStreamingMessage = useCallback((content: string, isComplete: boolean = false) => {
