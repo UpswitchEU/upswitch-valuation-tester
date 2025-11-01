@@ -91,7 +91,7 @@ export class StreamEventHandler {
       if (!this.hasStartedMessage) {
         chatLogger.debug('Creating placeholder message (thread-safe)');
         this.callbacks.addMessage({
-          type: 'assistant',
+          type: 'ai',  // FIX: Use correct type from Message type definition
           content: '',
           isStreaming: true,
           isComplete: false
@@ -380,7 +380,7 @@ export class StreamEventHandler {
     if (!this.hasStartedMessage) {
       chatLogger.warn('Message complete received but no message was started - creating final message');
       this.callbacks.addMessage({
-        type: 'assistant',
+        type: 'ai',  // FIX: Use correct type from Message type definition
         content: data.content || data.message || '',
         isComplete: true
       });
@@ -391,7 +391,9 @@ export class StreamEventHandler {
     this.callbacks.setIsStreaming(false);
     this.callbacks.setIsTyping?.(false);
     this.callbacks.setIsThinking?.(false);
-    this.hasStartedMessage = false; // Reset for next message
+    // CRITICAL FIX: Reset state for next message (release lock too)
+    this.hasStartedMessage = false;
+    this.messageCreationLock = false; // Release lock when message completes
     
     // Track model performance if metadata is available
     if (data.metadata) {
@@ -433,6 +435,9 @@ export class StreamEventHandler {
     
     this.callbacks.updateStreamingMessage('', true);
     this.callbacks.setIsStreaming(false);
+    // CRITICAL FIX: Reset state for next message
+    this.hasStartedMessage = false;
+    this.messageCreationLock = false;
     
     if (data.result) {
       chatLogger.info('Processing valuation result', { 
@@ -464,6 +469,9 @@ export class StreamEventHandler {
     this.callbacks.setIsTyping?.(false);
     this.callbacks.setIsThinking?.(false);
     this.callbacks.setTypingContext?.(undefined);
+    // CRITICAL FIX: Reset state and release lock on error
+    this.hasStartedMessage = false;
+    this.messageCreationLock = false;
     
     // Show user-friendly error message
     const errorMessage = data.message || data.content || 'Unknown error';
@@ -528,12 +536,14 @@ export class StreamEventHandler {
     });
     
     // Enhanced logging for debugging
+    // SECURITY FIX: Don't log actual values to console (may contain sensitive data)
     console.log('Data collected:', {
       field: data.field,
-      value: data.value,
       valueType: typeof data.value,
+      hasValue: data.value != null,
       display_name: data.display_name,
       completeness: data.completeness
+      // SECURITY: Don't log actual value - may contain PII/financial data
     });
     
     // CRITICAL FIX: Sanitize value to ensure it's always a string
@@ -560,7 +570,7 @@ export class StreamEventHandler {
           // Convert object to JSON string as fallback
           // MEMORY FIX: Limit size, handle circular references
           try {
-            const jsonStr = JSON.stringify(sanitizedValue, (key, val) => {
+            const jsonStr = JSON.stringify(sanitizedValue, (_key, val) => {
               // SECURITY: Don't stringify functions or undefined
               if (typeof val === 'function' || val === undefined) {
                 return '[Function]';
