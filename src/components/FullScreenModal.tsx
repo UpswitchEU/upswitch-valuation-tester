@@ -1,5 +1,5 @@
+import { Maximize2, X } from 'lucide-react';
 import React, { useEffect } from 'react';
-import { X, Maximize2 } from 'lucide-react';
 
 interface FullScreenModalProps {
   isOpen: boolean;
@@ -24,13 +24,30 @@ export const FullScreenModal: React.FC<FullScreenModalProps> = ({
 
     if (isOpen) {
       document.addEventListener('keydown', handleEscape);
-      // Prevent body scroll
+      
+      // Store original values
+      const originalOverflow = document.body.style.overflow;
+      const originalPaddingRight = document.body.style.paddingRight;
+      
+      // Calculate scrollbar width to prevent layout shift
+      const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth;
+      
+      // Prevent body scroll and compensate for scrollbar removal
       document.body.style.overflow = 'hidden';
+      if (scrollbarWidth > 0) {
+        document.body.style.paddingRight = `${scrollbarWidth}px`;
+      }
+      
+      return () => {
+        document.removeEventListener('keydown', handleEscape);
+        // Restore original values
+        document.body.style.overflow = originalOverflow;
+        document.body.style.paddingRight = originalPaddingRight;
+      };
     }
 
     return () => {
       document.removeEventListener('keydown', handleEscape);
-      document.body.style.overflow = 'unset';
     };
   }, [isOpen, onClose]);
 
@@ -40,8 +57,13 @@ export const FullScreenModal: React.FC<FullScreenModalProps> = ({
     <div className="fixed inset-0 z-50 flex items-center justify-center">
       {/* Backdrop */}
       <div 
-        className="absolute inset-0 bg-black/80 backdrop-blur-sm"
+        className="absolute inset-0 bg-black/80"
         onClick={onClose}
+        style={{
+          backdropFilter: 'blur(4px)',
+          WebkitBackdropFilter: 'blur(4px)',
+          willChange: 'opacity'
+        }}
       />
       
       {/* Modal Content */}
@@ -63,7 +85,14 @@ export const FullScreenModal: React.FC<FullScreenModalProps> = ({
         </div>
         
         {/* Content */}
-        <div className="flex-1 overflow-auto">
+        <div 
+          className="flex-1 overflow-auto"
+          style={{
+            WebkitOverflowScrolling: 'touch',
+            overscrollBehavior: 'contain',
+            willChange: 'scroll-position'
+          }}
+        >
           {children}
         </div>
       </div>

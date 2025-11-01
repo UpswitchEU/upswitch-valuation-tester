@@ -216,10 +216,14 @@ export const DocumentationModal: React.FC<DocumentationModalProps> = ({
           color: #111827;
         }
 
-        /* Custom scrollbar styling */
+        /* Custom scrollbar styling - optimized for performance */
         .documentation-scrollable {
           scrollbar-width: thin;
           scrollbar-color: #cbd5e1 #f1f5f9;
+          /* Prevent flicker during scroll */
+          -webkit-overflow-scrolling: touch;
+          transform: translateZ(0);
+          will-change: scroll-position;
         }
 
         .documentation-scrollable::-webkit-scrollbar {
@@ -234,6 +238,8 @@ export const DocumentationModal: React.FC<DocumentationModalProps> = ({
         .documentation-scrollable::-webkit-scrollbar-thumb {
           background: #cbd5e1;
           border-radius: 4px;
+          /* Prevent scrollbar repaint flicker */
+          transition: background-color 0.2s ease;
         }
 
         .documentation-scrollable::-webkit-scrollbar-thumb:hover {
