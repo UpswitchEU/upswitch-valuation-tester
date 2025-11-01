@@ -531,8 +531,10 @@ export class StreamEventHandler {
   private handleDataCollected(data: any): void {
     chatLogger.info('Data collected event received', {
       field: data.field,
-      value: data.value,
+      valueType: typeof data.value,
+      hasValue: data.value != null,
       completeness: data.completeness
+      // SECURITY: Don't log actual value - may contain PII/financial data
     });
     
     // Enhanced logging for debugging
