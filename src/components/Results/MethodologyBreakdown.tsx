@@ -1,22 +1,18 @@
 import React, { useMemo, useState } from 'react';
 import { FINANCIAL_CONSTANTS } from '../../config/financialConstants';
 import { METHODOLOGY_DOCS } from '../../content/methodologyDocs';
-import { useReducedMotion } from '../../hooks/useReducedMotion';
 import type { ValuationResponse } from '../../types/valuation';
 import { DocumentationModal } from '../ui/DocumentationModal';
 import { Tooltip } from '../ui/Tooltip';
-import { ConfidenceFactor } from './ConfidenceFactor';
 import { formatCurrency } from './utils/formatters';
-import { calculateConfidenceFactors, getWeightExplanation } from './utils/weightExplanation';
+import { getWeightExplanation } from './utils/weightExplanation';
 
 interface MethodologyBreakdownProps {
   result: ValuationResponse;
 }
 
 export const MethodologyBreakdown: React.FC<MethodologyBreakdownProps> = ({ result }) => {
-  const [showConfidenceDetails, setShowConfidenceDetails] = useState(false);
   const [modalContent, setModalContent] = useState<string | null>(null);
-  const prefersReducedMotion = useReducedMotion();
   
   const hasDCF = result.dcf_valuation && result.dcf_valuation.equity_value > 0;
   const hasMultiples = result.multiples_valuation && result.multiples_valuation.ev_ebitda_valuation > 0;
@@ -33,19 +29,11 @@ export const MethodologyBreakdown: React.FC<MethodologyBreakdownProps> = ({ resu
   const dcfWeight = result.dcf_weight || 0;
   const multiplesWeight = result.multiples_weight || 0;
   
-  // Calculate confidence factors
-  const confidenceFactors = useMemo(() => calculateConfidenceFactors(result), [result]);
-  
   // Get weight explanations
   const weightExplanation = useMemo(() => 
     getWeightExplanation(dcfWeight, multiplesWeight, result), 
     [dcfWeight, multiplesWeight, result]
   );
-  
-  // Calculate overall confidence if not provided
-  const overallConfidence = result.confidence_score || 
-    (Object.values(confidenceFactors) as number[]).reduce((a: number, b: number) => a + b, 0) / 
-    Object.keys(confidenceFactors).length;
   
   // DCF details
   // Backend returns rates as decimals (0.091 = 9.1%), constants are percentages (12.1 = 12.1%)
@@ -181,188 +169,6 @@ export const MethodologyBreakdown: React.FC<MethodologyBreakdownProps> = ({ resu
               </ul>
             </div>
           )}
-        </div>
-      </div>
-
-      {/* Confidence Score with Progressive Disclosure */}
-      <div className="bg-white rounded-lg border border-gray-200 p-4 sm:p-6 shadow-sm">
-        <div className="flex items-center justify-between mb-4">
-          <h4 className="text-lg font-semibold text-gray-900">Confidence Score: {Math.round(overallConfidence)}%</h4>
-          <div className="flex items-center gap-3">
-            <button
-              onClick={() => setModalContent('confidence-score')}
-              className="text-xs text-blue-600 hover:text-blue-800 flex items-center gap-1 transition-colors duration-200"
-            >
-              Learn More
-              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-              </svg>
-            </button>
-            <button 
-              onClick={() => setShowConfidenceDetails(!showConfidenceDetails)}
-              className="text-sm text-blue-600 hover:text-blue-800 font-medium 
-                transition-colors duration-200 flex items-center gap-1"
-            >
-                  <span className={`transform ${
-                    prefersReducedMotion ? '' : 'transition-rotate'
-                  } ${showConfidenceDetails ? 'rotate-90' : ''}`}>
-                ▶
-              </span>
-              {showConfidenceDetails ? 'Hide Details' : 'Show Details'}
-            </button>
-          </div>
-        </div>
-        
-        {/* Simple Breakdown (Always Visible) */}
-        <div className="grid grid-cols-2 gap-4 mb-4">
-          <div className="p-3 bg-gray-50 rounded">
-            <div className="flex justify-between items-center mb-1">
-              <span className="text-sm font-medium text-gray-700">Data Quality</span>
-              <span className="text-sm font-semibold text-gray-900">{confidenceFactors.data_quality}%</span>
-            </div>
-            <div className="w-full bg-gray-200 rounded-full h-2">
-                <div 
-                  className={`bg-blue-500 h-2 rounded-full ${
-                    prefersReducedMotion ? '' : 'transition-progress'
-                  }`}
-                  style={{ width: `${confidenceFactors.data_quality}%` }}
-                />
-            </div>
-          </div>
-          
-          <div className="p-3 bg-gray-50 rounded">
-            <div className="flex justify-between items-center mb-1">
-              <span className="text-sm font-medium text-gray-700">Methodology Agreement</span>
-              <span className="text-sm font-semibold text-gray-900">{confidenceFactors.methodology_agreement}%</span>
-            </div>
-            <div className="w-full bg-gray-200 rounded-full h-2">
-                <div 
-                  className={`bg-green-500 h-2 rounded-full ${
-                    prefersReducedMotion ? '' : 'transition-progress'
-                  }`}
-                  style={{ width: `${confidenceFactors.methodology_agreement}%` }}
-                />
-            </div>
-          </div>
-          
-          <div className="p-3 bg-gray-50 rounded">
-            <div className="flex justify-between items-center mb-1">
-              <span className="text-sm font-medium text-gray-700">Industry Benchmarks</span>
-              <span className="text-sm font-semibold text-gray-900">{confidenceFactors.industry_benchmarks}%</span>
-            </div>
-            <div className="w-full bg-gray-200 rounded-full h-2">
-                <div 
-                  className={`bg-yellow-500 h-2 rounded-full ${
-                    prefersReducedMotion ? '' : 'transition-progress'
-                  }`}
-                  style={{ width: `${confidenceFactors.industry_benchmarks}%` }}
-                />
-            </div>
-          </div>
-          
-          <div className="p-3 bg-gray-50 rounded">
-            <div className="flex justify-between items-center mb-1">
-              <span className="text-sm font-medium text-gray-700">Company Profile</span>
-              <span className="text-sm font-semibold text-gray-900">{confidenceFactors.company_profile}%</span>
-            </div>
-            <div className="w-full bg-gray-200 rounded-full h-2">
-                <div 
-                  className={`bg-purple-500 h-2 rounded-full ${
-                    prefersReducedMotion ? '' : 'transition-progress'
-                  }`}
-                  style={{ width: `${confidenceFactors.company_profile}%` }}
-                />
-            </div>
-          </div>
-        </div>
-
-        {/* Detailed Breakdown (Progressive Disclosure) */}
-        {showConfidenceDetails && (
-          <div 
-            className="mt-4 space-y-3 animate-fadeIn"
-            style={{
-              animation: 'fadeIn 0.3s ease-in-out'
-            }}
-          >
-            <h5 className="font-medium text-gray-900 mb-3">Detailed Confidence Factors</h5>
-            
-            {[
-              {
-                name: "Data Quality",
-                score: confidenceFactors.data_quality,
-                description: "Completeness and accuracy of financial data provided",
-                impact: (confidenceFactors.data_quality > 80 ? 'Strong' : confidenceFactors.data_quality > 60 ? 'Moderate' : 'Weak') as 'Strong' | 'Moderate' | 'Weak',
-                improvement: confidenceFactors.data_quality < 80 ? 'Add complete financial statements for current year' : null
-              },
-              {
-                name: "Historical Data",
-                score: confidenceFactors.historical_data,
-                description: "Years of historical financial data available",
-                impact: (confidenceFactors.historical_data > 80 ? 'Strong' : 'Moderate') as 'Strong' | 'Moderate' | 'Weak',
-                improvement: confidenceFactors.historical_data < 80 ? 'Provide 3+ years of historical data' : null
-              },
-              {
-                name: "Methodology Agreement",
-                score: confidenceFactors.methodology_agreement,
-                description: "How closely DCF and Multiples valuations agree",
-                impact: (confidenceFactors.methodology_agreement > 80 ? 'Strong' : 'Moderate') as 'Strong' | 'Moderate' | 'Weak',
-                improvement: confidenceFactors.methodology_agreement < 70 ? 'Valuations differ significantly - consider additional data points' : null
-              },
-              {
-                name: "Industry Benchmarks",
-                score: confidenceFactors.industry_benchmarks,
-                description: "Quality of comparable companies and market data",
-                impact: (confidenceFactors.industry_benchmarks > 80 ? 'Strong' : 'Moderate') as 'Strong' | 'Moderate' | 'Weak',
-                improvement: confidenceFactors.industry_benchmarks < 80 ? 'Industry has limited comparable data - this is normal for niche markets' : null
-              },
-              {
-                name: "Company Profile",
-                score: confidenceFactors.company_profile,
-                description: "Business stability, profitability, and growth characteristics",
-                impact: (confidenceFactors.company_profile > 80 ? 'Strong' : 'Moderate') as 'Strong' | 'Moderate' | 'Weak',
-                improvement: confidenceFactors.company_profile < 80 ? 'Improve financial stability and profitability metrics' : null
-              },
-              {
-                name: "Market Conditions",
-                score: confidenceFactors.market_conditions,
-                description: "Current market volatility and economic conditions",
-                impact: (confidenceFactors.market_conditions > 80 ? 'Strong' : 'Moderate') as 'Strong' | 'Moderate' | 'Weak',
-                improvement: null
-              },
-              {
-                name: "Geographic Data",
-                score: confidenceFactors.geographic_data,
-                description: "Quality of country-specific market data",
-                impact: (confidenceFactors.geographic_data > 80 ? 'Strong' : 'Moderate') as 'Strong' | 'Moderate' | 'Weak',
-                improvement: null
-              },
-              {
-                name: "Business Model Clarity",
-                score: confidenceFactors.business_model_clarity,
-                description: "How well business model fits valuation approach",
-                impact: (confidenceFactors.business_model_clarity > 80 ? 'Strong' : 'Moderate') as 'Strong' | 'Moderate' | 'Weak',
-                improvement: null
-              }
-            ].map((factor, index) => (
-              <div
-                key={factor.name}
-                className={`animate-fade-in animate-stagger-${index + 1}`}
-              >
-                <ConfidenceFactor {...factor} />
-              </div>
-            ))}
-          </div>
-        )}
-
-        {/* What Would Improve Confidence */}
-        <div className="mt-4 p-3 bg-blue-50 rounded border border-blue-200">
-          <h5 className="font-medium text-blue-900 mb-2">💡 How to Improve Confidence Score</h5>
-          <ul className="text-sm text-blue-800 space-y-1">
-            {confidenceFactors.data_quality < 80 && <li>• Add complete financial statements for current year</li>}
-            {confidenceFactors.historical_data < 80 && <li>• Provide 3+ years of historical financial data</li>}
-            {confidenceFactors.industry_benchmarks < 80 && <li>• Industry has limited comparable data - this is normal for niche markets</li>}
-            {confidenceFactors.company_profile < 80 && <li>• Improve financial stability and profitability metrics</li>}
-          </ul>
         </div>
       </div>
 

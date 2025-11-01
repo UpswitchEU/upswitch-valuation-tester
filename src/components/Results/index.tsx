@@ -4,14 +4,14 @@ import { useValuationStore } from '../../store/useValuationStore';
 // Note: Transparency components simplified to avoid type issues
 
 // Modular Results Components
-import { ResultsHeader } from './ResultsHeader';
-import { OwnershipAdjustments } from './OwnershipAdjustments';
-import { GrowthMetrics } from './GrowthMetrics';
-import { ValueDrivers } from './ValueDrivers';
-import { RiskFactors } from './RiskFactors';
-import { MethodologyBreakdown } from './MethodologyBreakdown';
-import { CompetitiveComparison } from './CompetitiveComparison';
 import { ErrorBoundary } from '../ErrorBoundary';
+import { CompetitiveComparison } from './CompetitiveComparison';
+import { GrowthMetrics } from './GrowthMetrics';
+import { MethodologyBreakdown } from './MethodologyBreakdown';
+import { OwnershipAdjustments } from './OwnershipAdjustments';
+import { ResultsHeader } from './ResultsHeader';
+import { RiskFactors } from './RiskFactors';
+import { ValueDrivers } from './ValueDrivers';
 
 /**
  * Results Component - Modular Architecture
@@ -39,6 +39,11 @@ export const Results: React.FC = () => {
       {/* Ownership Adjustments */}
       <OwnershipAdjustments result={result} />
       
+      {/* Methodology Breakdown - Enhanced with transparency */}
+      <ErrorBoundary fallback={<div className="p-4 bg-red-50 border border-red-200 rounded-lg text-red-700">Error loading methodology breakdown</div>}>
+        <MethodologyBreakdown result={result} />
+      </ErrorBoundary>
+      
       {/* Growth Metrics */}
       <GrowthMetrics result={result} />
       
@@ -47,11 +52,6 @@ export const Results: React.FC = () => {
       
       {/* Risk Factors */}
       <RiskFactors result={result} />
-      
-      {/* Methodology Breakdown - Enhanced with transparency */}
-      <ErrorBoundary fallback={<div className="p-4 bg-red-50 border border-red-200 rounded-lg text-red-700">Error loading methodology breakdown</div>}>
-        <MethodologyBreakdown result={result} />
-      </ErrorBoundary>
       
       {/* Methodology & Data Sources */}
       <CompetitiveComparison />

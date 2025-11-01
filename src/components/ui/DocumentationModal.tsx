@@ -97,6 +97,7 @@ export const DocumentationModal: React.FC<DocumentationModalProps> = ({
     >
       <div 
         ref={modalRef}
+        id="modal-content"
         tabIndex={-1}
         className="bg-white rounded-2xl max-w-3xl w-full mx-4 max-h-[90vh] overflow-hidden shadow-2xl border border-gray-100 flex flex-col animate-scale-in focus:outline-none"
         onClick={(e) => e.stopPropagation()}

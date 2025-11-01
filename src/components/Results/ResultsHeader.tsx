@@ -1,26 +1,45 @@
-import React from 'react';
-import { formatCurrency, formatCurrencyCompact } from './utils/formatters';
+import React, { useState } from 'react';
 import type { ValuationResponse } from '../../types/valuation';
+import { ConfidenceScoreModal } from './ConfidenceScoreModal';
+import { formatCurrency, formatCurrencyCompact } from './utils/formatters';
 
 interface ResultsHeaderProps {
   result: ValuationResponse;
 }
 
 export const ResultsHeader: React.FC<ResultsHeaderProps> = ({ result }) => {
+  const [showConfidenceModal, setShowConfidenceModal] = useState(false);
+
   return (
-    <div className="space-y-4 sm:space-y-6">
-      {/* Main Valuation */}
-      <div className="bg-white rounded-lg border-2 border-gray-200 p-4 sm:p-6 shadow-lg">
-        <div className="flex items-center justify-between mb-4">
-          <div>
-            <h2 className="text-xl sm:text-2xl font-bold text-gray-900">Valuation Report</h2>
-            <p className="text-sm text-gray-600">Based on DCF and Market Multiples methodology</p>
+    <>
+      <div className="space-y-4 sm:space-y-6">
+        {/* Main Valuation */}
+        <div className="bg-white rounded-lg border-2 border-gray-200 p-4 sm:p-6 shadow-lg">
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h2 className="text-xl sm:text-2xl font-bold text-gray-900">Valuation Report</h2>
+              <p className="text-sm text-gray-600">Based on DCF and Market Multiples methodology</p>
+            </div>
+            <div className="text-right">
+              <div className="text-xs text-gray-500">Confidence Score</div>
+              <div className="flex items-center gap-2 justify-end">
+                <div className="text-2xl font-bold text-blue-600">
+                  {result.confidence_score !== undefined && result.confidence_score !== null
+                    ? `${result.confidence_score}%`
+                    : 'N/A'}
+                </div>
+                <button
+                  onClick={() => setShowConfidenceModal(true)}
+                  className="text-xs text-blue-600 hover:text-blue-800 underline transition-colors duration-200"
+                  aria-label={`View detailed confidence score breakdown${result.confidence_score !== undefined && result.confidence_score !== null ? ` for ${result.confidence_score}% confidence` : ''}`}
+                  aria-expanded={showConfidenceModal}
+                  aria-controls="modal-content"
+                >
+                  View Details
+                </button>
+              </div>
+            </div>
           </div>
-          <div className="text-right">
-            <div className="text-xs text-gray-500">Confidence Score</div>
-            <div className="text-2xl font-bold text-blue-600">{result.confidence_score}%</div>
-          </div>
-        </div>
         
         <h3 className="text-lg font-semibold text-gray-900 mb-4">Enterprise Value</h3>
         
@@ -55,5 +74,13 @@ export const ResultsHeader: React.FC<ResultsHeaderProps> = ({ result }) => {
         </div>
       </div>
     </div>
+    
+    {/* Confidence Score Modal */}
+    <ConfidenceScoreModal
+      isOpen={showConfidenceModal}
+      onClose={() => setShowConfidenceModal(false)}
+      result={result}
+    />
+    </>
   );
 };
