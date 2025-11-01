@@ -329,9 +329,6 @@ export const ProgressiveValuationReport: React.FC<ProgressiveValuationReportProp
           <div className="flex items-center mb-4">
             <CheckCircle className="h-6 w-6 text-green-500 mr-2" />
             <h2 className="text-xl font-semibold text-gray-900">Complete Valuation Report</h2>
-            <span className="ml-auto text-sm text-gray-500">
-              ID: {valuationId}
-            </span>
           </div>
           <div 
             className="prose max-w-none"

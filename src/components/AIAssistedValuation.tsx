@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 // import { useNavigate } from 'react-router-dom';
 import { Building2, CheckCircle, Save } from 'lucide-react';
 import { MOBILE_BREAKPOINT, PANEL_CONSTRAINTS } from '../constants/panelConstants';
@@ -17,7 +17,6 @@ import type { ConversationContext, ValuationInputData, ValuationRequest, Valuati
 import { chatLogger } from '../utils/logger';
 import { ErrorBoundary } from './ErrorBoundary';
 import { FullScreenModal } from './FullScreenModal';
-import { type HTMLPreviewPanelRef } from './HTMLPreviewPanel';
 import { OutOfCreditsModal } from './OutOfCreditsModal';
 import { ResizableDivider } from './ResizableDivider';
 import { ValuationEmptyState } from './ValuationEmptyState';
@@ -41,9 +40,6 @@ export const AIAssistedValuation: React.FC<AIAssistedValuationProps> = ({ report
   const [error, setError] = useState<string | null>(null);
   const [conversationContext, setConversationContext] = useState<ConversationContext | null>(null);
   const [inputData, setInputData] = useState<ValuationInputData | null>(null);
-  
-  // Ref for HTMLPreviewPanel (progressive report system)
-  const htmlPreviewPanelRef = useRef<HTMLPreviewPanelRef>(null);
   
   
   // Update context when conversation progresses
@@ -153,10 +149,6 @@ export const AIAssistedValuation: React.FC<AIAssistedValuationProps> = ({ report
   const [finalReportHtml, setFinalReportHtml] = useState<string>('');
   const [finalValuationId, setFinalValuationId] = useState<string>('');
   
-  // HTML preview state for IlaraAI-style preview
-  const [previewHtml, setPreviewHtml] = useState<string>('');
-  const [previewProgress, setPreviewProgress] = useState<number>(0);
-  const [isGeneratingPreview, setIsGeneratingPreview] = useState(false);
   const [previewGenerated25, setPreviewGenerated25] = useState(false);
   const [previewGenerated50, setPreviewGenerated50] = useState(false);
   const [previewGenerated75, setPreviewGenerated75] = useState(false);
@@ -332,41 +324,13 @@ export const AIAssistedValuation: React.FC<AIAssistedValuationProps> = ({ report
     }
   }, [collectedData]);
 
-  // NEW: Progressive HTML preview generation (IlaraAI-style)
-  const generateProgressivePreview = useCallback(async (collectedData: Partial<ValuationRequest>) => {
-    setIsGeneratingPreview(true);
-    try {
-      console.log('Generating progressive preview with data:', collectedData);
-      
-      // Convert collected data to ValuationRequest format
-      const previewRequest: ValuationRequest = {
-        company_name: collectedData.company_name || 'Unknown Company',
-        industry: collectedData.industry || 'services',
-        country_code: collectedData.country_code || 'BE',
-        business_model: collectedData.business_model || 'services',
-        founding_year: collectedData.founding_year || new Date().getFullYear() - 5,
-        number_of_employees: collectedData.number_of_employees || 10,
-        current_year_data: {
-          year: new Date().getFullYear(),
-          revenue: collectedData.current_year_data?.revenue || collectedData.revenue || 0,
-          ebitda: collectedData.current_year_data?.ebitda || 0
-        },
-        historical_years_data: collectedData.historical_years_data || []
-      };
-
-      const response = await backendAPI.generatePreviewHtml(previewRequest);
-      setPreviewHtml(response.html);
-      setPreviewProgress(response.completeness_percent);
-      
-      console.log('Progressive preview generated:', {
-        htmlLength: response.html.length,
-        completeness: response.completeness_percent
-      });
-    } catch (error) {
-      console.error('Progressive preview generation failed:', error);
-    } finally {
-      setIsGeneratingPreview(false);
-    }
+  // NOTE: Progressive preview generation is now handled by the streaming backend
+  // via section_loading and section_complete events. This function is kept for
+  // backward compatibility but does nothing as preview is handled by the new system.
+  const generateProgressivePreview = useCallback(async (_collectedData: Partial<ValuationRequest>) => {
+    // Progressive preview is now handled by handleSectionLoading and handleSectionComplete
+    // via the streaming conversation system
+    console.log('Progressive preview generation handled by streaming system');
   }, []);
 
   // Calculate data completeness percentage
@@ -379,17 +343,12 @@ export const AIAssistedValuation: React.FC<AIAssistedValuationProps> = ({ report
     return Math.round((collectedFields.length / requiredFields.length) * 100);
   }, []);
 
-  // NEW: Handle HTML preview updates from streaming conversation
-  const handleHtmlPreviewUpdate = useCallback((html: string, previewType: string) => {
-    console.log('📊 Updating HTML preview from streaming:', { previewType, htmlLength: html.length });
-    setPreviewHtml(html);
-    setIsGeneratingPreview(false);
-    
-    // Update progress based on preview type
-    if (previewType === 'progressive_25') setPreviewProgress(25);
-    else if (previewType === 'progressive_50') setPreviewProgress(50);
-    else if (previewType === 'progressive_75') setPreviewProgress(75);
-    else if (previewType === 'progressive_100') setPreviewProgress(100);
+  // NOTE: HTML preview updates are now handled by handleSectionLoading and handleSectionComplete
+  // This callback is kept for backward compatibility but does nothing as the new system
+  // uses the progressive report sections directly.
+  const handleHtmlPreviewUpdate = useCallback((_html: string, _previewType: string) => {
+    // HTML preview is now handled by the progressive report system via sections
+    console.log('HTML preview updates handled by progressive report system');
   }, []);
 
   // NEW: Handle valuation preview events
@@ -623,8 +582,8 @@ export const AIAssistedValuation: React.FC<AIAssistedValuationProps> = ({ report
       }
     });
     
-    // Update overall progress
-    setPreviewProgress(event.progress);
+    // Progress is now tracked via reportPhase state, not previewProgress
+    setReportPhase(event.phase || 0);
   }, []);
 
   const handleReportComplete = useCallback((html: string, valuationId: string) => {
