@@ -6,6 +6,7 @@ interface ConfidenceFactorProps {
   description: string;
   impact: 'Strong' | 'Moderate' | 'Weak';
   improvement?: string | null;
+  isEstimated?: boolean;
 }
 
 export const ConfidenceFactor: React.FC<ConfidenceFactorProps> = ({
@@ -13,7 +14,8 @@ export const ConfidenceFactor: React.FC<ConfidenceFactorProps> = ({
   score, 
   description, 
   impact, 
-  improvement
+  improvement,
+  isEstimated = false
 }) => {
   return (
     <div className="p-3 bg-gray-50 rounded border border-gray-200">
@@ -25,6 +27,9 @@ export const ConfidenceFactor: React.FC<ConfidenceFactorProps> = ({
             score > 60 ? 'text-yellow-600' : 'text-red-600'
           }`}>
             {score}%
+            {isEstimated && (
+              <span className="ml-1 text-xs text-yellow-600 font-normal">(Est.)</span>
+            )}
           </span>
           <span className={`text-xs px-2 py-1 rounded ${
             impact === 'Strong' ? 'bg-green-100 text-green-800' :

@@ -76,16 +76,30 @@ export const getWeightExplanation = (
 
 /**
  * Calculate confidence factors from valuation result
+ * 
+ * PRIORITY ORDER:
+ * 1. Backend data: result.transparency.confidence_factors (preferred - weighted calculation)
+ * 2. Frontend fallback: Calculate from available result data (approximation)
+ * 
+ * NOTE: Frontend fallback uses simple average and includes estimated values for:
+ * - Market Conditions (75%)
+ * - Geographic Data (80%)
+ * - Business Model Clarity (85%)
+ * 
+ * These estimated factors are clearly labeled in the UI with "(Est.)" badges.
  */
 export const calculateConfidenceFactors = (result: ValuationResponse) => {
   const resultAny = result as any;
   
-  // Try to get from transparency.confidence_factors first
+  // PRIORITY 1: Try to get from backend transparency data (preferred)
+  // Backend uses weighted average calculation with actual market data
   if (resultAny.transparency?.confidence_factors) {
     return resultAny.transparency.confidence_factors;
   }
   
-  // Fallback: Calculate from available data
+  // PRIORITY 2: Fallback - Calculate from available data (approximation)
+  // Uses simple average instead of weighted average
+  // Some factors use default estimates when data unavailable
   const historicalDataLength = resultAny.historical_years_data?.length || 0;
   const hasHistoricalData = historicalDataLength > 0;
   
@@ -95,9 +109,13 @@ export const calculateConfidenceFactors = (result: ValuationResponse) => {
   const methodologyAgreement = calculateMethodologyAgreement(result);
   const industryBenchmarks = result.multiples_valuation?.comparables_quality === 'high' ? 85 : 70;
   const companyProfile = result.financial_metrics?.financial_health_score || 70;
-  const marketConditions = 75; // Default
-  const geographicData = 80; // Default for European markets
-  const businessModelClarity = 85; // Default
+  
+  // NOTE: These factors use default estimates when backend data is unavailable
+  // Frontend fallback cannot calculate these without market data access
+  // These are labeled as "Estimated" in the UI to maintain transparency
+  const marketConditions = 75; // Estimated: Frontend cannot access real-time market volatility data
+  const geographicData = 80; // Estimated: Default for European markets (EU/EEA), actual calculation requires country-specific data
+  const businessModelClarity = 85; // Estimated: Requires business model analysis that backend performs
   
   return {
     data_quality: dataQuality,

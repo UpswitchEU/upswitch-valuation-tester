@@ -236,12 +236,13 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
     setValuationPreview: state.setValuationPreview,
     setCalculateOption: state.setCalculateOption,
     addMessage: (message: Omit<Message, 'id' | 'timestamp'>) => {
-      const { updatedMessages, newMessage } = messageManager.addMessage(messagesRef.current, message);
-      // Use startTransition for batched state updates
-      startTransition(() => {
-        state.setMessages(updatedMessages);
+      // Use functional update to ensure latest state
+      state.setMessages(prevMessages => {
+        const { updatedMessages } = messageManager.addMessage(prevMessages, message);
+        // Update ref immediately for eventHandler access
+        messagesRef.current = updatedMessages;
+        return updatedMessages;
       });
-      return { updatedMessages, newMessage };
     },
     trackModelPerformance,
     trackConversationCompletion,
@@ -288,14 +289,16 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
   ]);
   
   // Add message helper
-  // CRITICAL FIX: Use messagesRef.current instead of state.messages to avoid stale closure
+  // CRITICAL FIX: Use functional state update to ensure we always get latest state
+  // This prevents race conditions where state update is deferred but new render happens
   const addMessage = useCallback((message: Omit<Message, 'id' | 'timestamp'>) => {
-    const { updatedMessages, newMessage } = messageManager.addMessage(messagesRef.current, message);
-    // Use startTransition for non-urgent state updates to prevent UI blocking
-    startTransition(() => {
-      state.setMessages(updatedMessages);
+    // Use functional update to ensure we always work with latest messages
+    state.setMessages(prevMessages => {
+      const { updatedMessages } = messageManager.addMessage(prevMessages, message);
+      // Update ref immediately for eventHandler access
+      messagesRef.current = updatedMessages;
+      return updatedMessages;
     });
-    return { updatedMessages, newMessage };
   }, [state.setMessages, messageManager]);
   
   // Update streaming message helper
@@ -321,11 +324,26 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
     }
   }, [state.messages, state.setMessages, state.refs.currentStreamingMessageRef, messageManager, complete, onMessageComplete]);
   
+  // Request lock to prevent duplicate stream requests
+  const isRequestInProgressRef = useRef(false);
+  
   // Handle form submission
   const handleSubmit = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!state.input.trim() || state.isStreaming || disabled) return;
+    // CRITICAL FIX: Check both state and ref to prevent duplicate requests
+    if (!state.input.trim() || state.isStreaming || disabled || isRequestInProgressRef.current) {
+      chatLogger.warn('Request blocked', { 
+        hasInput: !!state.input.trim(),
+        isStreaming: state.isStreaming,
+        disabled,
+        requestInProgress: isRequestInProgressRef.current
+      });
+      return;
+    }
+    
+    // Set lock immediately to prevent race conditions
+    isRequestInProgressRef.current = true;
     
     const userInput = state.input.trim();
     
@@ -348,6 +366,9 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
       return; // Exit early, input still visible
     }
     
+    // CRITICAL FIX: Set isStreaming BEFORE async call to prevent duplicate requests
+    state.setIsStreaming(true);
+    
     // FIX: Add user message IMMEDIATELY (before clearing)
     const userMessageData: Omit<Message, 'id' | 'timestamp'> = {
       type: 'user',
@@ -369,7 +390,9 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
     
     // Start streaming conversation using Python session ID if available
     const effectiveSessionId = pythonSessionId || sessionId;
-    await streamingManager.startStreaming(
+    
+    try {
+      await streamingManager.startStreaming(
       effectiveSessionId,
       userInput,
       userId,
@@ -387,13 +410,17 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
       (event) => {
         try {
           // DEPLOYMENT VERIFICATION MARKER - If this appears in logs, code is deployed
-          chatLogger.info('🚀 [DEPLOYED] Event received in StreamingChat callback', { 
-            type: event?.type, 
-            hasContent: !!event?.content,
-            contentLength: event?.content?.length,
-            sessionId: event?.session_id || effectiveSessionId,
-            fullEvent: JSON.stringify(event).substring(0, 300)
-          });
+          // Reduced logging - only log important events to prevent console spam
+          if (event?.type === 'error' || event?.type === 'valuation_complete') {
+            chatLogger.info('🚀 [DEPLOYED] Event received in StreamingChat callback', { 
+              type: event?.type, 
+              hasContent: !!event?.content,
+              contentLength: event?.content?.length,
+              sessionId: event?.session_id || effectiveSessionId
+            });
+          } else {
+            chatLogger.debug('Event received', { type: event?.type, sessionId: event?.session_id || effectiveSessionId });
+          }
           
           // CRITICAL FIX: Ensure eventHandler exists and handleEvent is callable
           if (!eventHandler) {
@@ -432,8 +459,21 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
         chatLogger.error('Streaming error', { error: error.message, sessionId: effectiveSessionId });
         state.setIsStreaming(false);
         state.setIsTyping(false); // Hide typing indicator on error
+        state.setIsThinking(false);
       }
     );
+    } catch (error) {
+      chatLogger.error('Streaming failed', { 
+        error: error instanceof Error ? error.message : String(error),
+        sessionId: effectiveSessionId 
+      });
+      state.setIsStreaming(false);
+      state.setIsTyping(false);
+      state.setIsThinking(false);
+    } finally {
+      // CRITICAL FIX: Release lock when done
+      isRequestInProgressRef.current = false;
+    }
   }, [state.input, state.isStreaming, state.setIsStreaming, disabled, sessionId, pythonSessionId, userId, inputValidator, addMessage, updateStreamingMessage, onHtmlPreviewUpdate, trackConversationCompletion, streamingManager, eventHandler]);
   
   // Handle suggestion selection
