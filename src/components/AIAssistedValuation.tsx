@@ -17,7 +17,7 @@ import type { ConversationContext, ValuationInputData, ValuationRequest, Valuati
 import { chatLogger } from '../utils/logger';
 import { ErrorBoundary } from './ErrorBoundary';
 import { FullScreenModal } from './FullScreenModal';
-import { HTMLPreviewPanel, type HTMLPreviewPanelRef } from './HTMLPreviewPanel';
+import { type HTMLPreviewPanelRef } from './HTMLPreviewPanel';
 import { OutOfCreditsModal } from './OutOfCreditsModal';
 import { ResizableDivider } from './ResizableDivider';
 import { ValuationEmptyState } from './ValuationEmptyState';
@@ -1245,28 +1245,13 @@ export const AIAssistedValuation: React.FC<AIAssistedValuationProps> = ({ report
               {/* Show optimistic preview first if available */}
               {renderOptimisticPreview()}
               
-              {/* NEW: HTML Preview (IlaraAI-style) */}
-              {previewHtml ? (
-                <HTMLPreviewPanel
-                  ref={htmlPreviewPanelRef}
-                  htmlContent={previewHtml}
-                  isGenerating={isGeneratingPreview}
-                  progress={previewProgress}
-                  onSectionLoading={(event) => htmlPreviewPanelRef.current?.handleSectionLoading(event)}
-                  onSectionComplete={(event) => htmlPreviewPanelRef.current?.handleSectionComplete(event)}
-                />
-              ) : reportSections.length > 0 || finalReportHtml ? (
+              {/* SIMPLIFIED: Use ONLY ProgressiveValuationReport for all cases */}
+              {reportSections.length > 0 || finalReportHtml ? (
                 <ProgressiveValuationReport
                   sections={reportSections}
                   phase={reportPhase}
                   finalHtml={finalReportHtml}
                   isGenerating={stage === 'chat'}
-                />
-              ) : liveHtmlReport ? (
-                <LiveValuationReport
-                  htmlContent={liveHtmlReport}
-                  isGenerating={stage === 'chat'}
-                  progress={reportProgress}
                 />
               ) : !showInstantPreview ? (
                 <ValuationEmptyState />
