@@ -89,11 +89,16 @@ export const DocumentationModal: React.FC<DocumentationModalProps> = ({
   
   return (
     <div 
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm animate-fade-in"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 animate-fade-in"
       onClick={onClose}
       role="dialog"
       aria-modal="true"
       aria-labelledby="modal-title"
+      style={{ 
+        backdropFilter: 'blur(4px)',
+        WebkitBackdropFilter: 'blur(4px)',
+        willChange: 'opacity'
+      }}
     >
       <div 
         ref={modalRef}
@@ -101,6 +106,10 @@ export const DocumentationModal: React.FC<DocumentationModalProps> = ({
         tabIndex={-1}
         className="bg-white rounded-2xl max-w-3xl w-full mx-4 max-h-[90vh] overflow-hidden shadow-2xl border border-gray-100 flex flex-col animate-scale-in focus:outline-none"
         onClick={(e) => e.stopPropagation()}
+        style={{
+          willChange: 'transform',
+          transform: 'translateZ(0)' // Force GPU acceleration
+        }}
       >
         {/* Header */}
         <div className="flex items-center justify-between px-6 sm:px-8 pt-6 sm:pt-8 pb-5 sm:pb-6 border-b border-gray-100 flex-shrink-0">
@@ -120,7 +129,13 @@ export const DocumentationModal: React.FC<DocumentationModalProps> = ({
         </div>
         
         {/* Content */}
-        <div className="overflow-y-auto px-6 sm:px-8 py-6 flex-1 documentation-scrollable">
+        <div 
+          className="overflow-y-auto px-6 sm:px-8 py-6 flex-1 documentation-scrollable"
+          style={{
+            WebkitOverflowScrolling: 'touch', // Smooth iOS scrolling
+            overscrollBehavior: 'contain' // Prevent scroll chaining
+          }}
+        >
           <div className="documentation-content">
             {content}
           </div>

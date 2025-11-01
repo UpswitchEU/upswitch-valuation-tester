@@ -245,13 +245,19 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
         result = addResult;
         return addResult.updatedMessages;
       });
-      // CRITICAL: Functional update is synchronous, so result should always be set
+      // CRITICAL: Fallback for cases where setMessagesWithPruning defers execution
+      // This can happen with React 18 concurrent rendering when setMessages is wrapped
       if (!result) {
-        chatLogger.error('addMessage: state.setMessages functional update failed to set result', {
+        chatLogger.warn('addMessage: Using fallback with messagesRef.current', {
           messageType: message.type,
           hasContent: !!message.content
         });
-        throw new Error('addMessage: state.setMessages functional update failed to set result');
+        // Safe fallback: use ref which is always current
+        const fallbackResult = messageManager.addMessage(messagesRef.current, message);
+        messagesRef.current = fallbackResult.updatedMessages;
+        // Trigger state update to sync React state
+        state.setMessages(fallbackResult.updatedMessages);
+        return fallbackResult;
       }
       return result;
     },
@@ -312,14 +318,19 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
       result = addResult;
       return addResult.updatedMessages;
     });
-    // CRITICAL: Functional update is synchronous, so result should always be set
-    // Assert instead of fallback to catch any unexpected issues
+    // CRITICAL: Fallback for cases where setMessagesWithPruning defers execution
+    // This can happen with React 18 concurrent rendering when setMessages is wrapped
     if (!result) {
-      chatLogger.error('addMessage: state.setMessages functional update failed to set result', {
+      chatLogger.warn('addMessage: Using fallback with messagesRef.current', {
         messageType: message.type,
         hasContent: !!message.content
       });
-      throw new Error('addMessage: state.setMessages functional update failed to set result');
+      // Safe fallback: use ref which is always current
+      const fallbackResult = messageManager.addMessage(messagesRef.current, message);
+      messagesRef.current = fallbackResult.updatedMessages;
+      // Trigger state update to sync React state
+      state.setMessages(fallbackResult.updatedMessages);
+      return fallbackResult;
     }
     return result;
   }, [state.setMessages, messageManager]);
