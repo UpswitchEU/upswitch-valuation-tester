@@ -569,67 +569,6 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
           </div>
         )}
         
-        {/* Data Collection Panel */}
-        {Object.keys(state.collectedData).length > 0 && (
-          <div className="bg-zinc-800/50 p-4 rounded-lg border border-zinc-700/50">
-            <h3 className="font-semibold text-white mb-2">Collected Data</h3>
-            <div className="space-y-2">
-              {Object.entries(state.collectedData).map(([key, data]: [string, any]) => {
-                // CRITICAL FIX: Handle correct state structure
-                // Structure is: {[field]: {field, value: string, display_name, ...}}
-                // OR old structure: {[field]: value}
-                const MAX_DISPLAY_SIZE = 200;
-                
-                let displayValue: string;
-                let displayName: string;
-                
-                // Handle new structure: {field: {field, value, display_name, ...}}
-                if (data && typeof data === 'object' && data.value !== undefined) {
-                  const rawValue = data.value;
-                  displayName = data.display_name || key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
-                  
-                  if (rawValue == null) {
-                    displayValue = 'Not provided';
-                  } else if (typeof rawValue === 'object' && rawValue !== null) {
-                    // Object value - convert to JSON
-                    try {
-                      const jsonStr = JSON.stringify(rawValue, null, 0);
-                      displayValue = jsonStr.length > MAX_DISPLAY_SIZE 
-                        ? jsonStr.substring(0, MAX_DISPLAY_SIZE - 3) + '...'
-                        : jsonStr;
-                    } catch (e) {
-                      displayValue = `[Complex object: ${rawValue.constructor?.name || 'Object'}]`;
-                    }
-                  } else {
-                    displayValue = String(rawValue);
-                    if (displayValue.length > MAX_DISPLAY_SIZE) {
-                      displayValue = displayValue.substring(0, MAX_DISPLAY_SIZE - 3) + '...';
-                    }
-                  }
-                }
-                // Handle old structure: {field: value}
-                else if (typeof data === 'string') {
-                  displayValue = data.length > MAX_DISPLAY_SIZE 
-                    ? data.substring(0, MAX_DISPLAY_SIZE - 3) + '...'
-                    : data;
-                  displayName = key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
-                } else {
-                  // Fallback
-                  displayValue = String(data ?? 'Not provided');
-                  displayName = key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
-                }
-                
-                return (
-                  <div key={key} className="flex justify-between text-sm">
-                    <span className="font-medium capitalize text-zinc-300">{displayName}:</span>
-                    <span className="text-zinc-400">{displayValue}</span>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        )}
-        
         {/* Calculate Now Button */}
         {state.calculateOption && (
           <div className="flex justify-center">

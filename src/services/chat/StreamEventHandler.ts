@@ -212,6 +212,10 @@ export class StreamEventHandler {
     this.callbacks.setIsThinking?.(false);
     this.callbacks.setIsTyping?.(false);
     this.callbacks.setTypingContext?.(undefined);
+    // FIX: Explicitly set isStreaming to true when message starts
+    // This ensures input field is properly disabled during streaming
+    // and re-enabled after message_complete
+    this.callbacks.setIsStreaming(true);
     
     // CRITICAL FIX: Ensure message exists if message_start comes before chunks
     // Some backends might send message_start but frontend hasn't created message yet
@@ -570,6 +574,10 @@ export class StreamEventHandler {
       completeness: data.completeness
       // SECURITY: Don't log actual value - may contain PII/financial data
     });
+    
+    // FIX: Don't reset streaming/thinking states here - conversation should continue
+    // The backend will immediately stream the next question, which will reset states via message_start
+    // Resetting here would block the next question from appearing
     
     // CRITICAL FIX: Sanitize value to ensure it's always a string
     // Backend might send objects, which would render as "[object Object]"
