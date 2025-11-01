@@ -341,20 +341,63 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
   // CRITICAL FIX: Use functional state update to ensure we always get latest state
   // This prevents race conditions where state update is deferred but new render happens
   const addMessage = useCallback((message: Omit<Message, 'id' | 'timestamp'>) => {
-    // CRITICAL FIX: Check for duplicates before adding
-    // Prevent same message appearing multiple times (same content within 2 seconds)
+    // CRITICAL FIX: Enhanced duplicate prevention
+    // For AI messages: Prevent ANY duplicate content (no time limit) - questions shouldn't repeat
+    // For user messages: Check within 2 seconds to prevent rapid duplicates
     const now = Date.now();
+    const isAIMessage = message.type === 'ai';
+    
+    // CRITICAL FIX: For AI messages, check ALL messages for duplicate content (no time limit)
+    // This prevents the same question from appearing multiple times
+    if (isAIMessage && message.content) {
+      const existingAIMessage = messagesRef.current.find(m => 
+        m.type === 'ai' &&
+        m.content === message.content &&
+        m.content.trim().length > 0  // Only check non-empty messages
+      );
+      
+      if (existingAIMessage) {
+        chatLogger.warn('Duplicate AI message prevented (same question)', {
+          content: message.content.substring(0, 50),
+          existingId: existingAIMessage.id,
+          existingTimestamp: existingAIMessage.timestamp.toISOString()
+        });
+        return { updatedMessages: messagesRef.current, newMessage: existingAIMessage };
+      }
+    }
+    
+    // Check for recent duplicate (within 2 seconds) - applies to user messages or same-timestamp duplicates
     const recentDuplicate = messagesRef.current.find(m => 
       m.content === message.content && 
       m.type === message.type &&
       now - m.timestamp.getTime() < 2000
     );
     
+    // Also check for streaming message duplicates (empty content, same type, isStreaming)
+    if (!recentDuplicate && message.isStreaming) {
+      const streamingDuplicate = messagesRef.current.find(m => 
+        m.type === message.type &&
+        m.isStreaming &&
+        !m.isComplete &&
+        (m.content === message.content || (message.content === '' && m.content === ''))
+      );
+      
+      if (streamingDuplicate) {
+        chatLogger.warn('Duplicate streaming message prevented', {
+          type: message.type,
+          existingId: streamingDuplicate.id,
+          existingContent: streamingDuplicate.content.substring(0, 30)
+        });
+        return { updatedMessages: messagesRef.current, newMessage: streamingDuplicate };
+      }
+    }
+    
     if (recentDuplicate) {
-      chatLogger.warn('Duplicate message prevented', {
+      chatLogger.warn('Duplicate message prevented (recent)', {
         content: message.content.substring(0, 50),
         type: message.type,
-        existingId: recentDuplicate.id
+        existingId: recentDuplicate.id,
+        timeDiff: now - recentDuplicate.timestamp.getTime()
       });
       return { updatedMessages: messagesRef.current, newMessage: recentDuplicate };
     }
@@ -515,8 +558,16 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
     state.setIsTyping(true);
     state.setTypingContext(undefined); // Will be updated by backend events
     
-    // Start streaming conversation using Python session ID if available
+    // CRITICAL FIX: Use Python session ID if available, otherwise use client session ID
+    // Log session ID usage for debugging
     const effectiveSessionId = pythonSessionId || sessionId;
+    
+    chatLogger.info('Starting stream with session ID', {
+      clientSessionId: sessionId,
+      pythonSessionId,
+      effectiveSessionId,
+      usingPythonSession: !!pythonSessionId
+    });
     
     try {
       await streamingManager.startStreaming(
@@ -603,8 +654,15 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
       state.setIsTyping(false);
       state.setIsThinking(false);
     } finally {
-      // CRITICAL FIX: Release lock when done
+      // CRITICAL FIX: ALWAYS release lock when done (success or error)
+      // This ensures subsequent requests can proceed
+      const wasInProgress = isRequestInProgressRef.current;
       isRequestInProgressRef.current = false;
+      chatLogger.debug('Request lock released', { 
+        sessionId: effectiveSessionId,
+        wasInProgress,
+        isStreaming: state.isStreaming
+      });
     }
   }, [state.input, state.isStreaming, state.setIsStreaming, disabled, sessionId, pythonSessionId, userId, inputValidator, addMessage, updateStreamingMessage, onHtmlPreviewUpdate, trackConversationCompletion, streamingManager, eventHandler]);
   

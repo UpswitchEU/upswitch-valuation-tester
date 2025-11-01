@@ -221,7 +221,23 @@ export class StreamEventHandler {
    * Handle message start events
    */
   private handleMessageStart(_data: any): void {
-    chatLogger.info('📨 AI message start received - hiding thinking, preparing for chunks');
+    chatLogger.info('📨 AI message start received - hiding thinking, preparing for chunks', {
+      hasStartedMessage: this.hasStartedMessage,
+      hasLock: this.messageCreationLock
+    });
+    
+    // CRITICAL FIX: Prevent duplicate message creation if already started
+    if (this.hasStartedMessage) {
+      chatLogger.warn('Message start event received but message already started - ignoring duplicate', {
+        sessionId: this.sessionId
+      });
+      // Still update UI state
+      this.callbacks.setIsThinking?.(false);
+      this.callbacks.setIsTyping?.(false);
+      this.callbacks.setIsStreaming(true);
+      return;
+    }
+    
     // Mark that we've started a message
     this.hasStartedMessage = true;
     // Hide thinking state and typing indicator when message starts streaming

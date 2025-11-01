@@ -75,7 +75,14 @@ export class StreamingManager {
     // Request deduplication
     const requestId = `${sessionId}_${Date.now()}`;
     this.requestIdRef.current = requestId;
-
+    
+    chatLogger.info('Starting stream request', {
+      sessionId,
+      requestId,
+      userInput: userInput.substring(0, 30),
+      hasExistingRequest: !!this.requestIdRef.current
+    });
+    
     // Log session tracking
     console.log('[SESSION] Sending message with session:', sessionId);
     

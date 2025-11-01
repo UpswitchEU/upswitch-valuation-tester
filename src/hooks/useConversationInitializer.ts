@@ -204,6 +204,15 @@ export const useConversationInitializer = (
         // Python backend returns the session_id - use it
         const pythonSessionId = data.session_id;
         
+        // CRITICAL FIX: Validate session_id is present
+        if (!pythonSessionId) {
+          chatLogger.error('Missing session_id in /start response', {
+            clientSessionId: sessionId,
+            responseKeys: Object.keys(data)
+          });
+          throw new Error('Backend did not return session_id');
+        }
+        
         // Log session ID transition
         chatLogger.info('Received session ID from Python backend', {
           clientSessionId: sessionId,
