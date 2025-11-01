@@ -185,18 +185,11 @@ export class StreamEventHandler {
     this.callbacks.setIsTyping?.(true);
     this.callbacks.setIsThinking?.(true);
     
-    // CRITICAL FIX: If message hasn't started, create placeholder message
-    // This prevents "loading disappears" issue when message_start event is missing
-    if (!this.hasStartedMessage) {
-      chatLogger.debug('Creating placeholder message for typing indicator');
-      this.callbacks.addMessage({
-        type: 'assistant',
-        content: '',
-        isStreaming: true,
-        isComplete: false
-      });
-      this.hasStartedMessage = true; // Mark as started so chunks can update it
-    }
+    // CRITICAL FIX: Thread-safe message creation
+    // Prevents race conditions when multiple events arrive simultaneously
+    this.ensureMessageExists().catch(err => {
+      chatLogger.error('Failed to ensure message exists', { error: err });
+    });
   }
 
   /**
@@ -225,20 +218,14 @@ export class StreamEventHandler {
       content: data.content?.substring(0, 50)
     });
     
-    // CRITICAL FIX: If no message exists yet, create one
-    // This handles cases where message_start event was missed or backend doesn't send it
-    if (!this.hasStartedMessage) {
-      chatLogger.warn('Message chunk received but no message_start - creating message', {
-        contentPreview: data.content?.substring(0, 50)
-      });
-      this.callbacks.addMessage({
-        type: 'assistant',
-        content: '',
-        isStreaming: true,
-        isComplete: false
-      });
-      this.hasStartedMessage = true;
-      // Clear typing indicators since we're now streaming
+    // CRITICAL FIX: Thread-safe message creation
+    // Prevents duplicate messages when chunks arrive before message_start
+    this.ensureMessageExists().catch(err => {
+      chatLogger.error('Failed to ensure message exists for chunk', { error: err });
+    });
+    
+    // Clear typing indicators since we're now streaming
+    if (this.hasStartedMessage) {
       this.callbacks.setIsThinking?.(false);
       this.callbacks.setIsTyping?.(false);
     }
@@ -551,26 +538,56 @@ export class StreamEventHandler {
     
     // CRITICAL FIX: Sanitize value to ensure it's always a string
     // Backend might send objects, which would render as "[object Object]"
+    // MEMORY FIX: Limit JSON stringify size to prevent memory issues
+    const MAX_JSON_SIZE = 500; // Maximum characters for JSON string representation
+    
     let sanitizedValue = data.value;
     if (sanitizedValue !== null && sanitizedValue !== undefined) {
-      if (typeof sanitizedValue === 'object') {
+      // TYPE SAFETY: Explicit type checking
+      const valueType = typeof sanitizedValue;
+      
+      if (valueType === 'object') {
         // If value is an object, extract meaningful string representation
         if (Array.isArray(sanitizedValue)) {
           sanitizedValue = sanitizedValue.length > 0 ? String(sanitizedValue[0]) : 'Not provided';
-        } else if ('value' in sanitizedValue) {
+        } else if (sanitizedValue === null) {
+          sanitizedValue = 'Not provided';
+        } else if ('value' in sanitizedValue && sanitizedValue.value != null) {
           sanitizedValue = String(sanitizedValue.value);
-        } else if ('name' in sanitizedValue) {
+        } else if ('name' in sanitizedValue && sanitizedValue.name != null) {
           sanitizedValue = String(sanitizedValue.name);
         } else {
           // Convert object to JSON string as fallback
+          // MEMORY FIX: Limit size, handle circular references
           try {
-            sanitizedValue = JSON.stringify(sanitizedValue);
+            const jsonStr = JSON.stringify(sanitizedValue, (key, val) => {
+              // SECURITY: Don't stringify functions or undefined
+              if (typeof val === 'function' || val === undefined) {
+                return '[Function]';
+              }
+              return val;
+            }, 2);
+            
+            // Truncate if too large
+            if (jsonStr.length > MAX_JSON_SIZE) {
+              sanitizedValue = jsonStr.substring(0, MAX_JSON_SIZE - 3) + '...';
+            } else {
+              sanitizedValue = jsonStr;
+            }
+            
             chatLogger.warn('Data collected value was object, converted to JSON', {
               field: data.field,
-              originalValue: data.value
+              valueType: 'object',
+              jsonLength: sanitizedValue.length
+              // SECURITY: Don't log actual values
             });
           } catch (e) {
-            sanitizedValue = String(sanitizedValue);
+            // Handle circular references or other serialization errors
+            chatLogger.error('Failed to serialize data collected value', {
+              field: data.field,
+              error: e instanceof Error ? e.message : String(e)
+            });
+            sanitizedValue = `[Complex object: ${sanitizedValue.constructor?.name || 'Object'}]`;
           }
         }
       } else {
