@@ -129,12 +129,65 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
   // Create event handler with all callbacks
   const eventHandler = useMemo(() => new StreamEventHandler(sessionId, {
     updateStreamingMessage: (content: string, isComplete: boolean = false) => {
+      // CRITICAL FIX: Thread-safe message creation
+      // Prevents duplicate messages when updateStreamingMessage called before message_start
+      // RACE CONDITION FIX: Check both ref and state to avoid duplicates
       if (!state.refs.currentStreamingMessageRef.current?.id) {
-        chatLogger.warn('No current streaming message to update');
+        // Check if message already exists in state (race condition protection)
+        const existingMessage = state.messages.find(
+          msg => msg.type === 'ai' && msg.isStreaming && !msg.isComplete
+        );
+        
+        if (existingMessage) {
+          // Message exists in state but ref wasn't set - update ref
+          chatLogger.debug('Found existing streaming message in state, updating ref', {
+            messageId: existingMessage.id
+          });
+          state.refs.currentStreamingMessageRef.current = existingMessage;
+        } else {
+          // No message exists - create one (thread-safe fallback)
+          chatLogger.warn('No current streaming message - creating one as fallback', { 
+            contentLength: content.length 
+          });
+          const { updatedMessages, newMessage } = messageManager.addMessage(state.messages, {
+            type: 'ai',
+            content: content,
+            isStreaming: !isComplete,
+            isComplete: isComplete || false
+          });
+          state.setMessages(updatedMessages);
+          if (newMessage) {
+            state.refs.currentStreamingMessageRef.current = newMessage;
+          }
+        }
+        
+        // If we just created/set the message, update it with the content
+        if (state.refs.currentStreamingMessageRef.current?.id) {
+          const currentMessageId = state.refs.currentStreamingMessageRef.current.id;
+          const updatedMessages = messageManager.updateStreamingMessage(
+            state.messages,
+            currentMessageId,
+            content,
+            isComplete
+          );
+          state.setMessages(updatedMessages);
+          
+          if (isComplete && state.refs.currentStreamingMessageRef.current) {
+            chatLogger.debug('Completing streaming message', { messageId: currentMessageId });
+            complete();
+            onMessageComplete?.(state.refs.currentStreamingMessageRef.current);
+            state.refs.currentStreamingMessageRef.current = null;
+          }
+        }
         return;
       }
       
       const currentMessageId = state.refs.currentStreamingMessageRef.current.id;
+      chatLogger.debug('Updating streaming message', { 
+        messageId: currentMessageId, 
+        contentLength: content.length, 
+        isComplete 
+      });
       
       // Update the message content in state
       const updatedMessages = messageManager.updateStreamingMessage(
@@ -146,8 +199,10 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
       state.setMessages(updatedMessages);
       
       // Complete the message if needed
-      if (isComplete) {
+      if (isComplete && state.refs.currentStreamingMessageRef.current) {
+        chatLogger.debug('Completing streaming message', { messageId: currentMessageId });
         complete();
+        onMessageComplete?.(state.refs.currentStreamingMessageRef.current);
         state.refs.currentStreamingMessageRef.current = null;
       }
     },
