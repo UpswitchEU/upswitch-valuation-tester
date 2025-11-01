@@ -5,14 +5,14 @@
  * The main component is now ~300 lines instead of 1,817 lines.
  */
 
-import React, { useCallback, useMemo, useEffect, useState } from 'react';
 import { Bot, CheckCircle, Loader2 } from 'lucide-react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { AI_CONFIG } from '../config';
-import { SuggestionChips } from './SuggestionChips';
-import { TypingIndicator } from './TypingIndicator';
+import { useAuth } from '../hooks/useAuth';
 import { useTypingAnimation } from '../hooks/useTypingAnimation';
 import { chatLogger } from '../utils/logger';
-import { useAuth } from '../hooks/useAuth';
+import { SuggestionChips } from './SuggestionChips';
+import { TypingIndicator } from './TypingIndicator';
 // Note: Business extraction utilities available if needed
 // import { 
 //   extractBusinessModelFromInput, 
@@ -20,13 +20,13 @@ import { useAuth } from '../hooks/useAuth';
 // } from '../utils/businessExtractionUtils';
 
 // Import extracted modules
-import { useStreamingChatState, Message } from '../hooks/useStreamingChatState';
-import { StreamEventHandler } from '../services/chat/StreamEventHandler';
-import { InputValidator } from '../utils/validation/InputValidator';
 import { useConversationInitializer, UserProfile } from '../hooks/useConversationInitializer';
-import { StreamingManager } from '../services/chat/StreamingManager';
 import { useConversationMetrics } from '../hooks/useConversationMetrics';
+import { Message, useStreamingChatState } from '../hooks/useStreamingChatState';
+import { StreamEventHandler } from '../services/chat/StreamEventHandler';
+import { StreamingManager } from '../services/chat/StreamingManager';
 import { MessageManager } from '../utils/chat/MessageManager';
+import { InputValidator } from '../utils/validation/InputValidator';
 
 // Re-export types for convenience
 export interface StreamingChatProps {
@@ -287,9 +287,52 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
         extractBusinessModelFromInput: (_input: string) => null,
         extractFoundingYearFromInput: (_input: string) => null
       },
-      eventHandler.handleEvent.bind(eventHandler),
+      (event) => {
+        try {
+          // DEPLOYMENT VERIFICATION MARKER - If this appears in logs, code is deployed
+          chatLogger.info('🚀 [DEPLOYED] Event received in StreamingChat callback', { 
+            type: event?.type, 
+            hasContent: !!event?.content,
+            contentLength: event?.content?.length,
+            sessionId: event?.session_id || effectiveSessionId,
+            fullEvent: JSON.stringify(event).substring(0, 300)
+          });
+          
+          // CRITICAL FIX: Ensure eventHandler exists and handleEvent is callable
+          if (!eventHandler) {
+            chatLogger.error('❌ eventHandler is null/undefined', { sessionId: effectiveSessionId });
+            console.error('❌ eventHandler is null/undefined', { sessionId: effectiveSessionId });
+            return;
+          }
+          
+          if (typeof eventHandler.handleEvent !== 'function') {
+            chatLogger.error('❌ eventHandler.handleEvent is not a function', { 
+              sessionId: effectiveSessionId,
+              eventHandlerType: typeof eventHandler,
+              hasHandleEvent: 'handleEvent' in eventHandler
+            });
+            console.error('❌ eventHandler.handleEvent is not a function', { eventHandler });
+            return;
+          }
+          
+          chatLogger.info('🎯 About to call eventHandler.handleEvent', { 
+            type: event?.type,
+            sessionId: event?.session_id || effectiveSessionId
+          });
+          eventHandler.handleEvent(event);
+          chatLogger.debug('✅ eventHandler.handleEvent completed', { type: event?.type });
+        } catch (error) {
+          chatLogger.error('❌ Error in onEvent callback', { 
+            error: error instanceof Error ? error.message : String(error),
+            stack: error instanceof Error ? error.stack : undefined,
+            eventType: event?.type,
+            sessionId: event?.session_id || effectiveSessionId
+          });
+          console.error('❌ Error in onEvent callback:', error, { event });
+        }
+      },
       (error: Error) => {
-        chatLogger.error('Streaming error', { error: error.message, sessionId });
+        chatLogger.error('Streaming error', { error: error.message, sessionId: effectiveSessionId });
         state.setIsStreaming(false);
         state.setIsTyping(false); // Hide typing indicator on error
       }
@@ -466,12 +509,58 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
           <div className="bg-zinc-800/50 p-4 rounded-lg border border-zinc-700/50">
             <h3 className="font-semibold text-white mb-2">Collected Data</h3>
             <div className="space-y-2">
-              {Object.entries(state.collectedData).map(([key, value]) => (
-                <div key={key} className="flex justify-between text-sm">
-                  <span className="font-medium capitalize text-zinc-300">{key.replace(/_/g, ' ')}:</span>
-                  <span className="text-zinc-400">{String(value)}</span>
-                </div>
-              ))}
+              {Object.entries(state.collectedData).map(([key, data]: [string, any]) => {
+                // CRITICAL FIX: Handle correct state structure
+                // Structure is: {[field]: {field, value: string, display_name, ...}}
+                // OR old structure: {[field]: value}
+                const MAX_DISPLAY_SIZE = 200;
+                
+                let displayValue: string;
+                let displayName: string;
+                
+                // Handle new structure: {field: {field, value, display_name, ...}}
+                if (data && typeof data === 'object' && data.value !== undefined) {
+                  const rawValue = data.value;
+                  displayName = data.display_name || key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+                  
+                  if (rawValue == null) {
+                    displayValue = 'Not provided';
+                  } else if (typeof rawValue === 'object' && rawValue !== null) {
+                    // Object value - convert to JSON
+                    try {
+                      const jsonStr = JSON.stringify(rawValue, null, 0);
+                      displayValue = jsonStr.length > MAX_DISPLAY_SIZE 
+                        ? jsonStr.substring(0, MAX_DISPLAY_SIZE - 3) + '...'
+                        : jsonStr;
+                    } catch (e) {
+                      displayValue = `[Complex object: ${rawValue.constructor?.name || 'Object'}]`;
+                    }
+                  } else {
+                    displayValue = String(rawValue);
+                    if (displayValue.length > MAX_DISPLAY_SIZE) {
+                      displayValue = displayValue.substring(0, MAX_DISPLAY_SIZE - 3) + '...';
+                    }
+                  }
+                }
+                // Handle old structure: {field: value}
+                else if (typeof data === 'string') {
+                  displayValue = data.length > MAX_DISPLAY_SIZE 
+                    ? data.substring(0, MAX_DISPLAY_SIZE - 3) + '...'
+                    : data;
+                  displayName = key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+                } else {
+                  // Fallback
+                  displayValue = String(data ?? 'Not provided');
+                  displayName = key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+                }
+                
+                return (
+                  <div key={key} className="flex justify-between text-sm">
+                    <span className="font-medium capitalize text-zinc-300">{displayName}:</span>
+                    <span className="text-zinc-400">{displayValue}</span>
+                  </div>
+                );
+              })}
             </div>
           </div>
         )}

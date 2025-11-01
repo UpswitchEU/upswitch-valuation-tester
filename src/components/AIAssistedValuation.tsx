@@ -1,28 +1,28 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 // import { useNavigate } from 'react-router-dom';
-import { CheckCircle, Save, Building2 } from 'lucide-react';
-import { PANEL_CONSTRAINTS, MOBILE_BREAKPOINT } from '../constants/panelConstants';
-import { StreamingChat } from './StreamingChat';
+import { Building2, CheckCircle, Save } from 'lucide-react';
+import { MOBILE_BREAKPOINT, PANEL_CONSTRAINTS } from '../constants/panelConstants';
 import { LiveValuationReport } from './LiveValuationReport';
+import { StreamingChat } from './StreamingChat';
 // Progressive report component - now implemented
 import { ProgressiveValuationReport } from './ProgressiveValuationReport';
 // NEW: HTML Preview component (IlaraAI-style)
-import { HTMLPreviewPanel, type HTMLPreviewPanelRef } from './HTMLPreviewPanel';
+import { useAuth } from '../hooks/useAuth';
+import { api } from '../services/api';
+import { backendAPI } from '../services/backendApi';
+import { businessDataService, type BusinessProfileData } from '../services/businessDataService';
+import { DownloadService } from '../services/downloadService';
+import { guestCreditService } from '../services/guestCreditService';
+import type { ConversationContext, ValuationInputData, ValuationRequest, ValuationResponse } from '../types/valuation';
+import { chatLogger } from '../utils/logger';
 import { ErrorBoundary } from './ErrorBoundary';
-import { ValuationToolbar } from './ValuationToolbar';
-import { ValuationInfoPanel } from './ValuationInfoPanel';
 import { FullScreenModal } from './FullScreenModal';
+import { HTMLPreviewPanel, type HTMLPreviewPanelRef } from './HTMLPreviewPanel';
 import { OutOfCreditsModal } from './OutOfCreditsModal';
 import { ResizableDivider } from './ResizableDivider';
 import { ValuationEmptyState } from './ValuationEmptyState';
-import { businessDataService, type BusinessProfileData } from '../services/businessDataService';
-import { api } from '../services/api';
-import { backendAPI } from '../services/backendApi';
-import { useAuth } from '../hooks/useAuth';
-import { guestCreditService } from '../services/guestCreditService';
-import type { ValuationResponse, ValuationRequest, ConversationContext, ValuationInputData } from '../types/valuation';
-import { chatLogger } from '../utils/logger';
-import { DownloadService } from '../services/downloadService';
+import { ValuationInfoPanel } from './ValuationInfoPanel';
+import { ValuationToolbar } from './ValuationToolbar';
 
 
 type FlowStage = 'chat' | 'results' | 'blocked';
@@ -277,11 +277,34 @@ export const AIAssistedValuation: React.FC<AIAssistedValuationProps> = ({ report
   const handleDataCollected = useCallback((data: any) => {
     console.log('Data collected in AIAssistedValuation:', data);
     
-    // IMMEDIATE: Update UI optimistically
-    setCollectedData(prev => ({
-      ...prev,
-      ...data
-    }));
+    // CRITICAL FIX: Preserve sanitized structure from StreamEventHandler
+    // StreamEventHandler stores: {[field]: {field, value: string, ...}}
+    // We must preserve this structure, not overwrite it
+    setCollectedData(prev => {
+      // If data has a 'field' property, it's already in the correct structure
+      // from StreamEventHandler.handleDataCollected
+      if (data.field && typeof data.field === 'string') {
+        // Preserve the sanitized structure: {[field]: {field, value, ...}}
+        return {
+          ...prev,
+          [data.field]: {
+            ...data,
+            // Ensure value is always a string (defensive)
+            value: typeof data.value === 'string' ? data.value : String(data.value || 'Not provided')
+          }
+        };
+      } else {
+        // Fallback: data might be in wrong format, sanitize it
+        chatLogger.warn('Data collected in unexpected format', { 
+          hasField: !!data.field,
+          dataKeys: Object.keys(data)
+        });
+        return {
+          ...prev,
+          ...data
+        };
+      }
+    });
     
     // IMMEDIATE: Show placeholder valuation for key fields
     if (data.revenue && !isNaN(parseFloat(data.revenue))) {

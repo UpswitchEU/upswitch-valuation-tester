@@ -5,9 +5,9 @@
  * Centralizes all streaming logic including async generators, EventSource fallback, and retry mechanisms.
  */
 
-import { streamingChatService } from './streamingChatService';
-import { chatLogger } from '../../utils/logger';
 import { Message } from '../../hooks/useStreamingChatState';
+import { chatLogger } from '../../utils/logger';
+import { streamingChatService } from './streamingChatService';
 
 export interface StreamingManagerCallbacks {
   setIsStreaming: (streaming: boolean) => void;
@@ -223,7 +223,25 @@ export class StreamingManager {
           contentLength: event.content?.length,
           sessionId: event.session_id 
         });
-        onEvent(event);
+        
+        // DEFENSIVE LOGGING: Track callback execution
+        try {
+          chatLogger.debug('📤 Passing event to onEvent callback', { 
+            eventCount,
+            type: event.type,
+            callbackType: typeof onEvent
+          });
+          onEvent(event);
+          chatLogger.debug('✅ onEvent callback completed', { eventCount, type: event.type });
+        } catch (callbackError) {
+          chatLogger.error('❌ Error in onEvent callback', {
+            error: callbackError instanceof Error ? callbackError.message : String(callbackError),
+            stack: callbackError instanceof Error ? callbackError.stack : undefined,
+            eventType: event.type,
+            eventCount
+          });
+          throw callbackError;
+        }
       }
       
       clearTimeout(generatorTimeout);

@@ -123,7 +123,7 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
       if (!state.refs.currentStreamingMessageRef.current?.id) {
         // Check if message already exists in state (race condition protection)
         const existingMessage = state.messages.find(
-          msg => msg.type === 'assistant' && msg.isStreaming && !msg.isComplete
+          msg => msg.type === 'ai' && msg.isStreaming && !msg.isComplete
         );
         
         if (existingMessage) {
