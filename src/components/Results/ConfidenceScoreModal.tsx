@@ -20,8 +20,9 @@ export const ConfidenceScoreModal: React.FC<ConfidenceScoreModalProps> = ({
   const [showEducationalContent, setShowEducationalContent] = useState(false);
   
   // Detect data source: backend vs frontend fallback
-  const resultAny = result as any;
-  const isUsingBackendData = !!resultAny.transparency?.confidence_factors || !!resultAny.transparency?.confidence_breakdown;
+  // CRITICAL FIX: Backend returns confidence_breakdown, not confidence_factors
+  // Check for confidence_breakdown which is the correct property name
+  const isUsingBackendData = !!(result.transparency?.confidence_breakdown);
   const hasEstimatedFactors = !isUsingBackendData; // Frontend fallback uses some hardcoded estimates
   
   // Calculate confidence factors with memoization
@@ -31,10 +32,16 @@ export const ConfidenceScoreModal: React.FC<ConfidenceScoreModalProps> = ({
   );
   
   // Identify which factors are estimates (hardcoded in fallback)
+  // CRITICAL: Only mark factors as estimated if using frontend fallback
+  // Backend provides all factors from actual calculations
   const estimatedFactors = useMemo(() => {
-    if (isUsingBackendData) return new Set<string>();
-    // These are hardcoded in weightExplanation.ts fallback
-    return new Set(['market_conditions', 'geographic_data', 'business_model_clarity']);
+    if (isUsingBackendData) {
+      // Backend provides all factors - none are estimated
+      return new Set<string>();
+    }
+    // Frontend fallback uses hardcoded estimates for these factors
+    // (see weightExplanation.ts lines 116-118)
+    return new Set<string>(['market_conditions', 'geographic_data', 'business_model_clarity']);
   }, [isUsingBackendData]);
   
   // Calculate overall confidence with safe fallback
@@ -343,6 +350,9 @@ export const ConfidenceScoreModal: React.FC<ConfidenceScoreModalProps> = ({
         <button
           onClick={() => setShowEducationalContent(!showEducationalContent)}
           className="w-full flex items-center justify-between text-left p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
+          aria-expanded={showEducationalContent}
+          aria-controls="educational-content-section"
+          aria-label={showEducationalContent ? 'Hide educational content' : 'Show educational content about confidence score'}
         >
           <span className="font-semibold text-gray-900">Understanding Your Confidence Score</span>
           <svg 
@@ -356,7 +366,7 @@ export const ConfidenceScoreModal: React.FC<ConfidenceScoreModalProps> = ({
         </button>
         
         {showEducationalContent && (
-          <div className="mt-4 space-y-4 animate-fade-in">
+          <div id="educational-content-section" className="mt-4 space-y-4 animate-fade-in" role="region" aria-labelledby="educational-content-title">
             <div>
               <h5 className="font-semibold text-gray-900 mb-2">What is the Confidence Score?</h5>
               <p className="text-sm text-gray-700">

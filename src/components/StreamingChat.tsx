@@ -236,13 +236,24 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
     setValuationPreview: state.setValuationPreview,
     setCalculateOption: state.setCalculateOption,
     addMessage: (message: Omit<Message, 'id' | 'timestamp'>) => {
+      let result: { updatedMessages: Message[]; newMessage: Message } | null = null;
       // Use functional update to ensure latest state
       state.setMessages(prevMessages => {
-        const { updatedMessages } = messageManager.addMessage(prevMessages, message);
+        const addResult = messageManager.addMessage(prevMessages, message);
         // Update ref immediately for eventHandler access
-        messagesRef.current = updatedMessages;
-        return updatedMessages;
+        messagesRef.current = addResult.updatedMessages;
+        result = addResult;
+        return addResult.updatedMessages;
       });
+      // CRITICAL: Functional update is synchronous, so result should always be set
+      if (!result) {
+        chatLogger.error('addMessage: state.setMessages functional update failed to set result', {
+          messageType: message.type,
+          hasContent: !!message.content
+        });
+        throw new Error('addMessage: state.setMessages functional update failed to set result');
+      }
+      return result;
     },
     trackModelPerformance,
     trackConversationCompletion,
@@ -292,16 +303,29 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
   // CRITICAL FIX: Use functional state update to ensure we always get latest state
   // This prevents race conditions where state update is deferred but new render happens
   const addMessage = useCallback((message: Omit<Message, 'id' | 'timestamp'>) => {
+    let result: { updatedMessages: Message[]; newMessage: Message } | null = null;
     // Use functional update to ensure we always work with latest messages
     state.setMessages(prevMessages => {
-      const { updatedMessages } = messageManager.addMessage(prevMessages, message);
+      const addResult = messageManager.addMessage(prevMessages, message);
       // Update ref immediately for eventHandler access
-      messagesRef.current = updatedMessages;
-      return updatedMessages;
+      messagesRef.current = addResult.updatedMessages;
+      result = addResult;
+      return addResult.updatedMessages;
     });
+    // CRITICAL: Functional update is synchronous, so result should always be set
+    // Assert instead of fallback to catch any unexpected issues
+    if (!result) {
+      chatLogger.error('addMessage: state.setMessages functional update failed to set result', {
+        messageType: message.type,
+        hasContent: !!message.content
+      });
+      throw new Error('addMessage: state.setMessages functional update failed to set result');
+    }
+    return result;
   }, [state.setMessages, messageManager]);
   
   // Update streaming message helper
+  // CRITICAL FIX: Use functional state update to prevent stale state during rapid streaming
   const updateStreamingMessage = useCallback((content: string, isComplete: boolean = false) => {
     if (!state.refs.currentStreamingMessageRef.current?.id) {
       chatLogger.warn('No current streaming message to update');
@@ -309,20 +333,27 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
     }
     
     const currentMessageId = state.refs.currentStreamingMessageRef.current.id;
-    const updatedMessages = messageManager.updateStreamingMessage(
-      state.messages,
-      currentMessageId,
-      content,
-      isComplete
-    );
-    state.setMessages(updatedMessages);
+    
+    // CRITICAL FIX: Use functional update to ensure we always work with latest messages
+    // This prevents lost updates during rapid streaming chunks
+    state.setMessages(prevMessages => {
+      const updatedMessages = messageManager.updateStreamingMessage(
+        prevMessages,  // Always latest state
+        currentMessageId,
+        content,
+        isComplete
+      );
+      // Update ref immediately for eventHandler access
+      messagesRef.current = updatedMessages;
+      return updatedMessages;
+    });
     
     if (isComplete) {
       complete();
       onMessageComplete?.(state.refs.currentStreamingMessageRef.current);
       state.refs.currentStreamingMessageRef.current = null;
     }
-  }, [state.messages, state.setMessages, state.refs.currentStreamingMessageRef, messageManager, complete, onMessageComplete]);
+  }, [state.setMessages, state.refs.currentStreamingMessageRef, messageManager, complete, onMessageComplete]);
   
   // Request lock to prevent duplicate stream requests
   const isRequestInProgressRef = useRef(false);
@@ -342,12 +373,9 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
       return;
     }
     
-    // Set lock immediately to prevent race conditions
-    isRequestInProgressRef.current = true;
-    
     const userInput = state.input.trim();
     
-    // FIX: Validate BEFORE clearing input
+    // FIX: Validate BEFORE setting lock or clearing input
     const validation = await inputValidator.validateInput(userInput, state.messages, sessionId);
     if (!validation.is_valid) {
       chatLogger.warn('Input validation failed', { 
@@ -363,8 +391,11 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
         isComplete: true
       };
       addMessage(errorMessage);
-      return; // Exit early, input still visible
+      return; // Exit early, input still visible - lock not set yet
     }
+    
+    // Set lock immediately after validation passes to prevent race conditions
+    isRequestInProgressRef.current = true;
     
     // CRITICAL FIX: Set isStreaming BEFORE async call to prevent duplicate requests
     state.setIsStreaming(true);
@@ -439,12 +470,11 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
             return;
           }
           
-          chatLogger.info('🎯 About to call eventHandler.handleEvent', { 
-            type: event?.type,
-            sessionId: event?.session_id || effectiveSessionId
-          });
+          // Only log important events to reduce console spam during fast streaming
+          if (event?.type === 'error' || event?.type === 'message_complete' || event?.type === 'valuation_complete') {
+            chatLogger.debug('Event handler processing', { type: event?.type, sessionId: event?.session_id || effectiveSessionId });
+          }
           eventHandler.handleEvent(event);
-          chatLogger.debug('✅ eventHandler.handleEvent completed', { type: event?.type });
         } catch (error) {
           chatLogger.error('❌ Error in onEvent callback', { 
             error: error instanceof Error ? error.message : String(error),

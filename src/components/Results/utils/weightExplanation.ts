@@ -89,17 +89,29 @@ export const getWeightExplanation = (
  * These estimated factors are clearly labeled in the UI with "(Est.)" badges.
  */
 export const calculateConfidenceFactors = (result: ValuationResponse) => {
-  const resultAny = result as any;
-  
   // PRIORITY 1: Try to get from backend transparency data (preferred)
   // Backend uses weighted average calculation with actual market data
-  if (resultAny.transparency?.confidence_factors) {
-    return resultAny.transparency.confidence_factors;
+  // CRITICAL FIX: Backend returns confidence_breakdown (ConfidenceBreakdown object), not confidence_factors
+  if (result.transparency?.confidence_breakdown) {
+    const breakdown = result.transparency.confidence_breakdown;
+    // Return in the same format expected by frontend
+    return {
+      data_quality: breakdown.data_quality,
+      historical_data: breakdown.historical_data,
+      methodology_agreement: breakdown.methodology_agreement,
+      industry_benchmarks: breakdown.industry_benchmarks,
+      company_profile: breakdown.company_profile,
+      market_conditions: breakdown.market_conditions,
+      geographic_data: breakdown.geographic_data,
+      business_model_clarity: breakdown.business_model_clarity
+    };
   }
   
   // PRIORITY 2: Fallback - Calculate from available data (approximation)
   // Uses simple average instead of weighted average
   // Some factors use default estimates when data unavailable
+  // Type-safe access to historical data (not in main ValuationResponse type)
+  const resultAny = result as any;
   const historicalDataLength = resultAny.historical_years_data?.length || 0;
   const hasHistoricalData = historicalDataLength > 0;
   
@@ -147,9 +159,9 @@ const calculateDataQuality = (result: ValuationResponse): number => {
     factors++;
   }
   
-  // Historical data
-  const resultAny = result as any;
-  if (resultAny.historical_years_data && resultAny.historical_years_data.length > 0) {
+  // Historical data (accessed safely - not in main type definition)
+  const historicalData = (result as any).historical_years_data;
+  if (historicalData && Array.isArray(historicalData) && historicalData.length > 0) {
     score += 30;
     factors++;
   }
