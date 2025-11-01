@@ -5,29 +5,29 @@
  * The main component is now ~300 lines instead of 1,817 lines.
  */
 
-import React, { useCallback, useMemo, useEffect } from 'react';
-import { Loader2, Bot, CheckCircle } from 'lucide-react';
+import { Bot, CheckCircle, Loader2 } from 'lucide-react';
+import React, { useCallback, useEffect, useMemo } from 'react';
 import { AI_CONFIG } from '../config';
-import { LoadingDots } from './LoadingDots';
-import { SuggestionChips } from './SuggestionChips';
+import { useAuth } from '../hooks/useAuth';
 import { useLoadingMessage } from '../hooks/useLoadingMessage';
 import { useTypingAnimation } from '../hooks/useTypingAnimation';
-import { TypingCursor } from './TypingCursor';
-import { chatLogger } from '../utils/logger';
-import { useAuth } from '../hooks/useAuth';
-import { 
-  extractBusinessModelFromInput, 
-  extractFoundingYearFromInput 
+import {
+    extractBusinessModelFromInput,
+    extractFoundingYearFromInput
 } from '../utils/businessExtractionUtils';
+import { chatLogger } from '../utils/logger';
+import { LoadingDots } from './LoadingDots';
+import { SuggestionChips } from './SuggestionChips';
+import { TypingCursor } from './TypingCursor';
 
 // Import extracted modules
-import { useStreamingChatState, Message } from '../hooks/useStreamingChatState';
-import { StreamEventHandler } from '../services/chat/StreamEventHandler';
-import { InputValidator } from '../utils/validation/InputValidator';
 import { useConversationInitializer, UserProfile } from '../hooks/useConversationInitializer';
-import { StreamingManager } from '../services/chat/StreamingManager';
 import { useConversationMetrics } from '../hooks/useConversationMetrics';
+import { Message, useStreamingChatState } from '../hooks/useStreamingChatState';
+import { StreamEventHandler } from '../services/chat/StreamEventHandler';
+import { StreamingManager } from '../services/chat/StreamingManager';
 import { MessageManager } from '../utils/chat/MessageManager';
+import { InputValidator } from '../utils/validation/InputValidator';
 
 // Re-export types for convenience
 export interface StreamingChatProps {
@@ -117,8 +117,20 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
   // Create event handler with all callbacks
   const eventHandler = useMemo(() => new StreamEventHandler(sessionId, {
     updateStreamingMessage: (content: string, isComplete?: boolean) => {
+      // CRITICAL FIX: If no streaming message exists, create one
+      // This prevents crashes when chunks arrive before message_start
       if (!state.refs.currentStreamingMessageRef.current?.id) {
-        chatLogger.warn('No current streaming message to update');
+        chatLogger.warn('No current streaming message - creating one', { contentLength: content.length });
+        const { updatedMessages, newMessage } = messageManager.addMessage(state.messages, {
+          type: 'assistant',
+          content: content,
+          isStreaming: !isComplete,
+          isComplete: isComplete || false
+        });
+        state.setMessages(updatedMessages);
+        if (newMessage) {
+          state.refs.currentStreamingMessageRef.current = newMessage;
+        }
         return;
       }
       
@@ -546,13 +558,22 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
               Collected Data
             </h4>
             <div className="grid grid-cols-2 gap-2">
-              {Object.entries(state.collectedData).map(([field, data]: [string, any]) => (
-                <div key={field} className="flex items-center gap-2 text-xs data-collected-item">
-                  <span className="text-zinc-400">{data.icon}</span>
-                  <span className="text-zinc-300">{data.display_name}:</span>
-                  <span className="text-white font-medium">{data.value}</span>
-                </div>
-              ))}
+              {Object.entries(state.collectedData).map(([field, data]: [string, any]) => {
+                // Defensive: Ensure value is always a string to prevent "[object Object]" rendering
+                const displayValue = data?.value != null 
+                  ? (typeof data.value === 'object' 
+                      ? JSON.stringify(data.value) 
+                      : String(data.value))
+                  : 'Not provided';
+                
+                return (
+                  <div key={field} className="flex items-center gap-2 text-xs data-collected-item">
+                    <span className="text-zinc-400">{data?.icon || '📋'}</span>
+                    <span className="text-zinc-300">{data?.display_name || field}:</span>
+                    <span className="text-white font-medium">{displayValue}</span>
+                  </div>
+                );
+              })}
             </div>
           </div>
         </div>

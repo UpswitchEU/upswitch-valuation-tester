@@ -5,8 +5,8 @@
  * Centralizes all event handling logic in a single, testable class.
  */
 
-import { chatLogger } from '../../utils/logger';
 import { Message } from '../../hooks/useStreamingChatState';
+import { chatLogger } from '../../utils/logger';
 
 // Re-export types for convenience
 export interface ModelPerformanceMetrics {
@@ -65,12 +65,43 @@ export interface StreamEventHandlerCallbacks {
 export class StreamEventHandler {
   private sessionId: string;
   private hasStartedMessage: boolean = false;
+  private messageCreationLock: boolean = false; // CRITICAL FIX: Prevent race conditions
 
   constructor(
     sessionId: string,
     private callbacks: StreamEventHandlerCallbacks
   ) {
     this.sessionId = sessionId;
+  }
+  
+  /**
+   * Thread-safe message creation helper
+   * CRITICAL FIX: Prevents duplicate messages from concurrent event handlers
+   */
+  private async ensureMessageExists(): Promise<void> {
+    if (this.hasStartedMessage || this.messageCreationLock) {
+      return; // Message already exists or creation in progress
+    }
+    
+    // Acquire lock
+    this.messageCreationLock = true;
+    
+    try {
+      // Double-check after acquiring lock (race condition prevention)
+      if (!this.hasStartedMessage) {
+        chatLogger.debug('Creating placeholder message (thread-safe)');
+        this.callbacks.addMessage({
+          type: 'assistant',
+          content: '',
+          isStreaming: true,
+          isComplete: false
+        });
+        this.hasStartedMessage = true;
+      }
+    } finally {
+      // Always release lock, even on error
+      this.messageCreationLock = false;
+    }
   }
 
   /**
@@ -150,8 +181,22 @@ export class StreamEventHandler {
    */
   private handleTyping(_data: any): void {
     chatLogger.debug('AI typing indicator received');
-    // Show typing indicator
+    // Show typing indicator and thinking state
     this.callbacks.setIsTyping?.(true);
+    this.callbacks.setIsThinking?.(true);
+    
+    // CRITICAL FIX: If message hasn't started, create placeholder message
+    // This prevents "loading disappears" issue when message_start event is missing
+    if (!this.hasStartedMessage) {
+      chatLogger.debug('Creating placeholder message for typing indicator');
+      this.callbacks.addMessage({
+        type: 'assistant',
+        content: '',
+        isStreaming: true,
+        isComplete: false
+      });
+      this.hasStartedMessage = true; // Mark as started so chunks can update it
+    }
   }
 
   /**
@@ -165,14 +210,44 @@ export class StreamEventHandler {
     this.callbacks.setIsThinking?.(false);
     this.callbacks.setIsTyping?.(false);
     this.callbacks.setTypingContext?.(undefined);
+    
+    // CRITICAL FIX: Ensure message exists if message_start comes before chunks
+    // Some backends might send message_start but frontend hasn't created message yet
+    chatLogger.debug('Message start - ensuring message exists', { hasStarted: this.hasStartedMessage });
   }
 
   /**
    * Handle message chunk events
    */
   private handleMessageChunk(data: any): void {
-    chatLogger.debug('Message chunk received', { contentLength: data.content?.length });
-    this.callbacks.updateStreamingMessage(data.content);
+    chatLogger.debug('Message chunk received', { 
+      contentLength: data.content?.length,
+      content: data.content?.substring(0, 50)
+    });
+    
+    // CRITICAL FIX: If no message exists yet, create one
+    // This handles cases where message_start event was missed or backend doesn't send it
+    if (!this.hasStartedMessage) {
+      chatLogger.warn('Message chunk received but no message_start - creating message', {
+        contentPreview: data.content?.substring(0, 50)
+      });
+      this.callbacks.addMessage({
+        type: 'assistant',
+        content: '',
+        isStreaming: true,
+        isComplete: false
+      });
+      this.hasStartedMessage = true;
+      // Clear typing indicators since we're now streaming
+      this.callbacks.setIsThinking?.(false);
+      this.callbacks.setIsTyping?.(false);
+    }
+    
+    // Sanitize content to ensure it's a string
+    const content = data.content != null ? String(data.content) : '';
+    
+    // Update streaming message
+    this.callbacks.updateStreamingMessage(content);
   }
 
   /**
@@ -314,8 +389,22 @@ export class StreamEventHandler {
       hasValuationResult: !!data.metadata?.valuation_result 
     });
     
-    this.callbacks.updateStreamingMessage('', true);
+    // CRITICAL FIX: Ensure message exists before completing
+    if (!this.hasStartedMessage) {
+      chatLogger.warn('Message complete received but no message was started - creating final message');
+      this.callbacks.addMessage({
+        type: 'assistant',
+        content: data.content || data.message || '',
+        isComplete: true
+      });
+    } else {
+      this.callbacks.updateStreamingMessage('', true);
+    }
+    
     this.callbacks.setIsStreaming(false);
+    this.callbacks.setIsTyping?.(false);
+    this.callbacks.setIsThinking?.(false);
+    this.hasStartedMessage = false; // Reset for next message
     
     // Track model performance if metadata is available
     if (data.metadata) {
@@ -455,18 +544,56 @@ export class StreamEventHandler {
     console.log('Data collected:', {
       field: data.field,
       value: data.value,
+      valueType: typeof data.value,
       display_name: data.display_name,
       completeness: data.completeness
     });
     
-    // Update local state
+    // CRITICAL FIX: Sanitize value to ensure it's always a string
+    // Backend might send objects, which would render as "[object Object]"
+    let sanitizedValue = data.value;
+    if (sanitizedValue !== null && sanitizedValue !== undefined) {
+      if (typeof sanitizedValue === 'object') {
+        // If value is an object, extract meaningful string representation
+        if (Array.isArray(sanitizedValue)) {
+          sanitizedValue = sanitizedValue.length > 0 ? String(sanitizedValue[0]) : 'Not provided';
+        } else if ('value' in sanitizedValue) {
+          sanitizedValue = String(sanitizedValue.value);
+        } else if ('name' in sanitizedValue) {
+          sanitizedValue = String(sanitizedValue.name);
+        } else {
+          // Convert object to JSON string as fallback
+          try {
+            sanitizedValue = JSON.stringify(sanitizedValue);
+            chatLogger.warn('Data collected value was object, converted to JSON', {
+              field: data.field,
+              originalValue: data.value
+            });
+          } catch (e) {
+            sanitizedValue = String(sanitizedValue);
+          }
+        }
+      } else {
+        sanitizedValue = String(sanitizedValue);
+      }
+    } else {
+      sanitizedValue = 'Not provided';
+    }
+    
+    // Update local state with sanitized value
     this.callbacks.setCollectedData(prev => ({
       ...prev,
-      [data.field]: data
+      [data.field]: {
+        ...data,
+        value: sanitizedValue  // Ensure value is always a string
+      }
     }));
     
     // Notify parent component
-    this.callbacks.onDataCollected?.(data);
+    this.callbacks.onDataCollected?.({
+      ...data,
+      value: sanitizedValue
+    });
   }
 
   /**

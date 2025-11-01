@@ -9,12 +9,12 @@
  * - Updates automatically
  */
 
-import React, { useState, useEffect } from 'react';
-import { TrendingUp, Zap, Info, Loader2 } from 'lucide-react';
-import { useValuationStore } from '../store/useValuationStore';
+import { Info, Loader2, TrendingUp, Zap } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
 import { api } from '../services/api';
-import { serviceLogger } from '../utils/logger';
+import { useValuationStore } from '../store/useValuationStore';
 import type { QuickValuationRequest, QuickValuationResponse } from '../types/valuation';
+import { serviceLogger } from '../utils/logger';
 
 interface LivePreviewProps {
   valuationPreview?: any;
@@ -238,15 +238,24 @@ export const LivePreview: React.FC<LivePreviewProps> = ({
         <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-200 mb-4">
           <h4 className="text-sm font-medium text-gray-700 mb-3">Collected Information</h4>
           <div className="space-y-2">
-            {Object.entries(collectedData).map(([field, data]: [string, any]) => (
-              <div key={field} className="flex items-center justify-between text-xs data-collected-item">
-                <span className="text-gray-600 flex items-center gap-2">
-                  <span>{data.icon}</span>
-                  {data.display_name}
-                </span>
-                <span className="text-gray-900 font-medium">{data.value}</span>
-              </div>
-            ))}
+            {Object.entries(collectedData).map(([field, data]: [string, any]) => {
+              // Defensive: Ensure value is always a string
+              const displayValue = data?.value != null 
+                ? (typeof data.value === 'object' 
+                    ? JSON.stringify(data.value) 
+                    : String(data.value))
+                : 'Not provided';
+              
+              return (
+                <div key={field} className="flex items-center justify-between text-xs data-collected-item">
+                  <span className="text-gray-600 flex items-center gap-2">
+                    <span>{data?.icon || '📋'}</span>
+                    {data?.display_name || field}
+                  </span>
+                  <span className="text-gray-900 font-medium">{displayValue}</span>
+                </div>
+              );
+            })}
           </div>
         </div>
       )}
