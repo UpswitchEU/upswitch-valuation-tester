@@ -349,16 +349,22 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
     
     // CRITICAL FIX: For AI messages, check ALL messages for duplicate content (no time limit)
     // This prevents the same question from appearing multiple times
+    // Use normalized comparison (trim + lowercase) to catch variations
     if (isAIMessage && message.content) {
-      const existingAIMessage = messagesRef.current.find(m => 
-        m.type === 'ai' &&
-        m.content === message.content &&
-        m.content.trim().length > 0  // Only check non-empty messages
-      );
+      const normalizedContent = message.content.trim().toLowerCase();
+      const existingAIMessage = messagesRef.current.find(m => {
+        if (m.type !== 'ai' || !m.content || m.content.trim().length === 0) {
+          return false;
+        }
+        // Normalized comparison to catch minor variations (capitalization, whitespace)
+        const existingNormalized = m.content.trim().toLowerCase();
+        return existingNormalized === normalizedContent;
+      });
       
       if (existingAIMessage) {
-        chatLogger.warn('Duplicate AI message prevented (same question)', {
-          content: message.content.substring(0, 50),
+        chatLogger.warn('Duplicate AI message prevented (same question, normalized)', {
+          newContent: message.content.substring(0, 50),
+          existingContent: existingAIMessage.content.substring(0, 50),
           existingId: existingAIMessage.id,
           existingTimestamp: existingAIMessage.timestamp.toISOString()
         });
