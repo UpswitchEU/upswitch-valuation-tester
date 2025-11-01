@@ -309,6 +309,24 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
   // CRITICAL FIX: Use functional state update to ensure we always get latest state
   // This prevents race conditions where state update is deferred but new render happens
   const addMessage = useCallback((message: Omit<Message, 'id' | 'timestamp'>) => {
+    // CRITICAL FIX: Check for duplicates before adding
+    // Prevent same message appearing multiple times (same content within 2 seconds)
+    const now = Date.now();
+    const recentDuplicate = messagesRef.current.find(m => 
+      m.content === message.content && 
+      m.type === message.type &&
+      now - m.timestamp.getTime() < 2000
+    );
+    
+    if (recentDuplicate) {
+      chatLogger.warn('Duplicate message prevented', {
+        content: message.content.substring(0, 50),
+        type: message.type,
+        existingId: recentDuplicate.id
+      });
+      return { updatedMessages: messagesRef.current, newMessage: recentDuplicate };
+    }
+    
     let result: { updatedMessages: Message[]; newMessage: Message } | null = null;
     // Use functional update to ensure we always work with latest messages
     state.setMessages(prevMessages => {
@@ -373,13 +391,15 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
   const handleSubmit = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
     
-    // CRITICAL FIX: Check both state and ref to prevent duplicate requests
-    if (!state.input.trim() || state.isStreaming || disabled || isRequestInProgressRef.current) {
-      chatLogger.warn('Request blocked', { 
-        hasInput: !!state.input.trim(),
+    // CRITICAL FIX: Enhanced lock check with detailed logging
+    // Check both state and ref to prevent duplicate requests
+    if (isRequestInProgressRef.current || state.isStreaming || !state.input.trim() || disabled) {
+      chatLogger.warn('Request blocked by lock', { 
+        requestInProgress: isRequestInProgressRef.current,
         isStreaming: state.isStreaming,
+        hasInput: !!state.input.trim(),
         disabled,
-        requestInProgress: isRequestInProgressRef.current
+        inputPreview: state.input.trim().substring(0, 20)
       });
       return;
     }
