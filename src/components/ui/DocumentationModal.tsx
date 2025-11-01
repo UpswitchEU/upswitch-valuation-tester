@@ -35,21 +35,36 @@ export const DocumentationModal: React.FC<DocumentationModalProps> = ({
     if (isOpen) {
       // Store the previously focused element
       previousActiveElement.current = document.activeElement as HTMLElement;
+      
+      // Store original overflow and padding values to restore later
+      const originalOverflow = document.body.style.overflow;
+      const originalPaddingRight = document.body.style.paddingRight;
+      
+      // Calculate scrollbar width to prevent layout shift
+      const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth;
+      
+      // Prevent body scroll and compensate for scrollbar removal
       document.body.style.overflow = 'hidden';
+      if (scrollbarWidth > 0) {
+        document.body.style.paddingRight = `${scrollbarWidth}px`;
+      }
       
       // Focus the modal for accessibility
       setTimeout(() => {
         modalRef.current?.focus();
       }, 100);
+      
+      return () => {
+        // Restore original values
+        document.body.style.overflow = originalOverflow;
+        document.body.style.paddingRight = originalPaddingRight;
+        // Return focus to previous element
+        previousActiveElement.current?.focus();
+      };
     } else {
-      document.body.style.overflow = 'unset';
-      // Return focus to previous element
+      // Return focus to previous element when closing
       previousActiveElement.current?.focus();
     }
-    
-    return () => {
-      document.body.style.overflow = 'unset';
-    };
   }, [isOpen]);
 
   // Focus trap implementation
