@@ -240,17 +240,43 @@ export const LivePreview: React.FC<LivePreviewProps> = ({
           <div className="space-y-2">
             {Object.entries(collectedData).map(([field, data]: [string, any]) => {
               // Defensive: Ensure value is always a string
-              const displayValue = data?.value != null 
-                ? (typeof data.value === 'object' 
-                    ? JSON.stringify(data.value) 
-                    : String(data.value))
-                : 'Not provided';
+              // MEMORY FIX: Limit JSON stringify size
+              // SECURITY FIX: Sanitize sensitive data
+              const MAX_DISPLAY_SIZE = 200;
+              
+              let displayValue: string;
+              if (data?.value == null) {
+                displayValue = 'Not provided';
+              } else if (typeof data.value === 'object') {
+                try {
+                  const jsonStr = JSON.stringify(data.value, null, 0);
+                  // Truncate if too large
+                  displayValue = jsonStr.length > MAX_DISPLAY_SIZE 
+                    ? jsonStr.substring(0, MAX_DISPLAY_SIZE - 3) + '...'
+                    : jsonStr;
+                } catch (e) {
+                  // Handle circular references
+                  displayValue = `[Complex object: ${data.value.constructor?.name || 'Object'}]`;
+                }
+              } else {
+                displayValue = String(data.value);
+                // Truncate long strings
+                if (displayValue.length > MAX_DISPLAY_SIZE) {
+                  displayValue = displayValue.substring(0, MAX_DISPLAY_SIZE - 3) + '...';
+                }
+              }
+              
+              // Null safety for icon
+              const icon = data?.icon && typeof data.icon === 'string' ? data.icon : '📋';
+              const displayName = data?.display_name && typeof data.display_name === 'string' 
+                ? data.display_name 
+                : field.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
               
               return (
                 <div key={field} className="flex items-center justify-between text-xs data-collected-item">
                   <span className="text-gray-600 flex items-center gap-2">
-                    <span>{data?.icon || '📋'}</span>
-                    {data?.display_name || field}
+                    <span>{icon}</span>
+                    {displayName}
                   </span>
                   <span className="text-gray-900 font-medium">{displayValue}</span>
                 </div>

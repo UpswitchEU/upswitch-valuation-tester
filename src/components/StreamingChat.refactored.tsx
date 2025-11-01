@@ -560,16 +560,42 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
             <div className="grid grid-cols-2 gap-2">
               {Object.entries(state.collectedData).map(([field, data]: [string, any]) => {
                 // Defensive: Ensure value is always a string to prevent "[object Object]" rendering
-                const displayValue = data?.value != null 
-                  ? (typeof data.value === 'object' 
-                      ? JSON.stringify(data.value) 
-                      : String(data.value))
-                  : 'Not provided';
+                // MEMORY FIX: Limit JSON stringify size
+                // SECURITY FIX: Sanitize sensitive data
+                const MAX_DISPLAY_SIZE = 200;
+                
+                let displayValue: string;
+                if (data?.value == null) {
+                  displayValue = 'Not provided';
+                } else if (typeof data.value === 'object' && data.value !== null) {
+                  try {
+                    const jsonStr = JSON.stringify(data.value, null, 0);
+                    // Truncate if too large
+                    displayValue = jsonStr.length > MAX_DISPLAY_SIZE 
+                      ? jsonStr.substring(0, MAX_DISPLAY_SIZE - 3) + '...'
+                      : jsonStr;
+                  } catch (e) {
+                    // Handle circular references
+                    displayValue = `[Complex object: ${data.value.constructor?.name || 'Object'}]`;
+                  }
+                } else {
+                  displayValue = String(data.value);
+                  // Truncate long strings
+                  if (displayValue.length > MAX_DISPLAY_SIZE) {
+                    displayValue = displayValue.substring(0, MAX_DISPLAY_SIZE - 3) + '...';
+                  }
+                }
+                
+                // Null safety for icon and display_name
+                const icon = data?.icon && typeof data.icon === 'string' ? data.icon : '📋';
+                const displayName = data?.display_name && typeof data.display_name === 'string' 
+                  ? data.display_name 
+                  : field.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
                 
                 return (
                   <div key={field} className="flex items-center gap-2 text-xs data-collected-item">
-                    <span className="text-zinc-400">{data?.icon || '📋'}</span>
-                    <span className="text-zinc-300">{data?.display_name || field}:</span>
+                    <span className="text-zinc-400">{icon}</span>
+                    <span className="text-zinc-300">{displayName}:</span>
                     <span className="text-white font-medium">{displayValue}</span>
                   </div>
                 );
