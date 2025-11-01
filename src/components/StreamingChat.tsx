@@ -236,6 +236,24 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
     setValuationPreview: state.setValuationPreview,
     setCalculateOption: state.setCalculateOption,
     addMessage: (message: Omit<Message, 'id' | 'timestamp'>) => {
+      // CRITICAL FIX: Check for duplicates before adding
+      // Prevent same message appearing multiple times (same content within 2 seconds)
+      const now = Date.now();
+      const recentDuplicate = messagesRef.current.find(m => 
+        m.content === message.content && 
+        m.type === message.type &&
+        now - m.timestamp.getTime() < 2000
+      );
+      
+      if (recentDuplicate) {
+        chatLogger.warn('Duplicate message prevented (eventHandler)', {
+          content: message.content.substring(0, 50),
+          type: message.type,
+          existingId: recentDuplicate.id
+        });
+        return { updatedMessages: messagesRef.current, newMessage: recentDuplicate };
+      }
+      
       let result: { updatedMessages: Message[]; newMessage: Message } | null = null;
       // Use functional update to ensure latest state
       state.setMessages(prevMessages => {
