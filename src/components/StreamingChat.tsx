@@ -174,7 +174,7 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
           });
           // Use startTransition for non-urgent updates to prevent UI blocking
           startTransition(() => {
-            state.setMessages(updatedMessages);
+          state.setMessages(updatedMessages);
           });
           if (newMessage) {
             state.refs.currentStreamingMessageRef.current = newMessage;
@@ -192,7 +192,7 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
           );
           // Use startTransition for batched updates
           startTransition(() => {
-            state.setMessages(updatedMessages);
+          state.setMessages(updatedMessages);
           });
           
           if (isComplete && state.refs.currentStreamingMessageRef.current) {
@@ -221,7 +221,7 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
       );
       // Use startTransition to batch state updates and prevent UI blocking
       startTransition(() => {
-        state.setMessages(updatedMessages);
+      state.setMessages(updatedMessages);
       });
       
       // Complete the message if needed
@@ -381,35 +381,20 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
     
     // CRITICAL FIX: Enhanced deduplication - check for existing complete message before creating streaming message
     // This handles case where /start creates complete message, then /stream tries to create streaming message
+    // When creating an empty streaming message, check if there's a recent complete message we might be duplicating
+    // We don't block creation here (as backend might stream a NEW question), but we log for debugging
     if (isAIMessage && message.isStreaming && !message.content) {
-      // Check if there's a complete message with content that we're about to stream
-      // If found, reuse that message instead of creating a new one
-      const existingCompleteMessage = messagesRef.current.find(m => 
-        m.type === 'ai' && 
-        !m.isStreaming && 
-        m.isComplete &&
-        m.content && 
-        m.content.trim().length > 0
-      );
+      // Find the most recent complete AI message (likely from /start)
+      const mostRecentCompleteMessage = messagesRef.current
+        .filter(m => m.type === 'ai' && !m.isStreaming && m.isComplete && m.content && m.content.trim().length > 0)
+        .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime())[0];
       
-      if (existingCompleteMessage) {
-        chatLogger.warn('Found existing complete message when creating streaming message - converting to streaming', {
-          existingId: existingCompleteMessage.id,
-          existingContent: existingCompleteMessage.content.substring(0, 50),
-          existingIsComplete: existingCompleteMessage.isComplete
+      if (mostRecentCompleteMessage) {
+        chatLogger.debug('Creating streaming message - found existing complete message (will check for duplicates when chunks arrive)', {
+          existingId: mostRecentCompleteMessage.id,
+          existingContent: mostRecentCompleteMessage.content.substring(0, 50),
+          note: 'If backend streams same question, normalized deduplication in updateStreamingMessage will catch it'
         });
-        // Convert existing message to streaming state
-        const updatedMessages = messagesRef.current.map(m =>
-          m.id === existingCompleteMessage.id
-            ? { ...m, isStreaming: true, isComplete: false, content: '' } // Clear content, will be rebuilt from chunks
-            : m
-        );
-        messagesRef.current = updatedMessages;
-        // Update refs to point to this message
-        state.refs.currentStreamingMessageRef.current = { ...existingCompleteMessage, isStreaming: true, isComplete: false, content: '' };
-        // Trigger state update
-        state.setMessages(updatedMessages);
-        return { updatedMessages, newMessage: state.refs.currentStreamingMessageRef.current };
       }
     }
     
@@ -497,19 +482,19 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
           isComplete,
           totalMessages: currentMessages.length
         });
-        return;
+      return;
       }
     }
     
     // CRITICAL FIX: Use functional update to ensure we always work with latest messages
     // This prevents lost updates during rapid streaming chunks
     state.setMessages(prevMessages => {
-      const updatedMessages = messageManager.updateStreamingMessage(
+    const updatedMessages = messageManager.updateStreamingMessage(
         prevMessages,  // Always latest state
         currentMessageId!,
-        content,
-        isComplete
-      );
+      content,
+      isComplete
+    );
       // Update ref immediately for eventHandler access
       messagesRef.current = updatedMessages;
       
@@ -610,7 +595,7 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
     });
     
     try {
-      await streamingManager.startStreaming(
+    await streamingManager.startStreaming(
       effectiveSessionId,
       userInput,
       userId,
@@ -636,12 +621,12 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
           // DEPLOYMENT VERIFICATION MARKER - If this appears in logs, code is deployed
           // Reduced logging - only log important events to prevent console spam
           if (event?.type === 'error' || event?.type === 'valuation_complete') {
-            chatLogger.info('🚀 [DEPLOYED] Event received in StreamingChat callback', { 
-              type: event?.type, 
-              hasContent: !!event?.content,
-              contentLength: event?.content?.length,
+          chatLogger.info('🚀 [DEPLOYED] Event received in StreamingChat callback', { 
+            type: event?.type, 
+            hasContent: !!event?.content,
+            contentLength: event?.content?.length,
               sessionId: event?.session_id || effectiveSessionId
-            });
+          });
           } else {
             chatLogger.debug('Event received', { type: event?.type, sessionId: event?.session_id || effectiveSessionId });
           }
@@ -736,7 +721,7 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
   // Auto-scroll when messages change - debounced to prevent excessive scrolling
   useEffect(() => {
     const timeoutId = setTimeout(() => {
-      scrollToBottom();
+    scrollToBottom();
     }, 100); // Debounce scroll updates
     return () => clearTimeout(timeoutId);
   }, [state.messages.length, scrollToBottom]); // Only depend on length, not full array

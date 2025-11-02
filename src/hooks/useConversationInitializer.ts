@@ -255,11 +255,25 @@ export const useConversationInitializer = (
             has_profile_data: !!(callbacks.user?.company_name || callbacks.user?.business_type || callbacks.user?.industry)
           });
           
-          // CRITICAL FIX: Don't create message from /start endpoint
-          // The /stream endpoint will create the message when streaming starts
-          // This prevents duplicate messages (one from /start, one from /stream)
-          // Store session info in metadata for reference, but don't add to UI yet
-          chatLogger.debug('Skipping message creation from /start - will be created by /stream', {
+          // CRITICAL FIX: Create initial message from /start endpoint
+          // This displays the first question immediately when page loads
+          // Deduplication in addMessage will prevent duplicates when /stream starts
+          // (it will convert this complete message to streaming instead of creating a new one)
+          const message: Omit<Message, 'id' | 'timestamp'> = {
+            type: 'ai',
+            content: data.ai_message,
+            isComplete: true,
+            isStreaming: false,
+            metadata: {
+              collected_field: data.field_name,
+              help_text: data.help_text,
+              session_phase: 'data_collection',
+              conversation_turn: 1
+            }
+          };
+          callbacks.addMessage(message);
+          
+          chatLogger.debug('Initial message created from /start', {
             field: data.field_name,
             questionPreview: data.ai_message?.substring(0, 50)
           });
