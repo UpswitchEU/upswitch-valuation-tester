@@ -255,18 +255,14 @@ export const useConversationInitializer = (
             has_profile_data: !!(callbacks.user?.company_name || callbacks.user?.business_type || callbacks.user?.industry)
           });
           
-          const message: Omit<Message, 'id' | 'timestamp'> = {
-            type: 'ai',
-            content: data.ai_message,
-            isComplete: true,
-            metadata: {
-              collected_field: data.field_name,
-              help_text: data.help_text,
-              session_phase: 'data_collection',
-              conversation_turn: 1
-            }
-          };
-          callbacks.addMessage(message);
+          // CRITICAL FIX: Don't create message from /start endpoint
+          // The /stream endpoint will create the message when streaming starts
+          // This prevents duplicate messages (one from /start, one from /stream)
+          // Store session info in metadata for reference, but don't add to UI yet
+          chatLogger.debug('Skipping message creation from /start - will be created by /stream', {
+            field: data.field_name,
+            questionPreview: data.ai_message?.substring(0, 50)
+          });
         }
         
       } catch (error) {

@@ -67,6 +67,7 @@ export class StreamEventHandler {
   private sessionId: string;
   private hasStartedMessage: boolean = false;
   private messageCreationLock: boolean = false; // CRITICAL FIX: Prevent race conditions
+  private chunkBuffer: string[] = []; // CRITICAL FIX: Buffer chunks until message exists
 
   constructor(
     sessionId: string,
@@ -84,18 +85,32 @@ export class StreamEventHandler {
     chatLogger.info('🔄 Resetting StreamEventHandler state for new stream', {
       sessionId: this.sessionId,
       hadStartedMessage: this.hasStartedMessage,
-      hadLock: this.messageCreationLock
+      hadLock: this.messageCreationLock,
+      bufferedChunks: this.chunkBuffer.length
     });
     this.hasStartedMessage = false;
     this.messageCreationLock = false;
+    this.chunkBuffer = []; // CRITICAL FIX: Clear chunk buffer on reset
   }
   
   /**
    * Thread-safe message creation helper
    * CRITICAL FIX: Prevents duplicate messages from concurrent event handlers
+   * Also flushes buffered chunks once message is created
    */
   private async ensureMessageExists(): Promise<void> {
     if (this.hasStartedMessage || this.messageCreationLock) {
+      // Message exists or being created - flush any buffered chunks if message exists
+      if (this.hasStartedMessage && this.chunkBuffer.length > 0) {
+        const chunkCount = this.chunkBuffer.length;
+        const bufferedContent = this.chunkBuffer.join('');
+        this.chunkBuffer = [];
+        chatLogger.debug('Flushing buffered chunks after message exists', {
+          chunkCount,
+          contentLength: bufferedContent.length
+        });
+        this.callbacks.updateStreamingMessage(bufferedContent);
+      }
       return; // Message already exists or creation in progress
     }
     
@@ -105,7 +120,9 @@ export class StreamEventHandler {
     try {
       // Double-check after acquiring lock (race condition prevention)
       if (!this.hasStartedMessage) {
-        chatLogger.debug('Creating placeholder message (thread-safe)');
+        chatLogger.debug('Creating placeholder message (thread-safe)', {
+          bufferedChunks: this.chunkBuffer.length
+        });
         this.callbacks.addMessage({
           type: 'ai',  // FIX: Use correct type from Message type definition
           content: '',
@@ -113,6 +130,18 @@ export class StreamEventHandler {
           isComplete: false
         });
         this.hasStartedMessage = true;
+        
+        // CRITICAL FIX: Flush any buffered chunks now that message exists
+        if (this.chunkBuffer.length > 0) {
+          const chunkCount = this.chunkBuffer.length;
+          const bufferedContent = this.chunkBuffer.join('');
+          this.chunkBuffer = [];
+          chatLogger.debug('Flushing buffered chunks after message creation', {
+            chunkCount,
+            contentLength: bufferedContent.length
+          });
+          this.callbacks.updateStreamingMessage(bufferedContent);
+        }
       }
     } finally {
       // Always release lock, even on error
@@ -150,7 +179,11 @@ export class StreamEventHandler {
       case 'message_start':
         return this.handleMessageStart(data);
       case 'message_chunk':
-        return this.handleMessageChunk(data);
+        // CRITICAL FIX: handleMessageChunk is now async - handle promise
+        this.handleMessageChunk(data).catch(err => {
+          chatLogger.error('Error handling message chunk', { error: err });
+        });
+        return;
       case 'report_update':
         return this.handleReportUpdate(data);
       case 'section_loading':
@@ -259,26 +292,9 @@ export class StreamEventHandler {
 
   /**
    * Handle message chunk events
+   * CRITICAL FIX: Buffer chunks until message exists to prevent first chunk loss
    */
-  private handleMessageChunk(data: any): void {
-    chatLogger.info('📝 Message chunk received', { 
-      contentLength: data.content?.length,
-      content: data.content?.substring(0, 50),
-      hasStartedMessage: this.hasStartedMessage
-    });
-    
-    // CRITICAL FIX: Thread-safe message creation
-    // Prevents duplicate messages when chunks arrive before message_start
-    this.ensureMessageExists().catch(err => {
-      chatLogger.error('Failed to ensure message exists for chunk', { error: err });
-    });
-    
-    // Clear typing indicators since we're now streaming
-    if (this.hasStartedMessage) {
-      this.callbacks.setIsThinking?.(false);
-      this.callbacks.setIsTyping?.(false);
-    }
-    
+  private async handleMessageChunk(data: any): Promise<void> {
     // Sanitize content to ensure it's a string
     const content = data.content != null ? String(data.content) : '';
     
@@ -287,12 +303,38 @@ export class StreamEventHandler {
       return;
     }
     
+    chatLogger.info('📝 Message chunk received', { 
+      contentLength: content.length,
+      content: content.substring(0, 50),
+      hasStartedMessage: this.hasStartedMessage,
+      bufferedChunks: this.chunkBuffer.length
+    });
+    
+    // CRITICAL FIX: Ensure message exists BEFORE processing chunk
+    // This prevents first chunk loss when chunks arrive before message_start
+    await this.ensureMessageExists();
+    
+    // Clear typing indicators since we're now streaming
+    if (this.hasStartedMessage) {
+      this.callbacks.setIsThinking?.(false);
+      this.callbacks.setIsTyping?.(false);
+    }
+    
+    // If message doesn't exist yet (shouldn't happen after await, but defensive), buffer the chunk
+    if (!this.hasStartedMessage) {
+      chatLogger.warn('⚠️ Message not created yet after ensureMessageExists - buffering chunk', {
+        chunkContent: content.substring(0, 30)
+      });
+      this.chunkBuffer.push(content);
+      return;
+    }
+    
+    // Message exists - update it with the chunk
     chatLogger.info('✅ Updating streaming message with chunk', { 
       contentLength: content.length,
       contentPreview: content.substring(0, 100)
     });
     
-    // Update streaming message
     this.callbacks.updateStreamingMessage(content);
   }
 

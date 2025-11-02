@@ -379,6 +379,40 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
       now - m.timestamp.getTime() < 2000
     );
     
+    // CRITICAL FIX: Enhanced deduplication - check for existing complete message before creating streaming message
+    // This handles case where /start creates complete message, then /stream tries to create streaming message
+    if (isAIMessage && message.isStreaming && !message.content) {
+      // Check if there's a complete message with content that we're about to stream
+      // If found, reuse that message instead of creating a new one
+      const existingCompleteMessage = messagesRef.current.find(m => 
+        m.type === 'ai' && 
+        !m.isStreaming && 
+        m.isComplete &&
+        m.content && 
+        m.content.trim().length > 0
+      );
+      
+      if (existingCompleteMessage) {
+        chatLogger.warn('Found existing complete message when creating streaming message - converting to streaming', {
+          existingId: existingCompleteMessage.id,
+          existingContent: existingCompleteMessage.content.substring(0, 50),
+          existingIsComplete: existingCompleteMessage.isComplete
+        });
+        // Convert existing message to streaming state
+        const updatedMessages = messagesRef.current.map(m =>
+          m.id === existingCompleteMessage.id
+            ? { ...m, isStreaming: true, isComplete: false, content: '' } // Clear content, will be rebuilt from chunks
+            : m
+        );
+        messagesRef.current = updatedMessages;
+        // Update refs to point to this message
+        state.refs.currentStreamingMessageRef.current = { ...existingCompleteMessage, isStreaming: true, isComplete: false, content: '' };
+        // Trigger state update
+        state.setMessages(updatedMessages);
+        return { updatedMessages, newMessage: state.refs.currentStreamingMessageRef.current };
+      }
+    }
+    
     // Also check for streaming message duplicates (empty content, same type, isStreaming)
     if (!recentDuplicate && message.isStreaming) {
       const streamingDuplicate = messagesRef.current.find(m => 
