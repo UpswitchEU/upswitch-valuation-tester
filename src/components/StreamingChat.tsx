@@ -381,8 +381,7 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
     
     // CRITICAL FIX: Enhanced deduplication - check for existing complete message before creating streaming message
     // This handles case where /start creates complete message, then /stream tries to create streaming message
-    // When creating an empty streaming message, check if there's a recent complete message we might be duplicating
-    // We don't block creation here (as backend might stream a NEW question), but we log for debugging
+    // SOLUTION: Convert existing complete message to streaming instead of creating duplicate
     if (isAIMessage && message.isStreaming && !message.content) {
       // Find the most recent complete AI message (likely from /start)
       const mostRecentCompleteMessage = messagesRef.current
@@ -390,11 +389,39 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
         .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime())[0];
       
       if (mostRecentCompleteMessage) {
-        chatLogger.debug('Creating streaming message - found existing complete message (will check for duplicates when chunks arrive)', {
+        chatLogger.info('🔄 Found existing complete message - converting to streaming to prevent duplicate', {
           existingId: mostRecentCompleteMessage.id,
           existingContent: mostRecentCompleteMessage.content.substring(0, 50),
-          note: 'If backend streams same question, normalized deduplication in updateStreamingMessage will catch it'
+          timestamp: mostRecentCompleteMessage.timestamp.toISOString()
         });
+        
+        // CRITICAL FIX: Convert existing complete message to streaming instead of creating new
+        // Clear content so it can be rebuilt from chunks (prevents showing stale + streaming text)
+        const convertedMessage = {
+          ...mostRecentCompleteMessage,
+          isStreaming: true,
+          isComplete: false,
+          content: '' // Clear - will be rebuilt from streaming chunks
+        };
+        
+        const updatedMessages = messagesRef.current.map(m =>
+          m.id === mostRecentCompleteMessage.id ? convertedMessage : m
+        );
+        messagesRef.current = updatedMessages;
+        
+        // CRITICAL FIX: Update refs so StreamingManager and StreamEventHandler can find this message
+        state.refs.currentStreamingMessageRef.current = convertedMessage;
+        
+        // Trigger state update
+        state.setMessages(updatedMessages);
+        
+        chatLogger.debug('✅ Converted complete message to streaming', {
+          messageId: convertedMessage.id,
+          wasComplete: true,
+          nowStreaming: true
+        });
+        
+        return { updatedMessages, newMessage: convertedMessage };
       }
     }
     

@@ -132,12 +132,19 @@ export class StreamingManager {
     const { newMessage: aiMessage } = callbacks.addMessage(aiMessageData);
     
     if (!aiMessage) {
-      chatLogger.error('Failed to create AI message - this should not happen');
+      chatLogger.error('Failed to create/reuse AI message - this should not happen');
       callbacks.setIsStreaming(false);
       return;
     }
     
-    chatLogger.debug('AI message created for streaming', { messageId: aiMessage.id });
+    // CRITICAL FIX: Message could be newly created OR converted from existing complete message
+    // Either way, we need to track it for streaming updates
+    // (Conversion happens in addMessage callback - we just need to track the result)
+    chatLogger.debug('AI message ready for streaming', { 
+      messageId: aiMessage.id,
+      isStreaming: aiMessage.isStreaming,
+      note: 'Message may have been converted from existing complete message'
+    });
     this.currentStreamingMessageRef.current = aiMessage;
 
     // CRITICAL FIX: Create AbortController for this request
