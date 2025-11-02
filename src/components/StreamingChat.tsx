@@ -385,12 +385,21 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
     if (isAIMessage && message.isStreaming && !message.content) {
       // CRITICAL FIX: Only convert on FIRST submit (initial message scenario)
       // After first exchange, always create new messages to maintain conversation history
-      // Count: 1 initial AI message + 1 user response = 2 messages means conversation just started
-      const isInitialConversation = messagesRef.current.length <= 2;
+      // Count AI messages specifically - only convert if we have exactly 1 AI message (initial from /start)
+      const aiMessageCount = messagesRef.current.filter(m => m.type === 'ai').length;
+      const isInitialConversation = aiMessageCount === 1;
+      
+      chatLogger.info('🔍 Deduplication check', {
+        aiMessageCount,
+        totalMessages: messagesRef.current.length,
+        isInitialConversation,
+        decision: isInitialConversation ? 'CONVERT existing message' : 'CREATE new message bubble'
+      });
       
       if (!isInitialConversation) {
         chatLogger.debug('Conversation in progress - creating new message instead of converting', {
-          messageCount: messagesRef.current.length,
+          aiMessageCount,
+          totalMessages: messagesRef.current.length,
           note: 'After initial exchange, always create new message bubbles'
         });
         // Fall through to create new message - don't convert existing ones
@@ -404,8 +413,10 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
           chatLogger.info('🔄 Initial conversation - converting complete message to streaming', {
             existingId: mostRecentCompleteMessage.id,
             existingContent: mostRecentCompleteMessage.content.substring(0, 50),
-            messageCount: messagesRef.current.length,
-            timestamp: mostRecentCompleteMessage.timestamp.toISOString()
+            aiMessageCount,
+            totalMessages: messagesRef.current.length,
+            timestamp: mostRecentCompleteMessage.timestamp.toISOString(),
+            reason: 'Only 1 AI message exists - this is the transition from /start to /stream'
           });
           
           // CRITICAL FIX: Convert existing complete message to streaming instead of creating new
