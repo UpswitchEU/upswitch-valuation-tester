@@ -24,6 +24,13 @@ export class StreamingChatService {
     abortSignal?: AbortSignal
   ): AsyncGenerator<StreamEvent> {
     try {
+      console.log('[streamingChatService] streamConversation called', {
+        userMessage: userInput,
+        sessionId,
+        userId,
+        apiBaseUrl: this.baseURL
+      });
+      
       chatLogger.info('Starting streaming conversation', { 
         sessionId, 
         userInput: userInput.substring(0, 50) + '...', 
@@ -37,12 +44,16 @@ export class StreamingChatService {
         user_id: userId
       };
       
+      const url = `${this.baseURL}/api/v1/intelligent-conversation/stream`;
+      console.log('[streamingChatService] Preparing fetch request', { url });
+      console.log('[streamingChatService] Request body', requestBody);
+      
       chatLogger.debug('SSE request details', { 
-        url: `${this.baseURL}/api/v1/intelligent-conversation/stream`,
+        url,
         body: requestBody 
       });
       
-      const response = await fetch(`${this.baseURL}/api/v1/intelligent-conversation/stream`, {
+      const response = await fetch(url, {
         method: 'POST',
         credentials: 'include', // Send cookies automatically for auth
         headers: { 'Content-Type': 'application/json' },
@@ -50,6 +61,12 @@ export class StreamingChatService {
         signal: abortSignal // CRITICAL FIX: Support abort signal for cleanup
       });
 
+      console.log('[streamingChatService] Fetch response received', {
+        status: response.status,
+        statusText: response.statusText,
+        headers: Object.fromEntries(response.headers.entries())
+      });
+      
       chatLogger.info('SSE response received', { 
         status: response.status, 
         ok: response.ok,
@@ -58,12 +75,24 @@ export class StreamingChatService {
 
       if (!response.ok) {
         const errorText = await response.text();
+        console.error('[streamingChatService] HTTP error response', {
+          status: response.status,
+          statusText: response.statusText,
+          body: errorText
+        });
         chatLogger.error('SSE request failed', { status: response.status, errorText });
         throw new Error(`HTTP error! status: ${response.status}, body: ${errorText}`);
       }
 
-      const reader = response.body?.getReader();
+      if (!response.body) {
+        console.error('[streamingChatService] Response body is null');
+        throw new Error('Response body is null');
+      }
+
+      const reader = response.body.getReader();
       if (!reader) throw new Error('No response body');
+      
+      console.log('[streamingChatService] Starting to read response stream');
 
       const decoder = new TextDecoder();
       let buffer = '';
@@ -78,6 +107,7 @@ export class StreamingChatService {
         
         const { done, value } = await reader.read();
         if (done) {
+          console.log('[streamingChatService] Stream ended');
           chatLogger.info('SSE stream completed - reader done');
           break;
         }
@@ -108,10 +138,16 @@ export class StreamingChatService {
             if (jsonStr) {
               try {
                 const data = JSON.parse(jsonStr);
+                console.log('[streamingChatService] Received SSE data', { jsonStr: jsonStr.substring(0, 100) });
+                console.log('[streamingChatService] Parsed SSE event', { 
+                  type: data.type,
+                  event: data 
+                });
                 chatLogger.info('SSE event parsed successfully', { type: data.type, hasContent: !!data.content, contentLength: data.content?.length });
                 
                 // Handle error events
                 if (data.type === 'error') {
+                  console.error('[streamingChatService] Error event received', { message: data.message, sessionId: data.session_id });
                   chatLogger.error('SSE Error received', { message: data.message, sessionId: data.session_id });
                   yield data;
                   return; // Stop processing on error
@@ -138,7 +174,15 @@ export class StreamingChatService {
           }
         }
       }
+      
+      console.log('[streamingChatService] Stream reading completed');
     } catch (error) {
+      console.error('[streamingChatService] Error in streamConversation', {
+        error,
+        message: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined
+      });
+      
       // CRITICAL FIX: Don't yield error if aborted (expected behavior)
       if (error instanceof Error && error.name === 'AbortError') {
         chatLogger.info('SSE stream aborted (expected)', { sessionId });

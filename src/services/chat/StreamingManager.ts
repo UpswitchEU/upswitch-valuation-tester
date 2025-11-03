@@ -62,8 +62,19 @@ export class StreamingManager {
     onError: (error: Error) => void,
     attempt: number = 0
   ): Promise<void> {
+    console.log('[StreamingManager] startStreaming initiated', {
+      userMessage: userInput,
+      sessionId,
+      timestamp: new Date().toISOString()
+    });
+
+    // Check if request is already in progress
     if (!userInput.trim() || this.requestIdRef.current) {
       if (this.requestIdRef.current) {
+        console.warn('[StreamingManager] Request already in progress', {
+          existingRequestId: this.requestIdRef.current,
+          sessionId
+        });
         chatLogger.warn('Request already in progress', { 
           currentRequestId: this.requestIdRef.current,
           sessionId 
@@ -72,9 +83,11 @@ export class StreamingManager {
       return;
     }
 
-    // Request deduplication
+    // Request deduplication - Generate new request ID
     const requestId = `${sessionId}_${Date.now()}`;
     this.requestIdRef.current = requestId;
+    
+    console.log('[StreamingManager] Request ID assigned', { requestId });
     
     chatLogger.info('Starting stream request', {
       sessionId,
@@ -116,6 +129,7 @@ export class StreamingManager {
     // CRITICAL FIX: Reset event handler state before starting new stream
     // This ensures hasStartedMessage and messageCreationLock are reset for the new message
     callbacks.onStreamStart?.();
+    console.log('[StreamingManager] onStreamStart callback executed');
     
     callbacks.setIsStreaming(true);
 
@@ -129,7 +143,13 @@ export class StreamingManager {
       isStreaming: true,
       isComplete: false
     };
+    
+    console.log('[StreamingManager] Adding AI message placeholder');
     const { newMessage: aiMessage } = callbacks.addMessage(aiMessageData);
+    console.log('[StreamingManager] AI message placeholder added', { 
+      id: aiMessage?.id,
+      isStreaming: aiMessage?.isStreaming 
+    });
     
     if (!aiMessage) {
       chatLogger.error('Failed to create/reuse AI message - this should not happen');
@@ -151,16 +171,57 @@ export class StreamingManager {
     this.currentAbortController = new AbortController();
     const abortSignal = this.currentAbortController.signal;
     
+    console.log('[StreamingManager] About to call streamWithAsyncGenerator', {
+      sessionId,
+      userMessage: userInput.substring(0, 50),
+      messageId: aiMessage.id
+    });
+    
+    // Add timeout detection
+    const timeoutMs = 30000; // 30 seconds
+    const timeoutPromise = new Promise<void>((_, reject) => {
+      setTimeout(() => {
+        reject(new Error(`Stream timeout after ${timeoutMs}ms - no response from backend`));
+      }, timeoutMs);
+    });
+    
     try {
-      await this.streamWithAsyncGenerator(
-        sessionId,
-        userInput,
-        userId,
-        onEvent,
-        aiMessage,
-        abortSignal
-      );
+      await Promise.race([
+        this.streamWithAsyncGenerator(
+          sessionId,
+          userInput,
+          userId,
+          onEvent,
+          aiMessage,
+          abortSignal
+        ),
+        timeoutPromise
+      ]);
+      
+      console.log('[StreamingManager] Stream processing completed successfully');
     } catch (error) {
+      // Check if it's a timeout error
+      if (error instanceof Error && error.message.includes('Stream timeout')) {
+        console.error('[StreamingManager] Stream timeout', { error });
+        
+        // Show error to user
+        callbacks.setIsStreaming(false);
+        
+        // Add error message to chat
+        callbacks.addMessage({
+          type: 'ai',
+          content: '⚠️ Connection timeout. The server took too long to respond. Please try again.',
+          isComplete: true,
+          isStreaming: false
+        });
+        
+        throw error;
+      }
+      console.error('[StreamingManager] Error in streamWithAsyncGenerator', {
+        error,
+        message: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined
+      });
       chatLogger.error('Async generator error', { 
         error: error instanceof Error ? error.message : 'Unknown error',
         stack: error instanceof Error ? error.stack : undefined,
@@ -200,6 +261,7 @@ export class StreamingManager {
       // Clear request ID and abort controller to allow new requests
       this.requestIdRef.current = null;
       this.currentAbortController = null;
+      console.log('[StreamingManager] Request lock cleared', { requestId });
     }
   }
 

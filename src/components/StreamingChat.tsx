@@ -745,7 +745,15 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
         state.setIsThinking(false);
       }
     );
+    
+    console.log('[StreamingChat] startStreaming call completed');
     } catch (error) {
+      console.error('[StreamingChat] Streaming failed', {
+        error,
+        message: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined,
+        sessionId: effectiveSessionId
+      });
       chatLogger.error('Streaming failed', { 
         error: error instanceof Error ? error.message : String(error),
         sessionId: effectiveSessionId 
