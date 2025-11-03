@@ -114,11 +114,6 @@ export class StreamingManager {
     onError: (error: Error) => void,
     attempt: number = 0
   ): Promise<void> {
-    debugLogger.log('[StreamingManager]', 'startStreaming initiated', {
-      userMessage: userInput,
-      sessionId,
-      timestamp: new Date().toISOString()
-    });
 
     // Check if request is already in progress
     if (!userInput.trim() || this.requestIdRef.current) {
@@ -177,10 +172,6 @@ export class StreamingManager {
     this.currentAbortController = new AbortController();
     const abortSignal = this.currentAbortController.signal;
     
-    debugLogger.log('[StreamingManager]', 'About to call streamWithAsyncGenerator', {
-      sessionId,
-      userMessage: userInput.substring(0, 50)
-    });
     
     // Add timeout detection
     const timeoutMs = 30000; // 30 seconds
@@ -202,7 +193,6 @@ export class StreamingManager {
         timeoutPromise
       ]);
       
-      debugLogger.log('[StreamingManager]', 'Stream processing completed successfully');
     } catch (error) {
       // CRITICAL FIX: Release locks in catch block BEFORE any retry logic
       // This ensures lock is released even if error handling fails

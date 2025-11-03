@@ -105,10 +105,6 @@ export class StreamEventHandler {
         const chunkCount = this.chunkBuffer.length;
         const bufferedContent = this.chunkBuffer.join('');
         this.chunkBuffer = [];
-        chatLogger.debug('Flushing buffered chunks after message exists', {
-          chunkCount,
-          contentLength: bufferedContent.length
-        });
         this.callbacks.updateStreamingMessage(bufferedContent);
       }
       return; // Message already exists or creation in progress
@@ -136,10 +132,6 @@ export class StreamEventHandler {
           const chunkCount = this.chunkBuffer.length;
           const bufferedContent = this.chunkBuffer.join('');
           this.chunkBuffer = [];
-          chatLogger.debug('Flushing buffered chunks after message creation', {
-            chunkCount,
-            contentLength: bufferedContent.length
-          });
           this.callbacks.updateStreamingMessage(bufferedContent);
         }
       }
