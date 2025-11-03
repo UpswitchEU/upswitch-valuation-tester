@@ -386,11 +386,15 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
       // CRITICAL FIX: Only convert on FIRST submit (initial message scenario)
       // After first exchange, always create new messages to maintain conversation history
       // Count AI messages specifically - only convert if we have exactly 1 AI message (initial from /start)
+      // AND no user messages yet (VERY FIRST submit)
       const aiMessageCount = messagesRef.current.filter(m => m.type === 'ai').length;
-      const isInitialConversation = aiMessageCount === 1;
+      const userMessageCount = messagesRef.current.filter(m => m.type === 'user').length;
+      // CRITICAL FIX: Only allow conversion on the VERY FIRST submit (no user messages exist yet)
+      const isInitialConversation = aiMessageCount === 1 && userMessageCount === 0;
       
       chatLogger.info('🔍 Deduplication check', {
         aiMessageCount,
+        userMessageCount,
         totalMessages: messagesRef.current.length,
         isInitialConversation,
         decision: isInitialConversation ? 'CONVERT existing message' : 'CREATE new message bubble'
@@ -575,6 +579,17 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
   // Handle form submission
   const handleSubmit = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // CRITICAL DEBUG: Log ALL state BEFORE any checks to diagnose blocking
+    console.log('[DEBUG] handleSubmit ENTRY - Lock State Check', {
+      isRequestInProgress: isRequestInProgressRef.current,
+      isStreaming: state.isStreaming,
+      hasInput: !!state.input.trim(),
+      disabled,
+      inputValue: state.input.trim().substring(0, 30),
+      messageCount: messagesRef.current.length,
+      timestamp: new Date().toISOString()
+    });
     
     console.log('[StreamingChat] handleSubmit called', {
       input: state.input,
