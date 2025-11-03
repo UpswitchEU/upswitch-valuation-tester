@@ -576,9 +576,25 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
   const handleSubmit = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
     
+    console.log('[StreamingChat] handleSubmit called', {
+      input: state.input,
+      isStreaming: state.isStreaming,
+      sessionId,
+      pythonSessionId,
+      timestamp: new Date().toISOString()
+    });
+    
     // CRITICAL FIX: Enhanced lock check with detailed logging
     // Check both state and ref to prevent duplicate requests
     if (isRequestInProgressRef.current || state.isStreaming || !state.input.trim() || disabled) {
+      console.warn('[StreamingChat] Submit blocked', { 
+        reason: !state.input.trim() ? 'empty input' : isRequestInProgressRef.current ? 'request in progress' : state.isStreaming ? 'already streaming' : 'disabled',
+        requestInProgress: isRequestInProgressRef.current,
+        isStreaming: state.isStreaming,
+        hasInput: !!state.input.trim(),
+        disabled,
+        inputPreview: state.input.trim().substring(0, 20)
+      });
       chatLogger.warn('Request blocked by lock', { 
         requestInProgress: isRequestInProgressRef.current,
         isStreaming: state.isStreaming,
@@ -644,6 +660,13 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
       pythonSessionId,
       effectiveSessionId,
       usingPythonSession: !!pythonSessionId
+    });
+    
+    console.log('[StreamingChat] About to start streaming', {
+      userMessage: userInput,
+      sessionId: effectiveSessionId,
+      pythonSessionId,
+      clientSessionId: sessionId
     });
     
     try {
