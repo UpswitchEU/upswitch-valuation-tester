@@ -40,7 +40,7 @@ export interface StreamEventHandlerCallbacks {
   trackConversationCompletion: (success: boolean, hasValuation: boolean) => void;
   onValuationComplete?: (result: any) => void;
   onReportUpdate?: (html: string, progress: number) => void;
-  onSectionLoading?: (section: string, html: string, phase: number) => void;
+  onSectionLoading?: (section: string, html: string, phase: number, data?: any) => void;
   onSectionComplete?: (event: { sectionId: string; sectionName: string; html: string; progress: number; phase?: number }) => void;
   onReportSectionUpdate?: (section: string, html: string, phase: number, progress: number, is_fallback?: boolean, is_error?: boolean, error_message?: string) => void;
   onReportComplete?: (html: string, valuationId: string) => void;
@@ -319,9 +319,10 @@ export class StreamEventHandler {
     });
     
     this.callbacks.onSectionLoading?.(
-      data.section,
+      data.section || data.section_id,
       data.html,
-      data.phase
+      data.phase,
+      data
     );
   }
 
@@ -482,6 +483,8 @@ export class StreamEventHandler {
     
     this.callbacks.updateStreamingMessage('', true);
     this.callbacks.setIsStreaming(false);
+    this.callbacks.setIsThinking?.(false);
+    this.callbacks.setIsTyping?.(false);
     // CRITICAL FIX: Reset state for next message
     this.hasStartedMessage = false;
     this.messageCreationLock = false;

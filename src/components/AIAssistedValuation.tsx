@@ -422,15 +422,21 @@ export const AIAssistedValuation: React.FC<AIAssistedValuationProps> = ({ report
   const handleSectionLoading = useCallback((
     section: string | undefined | null,
     html: string | undefined | null,
-    phase: number | undefined | null
+    phase: number | undefined | null,
+    data?: any
   ) => {
-    // Validate required fields
-    const sectionId = section || 'unknown';
+    // Validate required fields - try multiple possible sources for section ID
+    const sectionId = section || data?.section_id || 'unknown';
     const sectionHtml = html || '';
     const sectionPhase = phase ?? 0;
     
     if (!sectionId || sectionId === 'unknown') {
-      chatLogger.warn('Section loading received with invalid section ID', { section, phase });
+      chatLogger.warn('Section loading received with invalid section ID', { 
+        section, 
+        section_id: data?.section_id,
+        phase,
+        dataKeys: data ? Object.keys(data) : []
+      });
       return;
     }
     

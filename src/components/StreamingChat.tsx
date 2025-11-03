@@ -41,7 +41,7 @@ export interface StreamingChatProps {
   onCalculateOptionAvailable?: (data: any) => void;
   onProgressUpdate?: (data: any) => void;
   onReportSectionUpdate?: (section: string, html: string, phase: number, progress: number, is_fallback?: boolean, is_error?: boolean, error_message?: string) => void;
-  onSectionLoading?: (section: string, html: string, phase: number) => void;
+  onSectionLoading?: (section: string, html: string, phase: number, data?: any) => void;
   onSectionComplete?: (event: { sectionId: string; sectionName: string; html: string; progress: number; phase?: number }) => void;
   onReportComplete?: (html: string, valuationId: string) => void;
   onContextUpdate?: (context: any) => void;
