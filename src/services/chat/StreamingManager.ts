@@ -139,17 +139,10 @@ export class StreamingManager {
     const requestId = `${sessionId}_${Date.now()}`;
     this.requestIdRef.current = requestId;
     
-    debugLogger.log('[StreamingManager]', 'Request ID assigned', { requestId });
-    
-    chatLogger.info('Starting stream request', {
+    chatLogger.info('Stream request', {
       sessionId,
-      requestId,
-      userInput: userInput.substring(0, 30),
-      hasExistingRequest: !!this.requestIdRef.current
+      userInput: userInput.substring(0, 30)
     });
-    
-    // Log session tracking
-    debugLogger.log('[SESSION]', 'Sending message with session', { sessionId });
     
     // Extract business information from user input
     const extractedBusinessModel = callbacks.extractBusinessModelFromInput(userInput);
@@ -168,20 +161,9 @@ export class StreamingManager {
       callbacks.onContextUpdate?.(contextUpdate);
     }
     
-    chatLogger.info('Starting streaming conversation', { 
-      userInput: userInput.substring(0, 50) + '...', 
-      sessionId, 
-      userId,
-      attempt,
-      maxRetries: 3,
-      extractedBusinessModel,
-      extractedFoundingYear
-    });
-    
     // CRITICAL FIX: Reset event handler state before starting new stream
     // This ensures hasStartedMessage and messageCreationLock are reset for the new message
     callbacks.onStreamStart?.();
-    debugLogger.log('[StreamingManager]', 'onStreamStart callback executed');
     
     callbacks.setIsStreaming(true);
 
@@ -317,10 +299,6 @@ export class StreamingManager {
     onEvent: (event: any) => void,
     abortSignal?: AbortSignal
   ): Promise<void> {
-    chatLogger.info('Starting async generator consumption', { 
-      sessionId, 
-      userInput: userInput.substring(0, 50) + '...' 
-    });
     
     let eventCount = 0;
     let generatorTimeout: NodeJS.Timeout;

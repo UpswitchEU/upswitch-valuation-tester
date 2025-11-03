@@ -428,7 +428,7 @@ export class StreamEventHandler {
    * Handle message complete events
    */
   private handleMessageComplete(data: any): void {
-    chatLogger.debug('Message complete received', { 
+    chatLogger.info('Message complete', { 
       hasMetadata: !!data.metadata, 
       hasValuationResult: !!data.metadata?.valuation_result 
     });

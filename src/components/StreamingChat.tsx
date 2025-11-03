@@ -559,20 +559,6 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
     // Log session ID usage for debugging
     const effectiveSessionId = pythonSessionId || sessionId;
     
-    chatLogger.info('Starting stream with session ID', {
-      clientSessionId: sessionId,
-      pythonSessionId,
-      effectiveSessionId,
-      usingPythonSession: !!pythonSessionId
-    });
-    
-    chatLogger.info('Starting stream request', {
-      userMessage: userInput.substring(0, 50),
-      sessionId: effectiveSessionId,
-      pythonSessionId: pythonSessionId,
-      clientSessionId: sessionId
-    });
-    
     try {
     await streamingManager.startStreaming(
       effectiveSessionId,
