@@ -168,7 +168,7 @@ const CustomNumberInputField: React.FC<CustomNumberInputFieldProps> = ({
           ref={inputRef}
           type="text"
           inputMode="numeric"
-          pattern="[0-9]*"
+          pattern="-?[0-9]*"
           placeholder={placeholder}
           className={`
             w-full h-14 px-4 pt-6 pb-2 text-base text-black bg-white 

@@ -159,7 +159,7 @@ const transformFinancialYear = (year: FinancialFilingYear): YearDataInput => {
   return {
     year: validYear,
     revenue: validRevenue,
-    ebitda: year.ebitda || 0,
+    ebitda: year.ebitda !== undefined && year.ebitda !== null ? year.ebitda : 0, // Preserve negative values
     cogs: year.cost_of_goods_sold,
     operating_expenses: year.operating_expenses,
     net_income: year.net_income,

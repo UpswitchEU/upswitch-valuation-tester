@@ -450,8 +450,13 @@ export const ValuationForm: React.FC = () => {
             <CustomNumberInputField
               label="EBITDA (Required)"
               placeholder="e.g., 500,000"
-              value={formData.ebitda || ''}
-              onChange={(e) => updateFormData({ ebitda: parseFloat(e.target.value.replace(/,/g, '')) || undefined })}
+              value={formData.ebitda !== undefined && formData.ebitda !== null ? formData.ebitda : ''}
+              onChange={(e) => {
+                const cleanedValue = e.target.value.replace(/,/g, '');
+                const numValue = parseFloat(cleanedValue);
+                // Preserve negative values: only set undefined if NaN, not if value is 0 or negative
+                updateFormData({ ebitda: isNaN(numValue) ? undefined : numValue });
+              }}
               onBlur={() => {}}
               name="ebitda"
               step={1000}

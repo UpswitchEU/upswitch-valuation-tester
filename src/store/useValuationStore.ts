@@ -1,7 +1,7 @@
 import { create } from 'zustand';
-import type { ValuationRequest, ValuationResponse, QuickValuationRequest, ValuationFormData, ValuationInputData } from '../types/valuation';
 import { api } from '../services/api';
 import { backendAPI } from '../services/backendApi';
+import type { QuickValuationRequest, ValuationFormData, ValuationInputData, ValuationRequest, ValuationResponse } from '../types/valuation';
 import { storeLogger } from '../utils/logger';
 // import { useReportsStore } from './useReportsStore'; // Deprecated: Now saving to database
 
@@ -144,11 +144,11 @@ export const useValuationStore = create<ValuationStore>((set, get) => ({
       if (!formData.industry) {
         throw new Error('Industry is required');
       }
-      if (!formData.revenue || !formData.ebitda) {
-        throw new Error('Revenue and EBITDA are required');
-      }
-      if (formData.revenue <= 0) {
+      if (!formData.revenue || formData.revenue <= 0) {
         throw new Error('Revenue must be greater than 0');
+      }
+      if (formData.ebitda === undefined || formData.ebitda === null) {
+        throw new Error('EBITDA is required');
       }
       
       // Ensure year values are within valid range (2000-2100)
@@ -164,7 +164,7 @@ export const useValuationStore = create<ValuationStore>((set, get) => ({
       const industry = formData.industry || 'services';
       const businessModel = formData.business_model || 'services';
       const revenue = Math.max(Number(formData.revenue) || 100000, 1); // Ensure positive revenue
-      const ebitda = Number(formData.ebitda) || 20000;
+      const ebitda = formData.ebitda !== undefined && formData.ebitda !== null ? Number(formData.ebitda) : 20000; // Preserve negative values
       
       // Capture input data for Info tab
       const inputData: ValuationInputData = {
@@ -199,12 +199,14 @@ export const useValuationStore = create<ValuationStore>((set, get) => ({
           ...(formData.current_year_data?.cash && formData.current_year_data.cash >= 0 && { cash: Number(formData.current_year_data.cash) }),
         },
         historical_years_data: formData.historical_years_data && formData.historical_years_data.length > 0 
-          ? formData.historical_years_data.map(year => ({
-              ...year,
-              year: Math.min(Math.max(Number(year.year), 2000), 2100),
-              revenue: Math.max(Number(year.revenue) || 0, 1), // Ensure positive revenue
-              ebitda: Number(year.ebitda) || 0,
-            }))
+          ? formData.historical_years_data
+              .filter(year => year.ebitda !== undefined && year.ebitda !== null) // Only include years with EBITDA values
+              .map(year => ({
+                ...year,
+                year: Math.min(Math.max(Number(year.year), 2000), 2100),
+                revenue: Math.max(Number(year.revenue) || 0, 1), // Ensure positive revenue
+                ebitda: Number(year.ebitda), // Preserve negative values (already filtered for undefined/null)
+              }))
           : (revenue > 0 && ebitda !== 0)
             ? [{
                 year: Math.min(currentYear - 1, 2100),

@@ -58,7 +58,7 @@ export const RegistryDataPreview: React.FC<RegistryDataPreviewProps> = ({
       current_year_data: {
         year: currentYear,
         revenue: editedData.revenue || 0,
-        ebitda: editedData.ebitda || 0,
+        ebitda: editedData.ebitda !== undefined && editedData.ebitda !== null ? editedData.ebitda : 0, // Preserve negative values
         net_income: editedData.net_income,
         total_assets: editedData.total_assets,
         total_debt: editedData.total_debt,
@@ -68,7 +68,7 @@ export const RegistryDataPreview: React.FC<RegistryDataPreviewProps> = ({
       historical_years_data: companyData.filing_history.slice(1).map(year => ({
         year: year.year,
         revenue: year.revenue || 0,
-        ebitda: year.ebitda || 0, // Required field, default to 0
+        ebitda: year.ebitda !== undefined && year.ebitda !== null ? year.ebitda : 0, // Preserve negative values
         net_income: year.net_income,
         total_assets: year.total_assets,
         total_debt: year.total_debt,
@@ -109,15 +109,17 @@ export const RegistryDataPreview: React.FC<RegistryDataPreviewProps> = ({
       current_year_data: {
         year: currentYear,
         revenue: editedData.revenue || 0,
-        ebitda: editedData.ebitda || 0,
+        ebitda: editedData.ebitda !== undefined && editedData.ebitda !== null ? editedData.ebitda : 0, // Preserve negative values
       },
       // Add historical data if available (only revenue & EBITDA like /manual)
       historical_years_data: companyData.filing_history.length > 1 
-        ? companyData.filing_history.slice(1).map(year => ({
-            year: year.year,
-            revenue: year.revenue || 0,
-            ebitda: year.ebitda || 0,
-          }))
+        ? companyData.filing_history.slice(1)
+            .filter(year => year.ebitda !== undefined && year.ebitda !== null) // Only include years with EBITDA values
+            .map(year => ({
+              year: year.year,
+              revenue: year.revenue || 0,
+              ebitda: year.ebitda!, // Preserve negative values (already filtered for undefined/null)
+            }))
         : undefined,
     });
     onCalculateValuation();
