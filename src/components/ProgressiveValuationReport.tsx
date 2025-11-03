@@ -4,6 +4,7 @@
  * Similar to Lovable.dev's real-time code generation
  */
 
+import { motion } from 'framer-motion';
 import { AlertCircle, AlertTriangle, CheckCircle, Clock, Loader2 } from 'lucide-react';
 import React from 'react';
 
@@ -37,19 +38,7 @@ export const ProgressiveValuationReport: React.FC<ProgressiveValuationReportProp
   // Use props directly instead of useState to prevent stale data
   const currentPhase = phase;
   const finalReport = finalHtml;
-  const overallProgress = sections.length > 0 
-    ? sections.reduce((sum, s) => sum + (s.progress || 0), 0) / sections.length 
-    : 0;
 
-  // Placeholder handlers for future progressive report implementation
-  // Commented out until backend supports progressive reporting
-  // const handleSectionUpdate = useCallback((_sectionId: string, _html: string, _phase: number, _progress: number) => {
-  //   console.log('Progressive report section update:', _sectionId, _phase, _progress);
-  // }, []);
-
-  // const handleReportComplete = useCallback((_html: string, _id: string) => {
-  //   console.log('Progressive report complete:', _id);
-  // }, []);
 
   // Get pending sections for current phase
   const getPendingSections = (phase: number): string[] => {
@@ -66,51 +55,32 @@ export const ProgressiveValuationReport: React.FC<ProgressiveValuationReportProp
     ) || [];
   };
 
-
-  // Get phase description
-  const getPhaseDescription = (phase: number): string => {
-    const descriptions: Record<number, string> = {
-      1: 'Quick Preview - Industry multiples estimate',
-      2: 'Intermediate Analysis - DCF and market multiples',
-      3: 'Advanced Analysis - Complete financial modeling',
-      4: 'Complete Valuation - Owner dependency analysis'
-    };
-    return descriptions[phase] || 'Unknown phase';
-  };
-
-  // Render loading placeholder for pending sections
-  const renderLoadingPlaceholder = (sectionId: string) => (
-    <div key={`placeholder-${sectionId}`} className="section-placeholder bg-gray-50 rounded-lg p-6 mb-4 border border-gray-200 relative overflow-hidden">
-      <div className="animate-pulse">
-        <div className="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
-        <div className="h-4 bg-gray-200 rounded w-1/2 mb-2"></div>
-        <div className="h-4 bg-gray-200 rounded w-2/3"></div>
-      </div>
-      <div className="text-center mt-4">
-        <div className="inline-flex items-center px-3 py-1 rounded-full text-sm bg-blue-100 text-blue-800">
-          <Loader2 className="animate-spin -ml-1 mr-2 h-4 w-4 text-blue-600" />
-          Generating {getSectionDisplayName(sectionId)}...
-        </div>
-      </div>
-    </div>
-  );
-
-  // Render shimmer loading effect for instant preview
+  // Render shimmer loading effect for pending sections - inspired by Ilara-mercury
   const renderShimmerPlaceholder = (sectionId: string) => (
-    <div key={`shimmer-${sectionId}`} className="section-shimmer bg-white rounded-lg p-6 mb-4 border border-gray-200 relative overflow-hidden">
-      <div className="shimmer-container">
-        <div className="shimmer-line w-3/4 h-4 bg-gray-200 rounded mb-2"></div>
-        <div className="shimmer-line w-1/2 h-4 bg-gray-200 rounded mb-2"></div>
-        <div className="shimmer-line w-2/3 h-4 bg-gray-200 rounded mb-2"></div>
-        <div className="shimmer-line w-1/3 h-4 bg-gray-200 rounded"></div>
+    <motion.div
+      key={`shimmer-${sectionId}`}
+      className="bg-white rounded-lg p-6 mb-4 border border-gray-200 relative overflow-hidden"
+      initial={{ opacity: 0, height: 0 }}
+      animate={{ opacity: 1, height: 'auto' }}
+      transition={{ duration: 0.3 }}
+    >
+      <div className="h-24 bg-gray-50 rounded overflow-hidden relative">
+        <motion.div
+          animate={{ opacity: [0.5, 1, 0.5] }}
+          transition={{ duration: 1.5, repeat: Infinity, ease: 'easeInOut' }}
+          className="absolute inset-0"
+          style={{
+            background: 'linear-gradient(90deg, #f7fafc 0%, #edf2f7 50%, #f7fafc 100%)',
+          }}
+        />
       </div>
       <div className="text-center mt-4">
-        <div className="inline-flex items-center px-3 py-1 rounded-full text-sm bg-gradient-to-r from-blue-100 to-indigo-100 text-blue-800">
-          <div className="w-4 h-4 bg-blue-200 rounded-full animate-pulse mr-2"></div>
-          <span>Preparing {getSectionDisplayName(sectionId)}...</span>
-        </div>
+        <span className="inline-flex items-center px-3 py-1 rounded-full text-sm bg-blue-50 text-blue-700">
+          <Loader2 className="w-3 h-3 mr-2 animate-spin text-blue-600" />
+          Preparing {getSectionDisplayName(sectionId)}...
+        </span>
       </div>
-    </div>
+    </motion.div>
   );
 
   // Render section status icon
@@ -262,35 +232,6 @@ export const ProgressiveValuationReport: React.FC<ProgressiveValuationReportProp
 
   return (
     <div className={`progressive-report ${className}`}>
-      {/* Progress indicator */}
-      <div className="report-progress bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
-        <div className="flex justify-between items-center mb-4">
-          <h2 className="text-xl font-semibold text-gray-900">Valuation Report</h2>
-          <div className="text-right">
-            <div className="text-sm text-gray-500">Progress</div>
-            <div className="text-lg font-bold text-blue-600">{overallProgress}%</div>
-          </div>
-        </div>
-        
-        <div className="w-full bg-gray-200 rounded-full h-3 mb-2">
-          <div 
-            className="bg-blue-600 h-3 rounded-full transition-all duration-500 ease-out"
-            style={{ width: `${overallProgress}%` }}
-          />
-        </div>
-        
-        <div className="flex justify-between text-sm text-gray-600">
-          <span>Phase {currentPhase}/4</span>
-          <span>{isGenerating ? 'Generating...' : 'Complete'}</span>
-        </div>
-        
-        {currentPhase > 0 && (
-          <div className="mt-3 text-sm text-gray-700">
-            {getPhaseDescription(currentPhase)}
-          </div>
-        )}
-      </div>
-
       {/* Render sections in order */}
       <div className="report-sections space-y-6">
         {sections
@@ -314,10 +255,9 @@ export const ProgressiveValuationReport: React.FC<ProgressiveValuationReportProp
       {/* Loading placeholders for pending phases */}
       {isGenerating && currentPhase < 4 && (
         <div className="pending-sections mt-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Upcoming Sections</h3>
           <div className="space-y-4">
             {getPendingSections(currentPhase + 1).map(section => 
-              currentPhase === 0 ? renderShimmerPlaceholder(section) : renderLoadingPlaceholder(section)
+              renderShimmerPlaceholder(section)
             )}
           </div>
         </div>

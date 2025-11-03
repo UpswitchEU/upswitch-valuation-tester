@@ -188,33 +188,8 @@ export class StreamingManager {
     // FIX: User message is already added in handleSubmit, no need to add it again here
     // This prevents duplicate user messages in the UI
 
-    // Create streaming AI message
-    const aiMessageData: Omit<Message, 'id' | 'timestamp'> = {
-      type: 'ai',
-      content: '',
-      isStreaming: true,
-      isComplete: false
-    };
-    
-    debugLogger.log('[StreamingManager]', 'Adding AI message placeholder');
-    const { newMessage: aiMessage } = callbacks.addMessage(aiMessageData);
-    debugLogger.log('[StreamingManager]', 'AI message placeholder added', { 
-      id: aiMessage?.id,
-      isStreaming: aiMessage?.isStreaming 
-    });
-    
-    if (!aiMessage) {
-      chatLogger.error('Failed to create/reuse AI message - this should not happen');
-      this.releaseLocks('Failed to create AI message', requestId);
-      return;
-    }
-    
-    // Track message for streaming updates
-    chatLogger.debug('AI message ready for streaming', { 
-      messageId: aiMessage.id,
-      isStreaming: aiMessage.isStreaming
-    });
-    this.currentStreamingMessageRef.current = aiMessage;
+    // Message creation is handled by StreamEventHandler.ensureMessageExists() when message_start event arrives
+    // This ensures single source of truth and prevents duplicate empty messages
 
     // CRITICAL FIX: Create AbortController for this request
     this.currentAbortController = new AbortController();
@@ -222,8 +197,7 @@ export class StreamingManager {
     
     debugLogger.log('[StreamingManager]', 'About to call streamWithAsyncGenerator', {
       sessionId,
-      userMessage: userInput.substring(0, 50),
-      messageId: aiMessage.id
+      userMessage: userInput.substring(0, 50)
     });
     
     // Add timeout detection
@@ -241,7 +215,6 @@ export class StreamingManager {
           userInput,
           userId,
           onEvent,
-          aiMessage,
           abortSignal
         ),
         timeoutPromise
@@ -286,7 +259,6 @@ export class StreamingManager {
         error: error instanceof Error ? error.message : 'Unknown error',
         stack: error instanceof Error ? error.stack : undefined,
         sessionId,
-        messageId: aiMessage.id,
         userInput: userInput.substring(0, 50) + '...',
         attempt,
         maxRetries: 3
@@ -343,7 +315,6 @@ export class StreamingManager {
     userInput: string,
     userId: string | undefined,
     onEvent: (event: any) => void,
-    aiMessage: Message,
     abortSignal?: AbortSignal
   ): Promise<void> {
     chatLogger.info('Starting async generator consumption', { 
@@ -408,8 +379,7 @@ export class StreamingManager {
       clearTimeout(generatorTimeout);
       chatLogger.info('Async generator completed', { 
         totalEvents: eventCount, 
-        sessionId,
-        messageId: aiMessage.id 
+        sessionId
       });
       
       // If no events were received, throw error to trigger fallback

@@ -260,7 +260,10 @@ export const AIAssistedValuation: React.FC<AIAssistedValuationProps> = ({ report
 
   // NEW: Handle data collection events with optimistic UI updates
   const handleDataCollected = useCallback((data: any) => {
-    console.log('Data collected in AIAssistedValuation:', data);
+    chatLogger.debug('Data collected in AIAssistedValuation', { 
+      field: data.field,
+      hasValue: !!data.value 
+    });
     
     // CRITICAL FIX: Preserve sanitized structure from StreamEventHandler
     // StreamEventHandler stores: {[field]: {field, value: string, ...}}

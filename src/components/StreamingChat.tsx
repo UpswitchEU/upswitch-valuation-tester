@@ -566,10 +566,10 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
       usingPythonSession: !!pythonSessionId
     });
     
-    console.log('[StreamingChat] About to start streaming', {
-      userMessage: userInput,
+    chatLogger.info('Starting stream request', {
+      userMessage: userInput.substring(0, 50),
       sessionId: effectiveSessionId,
-      pythonSessionId,
+      pythonSessionId: pythonSessionId,
       clientSessionId: sessionId
     });
     
@@ -612,18 +612,16 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
           
           // CRITICAL FIX: Ensure eventHandler exists and handleEvent is callable
           if (!eventHandler) {
-            chatLogger.error('❌ eventHandler is null/undefined', { sessionId: effectiveSessionId });
-            console.error('❌ eventHandler is null/undefined', { sessionId: effectiveSessionId });
+            chatLogger.error('Event handler is null/undefined', { sessionId: effectiveSessionId });
             return;
           }
           
           if (typeof eventHandler.handleEvent !== 'function') {
-            chatLogger.error('❌ eventHandler.handleEvent is not a function', { 
+            chatLogger.error('Event handler handleEvent is not a function', { 
               sessionId: effectiveSessionId,
               eventHandlerType: typeof eventHandler,
               hasHandleEvent: 'handleEvent' in eventHandler
             });
-            console.error('❌ eventHandler.handleEvent is not a function', { eventHandler });
             return;
           }
           
@@ -633,13 +631,12 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
           }
           eventHandler.handleEvent(event);
         } catch (error) {
-          chatLogger.error('❌ Error in onEvent callback', { 
+          chatLogger.error('Error in onEvent callback', { 
             error: error instanceof Error ? error.message : String(error),
             stack: error instanceof Error ? error.stack : undefined,
             eventType: event?.type,
             sessionId: event?.session_id || effectiveSessionId
           });
-          console.error('❌ Error in onEvent callback:', error, { event });
         }
       },
       (error: Error) => {
@@ -650,16 +647,11 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
       }
     );
     
-    console.log('[StreamingChat] startStreaming call completed');
+    chatLogger.debug('Stream request completed');
     } catch (error) {
-      console.error('[StreamingChat] Streaming failed', {
-        error,
-        message: error instanceof Error ? error.message : String(error),
-        stack: error instanceof Error ? error.stack : undefined,
-        sessionId: effectiveSessionId
-      });
       chatLogger.error('Streaming failed', { 
         error: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined,
         sessionId: effectiveSessionId 
       });
       state.setIsStreaming(false);
