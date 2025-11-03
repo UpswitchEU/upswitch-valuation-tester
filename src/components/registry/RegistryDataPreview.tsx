@@ -1,7 +1,7 @@
+import { Building2, Calculator, Calendar, Check, Edit2, ExternalLink, TrendingUp, X } from 'lucide-react';
 import React, { useState } from 'react';
-import { Building2, TrendingUp, Calendar, ExternalLink, Edit2, Check, X, Calculator } from 'lucide-react';
-import type { CompanyFinancialData, FinancialFilingYear } from '../../types/registry';
 import { useValuationStore } from '../../store/useValuationStore';
+import type { CompanyFinancialData, FinancialFilingYear } from '../../types/registry';
 
 interface RegistryDataPreviewProps {
   companyData: CompanyFinancialData;
