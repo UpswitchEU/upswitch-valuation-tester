@@ -49,7 +49,10 @@ export const ProgressiveValuationReport: React.FC<ProgressiveValuationReportProp
       4: ['owner_analysis']
     };
     
-    const completedSections = sections.map(s => s.id);
+    // Filter out sections with invalid IDs before mapping
+    const completedSections = sections
+      .filter(s => s.id && typeof s.id === 'string')
+      .map(s => s.id as string);
     return phaseSections[phase as keyof typeof phaseSections]?.filter(
       section => !completedSections.includes(section)
     ) || [];
@@ -195,7 +198,12 @@ export const ProgressiveValuationReport: React.FC<ProgressiveValuationReportProp
   };
 
   // Get section display name
-  const getSectionDisplayName = (sectionId: string) => {
+  const getSectionDisplayName = (sectionId: string | undefined | null): string => {
+    // Handle undefined/null sectionId
+    if (!sectionId || typeof sectionId !== 'string') {
+      return 'Unknown Section';
+    }
+    
     const sectionNames = {
       'instant': 'Instant Preview',
       'preview': 'Quick Preview',
@@ -235,6 +243,7 @@ export const ProgressiveValuationReport: React.FC<ProgressiveValuationReportProp
       {/* Render sections in order */}
       <div className="report-sections space-y-6">
         {sections
+          .filter(section => section.id && typeof section.id === 'string')
           .sort((a, b) => a.phase - b.phase || a.timestamp.getTime() - b.timestamp.getTime())
           .map(section => (
             <div key={section.id} className="report-section fade-in">

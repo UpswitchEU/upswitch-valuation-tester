@@ -420,15 +420,25 @@ export const AIAssistedValuation: React.FC<AIAssistedValuationProps> = ({ report
 
   // Handle section loading event type
   const handleSectionLoading = useCallback((
-    section: string,
-    html: string,
-    phase: number
+    section: string | undefined | null,
+    html: string | undefined | null,
+    phase: number | undefined | null
   ) => {
-    chatLogger.info('Section loading received', { section, phase, htmlLength: html.length });
+    // Validate required fields
+    const sectionId = section || 'unknown';
+    const sectionHtml = html || '';
+    const sectionPhase = phase ?? 0;
+    
+    if (!sectionId || sectionId === 'unknown') {
+      chatLogger.warn('Section loading received with invalid section ID', { section, phase });
+      return;
+    }
+    
+    chatLogger.info('Section loading received', { section: sectionId, phase: sectionPhase, htmlLength: sectionHtml.length });
     
     setReportSections(prevSections => {
       const existingIndex = prevSections.findIndex(
-        s => s.section === section && s.phase === phase
+        s => s.section === sectionId && s.phase === sectionPhase
       );
       
       if (existingIndex >= 0) {
@@ -436,17 +446,17 @@ export const AIAssistedValuation: React.FC<AIAssistedValuationProps> = ({ report
         const updated = [...prevSections];
         updated[existingIndex] = {
           ...updated[existingIndex],
-          html,
+          html: sectionHtml,
           status: 'loading'
         };
         return updated;
       } else {
         // Add new loading section
         return [...prevSections, {
-          id: section,
-          section,
-          phase,
-          html,
+          id: sectionId,
+          section: sectionId,
+          phase: sectionPhase,
+          html: sectionHtml,
           status: 'loading',
           timestamp: new Date()
         }];
@@ -456,23 +466,33 @@ export const AIAssistedValuation: React.FC<AIAssistedValuationProps> = ({ report
 
   // Handle section complete event type (new progressive report system)
   const handleSectionComplete = useCallback((event: {
-    sectionId: string;
-    sectionName: string;
-    html: string;
-    progress: number;
+    sectionId?: string;
+    sectionName?: string;
+    html?: string;
+    progress?: number;
     phase?: number;
   }) => {
+    // Validate required fields
+    const sectionId = event.sectionId || event.sectionName || 'unknown';
+    const html = event.html || '';
+    const progress = event.progress || 0;
+    
+    if (!sectionId || sectionId === 'unknown') {
+      chatLogger.warn('Section complete received with invalid sectionId', { event });
+      return;
+    }
+    
     chatLogger.info('✅ Section complete received', {
-      sectionId: event.sectionId,
+      sectionId,
       sectionName: event.sectionName,
-      progress: event.progress,
-      htmlLength: event.html.length
+      progress,
+      htmlLength: html.length
     });
     
     // Update report sections with completed section
     setReportSections(prevSections => {
       const existingIndex = prevSections.findIndex(
-        s => s.id === event.sectionId || s.section === event.sectionId
+        s => s.id === sectionId || s.section === sectionId
       );
       
       if (existingIndex >= 0) {
@@ -480,7 +500,7 @@ export const AIAssistedValuation: React.FC<AIAssistedValuationProps> = ({ report
         const updated = [...prevSections];
         updated[existingIndex] = {
           ...updated[existingIndex],
-          html: event.html,
+          html,
           status: 'complete',
           timestamp: new Date()
         };
@@ -488,10 +508,10 @@ export const AIAssistedValuation: React.FC<AIAssistedValuationProps> = ({ report
       } else {
         // Add new complete section
         return [...prevSections, {
-          id: event.sectionId,
-          section: event.sectionId,
+          id: sectionId,
+          section: sectionId,
           phase: event.phase || 0,
-          html: event.html,
+          html,
           status: 'complete',
           timestamp: new Date()
         }];
