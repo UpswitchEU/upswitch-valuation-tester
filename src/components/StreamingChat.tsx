@@ -187,6 +187,12 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
           currentMessageId = existingMessage.id;
         } else {
           // No message exists - create one (thread-safe fallback)
+          // BUT: Don't create empty message if isComplete is true and content is empty
+          if (!content && isComplete) {
+            chatLogger.debug('Skipping empty message creation for completed message');
+            return;
+          }
+          
           chatLogger.warn('No current streaming message - creating one as fallback', { 
             contentLength: content.length 
           });

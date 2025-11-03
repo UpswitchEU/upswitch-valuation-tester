@@ -478,10 +478,22 @@ export class StreamEventHandler {
   private handleValuationComplete(data: any): void {
     chatLogger.info('Valuation complete event received', { 
       hasResult: !!data.result,
-      sessionId: data.session_id 
+      sessionId: data.session_id,
+      hasContent: !!data.content,
+      contentPreview: data.content?.substring(0, 50)
     });
     
-    this.callbacks.updateStreamingMessage('', true);
+    // Extract content from event (backend sends completion message)
+    const completionMessage = data.content || data.message || '';
+    
+    // Only update/create message if we have content to show
+    if (completionMessage) {
+      this.callbacks.updateStreamingMessage(completionMessage, true);
+    } else {
+      // No content - just clear state without creating empty message
+      chatLogger.debug('Valuation complete with no message content - skipping message creation');
+    }
+    
     this.callbacks.setIsStreaming(false);
     this.callbacks.setIsThinking?.(false);
     this.callbacks.setIsTyping?.(false);
