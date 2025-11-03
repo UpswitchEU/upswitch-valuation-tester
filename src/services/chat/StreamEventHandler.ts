@@ -102,7 +102,6 @@ export class StreamEventHandler {
     if (this.hasStartedMessage || this.messageCreationLock) {
       // Message exists or being created - flush any buffered chunks if message exists
       if (this.hasStartedMessage && this.chunkBuffer.length > 0) {
-        const chunkCount = this.chunkBuffer.length;
         const bufferedContent = this.chunkBuffer.join('');
         this.chunkBuffer = [];
         this.callbacks.updateStreamingMessage(bufferedContent);
@@ -129,7 +128,6 @@ export class StreamEventHandler {
         
         // CRITICAL FIX: Flush any buffered chunks now that message exists
         if (this.chunkBuffer.length > 0) {
-          const chunkCount = this.chunkBuffer.length;
           const bufferedContent = this.chunkBuffer.join('');
           this.chunkBuffer = [];
           this.callbacks.updateStreamingMessage(bufferedContent);
