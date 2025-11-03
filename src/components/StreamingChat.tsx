@@ -650,16 +650,185 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
   }, []);
   
   // Handle clarification confirmation
-  const handleClarificationConfirm = useCallback((messageId: string) => {
-    // Handle clarification confirmation
+  const handleClarificationConfirm = useCallback(async (messageId: string) => {
     chatLogger.info('Clarification confirmed', { messageId, sessionId });
-  }, [sessionId]);
+    
+    // Find the clarification message to get field and value
+    const message = state.messages.find(m => m.id === messageId);
+    if (!message?.metadata?.clarification_field || message.metadata.clarification_value === undefined) {
+      chatLogger.warn('Cannot confirm clarification: missing metadata', { messageId });
+      return;
+    }
+    
+    const clarificationField = message.metadata.clarification_field;
+    const clarificationValue = message.metadata.clarification_value;
+    const effectiveSessionId = pythonSessionId || sessionId;
+    
+    // Convert value to string for backend (preserve numeric values)
+    const valueToSend = clarificationValue !== null && clarificationValue !== undefined 
+      ? String(clarificationValue) 
+      : '';
+    
+    if (!valueToSend) {
+      chatLogger.warn('Cannot confirm clarification: empty value', { messageId, clarificationField });
+      return;
+    }
+    
+    chatLogger.info('Sending clarification confirmation to backend', {
+      messageId,
+      field: clarificationField,
+      value: valueToSend,
+      sessionId: effectiveSessionId
+    });
+    
+    // Send the confirmed value to backend
+    try {
+      state.setIsStreaming(true);
+      state.setIsTyping(true);
+      
+      await streamingManager.startStreaming(
+        effectiveSessionId,
+        valueToSend, // Send the confirmed value back
+        userId,
+        {
+          setIsStreaming: state.setIsStreaming,
+          addMessage,
+          updateStreamingMessage,
+          onContextUpdate: (context: any) => {
+            onHtmlPreviewUpdate?.(context.html || '', context.preview_type || 'progressive');
+          },
+          extractBusinessModelFromInput: (_input: string) => null,
+          extractFoundingYearFromInput: (_input: string) => null,
+          onStreamStart: () => {
+            eventHandler.reset();
+            chatLogger.debug('Stream start - reset event handler state');
+          }
+        },
+        (event) => {
+          try {
+            if (!eventHandler) {
+              chatLogger.error('Event handler is null/undefined', { sessionId: effectiveSessionId });
+              return;
+            }
+            
+            if (typeof eventHandler.handleEvent !== 'function') {
+              chatLogger.error('Event handler handleEvent is not a function', { 
+                sessionId: effectiveSessionId,
+                eventHandlerType: typeof eventHandler
+              });
+              return;
+            }
+            
+            eventHandler.handleEvent(event);
+          } catch (error) {
+            chatLogger.error('Error in onEvent callback', { 
+              error: error instanceof Error ? error.message : String(error),
+              eventType: event?.type,
+              sessionId: event?.session_id || effectiveSessionId
+            });
+          }
+        },
+        (error: Error) => {
+          chatLogger.error('Streaming error during confirmation', { error: error.message, sessionId: effectiveSessionId });
+          state.setIsStreaming(false);
+          state.setIsTyping(false);
+        }
+      );
+    } catch (error) {
+      chatLogger.error('Failed to send clarification confirmation', { 
+        error: error instanceof Error ? error.message : String(error),
+        messageId,
+        sessionId: effectiveSessionId 
+      });
+      state.setIsStreaming(false);
+      state.setIsTyping(false);
+    }
+  }, [sessionId, pythonSessionId, userId, state.messages, state.setIsStreaming, state.setIsTyping, addMessage, updateStreamingMessage, onHtmlPreviewUpdate, streamingManager, eventHandler]);
   
   // Handle clarification rejection
-  const handleClarificationReject = useCallback((messageId: string) => {
-    // Handle clarification rejection
+  const handleClarificationReject = useCallback(async (messageId: string) => {
     chatLogger.info('Clarification rejected', { messageId, sessionId });
-  }, [sessionId]);
+    
+    // Find the clarification message to get field
+    const message = state.messages.find(m => m.id === messageId);
+    if (!message?.metadata?.clarification_field) {
+      chatLogger.warn('Cannot reject clarification: missing metadata', { messageId });
+      return;
+    }
+    
+    const clarificationField = message.metadata.clarification_field;
+    const effectiveSessionId = pythonSessionId || sessionId;
+    
+    chatLogger.info('Sending clarification rejection to backend', {
+      messageId,
+      field: clarificationField,
+      sessionId: effectiveSessionId
+    });
+    
+    // Send rejection signal to backend - backend should ask for corrected value
+    try {
+      state.setIsStreaming(true);
+      state.setIsTyping(true);
+      
+      // Send "reject" or similar to indicate user wants to provide different value
+      await streamingManager.startStreaming(
+        effectiveSessionId,
+        'reject', // Signal rejection - backend should ask for corrected value
+        userId,
+        {
+          setIsStreaming: state.setIsStreaming,
+          addMessage,
+          updateStreamingMessage,
+          onContextUpdate: (context: any) => {
+            onHtmlPreviewUpdate?.(context.html || '', context.preview_type || 'progressive');
+          },
+          extractBusinessModelFromInput: (_input: string) => null,
+          extractFoundingYearFromInput: (_input: string) => null,
+          onStreamStart: () => {
+            eventHandler.reset();
+            chatLogger.debug('Stream start - reset event handler state');
+          }
+        },
+        (event) => {
+          try {
+            if (!eventHandler) {
+              chatLogger.error('Event handler is null/undefined', { sessionId: effectiveSessionId });
+              return;
+            }
+            
+            if (typeof eventHandler.handleEvent !== 'function') {
+              chatLogger.error('Event handler handleEvent is not a function', { 
+                sessionId: effectiveSessionId,
+                eventHandlerType: typeof eventHandler
+              });
+              return;
+            }
+            
+            eventHandler.handleEvent(event);
+          } catch (error) {
+            chatLogger.error('Error in onEvent callback', { 
+              error: error instanceof Error ? error.message : String(error),
+              eventType: event?.type,
+              sessionId: event?.session_id || effectiveSessionId
+            });
+          }
+        },
+        (error: Error) => {
+          chatLogger.error('Streaming error during rejection', { error: error.message, sessionId: effectiveSessionId });
+          state.setIsStreaming(false);
+          state.setIsTyping(false);
+        }
+      );
+    } catch (error) {
+      chatLogger.error('Failed to send clarification rejection', { 
+        error: error instanceof Error ? error.message : String(error),
+        messageId,
+        sessionId: effectiveSessionId 
+      });
+      state.setIsStreaming(false);
+      state.setIsTyping(false);
+    }
+  }, [sessionId, pythonSessionId, userId, state.messages, state.setIsStreaming, state.setIsTyping, addMessage, updateStreamingMessage, onHtmlPreviewUpdate, streamingManager, eventHandler]);
   
   // Auto-scroll to bottom
   const scrollToBottom = useCallback(() => {
