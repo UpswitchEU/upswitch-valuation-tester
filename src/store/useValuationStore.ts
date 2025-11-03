@@ -183,6 +183,13 @@ export const useValuationStore = create<ValuationStore>((set, get) => ({
       
       setInputData(inputData);
       
+      // DIAGNOSTIC: Log formData before building request
+      console.log('[DIAGNOSTIC-FRONTEND] FormData before building request:');
+      console.log('[DIAGNOSTIC-FRONTEND] business_type_id:', formData.business_type_id);
+      console.log('[DIAGNOSTIC-FRONTEND] _internal_dcf_preference:', formData._internal_dcf_preference);
+      console.log('[DIAGNOSTIC-FRONTEND] _internal_multiples_preference:', formData._internal_multiples_preference);
+      console.log('[DIAGNOSTIC-FRONTEND] _internal_owner_dependency_impact:', formData._internal_owner_dependency_impact);
+      
       const request: ValuationRequest = {
         company_name: companyName,
         country_code: countryCode,
@@ -231,6 +238,9 @@ export const useValuationStore = create<ValuationStore>((set, get) => ({
           typicalRevenueRange: formData._internal_typical_revenue_range,
         } : undefined,
       };
+      
+      // DIAGNOSTIC: Log business_context after building request
+      console.log('[DIAGNOSTIC-FRONTEND] business_context in request:', JSON.stringify(request.business_context));
       
       storeLogger.info('Sending manual valuation request (FREE)', { 
         companyName: request.company_name,
