@@ -5,7 +5,7 @@
  */
 
 import { motion } from 'framer-motion';
-import { AlertCircle, AlertTriangle, CheckCircle, Clock, Loader2 } from 'lucide-react';
+import { AlertCircle, AlertTriangle, CheckCircle, Loader2 } from 'lucide-react';
 import React from 'react';
 
 interface ReportSection {
@@ -86,20 +86,6 @@ export const ProgressiveValuationReport: React.FC<ProgressiveValuationReportProp
     </motion.div>
   );
 
-  // Render section status icon
-  const renderSectionStatus = (section: ReportSection) => {
-    switch (section.status) {
-      case 'completed':
-        return <CheckCircle className="h-5 w-5 text-green-500" />;
-      case 'loading':
-        return <Loader2 className="h-5 w-5 text-blue-500 animate-spin" />;
-      case 'error':
-        return <AlertCircle className="h-5 w-5 text-red-500" />;
-      default:
-        return <Clock className="h-5 w-5 text-gray-400" />;
-    }
-  };
-
   // Render fallback section
   const renderFallbackSection = (section: ReportSection) => {
     return (
@@ -141,62 +127,6 @@ export const ProgressiveValuationReport: React.FC<ProgressiveValuationReportProp
     );
   };
 
-  // Render section header with confidence indicators
-  const renderSectionHeader = (section: ReportSection) => {
-    return (
-      <div className="flex items-center justify-between mb-4">
-        <h3 className="text-lg font-semibold text-gray-900">
-          {getSectionDisplayName(section.id)}
-        </h3>
-        <div className="flex items-center gap-2">
-          {/* Confidence Badge */}
-          {section.is_fallback ? (
-            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
-              <AlertTriangle className="w-3 h-3 mr-1" />
-              Quick Estimate
-            </span>
-          ) : section.is_error ? (
-            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
-              <AlertCircle className="w-3 h-3 mr-1" />
-              Error
-            </span>
-          ) : (
-            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-              <CheckCircle className="w-3 h-3 mr-1" />
-              Full Analysis
-            </span>
-          )}
-          
-          {/* Phase Badge */}
-          <span className="text-sm text-gray-500">
-            Phase {section.phase}
-          </span>
-        </div>
-      </div>
-    );
-  };
-
-  // Add confidence meter
-  const renderConfidenceMeter = (section: ReportSection) => {
-    const confidence = section.is_fallback ? 30 : section.is_error ? 0 : 85;
-    const color = confidence > 70 ? 'bg-green-500' : confidence > 40 ? 'bg-yellow-500' : 'bg-red-500';
-    
-    return (
-      <div className="mt-4 p-3 bg-gray-50 rounded-lg">
-        <div className="flex items-center justify-between mb-2">
-          <span className="text-sm font-medium text-gray-700">Confidence Level</span>
-          <span className="text-sm font-bold text-gray-900">{confidence}%</span>
-        </div>
-        <div className="w-full bg-gray-200 rounded-full h-2">
-          <div 
-            className={`${color} h-2 rounded-full transition-all duration-500`}
-            style={{ width: `${confidence}%` }}
-          />
-        </div>
-      </div>
-    );
-  };
-
   // Get section display name
   const getSectionDisplayName = (sectionId: string | undefined | null): string => {
     // Handle undefined/null sectionId
@@ -221,21 +151,18 @@ export const ProgressiveValuationReport: React.FC<ProgressiveValuationReportProp
 
   // Main section renderer with fallback/error handling
   const renderSection = (section: ReportSection) => {
-    return (
-      <div className="section-container mb-6">
-        {renderSectionHeader(section)}
-        
-        {section.is_fallback ? (
-          renderFallbackSection(section)
-        ) : section.is_error ? (
-          renderErrorSection(section)
-        ) : (
-          <div className="section-content" dangerouslySetInnerHTML={{ __html: section.html }} />
-        )}
-        
-        {renderConfidenceMeter(section)}
-      </div>
-    );
+    if (section.is_fallback) {
+      return renderFallbackSection(section);
+    }
+    if (section.is_error) {
+      return renderErrorSection(section);
+    }
+    // Render section HTML directly without wrapper
+    // Safety check: only render if HTML content exists
+    if (!section.html || section.html.trim() === '') {
+      return null;
+    }
+    return <div dangerouslySetInnerHTML={{ __html: section.html }} />;
   };
 
   return (
@@ -247,22 +174,13 @@ export const ProgressiveValuationReport: React.FC<ProgressiveValuationReportProp
           .sort((a, b) => a.phase - b.phase || a.timestamp.getTime() - b.timestamp.getTime())
           .map(section => (
             <div key={section.id} className="report-section fade-in">
-              <div className="flex items-center mb-3">
-                {renderSectionStatus(section)}
-                <h3 className="ml-2 text-lg font-semibold text-gray-900">
-                  {getSectionDisplayName(section.id)}
-                </h3>
-                <span className="ml-auto text-sm text-gray-500">
-                  Phase {section.phase}
-                </span>
-              </div>
               {renderSection(section)}
             </div>
           ))}
       </div>
 
-      {/* Loading placeholders for pending phases */}
-      {isGenerating && currentPhase < 4 && (
+      {/* Loading placeholders for pending phases - only show when no content exists */}
+      {isGenerating && currentPhase < 4 && sections.length === 0 && (
         <div className="pending-sections mt-6">
           <div className="space-y-4">
             {getPendingSections(currentPhase + 1).map(section => 

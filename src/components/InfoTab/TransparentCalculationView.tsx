@@ -91,7 +91,7 @@ export const TransparentCalculationView: React.FC<TransparentCalculationViewProp
       </div>
 
       {/* Main Content */}
-      <div className="space-y-4 sm:space-y-6 bg-white p-4 sm:p-6">
+      <div className="space-y-4 sm:space-y-6">
       {/* Introduction */}
       <div id="summary" className="bg-gradient-to-r from-blue-50 via-purple-50 to-indigo-50 border-2 border-blue-500 rounded-lg p-4 sm:p-6">
         <h1 className="text-3xl font-bold text-gray-900 mb-3">

@@ -488,7 +488,25 @@ export class StreamEventHandler {
     
     // Only update/create message if we have content to show
     if (completionMessage) {
-      this.callbacks.updateStreamingMessage(completionMessage, true);
+      // CRITICAL FIX: Check if streaming message exists before updating
+      // If it doesn't exist, addMessage will create it with the correct content
+      // If it exists, updateStreamingMessage will append (which is correct for streaming)
+      // But for completion messages, we want to ensure no duplication
+      const hasStreamingMessage = this.hasStartedMessage;
+      
+      if (!hasStreamingMessage) {
+        // No existing message - create new one with completion message
+        // Don't call updateStreamingMessage as it would append and duplicate
+        this.callbacks.addMessage({
+          type: 'ai',
+          content: completionMessage,
+          isStreaming: false,
+          isComplete: true
+        });
+      } else {
+        // Existing message - update it (will append, but that's fine for streaming completion)
+        this.callbacks.updateStreamingMessage(completionMessage, true);
+      }
     } else {
       // No content - just clear state without creating empty message
       chatLogger.debug('Valuation complete with no message content - skipping message creation');
