@@ -82,7 +82,7 @@ export class StreamEventHandler {
    * This prevents the second message from appearing empty
    */
   reset(): void {
-    chatLogger.info('🔄 Resetting StreamEventHandler state for new stream', {
+    chatLogger.debug('Resetting StreamEventHandler state for new stream', {
       sessionId: this.sessionId,
       hadStartedMessage: this.hasStartedMessage,
       hadLock: this.messageCreationLock,
@@ -157,21 +157,6 @@ export class StreamEventHandler {
   handleEvent(data: any): void {
     // Defensive parsing: extract event type from multiple possible locations
     const eventType = data?.type || data?.event || 'unknown';
-    
-    // ENHANCED LOGGING: Always log to trace event flow
-    chatLogger.info('🎯 handleEvent called', { 
-      type: eventType, 
-      hasContent: !!data.content, 
-      contentLength: data.content?.length,
-      hasMessage: !!data.message,
-      fullData: JSON.stringify(data).substring(0, 200) // First 200 chars for debugging
-    });
-    
-    chatLogger.debug('Received stream event', { 
-      type: eventType, 
-      hasContent: !!data.content, 
-      contentLength: data.content?.length 
-    });
     
     switch (eventType) {
       case 'typing':
@@ -254,11 +239,6 @@ export class StreamEventHandler {
    * Handle message start events
    */
   private handleMessageStart(_data: any): void {
-    chatLogger.info('📨 AI message start received - hiding thinking, preparing for chunks', {
-      hasStartedMessage: this.hasStartedMessage,
-      hasLock: this.messageCreationLock
-    });
-    
     // Mark that we've started a message
     this.hasStartedMessage = true;
     // Hide thinking state and typing indicator when message starts streaming
@@ -272,7 +252,6 @@ export class StreamEventHandler {
     
     // CRITICAL FIX: Ensure message exists if message_start comes before chunks
     // Some backends might send message_start but frontend hasn't created message yet
-    chatLogger.info('Message start - ensuring message exists', { hasStarted: this.hasStartedMessage });
     this.ensureMessageExists().catch(err => {
       chatLogger.error('Failed to ensure message exists on message_start', { error: err });
     });
@@ -291,12 +270,6 @@ export class StreamEventHandler {
       return;
     }
     
-    chatLogger.info('📝 Message chunk received', { 
-      contentLength: content.length,
-      content: content.substring(0, 50),
-      hasStartedMessage: this.hasStartedMessage,
-      bufferedChunks: this.chunkBuffer.length
-    });
     
     // CRITICAL FIX: Ensure message exists BEFORE processing chunk
     // This prevents first chunk loss when chunks arrive before message_start
@@ -318,11 +291,6 @@ export class StreamEventHandler {
     }
     
     // Message exists - update it with the chunk
-    chatLogger.info('✅ Updating streaming message with chunk', { 
-      contentLength: content.length,
-      contentPreview: content.substring(0, 100)
-    });
-    
     this.callbacks.updateStreamingMessage(content);
   }
 
@@ -618,21 +586,9 @@ export class StreamEventHandler {
    * Handle data collected events
    */
   private handleDataCollected(data: any): void {
-    chatLogger.info('Data collected event received', {
+    chatLogger.info('Data collected', {
       field: data.field,
-      valueType: typeof data.value,
-      hasValue: data.value != null,
-      completeness: data.completeness
-      // SECURITY: Don't log actual value - may contain PII/financial data
-    });
-    
-    // Enhanced logging for debugging
-    // SECURITY FIX: Don't log actual values to console (may contain sensitive data)
-    console.log('Data collected:', {
-      field: data.field,
-      valueType: typeof data.value,
-      hasValue: data.value != null,
-      display_name: data.display_name,
+      displayName: data.display_name,
       completeness: data.completeness
       // SECURITY: Don't log actual value - may contain PII/financial data
     });

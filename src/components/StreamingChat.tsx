@@ -592,24 +592,11 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
           // CRITICAL FIX: Reset event handler state when new stream starts
           // This ensures hasStartedMessage and messageCreationLock are reset for each new message
           eventHandler.reset();
-          chatLogger.info('🔄 Stream start - reset event handler state');
+          chatLogger.debug('Stream start - reset event handler state');
         }
       },
       (event) => {
         try {
-          // DEPLOYMENT VERIFICATION MARKER - If this appears in logs, code is deployed
-          // Reduced logging - only log important events to prevent console spam
-          if (event?.type === 'error' || event?.type === 'valuation_complete') {
-          chatLogger.info('🚀 [DEPLOYED] Event received in StreamingChat callback', { 
-            type: event?.type, 
-            hasContent: !!event?.content,
-            contentLength: event?.content?.length,
-              sessionId: event?.session_id || effectiveSessionId
-          });
-          } else {
-            chatLogger.debug('Event received', { type: event?.type, sessionId: event?.session_id || effectiveSessionId });
-          }
-          
           // CRITICAL FIX: Ensure eventHandler exists and handleEvent is callable
           if (!eventHandler) {
             chatLogger.error('Event handler is null/undefined', { sessionId: effectiveSessionId });
@@ -625,10 +612,6 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
             return;
           }
           
-          // Only log important events to reduce console spam during fast streaming
-          if (event?.type === 'error' || event?.type === 'message_complete' || event?.type === 'valuation_complete') {
-            chatLogger.debug('Event handler processing', { type: event?.type, sessionId: event?.session_id || effectiveSessionId });
-          }
           eventHandler.handleEvent(event);
         } catch (error) {
           chatLogger.error('Error in onEvent callback', { 

@@ -348,23 +348,10 @@ export class StreamingManager {
         
         clearTimeout(generatorTimeout);
         eventCount++;
-        chatLogger.info('Event received from generator', { 
-          eventCount, 
-          type: event.type, 
-          hasContent: !!event.content,
-          contentLength: event.content?.length,
-          sessionId: event.session_id 
-        });
         
         // DEFENSIVE LOGGING: Track callback execution
         try {
-          chatLogger.debug('📤 Passing event to onEvent callback', { 
-            eventCount,
-            type: event.type,
-            callbackType: typeof onEvent
-          });
           onEvent(event);
-          chatLogger.debug('✅ onEvent callback completed', { eventCount, type: event.type });
         } catch (callbackError) {
           chatLogger.error('❌ Error in onEvent callback', {
             error: callbackError instanceof Error ? callbackError.message : String(callbackError),
@@ -377,7 +364,7 @@ export class StreamingManager {
       }
       
       clearTimeout(generatorTimeout);
-      chatLogger.info('Async generator completed', { 
+      chatLogger.debug('Async generator completed', { 
         totalEvents: eventCount, 
         sessionId
       });

@@ -139,7 +139,7 @@ export const AIAssistedValuation: React.FC<AIAssistedValuationProps> = ({ report
     const timestamp = Date.now();
     const randomId = Math.random().toString(36).substring(2, 15);
     const newSessionId = `session_${timestamp}_${randomId}`;
-    console.log('[SESSION] Created new session:', newSessionId);
+    chatLogger.debug('Created new session', { sessionId: newSessionId });
     return newSessionId;
   });
   
@@ -327,25 +327,21 @@ export const AIAssistedValuation: React.FC<AIAssistedValuationProps> = ({ report
   // uses the progressive report sections directly.
   const handleHtmlPreviewUpdate = useCallback((_html: string, _previewType: string) => {
     // HTML preview is now handled by the progressive report system via sections
-    console.log('HTML preview updates handled by progressive report system');
   }, []);
 
   // NEW: Handle valuation preview events
-  const handleValuationPreview = useCallback((preview: any) => {
-    console.log('Valuation preview in AIAssistedValuation:', preview);
-    // Update local state if needed
+  const handleValuationPreview = useCallback((_preview: any) => {
+    // Valuation preview handled silently
   }, []);
 
   // NEW: Handle calculate option events
-  const handleCalculateOption = useCallback((option: any) => {
-    console.log('Calculate option in AIAssistedValuation:', option);
-    // Update local state if needed
+  const handleCalculateOption = useCallback((_option: any) => {
+    // Calculate option handled silently
   }, []);
 
   // NEW: Handle progress update events
-  const handleProgressUpdate = useCallback((progress: any) => {
-    console.log('Progress update in AIAssistedValuation:', progress);
-    // Update local state if needed
+  const handleProgressUpdate = useCallback((_progress: any) => {
+    // Progress updates handled silently - UI removed
   }, []);
 
   // NEW: Progressive preview generation at data collection milestones

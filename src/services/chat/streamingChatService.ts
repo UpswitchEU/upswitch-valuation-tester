@@ -24,18 +24,10 @@ export class StreamingChatService {
     abortSignal?: AbortSignal
   ): AsyncGenerator<StreamEvent> {
     try {
-      console.log('[streamingChatService] streamConversation called', {
-        userMessage: userInput,
-        sessionId,
-        userId,
-        apiBaseUrl: this.baseURL
-      });
-      
-      chatLogger.info('Starting streaming conversation', { 
+      chatLogger.info('Stream started', { 
         sessionId, 
         userInput: userInput.substring(0, 50) + '...', 
-        userId,
-        baseURL: this.baseURL 
+        userId
       });
       
       const requestBody = {
@@ -45,13 +37,6 @@ export class StreamingChatService {
       };
       
       const url = `${this.baseURL}/api/v1/intelligent-conversation/stream`;
-      console.log('[streamingChatService] Preparing fetch request', { url });
-      console.log('[streamingChatService] Request body', requestBody);
-      
-      chatLogger.debug('SSE request details', { 
-        url,
-        body: requestBody 
-      });
       
       const response = await fetch(url, {
         method: 'POST',
@@ -61,38 +46,20 @@ export class StreamingChatService {
         signal: abortSignal // CRITICAL FIX: Support abort signal for cleanup
       });
 
-      console.log('[streamingChatService] Fetch response received', {
-        status: response.status,
-        statusText: response.statusText,
-        headers: Object.fromEntries(response.headers.entries())
-      });
-      
-      chatLogger.info('SSE response received', { 
-        status: response.status, 
-        ok: response.ok,
-        headers: Object.fromEntries(response.headers.entries())
-      });
 
       if (!response.ok) {
         const errorText = await response.text();
-        console.error('[streamingChatService] HTTP error response', {
-          status: response.status,
-          statusText: response.statusText,
-          body: errorText
-        });
         chatLogger.error('SSE request failed', { status: response.status, errorText });
         throw new Error(`HTTP error! status: ${response.status}, body: ${errorText}`);
       }
 
       if (!response.body) {
-        console.error('[streamingChatService] Response body is null');
+        chatLogger.error('Response body is null');
         throw new Error('Response body is null');
       }
 
       const reader = response.body.getReader();
       if (!reader) throw new Error('No response body');
-      
-      console.log('[streamingChatService] Starting to read response stream');
 
       const decoder = new TextDecoder();
       let buffer = '';
@@ -107,47 +74,31 @@ export class StreamingChatService {
         
         const { done, value } = await reader.read();
         if (done) {
-          console.log('[streamingChatService] Stream ended');
-          chatLogger.info('SSE stream completed - reader done');
+          chatLogger.debug('SSE stream completed');
           break;
         }
 
         const chunk = decoder.decode(value, { stream: true });
-        chatLogger.debug('SSE chunk received', { chunkLength: chunk.length, chunk: chunk.substring(0, 200) + '...' });
-        
         buffer += chunk;
         const lines = buffer.split('\n');
         buffer = lines.pop() || '';
 
-        chatLogger.debug('SSE lines to process', { lineCount: lines.length, lines: lines.map(l => l.substring(0, 100)) });
-
         for (const line of lines) {
-          chatLogger.debug('SSE LINE:', { line, lineLength: line.length, startsWithData: line.startsWith('data: '), startsWithComment: line.startsWith(': ') });
-          
           // Handle SSE comment lines (keepalive pings)
           if (line.startsWith(': ')) {
-            chatLogger.debug('SSE keepalive ping received', { line });
             continue;
           }
           
           // Handle data lines
           if (line.startsWith('data: ') && line.trim().length > 6) {
             const jsonStr = line.slice(6).trim();
-            chatLogger.debug('SSE DATA:', { jsonStr, jsonLength: jsonStr.length });
             
             if (jsonStr) {
               try {
                 const data = JSON.parse(jsonStr);
-                console.log('[streamingChatService] Received SSE data', { jsonStr: jsonStr.substring(0, 100) });
-                console.log('[streamingChatService] Parsed SSE event', { 
-                  type: data.type,
-                  event: data 
-                });
-                chatLogger.info('SSE event parsed successfully', { type: data.type, hasContent: !!data.content, contentLength: data.content?.length });
                 
                 // Handle error events
                 if (data.type === 'error') {
-                  console.error('[streamingChatService] Error event received', { message: data.message, sessionId: data.session_id });
                   chatLogger.error('SSE Error received', { message: data.message, sessionId: data.session_id });
                   yield data;
                   return; // Stop processing on error
@@ -155,33 +106,20 @@ export class StreamingChatService {
                 
                 // Handle ping events (ignore)
                 if (data.type === 'ping') {
-                  chatLogger.debug('SSE ping received', { sessionId: data.session_id });
                   continue;
                 }
                 
-                chatLogger.info('Yielding SSE event', { type: data.type, content: data.content?.substring(0, 50) + '...' });
                 yield data;
               } catch (parseError) {
                 chatLogger.error('Failed to parse SSE data', { line, jsonStr, parseError: parseError instanceof Error ? parseError.message : String(parseError) });
                 // Skip malformed chunks - they'll be completed in next iteration
                 continue;
               }
-            } else {
-              chatLogger.debug('Empty SSE data line, skipping');
             }
-          } else {
-            chatLogger.debug('SSE line not data or comment, skipping', { line: line.substring(0, 50) });
           }
         }
       }
-      
-      console.log('[streamingChatService] Stream reading completed');
     } catch (error) {
-      console.error('[streamingChatService] Error in streamConversation', {
-        error,
-        message: error instanceof Error ? error.message : String(error),
-        stack: error instanceof Error ? error.stack : undefined
-      });
       
       // CRITICAL FIX: Don't yield error if aborted (expected behavior)
       if (error instanceof Error && error.name === 'AbortError') {
