@@ -144,24 +144,47 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
   const eventHandler = useMemo(() => {
     const handler = new StreamEventHandler(sessionId, {
     updateStreamingMessage: (content: string, isComplete: boolean = false) => {
-      // CRITICAL FIX: Thread-safe message creation
-      // Prevents duplicate messages when updateStreamingMessage called before message_start
-      // RACE CONDITION FIX: Check both ref and state to avoid duplicates
-      // PERFORMANCE FIX: Use ref for current messages to avoid closure issues
+      // SIMPLIFIED: Trust the backend - update streaming message, find it if ref is missing
       const currentMessages = messagesRef.current;
       
-      if (!state.refs.currentStreamingMessageRef.current?.id) {
+      let currentMessageId: string | null = null;
+      
+      if (state.refs.currentStreamingMessageRef.current?.id) {
+        currentMessageId = state.refs.currentStreamingMessageRef.current.id;
+        // Verify the ref message still exists and is streaming (defensive check)
+        const refMessageInState = currentMessages.find(
+          msg => msg.id === currentMessageId && msg.type === 'ai' && msg.isStreaming && !msg.isComplete
+        );
+        if (!refMessageInState) {
+          chatLogger.warn('Ref points to non-existent or completed message in eventHandler callback, falling back', {
+            refMessageId: currentMessageId,
+            contentLength: content.length
+          });
+          // Fall through to state search
+          currentMessageId = null;
+        }
+      }
+      
+      if (!currentMessageId) {
         // Check if message already exists in state (race condition protection)
-        const existingMessage = currentMessages.find(
+        const streamingMessages = currentMessages.filter(
           msg => msg.type === 'ai' && msg.isStreaming && !msg.isComplete
         );
         
-        if (existingMessage) {
+        if (streamingMessages.length > 0) {
+          // If multiple streaming messages exist, use the most recent one
+          const existingMessage = streamingMessages.length === 1
+            ? streamingMessages[0]
+            : streamingMessages.sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime())[0];
+          
           // Message exists in state but ref wasn't set - update ref
           chatLogger.debug('Found existing streaming message in state, updating ref', {
-            messageId: existingMessage.id
+            messageId: existingMessage.id,
+            totalStreaming: streamingMessages.length,
+            usedMostRecent: streamingMessages.length > 1
           });
           state.refs.currentStreamingMessageRef.current = existingMessage;
+          currentMessageId = existingMessage.id;
         } else {
           // No message exists - create one (thread-safe fallback)
           chatLogger.warn('No current streaming message - creating one as fallback', { 
@@ -173,59 +196,46 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
             isStreaming: !isComplete,
             isComplete: isComplete || false
           });
+          messagesRef.current = updatedMessages;
           // Use startTransition for non-urgent updates to prevent UI blocking
           startTransition(() => {
           state.setMessages(updatedMessages);
           });
           if (newMessage) {
             state.refs.currentStreamingMessageRef.current = newMessage;
+            currentMessageId = newMessage.id;
+          } else {
+            chatLogger.error('Failed to create fallback message for chunk update');
+            return;
           }
         }
-        
-        // If we just created/set the message, update it with the content
-        if (state.refs.currentStreamingMessageRef.current?.id) {
-          const currentMessageId = state.refs.currentStreamingMessageRef.current.id;
-          const updatedMessages = messageManager.updateStreamingMessage(
-            messagesRef.current,
-            currentMessageId,
-            content,
-            isComplete
-          );
-          // Use startTransition for batched updates
-          startTransition(() => {
-          state.setMessages(updatedMessages);
-          });
-          
-          if (isComplete && state.refs.currentStreamingMessageRef.current) {
-            chatLogger.debug('Completing streaming message', { messageId: currentMessageId });
-            complete();
-            onMessageComplete?.(state.refs.currentStreamingMessageRef.current);
-            state.refs.currentStreamingMessageRef.current = null;
-          }
-        }
-        return;
       }
       
-      const currentMessageId = state.refs.currentStreamingMessageRef.current.id;
+      // Update the message content in state using batched updates
+      const updatedMessages = messageManager.updateStreamingMessage(
+        messagesRef.current,
+        currentMessageId!,
+        content,
+        isComplete
+      );
+      messagesRef.current = updatedMessages;
+      // Use startTransition for batched updates
+      startTransition(() => {
+      state.setMessages(updatedMessages);
+      });
+      
+      // Ensure ref points to updated message
+      const updatedMessage = updatedMessages.find(msg => msg.id === currentMessageId);
+      if (updatedMessage) {
+        state.refs.currentStreamingMessageRef.current = updatedMessage;
+      }
+      
       chatLogger.debug('Updating streaming message', { 
         messageId: currentMessageId, 
         contentLength: content.length, 
         isComplete 
       });
       
-      // Update the message content in state using batched updates
-      const updatedMessages = messageManager.updateStreamingMessage(
-        messagesRef.current,
-        currentMessageId,
-        content,
-        isComplete
-      );
-      // Use startTransition to batch state updates and prevent UI blocking
-      startTransition(() => {
-      state.setMessages(updatedMessages);
-      });
-      
-      // Complete the message if needed
       if (isComplete && state.refs.currentStreamingMessageRef.current) {
         chatLogger.debug('Completing streaming message', { messageId: currentMessageId });
         complete();
@@ -241,25 +251,9 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
     setValuationPreview: state.setValuationPreview,
     setCalculateOption: state.setCalculateOption,
     addMessage: (message: Omit<Message, 'id' | 'timestamp'>) => {
-      // CRITICAL FIX: Check for duplicates before adding
-      // Prevent same message appearing multiple times (same content within 2 seconds)
-      const now = Date.now();
-      const recentDuplicate = messagesRef.current.find(m => 
-        m.content === message.content && 
-        m.type === message.type &&
-        now - m.timestamp.getTime() < 2000
-      );
-      
-      if (recentDuplicate) {
-        chatLogger.warn('Duplicate message prevented (eventHandler)', {
-          content: message.content.substring(0, 50),
-          type: message.type,
-          existingId: recentDuplicate.id
-        });
-        return { updatedMessages: messagesRef.current, newMessage: recentDuplicate };
-      }
-      
+      // SIMPLIFIED: Trust the backend - create message, no complex duplicate checks
       let result: { updatedMessages: Message[]; newMessage: Message } | null = null;
+      
       // Use functional update to ensure latest state
       state.setMessages(prevMessages => {
         const addResult = messageManager.addMessage(prevMessages, message);
@@ -268,20 +262,20 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
         result = addResult;
         return addResult.updatedMessages;
       });
-      // CRITICAL: Fallback for cases where setMessagesWithPruning defers execution
-      // This can happen with React 18 concurrent rendering when setMessages is wrapped
+      
+      // Fallback for cases where setMessages defers execution
       if (!result) {
-        chatLogger.warn('addMessage: Using fallback with messagesRef.current', {
-          messageType: message.type,
-          hasContent: !!message.content
-        });
-        // Safe fallback: use ref which is always current
         const fallbackResult = messageManager.addMessage(messagesRef.current, message);
         messagesRef.current = fallbackResult.updatedMessages;
-        // Trigger state update to sync React state
         state.setMessages(fallbackResult.updatedMessages);
-        return fallbackResult;
+        result = fallbackResult;
       }
+      
+      // Always update ref for streaming messages so chunks can update them
+      if (message.isStreaming && result?.newMessage) {
+        state.refs.currentStreamingMessageRef.current = result.newMessage;
+      }
+      
       return result;
     },
     trackModelPerformance,
@@ -338,153 +332,12 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
     onMessageComplete
   ]);
   
-  // Add message helper
-  // CRITICAL FIX: Use functional state update to ensure we always get latest state
-  // This prevents race conditions where state update is deferred but new render happens
+  // Add message helper - SIMPLIFIED: Trust the backend, simple ID-based uniqueness
   const addMessage = useCallback((message: Omit<Message, 'id' | 'timestamp'>) => {
-    // CRITICAL FIX: Enhanced duplicate prevention
-    // For AI messages: Prevent ANY duplicate content (no time limit) - questions shouldn't repeat
-    // For user messages: Check within 2 seconds to prevent rapid duplicates
-    const now = Date.now();
-    const isAIMessage = message.type === 'ai';
-    
-    // CRITICAL FIX: For AI messages, check ALL messages for duplicate content (no time limit)
-    // This prevents the same question from appearing multiple times
-    // Use normalized comparison (trim + lowercase) to catch variations
-    if (isAIMessage && message.content) {
-      const normalizedContent = message.content.trim().toLowerCase();
-      const existingAIMessage = messagesRef.current.find(m => {
-        if (m.type !== 'ai' || !m.content || m.content.trim().length === 0) {
-          return false;
-        }
-        // Normalized comparison to catch minor variations (capitalization, whitespace)
-        const existingNormalized = m.content.trim().toLowerCase();
-        return existingNormalized === normalizedContent;
-      });
-      
-      if (existingAIMessage) {
-        chatLogger.warn('Duplicate AI message prevented (same question, normalized)', {
-          newContent: message.content.substring(0, 50),
-          existingContent: existingAIMessage.content.substring(0, 50),
-          existingId: existingAIMessage.id,
-          existingTimestamp: existingAIMessage.timestamp.toISOString()
-        });
-        return { updatedMessages: messagesRef.current, newMessage: existingAIMessage };
-      }
-    }
-    
-    // Check for recent duplicate (within 2 seconds) - applies to user messages or same-timestamp duplicates
-    const recentDuplicate = messagesRef.current.find(m => 
-      m.content === message.content && 
-      m.type === message.type &&
-      now - m.timestamp.getTime() < 2000
-    );
-    
-    // CRITICAL FIX: Enhanced deduplication - check for existing complete message before creating streaming message
-    // This handles case where /start creates complete message, then /stream tries to create streaming message
-    // SOLUTION: Only convert on FIRST submit to maintain conversation history for subsequent messages
-    if (isAIMessage && message.isStreaming && !message.content) {
-      // CRITICAL FIX: Only convert on FIRST submit (initial message scenario)
-      // After first exchange, always create new messages to maintain conversation history
-      // Count AI messages specifically - only convert if we have exactly 1 AI message (initial from /start)
-      // AND no user messages yet (VERY FIRST submit)
-      const aiMessageCount = messagesRef.current.filter(m => m.type === 'ai').length;
-      const userMessageCount = messagesRef.current.filter(m => m.type === 'user').length;
-      // CRITICAL FIX: Only allow conversion on the VERY FIRST submit (no user messages exist yet)
-      const isInitialConversation = aiMessageCount === 1 && userMessageCount === 0;
-      
-      chatLogger.info('🔍 Deduplication check', {
-        aiMessageCount,
-        userMessageCount,
-        totalMessages: messagesRef.current.length,
-        isInitialConversation,
-        decision: isInitialConversation ? 'CONVERT existing message' : 'CREATE new message bubble'
-      });
-      
-      if (!isInitialConversation) {
-        chatLogger.debug('Conversation in progress - creating new message instead of converting', {
-          aiMessageCount,
-          totalMessages: messagesRef.current.length,
-          note: 'After initial exchange, always create new message bubbles'
-        });
-        // Fall through to create new message - don't convert existing ones
-      } else {
-        // Find the most recent complete AI message (only on first submit)
-        const mostRecentCompleteMessage = messagesRef.current
-          .filter(m => m.type === 'ai' && !m.isStreaming && m.isComplete && m.content && m.content.trim().length > 0)
-          .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime())[0];
-        
-        if (mostRecentCompleteMessage) {
-          chatLogger.info('🔄 Initial conversation - converting complete message to streaming', {
-            existingId: mostRecentCompleteMessage.id,
-            existingContent: mostRecentCompleteMessage.content.substring(0, 50),
-            aiMessageCount,
-            totalMessages: messagesRef.current.length,
-            timestamp: mostRecentCompleteMessage.timestamp.toISOString(),
-            reason: 'Only 1 AI message exists - this is the transition from /start to /stream'
-          });
-          
-          // CRITICAL FIX: Convert existing complete message to streaming instead of creating new
-          // Clear content so it can be rebuilt from chunks (prevents showing stale + streaming text)
-          const convertedMessage = {
-            ...mostRecentCompleteMessage,
-            isStreaming: true,
-            isComplete: false,
-            content: '' // Clear - will be rebuilt from streaming chunks
-          };
-          
-          const updatedMessages = messagesRef.current.map(m =>
-            m.id === mostRecentCompleteMessage.id ? convertedMessage : m
-          );
-          messagesRef.current = updatedMessages;
-          
-          // CRITICAL FIX: Update refs so StreamingManager and StreamEventHandler can find this message
-          state.refs.currentStreamingMessageRef.current = convertedMessage;
-          
-          // Trigger state update
-          state.setMessages(updatedMessages);
-          
-          chatLogger.debug('✅ Converted complete message to streaming (initial conversation only)', {
-            messageId: convertedMessage.id,
-            wasComplete: true,
-            nowStreaming: true
-          });
-          
-          return { updatedMessages, newMessage: convertedMessage };
-        }
-      }
-    }
-    
-    // Also check for streaming message duplicates (empty content, same type, isStreaming)
-    if (!recentDuplicate && message.isStreaming) {
-      const streamingDuplicate = messagesRef.current.find(m => 
-        m.type === message.type &&
-        m.isStreaming &&
-        !m.isComplete &&
-        (m.content === message.content || (message.content === '' && m.content === ''))
-      );
-      
-      if (streamingDuplicate) {
-        chatLogger.warn('Duplicate streaming message prevented', {
-          type: message.type,
-          existingId: streamingDuplicate.id,
-          existingContent: streamingDuplicate.content.substring(0, 30)
-        });
-        return { updatedMessages: messagesRef.current, newMessage: streamingDuplicate };
-      }
-    }
-    
-    if (recentDuplicate) {
-      chatLogger.warn('Duplicate message prevented (recent)', {
-        content: message.content.substring(0, 50),
-        type: message.type,
-        existingId: recentDuplicate.id,
-        timeDiff: now - recentDuplicate.timestamp.getTime()
-      });
-      return { updatedMessages: messagesRef.current, newMessage: recentDuplicate };
-    }
-    
+    // Simple ID-based uniqueness check (prevents UI double-clicks only)
+    // Trust the backend - if it sends a message, display it
     let result: { updatedMessages: Message[]; newMessage: Message } | null = null;
+    
     // Use functional update to ensure we always work with latest messages
     state.setMessages(prevMessages => {
       const addResult = messageManager.addMessage(prevMessages, message);
@@ -493,43 +346,63 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
       result = addResult;
       return addResult.updatedMessages;
     });
-    // CRITICAL: Fallback for cases where setMessagesWithPruning defers execution
-    // This can happen with React 18 concurrent rendering when setMessages is wrapped
+    
+    // Fallback for cases where setMessages defers execution (React 18 concurrent rendering)
     if (!result) {
-      chatLogger.warn('addMessage: Using fallback with messagesRef.current', {
-        messageType: message.type,
-        hasContent: !!message.content
-      });
-      // Safe fallback: use ref which is always current
       const fallbackResult = messageManager.addMessage(messagesRef.current, message);
       messagesRef.current = fallbackResult.updatedMessages;
-      // Trigger state update to sync React state
       state.setMessages(fallbackResult.updatedMessages);
-      return fallbackResult;
+      result = fallbackResult;
     }
+    
+    // Always update ref for streaming messages so chunks can update them
+    if (message.isStreaming && result?.newMessage) {
+      state.refs.currentStreamingMessageRef.current = result.newMessage;
+    }
+    
     return result;
   }, [state.setMessages, messageManager]);
   
   // Update streaming message helper
-  // CRITICAL FIX: Use functional state update to prevent stale state during rapid streaming
-  // ENHANCED: More resilient to ref synchronization issues - can find message even if refs are slightly out of sync
+  // SIMPLIFIED: Trust the backend - update message with chunks, find it if ref is missing
   const updateStreamingMessage = useCallback((content: string, isComplete: boolean = false) => {
-    // CRITICAL FIX: Check ref first, but fallback to finding message in state if ref is out of sync
+    // Check ref first, but fallback to finding message in state if ref is out of sync
     let currentMessageId: string | null = null;
     
     if (state.refs.currentStreamingMessageRef.current?.id) {
       currentMessageId = state.refs.currentStreamingMessageRef.current.id;
-    } else {
+      // Verify the ref message still exists and is streaming (defensive check)
+      const refMessageInState = messagesRef.current.find(
+        msg => msg.id === currentMessageId && msg.type === 'ai' && msg.isStreaming && !msg.isComplete
+      );
+      if (!refMessageInState) {
+        chatLogger.warn('Ref points to non-existent or completed message, falling back to state search', {
+          refMessageId: currentMessageId,
+          contentLength: content.length
+        });
+        // Fall through to state search
+        currentMessageId = null;
+      }
+    }
+    
+    if (!currentMessageId) {
       // ENHANCED: If ref doesn't have message, find it in the current messages array
       // This handles cases where refs are slightly out of sync
       const currentMessages = messagesRef.current;
-      const streamingMessage = currentMessages.find(
+      const streamingMessages = currentMessages.filter(
         msg => msg.type === 'ai' && msg.isStreaming && !msg.isComplete
       );
       
-      if (streamingMessage) {
+      if (streamingMessages.length > 0) {
+        // If multiple streaming messages exist, use the most recent one (shouldn't happen but handle it)
+        const streamingMessage = streamingMessages.length === 1 
+          ? streamingMessages[0]
+          : streamingMessages.sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime())[0];
+        
         chatLogger.debug('Found streaming message in state when ref was missing', {
-          messageId: streamingMessage.id
+          messageId: streamingMessage.id,
+          totalStreaming: streamingMessages.length,
+          usedMostRecent: streamingMessages.length > 1
         });
         state.refs.currentStreamingMessageRef.current = streamingMessage;
         currentMessageId = streamingMessage.id;
@@ -537,9 +410,11 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
         chatLogger.warn('No current streaming message to update', {
           contentLength: content.length,
           isComplete,
-          totalMessages: currentMessages.length
+          totalMessages: currentMessages.length,
+          aiMessages: currentMessages.filter(m => m.type === 'ai').length,
+          streamingMessages: currentMessages.filter(m => m.isStreaming).length
         });
-      return;
+        return;
       }
     }
     

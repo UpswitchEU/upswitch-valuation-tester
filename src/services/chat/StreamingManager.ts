@@ -209,13 +209,10 @@ export class StreamingManager {
       return;
     }
     
-    // CRITICAL FIX: Message could be newly created OR converted from existing complete message
-    // Either way, we need to track it for streaming updates
-    // (Conversion happens in addMessage callback - we just need to track the result)
+    // Track message for streaming updates
     chatLogger.debug('AI message ready for streaming', { 
       messageId: aiMessage.id,
-      isStreaming: aiMessage.isStreaming,
-      note: 'Message may have been converted from existing complete message'
+      isStreaming: aiMessage.isStreaming
     });
     this.currentStreamingMessageRef.current = aiMessage;
 
