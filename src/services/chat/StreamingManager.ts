@@ -3,10 +3,16 @@
  * 
  * Extracted from StreamingChat.tsx to reduce component complexity and improve maintainability.
  * Centralizes all streaming logic including async generators, EventSource fallback, and retry mechanisms.
+ * 
+ * CRITICAL: Lock Release Robustness
+ * - Lock is released in BOTH catch and finally blocks
+ * - AbortController ensures proper cleanup
+ * - Cleanup method for component unmount
  */
 
 import { Message } from '../../hooks/useStreamingChatState';
 import { chatLogger } from '../../utils/logger';
+import { debugLogger } from '../../utils/debugLogger';
 import { streamingChatService } from './streamingChatService';
 
 export interface StreamingManagerCallbacks {
@@ -33,6 +39,8 @@ export class StreamingManager {
   private requestIdRef: React.MutableRefObject<string | null>;
   private currentStreamingMessageRef: React.MutableRefObject<Message | null>;
   private currentAbortController: AbortController | null = null;
+  private isRequestInProgressRef: React.MutableRefObject<boolean> | null = null;
+  private setIsStreamingCallback: ((streaming: boolean) => void) | null = null;
 
   constructor(
     requestIdRef: React.MutableRefObject<string | null>,
@@ -40,6 +48,50 @@ export class StreamingManager {
   ) {
     this.requestIdRef = requestIdRef;
     this.currentStreamingMessageRef = currentStreamingMessageRef;
+  }
+
+  /**
+   * CRITICAL: Set refs for robust lock management
+   * Called from StreamingChat to provide lock control refs
+   */
+  setLockRefs(
+    isRequestInProgressRef: React.MutableRefObject<boolean>,
+    setIsStreamingCallback: (streaming: boolean) => void
+  ): void {
+    this.isRequestInProgressRef = isRequestInProgressRef;
+    this.setIsStreamingCallback = setIsStreamingCallback;
+  }
+
+  /**
+   * CRITICAL: Release all locks - called on errors or cleanup
+   * Ensures both requestId lock and isRequestInProgress ref are cleared
+   */
+  private releaseLocks(reason: string, requestId?: string): void {
+    debugLogger.warn('[StreamingManager]', `Releasing locks: ${reason}`, { requestId });
+    
+    this.requestIdRef.current = null;
+    
+    if (this.isRequestInProgressRef) {
+      this.isRequestInProgressRef.current = false;
+    }
+    
+    if (this.setIsStreamingCallback) {
+      this.setIsStreamingCallback(false);
+    }
+    
+    if (this.currentAbortController) {
+      this.currentAbortController.abort();
+      this.currentAbortController = null;
+    }
+  }
+
+  /**
+   * CRITICAL: Cleanup method for component unmount
+   * Ensures locks are released when component unmounts
+   */
+  cleanup(): void {
+    debugLogger.info('[StreamingManager]', 'Cleanup called - releasing all locks');
+    this.releaseLocks('Component unmount or cleanup');
   }
 
   /**
@@ -62,7 +114,7 @@ export class StreamingManager {
     onError: (error: Error) => void,
     attempt: number = 0
   ): Promise<void> {
-    console.log('[StreamingManager] startStreaming initiated', {
+    debugLogger.log('[StreamingManager]', 'startStreaming initiated', {
       userMessage: userInput,
       sessionId,
       timestamp: new Date().toISOString()
@@ -71,7 +123,7 @@ export class StreamingManager {
     // Check if request is already in progress
     if (!userInput.trim() || this.requestIdRef.current) {
       if (this.requestIdRef.current) {
-        console.warn('[StreamingManager] Request already in progress', {
+        debugLogger.warn('[StreamingManager]', 'Request already in progress', {
           existingRequestId: this.requestIdRef.current,
           sessionId
         });
@@ -87,7 +139,7 @@ export class StreamingManager {
     const requestId = `${sessionId}_${Date.now()}`;
     this.requestIdRef.current = requestId;
     
-    console.log('[StreamingManager] Request ID assigned', { requestId });
+    debugLogger.log('[StreamingManager]', 'Request ID assigned', { requestId });
     
     chatLogger.info('Starting stream request', {
       sessionId,
@@ -97,7 +149,7 @@ export class StreamingManager {
     });
     
     // Log session tracking
-    console.log('[SESSION] Sending message with session:', sessionId);
+    debugLogger.log('[SESSION]', 'Sending message with session', { sessionId });
     
     // Extract business information from user input
     const extractedBusinessModel = callbacks.extractBusinessModelFromInput(userInput);
@@ -129,7 +181,7 @@ export class StreamingManager {
     // CRITICAL FIX: Reset event handler state before starting new stream
     // This ensures hasStartedMessage and messageCreationLock are reset for the new message
     callbacks.onStreamStart?.();
-    console.log('[StreamingManager] onStreamStart callback executed');
+    debugLogger.log('[StreamingManager]', 'onStreamStart callback executed');
     
     callbacks.setIsStreaming(true);
 
@@ -144,16 +196,16 @@ export class StreamingManager {
       isComplete: false
     };
     
-    console.log('[StreamingManager] Adding AI message placeholder');
+    debugLogger.log('[StreamingManager]', 'Adding AI message placeholder');
     const { newMessage: aiMessage } = callbacks.addMessage(aiMessageData);
-    console.log('[StreamingManager] AI message placeholder added', { 
+    debugLogger.log('[StreamingManager]', 'AI message placeholder added', { 
       id: aiMessage?.id,
       isStreaming: aiMessage?.isStreaming 
     });
     
     if (!aiMessage) {
       chatLogger.error('Failed to create/reuse AI message - this should not happen');
-      callbacks.setIsStreaming(false);
+      this.releaseLocks('Failed to create AI message', requestId);
       return;
     }
     
@@ -171,7 +223,7 @@ export class StreamingManager {
     this.currentAbortController = new AbortController();
     const abortSignal = this.currentAbortController.signal;
     
-    console.log('[StreamingManager] About to call streamWithAsyncGenerator', {
+    debugLogger.log('[StreamingManager]', 'About to call streamWithAsyncGenerator', {
       sessionId,
       userMessage: userInput.substring(0, 50),
       messageId: aiMessage.id
@@ -198,11 +250,20 @@ export class StreamingManager {
         timeoutPromise
       ]);
       
-      console.log('[StreamingManager] Stream processing completed successfully');
+      debugLogger.log('[StreamingManager]', 'Stream processing completed successfully');
     } catch (error) {
+      // CRITICAL FIX: Release locks in catch block BEFORE any retry logic
+      // This ensures lock is released even if error handling fails
+      const shouldRetry = attempt < 3;
+      
+      if (!shouldRetry) {
+        // Only release locks if not retrying (retry will start new request with new lock)
+        this.releaseLocks('Error in stream processing (no retry)', requestId);
+      }
+      
       // Check if it's a timeout error
       if (error instanceof Error && error.message.includes('Stream timeout')) {
-        console.error('[StreamingManager] Stream timeout', { error });
+        debugLogger.error('[StreamingManager]', 'Stream timeout', { error });
         
         // Show error to user
         callbacks.setIsStreaming(false);
@@ -217,11 +278,13 @@ export class StreamingManager {
         
         throw error;
       }
-      console.error('[StreamingManager] Error in streamWithAsyncGenerator', {
+      
+      debugLogger.error('[StreamingManager]', 'Error in streamWithAsyncGenerator', {
         error,
         message: error instanceof Error ? error.message : String(error),
         stack: error instanceof Error ? error.stack : undefined
       });
+      
       chatLogger.error('Async generator error', { 
         error: error instanceof Error ? error.message : 'Unknown error',
         stack: error instanceof Error ? error.stack : undefined,
@@ -233,13 +296,16 @@ export class StreamingManager {
       });
       
       // Retry logic with exponential backoff
-      if (attempt < 3) {
+      if (shouldRetry) {
         const delay = Math.min(1000 * Math.pow(2, attempt), 10000);
         chatLogger.info('Retrying streaming conversation', { 
           attempt: attempt + 1, 
           delay,
           sessionId 
         });
+        
+        // CRITICAL: Release current locks before retry (retry will set new locks)
+        this.releaseLocks('Error in stream processing (will retry)', requestId);
         
         setTimeout(() => {
           this.startStreaming(sessionId, userInput, userId, callbacks, onEvent, onError, attempt + 1);
@@ -258,10 +324,16 @@ export class StreamingManager {
       
       onError(error instanceof Error ? error : new Error('Unknown streaming error'));
     } finally {
-      // Clear request ID and abort controller to allow new requests
-      this.requestIdRef.current = null;
-      this.currentAbortController = null;
-      console.log('[StreamingManager] Request lock cleared', { requestId });
+      // CRITICAL FIX: Robust lock release in finally block
+      // This is the safety net - ensures locks are ALWAYS released
+      // Even if catch block is somehow bypassed
+      const wasLocked = this.requestIdRef.current !== null;
+      if (wasLocked) {
+        debugLogger.warn('[StreamingManager]', 'Finally block releasing locks (safety net)', { requestId });
+        this.releaseLocks('Finally block (safety net)', requestId);
+      } else {
+        debugLogger.log('[StreamingManager]', 'Finally block - locks already released', { requestId });
+      }
     }
   }
 
@@ -407,14 +479,10 @@ export class StreamingManager {
 
   /**
    * Clear current request (useful for cleanup)
-   * CRITICAL FIX: Also aborts any ongoing requests
+   * CRITICAL FIX: Uses releaseLocks for robust cleanup
    */
   clearCurrentRequest(): void {
-    this.requestIdRef.current = null;
-    if (this.currentAbortController) {
-      this.currentAbortController.abort();
-      this.currentAbortController = null;
-    }
+    this.releaseLocks('Manual clearCurrentRequest call');
   }
 
   /**

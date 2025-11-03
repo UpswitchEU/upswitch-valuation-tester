@@ -11,6 +11,7 @@ import { AI_CONFIG } from '../config';
 import { useAuth } from '../hooks/useAuth';
 import { useTypingAnimation } from '../hooks/useTypingAnimation';
 import { chatLogger } from '../utils/logger';
+import { debugLogger } from '../utils/debugLogger';
 import { SuggestionChips } from './SuggestionChips';
 import { TypingIndicator } from './TypingIndicator';
 // Note: Business extraction utilities available if needed
@@ -576,12 +577,26 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
   // Request lock to prevent duplicate stream requests
   const isRequestInProgressRef = useRef(false);
   
+  // CRITICAL FIX: Provide lock refs to StreamingManager for robust lock management
+  // Also cleanup on component unmount to release locks
+  useEffect(() => {
+    streamingManager.setLockRefs(isRequestInProgressRef, state.setIsStreaming);
+    
+    debugLogger.info('[StreamingChat]', 'StreamingManager lock refs configured');
+    
+    // Cleanup on unmount - ensures locks are ALWAYS released
+    return () => {
+      debugLogger.info('[StreamingChat]', 'Component unmounting - cleaning up StreamingManager');
+      streamingManager.cleanup();
+    };
+  }, [streamingManager, state.setIsStreaming]);
+  
   // Handle form submission
   const handleSubmit = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
     
     // CRITICAL DEBUG: Log ALL state BEFORE any checks to diagnose blocking
-    console.log('[DEBUG] handleSubmit ENTRY - Lock State Check', {
+    debugLogger.log('[DEBUG]', 'handleSubmit ENTRY - Lock State Check', {
       isRequestInProgress: isRequestInProgressRef.current,
       isStreaming: state.isStreaming,
       hasInput: !!state.input.trim(),
@@ -591,7 +606,7 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
       timestamp: new Date().toISOString()
     });
     
-    console.log('[StreamingChat] handleSubmit called', {
+    debugLogger.log('[StreamingChat]', 'handleSubmit called', {
       input: state.input,
       isStreaming: state.isStreaming,
       sessionId,
@@ -602,7 +617,7 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
     // CRITICAL FIX: Enhanced lock check with detailed logging
     // Check both state and ref to prevent duplicate requests
     if (isRequestInProgressRef.current || state.isStreaming || !state.input.trim() || disabled) {
-      console.warn('[StreamingChat] Submit blocked', { 
+      debugLogger.warn('[StreamingChat]', 'Submit blocked', { 
         reason: !state.input.trim() ? 'empty input' : isRequestInProgressRef.current ? 'request in progress' : state.isStreaming ? 'already streaming' : 'disabled',
         requestInProgress: isRequestInProgressRef.current,
         isStreaming: state.isStreaming,
