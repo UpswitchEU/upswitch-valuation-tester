@@ -10,8 +10,8 @@ import React, { startTransition, useCallback, useEffect, useMemo, useRef, useSta
 import { AI_CONFIG } from '../config';
 import { useAuth } from '../hooks/useAuth';
 import { useTypingAnimation } from '../hooks/useTypingAnimation';
-import { chatLogger } from '../utils/logger';
 import { debugLogger } from '../utils/debugLogger';
+import { chatLogger } from '../utils/logger';
 import { SuggestionChips } from './SuggestionChips';
 import { TypingIndicator } from './TypingIndicator';
 // Note: Business extraction utilities available if needed

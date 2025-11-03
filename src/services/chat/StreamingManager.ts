@@ -11,8 +11,8 @@
  */
 
 import { Message } from '../../hooks/useStreamingChatState';
-import { chatLogger } from '../../utils/logger';
 import { debugLogger } from '../../utils/debugLogger';
+import { chatLogger } from '../../utils/logger';
 import { streamingChatService } from './streamingChatService';
 
 export interface StreamingManagerCallbacks {
