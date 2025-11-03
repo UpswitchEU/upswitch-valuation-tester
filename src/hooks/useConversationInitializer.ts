@@ -257,8 +257,7 @@ export const useConversationInitializer = (
           
           // CRITICAL FIX: Create initial message from /start endpoint
           // This displays the first question immediately when page loads
-          // Deduplication in addMessage will prevent duplicates when /stream starts
-          // (it will convert this complete message to streaming instead of creating a new one)
+          // Backend handles message flow - frontend trusts backend completely
           const message: Omit<Message, 'id' | 'timestamp'> = {
             type: 'ai',
             content: data.ai_message,

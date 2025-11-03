@@ -251,7 +251,7 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
     setValuationPreview: state.setValuationPreview,
     setCalculateOption: state.setCalculateOption,
     addMessage: (message: Omit<Message, 'id' | 'timestamp'>) => {
-      // SIMPLIFIED: Trust the backend - create message, no complex duplicate checks
+      // Trust the backend - add message as received
       let result: { updatedMessages: Message[]; newMessage: Message } | null = null;
       
       // Use functional update to ensure latest state
@@ -332,10 +332,9 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
     onMessageComplete
   ]);
   
-  // Add message helper - SIMPLIFIED: Trust the backend, simple ID-based uniqueness
+  // Add message helper - Trust the backend completely
   const addMessage = useCallback((message: Omit<Message, 'id' | 'timestamp'>) => {
-    // Simple ID-based uniqueness check (prevents UI double-clicks only)
-    // Trust the backend - if it sends a message, display it
+    // Trust the backend - add message as received
     let result: { updatedMessages: Message[]; newMessage: Message } | null = null;
     
     // Use functional update to ensure we always work with latest messages
