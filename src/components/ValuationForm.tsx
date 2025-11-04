@@ -200,6 +200,18 @@ export const ValuationForm: React.FC = () => {
               value={formData.business_type_id}
               businessTypes={businessTypes}
               onChange={(businessType) => {
+                // DIAGNOSTIC: Log selected business type with full details
+                console.log('[DIAGNOSTIC-FORM] Business type selected:', {
+                  id: businessType.id,
+                  title: businessType.title,
+                  dcfPreference: businessType.dcfPreference,
+                  multiplesPreference: businessType.multiplesPreference,
+                  ownerDependencyImpact: businessType.ownerDependencyImpact,
+                  keyMetrics: businessType.keyMetrics,
+                  hasPreferences: !!(businessType.dcfPreference !== undefined && businessType.multiplesPreference !== undefined),
+                  allKeys: Object.keys(businessType)
+                });
+                
                 generalLogger.info('Business type selected', {
                   id: businessType.id,
                   title: businessType.title,
