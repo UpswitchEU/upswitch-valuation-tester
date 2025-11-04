@@ -379,21 +379,6 @@ export const ValuationForm: React.FC = () => {
         {formData.business_type === 'company' && (
           <div className="grid grid-cols-1 @4xl:grid-cols-2 gap-6">
             <CustomNumberInputField
-              label="Full-Time Equivalent (FTE) Employees"
-              placeholder="e.g., 12 (include part-time as FTE)"
-              value={formData.number_of_employees || ''}
-              onChange={(e) => {
-                const value = parseInt(e.target.value) || undefined;
-                updateFormData({ number_of_employees: value });
-              }}
-              onBlur={() => {}}
-              name="number_of_employees"
-              min={0}
-              step={1}
-              helpText="Total workforce converted to full-time equivalents. Part-time employees count proportionally (e.g., 2 half-time = 1 FTE). Excludes contractors and external consultants. Used to assess operational scale and key person risk. Only applicable for companies with shareholders."
-            />
-            
-            <CustomNumberInputField
               label="Active Owner-Managers"
               placeholder="e.g., 2 (founder + COO who owns equity)"
               value={formData.number_of_owners || 1}
@@ -407,6 +392,21 @@ export const ValuationForm: React.FC = () => {
               max={100}
               step={1}
               helpText="Shareholders who actively work in the business in executive or management roles. Include: C-suite shareholders, working directors, founder-operators. Exclude: passive investors, silent partners, external board members. Only applicable for companies with shareholders. High owner concentration (>25% of workforce) typically reduces valuation by 7-20%."
+            />
+            
+            <CustomNumberInputField
+              label="Full-Time Equivalent (FTE) Employees"
+              placeholder="e.g., 12 (include part-time as FTE)"
+              value={formData.number_of_employees || ''}
+              onChange={(e) => {
+                const value = parseInt(e.target.value) || undefined;
+                updateFormData({ number_of_employees: value });
+              }}
+              onBlur={() => {}}
+              name="number_of_employees"
+              min={0}
+              step={1}
+              helpText="Total workforce converted to full-time equivalents. Part-time employees count proportionally (e.g., 2 half-time = 1 FTE). Excludes contractors and external consultants. Used to assess operational scale and key person risk. Only applicable for companies with shareholders."
             />
           </div>
         )}
