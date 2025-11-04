@@ -16,6 +16,7 @@ import { suggestionService } from '../services/businessTypeSuggestionApi';
 import { industriesApi } from '../services/industriesApi';
 import { debounce } from '../utils/debounce';
 import { generalLogger } from '../utils/logger';
+import { safePreference } from '../utils/numberUtils';
 import { CustomBusinessTypeSearch, CustomDropdown, CustomInputField, CustomNumberInputField, HistoricalDataInputs } from './forms';
 
 /**
@@ -236,10 +237,10 @@ export const ValuationForm: React.FC = () => {
                   business_model: businessType.id, // Use business type id as business model
                   industry: businessType.industry || businessType.industryMapping,
                   subIndustry: businessType.category || undefined,
-                  // Store metadata for business context
-                  _internal_dcf_preference: businessType.dcfPreference,
-                  _internal_multiples_preference: businessType.multiplesPreference,
-                  _internal_owner_dependency_impact: businessType.ownerDependencyImpact,
+                  // Store metadata for business context (convert to numbers with validation)
+                  _internal_dcf_preference: safePreference(businessType.dcfPreference),
+                  _internal_multiples_preference: safePreference(businessType.multiplesPreference),
+                  _internal_owner_dependency_impact: safePreference(businessType.ownerDependencyImpact),
                   _internal_key_metrics: businessType.keyMetrics,
                   _internal_typical_employee_range: businessType.typicalEmployeeRange,
                   _internal_typical_revenue_range: businessType.typicalRevenueRange,

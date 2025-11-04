@@ -3,6 +3,7 @@ import { api } from '../services/api';
 import { backendAPI } from '../services/backendApi';
 import type { QuickValuationRequest, ValuationFormData, ValuationInputData, ValuationRequest, ValuationResponse } from '../types/valuation';
 import { storeLogger } from '../utils/logger';
+import { validatePreference } from '../utils/numberUtils';
 // import { useReportsStore } from './useReportsStore'; // Deprecated: Now saving to database
 
 interface ValuationStore {
@@ -230,9 +231,10 @@ export const useValuationStore = create<ValuationStore>((set, get) => ({
         // NEW: Include PostgreSQL business type ID and context metadata
         business_type_id: formData.business_type_id,
         business_context: formData.business_type_id ? {
-          dcfPreference: formData._internal_dcf_preference,
-          multiplesPreference: formData._internal_multiples_preference,
-          ownerDependencyImpact: formData._internal_owner_dependency_impact,
+          // Values already converted to numbers in ValuationForm.tsx, but validate range as defensive check
+          dcfPreference: validatePreference(formData._internal_dcf_preference),
+          multiplesPreference: validatePreference(formData._internal_multiples_preference),
+          ownerDependencyImpact: validatePreference(formData._internal_owner_dependency_impact),
           keyMetrics: formData._internal_key_metrics,
           typicalEmployeeRange: formData._internal_typical_employee_range,
           typicalRevenueRange: formData._internal_typical_revenue_range,
