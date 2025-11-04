@@ -4,6 +4,8 @@ import { METHODOLOGY_DOCS } from '../../content/methodologyDocs';
 import type { ValuationResponse } from '../../types/valuation';
 import { DocumentationModal } from '../ui/DocumentationModal';
 import { Tooltip } from '../ui/Tooltip';
+import { DCFExclusionNotice } from './DCFExclusionNotice';
+import { SmallFirmAdjustments } from './SmallFirmAdjustments';
 import { formatCurrency } from './utils/formatters';
 import { getWeightExplanation } from './utils/weightExplanation';
 
@@ -71,6 +73,9 @@ export const MethodologyBreakdown: React.FC<MethodologyBreakdownProps> = ({ resu
 
   return (
     <div className="space-y-6">
+      {/* DCF Exclusion Notice (if DCF not used) */}
+      <DCFExclusionNotice result={result} />
+      
       {/* Dynamic Methodology Description */}
       <div className="bg-white rounded-lg border border-gray-200 p-4 sm:p-6 shadow-sm">
         <div className="flex items-center justify-between mb-4">
@@ -226,6 +231,9 @@ export const MethodologyBreakdown: React.FC<MethodologyBreakdownProps> = ({ resu
           </div>
         </div>
       )}
+
+      {/* Small Firm Adjustments Section (NEW) */}
+      <SmallFirmAdjustments result={result} />
 
       {/* Final Calculation - Only if both methods are used */}
       {dcfWeight > 0 && multiplesWeight > 0 && (

@@ -224,6 +224,31 @@ export interface ValidationWarning {
   recommended_action?: string;
 }
 
+// Small Firm Effect Transparency Types
+export interface SmallFirmAdjustments {
+  size_discount: number;
+  size_discount_reason: string;
+  liquidity_discount: number;
+  liquidity_discount_reason: string;
+  country_adjustment: number;
+  country_adjustment_reason: string;
+  growth_premium: number;
+  growth_premium_reason: string;
+  combined_effect: number;
+  base_value_before_adjustments: number;
+  adjusted_value_after_adjustments: number;
+}
+
+export interface MethodologySelection {
+  selected_methodology: string;
+  dcf_included: boolean;
+  dcf_weight: number;
+  dcf_exclusion_reason?: string;
+  multiples_included: boolean;
+  multiples_weight: number;
+  selection_rationale: string;
+}
+
 export interface ValuationResponse {
   valuation_id: string;
   company_name: string;
@@ -384,6 +409,14 @@ export interface ValuationResponse {
   key_value_drivers: string[];
   value_drivers?: string[]; // Alias for key_value_drivers
   risk_factors: string[];
+  
+  // Small Firm Effect Transparency (Phase: Small Firm Transparency)
+  methodology_selection?: MethodologySelection;
+  small_firm_adjustments?: SmallFirmAdjustments;
+  dcf_exclusion_reason?: string; // Backward compatibility field
+  
+  // Additional data
+  current_year_data?: YearDataInput; // For accessing revenue, ebitda, etc.
 }
 
 export interface CompanyLookupResult {
