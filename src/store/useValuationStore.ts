@@ -223,8 +223,14 @@ export const useValuationStore = create<ValuationStore>((set, get) => ({
                 ebitda: ebitda * 0.9,
               }]
             : [], // Don't send historical data if current data is invalid
-        number_of_employees: formData.number_of_employees && formData.number_of_employees >= 0 ? formData.number_of_employees : undefined,
-        number_of_owners: formData.number_of_owners && formData.number_of_owners >= 1 ? formData.number_of_owners : 1,
+        // Only include owner concentration fields for companies (not sole traders)
+        // Sole traders are inherently owner-operated, so owner concentration analysis doesn't apply
+        number_of_employees: (formData.business_type === 'sole-trader')
+          ? undefined 
+          : (formData.number_of_employees && formData.number_of_employees >= 0 ? formData.number_of_employees : undefined),
+        number_of_owners: (formData.business_type === 'sole-trader')
+          ? undefined 
+          : (formData.number_of_owners && formData.number_of_owners >= 1 ? formData.number_of_owners : 1),
         recurring_revenue_percentage: recurringRevenue,
         use_dcf: true,
         use_multiples: true,

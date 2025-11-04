@@ -410,7 +410,6 @@ export const MultiplesTransparencySection: React.FC<MultiplesTransparencySection
       {/* Small Firm Adjustments Section */}
       {result.small_firm_adjustments && (() => {
         const adjustments = result.small_firm_adjustments;
-        const revenue = inputData?.revenue || result.current_year_data?.revenue || 0;
         
         // Validate required fields exist
         if (!adjustments.size_discount_reason || 

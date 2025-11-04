@@ -8,7 +8,6 @@ interface SmallFirmAdjustmentsProps {
 
 export const SmallFirmAdjustments: React.FC<SmallFirmAdjustmentsProps> = ({ result }) => {
   const adjustments = result.small_firm_adjustments;
-  const revenue = result.current_year_data?.revenue || result.financial_metrics?.revenue_growth || 0;
   
   // Only show if adjustments data exists
   if (!adjustments) {
