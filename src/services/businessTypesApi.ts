@@ -114,6 +114,19 @@ class BusinessTypesApiService {
         const businessTypes = typesResponse.data.data.business_types;
         const categories = categoriesResponse.data.success ? categoriesResponse.data.data : [];
         
+        // DIAGNOSTIC: Log sample business type to verify preferences are present
+        if (businessTypes.length > 0) {
+          console.log('[DIAGNOSTIC-API] Sample business type from API:', {
+            id: businessTypes[0].id,
+            title: businessTypes[0].title,
+            dcfPreference: businessTypes[0].dcfPreference,
+            multiplesPreference: businessTypes[0].multiplesPreference,
+            ownerDependencyImpact: businessTypes[0].ownerDependencyImpact,
+            keyMetrics: businessTypes[0].keyMetrics,
+            hasAllFields: !!(businessTypes[0].dcfPreference !== undefined && businessTypes[0].multiplesPreference !== undefined)
+          });
+        }
+        
         // Cache the complete data
         await businessTypesCache.setBusinessTypes({
           businessTypes,
@@ -169,6 +182,13 @@ class BusinessTypesApiService {
       industryMapping: bt.category,
       keywords: [bt.category.toLowerCase()],
       popular: true,
+      // Add default preferences for fallback data
+      dcfPreference: 0.47,
+      multiplesPreference: 0.53,
+      ownerDependencyImpact: 0.5,
+      keyMetrics: ['revenue', 'ebitda', 'growth_rate'],
+      typicalEmployeeRange: { min: 1, max: 50 },
+      typicalRevenueRange: { min: 100000, max: 5000000 },
       status: 'active',
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString()
