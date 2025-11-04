@@ -325,6 +325,22 @@ export const ValuationForm: React.FC = () => {
             min={0}
             step={1}
           />
+          
+          {/* Number of Operational Owners - C-level + working shareholders */}
+          <CustomNumberInputField
+            label="Number of Operational Owners"
+            placeholder="e.g., 2"
+            value={formData.number_of_owners || 1}
+            onChange={(e) => {
+              const value = parseInt(e.target.value) || 1;
+              updateFormData({ number_of_owners: value });
+            }}
+            onBlur={() => {}}
+            name="number_of_owners"
+            min={1}
+            max={100}
+            step={1}
+          />
         </div>
       </div>
 

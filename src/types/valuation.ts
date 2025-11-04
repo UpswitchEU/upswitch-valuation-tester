@@ -69,6 +69,7 @@ export interface ValuationRequest {
   
   // Optional company details
   number_of_employees?: number;
+  number_of_owners?: number; // Number of operational owners (C-level + working shareholders)
   recurring_revenue_percentage?: number; // 0.0 to 1.0
   
   // Additional business context
@@ -121,6 +122,7 @@ export interface ValuationFormData extends Partial<ValuationRequest> {
   // Phase 2: Sub-industry granularity
   subIndustry?: string;
   employees?: number;
+  owners?: number; // Alias for number_of_owners
   
   // Internal preferences (stored locally, sent in business_context)
   _internal_dcf_preference?: number;

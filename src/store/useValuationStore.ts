@@ -64,6 +64,7 @@ const defaultFormData: ValuationFormData = {
   founding_year: getSafeCurrentYear() - 5, // Default to 5 years ago
   business_type: 'company',
   shares_for_sale: 100,
+  number_of_owners: 1, // Default to 1 owner
   revenue: undefined,
   ebitda: undefined,
   current_year_data: {
@@ -223,6 +224,7 @@ export const useValuationStore = create<ValuationStore>((set, get) => ({
               }]
             : [], // Don't send historical data if current data is invalid
         number_of_employees: formData.number_of_employees && formData.number_of_employees >= 0 ? formData.number_of_employees : undefined,
+        number_of_owners: formData.number_of_owners && formData.number_of_owners >= 1 ? formData.number_of_owners : 1,
         recurring_revenue_percentage: recurringRevenue,
         use_dcf: true,
         use_multiples: true,
