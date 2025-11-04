@@ -344,6 +344,24 @@ export interface ValuationResponse {
     adjusted_equity_value: number;
     confidence: string;
     confidence_score: number;
+    
+    // Owner concentration details
+    owner_concentration?: {
+      ratio: number;  // 0.0 to 1.0
+      adjustment_factor: number;  // e.g., -0.12 for -12%
+      number_of_owners: number;
+      number_of_employees: number;
+      calibration?: {  // Optional: if backend sends calibration details
+        business_type_id?: string;
+        calibration_type?: 'industry-specific' | 'universal';
+        owner_dependency_impact?: number;
+        tier_used?: string;  // "CRITICAL" | "HIGH" | "MEDIUM" | "LOW"
+      };
+    };
+    
+    // Original (unadjusted) multiples for transparency
+    unadjusted_ebitda_multiple?: number;
+    unadjusted_revenue_multiple?: number;
   };
   
   // Financial Metrics (comprehensive)

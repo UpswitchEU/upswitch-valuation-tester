@@ -8,6 +8,7 @@ import { ErrorBoundary } from '../ErrorBoundary';
 import { CompetitiveComparison } from './CompetitiveComparison';
 import { GrowthMetrics } from './GrowthMetrics';
 import { MethodologyBreakdown } from './MethodologyBreakdown';
+import { OwnerConcentrationAnalysis } from './OwnerConcentrationAnalysis';
 import { OwnershipAdjustments } from './OwnershipAdjustments';
 import { ResultsHeader } from './ResultsHeader';
 import { RiskFactors } from './RiskFactors';
@@ -38,6 +39,13 @@ export const Results: React.FC = () => {
       
       {/* Ownership Adjustments */}
       <OwnershipAdjustments result={result} />
+      
+      {/* Owner Concentration Analysis (if applicable) */}
+      {result.multiples_valuation?.owner_concentration && (
+        <ErrorBoundary fallback={<div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg text-yellow-700">Error loading owner concentration analysis</div>}>
+          <OwnerConcentrationAnalysis result={result} />
+        </ErrorBoundary>
+      )}
       
       {/* Methodology Breakdown - Enhanced with transparency */}
       <ErrorBoundary fallback={<div className="p-4 bg-red-50 border border-red-200 rounded-lg text-red-700">Error loading methodology breakdown</div>}>
