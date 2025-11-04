@@ -420,9 +420,6 @@ export const MultiplesTransparencySection: React.FC<MultiplesTransparencySection
           return null; // Don't show section if data incomplete
         }
         
-        // Only show for small companies (<€10M)
-        if (revenue > 10_000_000) return null;
-        
         const formatAdjustment = (value: number) => {
           if (!isFinite(value)) return '0.0%';
           const sign = value > 0 ? '+' : '';
@@ -440,7 +437,7 @@ export const MultiplesTransparencySection: React.FC<MultiplesTransparencySection
             <div className="space-y-6">
               <div className="bg-blue-50 border-l-4 border-blue-500 p-4 rounded">
                 <p className="text-sm text-gray-700 mb-2">
-                  Your company's base valuation has been adjusted to reflect market realities for small businesses.
+                  Your company's base valuation has been adjusted to reflect market realities. Multiples from databases (Bloomberg, Capital IQ, PitchBook) become correct at around €5M revenue (McKinsey standard). Companies below this threshold require size-based corrections.
                 </p>
               </div>
 
@@ -454,7 +451,7 @@ export const MultiplesTransparencySection: React.FC<MultiplesTransparencySection
                 </div>
                 <p className="text-sm text-gray-600 mb-2">{adjustments.size_discount_reason}</p>
                 <p className="text-xs text-gray-500">
-                  <strong>Market Data:</strong> Based on 2,500+ European SME transactions (Duff & Phelps 2024)
+                  <strong>Market Data:</strong> Based on 2,500+ European SME transactions (Duff & Phelps 2024). Multiples become correct at €5M revenue (McKinsey standard).
                 </p>
               </div>
 
@@ -527,7 +524,7 @@ export const MultiplesTransparencySection: React.FC<MultiplesTransparencySection
               <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
                 <h4 className="font-semibold text-gray-900 mb-2 text-sm">Academic & Industry Standards</h4>
                 <div className="text-xs text-gray-700 space-y-1">
-                  <p><strong>Size Premium:</strong> Duff & Phelps Risk Premium Report 2024, Ibbotson SBBI</p>
+                  <p><strong>Size Premium:</strong> Duff & Phelps Risk Premium Report 2024, Ibbotson SBBI. Multiples become correct at €5M revenue (McKinsey Valuation Handbook).</p>
                   <p><strong>Liquidity Discount:</strong> Damodaran (2005), Koeplin et al. (2000)</p>
                   <p><strong>Growth Premium:</strong> Capital IQ transaction database, PwC Valuation Handbook</p>
                   <p><strong>Country Risk:</strong> Big 4 (Deloitte, PwC, EY, KPMG) country risk matrices</p>

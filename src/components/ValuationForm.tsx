@@ -84,6 +84,29 @@ export const ValuationForm: React.FC = () => {
     debouncedQuickCalc(formData);
   }, [formData.revenue, formData.ebitda, formData.industry, formData.country_code]);
 
+  // Clear owner concentration fields when switching to sole-trader
+  // Set defaults when switching to company
+  useEffect(() => {
+    if (formData.business_type === 'sole-trader') {
+      // Clear owner concentration fields (not applicable for sole traders)
+      // Sole traders are inherently 100% owner-operated - no owner concentration analysis needed
+      // Only update if values are currently set (avoid unnecessary updates)
+      if (formData.number_of_employees !== undefined || formData.number_of_owners !== undefined) {
+        updateFormData({
+          number_of_employees: undefined,
+          number_of_owners: undefined,
+        });
+      }
+    } else if (formData.business_type === 'company') {
+      // Set default number_of_owners if not already set (minimum 1 for companies)
+      // Only update if value is missing or invalid (avoid unnecessary updates)
+      if (!formData.number_of_owners || formData.number_of_owners < 1) {
+        updateFormData({ number_of_owners: 1 });
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [formData.business_type]); // Only depend on business_type to avoid loops
+
   // businessTypes now comes directly from useBusinessTypes() hook with full PostgreSQL metadata
   // No conversion needed - preserves dcfPreference, multiplesPreference, keywords, etc.
 
@@ -312,39 +335,6 @@ export const ValuationForm: React.FC = () => {
             helpText="Country where majority of operations and revenue occur. For multi-country businesses, select headquarters location. Affects market multiples, risk-free rates, and tax assumptions."
             required
           />
-
-          {/* Number of Employees */}
-          <CustomNumberInputField
-            label="Full-Time Equivalent (FTE) Employees"
-            placeholder="e.g., 12 (include part-time as FTE)"
-            value={formData.number_of_employees || ''}
-            onChange={(e) => {
-              const value = parseInt(e.target.value) || undefined;
-              updateFormData({ number_of_employees: value });
-            }}
-            onBlur={() => {}}
-            name="number_of_employees"
-            min={0}
-            step={1}
-            helpText="Total workforce converted to full-time equivalents. Part-time employees count proportionally (e.g., 2 half-time = 1 FTE). Excludes contractors and external consultants. Used to assess operational scale and key person risk."
-          />
-          
-          {/* Active Owner-Managers */}
-          <CustomNumberInputField
-            label="Active Owner-Managers"
-            placeholder="e.g., 2 (founder + COO who owns equity)"
-            value={formData.number_of_owners || 1}
-            onChange={(e) => {
-              const value = parseInt(e.target.value) || 1;
-              updateFormData({ number_of_owners: value });
-            }}
-            onBlur={() => {}}
-            name="number_of_owners"
-            min={1}
-            max={100}
-            step={1}
-            helpText="Shareholders who actively work in the business in executive or management roles. Include: C-suite shareholders, working directors, founder-operators. Exclude: passive investors, silent partners, external board members. High owner concentration (>25% of workforce) typically reduces valuation by 7-20%."
-          />
         </div>
       </div>
 
@@ -384,6 +374,42 @@ export const ValuationForm: React.FC = () => {
             />
           )}
         </div>
+
+        {/* Owner Concentration Fields - Only for Companies */}
+        {formData.business_type === 'company' && (
+          <div className="grid grid-cols-1 @4xl:grid-cols-2 gap-6">
+            <CustomNumberInputField
+              label="Full-Time Equivalent (FTE) Employees"
+              placeholder="e.g., 12 (include part-time as FTE)"
+              value={formData.number_of_employees || ''}
+              onChange={(e) => {
+                const value = parseInt(e.target.value) || undefined;
+                updateFormData({ number_of_employees: value });
+              }}
+              onBlur={() => {}}
+              name="number_of_employees"
+              min={0}
+              step={1}
+              helpText="Total workforce converted to full-time equivalents. Part-time employees count proportionally (e.g., 2 half-time = 1 FTE). Excludes contractors and external consultants. Used to assess operational scale and key person risk. Only applicable for companies with shareholders."
+            />
+            
+            <CustomNumberInputField
+              label="Active Owner-Managers"
+              placeholder="e.g., 2 (founder + COO who owns equity)"
+              value={formData.number_of_owners || 1}
+              onChange={(e) => {
+                const value = parseInt(e.target.value) || 1;
+                updateFormData({ number_of_owners: value });
+              }}
+              onBlur={() => {}}
+              name="number_of_owners"
+              min={1}
+              max={100}
+              step={1}
+              helpText="Shareholders who actively work in the business in executive or management roles. Include: C-suite shareholders, working directors, founder-operators. Exclude: passive investors, silent partners, external board members. Only applicable for companies with shareholders. High owner concentration (>25% of workforce) typically reduces valuation by 7-20%."
+            />
+          </div>
+        )}
       </div>
 
       {/* Financial Data */}
