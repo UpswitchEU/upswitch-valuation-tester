@@ -59,6 +59,15 @@ export const MethodologyBreakdown: React.FC<MethodologyBreakdownProps> = ({ resu
   const dcfValue = result.dcf_valuation?.equity_value || 0;
   const multiplesValue = result.multiples_valuation?.ev_ebitda_valuation || 0;
   const finalValue = (dcfValue * dcfWeight) + (multiplesValue * multiplesWeight);
+  
+  // Extract valuation range values
+  const equityValueMid = result.equity_value_mid || finalValue;
+  const equityValueLow = result.equity_value_low || 0;
+  const equityValueHigh = result.equity_value_high || 0;
+  
+  // Calculate spreads for low/high estimates
+  const downside = equityValueMid > 0 ? ((equityValueMid - equityValueLow) / equityValueMid) * 100 : 0;
+  const upside = equityValueMid > 0 ? ((equityValueHigh - equityValueMid) / equityValueMid) * 100 : 0;
 
   return (
     <div className="space-y-6">
@@ -228,6 +237,16 @@ export const MethodologyBreakdown: React.FC<MethodologyBreakdownProps> = ({ resu
             <div className="text-lg font-semibold text-gray-900 pt-2 border-t border-gray-300">
               = {formatCurrency(finalValue)}
             </div>
+            {equityValueLow > 0 && equityValueHigh > 0 && (
+              <>
+                <div className="pt-2 border-t border-gray-300 mt-2">
+                  • Low: {formatCurrency(equityValueMid)} × (1 - {downside.toFixed(1)}%) = {formatCurrency(equityValueLow)}
+                </div>
+                <div>
+                  • High: {formatCurrency(equityValueMid)} × (1 + {upside.toFixed(1)}%) = {formatCurrency(equityValueHigh)}
+                </div>
+              </>
+            )}
           </div>
         </div>
       )}
