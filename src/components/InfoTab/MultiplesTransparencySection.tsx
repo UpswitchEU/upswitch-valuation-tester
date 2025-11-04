@@ -235,17 +235,24 @@ export const MultiplesTransparencySection: React.FC<MultiplesTransparencySection
       </ExpandableSection>
 
       {/* Owner Concentration Adjustment Section */}
-      {result.multiples_valuation?.owner_concentration && (() => {
+      {result.multiples_valuation?.owner_concentration && 
+       result.multiples_valuation.owner_concentration.number_of_employees > 0 && (() => {
         const ownerConcentration = result.multiples_valuation.owner_concentration;
         const calibration = ownerConcentration.calibration;
         
         // Calculate unadjusted multiples if not provided
+        // Guard against division by zero (adjustment_factor === -1.0)
         const adjustedEbitda = result.multiples_valuation.ebitda_multiple || 0;
         const adjustedRevenue = result.multiples_valuation.revenue_multiple || 0;
+        const adjustmentFactor = ownerConcentration.adjustment_factor;
         const unadjustedEbitda = result.multiples_valuation.unadjusted_ebitda_multiple || 
-                                 (adjustedEbitda / (1 + ownerConcentration.adjustment_factor));
+                                 (adjustmentFactor === -1 
+                                   ? adjustedEbitda 
+                                   : (adjustedEbitda / (1 + adjustmentFactor)));
         const unadjustedRevenue = result.multiples_valuation.unadjusted_revenue_multiple || 
-                                  (adjustedRevenue / (1 + ownerConcentration.adjustment_factor));
+                                  (adjustmentFactor === -1 
+                                    ? adjustedRevenue 
+                                    : (adjustedRevenue / (1 + adjustmentFactor)));
         
         return (
           <ExpandableSection
@@ -393,6 +400,137 @@ export const MultiplesTransparencySection: React.FC<MultiplesTransparencySection
                     <strong>Validation:</strong> Tier boundaries calibrated against 1,000+ historical SME 
                     transactions, with industry-specific adjustments based on business type characteristics.
                   </p>
+                </div>
+              </div>
+            </div>
+          </ExpandableSection>
+        );
+      })()}
+
+      {/* Small Firm Adjustments Section */}
+      {result.small_firm_adjustments && (() => {
+        const adjustments = result.small_firm_adjustments;
+        const revenue = inputData?.revenue || result.current_year_data?.revenue || 0;
+        
+        // Validate required fields exist
+        if (!adjustments.size_discount_reason || 
+            !adjustments.liquidity_discount_reason ||
+            adjustments.base_value_before_adjustments === undefined ||
+            adjustments.adjusted_value_after_adjustments === undefined) {
+          return null; // Don't show section if data incomplete
+        }
+        
+        // Only show for small companies (<€10M)
+        if (revenue > 10_000_000) return null;
+        
+        const formatAdjustment = (value: number) => {
+          if (!isFinite(value)) return '0.0%';
+          const sign = value > 0 ? '+' : '';
+          return `${sign}${(value * 100).toFixed(1)}%`;
+        };
+        
+        return (
+          <ExpandableSection
+            title="1c. Small Business Valuation Adjustments"
+            value={`${formatAdjustment(adjustments.combined_effect)} net adjustment`}
+            isExpanded={expandedSections.has('small-firm-adjustments')}
+            onToggle={() => toggleSection('small-firm-adjustments')}
+            color="green"
+          >
+            <div className="space-y-6">
+              <div className="bg-blue-50 border-l-4 border-blue-500 p-4 rounded">
+                <p className="text-sm text-gray-700 mb-2">
+                  Your company's base valuation has been adjusted to reflect market realities for small businesses.
+                </p>
+              </div>
+
+              {/* Size Discount */}
+              <div className="bg-white border border-gray-200 rounded-lg p-4">
+                <div className="flex justify-between items-baseline mb-2">
+                  <h4 className="font-semibold text-gray-900">1. Size Discount</h4>
+                  <span className="text-lg font-bold text-blue-600">
+                    {formatAdjustment(adjustments.size_discount)}
+                  </span>
+                </div>
+                <p className="text-sm text-gray-600 mb-2">{adjustments.size_discount_reason}</p>
+                <p className="text-xs text-gray-500">
+                  <strong>Market Data:</strong> Based on 2,500+ European SME transactions (Duff & Phelps 2024)
+                </p>
+              </div>
+
+              {/* Liquidity Discount */}
+              <div className="bg-white border border-gray-200 rounded-lg p-4">
+                <div className="flex justify-between items-baseline mb-2">
+                  <h4 className="font-semibold text-gray-900">2. Liquidity Discount</h4>
+                  <span className="text-lg font-bold text-purple-600">
+                    {formatAdjustment(adjustments.liquidity_discount)}
+                  </span>
+                </div>
+                <p className="text-sm text-gray-600 mb-2">{adjustments.liquidity_discount_reason}</p>
+                <p className="text-xs text-gray-500">
+                  <strong>Market Data:</strong> Private companies lack public market liquidity (Damodaran research)
+                </p>
+              </div>
+
+              {/* Country Adjustment */}
+              {Math.abs(adjustments.country_adjustment) > 0.001 && (
+                <div className="bg-white border border-gray-200 rounded-lg p-4">
+                  <div className="flex justify-between items-baseline mb-2">
+                    <h4 className="font-semibold text-gray-900">3. Country Risk</h4>
+                    <span className={`text-lg font-bold ${adjustments.country_adjustment > 0 ? 'text-green-600' : 'text-orange-600'}`}>
+                      {formatAdjustment(adjustments.country_adjustment)}
+                    </span>
+                  </div>
+                  <p className="text-sm text-gray-600">{adjustments.country_adjustment_reason}</p>
+                </div>
+              )}
+
+              {/* Growth Premium */}
+              {adjustments.growth_premium > 0.001 && (
+                <div className="bg-white border border-gray-200 rounded-lg p-4">
+                  <div className="flex justify-between items-baseline mb-2">
+                    <h4 className="font-semibold text-gray-900">4. Growth Premium ✓</h4>
+                    <span className="text-lg font-bold text-green-600">
+                      {formatAdjustment(adjustments.growth_premium)}
+                    </span>
+                  </div>
+                  <p className="text-sm text-gray-600 mb-2">{adjustments.growth_premium_reason}</p>
+                  <p className="text-xs text-gray-500">
+                    <strong>Market Data:</strong> High-growth SMEs command premiums (Capital IQ data)
+                  </p>
+                </div>
+              )}
+
+              {/* Combined Effect */}
+              <div className="bg-gradient-to-br from-gray-50 to-gray-100 border-2 border-gray-300 rounded-lg p-4">
+                <h4 className="font-semibold text-gray-900 mb-3">Combined Effect</h4>
+                <div className="bg-white rounded p-3 space-y-2 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Base valuation (before adjustments):</span>
+                    <span className="font-semibold font-mono">{formatCurrency(adjustments.base_value_before_adjustments)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Net adjustment:</span>
+                    <span className="font-semibold">{formatAdjustment(adjustments.combined_effect)}</span>
+                  </div>
+                  <div className="flex justify-between text-base pt-2 border-t border-gray-300">
+                    <span className="text-gray-900 font-semibold">Adjusted valuation:</span>
+                    <span className="font-bold text-green-600 font-mono">{formatCurrency(adjustments.adjusted_value_after_adjustments)}</span>
+                  </div>
+                </div>
+                <p className="text-xs text-gray-600 mt-3">
+                  <strong>Formula:</strong> Base Value × (1 + Size Discount + Liquidity Discount + Country Adjustment + Growth Premium) = Adjusted Value
+                </p>
+              </div>
+
+              {/* Academic References */}
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <h4 className="font-semibold text-gray-900 mb-2 text-sm">Academic & Industry Standards</h4>
+                <div className="text-xs text-gray-700 space-y-1">
+                  <p><strong>Size Premium:</strong> Duff & Phelps Risk Premium Report 2024, Ibbotson SBBI</p>
+                  <p><strong>Liquidity Discount:</strong> Damodaran (2005), Koeplin et al. (2000)</p>
+                  <p><strong>Growth Premium:</strong> Capital IQ transaction database, PwC Valuation Handbook</p>
+                  <p><strong>Country Risk:</strong> Big 4 (Deloitte, PwC, EY, KPMG) country risk matrices</p>
                 </div>
               </div>
             </div>

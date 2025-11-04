@@ -142,7 +142,24 @@ export const ValuationMethodsSection: React.FC<ValuationMethodsSectionProps> = (
                 </button>
               </>
             ) : (
-              <p className="text-sm text-gray-500">Not available for this valuation</p>
+              <div className="space-y-3">
+                {/* DCF Exclusion Notice for Small Companies */}
+                {result.methodology_selection && !result.methodology_selection.dcf_included && result.methodology_selection.dcf_exclusion_reason ? (
+                  <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
+                    <p className="text-xs font-semibold text-amber-900 mb-1">
+                      📊 DCF Excluded for Small Company
+                    </p>
+                    <p className="text-xs text-amber-800">
+                      {result.methodology_selection.dcf_exclusion_reason}
+                    </p>
+                    <p className="text-xs text-amber-700 mt-2 italic">
+                      Market Multiples is more reliable for small businesses (Big 4 & NACVA standards)
+                    </p>
+                  </div>
+                ) : (
+                  <p className="text-sm text-gray-500">Not available for this valuation</p>
+                )}
+              </div>
             )}
           </div>
 
@@ -186,13 +203,19 @@ export const ValuationMethodsSection: React.FC<ValuationMethodsSectionProps> = (
         {/* Weighting Rationale */}
         <div className="bg-white rounded-lg p-4 border border-gray-300">
           <h4 className="font-medium text-gray-900 mb-2">Why These Weights?</h4>
-          <p className="text-sm text-gray-700">
-            {dcfWeight > multiplesWeight
-              ? `DCF weighted higher (${(dcfWeight * 100).toFixed(1)}%) due to reliable historical cash flows and stable projections.`
-              : multiplesWeight > dcfWeight
-              ? `Market Multiples weighted higher (${(multiplesWeight * 100).toFixed(1)}%) due to strong comparable company data and industry benchmarks.`
-              : 'Balanced weighting reflects equal confidence in both methodologies.'}
-          </p>
+          {result.methodology_selection?.selection_rationale ? (
+            <p className="text-sm text-gray-700">
+              {result.methodology_selection.selection_rationale}
+            </p>
+          ) : (
+            <p className="text-sm text-gray-700">
+              {dcfWeight > multiplesWeight
+                ? `DCF weighted higher (${(dcfWeight * 100).toFixed(1)}%) due to reliable historical cash flows and stable projections.`
+                : multiplesWeight > dcfWeight
+                ? `Market Multiples weighted higher (${(multiplesWeight * 100).toFixed(1)}%) due to strong comparable company data and industry benchmarks.`
+                : 'Balanced weighting reflects equal confidence in both methodologies.'}
+            </p>
+          )}
         </div>
       </div>
 

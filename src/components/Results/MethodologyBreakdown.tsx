@@ -318,34 +318,61 @@ export const MethodologyBreakdown: React.FC<MethodologyBreakdownProps> = ({ resu
 };
 
 // Helper function to render multiples with adjustment transparency
+type OwnerConcentrationType = NonNullable<NonNullable<ValuationResponse['multiples_valuation']>['owner_concentration']>;
+
 const renderMultipleWithAdjustment = (
   label: string,
   unadjusted: number | undefined,
   adjusted: number,
-  ownerConcentration: any
+  ownerConcentration: OwnerConcentrationType | undefined
 ) => {
-  const hasAdjustment = unadjusted && ownerConcentration && ownerConcentration.adjustment_factor !== 0;
-  
-  if (!hasAdjustment) {
+  try {
+    // Validate inputs
+    if (!ownerConcentration || ownerConcentration.adjustment_factor === 0) {
+      return <div>• {label}: {adjusted.toFixed(1)}x</div>;
+    }
+
+    // If unadjusted is not provided, calculate it (with division by zero protection)
+    let safeUnadjusted = unadjusted;
+    if (!safeUnadjusted && ownerConcentration.adjustment_factor !== -1) {
+      safeUnadjusted = adjusted / (1 + ownerConcentration.adjustment_factor);
+    } else if (!safeUnadjusted) {
+      // If adjustment_factor === -1, use adjusted as unadjusted (no change)
+      safeUnadjusted = adjusted;
+    }
+
+    // Validate calculated values (not NaN or Infinity)
+    if (!safeUnadjusted || !isFinite(safeUnadjusted) || !isFinite(adjusted)) {
+      return <div>• {label}: {adjusted.toFixed(1)}x</div>;
+    }
+
+    const hasAdjustment = safeUnadjusted && ownerConcentration.adjustment_factor !== 0;
+    
+    if (!hasAdjustment) {
+      return <div>• {label}: {adjusted.toFixed(1)}x</div>;
+    }
+    
+    const adjustmentPercent = Math.abs(ownerConcentration.adjustment_factor * 100).toFixed(0);
+    
+    return (
+      <div className="bg-yellow-50 border-l-4 border-yellow-400 pl-3 py-2 -ml-1 mb-2 rounded">
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className="font-medium text-gray-900">• {label}:</span>
+          <span className="font-mono text-gray-500 line-through">{safeUnadjusted.toFixed(1)}x</span>
+          <span className="text-gray-700">→</span>
+          <span className="font-mono font-semibold text-gray-900">{adjusted.toFixed(1)}x</span>
+          <span className="text-xs bg-yellow-100 text-yellow-800 px-2 py-0.5 rounded font-medium">
+            -{adjustmentPercent}%
+          </span>
+        </div>
+        <p className="text-xs text-gray-600 mt-1">
+          Adjusted for owner concentration ({ownerConcentration.number_of_owners} {ownerConcentration.number_of_owners === 1 ? 'owner' : 'owners'} / {ownerConcentration.number_of_employees} {ownerConcentration.number_of_employees === 1 ? 'employee' : 'employees'})
+        </p>
+      </div>
+    );
+  } catch (error) {
+    // Error boundary: gracefully fall back to simple display
+    console.warn('Error rendering multiple adjustment:', error);
     return <div>• {label}: {adjusted.toFixed(1)}x</div>;
   }
-  
-  const adjustmentPercent = Math.abs(ownerConcentration.adjustment_factor * 100).toFixed(0);
-  
-  return (
-    <div className="bg-yellow-50 border-l-4 border-yellow-400 pl-3 py-2 -ml-1 mb-2 rounded">
-      <div className="flex items-center gap-2 flex-wrap">
-        <span className="font-medium text-gray-900">• {label}:</span>
-        <span className="font-mono text-gray-500 line-through">{unadjusted.toFixed(1)}x</span>
-        <span className="text-gray-700">→</span>
-        <span className="font-mono font-semibold text-gray-900">{adjusted.toFixed(1)}x</span>
-        <span className="text-xs bg-yellow-100 text-yellow-800 px-2 py-0.5 rounded font-medium">
-          -{adjustmentPercent}%
-        </span>
-      </div>
-      <p className="text-xs text-gray-600 mt-1">
-        Adjusted for owner concentration ({ownerConcentration.number_of_owners} {ownerConcentration.number_of_owners === 1 ? 'owner' : 'owners'} / {ownerConcentration.number_of_employees} {ownerConcentration.number_of_employees === 1 ? 'employee' : 'employees'})
-      </p>
-    </div>
-  );
 };

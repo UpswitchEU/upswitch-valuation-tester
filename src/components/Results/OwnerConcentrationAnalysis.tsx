@@ -12,6 +12,11 @@ export const OwnerConcentrationAnalysis: React.FC<OwnerConcentrationAnalysisProp
     return null;
   }
 
+  // Validate employee count (edge case: zero employees)
+  if (!ownerConcentration.number_of_employees || ownerConcentration.number_of_employees === 0) {
+    return null;
+  }
+
   const ratio = ownerConcentration.ratio;
   const adjustmentFactor = ownerConcentration.adjustment_factor;
   const numberOfOwners = ownerConcentration.number_of_owners;
@@ -42,12 +47,17 @@ export const OwnerConcentrationAnalysis: React.FC<OwnerConcentrationAnalysisProp
   }
 
   // Calculate unadjusted multiples if not provided
+  // Guard against division by zero (adjustmentFactor === -1.0)
   const adjustedEbitda = result.multiples_valuation?.ebitda_multiple || 0;
   const adjustedRevenue = result.multiples_valuation?.revenue_multiple || 0;
   const unadjustedEbitda = result.multiples_valuation?.unadjusted_ebitda_multiple || 
-                           (adjustedEbitda / (1 + adjustmentFactor));
+                           (adjustmentFactor === -1 
+                             ? adjustedEbitda 
+                             : (adjustedEbitda / (1 + adjustmentFactor)));
   const unadjustedRevenue = result.multiples_valuation?.unadjusted_revenue_multiple || 
-                            (adjustedRevenue / (1 + adjustmentFactor));
+                            (adjustmentFactor === -1 
+                              ? adjustedRevenue 
+                              : (adjustedRevenue / (1 + adjustmentFactor)));
 
   const ratioPercentage = (ratio * 100).toFixed(0);
   const adjustmentPercentage = Math.abs(adjustmentFactor * 100).toFixed(0);
