@@ -157,7 +157,7 @@ export const WeightingLogicSection: React.FC<WeightingLogicSectionProps> = ({ re
           <div className="bg-white rounded-lg p-4 border-2 border-blue-500">
             <div className="flex items-center justify-between mb-2">
               <span className="font-semibold text-gray-900">DCF Weight</span>
-              <span className="text-3xl font-bold text-blue-600">{(dcfWeight * 100).toFixed(0)}%</span>
+              <span className="text-3xl font-bold text-blue-600">{formatPercent(dcfWeight * 100)}</span>
             </div>
             <div className="w-full bg-gray-200 rounded-full h-3">
               <div
@@ -171,7 +171,7 @@ export const WeightingLogicSection: React.FC<WeightingLogicSectionProps> = ({ re
           <div className="bg-white rounded-lg p-4 border-2 border-green-500">
             <div className="flex items-center justify-between mb-2">
               <span className="font-semibold text-gray-900">Multiples Weight</span>
-              <span className="text-3xl font-bold text-green-600">{(multiplesWeight * 100).toFixed(0)}%</span>
+              <span className="text-3xl font-bold text-green-600">{formatPercent(multiplesWeight * 100)}</span>
             </div>
             <div className="w-full bg-gray-200 rounded-full h-3">
               <div
@@ -226,7 +226,7 @@ export const WeightingLogicSection: React.FC<WeightingLogicSectionProps> = ({ re
                 <div>
                   <div className="flex justify-between text-sm mb-1">
                     <span className="font-semibold text-blue-700">DCF Weight</span>
-                    <span className="font-bold text-blue-900">{(dcfWeight * 100).toFixed(0)}%</span>
+                    <span className="font-bold text-blue-900">{formatPercent(dcfWeight * 100)}</span>
                   </div>
                   <div className="w-full bg-gray-200 rounded-full h-4">
                     <div 
@@ -239,7 +239,7 @@ export const WeightingLogicSection: React.FC<WeightingLogicSectionProps> = ({ re
                 <div>
                   <div className="flex justify-between text-sm mb-1">
                     <span className="font-semibold text-purple-700">Multiples Weight</span>
-                    <span className="font-bold text-purple-900">{(multiplesWeight * 100).toFixed(0)}%</span>
+                    <span className="font-bold text-purple-900">{formatPercent(multiplesWeight * 100)}</span>
                   </div>
                   <div className="w-full bg-gray-200 rounded-full h-4">
                     <div 
@@ -322,7 +322,7 @@ export const WeightingLogicSection: React.FC<WeightingLogicSectionProps> = ({ re
         <h3 className="text-lg font-semibold text-gray-900 mb-4">Weighting Rationale</h3>
         <div className="space-y-3 text-sm text-gray-700">
           <p>
-            <strong>Factors Favoring DCF ({(dcfWeight * 100).toFixed(0)}%):</strong>
+            <strong>Factors Favoring DCF ({formatPercent(dcfWeight * 100)}):</strong>
           </p>
           <ul className="list-disc list-inside space-y-1 ml-4">
             <li>Technology/SaaS industry benefits from cash flow projections</li>
@@ -331,7 +331,7 @@ export const WeightingLogicSection: React.FC<WeightingLogicSectionProps> = ({ re
           </ul>
           
           <p className="mt-4">
-            <strong>Factors Favoring Multiples ({(multiplesWeight * 100).toFixed(0)}%):</strong>
+            <strong>Factors Favoring Multiples ({formatPercent(multiplesWeight * 100)}):</strong>
           </p>
           <ul className="list-disc list-inside space-y-1 ml-4">
             <li>SME size class benefits from comparable company analysis</li>
@@ -341,7 +341,7 @@ export const WeightingLogicSection: React.FC<WeightingLogicSectionProps> = ({ re
 
           <div className="mt-4 pt-4 border-t-2 border-purple-300">
             <p className="font-semibold text-gray-900">
-              Final Decision: Balanced {(dcfWeight * 100).toFixed(0)}/{(multiplesWeight * 100).toFixed(0)} weighting
+              Final Decision: Balanced {formatPercent(dcfWeight * 100)}/{formatPercent(multiplesWeight * 100)} weighting
             </p>
             <p className="mt-2">
               The balanced approach reflects both the growth-oriented nature of the business (favoring DCF) 

@@ -92,7 +92,7 @@ export const DCFTransparencySection: React.FC<DCFTransparencySectionProps> = ({ 
       <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
         <div className="flex items-center justify-between">
           <span className="font-semibold text-gray-900">DCF Weight in Final Valuation</span>
-          <span className="text-2xl font-bold text-blue-600">{(dcfWeight * 100).toFixed(0)}%</span>
+          <span className="text-2xl font-bold text-blue-600">{formatPercent(dcfWeight * 100)}</span>
         </div>
       </div>
 

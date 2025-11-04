@@ -90,7 +90,7 @@ export const RangeCalculationSection: React.FC<RangeCalculationSectionProps> = (
               <strong>Calculation:</strong>
             </p>
             <div className="space-y-1 font-mono text-sm text-gray-600">
-              <p>= ({formatCurrency(dcfValue)} × {(dcfWeight * 100).toFixed(0)}%) + ({formatCurrency(multiplesValue)} × {(multiplesWeight * 100).toFixed(0)}%)</p>
+              <p>= ({formatCurrency(dcfValue)} × {formatPercent(dcfWeight * 100)}) + ({formatCurrency(multiplesValue)} × {formatPercent(multiplesWeight * 100)})</p>
               <p>= {formatCurrency(dcfValue * dcfWeight)} + {formatCurrency(multiplesValue * multiplesWeight)}</p>
               <p className="text-lg font-bold text-orange-600 pt-2">= {formatCurrency(equityValueMid)} (Mid-Point Estimate)</p>
             </div>

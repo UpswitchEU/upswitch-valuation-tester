@@ -3,6 +3,7 @@ import React, { lazy, Suspense, useState } from 'react';
 import { getVarianceMessage, VARIANCE_THRESHOLDS } from '../../config/valuationConfig';
 import type { ValuationInputData, ValuationResponse } from '../../types/valuation';
 import { calculateVariance } from '../../utils/calculationHelpers';
+import { formatPercent } from '../Results/utils/formatters';
 
 // Lazy load detailed sections for better performance
 const DCFTransparencySection = lazy(() => import('./DCFTransparencySection').then(m => ({ default: m.DCFTransparencySection })));
@@ -118,7 +119,7 @@ export const ValuationMethodsSection: React.FC<ValuationMethodsSectionProps> = (
                 <TrendingUp className="w-5 h-5 text-blue-600" />
                 <h4 className="font-semibold text-gray-900">DCF Method</h4>
               </div>
-              <span className="text-xl font-bold text-blue-600">{(dcfWeight * 100).toFixed(0)}%</span>
+              <span className="text-xl font-bold text-blue-600">{formatPercent(dcfWeight * 100)}</span>
             </div>
             
             {dcfWeight > 0 ? (
@@ -154,7 +155,7 @@ export const ValuationMethodsSection: React.FC<ValuationMethodsSectionProps> = (
                 <BarChart3 className="w-5 h-5 text-green-600" />
                 <h4 className="font-semibold text-gray-900">Market Multiples</h4>
               </div>
-              <span className="text-xl font-bold text-green-600">{(multiplesWeight * 100).toFixed(0)}%</span>
+              <span className="text-xl font-bold text-green-600">{formatPercent(multiplesWeight * 100)}</span>
             </div>
             
             {multiplesWeight > 0 ? (
@@ -187,9 +188,9 @@ export const ValuationMethodsSection: React.FC<ValuationMethodsSectionProps> = (
           <h4 className="font-medium text-gray-900 mb-2">Why These Weights?</h4>
           <p className="text-sm text-gray-700">
             {dcfWeight > multiplesWeight
-              ? `DCF weighted higher (${(dcfWeight * 100).toFixed(0)}%) due to reliable historical cash flows and stable projections.`
+              ? `DCF weighted higher (${(dcfWeight * 100).toFixed(1)}%) due to reliable historical cash flows and stable projections.`
               : multiplesWeight > dcfWeight
-              ? `Market Multiples weighted higher (${(multiplesWeight * 100).toFixed(0)}%) due to strong comparable company data and industry benchmarks.`
+              ? `Market Multiples weighted higher (${(multiplesWeight * 100).toFixed(1)}%) due to strong comparable company data and industry benchmarks.`
               : 'Balanced weighting reflects equal confidence in both methodologies.'}
           </p>
         </div>

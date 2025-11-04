@@ -49,7 +49,7 @@ export const CalculationBreakdown: React.FC<CalculationBreakdownProps> = ({ resu
           >
             <div className="flex items-center gap-2">
               {expandedSections.has('dcf') ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
-              <span className="font-medium text-gray-900">Discounted Cash Flow (DCF) - {(dcfWeight * 100).toFixed(0)}%</span>
+              <span className="font-medium text-gray-900">Discounted Cash Flow (DCF) - {formatPercent(dcfWeight * 100)}</span>
             </div>
             <span className="text-blue-600 font-semibold">{formatCurrency(dcfValue)}</span>
           </button>
@@ -159,7 +159,7 @@ export const CalculationBreakdown: React.FC<CalculationBreakdownProps> = ({ resu
           >
             <div className="flex items-center gap-2">
               {expandedSections.has('multiples') ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
-              <span className="font-medium text-gray-900">Market Multiples - {(multiplesWeight * 100).toFixed(0)}%</span>
+              <span className="font-medium text-gray-900">Market Multiples - {formatPercent(multiplesWeight * 100)}</span>
             </div>
             <span className="text-green-600 font-semibold">{formatCurrency(multiplesValue)}</span>
           </button>
@@ -231,12 +231,12 @@ export const CalculationBreakdown: React.FC<CalculationBreakdownProps> = ({ resu
           <h4 className="font-semibold text-gray-900 mb-3">Final Valuation (Weighted Average)</h4>
           <div className="space-y-2 text-sm">
             <div className="flex justify-between">
-              <span>DCF ({(dcfWeight * 100).toFixed(0)}%):</span>
-              <span className="font-mono">{formatCurrency(dcfValue)} × {(dcfWeight * 100).toFixed(0)}% = {formatCurrency(dcfValue * dcfWeight)}</span>
+              <span>DCF ({formatPercent(dcfWeight * 100)}):</span>
+              <span className="font-mono">{formatCurrency(dcfValue)} × {formatPercent(dcfWeight * 100)} = {formatCurrency(dcfValue * dcfWeight)}</span>
             </div>
             <div className="flex justify-between">
-              <span>Multiples ({(multiplesWeight * 100).toFixed(0)}%):</span>
-              <span className="font-mono">{formatCurrency(multiplesValue)} × {(multiplesWeight * 100).toFixed(0)}% = {formatCurrency(multiplesValue * multiplesWeight)}</span>
+              <span>Multiples ({formatPercent(multiplesWeight * 100)}):</span>
+              <span className="font-mono">{formatCurrency(multiplesValue)} × {formatPercent(multiplesWeight * 100)} = {formatCurrency(multiplesValue * multiplesWeight)}</span>
             </div>
             <div className="flex justify-between text-lg font-bold pt-2 border-t-2 border-primary-600">
               <span>Final Mid-Point Estimate:</span>
