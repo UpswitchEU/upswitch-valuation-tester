@@ -71,6 +71,16 @@ interface CustomDropdownProps {
    * Reference to the dropdown element
    */
   dropdownRef?: React.RefObject<HTMLDivElement>;
+
+  /**
+   * Help text to display below the field (McKinsey UX standard)
+   */
+  helpText?: string;
+
+  /**
+   * Help text placement style
+   */
+  helpTextPlacement?: 'tooltip' | 'below';
 }
 
 const CustomDropdown: React.FC<CustomDropdownProps> = ({
@@ -86,6 +96,8 @@ const CustomDropdown: React.FC<CustomDropdownProps> = ({
   name,
   className = '',
   dropdownRef,
+  helpText,
+  helpTextPlacement = 'below',
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [focusedIndex, setFocusedIndex] = useState(-1);
@@ -302,6 +314,13 @@ const CustomDropdown: React.FC<CustomDropdownProps> = ({
       </div>
       {error && touched && (
         <span className="block text-sm text-red-600 mt-2 font-medium">{error}</span>
+      )}
+      
+      {/* Help Text (McKinsey UX Standard) */}
+      {helpText && helpTextPlacement === 'below' && !error && (
+        <p className="text-xs text-gray-500 mt-2 leading-relaxed">
+          {helpText}
+        </p>
       )}
     </div>
   );

@@ -26,6 +26,8 @@ export interface CustomNumberInputFieldProps {
   allowDecimals?: boolean;
   formatAsCurrency?: boolean;
   showArrows?: boolean; // New prop to show up/down arrows
+  helpText?: string; // NEW: Optional help text (McKinsey UX standard)
+  helpTextPlacement?: 'tooltip' | 'below'; // NEW: Display style
 }
 
 const CustomNumberInputField: React.FC<CustomNumberInputFieldProps> = ({
@@ -50,6 +52,8 @@ const CustomNumberInputField: React.FC<CustomNumberInputFieldProps> = ({
   allowDecimals = true,
   formatAsCurrency = false,
   showArrows = false,
+  helpText,
+  helpTextPlacement = 'below',
 }) => {
   const handleFocus = (e: React.FocusEvent<HTMLInputElement>) => {
     onFocus?.(e);
@@ -238,6 +242,13 @@ const CustomNumberInputField: React.FC<CustomNumberInputFieldProps> = ({
       </div>
 
       {hasError && <span className="block text-sm text-red-600 mt-2 font-medium">{error}</span>}
+      
+      {/* Help Text (McKinsey UX Standard) */}
+      {helpText && helpTextPlacement === 'below' && !hasError && (
+        <p className="text-xs text-gray-500 mt-2 leading-relaxed">
+          {helpText}
+        </p>
+      )}
     </div>
   );
 };

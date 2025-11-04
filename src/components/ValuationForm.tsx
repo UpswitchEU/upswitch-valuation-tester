@@ -286,8 +286,8 @@ export const ValuationForm: React.FC = () => {
 
           {/* Founding Year */}
           <CustomNumberInputField
-            label="Founding Year"
-            placeholder="e.g., 2018"
+            label="Year Business Commenced Trading"
+            placeholder="e.g., 2018 (first commercial revenue)"
             value={formData.founding_year || new Date().getFullYear() - 5}
             onChange={(e) => updateFormData({ founding_year: parseInt(e.target.value) || new Date().getFullYear() - 5 })}
             onBlur={() => {}}
@@ -295,12 +295,13 @@ export const ValuationForm: React.FC = () => {
             min={1900}
             max={new Date().getFullYear()}
             showArrows={true}
+            helpText="Year the company first generated revenue from operations. For restructured businesses, use original trading start date, not incorporation date."
             required
           />
 
           {/* Country */}
           <CustomDropdown
-            label="Country"
+            label="Primary Operating Country"
             placeholder="Select country..."
             options={TARGET_COUNTRIES.map((country) => ({
               value: country.code,
@@ -308,13 +309,14 @@ export const ValuationForm: React.FC = () => {
             }))}
             value={formData.country_code || ''}
             onChange={(value) => updateFormData({ country_code: value })}
+            helpText="Country where majority of operations and revenue occur. For multi-country businesses, select headquarters location. Affects market multiples, risk-free rates, and tax assumptions."
             required
           />
 
           {/* Number of Employees */}
           <CustomNumberInputField
-            label="Number of Employees"
-            placeholder="e.g., 25"
+            label="Full-Time Equivalent (FTE) Employees"
+            placeholder="e.g., 12 (include part-time as FTE)"
             value={formData.number_of_employees || ''}
             onChange={(e) => {
               const value = parseInt(e.target.value) || undefined;
@@ -324,12 +326,13 @@ export const ValuationForm: React.FC = () => {
             name="number_of_employees"
             min={0}
             step={1}
+            helpText="Total workforce converted to full-time equivalents. Part-time employees count proportionally (e.g., 2 half-time = 1 FTE). Excludes contractors and external consultants. Used to assess operational scale and key person risk."
           />
           
-          {/* Number of Operational Owners - C-level + working shareholders */}
+          {/* Active Owner-Managers */}
           <CustomNumberInputField
-            label="Number of Operational Owners"
-            placeholder="e.g., 2"
+            label="Active Owner-Managers"
+            placeholder="e.g., 2 (founder + COO who owns equity)"
             value={formData.number_of_owners || 1}
             onChange={(e) => {
               const value = parseInt(e.target.value) || 1;
@@ -340,6 +343,7 @@ export const ValuationForm: React.FC = () => {
             min={1}
             max={100}
             step={1}
+            helpText="Shareholders who actively work in the business in executive or management roles. Include: C-suite shareholders, working directors, founder-operators. Exclude: passive investors, silent partners, external board members. High owner concentration (>25% of workforce) typically reduces valuation by 7-20%."
           />
         </div>
       </div>
@@ -366,8 +370,8 @@ export const ValuationForm: React.FC = () => {
           {/* Shares for Sale */}
           {formData.business_type === 'company' && (
             <CustomNumberInputField
-              label="% Shares for Sale"
-              placeholder="e.g., 50"
+              label="Equity Stake for Sale (%)"
+              placeholder="e.g., 51 (majority control) or 25 (minority stake)"
               value={formData.shares_for_sale || 100}
               onChange={(e) => updateFormData({ shares_for_sale: parseFloat(e.target.value) || 100 })}
               onBlur={() => {}}
@@ -376,6 +380,7 @@ export const ValuationForm: React.FC = () => {
               max={100}
               step={0.1}
               suffix="%"
+              helpText="Percentage of company ownership being valued for transaction. Minority stakes (<50%) may include control discount of 15-30%. Full sale (100%) maximizes strategic premium."
             />
           )}
         </div>
