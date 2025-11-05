@@ -61,6 +61,37 @@ export const RangeCalculationSection: React.FC<RangeCalculationSectionProps> = (
         </div>
       </div>
 
+      {/* Key Principle Explanation */}
+      <div className="bg-gradient-to-br from-purple-50 to-indigo-50 border-2 border-purple-500 rounded-lg p-4 sm:p-6 mb-6">
+        <div className="flex items-start gap-3 mb-4">
+          <AlertTriangle className="w-6 h-6 text-purple-600 flex-shrink-0 mt-0.5" />
+          <div className="flex-1">
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">
+              Important: Understanding the Valuation Range
+            </h3>
+            <div className="space-y-3 text-sm text-gray-700">
+              <p>
+                <strong>The valuation range reflects uncertainty in the valuation, not disagreement between methodologies.</strong> Both DCF and Market Multiples (when used) contribute to a single mid-point estimate through weighted averaging.
+              </p>
+              <p>
+                <strong>Mid-Point:</strong> This is the true valuation estimate, calculated as a weighted average of the methodologies used. If DCF is excluded (e.g., for companies &lt;€5M revenue), the mid-point equals the Multiples valuation directly.
+              </p>
+              <p>
+                <strong>Range Width:</strong> The Low and High estimates are calculated as a percentage spread around the mid-point based on your confidence score. This follows Big 4 valuation standards (PwC Valuation Handbook):
+              </p>
+              <ul className="list-disc list-inside space-y-1 ml-2 mt-2">
+                <li><strong>High confidence (≥80%):</strong> ±12% spread</li>
+                <li><strong>Medium confidence (60-79%):</strong> ±18% spread</li>
+                <li><strong>Low confidence (&lt;60%):</strong> ±22% spread</li>
+              </ul>
+              <p className="mt-3 text-xs text-gray-600 italic">
+                <strong>Academic Source:</strong> Damodaran (2018), "The Dark Side of Valuation", Chapter 6. PwC Valuation Handbook 2024, Section 4.2.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
       {/* Step 1: Weighted Mid-Point */}
       <div className="bg-white border-2 border-gray-300 rounded-lg p-4 sm:p-6">
         <h3 className="text-lg font-semibold text-gray-900 mb-4">Step 1: Weighted Mid-Point Calculation</h3>

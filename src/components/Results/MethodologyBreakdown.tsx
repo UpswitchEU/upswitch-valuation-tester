@@ -138,7 +138,7 @@ export const MethodologyBreakdown: React.FC<MethodologyBreakdownProps> = ({ resu
           </div>
         )}
         
-        {dcfWeight === 100 && (
+        {(dcfWeight >= 0.99 || (dcfWeight > 0 && multiplesWeight === 0)) && (
           <div className="mb-4 p-4 bg-blue-50 rounded border border-blue-200">
             <p className="text-blue-900">
               This valuation uses <strong>Discounted Cash Flow (DCF) only</strong> because your business profile is best suited for cash flow projection.
@@ -146,7 +146,7 @@ export const MethodologyBreakdown: React.FC<MethodologyBreakdownProps> = ({ resu
           </div>
         )}
         
-        {multiplesWeight === 100 && (
+        {(multiplesWeight >= 0.99 || (multiplesWeight > 0 && dcfWeight === 0)) && (
           <div className="mb-4 p-4 bg-green-50 rounded border border-green-200">
             <p className="text-green-900">
               This valuation uses <strong>Market Multiples only</strong> because comparable company analysis is most reliable for your business type.
@@ -154,35 +154,67 @@ export const MethodologyBreakdown: React.FC<MethodologyBreakdownProps> = ({ resu
           </div>
         )}
 
-        {/* How We Determined These Weights */}
+        {/* Methodology Selection Explanation */}
         <div className="mt-6">
-          <h4 className="font-medium text-gray-900 mb-3">How We Determined These Weights</h4>
-          
-          {dcfWeight > 50 && (
-            <div className="mb-4 p-3 bg-blue-50 rounded border border-blue-200">
-              <p className="text-blue-900 font-medium mb-2">
-                ✓ <strong>DCF-Favored ({(dcfWeight * 100).toFixed(1)}%)</strong> because:
-              </p>
-              <ul className="text-sm text-blue-800 space-y-1">
-                {weightExplanation.dcfReasons.map((reason, index) => (
-                  <li key={index}>• {reason}</li>
-                ))}
-              </ul>
-            </div>
-          )}
-          
-          {multiplesWeight > 50 && (
-            <div className="mb-4 p-3 bg-green-50 rounded border border-green-200">
-              <p className="text-green-900 font-medium mb-2">
-                ✓ <strong>Multiples-Favored ({(multiplesWeight * 100).toFixed(1)}%)</strong> because:
-              </p>
-              <ul className="text-sm text-green-800 space-y-1">
-                {weightExplanation.multiplesReasons.map((reason, index) => (
-                  <li key={index}>• {reason}</li>
-                ))}
-              </ul>
-            </div>
-          )}
+          {dcfWeight > 0 && multiplesWeight > 0 ? (
+            <>
+              <h4 className="font-medium text-gray-900 mb-3">How We Determined These Weights</h4>
+              
+              {dcfWeight > 50 && (
+                <div className="mb-4 p-3 bg-blue-50 rounded border border-blue-200">
+                  <p className="text-blue-900 font-medium mb-2">
+                    ✓ <strong>DCF-Favored ({(dcfWeight * 100).toFixed(1)}%)</strong> because:
+                  </p>
+                  <ul className="text-sm text-blue-800 space-y-1">
+                    {weightExplanation.dcfReasons.map((reason, index) => (
+                      <li key={index}>• {reason}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+              
+              {multiplesWeight > 50 && (
+                <div className="mb-4 p-3 bg-green-50 rounded border border-green-200">
+                  <p className="text-green-900 font-medium mb-2">
+                    ✓ <strong>Multiples-Favored ({(multiplesWeight * 100).toFixed(1)}%)</strong> because:
+                  </p>
+                  <ul className="text-sm text-green-800 space-y-1">
+                    {weightExplanation.multiplesReasons.map((reason, index) => (
+                      <li key={index}>• {reason}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </>
+          ) : multiplesWeight >= 0.99 ? (
+            <>
+              <h4 className="font-medium text-gray-900 mb-3">Why Market Multiples Methodology Was Selected</h4>
+              <div className="mb-4 p-3 bg-green-50 rounded border border-green-200">
+                <p className="text-green-900 font-medium mb-2">
+                  ✓ <strong>Market Multiples is the most reliable approach</strong> for your company because:
+                </p>
+                <ul className="text-sm text-green-800 space-y-1">
+                  {weightExplanation.multiplesReasons.map((reason, index) => (
+                    <li key={index}>• {reason}</li>
+                  ))}
+                </ul>
+              </div>
+            </>
+          ) : dcfWeight >= 0.99 ? (
+            <>
+              <h4 className="font-medium text-gray-900 mb-3">Why DCF Methodology Was Selected</h4>
+              <div className="mb-4 p-3 bg-blue-50 rounded border border-blue-200">
+                <p className="text-blue-900 font-medium mb-2">
+                  ✓ <strong>DCF is the most reliable approach</strong> for your company because:
+                </p>
+                <ul className="text-sm text-blue-800 space-y-1">
+                  {weightExplanation.dcfReasons.map((reason, index) => (
+                    <li key={index}>• {reason}</li>
+                  ))}
+                </ul>
+              </div>
+            </>
+          ) : null}
         </div>
       </div>
 
@@ -190,7 +222,11 @@ export const MethodologyBreakdown: React.FC<MethodologyBreakdownProps> = ({ resu
       {dcfWeight > 0 && (
         <div className="bg-white rounded-lg border border-gray-200 p-4 sm:p-6 shadow-sm">
           <h4 className="text-lg font-semibold text-gray-900 mb-4">
-            Method 1: Discounted Cash Flow (DCF) - {(dcfWeight * 100).toFixed(1)}%
+            {dcfWeight > 0 && multiplesWeight > 0 ? (
+              <>Method 1: Discounted Cash Flow (DCF) - {(dcfWeight * 100).toFixed(1)}%</>
+            ) : (
+              <>Discounted Cash Flow (DCF) - {(dcfWeight * 100).toFixed(1)}%</>
+            )}
           </h4>
           
           <div className="p-4 bg-blue-50 rounded border border-blue-200">
@@ -216,7 +252,11 @@ export const MethodologyBreakdown: React.FC<MethodologyBreakdownProps> = ({ resu
       {multiplesWeight > 0 && (
         <div className="bg-white rounded-lg border border-gray-200 p-4 sm:p-6 shadow-sm">
           <h4 className="text-lg font-semibold text-gray-900 mb-4">
-            Method 2: Market Multiples - {(multiplesWeight * 100).toFixed(1)}%
+            {dcfWeight > 0 && multiplesWeight > 0 ? (
+              <>Method 2: Market Multiples - {(multiplesWeight * 100).toFixed(1)}%</>
+            ) : (
+              <>Market Multiples - {(multiplesWeight * 100).toFixed(1)}%</>
+            )}
           </h4>
           
           <div className="p-4 bg-green-50 rounded border border-green-200">

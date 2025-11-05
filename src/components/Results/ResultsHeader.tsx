@@ -10,6 +10,39 @@ interface ResultsHeaderProps {
 export const ResultsHeader: React.FC<ResultsHeaderProps> = ({ result }) => {
   const [showConfidenceModal, setShowConfidenceModal] = useState(false);
 
+  // Dynamic methodology description based on actual weights
+  const getMethodologyDescription = () => {
+    const dcfWeight = result.dcf_weight || 0;
+    const multiplesWeight = result.multiples_weight || 0;
+    
+    if (dcfWeight === 0 && multiplesWeight === 1.0) {
+      return "Based on Market Multiples methodology";
+    } else if (dcfWeight === 1.0 && multiplesWeight === 0) {
+      return "Based on DCF methodology";
+    } else if (dcfWeight > 0 && multiplesWeight > 0) {
+      return `Based on DCF and Market Multiples methodology (${Math.round(dcfWeight * 100)}% / ${Math.round(multiplesWeight * 100)}%)`;
+    }
+    return "Based on valuation methodology";
+  };
+
+  // Calculate spread percentage for range explanation
+  const calculateSpread = () => {
+    const mid = result.equity_value_mid || 0;
+    const low = result.equity_value_low || 0;
+    const high = result.equity_value_high || 0;
+    
+    if (mid <= 0) return 0;
+    
+    const downside = ((mid - low) / mid) * 100;
+    const upside = ((high - mid) / mid) * 100;
+    
+    // Return average spread (they should be similar)
+    return Math.round((downside + upside) / 2);
+  };
+
+  const spreadPercentage = calculateSpread();
+  const confidenceScore = result.confidence_score || 0;
+
   return (
     <>
       <div className="space-y-4 sm:space-y-6">
@@ -18,7 +51,7 @@ export const ResultsHeader: React.FC<ResultsHeaderProps> = ({ result }) => {
           <div className="flex items-center justify-between mb-4">
             <div>
               <h2 className="text-xl sm:text-2xl font-bold text-gray-900">Valuation Report</h2>
-              <p className="text-sm text-gray-600">Based on DCF and Market Multiples methodology</p>
+              <p className="text-sm text-gray-600">{getMethodologyDescription()}</p>
             </div>
             <div className="text-right">
               {/* Confidence Score - Enhanced Design - Clickable */}
@@ -139,6 +172,29 @@ export const ResultsHeader: React.FC<ResultsHeaderProps> = ({ result }) => {
             <p className="text-xs text-gray-500 mt-1 hidden sm:block">
               {formatCurrency(result.equity_value_high)}
             </p>
+          </div>
+        </div>
+
+        {/* Range Explanation */}
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 sm:p-5">
+          <div className="flex items-start gap-3">
+            <div className="flex-shrink-0 mt-0.5">
+              <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
+            <div className="flex-1">
+              <h4 className="text-sm font-semibold text-blue-900 mb-2">Understanding the Valuation Range</h4>
+              <p className="text-sm text-blue-800 mb-2">
+                The <strong>Mid-Point (€{formatCurrency(result.equity_value_mid)})</strong> is our best estimate of your company's value, calculated as a weighted average of the valuation methodologies used.
+              </p>
+              <p className="text-sm text-blue-800 mb-2">
+                The <strong>Low</strong> and <strong>High</strong> estimates reflect <strong>valuation uncertainty</strong> based on data quality and market conditions, not disagreement between methodologies. The range width of <strong>±{spreadPercentage}%</strong> is determined by your confidence score of <strong>{confidenceScore}%</strong> per industry standards (PwC Valuation Handbook).
+              </p>
+              <p className="text-xs text-blue-700 mt-2 italic">
+                Higher confidence scores result in tighter ranges (±12%), while lower scores result in wider ranges (±22%) to account for greater uncertainty.
+              </p>
+            </div>
           </div>
         </div>
       </div>
