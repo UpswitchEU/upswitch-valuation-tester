@@ -12,6 +12,7 @@ import { useAuth } from '../hooks/useAuth';
 import { useTypingAnimation } from '../hooks/useTypingAnimation';
 import { debugLogger } from '../utils/debugLogger';
 import { chatLogger } from '../utils/logger';
+import { hasKBOSuggestions, KBOSuggestionsList, parseKBOSuggestions } from './KBOSuggestionsList';
 import { SuggestionChips } from './SuggestionChips';
 import { TypingIndicator } from './TypingIndicator';
 // Note: Business extraction utilities available if needed
@@ -655,6 +656,76 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
     // Dismiss suggestions - could add state for this if needed
   }, []);
   
+  // Handle KBO suggestion selection (sends number or "none" directly to backend)
+  const handleKBOSuggestionSelect = useCallback(async (selection: string) => {
+    chatLogger.info('KBO suggestion selected', { selection, sessionId });
+    
+    const effectiveSessionId = pythonSessionId || sessionId;
+    
+    // Send the selection (number or "none") directly to backend
+    try {
+      state.setIsStreaming(true);
+      state.setIsTyping(true);
+      
+      await streamingManager.startStreaming(
+        effectiveSessionId,
+        selection, // Send "1", "2", "3", etc. or "none"
+        userId,
+        {
+          setIsStreaming: state.setIsStreaming,
+          addMessage,
+          updateStreamingMessage,
+          onContextUpdate: (context: any) => {
+            onHtmlPreviewUpdate?.(context.html || '', context.preview_type || 'progressive');
+          },
+          extractBusinessModelFromInput: (_input: string) => null,
+          extractFoundingYearFromInput: (_input: string) => null,
+          onStreamStart: () => {
+            eventHandler.reset();
+            chatLogger.debug('Stream start - reset event handler state');
+          }
+        },
+        (event) => {
+          try {
+            if (!eventHandler) {
+              chatLogger.error('Event handler is null/undefined', { sessionId: effectiveSessionId });
+              return;
+            }
+            
+            if (typeof eventHandler.handleEvent !== 'function') {
+              chatLogger.error('Event handler handleEvent is not a function', { 
+                sessionId: effectiveSessionId,
+                eventHandlerType: typeof eventHandler
+              });
+              return;
+            }
+            
+            eventHandler.handleEvent(event);
+          } catch (error) {
+            chatLogger.error('Error in onEvent callback', { 
+              error: error instanceof Error ? error.message : String(error),
+              eventType: event?.type,
+              sessionId: event?.session_id || effectiveSessionId
+            });
+          }
+        },
+        (error: Error) => {
+          chatLogger.error('Streaming error during KBO suggestion selection', { error: error.message, sessionId: effectiveSessionId });
+          state.setIsStreaming(false);
+          state.setIsTyping(false);
+        }
+      );
+    } catch (error) {
+      chatLogger.error('Failed to send KBO suggestion selection', { 
+        error: error instanceof Error ? error.message : String(error),
+        selection,
+        sessionId: effectiveSessionId 
+      });
+      state.setIsStreaming(false);
+      state.setIsTyping(false);
+    }
+  }, [sessionId, pythonSessionId, userId, state.setIsStreaming, state.setIsTyping, addMessage, updateStreamingMessage, onHtmlPreviewUpdate, streamingManager, eventHandler]);
+  
   // Handle clarification confirmation
   const handleClarificationConfirm = useCallback(async (messageId: string) => {
     chatLogger.info('Clarification confirmed', { messageId, sessionId });
@@ -911,6 +982,7 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
             onSuggestionDismiss={handleSuggestionDismiss}
             onClarificationConfirm={handleClarificationConfirm}
             onClarificationReject={handleClarificationReject}
+            onKBOSuggestionSelect={handleKBOSuggestionSelect}
           />
         ))}
         
@@ -1022,6 +1094,7 @@ interface MessageItemProps {
   onSuggestionDismiss: () => void;
   onClarificationConfirm: (messageId: string) => void;
   onClarificationReject: (messageId: string) => void;
+  onKBOSuggestionSelect: (selection: string) => void;
 }
 
 const MessageItem = React.memo<MessageItemProps>(({
@@ -1029,8 +1102,27 @@ const MessageItem = React.memo<MessageItemProps>(({
   onSuggestionSelect,
   onSuggestionDismiss,
   onClarificationConfirm,
-  onClarificationReject
+  onClarificationReject,
+  onKBOSuggestionSelect
 }) => {
+  // Detect KBO suggestions in the message
+  // Check both message content and metadata clarification_message
+  const kboSuggestions = React.useMemo(() => {
+    // First check metadata clarification_message (if available)
+    if (message.metadata?.clarification_message) {
+      const clarificationMsg = message.metadata.clarification_message;
+      if (hasKBOSuggestions(clarificationMsg)) {
+        return parseKBOSuggestions(clarificationMsg);
+      }
+    }
+    // Check message content directly (primary source)
+    if (hasKBOSuggestions(message.content)) {
+      return parseKBOSuggestions(message.content);
+    }
+    return null;
+  }, [message.content, message.metadata?.clarification_message]);
+  
+  const hasKBOSuggestionsInMessage = kboSuggestions !== null && kboSuggestions.length > 0;
   return (
     <div
       className={`flex ${message.type === 'user' ? 'justify-end' : 'justify-start'}`}
@@ -1073,8 +1165,16 @@ const MessageItem = React.memo<MessageItemProps>(({
                       />
                     )}
                     
-                    {/* Clarification confirmation buttons */}
-                    {message.metadata?.needs_confirmation && (
+                    {/* KBO Suggestions List */}
+                    {hasKBOSuggestionsInMessage && kboSuggestions && (
+                      <KBOSuggestionsList
+                        suggestions={kboSuggestions}
+                        onSelect={onKBOSuggestionSelect}
+                      />
+                    )}
+                    
+                    {/* Generic Clarification confirmation buttons (only if not KBO suggestions) */}
+                    {message.metadata?.needs_confirmation && !hasKBOSuggestionsInMessage && (
                       <div className="flex space-x-2 mt-2">
                         <button
                           onClick={() => onClarificationConfirm(message.id)}
