@@ -391,6 +391,7 @@ export const ValuationForm: React.FC = () => {
               min={1}
               max={100}
               step={1}
+              showArrows={true}
               helpText="Shareholders who actively work in the business in executive or management roles. Include: C-suite shareholders, working directors, founder-operators. Exclude: passive investors, silent partners, external board members. Only applicable for companies with shareholders. High owner concentration (>25% of workforce) typically reduces valuation by 7-20%."
             />
             
