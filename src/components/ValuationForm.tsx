@@ -381,12 +381,26 @@ export const ValuationForm: React.FC = () => {
             <CustomNumberInputField
               label="Active Owner-Managers"
               placeholder="e.g., 2 (founder + COO who owns equity)"
-              value={formData.number_of_owners || 1}
+              value={formData.number_of_owners !== undefined ? String(formData.number_of_owners) : ''}
               onChange={(e) => {
-                const value = parseInt(e.target.value) || 1;
-                updateFormData({ number_of_owners: value });
+                // Allow empty string during editing
+                if (e.target.value === '') {
+                  updateFormData({ number_of_owners: undefined });
+                  return;
+                }
+                const parsedValue = parseInt(e.target.value);
+                if (!isNaN(parsedValue)) {
+                  // Apply min/max constraints only when there's a valid number
+                  const value = Math.max(1, Math.min(100, parsedValue));
+                  updateFormData({ number_of_owners: value });
+                }
               }}
-              onBlur={() => {}}
+              onBlur={(e) => {
+                // Apply default value of 1 only on blur if field is empty
+                if (e.target.value === '' || !e.target.value) {
+                  updateFormData({ number_of_owners: 1 });
+                }
+              }}
               name="number_of_owners"
               min={1}
               max={100}

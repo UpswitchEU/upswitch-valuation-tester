@@ -62,19 +62,21 @@ export const MultiplesTransparencySection: React.FC<MultiplesTransparencySection
   const revenue = inputData?.revenue || 0;
   const ebitda = inputData?.ebitda || 0;
   
-  // Backend returns unadjusted base multiples and adjustment factors
-  const baseRevenueMultiple = multiplesValuation?.revenue_multiple || 2.1;
-  const baseEbitdaMultiple = multiplesValuation?.ebitda_multiple || 8.5;
+  // Backend returns the FINAL multiples used in calculation (already adjusted for owner concentration)
+  // The unadjusted multiples are stored separately for transparency
+  const revenueMultiple = multiplesValuation?.revenue_multiple || 1.2;
+  const ebitdaMultiple = multiplesValuation?.ebitda_multiple || 5.2;
   
-  // Calculate adjusted multiples: base × (1 + total_adjustment)
-  // total_adjustment is the net adjustment % (e.g., -0.15 for -15%)
-  const totalAdjustmentFactor = 1.0 + (multiplesValuation?.total_adjustment || 0);
-  const adjustedRevenueMultiple = baseRevenueMultiple * totalAdjustmentFactor;
-  const adjustedEbitdaMultiple = baseEbitdaMultiple * totalAdjustmentFactor;
+  // Unadjusted multiples (before owner concentration adjustment) - for display transparency
+  const baseRevenueMultiple = multiplesValuation?.unadjusted_revenue_multiple || revenueMultiple;
+  const baseEbitdaMultiple = multiplesValuation?.unadjusted_ebitda_multiple || ebitdaMultiple;
   
-  // For display purposes, use adjusted multiples
-  const revenueMultiple = adjustedRevenueMultiple;
-  const ebitdaMultiple = adjustedEbitdaMultiple;
+  // Check if owner concentration adjustment was applied
+  const ownerConcentrationAdjustment = multiplesValuation?.owner_concentration?.adjustment_factor || 0;
+  const hasOwnerConcentrationAdjustment = Math.abs(ownerConcentrationAdjustment) > 0.001;
+  
+  // NOTE: total_adjustment is NOT applied to multiples - it's applied to EQUITY VALUE only
+  // The multiples shown here are the final multiples used in enterprise value calculation
   
   // CRITICAL: NO MOCK DATA - Only use real backend comparable companies
   const comparableCompanies: ComparableCompany[] = result.transparency?.comparable_companies || [];
@@ -143,37 +145,49 @@ export const MultiplesTransparencySection: React.FC<MultiplesTransparencySection
                 </div>
               </div>
 
-              {/* CRITICAL FIX: Show actual adjustment factor from backend, not fake step-by-step */}
-              <div className="bg-blue-50 p-3 rounded border-l-4 border-blue-400">
-                <div className="flex justify-between items-start mb-2">
-                  <span className="font-medium text-gray-900">Total Adjustment Factor:</span>
-                  <span className={`font-semibold px-2 py-1 rounded text-sm ${
-                    totalAdjustmentFactor >= 1.0 
-                      ? 'bg-green-100 text-green-700' 
-                      : 'bg-red-100 text-red-700'
-                  }`}>
-                    {totalAdjustmentFactor >= 1.0 ? '+' : ''}{((totalAdjustmentFactor - 1.0) * 100).toFixed(1)}%
-                  </span>
+              {/* Owner Concentration Adjustment (if applied) */}
+              {hasOwnerConcentrationAdjustment && (
+                <div className="bg-blue-50 p-3 rounded border-l-4 border-blue-400">
+                  <div className="flex justify-between items-start mb-2">
+                    <span className="font-medium text-gray-900">Owner Concentration Adjustment:</span>
+                    <span className={`font-semibold px-2 py-1 rounded text-sm ${
+                      ownerConcentrationAdjustment >= 0 
+                        ? 'bg-green-100 text-green-700' 
+                        : 'bg-red-100 text-red-700'
+                    }`}>
+                      {ownerConcentrationAdjustment >= 0 ? '+' : ''}{(ownerConcentrationAdjustment * 100).toFixed(1)}%
+                    </span>
+                  </div>
+                  <p className="text-xs text-gray-700 mb-1">
+                    <strong>Note:</strong> Owner concentration risk adjustment applied to multiples based on owner/employee ratio.
+                    This reflects key person risk and management depth.
+                  </p>
+                  {multiplesValuation?.owner_concentration?.risk_level && (
+                    <p className="text-xs text-gray-600 mb-1">
+                      Risk Level: <strong>{multiplesValuation.owner_concentration.risk_level}</strong>
+                    </p>
+                  )}
                 </div>
-                <p className="text-xs text-gray-700 mb-1">
-                  <strong>Note:</strong> This represents the net adjustment applied to the base multiple.
-                  The backend applies size, growth, profitability, and other adjustments based on company characteristics.
-                </p>
-                <p className="text-xs text-gray-600 mb-1">
-                  Individual adjustment breakdowns are calculated internally and combined into this total factor.
-                </p>
-              </div>
+              )}
 
               <div className="bg-green-100 p-4 rounded-lg border border-green-300 mt-4">
                 <div className="flex justify-between items-center">
-                  <span className="font-semibold text-gray-900">Final Revenue Multiple:</span>
+                  <span className="font-semibold text-gray-900">Final Revenue Multiple Used:</span>
                   <span className="text-2xl font-bold text-green-600">{revenueMultiple.toFixed(2)}x</span>
                 </div>
-                <p className="text-xs text-gray-600 mt-2 font-mono">
-                  Calculation: {baseRevenueMultiple.toFixed(2)}x × {totalAdjustmentFactor.toFixed(3)} = {revenueMultiple.toFixed(2)}x
-                </p>
+                {hasOwnerConcentrationAdjustment && baseRevenueMultiple !== revenueMultiple && (
+                  <p className="text-xs text-gray-600 mt-2 font-mono">
+                    Calculation: {baseRevenueMultiple.toFixed(2)}x × (1{ownerConcentrationAdjustment >= 0 ? '+' : ''}{ownerConcentrationAdjustment.toFixed(3)}) = {revenueMultiple.toFixed(2)}x
+                  </p>
+                )}
                 <p className="text-xs text-gray-500 mt-1">
-                  (Base multiple × Total adjustment factor = Adjusted multiple)
+                  {hasOwnerConcentrationAdjustment 
+                    ? "(Base multiple × Owner concentration adjustment = Final multiple)"
+                    : "(This is the final multiple used in enterprise value calculation)"
+                  }
+                </p>
+                <p className="text-xs text-blue-600 mt-2 italic">
+                  ⚠️ <strong>Important:</strong> Size, liquidity, and country adjustments are applied to EQUITY VALUE after enterprise value calculation, not to the multiples themselves.
                 </p>
               </div>
             </div>
@@ -196,37 +210,49 @@ export const MultiplesTransparencySection: React.FC<MultiplesTransparencySection
                 </div>
               </div>
 
-              {/* CRITICAL FIX: Show actual adjustment factor from backend, not fake step-by-step */}
-              <div className="bg-blue-50 p-3 rounded border-l-4 border-blue-400">
-                <div className="flex justify-between items-start mb-2">
-                  <span className="font-medium text-gray-900">Total Adjustment Factor:</span>
-                  <span className={`font-semibold px-2 py-1 rounded text-sm ${
-                    totalAdjustmentFactor >= 1.0 
-                      ? 'bg-green-100 text-green-700' 
-                      : 'bg-red-100 text-red-700'
-                  }`}>
-                    {totalAdjustmentFactor >= 1.0 ? '+' : ''}{((totalAdjustmentFactor - 1.0) * 100).toFixed(1)}%
-                  </span>
+              {/* Owner Concentration Adjustment (if applied) */}
+              {hasOwnerConcentrationAdjustment && (
+                <div className="bg-blue-50 p-3 rounded border-l-4 border-blue-400">
+                  <div className="flex justify-between items-start mb-2">
+                    <span className="font-medium text-gray-900">Owner Concentration Adjustment:</span>
+                    <span className={`font-semibold px-2 py-1 rounded text-sm ${
+                      ownerConcentrationAdjustment >= 0 
+                        ? 'bg-green-100 text-green-700' 
+                        : 'bg-red-100 text-red-700'
+                    }`}>
+                      {ownerConcentrationAdjustment >= 0 ? '+' : ''}{(ownerConcentrationAdjustment * 100).toFixed(1)}%
+                    </span>
+                  </div>
+                  <p className="text-xs text-gray-700 mb-1">
+                    <strong>Note:</strong> Owner concentration risk adjustment applied to multiples based on owner/employee ratio.
+                    This reflects key person risk and management depth.
+                  </p>
+                  {multiplesValuation?.owner_concentration?.risk_level && (
+                    <p className="text-xs text-gray-600 mb-1">
+                      Risk Level: <strong>{multiplesValuation.owner_concentration.risk_level}</strong>
+                    </p>
+                  )}
                 </div>
-                <p className="text-xs text-gray-700 mb-1">
-                  <strong>Note:</strong> This represents the net adjustment applied to the base multiple.
-                  The backend applies size, growth, profitability, and other adjustments based on company characteristics.
-                </p>
-                <p className="text-xs text-gray-600 mb-1">
-                  Individual adjustment breakdowns are calculated internally and combined into this total factor.
-                </p>
-              </div>
+              )}
 
               <div className="bg-green-100 p-4 rounded-lg border border-green-300 mt-4">
                 <div className="flex justify-between items-center">
-                  <span className="font-semibold text-gray-900">Final EBITDA Multiple:</span>
+                  <span className="font-semibold text-gray-900">Final EBITDA Multiple Used:</span>
                   <span className="text-2xl font-bold text-green-600">{ebitdaMultiple.toFixed(1)}x</span>
                 </div>
-                <p className="text-xs text-gray-600 mt-2 font-mono">
-                  Calculation: {baseEbitdaMultiple.toFixed(1)}x × {totalAdjustmentFactor.toFixed(3)} = {ebitdaMultiple.toFixed(1)}x
-                </p>
+                {hasOwnerConcentrationAdjustment && baseEbitdaMultiple !== ebitdaMultiple && (
+                  <p className="text-xs text-gray-600 mt-2 font-mono">
+                    Calculation: {baseEbitdaMultiple.toFixed(1)}x × (1{ownerConcentrationAdjustment >= 0 ? '+' : ''}{ownerConcentrationAdjustment.toFixed(3)}) = {ebitdaMultiple.toFixed(1)}x
+                  </p>
+                )}
                 <p className="text-xs text-gray-500 mt-1">
-                  (Base multiple × Total adjustment factor = Adjusted multiple)
+                  {hasOwnerConcentrationAdjustment 
+                    ? "(Base multiple × Owner concentration adjustment = Final multiple)"
+                    : "(This is the final multiple used in enterprise value calculation)"
+                  }
+                </p>
+                <p className="text-xs text-blue-600 mt-2 italic">
+                  ⚠️ <strong>Important:</strong> Size, liquidity, and country adjustments are applied to EQUITY VALUE after enterprise value calculation, not to the multiples themselves.
                 </p>
               </div>
             </div>
@@ -737,10 +763,13 @@ export const MultiplesTransparencySection: React.FC<MultiplesTransparencySection
           <div className="bg-green-100 border-2 border-green-400 rounded-lg p-4">
             <h4 className="font-semibold text-gray-900 mb-3">Equity Value Conversion</h4>
             <div className="space-y-2 text-sm">
+              {/* Enterprise Value */}
               <div className="flex justify-between">
                 <span className="text-gray-700">Enterprise Value:</span>
-                <span className="font-mono font-semibold">{formatCurrency(multiplesValuation?.ev_ebitda_valuation || 0)}</span>
+                <span className="font-mono font-semibold">{formatCurrency(multiplesValuation?.ev_ebitda_valuation || multiplesValuation?.enterprise_value || 0)}</span>
               </div>
+              
+              {/* Net Debt and Cash */}
               <div className="flex justify-between text-xs text-gray-600">
                 <span>- Net Debt:</span>
                 <span className="font-mono">{formatCurrency(inputData?.total_debt || 0)}</span>
@@ -749,10 +778,102 @@ export const MultiplesTransparencySection: React.FC<MultiplesTransparencySection
                 <span>+ Cash:</span>
                 <span className="font-mono">{formatCurrency(inputData?.cash || 0)}</span>
               </div>
+              
+              {/* Base Equity Value */}
               <div className="flex justify-between pt-2 mt-2 border-t border-green-300">
-                <span className="text-sm text-gray-600">Multiples Component Value:</span>
-                <span className="text-sm font-mono text-gray-700">{formatCurrency(multiplesValuation?.adjusted_equity_value || 0)}</span>
+                <span className="text-sm font-medium text-gray-700">Base Equity Value:</span>
+                <span className="text-sm font-mono font-semibold text-gray-900">
+                  {formatCurrency(
+                    (multiplesValuation?.ev_ebitda_valuation || multiplesValuation?.enterprise_value || 0) -
+                    (inputData?.total_debt || 0) +
+                    (inputData?.cash || 0)
+                  )}
+                </span>
               </div>
+              <p className="text-xs text-gray-500 italic pl-2">
+                = Enterprise Value - Net Debt + Cash
+              </p>
+              
+              {/* Adjustment Breakdown */}
+              {result.small_firm_adjustments && (
+                <>
+                  <div className="pt-3 mt-3 border-t-2 border-blue-300">
+                    <p className="text-xs font-semibold text-gray-700 mb-2">Valuation Adjustments Applied:</p>
+                    <div className="space-y-1 text-xs">
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Size Discount:</span>
+                        <span className="font-mono font-semibold text-red-600">
+                          {result.small_firm_adjustments.size_discount < 0 ? '' : '+'}
+                          {(result.small_firm_adjustments.size_discount * 100).toFixed(1)}%
+                        </span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Liquidity Discount:</span>
+                        <span className="font-mono font-semibold text-red-600">
+                          {result.small_firm_adjustments.liquidity_discount < 0 ? '' : '+'}
+                          {(result.small_firm_adjustments.liquidity_discount * 100).toFixed(1)}%
+                        </span>
+                      </div>
+                      {Math.abs(result.small_firm_adjustments.country_adjustment) > 0.001 && (
+                        <div className="flex justify-between">
+                          <span className="text-gray-600">Country Adjustment:</span>
+                          <span className="font-mono font-semibold">
+                            {result.small_firm_adjustments.country_adjustment >= 0 ? '+' : ''}
+                            {(result.small_firm_adjustments.country_adjustment * 100).toFixed(1)}%
+                          </span>
+                        </div>
+                      )}
+                      {result.small_firm_adjustments.growth_premium > 0.001 && (
+                        <div className="flex justify-between">
+                          <span className="text-gray-600">Growth Premium:</span>
+                          <span className="font-mono font-semibold text-green-600">
+                            +{(result.small_firm_adjustments.growth_premium * 100).toFixed(1)}%
+                          </span>
+                        </div>
+                      )}
+                      <div className="flex justify-between pt-1 mt-1 border-t border-gray-300 font-semibold">
+                        <span className="text-gray-700">Total Adjustment Factor:</span>
+                        <span className="font-mono text-blue-700">
+                          {(1.0 + result.small_firm_adjustments.combined_effect).toFixed(3)}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {/* Adjusted Equity Value Calculation */}
+                  <div className="bg-blue-50 rounded p-3 mt-2 border border-blue-300">
+                    <div className="flex justify-between items-center mb-1">
+                      <span className="text-sm font-semibold text-gray-900">Calculation:</span>
+                    </div>
+                    <p className="text-xs font-mono text-gray-700 mb-1">
+                      Adjusted Equity Value = Base Equity Value × Total Adjustment Factor
+                    </p>
+                    <p className="text-xs font-mono text-gray-700">
+                      = {formatCurrency(
+                        (multiplesValuation?.ev_ebitda_valuation || multiplesValuation?.enterprise_value || 0) -
+                        (inputData?.total_debt || 0) +
+                        (inputData?.cash || 0)
+                      )} × {(1.0 + result.small_firm_adjustments.combined_effect).toFixed(3)}
+                    </p>
+                    <p className="text-xs font-mono font-semibold text-green-700 mt-1">
+                      = {formatCurrency(multiplesValuation?.adjusted_equity_value || 0)}
+                    </p>
+                  </div>
+                </>
+              )}
+              
+              {/* Adjusted Equity Value (Multiples) */}
+              <div className="flex justify-between pt-2 mt-2 border-t-2 border-green-500">
+                <span className="text-sm font-semibold text-gray-900">Adjusted Equity Value (Multiples):</span>
+                <span className="text-base font-mono font-bold text-green-600">
+                  {formatCurrency(multiplesValuation?.adjusted_equity_value || 0)}
+                </span>
+              </div>
+              <p className="text-xs text-gray-600 italic pl-2">
+                This is the final equity value after all adjustments (size, liquidity, country, growth)
+              </p>
+              
+              {/* Final Valuation (Mid-Point) */}
               <div className="bg-white rounded p-2 mt-2 border border-green-300">
                 <div className="flex justify-between items-center">
                   <span className="text-base font-semibold text-gray-900">Final Valuation (Mid-Point):</span>

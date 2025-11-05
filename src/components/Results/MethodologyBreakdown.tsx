@@ -71,10 +71,39 @@ export const MethodologyBreakdown: React.FC<MethodologyBreakdownProps> = ({ resu
   const downside = equityValueMid > 0 ? ((equityValueMid - equityValueLow) / equityValueMid) * 100 : 0;
   const upside = equityValueMid > 0 ? ((equityValueHigh - equityValueMid) / equityValueMid) * 100 : 0;
 
+  // Check if size discount applies
+  const sizeDiscount = result.small_firm_adjustments?.size_discount || 0;
+  const hasSizeDiscount = sizeDiscount < -0.001; // More than 0.1% discount
+  const revenue = result.current_year_data?.revenue || 0;
+
   return (
     <div className="space-y-6">
       {/* DCF Exclusion Notice (if DCF not used) */}
       <DCFExclusionNotice result={result} />
+      
+      {/* Size Discount Notice (if size discount applies) */}
+      {hasSizeDiscount && (
+        <div className="bg-amber-50 border-2 border-amber-300 rounded-lg p-4 sm:p-5">
+          <div className="flex items-start gap-3">
+            <div className="flex-shrink-0 mt-0.5">
+              <svg className="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
+            <div className="flex-1">
+              <h4 className="text-sm font-semibold text-amber-900 mb-2">Size Discount Applied</h4>
+              <p className="text-sm text-amber-800 mb-2">
+                Revenue of <strong>{formatCurrency(revenue)}</strong> is below the €5M threshold. 
+                A <strong>{(Math.abs(sizeDiscount) * 100).toFixed(0)}%</strong> size discount has been applied to reflect higher risk and lower liquidity for small companies (McKinsey standard).
+              </p>
+              <p className="text-xs text-amber-700 mt-2">
+                Multiples from databases (Bloomberg, Capital IQ, PitchBook) become correct at around €5M revenue. 
+                Companies below this threshold require size-based corrections. See full adjustment breakdown in the Small Business Valuation Adjustments section below.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
       
       {/* Dynamic Methodology Description */}
       <div className="bg-white rounded-lg border border-gray-200 p-4 sm:p-6 shadow-sm">
@@ -197,6 +226,9 @@ export const MethodologyBreakdown: React.FC<MethodologyBreakdownProps> = ({ resu
                   {weightExplanation.multiplesReasons.map((reason, index) => (
                     <li key={index}>• {reason}</li>
                   ))}
+                  {hasSizeDiscount && (
+                    <li>• Small companies (&lt;€5M revenue) require size-based adjustments to multiples (McKinsey standard)</li>
+                  )}
                 </ul>
               </div>
             </>
