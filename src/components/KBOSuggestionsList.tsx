@@ -1,5 +1,5 @@
 import { Building2, X } from 'lucide-react';
-import React from 'react';
+import React, { useState } from 'react';
 
 interface KBOSuggestion {
   number: number;
@@ -54,9 +54,17 @@ export const KBOSuggestionsList: React.FC<KBOSuggestionsListProps> = ({
   suggestions,
   onSelect,
 }) => {
+  const [isDismissed, setIsDismissed] = useState(false);
+
   const handleSelect = (selection: string) => {
+    if (selection === 'none') {
+      setIsDismissed(true); // Hide immediately
+    }
     onSelect(selection);
   };
+
+  // Early return if dismissed
+  if (isDismissed) return null;
 
   return (
     <div className="mt-4 space-y-2">

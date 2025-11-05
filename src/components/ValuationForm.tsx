@@ -37,6 +37,9 @@ export const ValuationForm: React.FC = () => {
   // Industry validation state
   const [industryValidationError, setIndustryValidationError] = useState<string | null>(null);
   const [isValidatingIndustry, setIsValidatingIndustry] = useState(false);
+  
+  // Employee count validation state
+  const [employeeCountError, setEmployeeCountError] = useState<string | null>(null);
 
   // Debounced quick calculation for live preview
   const debouncedQuickCalc = useCallback(
@@ -173,11 +176,25 @@ export const ValuationForm: React.FC = () => {
 
   const handleSubmit = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Validate employee count when owner count is provided
+    if (formData.business_type === 'company' && 
+        formData.number_of_owners && 
+        formData.number_of_owners > 0 && 
+        (!formData.number_of_employees || formData.number_of_employees === 0)) {
+      setEmployeeCountError("Employee count is required when owner count is provided to calculate owner concentration risk");
+      toast.error("Please provide employee count to calculate owner concentration risk");
+      return;
+    }
+    
+    // Clear validation error if validation passes
+    setEmployeeCountError(null);
+    
     await calculateValuation();
     
     // Auto-save report to localStorage (will show inline below the form)
     // Results component will appear automatically in App.tsx when result is set
-  }, [calculateValuation]);
+  }, [calculateValuation, formData.business_type, formData.number_of_owners, formData.number_of_employees]);
 
   // 📝 DEPRECATED: Auto-save to localStorage
   // Now handled by calculateValuation() → saveToBackend()
@@ -416,12 +433,19 @@ export const ValuationForm: React.FC = () => {
               onChange={(e) => {
                 const value = parseInt(e.target.value) || undefined;
                 updateFormData({ number_of_employees: value });
+                // Clear error when user starts typing
+                if (employeeCountError && value) {
+                  setEmployeeCountError(null);
+                }
               }}
               onBlur={() => {}}
               name="number_of_employees"
               min={0}
               step={1}
-              helpText="Total workforce converted to full-time equivalents. Part-time employees count proportionally (e.g., 2 half-time = 1 FTE). Excludes contractors and external consultants. Used to assess operational scale and key person risk. Only applicable for companies with shareholders."
+              error={employeeCountError || undefined}
+              touched={!!employeeCountError}
+              required={formData.business_type === 'company' && formData.number_of_owners && formData.number_of_owners > 0}
+              helpText={`Total workforce converted to full-time equivalents. Part-time employees count proportionally (e.g., 2 half-time = 1 FTE). Excludes contractors and external consultants. Used to assess operational scale and key person risk.${formData.business_type === 'company' && formData.number_of_owners && formData.number_of_owners > 0 ? ' Required when owner count is provided. Owner concentration risk (7-20% discount) cannot be calculated without this data.' : ''}`}
             />
           </div>
         )}

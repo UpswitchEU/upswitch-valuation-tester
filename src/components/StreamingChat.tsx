@@ -1166,12 +1166,17 @@ const MessageItem = React.memo<MessageItemProps>(({
                     )}
                     
                     {/* KBO Suggestions List */}
-                    {hasKBOSuggestionsInMessage && kboSuggestions && (
-                      <KBOSuggestionsList
-                        suggestions={kboSuggestions}
-                        onSelect={onKBOSuggestionSelect}
-                      />
-                    )}
+                    {/* Check if this message comes after "none" was clicked - hide suggestions if so */}
+                    {(() => {
+                      const isAfterNoneResponse = message.content?.includes("No problem!") && 
+                                                   message.content?.includes("What's your company name?");
+                      return hasKBOSuggestionsInMessage && kboSuggestions && !isAfterNoneResponse && (
+                        <KBOSuggestionsList
+                          suggestions={kboSuggestions}
+                          onSelect={onKBOSuggestionSelect}
+                        />
+                      );
+                    })()}
                     
                     {/* Generic Clarification confirmation buttons (only if not KBO suggestions) */}
                     {message.metadata?.needs_confirmation && !hasKBOSuggestionsInMessage && (

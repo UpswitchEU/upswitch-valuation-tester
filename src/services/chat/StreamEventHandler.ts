@@ -786,10 +786,16 @@ export class StreamEventHandler {
       value: data.value
     });
     
-    // Show clarification message with confirmation options
+    // Check if this is a simple follow-up question (e.g., after "none" response)
+    // These should NOT have confirmation buttons
+    const message = data.message || data.content || '';
+    const isSimpleFollowUp = message.includes("No problem!") || 
+                             (message.includes("What's your company name?") && message.includes("No problem"));
+    
+    // Show clarification message with confirmation options (unless it's a simple follow-up)
     const clarificationMessage: Omit<Message, 'id' | 'timestamp'> = {
       type: 'ai',
-      content: data.message,
+      content: message,
       isComplete: true,
       metadata: {
         intent: 'clarification',
@@ -797,7 +803,7 @@ export class StreamEventHandler {
         validation_status: 'needs_clarification',
         clarification_value: data.value,
         clarification_field: data.field,
-        needs_confirmation: true,
+        needs_confirmation: !isSimpleFollowUp, // Only set true if NOT a simple follow-up
         // Merge any additional metadata from backend
         ...(data.metadata || {})
       }
