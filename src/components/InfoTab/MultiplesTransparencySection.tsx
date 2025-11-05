@@ -749,9 +749,21 @@ export const MultiplesTransparencySection: React.FC<MultiplesTransparencySection
                 <span>+ Cash:</span>
                 <span className="font-mono">{formatCurrency(inputData?.cash || 0)}</span>
               </div>
-              <div className="flex justify-between pt-3 mt-3 border-t-2 border-green-500">
-                <span className="text-lg font-bold text-gray-900">Equity Value (Multiples):</span>
-                <span className="text-2xl font-bold text-green-600">{formatCurrency(multiplesValuation?.adjusted_equity_value || 0)}</span>
+              <div className="flex justify-between pt-2 mt-2 border-t border-green-300">
+                <span className="text-sm text-gray-600">Multiples Component Value:</span>
+                <span className="text-sm font-mono text-gray-700">{formatCurrency(multiplesValuation?.adjusted_equity_value || 0)}</span>
+              </div>
+              <div className="bg-white rounded p-2 mt-2 border border-green-300">
+                <div className="flex justify-between items-center">
+                  <span className="text-base font-semibold text-gray-900">Final Valuation (Mid-Point):</span>
+                  <span className="text-xl font-bold text-green-600">{formatCurrency(result.equity_value_mid || multiplesValuation?.adjusted_equity_value || 0)}</span>
+                </div>
+                <p className="text-xs text-gray-600 mt-1">
+                  {result.dcf_weight && result.dcf_weight > 0 
+                    ? `Weighted average: DCF (${(result.dcf_weight * 100).toFixed(0)}%) + Multiples (${(result.multiples_weight * 100).toFixed(0)}%)`
+                    : 'Final valuation from Market Multiples methodology (DCF excluded for small companies)'
+                  }
+                </p>
               </div>
             </div>
           </div>

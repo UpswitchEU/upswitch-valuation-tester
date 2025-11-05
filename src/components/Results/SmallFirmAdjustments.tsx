@@ -98,6 +98,58 @@ export const SmallFirmAdjustments: React.FC<SmallFirmAdjustmentsProps> = ({ resu
           </span>
         </div>
 
+        {/* Step-by-Step Calculation */}
+        <div className="bg-blue-50 rounded-lg p-4 mb-4 border border-blue-200">
+          <h5 className="font-semibold text-gray-900 mb-3 text-sm">Step-by-Step Calculation</h5>
+          <div className="bg-white rounded p-3 space-y-2 text-xs font-mono border border-blue-300">
+            <div className="flex justify-between">
+              <span className="text-gray-700">Base Value (before adjustments):</span>
+              <span className="font-semibold">{formatCurrency(adjustments.base_value_before_adjustments)}</span>
+            </div>
+            <div className="flex justify-between text-gray-600 pt-1">
+              <span>Size Discount:</span>
+              <span>{formatAdjustment(adjustments.size_discount)}</span>
+            </div>
+            <div className="flex justify-between text-gray-600">
+              <span>Liquidity Discount:</span>
+              <span>{formatAdjustment(adjustments.liquidity_discount)}</span>
+            </div>
+            {Math.abs(adjustments.country_adjustment) > 0.001 && (
+              <div className="flex justify-between text-gray-600">
+                <span>Country Adjustment:</span>
+                <span>{formatAdjustment(adjustments.country_adjustment)}</span>
+              </div>
+            )}
+            {adjustments.growth_premium > 0.001 && (
+              <div className="flex justify-between text-gray-600">
+                <span>Growth Premium:</span>
+                <span className="text-green-600">{formatAdjustment(adjustments.growth_premium)}</span>
+              </div>
+            )}
+            <div className="flex justify-between pt-2 border-t border-gray-300 text-gray-700">
+              <span>Total Adjustment:</span>
+              <span className="font-semibold">{formatAdjustment(adjustments.combined_effect)}</span>
+            </div>
+            <div className="flex justify-between pt-1 border-t-2 border-blue-400 font-semibold text-sm">
+              <span className="text-gray-900">Calculation:</span>
+              <span className="text-blue-700">
+                {formatCurrency(adjustments.base_value_before_adjustments)} × {(1.0 + adjustments.combined_effect).toFixed(3)}
+              </span>
+            </div>
+            <div className="flex justify-between pt-2 border-t-2 border-green-500 font-semibold text-base">
+              <span className="text-gray-900">= Final Adjusted Value:</span>
+              <span className="text-green-600">{formatCurrency(adjustments.adjusted_value_after_adjustments)}</span>
+            </div>
+          </div>
+          <p className="text-xs text-gray-600 mt-2 italic">
+            <strong>Formula:</strong> Adjusted Value = Base Value × (1.0 + Size Discount + Liquidity Discount + Country Adjustment + Growth Premium)
+            <br />
+            Where discounts are negative values (e.g., -30% = -0.30) and premiums are positive values
+            <br />
+            <span className="text-gray-500">Example: Base €1,000,000 × (1.0 + (-0.30) + (-0.15) + 0.00 + 0.00) = €1,000,000 × 0.55 = €550,000</span>
+          </p>
+        </div>
+
         <div className="bg-gray-50 rounded p-4 space-y-2 text-sm">
           <div className="flex justify-between">
             <span className="text-gray-600">Base valuation (before adjustments):</span>
