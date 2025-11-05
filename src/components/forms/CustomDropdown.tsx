@@ -4,6 +4,7 @@
 
 import { ChevronDown } from 'lucide-react';
 import React, { useEffect, useRef, useState } from 'react';
+import { InfoIcon } from '../ui/InfoIcon';
 
 interface DropdownOption {
   value: string;
@@ -97,7 +98,7 @@ const CustomDropdown: React.FC<CustomDropdownProps> = ({
   className = '',
   dropdownRef,
   helpText,
-  helpTextPlacement = 'below',
+  helpTextPlacement = 'tooltip',
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [focusedIndex, setFocusedIndex] = useState(-1);
@@ -239,14 +240,18 @@ const CustomDropdown: React.FC<CustomDropdownProps> = ({
           {/* Fixed Label */}
           <label
             className={`
-            absolute left-4 top-2 text-xs text-gray-700 pointer-events-none font-medium
+            absolute left-4 top-2 text-xs text-gray-700 font-medium flex items-center gap-1
             ${error && touched ? 'text-red-600' : ''}
             ${disabled ? 'text-gray-400' : ''}
             ${required ? "after:content-['*'] after:text-red-500 after:ml-1" : ''}
+            ${helpText && helpTextPlacement === 'tooltip' ? 'pointer-events-auto' : 'pointer-events-none'}
           `}
             id={`${label}-label`}
           >
-            {label}
+            <span className="pointer-events-none">{label}</span>
+            {helpText && helpTextPlacement === 'tooltip' && (
+              <InfoIcon content={helpText} position="top" maxWidth={300} />
+            )}
           </label>
 
           {/* Inner Content */}

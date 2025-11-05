@@ -3,6 +3,7 @@
 // Purpose: Number input with formatting, min/max validation, and consistent styling
 
 import React from 'react';
+import { InfoIcon } from '../ui/InfoIcon';
 
 export interface CustomNumberInputFieldProps {
   label: string;
@@ -53,7 +54,7 @@ const CustomNumberInputField: React.FC<CustomNumberInputFieldProps> = ({
   formatAsCurrency = false,
   showArrows = false,
   helpText,
-  helpTextPlacement = 'below',
+  helpTextPlacement = 'tooltip',
 }) => {
   const handleFocus = (e: React.FocusEvent<HTMLInputElement>) => {
     onFocus?.(e);
@@ -232,12 +233,16 @@ const CustomNumberInputField: React.FC<CustomNumberInputFieldProps> = ({
         )}
         <label
           className={`
-            absolute left-4 top-2 text-xs text-gray-700 pointer-events-none font-medium
+            absolute left-4 top-2 text-xs text-gray-700 font-medium flex items-center gap-1
             ${hasError ? 'text-red-600' : ''}
             ${prefix ? 'left-8' : ''}
+            ${helpText && helpTextPlacement === 'tooltip' ? 'pointer-events-auto' : 'pointer-events-none'}
           `}
         >
-          {label}
+          <span className="pointer-events-none">{label}</span>
+          {helpText && helpTextPlacement === 'tooltip' && (
+            <InfoIcon content={helpText} position="top" maxWidth={300} />
+          )}
         </label>
       </div>
 
