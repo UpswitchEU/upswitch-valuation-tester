@@ -59,7 +59,9 @@ export const MethodologyBreakdown: React.FC<MethodologyBreakdownProps> = ({ resu
   
   // Final calculation
   const dcfValue = result.dcf_valuation?.equity_value || 0;
-  const multiplesValue = result.multiples_valuation?.ev_ebitda_valuation || 0;
+  // Use adjusted equity value (not enterprise value) for display clarity
+  const multiplesValue = result.multiples_valuation?.adjusted_equity_value || result.multiples_valuation?.ev_ebitda_valuation || 0;
+  const enterpriseValue = result.multiples_valuation?.ev_ebitda_valuation || 0; // Keep for reference
   const finalValue = (dcfValue * dcfWeight) + (multiplesValue * multiplesWeight);
   
   // Extract valuation range values
@@ -295,6 +297,14 @@ export const MethodologyBreakdown: React.FC<MethodologyBreakdownProps> = ({ resu
             <div className="text-2xl font-bold text-green-600 mb-2">
               {formatCurrency(multiplesValue)}
             </div>
+            <div className="text-xs text-green-600 mb-2 italic">
+              Adjusted Equity Value (after size, liquidity, and other adjustments)
+            </div>
+            {enterpriseValue > 0 && enterpriseValue !== multiplesValue && (
+              <div className="text-xs text-gray-600 mb-2">
+                Enterprise Value: {formatCurrency(enterpriseValue)} (before adjustments)
+              </div>
+            )}
             <div className="text-sm text-green-700 space-y-1">
               {renderMultipleWithAdjustment(
                 "Revenue Multiple",

@@ -185,14 +185,50 @@ export const ResultsHeader: React.FC<ResultsHeaderProps> = ({ result }) => {
             </div>
             <div className="flex-1">
               <h4 className="text-sm font-semibold text-blue-900 mb-2">Understanding the Valuation Range</h4>
+              
+              {/* Methodology Indicator */}
+              {result.range_methodology && (
+                <div className="mb-3 p-2 bg-white rounded border border-blue-300">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-semibold text-blue-900">Range Methodology:</span>
+                    <span className={`text-xs px-2 py-1 rounded font-medium ${
+                      result.range_methodology === 'multiple_dispersion' 
+                        ? 'bg-green-100 text-green-800' 
+                        : 'bg-amber-100 text-amber-800'
+                    }`}>
+                      {result.range_methodology === 'multiple_dispersion' 
+                        ? '📊 Multiple Dispersion (P25/P50/P75 from comparables)'
+                        : '📈 Confidence Spread (size-adjusted)'
+                      }
+                    </span>
+                    {result.range_methodology === 'multiple_dispersion' && result.multiples_valuation?.comparables_count && (
+                      <span className="text-xs text-gray-600">
+                        ({result.multiples_valuation.comparables_count} comparable companies)
+                      </span>
+                    )}
+                  </div>
+                </div>
+              )}
+              
               <p className="text-sm text-blue-800 mb-2">
                 The <strong>Mid-Point (€{formatCurrency(result.equity_value_mid)})</strong> is our best estimate of your company's value, calculated as a weighted average of the valuation methodologies used.
               </p>
               <p className="text-sm text-blue-800 mb-2">
-                The <strong>Low</strong> and <strong>High</strong> estimates reflect <strong>valuation uncertainty</strong> based on data quality and market conditions, not disagreement between methodologies. The range width of <strong>±{spreadPercentage}%</strong> is determined by your confidence score of <strong>{confidenceScore}%</strong> per industry standards (PwC Valuation Handbook).
+                {result.range_methodology === 'multiple_dispersion' ? (
+                  <>
+                    The <strong>Low</strong> and <strong>High</strong> estimates are calculated from the <strong>25th and 75th percentile multiples</strong> of comparable companies. This reflects actual market dispersion, making it more accurate than confidence-based spreads (McKinsey best practice).
+                  </>
+                ) : (
+                  <>
+                    The <strong>Low</strong> and <strong>High</strong> estimates reflect <strong>valuation uncertainty</strong> based on data quality and market conditions. The range width of <strong>±{spreadPercentage}%</strong> is determined by your confidence score of <strong>{confidenceScore}%</strong> and company size (small companies get wider spreads ±25%).
+                  </>
+                )}
               </p>
               <p className="text-xs text-blue-700 mt-2 italic">
-                Higher confidence scores result in tighter ranges (±12%), while lower scores result in wider ranges (±22%) to account for greater uncertainty.
+                {result.range_methodology === 'multiple_dispersion' 
+                  ? 'Multiple dispersion ranges use actual comparable company data (P25/P50/P75 percentiles), providing more accurate valuation ranges than confidence-based spreads.'
+                  : 'Higher confidence scores and larger companies result in tighter ranges (±12%), while lower scores and smaller companies result in wider ranges (±25%) to account for greater uncertainty.'
+                }
               </p>
             </div>
           </div>

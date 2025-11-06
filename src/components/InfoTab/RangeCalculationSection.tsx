@@ -77,15 +77,35 @@ export const RangeCalculationSection: React.FC<RangeCalculationSectionProps> = (
                 <strong>Mid-Point:</strong> This is the true valuation estimate, calculated as a weighted average of the methodologies used. If DCF is excluded (e.g., for companies &lt;€5M revenue), the mid-point equals the Multiples valuation directly.
               </p>
               <p>
-                <strong>Range Width:</strong> The Low and High estimates are calculated as a percentage spread around the mid-point based on your confidence score. This follows Big 4 valuation standards (PwC Valuation Handbook):
+                <strong>Range Width:</strong> The Low and High estimates are calculated using one of two methods:
               </p>
-              <ul className="list-disc list-inside space-y-1 ml-2 mt-2">
-                <li><strong>High confidence (≥80%):</strong> ±12% spread</li>
-                <li><strong>Medium confidence (60-79%):</strong> ±18% spread</li>
-                <li><strong>Low confidence (&lt;60%):</strong> ±22% spread</li>
+              <ul className="list-disc list-inside space-y-2 ml-2 mt-2">
+                <li>
+                  <strong>Multiple Dispersion (Preferred):</strong> When ≥5 comparable companies are available, we use <strong>P25/P50/P75 multiples</strong> to calculate the range. This reflects actual market dispersion and is more accurate (McKinsey best practice).
+                </li>
+                <li>
+                  <strong>Confidence Spread (Fallback):</strong> When comparables are insufficient, we use a percentage spread based on confidence score and company size:
+                  <ul className="list-disc list-inside ml-4 mt-1 space-y-1">
+                    <li><strong>High confidence (≥80%):</strong> ±12% spread</li>
+                    <li><strong>Medium confidence (60-79%):</strong> ±18% spread</li>
+                    <li><strong>Low confidence (&lt;60%):</strong> ±22% spread</li>
+                    <li><strong>Small companies (&lt;€5M):</strong> Wider spreads (±25%) regardless of confidence</li>
+                  </ul>
+                </li>
               </ul>
+              {result.range_methodology && (
+                <div className="mt-3 p-2 bg-white rounded border border-purple-300">
+                  <p className="text-xs font-semibold text-purple-900 mb-1">Current Range Methodology:</p>
+                  <p className="text-xs text-purple-800">
+                    {result.range_methodology === 'multiple_dispersion' 
+                      ? `✅ Using Multiple Dispersion (${result.multiples_valuation?.comparables_count || 0} comparable companies)`
+                      : '📊 Using Confidence Spread (insufficient comparables for multiple dispersion)'
+                    }
+                  </p>
+                </div>
+              )}
               <p className="mt-3 text-xs text-gray-600 italic">
-                <strong>Academic Source:</strong> Damodaran (2018), "The Dark Side of Valuation", Chapter 6. PwC Valuation Handbook 2024, Section 4.2.
+                <strong>Academic Source:</strong> McKinsey Valuation Handbook, Section 4.3 (Multiple Dispersion Analysis). Damodaran (2018), "The Dark Side of Valuation", Chapter 6. PwC Valuation Handbook 2024, Section 4.2.
               </p>
             </div>
           </div>
@@ -161,9 +181,79 @@ export const RangeCalculationSection: React.FC<RangeCalculationSectionProps> = (
         </div>
       </div>
 
+      {/* Step 2.5: Multiple Dispersion Analysis (if available) */}
+      {result.range_methodology === 'multiple_dispersion' && (
+        <div className="bg-gradient-to-br from-green-50 to-emerald-50 border-2 border-green-500 rounded-lg p-4 sm:p-6">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+            <span className="text-2xl">📊</span>
+            Step 2.5: Multiple Dispersion Analysis (McKinsey Best Practice)
+          </h3>
+          
+          <div className="bg-white rounded-lg p-4 border border-green-300 mb-4">
+            <p className="text-sm text-gray-700 mb-3">
+              Your valuation range is calculated from <strong>actual comparable company multiples</strong> using P25/P50/P75 percentiles. This is more accurate than confidence-based spreads because it reflects real market dispersion.
+            </p>
+            
+            {/* EBITDA Multiples */}
+            {result.multiples_valuation?.p25_ebitda_multiple && result.multiples_valuation?.p75_ebitda_multiple && (
+              <div className="mb-4">
+                <h4 className="font-semibold text-gray-900 mb-2">EBITDA Multiples from Comparables:</h4>
+                <div className="grid grid-cols-3 gap-3">
+                  <div className="bg-red-50 p-3 rounded border border-red-200">
+                    <p className="text-xs text-gray-600 mb-1">P25 (Conservative)</p>
+                    <p className="text-lg font-bold text-red-600">{result.multiples_valuation.p25_ebitda_multiple.toFixed(2)}x</p>
+                  </div>
+                  <div className="bg-green-50 p-3 rounded border-2 border-green-400">
+                    <p className="text-xs text-gray-600 mb-1">P50 (Median)</p>
+                    <p className="text-lg font-bold text-green-600">{result.multiples_valuation.p50_ebitda_multiple?.toFixed(2) || result.multiples_valuation.ebitda_multiple.toFixed(2)}x</p>
+                  </div>
+                  <div className="bg-blue-50 p-3 rounded border border-blue-200">
+                    <p className="text-xs text-gray-600 mb-1">P75 (Optimistic)</p>
+                    <p className="text-lg font-bold text-blue-600">{result.multiples_valuation.p75_ebitda_multiple.toFixed(2)}x</p>
+                  </div>
+                </div>
+                <p className="text-xs text-gray-600 mt-2">
+                  Based on {result.multiples_valuation.comparables_count} comparable companies
+                </p>
+              </div>
+            )}
+            
+            {/* Revenue Multiples */}
+            {result.multiples_valuation?.p25_revenue_multiple && result.multiples_valuation?.p75_revenue_multiple && (
+              <div>
+                <h4 className="font-semibold text-gray-900 mb-2">Revenue Multiples from Comparables:</h4>
+                <div className="grid grid-cols-3 gap-3">
+                  <div className="bg-red-50 p-3 rounded border border-red-200">
+                    <p className="text-xs text-gray-600 mb-1">P25 (Conservative)</p>
+                    <p className="text-lg font-bold text-red-600">{result.multiples_valuation.p25_revenue_multiple.toFixed(2)}x</p>
+                  </div>
+                  <div className="bg-green-50 p-3 rounded border-2 border-green-400">
+                    <p className="text-xs text-gray-600 mb-1">P50 (Median)</p>
+                    <p className="text-lg font-bold text-green-600">{result.multiples_valuation.p50_revenue_multiple?.toFixed(2) || result.multiples_valuation.revenue_multiple.toFixed(2)}x</p>
+                  </div>
+                  <div className="bg-blue-50 p-3 rounded border border-blue-200">
+                    <p className="text-xs text-gray-600 mb-1">P75 (Optimistic)</p>
+                    <p className="text-lg font-bold text-blue-600">{result.multiples_valuation.p75_revenue_multiple.toFixed(2)}x</p>
+                  </div>
+                </div>
+              </div>
+            )}
+            
+            <p className="text-xs text-gray-600 mt-4 italic">
+              <strong>Source:</strong> McKinsey Valuation Handbook, Section 4.3 (Multiple Dispersion Analysis)
+            </p>
+          </div>
+        </div>
+      )}
+
       {/* Step 3: Range Spread Determination */}
       <div className="bg-white border-2 border-gray-300 rounded-lg p-4 sm:p-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Step 3: Range Spread Determination (Big 4 Methodology)</h3>
+        <h3 className="text-lg font-semibold text-gray-900 mb-4">
+          Step 3: Range Spread Determination 
+          {result.range_methodology === 'multiple_dispersion' ? ' (Not Used - Multiple Dispersion Active)' : ' (Big 4 Methodology)'}
+        </h3>
+        
+        {result.range_methodology === 'confidence_spread' ? (
         
         <div className="space-y-4">
           <div className="bg-gray-50 p-4 rounded-lg">
@@ -200,6 +290,13 @@ export const RangeCalculationSection: React.FC<RangeCalculationSectionProps> = (
         <p className="text-xs text-gray-600 mt-4">
           <strong>Source:</strong> PwC Valuation Handbook 2024, Section 4.2, p. 156
         </p>
+        ) : (
+          <div className="bg-gray-50 p-4 rounded-lg border border-gray-300">
+            <p className="text-sm text-gray-700">
+              <strong>Note:</strong> This step is not used because your valuation range is calculated from multiple dispersion (P25/P50/P75) rather than confidence-based spreads. This provides more accurate ranges based on actual market data.
+            </p>
+          </div>
+        )}
       </div>
 
       {/* Step 4: Asymmetric Range Adjustment */}

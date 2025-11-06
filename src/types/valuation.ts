@@ -260,6 +260,7 @@ export interface ValuationResponse {
   equity_value_low: number;
   equity_value_mid: number;
   equity_value_high: number;
+  range_methodology?: 'multiple_dispersion' | 'confidence_spread';  // Methodology used for range calculation
   recommended_asking_price: number;
   
   // Confidence (multiple formats for compatibility)
@@ -335,6 +336,15 @@ export interface ValuationResponse {
     ebitda_multiple: number;
     revenue_multiple: number;
     pe_multiple: number | null;
+    
+    // Percentile multiples (P25/P50/P75) from comparable companies
+    p25_ebitda_multiple?: number;
+    p50_ebitda_multiple?: number;
+    p75_ebitda_multiple?: number;
+    p25_revenue_multiple?: number;
+    p50_revenue_multiple?: number;
+    p75_revenue_multiple?: number;
+    
     comparables_count: number;
     comparables_quality: string;
     size_discount: number;
