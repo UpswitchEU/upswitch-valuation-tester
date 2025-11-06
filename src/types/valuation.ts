@@ -390,12 +390,27 @@ export interface ValuationResponse {
     debt_to_equity: number;
     debt_to_assets: number;
     interest_coverage: number;
+    /**
+     * Year-over-year revenue growth in DECIMAL format (0.20 = 20%, -0.15 = -15%)
+     * Frontend should multiply by 100 to display as percentage
+     */
     revenue_growth: number;
+    /**
+     * Compound Annual Growth Rate in DECIMAL format (0.0037 = 0.37%, 0.111 = 11.1%)
+     * Calculated from first historical year to current year
+     * Backend guarantees this is never null/undefined (defaults to 0.0)
+     * Frontend should multiply by 100 to display as percentage
+     */
     revenue_cagr_3y: number;
     ebitda_growth: number;
     altman_z_score: number;
     financial_health_score: number;
     financial_health_description: string;
+    /**
+     * Optional list of calculation error messages.
+     * Presence indicates partial results - some calculations may have failed.
+     */
+    calculation_errors?: string[];
   };
   
   // Legacy fields for backward compatibility

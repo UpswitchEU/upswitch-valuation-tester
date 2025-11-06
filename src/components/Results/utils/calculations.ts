@@ -17,56 +17,35 @@ export const calculateOwnershipAdjustment = (result: ValuationResponse) => {
 };
 
 export const calculateGrowthMetrics = (result: ValuationResponse) => {
-  // Check if we have financial metrics (preferred - comes from backend calculation)
+  // Backend always provides CAGR in financial_metrics (never None/null)
+  // Frontend should only format/display, never calculate
   const resultAny = result as any;
   const hasFinancialMetrics = resultAny.financial_metrics && Object.keys(resultAny.financial_metrics).length > 0;
   
-  // Primary: use revenue_cagr_3y from financial_metrics (backend calculated)
   if (hasFinancialMetrics && resultAny.financial_metrics) {
     const metrics = resultAny.financial_metrics;
     
-    // Backend returns revenue_cagr_3y as decimal (e.g., 0.291 for 29.1% or 11.11 for 1111.1%)
-    // Keep as decimal for internal use, will be converted to percentage for display
-    if (metrics.revenue_cagr_3y !== undefined && metrics.revenue_cagr_3y !== null) {
-      // Backend always returns as decimal, no conversion needed
-      const cagrDecimal = metrics.revenue_cagr_3y;
-      
-      // Determine years from historical data if available, otherwise use 2 (most common)
-      const hasHistoricalData = resultAny.historical_years_data && resultAny.historical_years_data.length > 0;
-      const years = hasHistoricalData ? resultAny.historical_years_data.length : 2;
-      
-      return { 
-        cagr: cagrDecimal, 
-        hasHistoricalData: true, 
-        years 
-      };
-    }
+    // Backend always returns revenue_cagr_3y as decimal format (0.0037 = 0.37%, 0.111 = 11.1%)
+    // Backend guarantees this field is never None (defaults to 0.0)
+    const cagrDecimal = metrics.revenue_cagr_3y !== undefined && metrics.revenue_cagr_3y !== null 
+      ? metrics.revenue_cagr_3y 
+      : 0.0;
     
-    // Fallback to other metrics if revenue_cagr_3y not available  
-    if (metrics.cagr !== undefined && metrics.cagr !== null) {
-      // Backend returns as decimal
-      return { cagr: metrics.cagr, hasHistoricalData: true, years: 3 };
-    }
+    // Determine years from historical data if available, otherwise use 2 (most common)
+    const hasHistoricalData = resultAny.historical_years_data && resultAny.historical_years_data.length > 0;
+    const years = hasHistoricalData ? resultAny.historical_years_data.length : 2;
     
-    if (metrics.revenue_growth !== undefined && metrics.revenue_growth !== null) {
-      // Backend returns as decimal
-      return { cagr: metrics.revenue_growth, hasHistoricalData: true, years: 2 };
-    }
+    return { 
+      cagr: cagrDecimal, 
+      hasHistoricalData: hasHistoricalData && years > 0, 
+      years 
+    };
   }
   
-  // Secondary: calculate CAGR from historical data if available (fallback)
-  const hasHistoricalData = resultAny.historical_years_data && resultAny.historical_years_data.length > 0;
-  if (hasHistoricalData && resultAny.historical_years_data && resultAny.current_year_data) {
-    const years = resultAny.historical_years_data.length;
-    const firstYear = resultAny.historical_years_data[0];
-    const currentYear = resultAny.current_year_data;
-    
-    if (firstYear && currentYear && firstYear.revenue > 0 && currentYear.revenue > 0) {
-      // Calculate CAGR: (current_year / first_year)^(1/periods) - 1
-      const periods = years; // Number of periods between first historical and current
-      const cagr = Math.pow(currentYear.revenue / firstYear.revenue, 1 / periods) - 1;
-      return { cagr, hasHistoricalData: true, years: periods };
-    }
+  // If financial_metrics is missing, show no data (backend should always provide this)
+  // Log warning but don't calculate - backend is source of truth
+  if (typeof console !== 'undefined' && console.warn) {
+    console.warn('[calculateGrowthMetrics] Financial metrics missing from backend response. Backend should always provide CAGR.');
   }
   
   return { cagr: 0, hasHistoricalData: false, years: 0 };
@@ -154,6 +133,8 @@ export const getRiskFactors = (result: ValuationResponse): Array<{
       });
     }
     
+    // revenue_growth_rate is in decimal format (0.20 = 20%, -0.15 = -15%)
+    // Convert to percentage for display
     if (metrics.revenue_growth_rate && metrics.revenue_growth_rate < 0) {
       risks.push({
         label: 'Declining Revenue',

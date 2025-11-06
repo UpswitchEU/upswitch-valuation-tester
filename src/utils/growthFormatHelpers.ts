@@ -1,23 +1,21 @@
 /**
  * Growth Format Helper Utilities
  * 
- * Handles inconsistent backend format for growth rate values.
- * Backend may return growth rates as:
- * - Decimal (0.291 = 29.1%)
- * - Percentage (11.11 = 11.11%)
- * - Already normalized (29.1 = 29.1%)
+ * Backend now consistently returns all growth rates in DECIMAL format:
+ * - CAGR: 0.0037 = 0.37%, 0.111 = 11.1%
+ * - Revenue Growth: 0.20 = 20%, -0.15 = -15%
+ * 
+ * Frontend always converts decimal to percentage for display.
  */
 
 /**
  * Normalize growth value from backend to percentage
  * 
- * Handles inconsistent backend formats:
- * - < 1.0: Treated as decimal (multiply by 100)
- * - >= 1.0 and < 100: Treated as percentage (use as-is)
- * - >= 100: Treated as percentage (use as-is, but log warning)
+ * Backend always returns growth values as decimal format (0.0037 = 0.37%).
+ * This function converts decimal to percentage for display.
  * 
- * @param value Growth value from backend (decimal or percentage)
- * @returns Normalized percentage value, or null if invalid
+ * @param value Growth value from backend in decimal format (0.0037 = 0.37%)
+ * @returns Percentage value for display (0.37), or null if invalid
  */
 export function normalizeGrowthValue(
   value: number | null | undefined
@@ -26,28 +24,25 @@ export function normalizeGrowthValue(
     return null;
   }
 
-  // Handle NaN
+  // Handle NaN or invalid values
   if (isNaN(value) || !isFinite(value)) {
     console.warn(`[normalizeGrowthValue] Invalid growth value: ${value}`);
     return null;
   }
 
-  // Format detection: if < 1.0, treat as decimal; if >= 1.0 and < 100, treat as percentage
-  if (value < 1.0) {
-    return value * 100; // Decimal format (0.291 → 29.1)
-  } else if (value >= 1.0 && value < 100) {
-    return value; // Percentage format (11.11 → 11.11)
-  } else {
-    // >= 100 - likely already a percentage but unusually high
-    // Log warning but return as-is (could indicate error or hypergrowth)
-    if (value >= 1000) {
-      console.warn(
-        `[normalizeGrowthValue] Suspiciously high growth value: ${value}%. ` +
-        `This may indicate a data quality issue or calculation error.`
-      );
-    }
-    return value; // Assume already percentage (1111.1 → 1111.1)
+  // Backend always returns decimal format - convert to percentage
+  // Example: 0.0037 → 0.37%, 0.111 → 11.1%
+  const percentage = value * 100;
+  
+  // Sanity check: Flag unrealistic values (>1000% or <-500% likely indicate errors)
+  if (percentage > 1000 || percentage < -500) {
+    console.warn(
+      `[normalizeGrowthValue] Suspiciously extreme growth value: ${percentage}%. ` +
+      `This may indicate a data quality issue or calculation error.`
+    );
   }
+  
+  return percentage;
 }
 
 /**
