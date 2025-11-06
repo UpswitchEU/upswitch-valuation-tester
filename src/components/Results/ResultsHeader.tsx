@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import type { ValuationResponse } from '../../types/valuation';
 import { ConfidenceScoreModal } from './ConfidenceScoreModal';
 import { formatCurrency, formatCurrencyCompact } from './utils/formatters';
@@ -14,13 +14,16 @@ export const ResultsHeader: React.FC<ResultsHeaderProps> = ({ result }) => {
   const getMethodologyDescription = () => {
     const dcfWeight = result.dcf_weight || 0;
     const multiplesWeight = result.multiples_weight || 0;
+    const methodology = result.methodology || '';
+    const dcfExcluded = !!(result.dcf_exclusion_reason || (dcfWeight < 0.01 && multiplesWeight > 0.99));
     
-    if (dcfWeight === 0 && multiplesWeight === 1.0) {
+    // Use methodology field as authoritative source
+    if (methodology === 'Multiples' || dcfExcluded || (dcfWeight < 0.01 && multiplesWeight > 0.99)) {
       return "Based on Market Multiples methodology";
-    } else if (dcfWeight === 1.0 && multiplesWeight === 0) {
-      return "Based on DCF methodology";
-    } else if (dcfWeight > 0 && multiplesWeight > 0) {
+    } else if (methodology === 'Hybrid' || (dcfWeight > 0.01 && multiplesWeight > 0.01)) {
       return `Based on DCF and Market Multiples methodology (${Math.round(dcfWeight * 100)}% / ${Math.round(multiplesWeight * 100)}%)`;
+    } else if (dcfWeight > 0.99 && multiplesWeight < 0.01) {
+      return "Based on DCF methodology";
     }
     return "Based on valuation methodology";
   };
@@ -44,6 +47,18 @@ export const ResultsHeader: React.FC<ResultsHeaderProps> = ({ result }) => {
   const confidenceScore = result.confidence_score || 0;
   const dcfWeight = result.dcf_weight || 0;
 
+  // Diagnostic: Log methodology information
+  useEffect(() => {
+    console.log('[DIAGNOSTIC] Methodology Info', {
+      methodology: result.methodology,
+      dcf_weight: result.dcf_weight,
+      multiples_weight: result.multiples_weight,
+      dcf_exclusion_reason: result.dcf_exclusion_reason,
+      has_dcf_valuation: !!result.dcf_valuation,
+      revenue: result.current_year_data?.revenue
+    });
+  }, [result]);
+
   return (
     <>
       <div className="space-y-4 sm:space-y-6">
@@ -53,6 +68,21 @@ export const ResultsHeader: React.FC<ResultsHeaderProps> = ({ result }) => {
             <div>
               <h2 className="text-xl sm:text-2xl font-bold text-gray-900">Valuation Report</h2>
               <p className="text-sm text-gray-600">{getMethodologyDescription()}</p>
+              {result.dcf_exclusion_reason && (
+                <div className="bg-amber-50 border-l-4 border-amber-500 p-4 rounded mt-2">
+                  <div className="flex items-start gap-3">
+                    <svg className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <div className="flex-1">
+                      <h4 className="text-sm font-semibold text-amber-900 mb-1">DCF Methodology Excluded</h4>
+                      <p className="text-sm text-amber-800">
+                        {result.dcf_exclusion_reason} Market Multiples methodology is more reliable for businesses of this size.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
             <div className="text-right">
               {/* Confidence Score - Enhanced Design - Clickable */}

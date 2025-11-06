@@ -31,6 +31,10 @@ export const MethodologyBreakdown: React.FC<MethodologyBreakdownProps> = ({ resu
   const dcfWeight = result.dcf_weight || 0;
   const multiplesWeight = result.multiples_weight || 0;
   
+  // Check if DCF should be displayed
+  const shouldShowDCF = dcfWeight > 0 && !result.dcf_exclusion_reason;
+  const shouldShowMultiples = multiplesWeight > 0;
+  
   // Get weight explanations
   const weightExplanation = useMemo(() => 
     getWeightExplanation(dcfWeight, multiplesWeight, result), 
@@ -253,8 +257,8 @@ export const MethodologyBreakdown: React.FC<MethodologyBreakdownProps> = ({ resu
         </div>
       </div>
 
-      {/* DCF Section - Only if dcfWeight > 0 */}
-      {dcfWeight > 0 && (
+      {/* DCF Section - Only if dcfWeight > 0 and not excluded */}
+      {shouldShowDCF && (
         <div className="bg-white rounded-lg border border-gray-200 p-4 sm:p-6 shadow-sm">
           <h4 className="text-lg font-semibold text-gray-900 mb-4">
             {dcfWeight > 0 && multiplesWeight > 0 ? (
