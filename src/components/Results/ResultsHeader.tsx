@@ -42,6 +42,7 @@ export const ResultsHeader: React.FC<ResultsHeaderProps> = ({ result }) => {
 
   const spreadPercentage = calculateSpread();
   const confidenceScore = result.confidence_score || 0;
+  const dcfWeight = result.dcf_weight || 0;
 
   return (
     <>
@@ -255,6 +256,15 @@ export const ResultsHeader: React.FC<ResultsHeaderProps> = ({ result }) => {
               </div>
             </div>
 
+            {/* DCF Exclusion Note (if applicable) */}
+            {dcfWeight === 0 && result.dcf_exclusion_reason && (
+              <div className="mt-3 pt-3 border-t border-purple-200">
+                <p className="text-xs text-purple-800">
+                  <span className="font-semibold">Note:</span> DCF methodology was excluded for this valuation. {result.dcf_exclusion_reason} Market Multiples methodology is more reliable for businesses of this size.
+                </p>
+              </div>
+            )}
+            
             {/* Adjustments Applied Note */}
             {(result.multiples_valuation.owner_concentration || 
               result.multiples_valuation.size_discount || 

@@ -10,6 +10,9 @@ interface JourneyStep2Props {
 export const JourneyStep2_Benchmarking: React.FC<JourneyStep2Props> = ({ result }) => {
   const multiples = result.multiples_valuation;
   const isPrimaryEBITDA = multiples?.primary_multiple_method === 'ebitda_multiple';
+  const dcfWeight = result.dcf_weight || 0;
+  const revenue = result.current_year_data?.revenue || 0;
+  const isDCFExcluded = dcfWeight === 0;
   
   return (
     <StepCard
@@ -22,6 +25,26 @@ export const JourneyStep2_Benchmarking: React.FC<JourneyStep2Props> = ({ result 
       defaultExpanded={true}
     >
       <div className="space-y-6">
+        {/* DCF Exclusion Notice (if applicable) */}
+        {isDCFExcluded && result.dcf_exclusion_reason && (
+          <div className="bg-amber-50 border-l-4 border-amber-500 p-4 rounded">
+            <div className="flex items-start gap-3">
+              <div className="flex-shrink-0 mt-0.5">
+                <svg className="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </div>
+              <div className="flex-1">
+                <h4 className="text-sm font-semibold text-amber-900 mb-1">DCF Methodology Excluded</h4>
+                <p className="text-sm text-amber-800">
+                  {result.dcf_exclusion_reason} Market Multiples methodology is more reliable for businesses of this size 
+                  (revenue: {revenue >= 1_000_000 ? `€${(revenue / 1_000_000).toFixed(1)}M` : `€${Math.round(revenue).toLocaleString()}`}). 
+                  This approach aligns with McKinsey valuation standards and Big 4 consulting firm methodologies for small businesses.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
         {/* Primary Multiple Selection */}
         <div>
           <h4 className="font-semibold text-gray-900 mb-3">Primary Multiple Method Selected</h4>

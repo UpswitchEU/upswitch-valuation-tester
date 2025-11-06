@@ -4,16 +4,20 @@ import { StepCard } from '../shared/StepCard';
 import { FormulaBox } from '../shared/FormulaBox';
 import { ValueGrid } from '../shared/ValueGrid';
 
+import type { ValuationResponse } from '../../../types/valuation';
+
 interface JourneyStep7Props {
   beforeValues: { low: number; mid: number; high: number };
+  result: ValuationResponse;
 }
 
 const formatCurrency = (value: number): string => `€${Math.round(value).toLocaleString()}`;
 
-export const JourneyStep7_EVToEquity: React.FC<JourneyStep7Props> = ({ beforeValues }) => {
-  // Get debt and cash from input data or result
-  const netDebt = 0; // Assuming no debt for now, can be enhanced
-  const cash = 0; // Assuming no cash adjustment for now
+export const JourneyStep7_EVToEquity: React.FC<JourneyStep7Props> = ({ beforeValues, result }) => {
+  // Get debt and cash from current_year_data
+  const totalDebt = result.current_year_data?.total_debt || 0;
+  const cash = result.current_year_data?.cash || 0;
+  const netDebt = totalDebt - cash;
 
   // Calculate equity value
   const equityValues = {

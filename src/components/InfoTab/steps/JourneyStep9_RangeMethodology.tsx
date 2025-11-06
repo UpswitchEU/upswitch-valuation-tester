@@ -5,13 +5,32 @@ import type { ValuationResponse } from '../../../types/valuation';
 
 interface JourneyStep9Props {
   result: ValuationResponse;
+  beforeValues: { low: number; mid: number; high: number };
 }
 
-export const JourneyStep9_RangeMethodology: React.FC<JourneyStep9Props> = ({ result }) => {
+const formatCurrency = (value: number): string => `€${Math.round(value).toLocaleString()}`;
+const formatCurrencyCompact = (value: number): string => {
+  if (value >= 1_000_000) return `€${(value / 1_000_000).toFixed(1)}M`;
+  if (value >= 1_000) return `€${Math.round(value / 1_000)}K`;
+  return formatCurrency(value);
+};
+
+export const JourneyStep9_RangeMethodology: React.FC<JourneyStep9Props> = ({ result, beforeValues }) => {
   const rangeMethod = result.range_methodology || 'confidence_spread';
   const isMultipleDispersion = rangeMethod === 'multiple_dispersion';
   const multiples = result.multiples_valuation;
   const confidenceScore = result.confidence_score || 0;
+  
+  // Calculate spread from Step 7 equity value to final range
+  const step7Equity = beforeValues.mid; // From Step 7 (EV to Equity conversion)
+  const finalMid = result.equity_value_mid;
+  const finalLow = result.equity_value_low;
+  const finalHigh = result.equity_value_high;
+  
+  // Calculate spreads
+  const spreadLow = step7Equity > 0 ? ((step7Equity - finalLow) / step7Equity) * 100 : 0;
+  const spreadHigh = step7Equity > 0 ? ((finalHigh - step7Equity) / step7Equity) * 100 : 0;
+  const avgSpread = (spreadLow + spreadHigh) / 2;
 
   return (
     <StepCard
@@ -140,6 +159,107 @@ export const JourneyStep9_RangeMethodology: React.FC<JourneyStep9Props> = ({ res
             </div>
           </div>
         )}
+
+        {/* Actual Range Calculation */}
+        <div>
+          <h4 className="font-semibold text-gray-900 mb-3">Range Calculation</h4>
+          <div className="bg-blue-50 border border-blue-300 rounded-lg p-4 space-y-3">
+            <div className="bg-white border border-blue-200 rounded-lg p-3">
+              <div className="flex justify-between items-center mb-2">
+                <span className="text-sm text-gray-600">Base Equity Value (from Step 7):</span>
+                <span className="text-base font-bold text-blue-900">{formatCurrency(step7Equity)}</span>
+              </div>
+            </div>
+            
+            {isMultipleDispersion ? (
+              <div className="space-y-2 text-sm">
+                <p className="text-gray-700 font-medium">Using P25/P50/P75 multiples from comparables:</p>
+                <div className="bg-white border border-blue-200 rounded p-2 space-y-1 font-mono text-xs">
+                  <div>Low: P25 Multiple × Revenue × Adjustments = {formatCurrency(finalLow)}</div>
+                  <div className="text-blue-700 font-semibold">Mid: P50 Multiple × Revenue × Adjustments = {formatCurrency(finalMid)}</div>
+                  <div>High: P75 Multiple × Revenue × Adjustments = {formatCurrency(finalHigh)}</div>
+                </div>
+                <p className="text-xs text-gray-600 italic">
+                  Note: The mid-point may be adjusted to match the waterfall calculation for consistency.
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-2 text-sm">
+                <p className="text-gray-700 font-medium">Applying confidence spread:</p>
+                <div className="bg-white border border-blue-200 rounded p-2 space-y-1 font-mono text-xs">
+                  <div>Low: {formatCurrency(step7Equity)} × (1 - {avgSpread.toFixed(0)}%) = <strong>{formatCurrency(finalLow)}</strong></div>
+                  <div className="text-blue-700 font-semibold">Mid: {formatCurrency(step7Equity)} (unchanged) = <strong>{formatCurrency(finalMid)}</strong></div>
+                  <div>High: {formatCurrency(step7Equity)} × (1 + {avgSpread.toFixed(0)}%) = <strong>{formatCurrency(finalHigh)}</strong></div>
+                </div>
+                <p className="text-xs text-gray-600 italic">
+                  Spread of ±{avgSpread.toFixed(0)}% reflects valuation uncertainty based on {confidenceScore.toFixed(0)}% confidence score and company size.
+                </p>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Before/After Comparison */}
+        <div>
+          <h4 className="font-semibold text-gray-900 mb-3">Range Transformation</h4>
+          <div className="bg-white border border-gray-300 rounded-lg overflow-hidden">
+            <table className="w-full text-sm">
+              <thead className="bg-gray-100">
+                <tr>
+                  <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600 uppercase">Estimate</th>
+                  <th className="px-4 py-2 text-right text-xs font-semibold text-gray-600 uppercase">Step 7 (Before Range)</th>
+                  <th className="px-2 py-2"></th>
+                  <th className="px-4 py-2 text-right text-xs font-semibold text-gray-600 uppercase">Step 10 (Final Range)</th>
+                  <th className="px-4 py-2 text-right text-xs font-semibold text-gray-600 uppercase">Change</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-200">
+                <tr>
+                  <td className="px-4 py-3 font-medium text-gray-900">Low</td>
+                  <td className="px-4 py-3 text-right font-mono text-gray-700">{formatCurrency(beforeValues.low)}</td>
+                  <td className="px-2 py-3 text-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-arrow-right w-4 h-4 text-gray-400 mx-auto">
+                      <path d="M5 12h14"></path>
+                      <path d="m12 5 7 7-7 7"></path>
+                    </svg>
+                  </td>
+                  <td className="px-4 py-3 text-right font-mono font-semibold text-gray-900">{formatCurrency(finalLow)}</td>
+                  <td className="px-4 py-3 text-right font-mono text-xs text-gray-600">
+                    {((finalLow - beforeValues.low) / beforeValues.low * 100).toFixed(1)}%
+                  </td>
+                </tr>
+                <tr className="bg-blue-50">
+                  <td className="px-4 py-3 font-bold text-blue-900">Mid</td>
+                  <td className="px-4 py-3 text-right font-mono text-blue-700">{formatCurrency(beforeValues.mid)}</td>
+                  <td className="px-2 py-3 text-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-arrow-right w-4 h-4 text-blue-400 mx-auto">
+                      <path d="M5 12h14"></path>
+                      <path d="m12 5 7 7-7 7"></path>
+                    </svg>
+                  </td>
+                  <td className="px-4 py-3 text-right font-mono font-bold text-blue-900">{formatCurrency(finalMid)}</td>
+                  <td className="px-4 py-3 text-right font-mono text-xs font-semibold text-blue-600">
+                    {((finalMid - beforeValues.mid) / beforeValues.mid * 100).toFixed(1)}%
+                  </td>
+                </tr>
+                <tr>
+                  <td className="px-4 py-3 font-medium text-gray-900">High</td>
+                  <td className="px-4 py-3 text-right font-mono text-gray-700">{formatCurrency(beforeValues.high)}</td>
+                  <td className="px-2 py-3 text-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-arrow-right w-4 h-4 text-gray-400 mx-auto">
+                      <path d="M5 12h14"></path>
+                      <path d="m12 5 7 7-7 7"></path>
+                    </svg>
+                  </td>
+                  <td className="px-4 py-3 text-right font-mono font-semibold text-gray-900">{formatCurrency(finalHigh)}</td>
+                  <td className="px-4 py-3 text-right font-mono text-xs text-gray-600">
+                    {((finalHigh - beforeValues.high) / beforeValues.high * 100).toFixed(1)}%
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
 
         {/* Comparison */}
         <div className="bg-gray-50 border border-gray-300 rounded-lg p-4">

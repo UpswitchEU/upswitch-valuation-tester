@@ -1,5 +1,6 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { JourneyNavigation } from './JourneyNavigation';
+import { JourneyStep0_HistoricalTrends } from './steps/JourneyStep0_HistoricalTrends';
 import { JourneyStep1_Inputs } from './steps/JourneyStep1_Inputs';
 import { JourneyStep2_Benchmarking } from './steps/JourneyStep2_Benchmarking';
 import { JourneyStep3_BaseEV } from './steps/JourneyStep3_BaseEV';
@@ -17,12 +18,31 @@ interface CalculationJourneyProps {
   inputData: ValuationInputData | null;
 }
 
+// Constants for scroll spy configuration
+const SCROLL_SPY_CONFIG = {
+  // Intersection Observer options
+  ROOT_MARGIN: '-20% 0px -60% 0px', // Trigger when section is in upper 20% of viewport
+  THRESHOLDS: [0, 0.5, 1.0] as const, // Reduced from 11 to 3 for performance
+  RATIO_THRESHOLD: 0.1, // Minimum difference to prefer one section over another
+  
+  // Timing constants
+  PROGRAMMATIC_SCROLL_TIMEOUT: 1500, // ms - time to block updates after programmatic scroll
+  REF_INIT_DELAY: 50, // ms - delay before observing refs (reduced from 100ms)
+} as const;
+
 export const CalculationJourney: React.FC<CalculationJourneyProps> = ({ result, inputData }) => {
   const [activeStep, setActiveStep] = useState('step-1-inputs');
   const stepRefs = useRef<{ [key: string]: HTMLDivElement | null }>({});
+  const isScrollingProgrammatically = useRef(false);
+  const observerRef = useRef<IntersectionObserver | null>(null);
+  const rafIdRef = useRef<number | null>(null);
 
-  // Define all journey steps
+  // Check if historical trend analysis should be shown
+  const hasHistoricalData = result.historical_years_data && result.historical_years_data.length >= 1 && result.current_year_data;
+  
+  // Define all journey steps (dynamic based on available data)
   const steps = [
+    ...(hasHistoricalData ? [{ id: 'step-0-trends', number: 0, title: 'Historical Trend Analysis', completed: true }] : []),
     { id: 'step-1-inputs', number: 1, title: 'Input Data & Business Profile', completed: true },
     { id: 'step-2-benchmarking', number: 2, title: 'Industry Benchmarking', completed: true },
     { id: 'step-3-base-ev', number: 3, title: 'Base Enterprise Value', completed: true },
@@ -39,9 +59,126 @@ export const CalculationJourney: React.FC<CalculationJourneyProps> = ({ result, 
     setActiveStep(stepId);
     const element = stepRefs.current[stepId];
     if (element) {
+      isScrollingProgrammatically.current = true;
       element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      
+      // Reset flag after scroll animation completes
+      // Use longer timeout to account for slow scrolls
+      setTimeout(() => {
+        isScrollingProgrammatically.current = false;
+      }, SCROLL_SPY_CONFIG.PROGRAMMATIC_SCROLL_TIMEOUT);
     }
   };
+
+  // Scroll spy: Update active step based on viewport
+  useEffect(() => {
+    // Feature detection for IntersectionObserver
+    if (typeof IntersectionObserver === 'undefined') {
+      console.warn('IntersectionObserver not supported - scroll spy disabled');
+      return;
+    }
+
+    const observerOptions: IntersectionObserverInit = {
+      root: null,
+      rootMargin: SCROLL_SPY_CONFIG.ROOT_MARGIN,
+      threshold: SCROLL_SPY_CONFIG.THRESHOLDS
+    };
+
+    const observerCallback = (entries: IntersectionObserverEntry[]) => {
+      // Don't update if we're programmatically scrolling
+      if (isScrollingProgrammatically.current) {
+        return;
+      }
+
+      // Use requestAnimationFrame to batch updates and improve performance
+      if (rafIdRef.current !== null) {
+        cancelAnimationFrame(rafIdRef.current);
+      }
+
+      rafIdRef.current = requestAnimationFrame(() => {
+        // Find all intersecting entries and determine which is most prominent
+        const intersectingEntries = entries.filter(entry => entry.isIntersecting);
+        
+        if (intersectingEntries.length === 0) {
+          return;
+        }
+
+        // Sort by intersection ratio (how much is visible) and position
+        // Optimized: Only sort when necessary
+        const sortedEntries = intersectingEntries.sort((a, b) => {
+          // First, prefer entries with higher intersection ratio
+          const ratioDiff = b.intersectionRatio - a.intersectionRatio;
+          if (Math.abs(ratioDiff) > SCROLL_SPY_CONFIG.RATIO_THRESHOLD) {
+            return ratioDiff;
+          }
+          // If ratios are similar, prefer the one closest to the top of the viewport
+          return a.boundingClientRect.top - b.boundingClientRect.top;
+        });
+
+        const mostVisible = sortedEntries[0];
+        if (mostVisible) {
+          const stepId = mostVisible.target.getAttribute('data-step-id');
+          if (stepId) {
+            setActiveStep((currentStep) => {
+              // Only update if different to avoid unnecessary re-renders
+              return stepId !== currentStep ? stepId : currentStep;
+            });
+          }
+        }
+      });
+    };
+
+    try {
+      observerRef.current = new IntersectionObserver(observerCallback, observerOptions);
+    } catch (error) {
+      console.error('Failed to create IntersectionObserver:', error);
+      return;
+    }
+
+    const observer = observerRef.current;
+
+    // Observe all step sections
+    // Use a small delay to ensure refs are set, with retry mechanism
+    let retryCount = 0;
+    const MAX_RETRIES = 10; // Maximum retries to prevent infinite loop
+    
+    const observeRefs = () => {
+      const refs = Object.values(stepRefs.current);
+      const allRefsReady = refs.length === steps.length && refs.every(ref => ref !== null);
+      
+      if (allRefsReady) {
+        refs.forEach((ref) => {
+          if (ref) {
+            observer.observe(ref);
+          }
+        });
+      } else if (retryCount < MAX_RETRIES) {
+        // Retry if refs aren't ready yet
+        retryCount++;
+        setTimeout(observeRefs, SCROLL_SPY_CONFIG.REF_INIT_DELAY);
+      } else {
+        console.warn('Scroll spy: Some refs not ready after max retries');
+        // Still observe what we have
+        refs.forEach((ref) => {
+          if (ref) {
+            observer.observe(ref);
+          }
+        });
+      }
+    };
+
+    const timeoutId = setTimeout(observeRefs, SCROLL_SPY_CONFIG.REF_INIT_DELAY);
+
+    return () => {
+      clearTimeout(timeoutId);
+      if (rafIdRef.current !== null) {
+        cancelAnimationFrame(rafIdRef.current);
+      }
+      if (observer) {
+        observer.disconnect();
+      }
+    };
+  }, []); // Empty dependency array - set up once, refs are stable
 
   // Calculate intermediate values for before/after comparisons
   const calculateIntermediateValues = () => {
@@ -53,7 +190,8 @@ export const CalculationJourney: React.FC<CalculationJourneyProps> = ({ result, 
         step3: { low: 0, mid: 0, high: 0 },
         step4: { low: 0, mid: 0, high: 0 },
         step5: { low: 0, mid: 0, high: 0 },
-        step6: { low: 0, mid: 0, high: 0 }
+        step6: { low: 0, mid: 0, high: 0 },
+        step7: { low: 0, mid: 0, high: 0 } // Step 7: Equity values
       };
     }
 
@@ -103,7 +241,15 @@ export const CalculationJourney: React.FC<CalculationJourneyProps> = ({ result, 
       high: step5.high * (1 + liquidityDiscount)
     };
 
-    return { step3, step4, step5, step6 };
+    // Step 7: EV to Equity conversion (subtract net debt, add cash)
+    const netDebt = (currentData.total_debt || 0) - (currentData.cash || 0);
+    const step7 = {
+      low: step6.low - netDebt,
+      mid: step6.mid - netDebt,
+      high: step6.high - netDebt
+    };
+
+    return { step3, step4, step5, step6, step7 };
   };
 
   const intermediateValues = calculateIntermediateValues();
@@ -134,54 +280,65 @@ export const CalculationJourney: React.FC<CalculationJourneyProps> = ({ result, 
 
           {/* Main Content */}
           <div className="flex-1 space-y-4 sm:space-y-6">
-            <div ref={(el) => (stepRefs.current['step-1-inputs'] = el)}>
+            {/* Step 0: Historical Trend Analysis (if data available) */}
+            {hasHistoricalData && (
+              <div ref={(el) => (stepRefs.current['step-0-trends'] = el)} data-step-id="step-0-trends">
+                <JourneyStep0_HistoricalTrends result={result} />
+              </div>
+            )}
+
+            <div ref={(el) => (stepRefs.current['step-1-inputs'] = el)} data-step-id="step-1-inputs">
               <JourneyStep1_Inputs result={result} inputData={inputData} />
             </div>
 
-            <div ref={(el) => (stepRefs.current['step-2-benchmarking'] = el)}>
+            <div ref={(el) => (stepRefs.current['step-2-benchmarking'] = el)} data-step-id="step-2-benchmarking">
               <JourneyStep2_Benchmarking result={result} />
             </div>
 
-            <div ref={(el) => (stepRefs.current['step-3-base-ev'] = el)}>
+            <div ref={(el) => (stepRefs.current['step-3-base-ev'] = el)} data-step-id="step-3-base-ev">
               <JourneyStep3_BaseEV result={result} />
             </div>
 
-            <div ref={(el) => (stepRefs.current['step-4-owner'] = el)}>
+            <div ref={(el) => (stepRefs.current['step-4-owner'] = el)} data-step-id="step-4-owner">
               <JourneyStep4_OwnerConcentration 
                 result={result} 
                 beforeValues={intermediateValues.step3}
               />
             </div>
 
-            <div ref={(el) => (stepRefs.current['step-5-size'] = el)}>
+            <div ref={(el) => (stepRefs.current['step-5-size'] = el)} data-step-id="step-5-size">
               <JourneyStep5_SizeDiscount 
                 result={result} 
                 beforeValues={intermediateValues.step4}
               />
             </div>
 
-            <div ref={(el) => (stepRefs.current['step-6-liquidity'] = el)}>
+            <div ref={(el) => (stepRefs.current['step-6-liquidity'] = el)} data-step-id="step-6-liquidity">
               <JourneyStep6_LiquidityDiscount 
                 result={result} 
                 beforeValues={intermediateValues.step5}
               />
             </div>
 
-            <div ref={(el) => (stepRefs.current['step-7-equity'] = el)}>
+            <div ref={(el) => (stepRefs.current['step-7-equity'] = el)} data-step-id="step-7-equity">
               <JourneyStep7_EVToEquity 
                 beforeValues={intermediateValues.step6}
+                result={result}
               />
             </div>
 
-            <div ref={(el) => (stepRefs.current['step-8-confidence'] = el)}>
+            <div ref={(el) => (stepRefs.current['step-8-confidence'] = el)} data-step-id="step-8-confidence">
               <JourneyStep8_ConfidenceScore result={result} />
             </div>
 
-            <div ref={(el) => (stepRefs.current['step-9-range'] = el)}>
-              <JourneyStep9_RangeMethodology result={result} />
+            <div ref={(el) => (stepRefs.current['step-9-range'] = el)} data-step-id="step-9-range">
+              <JourneyStep9_RangeMethodology 
+                result={result} 
+                beforeValues={intermediateValues.step7} // Use Step 7 (equity values) as base for range
+              />
             </div>
 
-            <div ref={(el) => (stepRefs.current['step-10-final'] = el)}>
+            <div ref={(el) => (stepRefs.current['step-10-final'] = el)} data-step-id="step-10-final">
               <JourneyStep10_FinalValuation result={result} />
             </div>
           </div>

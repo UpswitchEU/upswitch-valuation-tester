@@ -434,35 +434,348 @@ export const calculateEVToEquityConversion = (result: ValuationResponse, previou
 };
 
 /**
+ * Calculate historical trend analysis step
+ * Only shown when 2+ years of historical data available
+ */
+export const calculateHistoricalTrendAnalysis = (result: ValuationResponse): CalculationStep | null => {
+  const historicalData = result.historical_years_data || [];
+  const currentData = result.current_year_data;
+  
+  // Need at least 2 years of data (1 historical + current) to show trends
+  if (historicalData.length < 1 || !currentData) {
+    return null;
+  }
+  
+  // Sort historical data by year (oldest first)
+  const sortedHistorical = [...historicalData].sort((a, b) => a.year - b.year);
+  const allYears = [...sortedHistorical, currentData];
+  
+  // Calculate YoY growth rates
+  const revenueGrowthRates: number[] = [];
+  const ebitdaGrowthRates: number[] = [];
+  
+  for (let i = 1; i < allYears.length; i++) {
+    const prevYear = allYears[i - 1];
+    const currYear = allYears[i];
+    
+    if (prevYear.revenue > 0) {
+      const revenueGrowth = ((currYear.revenue - prevYear.revenue) / prevYear.revenue) * 100;
+      revenueGrowthRates.push(revenueGrowth);
+    }
+    
+    if (prevYear.ebitda > 0 && currYear.ebitda > 0) {
+      const ebitdaGrowth = ((currYear.ebitda - prevYear.ebitda) / Math.abs(prevYear.ebitda)) * 100;
+      ebitdaGrowthRates.push(ebitdaGrowth);
+    } else if (prevYear.ebitda < 0 && currYear.ebitda > 0) {
+      // Negative to positive is significant improvement
+      ebitdaGrowthRates.push(100); // Flag as 100%+ improvement
+    }
+  }
+  
+  // Calculate CAGR if we have first and last year
+  const firstYear = sortedHistorical[0];
+  const lastYear = currentData;
+  const yearsDiff = lastYear.year - firstYear.year;
+  
+  let revenueCAGR = 0;
+  let ebitdaCAGR = 0;
+  
+  if (yearsDiff > 0 && firstYear.revenue > 0) {
+    revenueCAGR = (Math.pow(lastYear.revenue / firstYear.revenue, 1 / yearsDiff) - 1) * 100;
+  }
+  
+  if (yearsDiff > 0 && firstYear.ebitda > 0 && lastYear.ebitda > 0) {
+    ebitdaCAGR = (Math.pow(lastYear.ebitda / firstYear.ebitda, 1 / yearsDiff) - 1) * 100;
+  }
+  
+  // Determine trend direction
+  const avgRevenueGrowth = revenueGrowthRates.length > 0 
+    ? revenueGrowthRates.reduce((a, b) => a + b, 0) / revenueGrowthRates.length 
+    : 0;
+  
+  const isDeclining = avgRevenueGrowth < -5; // More than 5% decline
+  const isGrowing = avgRevenueGrowth > 5; // More than 5% growth
+  const isStable = !isDeclining && !isGrowing;
+  
+  const trendDirection = isDeclining ? 'Declining' : isGrowing ? 'Growing' : 'Stable';
+  const trendColor = isDeclining ? 'red' : isGrowing ? 'green' : 'yellow';
+  
+  // Build inputs array
+  const inputs: { label: string; value: string; highlight?: boolean }[] = [];
+  
+  // Add year-by-year revenue
+  for (let i = 0; i < allYears.length; i++) {
+    const year = allYears[i];
+    inputs.push({
+      label: `${year.year} Revenue`,
+      value: formatCurrency(year.revenue),
+      highlight: i === allYears.length - 1 // Highlight current year
+    });
+  }
+  
+  // Add growth rates
+  if (revenueGrowthRates.length > 0) {
+    inputs.push({
+      label: 'Average YoY Revenue Growth',
+      value: `${avgRevenueGrowth.toFixed(1)}%`,
+      highlight: isDeclining
+    });
+  }
+  
+  if (revenueCAGR !== 0) {
+    inputs.push({
+      label: `Revenue CAGR (${yearsDiff} years)`,
+      value: `${revenueCAGR.toFixed(1)}%`,
+      highlight: true
+    });
+  }
+  
+  // Build calculation string
+  let calculation = '';
+  if (revenueGrowthRates.length > 0) {
+    calculation = `Average growth: ${avgRevenueGrowth.toFixed(1)}%`;
+    if (revenueCAGR !== 0) {
+      calculation += ` | CAGR: ${revenueCAGR.toFixed(1)}%`;
+    }
+  } else {
+    calculation = 'Insufficient data for trend analysis';
+  }
+  
+  // Build explanation
+  let explanation = '';
+  if (isDeclining) {
+    explanation = `⚠️ Revenue is declining (average ${avgRevenueGrowth.toFixed(1)}% per year). This may indicate business challenges and could impact valuation multiples.`;
+  } else if (isGrowing) {
+    explanation = `✅ Revenue is growing (average ${avgRevenueGrowth.toFixed(1)}% per year). Positive growth trend supports higher valuation multiples.`;
+  } else {
+    explanation = `Revenue trend is relatively stable. Consistent performance may indicate mature business model.`;
+  }
+  
+  return {
+    stepNumber: 0, // Step 0 (before base valuation)
+    title: 'Historical Trend Analysis',
+    subtitle: `${trendDirection} Revenue Trend`,
+    formula: 'YoY Growth = (Current Year - Previous Year) / Previous Year × 100%',
+    inputs,
+    calculation,
+    result: { low: 0, mid: 0, high: 0 }, // No valuation impact, informational only
+    color: trendColor as 'blue' | 'red' | 'green' | 'yellow' | 'gray',
+    icon: '📈',
+    explanation
+  };
+};
+
+/**
+ * Calculate DCF valuation waterfall step
+ * Only shown when DCF is included (dcf_weight > 0)
+ */
+export const calculateDCFValuationStep = (result: ValuationResponse): CalculationStep | null => {
+  const dcfValuation = result.dcf_valuation;
+  const dcfWeight = result.dcf_weight || 0;
+  
+  // Only show if DCF is included
+  if (!dcfValuation || dcfWeight === 0) {
+    return null;
+  }
+  
+  const equityValue = dcfValuation.equity_value || 0;
+  const enterpriseValue = dcfValuation.enterprise_value || 0;
+  const wacc = dcfValuation.wacc || 0;
+  const terminalValue = dcfValuation.terminal_value || 0;
+  const presentValue = dcfValuation.present_value_of_cash_flows || 0;
+  
+  // Build inputs
+  const inputs: { label: string; value: string; highlight?: boolean }[] = [];
+  
+  if (dcfValuation.free_cash_flows) {
+    const fcfArray = Array.isArray(dcfValuation.free_cash_flows) 
+      ? dcfValuation.free_cash_flows 
+      : [];
+    const totalFCF = fcfArray.reduce((sum, fcf) => sum + (fcf || 0), 0);
+    inputs.push({
+      label: 'Total Projected Free Cash Flows',
+      value: formatCurrency(totalFCF),
+      highlight: true
+    });
+  }
+  
+  inputs.push(
+    { label: 'WACC (Discount Rate)', value: `${(wacc * 100).toFixed(1)}%`, highlight: true },
+    { label: 'Terminal Value', value: formatCurrency(terminalValue) },
+    { label: 'Present Value of Cash Flows', value: formatCurrency(presentValue) },
+    { label: 'Enterprise Value', value: formatCurrency(enterpriseValue), highlight: true }
+  );
+  
+  // Net debt adjustment
+  const netDebt = (result.current_year_data?.total_debt || 0) - (result.current_year_data?.cash || 0);
+  if (netDebt !== 0) {
+    inputs.push({ label: 'Net Debt', value: formatCurrency(netDebt) });
+  }
+  
+  inputs.push({ label: 'DCF Equity Value', value: formatCurrency(equityValue), highlight: true });
+  
+  // Build calculation
+  const calculation = netDebt !== 0
+    ? `Enterprise Value (€${Math.round(enterpriseValue).toLocaleString()}) - Net Debt (€${Math.round(netDebt).toLocaleString()}) = Equity Value (€${Math.round(equityValue).toLocaleString()})`
+    : `Enterprise Value = Equity Value (€${Math.round(equityValue).toLocaleString()})`;
+  
+  return {
+    stepNumber: 1, // Will be adjusted in generateCalculationSteps
+    title: 'DCF Valuation',
+    subtitle: 'Discounted Cash Flow Method',
+    formula: 'Equity Value = Present Value of Cash Flows + Terminal Value - Net Debt',
+    inputs,
+    calculation,
+    result: {
+      low: equityValue * 0.9, // Approximate range
+      mid: equityValue,
+      high: equityValue * 1.1
+    },
+    color: 'blue',
+    icon: '💰',
+    explanation: 'DCF valuation projects future free cash flows and discounts them to present value using WACC. Terminal value represents the business value beyond the projection period.'
+  };
+};
+
+/**
+ * Calculate weighted average combination step
+ * Only shown when both DCF and Multiples are included
+ */
+export const calculateWeightedAverageStep = (
+  result: ValuationResponse,
+  dcfStep: CalculationStep,
+  multiplesStep: CalculationStep
+): CalculationStep | null => {
+  const dcfWeight = result.dcf_weight || 0;
+  const multiplesWeight = result.multiples_weight || 0;
+  
+  // Only show if both methodologies are included
+  if (dcfWeight === 0 || multiplesWeight === 0) {
+    return null;
+  }
+  
+  const dcfValue = dcfStep.result.mid;
+  const multiplesValue = multiplesStep.result.mid;
+  const weightedAverage = (dcfValue * dcfWeight) + (multiplesValue * multiplesWeight);
+  
+  const inputs: { label: string; value: string; highlight?: boolean }[] = [
+    {
+      label: 'DCF Equity Value',
+      value: formatCurrency(dcfValue)
+    },
+    {
+      label: 'DCF Weight',
+      value: `${(dcfWeight * 100).toFixed(0)}%`,
+      highlight: true
+    },
+    {
+      label: 'Multiples Equity Value',
+      value: formatCurrency(multiplesValue)
+    },
+    {
+      label: 'Multiples Weight',
+      value: `${(multiplesWeight * 100).toFixed(0)}%`,
+      highlight: true
+    },
+    {
+      label: 'Weighted Average',
+      value: formatCurrency(weightedAverage),
+      highlight: true
+    }
+  ];
+  
+  const calculation = `(€${Math.round(dcfValue).toLocaleString()} × ${(dcfWeight * 100).toFixed(0)}%) + (€${Math.round(multiplesValue).toLocaleString()} × ${(multiplesWeight * 100).toFixed(0)}%) = €${Math.round(weightedAverage).toLocaleString()}`;
+  
+  return {
+    stepNumber: dcfStep.stepNumber + 1, // After both methodologies
+    title: 'Methodology Combination',
+    subtitle: 'Weighted Average of DCF and Multiples',
+    formula: 'Final Value = (DCF Value × DCF Weight) + (Multiples Value × Multiples Weight)',
+    inputs,
+    calculation,
+    result: {
+      low: (dcfStep.result.low * dcfWeight) + (multiplesStep.result.low * multiplesWeight),
+      mid: weightedAverage,
+      high: (dcfStep.result.high * dcfWeight) + (multiplesStep.result.high * multiplesWeight)
+    },
+    color: 'green',
+    icon: '⚖️',
+    explanation: 'The final valuation combines DCF and Multiples methodologies using weighted averages. This approach balances intrinsic value (DCF) with market comparables (Multiples) for a more robust estimate.'
+  };
+};
+
+/**
  * Generate all calculation steps for the waterfall
  */
 export const generateCalculationSteps = (result: ValuationResponse): CalculationStep[] => {
   const steps: CalculationStep[] = [];
   
-  // Step 1: Base Enterprise Value
+  // Step 0: Historical Trend Analysis (if data available)
+  const trendStep = calculateHistoricalTrendAnalysis(result);
+  if (trendStep) {
+    steps.push(trendStep);
+  }
+  
+  // Check if DCF is included
+  const dcfWeight = result.dcf_weight || 0;
+  const multiplesWeight = result.multiples_weight || 0;
+  const isDCFIncluded = dcfWeight > 0 && result.dcf_valuation;
+  const isMultiplesOnly = multiplesWeight === 1.0 || !isDCFIncluded;
+  
+  let stepNumber = 1;
+  
+  // If DCF included, show DCF waterfall first
+  if (isDCFIncluded) {
+    const dcfStep = calculateDCFValuationStep(result);
+    if (dcfStep) {
+      dcfStep.stepNumber = stepNumber++;
+      steps.push(dcfStep);
+    }
+  }
+  
+  // Multiples waterfall (always shown)
+  // Step 1 (or 2 if DCF included): Base Enterprise Value
   const baseStep = calculateBaseEnterpriseValue(result);
+  baseStep.stepNumber = stepNumber++;
   steps.push(baseStep);
   
   let previousStep = baseStep;
   
-  // Step 2: Owner Concentration (ALWAYS show, even if no adjustment)
+  // Step 2 (or 3 if DCF included): Owner Concentration (ALWAYS show, even if no adjustment)
   const ownerStep = calculateOwnerConcentrationImpact(result, previousStep);
+  ownerStep.stepNumber = stepNumber++;
   steps.push(ownerStep);
   previousStep = ownerStep;
   
-  // Step 3: Size Discount
+  // Step 3 (or 4 if DCF included): Size Discount
   const sizeStep = calculateSizeDiscountImpact(result, previousStep);
+  sizeStep.stepNumber = stepNumber++;
   steps.push(sizeStep);
   previousStep = sizeStep;
   
-  // Step 4: Liquidity Discount
+  // Step 4 (or 5 if DCF included): Liquidity Discount
   const liquidityStep = calculateLiquidityDiscountImpact(result, previousStep);
+  liquidityStep.stepNumber = stepNumber++;
   steps.push(liquidityStep);
   previousStep = liquidityStep;
   
-  // Step 5: Enterprise Value to Equity Value Conversion
+  // Step 5 (or 6 if DCF included): Enterprise Value to Equity Value Conversion
   const equityStep = calculateEVToEquityConversion(result, previousStep);
+  equityStep.stepNumber = stepNumber++;
   steps.push(equityStep);
+  
+  // If both DCF and Multiples included, show weighted average combination
+  if (isDCFIncluded && !isMultiplesOnly) {
+    const dcfStep = steps.find(s => s.title === 'DCF Valuation');
+    const multiplesFinalStep = equityStep; // Final step from Multiples waterfall
+    if (dcfStep && multiplesFinalStep) {
+      const weightedStep = calculateWeightedAverageStep(result, dcfStep, multiplesFinalStep);
+      if (weightedStep) {
+        weightedStep.stepNumber = stepNumber++;
+        steps.push(weightedStep);
+      }
+    }
+  }
   
   return steps;
 };
