@@ -275,7 +275,11 @@ export const calculateSizeDiscountImpact = (result: ValuationResponse, previousS
 export const calculateLiquidityDiscountImpact = (result: ValuationResponse, previousStep: CalculationStep): CalculationStep => {
   const multiples = result.multiples_valuation;
   const liquidityDiscount = multiples?.liquidity_discount || 0;
-  const ebitdaMargin = result.financial_metrics?.ebitda_margin || 0;
+  
+  // Safely calculate EBITDA margin with validation
+  const revenue = result.current_year_data?.revenue;
+  const ebitda = result.current_year_data?.ebitda;
+  const ebitdaMargin = calculateEBITDAMargin(revenue, ebitda);
   
   // Base liquidity discount is typically -15% for private companies
   // Can be adjusted based on profitability (higher margins = better liquidity = smaller discount)
@@ -286,6 +290,9 @@ export const calculateLiquidityDiscountImpact = (result: ValuationResponse, prev
   const adjustedMid = previousStep.result.mid * (1 + liquidityDiscount);
   const adjustedHigh = previousStep.result.high * (1 + liquidityDiscount);
 
+  // Check if margin was unrealistic (capped at 100%)
+  const marginWasCapped = revenue && ebitda && revenue > 0 && (ebitda / revenue) > 1.0;
+
   return {
     stepNumber: previousStep.stepNumber + 1,
     title: 'Liquidity Discount',
@@ -293,7 +300,7 @@ export const calculateLiquidityDiscountImpact = (result: ValuationResponse, prev
     formula: 'Value × (1 + Liquidity Discount)',
     inputs: [
       { label: 'Base Discount (Private Co.)', value: `${(baseLiquidityDiscount * 100).toFixed(0)}%` },
-      { label: 'EBITDA Margin', value: formatPercent(ebitdaMargin) },
+      { label: 'EBITDA Margin', value: ebitdaMargin !== null ? formatEBITDAMargin(revenue, ebitda) : 'N/A' },
       { label: 'Margin Adjustment', value: `+${(marginBonus * 100).toFixed(0)}%` },
       { label: 'Total Liquidity Discount', value: `${(liquidityDiscount * 100).toFixed(0)}%`, highlight: true }
     ],
@@ -306,7 +313,9 @@ export const calculateLiquidityDiscountImpact = (result: ValuationResponse, prev
     adjustmentPercent: liquidityDiscount,
     color: 'red',
     icon: '💧',
-    explanation: 'Private company shares are less liquid than public markets. Higher profitability margins reduce this discount.'
+    explanation: marginWasCapped 
+      ? 'Private company shares are less liquid than public markets. Note: EBITDA margin exceeded 100% and was capped - data review recommended.'
+      : 'Private company shares are less liquid than public markets. Higher profitability margins reduce this discount.'
   };
 };
 

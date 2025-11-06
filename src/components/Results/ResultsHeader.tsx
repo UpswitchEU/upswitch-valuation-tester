@@ -175,10 +175,19 @@ export const ResultsHeader: React.FC<ResultsHeaderProps> = ({ result }) => {
                     }
                   </p>
                   <p className="text-xs text-gray-600">
-                    {result.multiples_valuation.primary_multiple_method === 'ebitda_multiple'
-                      ? `${result.current_year_data?.ebitda != null ? formatCurrencyCompact(result.current_year_data.ebitda) : 'N/A'} × ${result.multiples_valuation.ebitda_multiple?.toFixed(2)}x`
-                      : `${result.current_year_data?.revenue != null ? formatCurrencyCompact(result.current_year_data.revenue) : 'N/A'} × ${result.multiples_valuation.revenue_multiple?.toFixed(2)}x`
-                    }
+                    {result.multiples_valuation.primary_multiple_method === 'ebitda_multiple' ? (
+                      result.current_year_data?.ebitda != null && result.current_year_data.ebitda > 0 ? (
+                        `${formatCurrencyCompact(result.current_year_data.ebitda)} × ${result.multiples_valuation.ebitda_multiple?.toFixed(2)}x`
+                      ) : (
+                        <span className="text-yellow-600 font-medium" title="Please enter EBITDA to calculate enterprise value">EBITDA: Required</span>
+                      )
+                    ) : (
+                      result.current_year_data?.revenue != null && result.current_year_data.revenue > 0 ? (
+                        `${formatCurrencyCompact(result.current_year_data.revenue)} × ${result.multiples_valuation.revenue_multiple?.toFixed(2)}x`
+                      ) : (
+                        <span className="text-yellow-600 font-medium" title="Please enter revenue to calculate enterprise value">Revenue: Required</span>
+                      )
+                    )}
                   </p>
                 </div>
               </div>
