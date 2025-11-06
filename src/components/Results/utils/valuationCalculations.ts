@@ -111,7 +111,23 @@ export const calculateBaseEnterpriseValue = (result: ValuationResponse): Calcula
   const multiples = result.multiples_valuation;
   const currentData = result.current_year_data;
   
-  if (!multiples || !currentData) {
+  // DIAGNOSTIC: Log current_year_data availability
+  console.log('[DIAGNOSTIC-VALUATION] calculateBaseEnterpriseValue:', {
+    hasMultiples: !!multiples,
+    hasCurrentData: !!currentData,
+    currentData: currentData,
+    revenue: currentData?.revenue,
+    ebitda: currentData?.ebitda,
+    resultKeys: Object.keys(result || {}),
+  });
+  
+  // Check if currentData exists and has valid revenue or EBITDA
+  const hasValidData = currentData && (
+    (typeof currentData.revenue === 'number' && currentData.revenue > 0) ||
+    (typeof currentData.ebitda === 'number' && currentData.ebitda !== undefined)
+  );
+  
+  if (!multiples || !currentData || !hasValidData) {
     return {
       stepNumber: 1,
       title: 'Base Valuation',
@@ -190,12 +206,40 @@ export const calculateBaseEnterpriseValue = (result: ValuationResponse): Calcula
 /**
  * Calculate owner concentration adjustment step
  */
-export const calculateOwnerConcentrationImpact = (result: ValuationResponse, previousStep: CalculationStep): CalculationStep | null => {
+export const calculateOwnerConcentrationImpact = (result: ValuationResponse, previousStep: CalculationStep): CalculationStep => {
   const multiples = result.multiples_valuation;
   const ownerConc = multiples?.owner_concentration;
   
+  // Always show this step, even if no adjustment was applied
   if (!ownerConc || ownerConc.adjustment_factor === 0) {
-    return null; // Skip this step if no owner concentration adjustment
+    // Try to get owner/employee data from the request if available
+    const owners = ownerConc?.number_of_owners;
+    const employees = ownerConc?.number_of_employees;
+    const hasData = owners !== undefined && employees !== undefined;
+    
+    // Return a step indicating no adjustment was applied
+    return {
+      stepNumber: previousStep.stepNumber + 1,
+      title: 'Owner Concentration Adjustment',
+      subtitle: 'No adjustment applied',
+      formula: hasData ? 'Owners / Employees = Ratio' : 'Owner/Employee Ratio Analysis',
+      inputs: hasData ? [
+        { label: 'Active Owner-Managers', value: String(owners) },
+        { label: 'FTE Employees', value: String(employees) },
+        { label: 'Owner/Employee Ratio', value: employees > 0 ? `${((owners / employees) * 100).toFixed(1)}%` : 'N/A' },
+        { label: 'Status', value: 'Low risk - sufficient non-owner employees', highlight: false }
+      ] : [
+        { label: 'Status', value: 'No owner concentration data provided', highlight: false }
+      ],
+      calculation: hasData 
+        ? `${owners} owners / ${employees} employees = ${employees > 0 ? ((owners / employees) * 100).toFixed(1) : 'N/A'}% ratio → No adjustment (low risk)`
+        : 'No owner concentration risk detected - insufficient data or low risk profile',
+      result: previousStep.result, // No change to values
+      adjustmentPercent: 0,
+      color: 'gray',
+      icon: '👥',
+      explanation: 'Owner concentration adjustment is only applied when owners represent a significant portion of the workforce (typically >50%), indicating key person dependency risk. Lower ratios indicate better operational independence.'
+    };
   }
 
   const owners = ownerConc.number_of_owners;
@@ -215,7 +259,7 @@ export const calculateOwnerConcentrationImpact = (result: ValuationResponse, pre
     : `${(ratio * 100).toFixed(0)}%`;
 
   return {
-    stepNumber: 2,
+    stepNumber: previousStep.stepNumber + 1,
     title: 'Owner Concentration Adjustment',
     subtitle: `${riskLevel} Key Person Risk`,
     formula: 'Owners / Employees = Ratio → Discount %',
@@ -249,7 +293,11 @@ export const calculateOwnerConcentrationImpact = (result: ValuationResponse, pre
 export const calculateSizeDiscountImpact = (result: ValuationResponse, previousStep: CalculationStep): CalculationStep => {
   const multiples = result.multiples_valuation;
   const sizeDiscount = multiples?.size_discount || 0;
-  const revenue = result.current_year_data?.revenue || 0;
+  // Try to get revenue from current_year_data, fallback to multiples valuation if available
+  const revenue = result.current_year_data?.revenue ?? 
+                  (result.multiples_valuation?.enterprise_value && result.multiples_valuation?.revenue_multiple 
+                    ? result.multiples_valuation.enterprise_value / (result.multiples_valuation.revenue_multiple || 1)
+                    : 0);
 
   // Determine size category
   let sizeCategory = 'Unknown';
@@ -348,6 +396,44 @@ export const calculateLiquidityDiscountImpact = (result: ValuationResponse, prev
 };
 
 /**
+ * Calculate Enterprise Value to Equity Value conversion step
+ */
+export const calculateEVToEquityConversion = (result: ValuationResponse, previousStep: CalculationStep): CalculationStep => {
+  // Get debt and cash from current_year_data or use defaults
+  const totalDebt = result.current_year_data?.total_debt || 0;
+  const cash = result.current_year_data?.cash || 0;
+  const netDebt = totalDebt - cash;
+  
+  // Calculate equity values (EV - Net Debt = Equity Value)
+  const equityLow = previousStep.result.low - netDebt;
+  const equityMid = previousStep.result.mid - netDebt;
+  const equityHigh = previousStep.result.high - netDebt;
+  
+  return {
+    stepNumber: previousStep.stepNumber + 1,
+    title: 'Enterprise Value to Equity Value',
+    subtitle: 'Converting to shareholder value',
+    formula: 'Equity Value = Enterprise Value - Net Debt',
+    inputs: [
+      { label: 'Enterprise Value (After Adjustments)', value: formatCurrency(previousStep.result.mid), highlight: true },
+      { label: 'Total Debt', value: formatCurrency(totalDebt) },
+      { label: 'Cash & Equivalents', value: formatCurrency(cash) },
+      { label: 'Net Debt', value: formatCurrency(netDebt), highlight: netDebt > 0 }
+    ],
+    calculation: `€${Math.round(previousStep.result.mid).toLocaleString()} - €${Math.round(netDebt).toLocaleString()} = €${Math.round(equityMid).toLocaleString()}`,
+    result: {
+      low: equityLow,
+      mid: equityMid,
+      high: equityHigh
+    },
+    adjustmentPercent: 0,
+    color: 'blue',
+    icon: '💼',
+    explanation: 'Enterprise Value represents the total value of the company. Equity Value is what shareholders own after accounting for debt obligations and cash holdings.'
+  };
+};
+
+/**
  * Generate all calculation steps for the waterfall
  */
 export const generateCalculationSteps = (result: ValuationResponse): CalculationStep[] => {
@@ -359,12 +445,10 @@ export const generateCalculationSteps = (result: ValuationResponse): Calculation
   
   let previousStep = baseStep;
   
-  // Step 2: Owner Concentration (if applicable)
+  // Step 2: Owner Concentration (ALWAYS show, even if no adjustment)
   const ownerStep = calculateOwnerConcentrationImpact(result, previousStep);
-  if (ownerStep) {
-    steps.push(ownerStep);
-    previousStep = ownerStep;
-  }
+  steps.push(ownerStep);
+  previousStep = ownerStep;
   
   // Step 3: Size Discount
   const sizeStep = calculateSizeDiscountImpact(result, previousStep);
@@ -374,6 +458,11 @@ export const generateCalculationSteps = (result: ValuationResponse): Calculation
   // Step 4: Liquidity Discount
   const liquidityStep = calculateLiquidityDiscountImpact(result, previousStep);
   steps.push(liquidityStep);
+  previousStep = liquidityStep;
+  
+  // Step 5: Enterprise Value to Equity Value Conversion
+  const equityStep = calculateEVToEquityConversion(result, previousStep);
+  steps.push(equityStep);
   
   return steps;
 };

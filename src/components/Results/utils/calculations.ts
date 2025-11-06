@@ -33,7 +33,7 @@ export const calculateGrowthMetrics = (result: ValuationResponse) => {
       
     // Determine years from actual year difference (first historical year to current year)
     // This matches the backend calculation which uses year difference, not historical_years_data.length
-    const hasHistoricalData = resultAny.historical_years_data && resultAny.historical_years_data.length > 0;
+      const hasHistoricalData = resultAny.historical_years_data && resultAny.historical_years_data.length > 0;
     let years = 2; // Default fallback
     
     if (hasHistoricalData && resultAny.historical_years_data.length > 0) {
@@ -43,7 +43,7 @@ export const calculateGrowthMetrics = (result: ValuationResponse) => {
       // Calculate actual year difference (matches backend logic: current_year - first_year)
       if (firstHistoricalYear && currentYear && typeof firstHistoricalYear === 'number' && typeof currentYear === 'number') {
         if (currentYear > firstHistoricalYear) {
-          years = currentYear - firstHistoricalYear;
+        years = currentYear - firstHistoricalYear;
         } else if (currentYear === firstHistoricalYear) {
           // Same year edge case: use 1 year minimum for CAGR calculation
           years = 1;
@@ -57,11 +57,11 @@ export const calculateGrowthMetrics = (result: ValuationResponse) => {
       }
     }
       
-    return { 
-      cagr: cagrDecimal, 
+      return { 
+        cagr: cagrDecimal, 
       hasHistoricalData: hasHistoricalData && years > 0, 
-      years 
-    };
+        years 
+      };
     }
     
   // If financial_metrics is missing, show no data (backend should always provide this)

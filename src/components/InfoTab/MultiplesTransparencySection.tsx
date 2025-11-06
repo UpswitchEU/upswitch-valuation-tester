@@ -490,7 +490,7 @@ export const MultiplesTransparencySection: React.FC<MultiplesTransparencySection
                     </>
                   ) : (
                     <>
-                      Formula: {ownerConcentration.number_of_owners} ÷ {ownerConcentration.number_of_employees} = {ownerConcentration.ratio.toFixed(3)}
+                  Formula: {ownerConcentration.number_of_owners} ÷ {ownerConcentration.number_of_employees} = {ownerConcentration.ratio.toFixed(3)}
                     </>
                   )}
                 </p>
