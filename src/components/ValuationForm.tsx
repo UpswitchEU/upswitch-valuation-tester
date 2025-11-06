@@ -430,11 +430,16 @@ export const ValuationForm: React.FC = () => {
             <CustomNumberInputField
               label="Full-Time Equivalent (FTE) Employees"
               placeholder="e.g., 12 (include part-time as FTE)"
-              value={formData.number_of_employees || ''}
+              value={formData.number_of_employees !== undefined ? formData.number_of_employees.toString() : ''}
               onChange={(e) => {
                 const inputValue = e.target.value;
                 // Allow empty string, 0, or positive numbers
-                const value = inputValue === '' ? undefined : (parseInt(inputValue) >= 0 ? parseInt(inputValue) : undefined);
+                // Use nullish coalescing to preserve 0 as a valid value
+                const value = inputValue === '' 
+                  ? undefined 
+                  : (inputValue === '0' 
+                      ? 0 
+                      : (parseInt(inputValue) > 0 ? parseInt(inputValue) : undefined));
                 updateFormData({ number_of_employees: value });
                 // Clear error when user provides a valid value (including 0)
                 if (employeeCountError && value !== undefined) {

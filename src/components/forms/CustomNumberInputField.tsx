@@ -73,7 +73,10 @@ const CustomNumberInputField: React.FC<CustomNumberInputFieldProps> = ({
     // Handle arrow keys for increment/decrement when arrows are shown
     if (showArrows && (e.key === 'ArrowUp' || e.key === 'ArrowDown')) {
       e.preventDefault();
-      const currentValue = typeof value === 'string' ? parseInt(value) || 0 : value;
+      // Preserve 0 as a valid value - use nullish coalescing instead of logical OR
+      const currentValue = typeof value === 'string' 
+        ? (value === '' ? 0 : (parseInt(value) ?? 0))
+        : (value ?? 0);
       const stepValue = step || 1;
       let newValue: number;
       
@@ -129,7 +132,10 @@ const CustomNumberInputField: React.FC<CustomNumberInputFieldProps> = ({
   };
 
   const handleArrowClick = (direction: 'up' | 'down') => {
-    const currentValue = typeof value === 'string' ? parseInt(value) || 0 : value;
+    // Preserve 0 as a valid value - use nullish coalescing instead of logical OR
+    const currentValue = typeof value === 'string' 
+      ? (value === '' ? 0 : (parseInt(value) ?? 0))
+      : (value ?? 0);
     const stepValue = step || 1;
     let newValue: number;
     
@@ -210,7 +216,7 @@ const CustomNumberInputField: React.FC<CustomNumberInputFieldProps> = ({
             <button
               type="button"
               onClick={() => handleArrowClick('up')}
-              disabled={disabled || (max !== undefined && (typeof value === 'string' ? parseInt(value) || 0 : value) >= max)}
+              disabled={disabled || (max !== undefined && (typeof value === 'string' ? (parseInt(value) ?? 0) : (value ?? 0)) >= max)}
               className="w-4 h-4 flex items-center justify-center text-gray-400 hover:text-gray-600 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
               aria-label="Increase value"
             >
@@ -221,7 +227,7 @@ const CustomNumberInputField: React.FC<CustomNumberInputFieldProps> = ({
             <button
               type="button"
               onClick={() => handleArrowClick('down')}
-              disabled={disabled || (min !== undefined && (typeof value === 'string' ? parseInt(value) || 0 : value) <= min)}
+              disabled={disabled || (min !== undefined && min > 0 && (typeof value === 'string' ? (parseInt(value) ?? 0) : (value ?? 0)) <= min)}
               className="w-4 h-4 flex items-center justify-center text-gray-400 hover:text-gray-600 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
               aria-label="Decrease value"
             >
