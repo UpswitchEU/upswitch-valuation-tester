@@ -36,11 +36,11 @@ export function normalizeGrowthValue(
   
   // Sanity check: Flag unrealistic values (>1000% or <-500% likely indicate errors)
   if (percentage > 1000 || percentage < -500) {
-    console.warn(
+      console.warn(
       `[normalizeGrowthValue] Suspiciously extreme growth value: ${percentage}%. ` +
-      `This may indicate a data quality issue or calculation error.`
-    );
-  }
+        `This may indicate a data quality issue or calculation error.`
+      );
+    }
   
   return percentage;
 }

@@ -255,41 +255,41 @@ export const RangeCalculationSection: React.FC<RangeCalculationSectionProps> = (
         
         {result.range_methodology === 'confidence_spread' ? (
           <>
-            <div className="space-y-4">
-              <div className="bg-gray-50 p-4 rounded-lg">
-                <h4 className="font-semibold text-gray-900 mb-3">Standard Spreads by Confidence Level</h4>
-                <div className="space-y-2 text-sm">
-                  <div className={`flex justify-between p-2 rounded ${confidenceLevel === 'HIGH' ? 'bg-green-100 border border-green-300' : 'bg-white'}`}>
-                    <span className="font-medium">High Confidence (&gt;80%):</span>
-                    <span className="font-mono font-semibold">±12% spread</span>
-                  </div>
-                  <div className={`flex justify-between p-2 rounded ${confidenceLevel === 'MEDIUM' ? 'bg-yellow-100 border border-yellow-300' : 'bg-white'}`}>
-                    <span className="font-medium">Medium Confidence (60-80%):</span>
-                    <span className="font-mono font-semibold">±18% spread</span>
-                  </div>
-                  <div className={`flex justify-between p-2 rounded ${confidenceLevel === 'LOW' ? 'bg-red-100 border border-red-300' : 'bg-white'}`}>
-                    <span className="font-medium">Low Confidence (&lt;60%):</span>
-                    <span className="font-mono font-semibold">±22% spread</span>
-                  </div>
-                </div>
+        <div className="space-y-4">
+          <div className="bg-gray-50 p-4 rounded-lg">
+            <h4 className="font-semibold text-gray-900 mb-3">Standard Spreads by Confidence Level</h4>
+            <div className="space-y-2 text-sm">
+              <div className={`flex justify-between p-2 rounded ${confidenceLevel === 'HIGH' ? 'bg-green-100 border border-green-300' : 'bg-white'}`}>
+                <span className="font-medium">High Confidence (&gt;80%):</span>
+                <span className="font-mono font-semibold">±12% spread</span>
               </div>
-
-              <div className="bg-blue-100 border-2 border-blue-400 rounded-lg p-4">
-                <div className="flex items-center justify-between">
-                  <span className="font-semibold text-gray-900">Your Confidence: {confidenceScore.toFixed(1)}%</span>
-                  <div className="text-right">
-                    <span className="text-sm text-gray-600">Standard Spread:</span>
-                    <p className="text-xl font-bold text-blue-600">
-                      ±{formatPercent(rangeMethodology.base_spread * 100)}
-                    </p>
-                  </div>
-                </div>
+              <div className={`flex justify-between p-2 rounded ${confidenceLevel === 'MEDIUM' ? 'bg-yellow-100 border border-yellow-300' : 'bg-white'}`}>
+                <span className="font-medium">Medium Confidence (60-80%):</span>
+                <span className="font-mono font-semibold">±18% spread</span>
+              </div>
+              <div className={`flex justify-between p-2 rounded ${confidenceLevel === 'LOW' ? 'bg-red-100 border border-red-300' : 'bg-white'}`}>
+                <span className="font-medium">Low Confidence (&lt;60%):</span>
+                <span className="font-mono font-semibold">±22% spread</span>
               </div>
             </div>
+          </div>
 
-            <p className="text-xs text-gray-600 mt-4">
-              <strong>Source:</strong> PwC Valuation Handbook 2024, Section 4.2, p. 156
-            </p>
+          <div className="bg-blue-100 border-2 border-blue-400 rounded-lg p-4">
+            <div className="flex items-center justify-between">
+              <span className="font-semibold text-gray-900">Your Confidence: {confidenceScore.toFixed(1)}%</span>
+              <div className="text-right">
+                <span className="text-sm text-gray-600">Standard Spread:</span>
+                <p className="text-xl font-bold text-blue-600">
+                  ±{formatPercent(rangeMethodology.base_spread * 100)}
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <p className="text-xs text-gray-600 mt-4">
+          <strong>Source:</strong> PwC Valuation Handbook 2024, Section 4.2, p. 156
+        </p>
           </>
         ) : (
           <div className="bg-gray-50 p-4 rounded-lg border border-gray-300">
