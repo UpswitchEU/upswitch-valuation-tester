@@ -569,14 +569,15 @@ export const calculateHistoricalTrendAnalysis = (result: ValuationResponse): Cal
 
 /**
  * Calculate DCF valuation waterfall step
- * Only shown when DCF is included (dcf_weight > 0)
+ * Only shown when DCF is included (dcf_weight > 0 and not excluded)
  */
 export const calculateDCFValuationStep = (result: ValuationResponse): CalculationStep | null => {
   const dcfValuation = result.dcf_valuation;
   const dcfWeight = result.dcf_weight || 0;
+  const hasDCFExclusionReason = !!result.dcf_exclusion_reason;
   
-  // Only show if DCF is included
-  if (!dcfValuation || dcfWeight === 0) {
+  // Only show if DCF is included (not excluded)
+  if (!dcfValuation || dcfWeight === 0 || hasDCFExclusionReason) {
     return null;
   }
   
@@ -643,7 +644,7 @@ export const calculateDCFValuationStep = (result: ValuationResponse): Calculatio
 
 /**
  * Calculate weighted average combination step
- * Only shown when both DCF and Multiples are included
+ * Only shown when both DCF and Multiples are included (DCF not excluded)
  */
 export const calculateWeightedAverageStep = (
   result: ValuationResponse,
@@ -652,9 +653,10 @@ export const calculateWeightedAverageStep = (
 ): CalculationStep | null => {
   const dcfWeight = result.dcf_weight || 0;
   const multiplesWeight = result.multiples_weight || 0;
+  const hasDCFExclusionReason = !!result.dcf_exclusion_reason;
   
-  // Only show if both methodologies are included
-  if (dcfWeight === 0 || multiplesWeight === 0) {
+  // Only show if both methodologies are included (DCF not excluded)
+  if (dcfWeight === 0 || multiplesWeight === 0 || hasDCFExclusionReason) {
     return null;
   }
   
@@ -724,9 +726,11 @@ export const generateCalculationSteps = (result: ValuationResponse): Calculation
   }
   
   // Check if DCF is included
+  // DCF is excluded if: dcf_weight is 0, dcf_exclusion_reason exists, or no dcf_valuation
   const dcfWeight = result.dcf_weight || 0;
   const multiplesWeight = result.multiples_weight || 0;
-  const isDCFIncluded = dcfWeight > 0 && result.dcf_valuation;
+  const hasDCFExclusionReason = !!result.dcf_exclusion_reason;
+  const isDCFIncluded = dcfWeight > 0 && result.dcf_valuation && !hasDCFExclusionReason;
   const isMultiplesOnly = multiplesWeight === 1.0 || !isDCFIncluded;
   
   let stepNumber = 1;
