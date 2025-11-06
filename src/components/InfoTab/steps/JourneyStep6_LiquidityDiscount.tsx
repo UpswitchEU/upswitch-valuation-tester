@@ -4,6 +4,7 @@ import { StepCard } from '../shared/StepCard';
 import { FormulaBox } from '../shared/FormulaBox';
 import { BeforeAfterTable } from '../shared/BeforeAfterTable';
 import type { ValuationResponse } from '../../../types/valuation';
+import { normalizeMarginFormat } from '../../Results/utils/valuationCalculations';
 
 interface JourneyStep6Props {
   result: ValuationResponse;
@@ -14,7 +15,9 @@ const formatCurrency = (value: number): string => `€${Math.round(value).toLoca
 
 export const JourneyStep6_LiquidityDiscount: React.FC<JourneyStep6Props> = ({ result, beforeValues }) => {
   const liquidityDiscount = result.multiples_valuation?.liquidity_discount || 0;
-  const ebitdaMargin = result.financial_metrics?.ebitda_margin || 0;
+  // Normalize margin format (handles both decimal 0-1 and percentage 0-100 from backend)
+  const ebitdaMarginRaw = result.financial_metrics?.ebitda_margin;
+  const ebitdaMargin = normalizeMarginFormat(ebitdaMarginRaw) || 0;
   
   const afterValues = {
     low: beforeValues.low * (1 + liquidityDiscount),

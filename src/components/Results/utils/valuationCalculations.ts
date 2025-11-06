@@ -60,10 +60,38 @@ export const calculateEBITDAMargin = (revenue: number | null | undefined, ebitda
 };
 
 /**
- * Format EBITDA margin for display with validation
+ * Normalize EBITDA margin format (handles both decimal 0-1 and percentage 0-100)
+ * Returns decimal format (0-1) for consistency
  */
-export const formatEBITDAMargin = (revenue: number | null | undefined, ebitda: number | null | undefined): string => {
-  const margin = calculateEBITDAMargin(revenue, ebitda);
+export const normalizeMarginFormat = (margin: number | null | undefined): number | null => {
+  if (margin === null || margin === undefined) {
+    return null;
+  }
+  
+  // If value > 1.0, assume it's in percentage format (0-100) and convert to decimal
+  if (margin > 1.0) {
+    return Math.min(1.0, margin / 100); // Convert percentage to decimal, cap at 1.0
+  }
+  
+  // Already in decimal format (0-1)
+  return Math.min(1.0, Math.max(0.0, margin)); // Ensure it's within valid range
+};
+
+/**
+ * Format EBITDA margin for display with validation
+ * Handles both decimal (0-1) and percentage (0-100) formats from backend
+ */
+export const formatEBITDAMargin = (revenue: number | null | undefined, ebitda: number | null | undefined, marginFromBackend?: number | null | undefined): string => {
+  // If margin is provided from backend, use it (with format normalization)
+  // Otherwise calculate from revenue/EBITDA
+  let margin: number | null;
+  
+  if (marginFromBackend !== null && marginFromBackend !== undefined) {
+    margin = normalizeMarginFormat(marginFromBackend);
+  } else {
+    margin = calculateEBITDAMargin(revenue, ebitda);
+  }
+  
   if (margin === null) {
     return 'N/A';
   }
@@ -276,10 +304,10 @@ export const calculateLiquidityDiscountImpact = (result: ValuationResponse, prev
   const multiples = result.multiples_valuation;
   const liquidityDiscount = multiples?.liquidity_discount || 0;
   
-  // Safely calculate EBITDA margin with validation
+  // Safely get EBITDA margin - prefer from backend financial_metrics, fallback to calculation
   const revenue = result.current_year_data?.revenue;
   const ebitda = result.current_year_data?.ebitda;
-  const ebitdaMargin = calculateEBITDAMargin(revenue, ebitda);
+  const marginFromBackend = result.financial_metrics?.ebitda_margin;
   
   // Base liquidity discount is typically -15% for private companies
   // Can be adjusted based on profitability (higher margins = better liquidity = smaller discount)
@@ -300,7 +328,7 @@ export const calculateLiquidityDiscountImpact = (result: ValuationResponse, prev
     formula: 'Value × (1 + Liquidity Discount)',
     inputs: [
       { label: 'Base Discount (Private Co.)', value: `${(baseLiquidityDiscount * 100).toFixed(0)}%` },
-      { label: 'EBITDA Margin', value: ebitdaMargin !== null ? formatEBITDAMargin(revenue, ebitda) : 'N/A' },
+      { label: 'EBITDA Margin', value: formatEBITDAMargin(revenue, ebitda, marginFromBackend) },
       { label: 'Margin Adjustment', value: `+${(marginBonus * 100).toFixed(0)}%` },
       { label: 'Total Liquidity Discount', value: `${(liquidityDiscount * 100).toFixed(0)}%`, highlight: true }
     ],

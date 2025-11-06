@@ -112,10 +112,10 @@ export const CalculationJourney: React.FC<CalculationJourneyProps> = ({ result, 
     <div className="relative bg-gradient-to-br from-gray-50 to-blue-50 min-h-screen">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
-        <div className="bg-gradient-to-r from-blue-600 to-indigo-600 shadow-lg p-4 sm:p-6 text-white">
-          <h1 className="text-2xl sm:text-3xl font-bold mb-2">Complete Calculation Journey</h1>
-          <p className="text-sm sm:text-base text-blue-100">
-            Every step, formula, and calculation from initial inputs to final valuation - fully transparent and academically sourced
+        <div className="border-b border-gray-200 bg-white px-4 sm:px-6 py-4">
+          <h1 className="text-lg sm:text-xl font-semibold text-gray-900 mb-1">Calculation Journey</h1>
+          <p className="text-xs sm:text-sm text-gray-600">
+            Step-by-step breakdown of the valuation calculation
           </p>
         </div>
 
