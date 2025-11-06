@@ -31,9 +31,23 @@ export const calculateGrowthMetrics = (result: ValuationResponse) => {
       ? metrics.revenue_cagr_3y 
       : 0.0;
     
-    // Determine years from historical data if available, otherwise use 2 (most common)
+    // Determine years from actual year difference (first historical year to current year)
+    // This matches the backend calculation which uses year difference, not historical_years_data.length
     const hasHistoricalData = resultAny.historical_years_data && resultAny.historical_years_data.length > 0;
-    const years = hasHistoricalData ? resultAny.historical_years_data.length : 2;
+    let years = 2; // Default fallback
+    
+    if (hasHistoricalData && resultAny.historical_years_data.length > 0) {
+      const firstHistoricalYear = resultAny.historical_years_data[0]?.year;
+      const currentYear = resultAny.current_year_data?.year;
+      
+      // Calculate actual year difference (matches backend logic: current_year - first_year)
+      if (firstHistoricalYear && currentYear && currentYear > firstHistoricalYear) {
+        years = currentYear - firstHistoricalYear;
+      } else {
+        // Fallback to length if year fields not available (backward compatibility)
+        years = resultAny.historical_years_data.length;
+      }
+    }
     
     return { 
       cagr: cagrDecimal, 

@@ -319,6 +319,21 @@ export const MethodologyBreakdown: React.FC<MethodologyBreakdownProps> = ({ resu
                 result.multiples_valuation?.owner_concentration
               )}
               <div>• Comparables: {comparablesCount} similar companies</div>
+              {/* Primary Multiple Method (Transparency) */}
+              {result.multiples_valuation?.primary_multiple_method && (
+                <div className="mt-2 pt-2 border-t border-green-300">
+                  <div className="text-xs text-green-800">
+                    <strong>Primary Method:</strong> {result.multiples_valuation.primary_multiple_method === 'ebitda_multiple' 
+                      ? 'EBITDA Multiple' 
+                      : result.multiples_valuation.primary_multiple_method === 'revenue_multiple'
+                      ? 'Revenue Multiple'
+                      : result.multiples_valuation.primary_multiple_method}
+                    {result.multiples_valuation.primary_multiple_reason && (
+                      <span className="text-green-700"> - {result.multiples_valuation.primary_multiple_reason}</span>
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>

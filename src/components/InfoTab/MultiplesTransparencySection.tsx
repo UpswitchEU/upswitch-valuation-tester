@@ -759,6 +759,40 @@ export const MultiplesTransparencySection: React.FC<MultiplesTransparencySection
             </div>
           </div>
 
+          {/* Primary Multiple Method (Transparency) */}
+          {multiplesValuation?.primary_multiple_method && (
+            <div className="bg-blue-50 border-2 border-blue-400 rounded-lg p-4">
+              <h4 className="font-semibold text-gray-900 mb-3">Primary Multiple Method</h4>
+              <div className="space-y-2 text-sm">
+                <div className="flex items-start gap-2">
+                  <span className="text-gray-700 font-medium">Method Used:</span>
+                  <span className="font-mono font-semibold text-blue-700">
+                    {multiplesValuation.primary_multiple_method === 'ebitda_multiple' 
+                      ? 'EBITDA Multiple' 
+                      : multiplesValuation.primary_multiple_method === 'revenue_multiple'
+                      ? 'Revenue Multiple'
+                      : multiplesValuation.primary_multiple_method}
+                  </span>
+                </div>
+                {multiplesValuation.primary_multiple_reason && (
+                  <div className="mt-2 pt-2 border-t border-blue-300">
+                    <p className="text-xs text-gray-700">
+                      <strong>Reason:</strong> {multiplesValuation.primary_multiple_reason}
+                    </p>
+                  </div>
+                )}
+                <div className="mt-2 pt-2 border-t border-blue-300">
+                  <p className="text-xs text-gray-600 italic">
+                    <strong>Note:</strong> The enterprise value shown above is calculated using the primary method. 
+                    {multiplesValuation.primary_multiple_method === 'ebitda_multiple' 
+                      ? ' EBITDA multiple is standard for profitable companies with >10% EBITDA margin.'
+                      : ' Revenue multiple is used for revenue-heavy business types or companies with low EBITDA margins.'}
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Equity Value Conversion */}
           <div className="bg-green-100 border-2 border-green-400 rounded-lg p-4">
             <h4 className="font-semibold text-gray-900 mb-3">Equity Value Conversion</h4>

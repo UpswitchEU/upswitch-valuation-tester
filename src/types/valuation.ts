@@ -374,6 +374,10 @@ export interface ValuationResponse {
     // Original (unadjusted) multiples for transparency
     unadjusted_ebitda_multiple?: number;
     unadjusted_revenue_multiple?: number;
+    
+    // Primary multiple method transparency (from backend)
+    primary_multiple_method?: string;  // "ebitda_multiple" or "revenue_multiple"
+    primary_multiple_reason?: string;  // Explanation of why this method was selected
   };
   
   // Financial Metrics (comprehensive)
