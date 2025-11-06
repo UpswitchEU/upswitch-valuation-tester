@@ -22,7 +22,7 @@ interface CalculationJourneyProps {
 const SCROLL_SPY_CONFIG = {
   // Intersection Observer options
   ROOT_MARGIN: '-20% 0px -60% 0px', // Trigger when section is in upper 20% of viewport
-  THRESHOLDS: [0, 0.5, 1.0] as const, // Reduced from 11 to 3 for performance
+  THRESHOLDS: [0, 0.5, 1.0] as number[], // Reduced from 11 to 3 for performance
   RATIO_THRESHOLD: 0.1, // Minimum difference to prefer one section over another
   
   // Timing constants

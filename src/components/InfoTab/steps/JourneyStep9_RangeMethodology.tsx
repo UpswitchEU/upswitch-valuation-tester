@@ -9,11 +9,6 @@ interface JourneyStep9Props {
 }
 
 const formatCurrency = (value: number): string => `€${Math.round(value).toLocaleString()}`;
-const formatCurrencyCompact = (value: number): string => {
-  if (value >= 1_000_000) return `€${(value / 1_000_000).toFixed(1)}M`;
-  if (value >= 1_000) return `€${Math.round(value / 1_000)}K`;
-  return formatCurrency(value);
-};
 
 export const JourneyStep9_RangeMethodology: React.FC<JourneyStep9Props> = ({ result, beforeValues }) => {
   const rangeMethod = result.range_methodology || 'confidence_spread';

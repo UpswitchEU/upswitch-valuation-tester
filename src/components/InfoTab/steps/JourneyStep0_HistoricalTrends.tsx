@@ -50,14 +50,9 @@ export const JourneyStep0_HistoricalTrends: React.FC<JourneyStep0Props> = ({ res
   const yearsDiff = lastYear.year - firstYear.year;
   
   let revenueCAGR = 0;
-  let ebitdaCAGR = 0;
   
   if (yearsDiff > 0 && firstYear.revenue > 0) {
     revenueCAGR = (Math.pow(lastYear.revenue / firstYear.revenue, 1 / yearsDiff) - 1) * 100;
-  }
-  
-  if (yearsDiff > 0 && firstYear.ebitda > 0 && lastYear.ebitda > 0) {
-    ebitdaCAGR = (Math.pow(lastYear.ebitda / firstYear.ebitda, 1 / yearsDiff) - 1) * 100;
   }
   
   // Determine trend direction
@@ -70,7 +65,7 @@ export const JourneyStep0_HistoricalTrends: React.FC<JourneyStep0Props> = ({ res
   const isStable = !isDeclining && !isGrowing;
   
   const trendDirection = isDeclining ? 'Declining' : isGrowing ? 'Growing' : 'Stable';
-  const trendColor = isDeclining ? 'red' : isGrowing ? 'green' : 'yellow';
+  const trendColor: 'blue' | 'green' | 'orange' | 'purple' | 'teal' = isDeclining ? 'orange' : isGrowing ? 'green' : 'blue';
   const TrendIcon = isDeclining ? TrendingDown : isGrowing ? TrendingUp : Minus;
   
   return (

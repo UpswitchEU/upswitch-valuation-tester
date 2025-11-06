@@ -478,14 +478,9 @@ export const calculateHistoricalTrendAnalysis = (result: ValuationResponse): Cal
   const yearsDiff = lastYear.year - firstYear.year;
   
   let revenueCAGR = 0;
-  let ebitdaCAGR = 0;
   
   if (yearsDiff > 0 && firstYear.revenue > 0) {
     revenueCAGR = (Math.pow(lastYear.revenue / firstYear.revenue, 1 / yearsDiff) - 1) * 100;
-  }
-  
-  if (yearsDiff > 0 && firstYear.ebitda > 0 && lastYear.ebitda > 0) {
-    ebitdaCAGR = (Math.pow(lastYear.ebitda / firstYear.ebitda, 1 / yearsDiff) - 1) * 100;
   }
   
   // Determine trend direction
@@ -495,10 +490,9 @@ export const calculateHistoricalTrendAnalysis = (result: ValuationResponse): Cal
   
   const isDeclining = avgRevenueGrowth < -5; // More than 5% decline
   const isGrowing = avgRevenueGrowth > 5; // More than 5% growth
-  const isStable = !isDeclining && !isGrowing;
   
   const trendDirection = isDeclining ? 'Declining' : isGrowing ? 'Growing' : 'Stable';
-  const trendColor = isDeclining ? 'red' : isGrowing ? 'green' : 'yellow';
+  const trendColor: 'blue' | 'green' | 'orange' | 'purple' | 'teal' = isDeclining ? 'orange' : isGrowing ? 'green' : 'blue';
   
   // Build inputs array
   const inputs: { label: string; value: string; highlight?: boolean }[] = [];
@@ -581,17 +575,19 @@ export const calculateDCFValuationStep = (result: ValuationResponse): Calculatio
   const equityValue = dcfValuation.equity_value || 0;
   const enterpriseValue = dcfValuation.enterprise_value || 0;
   const wacc = dcfValuation.wacc || 0;
-  const terminalValue = dcfValuation.terminal_value || 0;
-  const presentValue = dcfValuation.present_value_of_cash_flows || 0;
+  const pvTerminalValue = dcfValuation.pv_terminal_value || 0;
+  
+  // Calculate present value of cash flows from projections
+  const pvFcfProjections = dcfValuation.pv_fcf_projections_5y || [];
+  const presentValue = pvFcfProjections.reduce((sum: number, pv: number) => sum + (pv || 0), 0);
   
   // Build inputs
   const inputs: { label: string; value: string; highlight?: boolean }[] = [];
   
-  if (dcfValuation.free_cash_flows) {
-    const fcfArray = Array.isArray(dcfValuation.free_cash_flows) 
-      ? dcfValuation.free_cash_flows 
-      : [];
-    const totalFCF = fcfArray.reduce((sum, fcf) => sum + (fcf || 0), 0);
+  // Calculate total FCF from projections if available
+  const fcfProjections = dcfValuation.fcf_projections_5y || [];
+  if (fcfProjections.length > 0) {
+    const totalFCF = fcfProjections.reduce((sum: number, fcf: number) => sum + (fcf || 0), 0);
     inputs.push({
       label: 'Total Projected Free Cash Flows',
       value: formatCurrency(totalFCF),
@@ -601,8 +597,8 @@ export const calculateDCFValuationStep = (result: ValuationResponse): Calculatio
   
   inputs.push(
     { label: 'WACC (Discount Rate)', value: `${(wacc * 100).toFixed(1)}%`, highlight: true },
-    { label: 'Terminal Value', value: formatCurrency(terminalValue) },
-    { label: 'Present Value of Cash Flows', value: formatCurrency(presentValue) },
+    { label: 'PV of Projected Cash Flows', value: formatCurrency(presentValue) },
+    { label: 'PV of Terminal Value', value: formatCurrency(pvTerminalValue) },
     { label: 'Enterprise Value', value: formatCurrency(enterpriseValue), highlight: true }
   );
   

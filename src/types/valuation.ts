@@ -466,6 +466,7 @@ export interface ValuationResponse {
   
   // Additional data
   current_year_data?: YearDataInput; // For accessing revenue, ebitda, etc.
+  historical_years_data?: YearDataInput[]; // Historical financial data for trend analysis
 }
 
 export interface CompanyLookupResult {
