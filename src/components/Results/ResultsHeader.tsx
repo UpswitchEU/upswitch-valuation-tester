@@ -150,6 +150,133 @@ export const ResultsHeader: React.FC<ResultsHeaderProps> = ({ result }) => {
           </p>
         </div>
         
+        {/* Final Multiples Used (if applicable) */}
+        {result.multiples_valuation && (
+          <div className="bg-gradient-to-r from-purple-50 to-blue-50 border-2 border-purple-300 rounded-lg p-4 mb-4">
+            <div className="flex items-center gap-2 mb-3">
+              <span className="text-lg">📐</span>
+              <h4 className="text-sm font-bold text-purple-900">Final Multiples Used</h4>
+            </div>
+            
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {/* Primary Multiple */}
+              <div className="bg-white rounded-lg p-3 border-2 border-purple-500">
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="text-xs font-semibold text-purple-700 uppercase">Primary Method ⭐</span>
+                </div>
+                <div className="space-y-1">
+                  <p className="text-sm font-bold text-gray-900">
+                    {result.multiples_valuation.primary_multiple_method === 'ebitda_multiple' ? 'EBITDA Multiple' : 'Revenue Multiple'}
+                  </p>
+                  <p className="text-2xl font-bold text-purple-700">
+                    {result.multiples_valuation.primary_multiple_method === 'ebitda_multiple' 
+                      ? `${result.multiples_valuation.ebitda_multiple?.toFixed(2)}x`
+                      : `${result.multiples_valuation.revenue_multiple?.toFixed(2)}x`
+                    }
+                  </p>
+                  <p className="text-xs text-gray-600">
+                    {result.multiples_valuation.primary_multiple_method === 'ebitda_multiple'
+                      ? `${result.current_year_data?.ebitda != null ? formatCurrencyCompact(result.current_year_data.ebitda) : 'N/A'} × ${result.multiples_valuation.ebitda_multiple?.toFixed(2)}x`
+                      : `${result.current_year_data?.revenue != null ? formatCurrencyCompact(result.current_year_data.revenue) : 'N/A'} × ${result.multiples_valuation.revenue_multiple?.toFixed(2)}x`
+                    }
+                  </p>
+                </div>
+              </div>
+
+              {/* Range Calculation */}
+              <div className="bg-white rounded-lg p-3 border border-gray-300">
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="text-xs font-semibold text-gray-700 uppercase">Range Calculation</span>
+                </div>
+                <div className="space-y-2 text-xs">
+                  {result.range_methodology === 'multiple_dispersion' ? (
+                    <>
+                      <div className="flex justify-between items-center">
+                        <span className="text-gray-600">Low (P25):</span>
+                        <span className="font-bold text-gray-900">
+                          {result.multiples_valuation.primary_multiple_method === 'ebitda_multiple'
+                            ? `${result.multiples_valuation.p25_ebitda_multiple?.toFixed(2)}x`
+                            : `${result.multiples_valuation.p25_revenue_multiple?.toFixed(2)}x`
+                          }
+                        </span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-gray-600">Mid (P50):</span>
+                        <span className="font-bold text-purple-700">
+                          {result.multiples_valuation.primary_multiple_method === 'ebitda_multiple'
+                            ? `${result.multiples_valuation.p50_ebitda_multiple?.toFixed(2)}x`
+                            : `${result.multiples_valuation.p50_revenue_multiple?.toFixed(2)}x`
+                          }
+                        </span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-gray-600">High (P75):</span>
+                        <span className="font-bold text-gray-900">
+                          {result.multiples_valuation.primary_multiple_method === 'ebitda_multiple'
+                            ? `${result.multiples_valuation.p75_ebitda_multiple?.toFixed(2)}x`
+                            : `${result.multiples_valuation.p75_revenue_multiple?.toFixed(2)}x`
+                          }
+                        </span>
+                      </div>
+                      <div className="mt-2 pt-2 border-t border-gray-200">
+                        <p className="text-xs text-green-700 font-semibold">✓ Market-based range from {result.multiples_valuation.comparables_count} comparables</p>
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <div className="flex justify-between items-center">
+                        <span className="text-gray-600">Base Multiple:</span>
+                        <span className="font-bold text-purple-700">
+                          {result.multiples_valuation.primary_multiple_method === 'ebitda_multiple'
+                            ? `${result.multiples_valuation.ebitda_multiple?.toFixed(2)}x`
+                            : `${result.multiples_valuation.revenue_multiple?.toFixed(2)}x`
+                          }
+                        </span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-gray-600">Range Spread:</span>
+                        <span className="font-bold text-gray-900">±{spreadPercentage}%</span>
+                      </div>
+                      <div className="mt-2 pt-2 border-t border-gray-200">
+                        <p className="text-xs text-blue-700">Based on {confidenceScore}% confidence & company size</p>
+                      </div>
+                    </>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Adjustments Applied Note */}
+            {(result.multiples_valuation.owner_concentration || 
+              result.multiples_valuation.size_discount || 
+              result.multiples_valuation.liquidity_discount) && (
+              <div className="mt-3 pt-3 border-t border-purple-200">
+                <p className="text-xs text-purple-800">
+                  <span className="font-semibold">Note:</span> Multiples shown above are <strong>final adjusted values</strong> after applying:
+                  {result.multiples_valuation.owner_concentration && (
+                    <span className="ml-1">
+                      Owner Concentration ({(result.multiples_valuation.owner_concentration.adjustment_factor * 100).toFixed(0)}%)
+                    </span>
+                  )}
+                  {result.multiples_valuation.size_discount && (
+                    <span className="ml-1">
+                      {result.multiples_valuation.owner_concentration ? ', ' : ''}
+                      Size Discount ({(result.multiples_valuation.size_discount * 100).toFixed(0)}%)
+                    </span>
+                  )}
+                  {result.multiples_valuation.liquidity_discount && (
+                    <span className="ml-1">
+                      {(result.multiples_valuation.owner_concentration || result.multiples_valuation.size_discount) ? ', ' : ''}
+                      Liquidity Discount ({(result.multiples_valuation.liquidity_discount * 100).toFixed(0)}%)
+                    </span>
+                  )}
+                  . See calculation breakdown below for details.
+                </p>
+              </div>
+            )}
+          </div>
+        )}
+
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 mb-6">
           <div className="text-center p-3 sm:p-4 bg-gray-50 rounded">
             <p className="text-xs sm:text-sm text-gray-600 mb-1">Low Estimate</p>

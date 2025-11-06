@@ -13,6 +13,7 @@ import { OwnerConcentrationSummaryCard } from './OwnerConcentrationSummaryCard';
 import { OwnershipAdjustments } from './OwnershipAdjustments';
 import { ResultsHeader } from './ResultsHeader';
 import { RiskFactors } from './RiskFactors';
+import { ValuationWaterfall } from './ValuationWaterfall';
 import { ValueDrivers } from './ValueDrivers';
 
 /**
@@ -20,11 +21,14 @@ import { ValueDrivers } from './ValueDrivers';
  * 
  * Displays comprehensive valuation results using modular components:
  * - ResultsHeader: Main valuation display
+ * - ValuationWaterfall: Detailed step-by-step calculation breakdown
+ * - OwnerConcentrationSummaryCard: Owner concentration risk summary
  * - OwnershipAdjustments: Ownership percentage calculations
+ * - OwnerConcentrationAnalysis: Detailed owner concentration analysis
+ * - MethodologyBreakdown: DCF vs Multiples breakdown
  * - GrowthMetrics: CAGR and growth analysis
  * - ValueDrivers: Key value factors
  * - RiskFactors: Risk assessment
- * - MethodologyBreakdown: DCF vs Multiples breakdown
  */
 export const Results: React.FC = () => {
   const { result } = useValuationStore();
@@ -37,6 +41,11 @@ export const Results: React.FC = () => {
     <div className="space-y-4 sm:space-y-6">
       {/* Main Results Header */}
       <ResultsHeader result={result} />
+      
+      {/* Valuation Calculation Waterfall - Detailed step-by-step breakdown */}
+      <ErrorBoundary fallback={<div className="p-4 bg-red-50 border border-red-200 rounded-lg text-red-700">Error loading calculation breakdown</div>}>
+        <ValuationWaterfall result={result} />
+      </ErrorBoundary>
       
       {/* Owner Concentration Summary Card - Prominent display in main preview */}
       {result.multiples_valuation?.owner_concentration && (

@@ -16,7 +16,6 @@ export const OwnerConcentrationSummaryCard: React.FC<OwnerConcentrationSummaryCa
   const adjustmentFactor = ownerConcentration.adjustment_factor;
   const riskLevel = ownerConcentration.risk_level || 'UNKNOWN';
   const isFullyOwnerOperated = ownerConcentration.number_of_employees === 0;
-  const isCritical = riskLevel === 'CRITICAL';
   
   // Determine color scheme based on risk level
   const colorClasses = {

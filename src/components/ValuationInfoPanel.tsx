@@ -1,5 +1,5 @@
 import React from 'react';
-import { TransparentCalculationView } from './InfoTab/TransparentCalculationView';
+import { CalculationJourney } from './InfoTab/CalculationJourney';
 import type { ValuationResponse, ValuationInputData } from '../types/valuation';
 
 interface ValuationInfoPanelProps {
@@ -12,13 +12,11 @@ export const ValuationInfoPanel: React.FC<ValuationInfoPanelProps> = ({
   inputData
 }) => {
   return (
-    <div className="h-full bg-white p-6 overflow-y-auto">
-      <div className="max-w-6xl mx-auto">
-        <TransparentCalculationView 
-          result={result} 
-          inputData={inputData || null} 
-        />
-      </div>
+    <div className="h-full overflow-y-auto">
+      <CalculationJourney 
+        result={result} 
+        inputData={inputData || null} 
+      />
     </div>
   );
 };
