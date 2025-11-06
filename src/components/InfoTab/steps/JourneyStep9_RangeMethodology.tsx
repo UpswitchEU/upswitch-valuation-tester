@@ -111,7 +111,7 @@ export const JourneyStep9_RangeMethodology: React.FC<JourneyStep9Props> = ({ res
                 <div className="space-y-2 text-sm">
                   <div className="flex justify-between items-center">
                     <span className="text-gray-600">Confidence Score:</span>
-                    <span className="font-semibold">{(confidenceScore * 100).toFixed(0)}%</span>
+                    <span className="font-semibold">{confidenceScore.toFixed(0)}%</span>
                   </div>
                   <div className="flex justify-between items-center">
                     <span className="text-gray-600">Base Spread:</span>

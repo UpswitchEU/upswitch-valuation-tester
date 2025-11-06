@@ -9,9 +9,10 @@ interface JourneyStep8Props {
 
 export const JourneyStep8_ConfidenceScore: React.FC<JourneyStep8Props> = ({ result }) => {
   const confidenceScore = result.confidence_score || 0;
+  // Backend returns confidence_score as integer 0-100, not decimal 0-1
   const confidenceLevel = 
-    confidenceScore >= 0.8 ? 'HIGH' :
-    confidenceScore >= 0.6 ? 'MEDIUM' : 'LOW';
+    confidenceScore >= 80 ? 'HIGH' :
+    confidenceScore >= 60 ? 'MEDIUM' : 'LOW';
 
   // Confidence factors (using dummy data if not available)
   const factors = [
@@ -30,7 +31,7 @@ export const JourneyStep8_ConfidenceScore: React.FC<JourneyStep8Props> = ({ resu
       id="step-8-confidence"
       stepNumber={8}
       title="Confidence Score Analysis"
-      subtitle={`${confidenceLevel} Confidence - ${(confidenceScore * 100).toFixed(0)}%`}
+      subtitle={`${confidenceLevel} Confidence - ${confidenceScore.toFixed(0)}%`}
       icon={<Target className="w-5 h-5" />}
       color="indigo"
       defaultExpanded={true}
@@ -49,7 +50,7 @@ export const JourneyStep8_ConfidenceScore: React.FC<JourneyStep8Props> = ({ resu
               confidenceLevel === 'MEDIUM' ? 'text-yellow-700' :
               'text-red-700'
             }`}>
-              {(confidenceScore * 100).toFixed(0)}%
+              {confidenceScore.toFixed(0)}%
             </span>
           </div>
           <div className="w-full bg-gray-200 rounded-full h-3">
@@ -59,7 +60,7 @@ export const JourneyStep8_ConfidenceScore: React.FC<JourneyStep8Props> = ({ resu
                 confidenceLevel === 'MEDIUM' ? 'bg-yellow-500' :
                 'bg-red-500'
               }`}
-              style={{ width: `${confidenceScore * 100}%` }}
+              style={{ width: `${confidenceScore}%` }}
             />
           </div>
           <p className="text-sm text-gray-700 mt-2">

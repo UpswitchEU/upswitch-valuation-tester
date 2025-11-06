@@ -19,6 +19,8 @@ export interface CalculationStep {
   color: 'blue' | 'red' | 'green' | 'yellow' | 'gray';
   icon: string;
   explanation?: string;
+  dataRequired?: boolean; // Flag to indicate missing critical data
+  dataRequiredMessage?: string; // Message to show when data is missing
 }
 
 /**
@@ -33,6 +35,45 @@ export const formatCurrency = (value: number): string => {
  */
 export const formatPercent = (value: number): string => {
   return `${(value * 100).toFixed(1)}%`;
+};
+
+/**
+ * Safely calculate EBITDA margin with validation
+ * Returns null if revenue is invalid, caps at 100%
+ */
+export const calculateEBITDAMargin = (revenue: number | null | undefined, ebitda: number | null | undefined): number | null => {
+  if (!revenue || revenue <= 0) {
+    return null; // Cannot calculate margin with zero/negative revenue
+  }
+  if (ebitda === null || ebitda === undefined) {
+    return null; // EBITDA not provided
+  }
+  
+  const margin = ebitda / revenue;
+  
+  // Cap at 100% (mathematically impossible to exceed)
+  if (margin > 1.0) {
+    return 1.0; // Return as decimal (1.0 = 100%)
+  }
+  
+  return margin;
+};
+
+/**
+ * Format EBITDA margin for display with validation
+ */
+export const formatEBITDAMargin = (revenue: number | null | undefined, ebitda: number | null | undefined): string => {
+  const margin = calculateEBITDAMargin(revenue, ebitda);
+  if (margin === null) {
+    return 'N/A';
+  }
+  
+  // Check if margin was capped (indicates data quality issue)
+  const wasCapped = revenue && ebitda && (ebitda / revenue) > 1.0;
+  
+  return wasCapped 
+    ? '100.0% (capped - data review required)'
+    : formatPercent(margin);
 };
 
 /**
@@ -52,7 +93,9 @@ export const calculateBaseEnterpriseValue = (result: ValuationResponse): Calcula
       calculation: 'Insufficient data',
       result: { low: 0, mid: 0, high: 0 },
       color: 'gray',
-      icon: '📊'
+      icon: '📊',
+      dataRequired: true,
+      dataRequiredMessage: 'Revenue and EBITDA data are required to calculate enterprise value. Please enter financial data to generate valuation.'
     };
   }
 
@@ -62,8 +105,28 @@ export const calculateBaseEnterpriseValue = (result: ValuationResponse): Calcula
   const metricName = isPrimaryEBITDA ? 'EBITDA' : 'Revenue';
   const multipleName = isPrimaryEBITDA ? 'EBITDA Multiple' : 'Revenue Multiple';
 
+  // Validate that we have the required metric (revenue or EBITDA)
+  if (!primaryMetric || primaryMetric <= 0) {
+    return {
+      stepNumber: 1,
+      title: 'Base Enterprise Valuation',
+      subtitle: `Primary Method: ${isPrimaryEBITDA ? 'EBITDA Multiple' : 'Revenue Multiple'}`,
+      formula: `${metricName} × ${multipleName} = Enterprise Value`,
+      inputs: [
+        { label: metricName, value: 'Required', highlight: true },
+        { label: `${multipleName} (Industry Median)`, value: `${(primaryMultiple || 0).toFixed(2)}x`, highlight: true }
+      ],
+      calculation: `Cannot calculate: ${metricName} is required`,
+      result: { low: 0, mid: 0, high: 0 },
+      color: 'gray',
+      icon: '📊',
+      dataRequired: true,
+      dataRequiredMessage: `${metricName} is required for valuation calculation. Please enter ${metricName.toLowerCase()} data to generate enterprise value.`
+    };
+  }
+
   // Calculate base enterprise value before any adjustments
-  const baseEV = (primaryMetric || 0) * (primaryMultiple || 0);
+  const baseEV = primaryMetric * (primaryMultiple || 0);
   
   // For range: use percentile multiples if available, otherwise estimate ±20%
   const lowMultiple = isPrimaryEBITDA 
@@ -79,16 +142,16 @@ export const calculateBaseEnterpriseValue = (result: ValuationResponse): Calcula
     subtitle: `Primary Method: ${isPrimaryEBITDA ? 'EBITDA Multiple' : 'Revenue Multiple'}`,
     formula: `${metricName} × ${multipleName} = Enterprise Value`,
     inputs: [
-      { label: metricName, value: formatCurrency(primaryMetric || 0), highlight: true },
+      { label: metricName, value: formatCurrency(primaryMetric), highlight: true },
       { label: `${multipleName} (Industry Median)`, value: `${(primaryMultiple || 0).toFixed(2)}x`, highlight: true },
       { label: 'P25 Multiple (Low)', value: `${lowMultiple.toFixed(2)}x` },
       { label: 'P75 Multiple (High)', value: `${highMultiple.toFixed(2)}x` }
     ],
-    calculation: `${formatCurrency(primaryMetric || 0)} × ${(primaryMultiple || 0).toFixed(2)}x = ${formatCurrency(baseEV)}`,
+    calculation: `${formatCurrency(primaryMetric)} × ${(primaryMultiple || 0).toFixed(2)}x = ${formatCurrency(baseEV)}`,
     result: {
-      low: (primaryMetric || 0) * lowMultiple,
+      low: primaryMetric * lowMultiple,
       mid: baseEV,
-      high: (primaryMetric || 0) * highMultiple
+      high: primaryMetric * highMultiple
     },
     color: 'blue',
     icon: '📊',

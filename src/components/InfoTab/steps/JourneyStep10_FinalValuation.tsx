@@ -19,7 +19,8 @@ export const JourneyStep10_FinalValuation: React.FC<JourneyStep10Props> = ({ res
   const finalMid = result.equity_value_mid;
   const finalHigh = result.equity_value_high;
   const confidenceScore = result.confidence_score || 0;
-  const confidenceLevel = confidenceScore >= 0.8 ? 'HIGH' : confidenceScore >= 0.6 ? 'MEDIUM' : 'LOW';
+  // Backend returns confidence_score as integer 0-100, not decimal 0-1
+  const confidenceLevel = confidenceScore >= 80 ? 'HIGH' : confidenceScore >= 60 ? 'MEDIUM' : 'LOW';
 
   return (
     <StepCard
@@ -80,10 +81,10 @@ export const JourneyStep10_FinalValuation: React.FC<JourneyStep10Props> = ({ res
                       confidenceLevel === 'MEDIUM' ? 'bg-yellow-500' :
                       'bg-red-500'
                     }`}
-                    style={{ width: `${confidenceScore * 100}%` }}
+                    style={{ width: `${confidenceScore}%` }}
                   />
                 </div>
-                <span className="text-sm font-bold text-gray-900">{(confidenceScore * 100).toFixed(0)}%</span>
+                <span className="text-sm font-bold text-gray-900">{confidenceScore.toFixed(0)}%</span>
               </div>
             </div>
           </div>
@@ -126,7 +127,7 @@ export const JourneyStep10_FinalValuation: React.FC<JourneyStep10Props> = ({ res
               </li>
               <li className="flex items-start gap-2">
                 <span className="flex-shrink-0 w-6 h-6 rounded-full bg-indigo-100 text-indigo-700 flex items-center justify-center text-xs font-bold">{result.multiples_valuation?.owner_concentration ? '8' : '7'}</span>
-                <span className="text-gray-700"><strong>Confidence Analysis:</strong> Scored data quality at {(confidenceScore * 100).toFixed(0)}%</span>
+                <span className="text-gray-700"><strong>Confidence Analysis:</strong> Scored data quality at {confidenceScore.toFixed(0)}%</span>
               </li>
               <li className="flex items-start gap-2">
                 <span className="flex-shrink-0 w-6 h-6 rounded-full bg-indigo-100 text-indigo-700 flex items-center justify-center text-xs font-bold">{result.multiples_valuation?.owner_concentration ? '9' : '8'}</span>

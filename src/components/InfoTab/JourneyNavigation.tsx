@@ -73,7 +73,8 @@ export const JourneyNavigation: React.FC<JourneyNavigationProps> = ({ steps, act
       </div>
 
       {/* Desktop: Vertical Sidebar - Fixed position within container */}
-      <div className="hidden lg:block fixed top-24 w-64 bg-white border border-gray-200 rounded-lg shadow-sm p-4 max-h-[calc(100vh-8rem)] overflow-y-auto">
+      {/* Position accounts for: main navbar (64px/4rem) + journey header (~110px on desktop) = ~174px total */}
+      <div className="hidden lg:block fixed top-44 w-64 bg-white border border-gray-200 rounded-lg shadow-sm p-4 max-h-[calc(100vh-11rem)] overflow-y-auto">
         <h3 className="text-sm font-semibold text-gray-900 uppercase tracking-wide mb-4">
           Calculation Journey
         </h3>
