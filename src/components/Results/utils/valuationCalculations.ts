@@ -652,7 +652,10 @@ export const calculateWeightedAverageStep = (
   
   const dcfValue = dcfStep.result.mid;
   const multiplesValue = multiplesStep.result.mid;
-  const weightedAverage = (dcfValue * dcfWeight) + (multiplesValue * multiplesWeight);
+  // Use equity_value_mid from result as it's the authoritative weighted average from backend
+  // Fallback to calculated value if backend doesn't provide it
+  const weightedAverage = result.equity_value_mid || 
+    ((dcfValue * dcfWeight) + (multiplesValue * multiplesWeight));
   
   const inputs: { label: string; value: string; highlight?: boolean }[] = [
     {

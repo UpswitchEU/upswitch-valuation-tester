@@ -62,10 +62,11 @@ export const MethodologyBreakdown: React.FC<MethodologyBreakdownProps> = ({ resu
   // Use adjusted equity value (not enterprise value) for display clarity
   const multiplesValue = result.multiples_valuation?.adjusted_equity_value || result.multiples_valuation?.ev_ebitda_valuation || 0;
   const enterpriseValue = result.multiples_valuation?.ev_ebitda_valuation || 0; // Keep for reference
-  const finalValue = (dcfValue * dcfWeight) + (multiplesValue * multiplesWeight);
   
-  // Extract valuation range values
-  const equityValueMid = result.equity_value_mid || finalValue;
+  // Use equity_value_mid from backend as source of truth (it's the weighted average when DCF included)
+  // Fallback to calculated weighted average if backend doesn't provide it
+  const equityValueMid = result.equity_value_mid || ((dcfValue * dcfWeight) + (multiplesValue * multiplesWeight));
+  const finalValue = equityValueMid; // Use backend value as authoritative
   const equityValueLow = result.equity_value_low || 0;
   const equityValueHigh = result.equity_value_high || 0;
   
