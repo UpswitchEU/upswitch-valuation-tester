@@ -336,6 +336,7 @@ export interface ValuationResponse {
     ebitda_multiple: number;
     revenue_multiple: number;
     pe_multiple: number | null;
+    enterprise_value?: number;  // Optional enterprise value if provided
     
     // Percentile multiples (P25/P50/P75) from comparable companies
     p25_ebitda_multiple?: number;
@@ -361,6 +362,7 @@ export interface ValuationResponse {
       adjustment_factor: number;  // e.g., -0.12 for -12%
       number_of_owners: number;
       number_of_employees: number;
+      risk_level?: string;  // "CRITICAL" | "HIGH" | "MEDIUM" | "LOW"
       calibration?: {  // Optional: if backend sends calibration details
         business_type_id?: string;
         calibration_type?: 'industry-specific' | 'universal';

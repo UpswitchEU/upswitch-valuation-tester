@@ -705,16 +705,16 @@ export const MultiplesTransparencySection: React.FC<MultiplesTransparencySection
                 (Revenue × 60%) + (EBITDA × 40%)
               </p>
               <p className="text-gray-700">
-                ({formatCurrency(revenue * adjustedRevenueMultiple)} × 0.6) + ({formatCurrency(ebitda * adjustedEbitdaMultiple)} × 0.4)
+                ({formatCurrency(revenue * revenueMultiple)} × 0.6) + ({formatCurrency(ebitda * ebitdaMultiple)} × 0.4)
               </p>
               {(() => {
                 // CRITICAL FIX: Calculate weighted average correctly with null/NaN validation
                 // P0: Add defensive checks to prevent NaN propagation
-                const safeRevenueMultiple = isFinite(adjustedRevenueMultiple) && adjustedRevenueMultiple >= 0 
-                  ? adjustedRevenueMultiple 
+                const safeRevenueMultiple = isFinite(revenueMultiple) && revenueMultiple >= 0 
+                  ? revenueMultiple 
                   : 0;
-                const safeEbitdaMultiple = isFinite(adjustedEbitdaMultiple) && adjustedEbitdaMultiple >= 0 
-                  ? adjustedEbitdaMultiple 
+                const safeEbitdaMultiple = isFinite(ebitdaMultiple) && ebitdaMultiple >= 0 
+                  ? ebitdaMultiple 
                   : 0;
                 const safeRevenue = isFinite(revenue) && revenue >= 0 ? revenue : 0;
                 const safeEbitda = isFinite(ebitda) && ebitda >= 0 ? ebitda : 0;

@@ -346,21 +346,22 @@ export const AIAssistedValuation: React.FC<AIAssistedValuationProps> = ({ report
 
   // NEW: Progressive preview generation at data collection milestones
   useEffect(() => {
-    if (conversationContext?.collected_data) {
-      const dataCompleteness = calculateCompleteness(conversationContext.collected_data);
+    const collectedData = conversationContext?.collected_data;
+    if (collectedData) {
+      const dataCompleteness = calculateCompleteness(collectedData);
       
       // Trigger preview at 25%, 50%, 75%, 100% thresholds
       if (dataCompleteness >= 25 && dataCompleteness < 50 && !previewGenerated25) {
-        generateProgressivePreview(conversationContext.collected_data);
+        generateProgressivePreview(collectedData);
         setPreviewGenerated25(true);
       } else if (dataCompleteness >= 50 && dataCompleteness < 75 && !previewGenerated50) {
-        generateProgressivePreview(conversationContext.collected_data);
+        generateProgressivePreview(collectedData);
         setPreviewGenerated50(true);
       } else if (dataCompleteness >= 75 && dataCompleteness < 100 && !previewGenerated75) {
-        generateProgressivePreview(conversationContext.collected_data);
+        generateProgressivePreview(collectedData);
         setPreviewGenerated75(true);
       } else if (dataCompleteness >= 100 && !previewGenerated100) {
-        generateProgressivePreview(conversationContext.collected_data);
+        generateProgressivePreview(collectedData);
         setPreviewGenerated100(true);
       }
     }

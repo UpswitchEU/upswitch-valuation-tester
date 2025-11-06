@@ -92,14 +92,17 @@ class ValuationAPI {
   // =============================================================================
 
   // Start intelligent conversation
+  // NOW USES: Intelligent Triage System with structured flow (matches manual form)
   async startConversation(data: ConversationStartRequest): Promise<ConversationStartResponse> {
-    const response = await this.client.post('/api/valuations/conversation/start', data);
+    // Use intelligent conversation endpoint with structured flow
+    const response = await this.client.post('/api/v1/intelligent-conversation/start', data);
     return response.data;
   }
 
   // Process conversation step
   async conversationStep(data: ConversationStepRequest): Promise<ConversationStepResponse> {
-    const response = await this.client.post('/api/valuations/conversation/step', data);
+    // Continue using streaming endpoint for conversation steps
+    const response = await this.client.post('/api/v1/intelligent-conversation/step', data);
     return response.data;
   }
 

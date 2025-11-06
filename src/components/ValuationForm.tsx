@@ -444,7 +444,7 @@ export const ValuationForm: React.FC = () => {
               step={1}
               error={employeeCountError || undefined}
               touched={!!employeeCountError}
-              required={formData.business_type === 'company' && formData.number_of_owners && formData.number_of_owners > 0}
+              required={formData.business_type === 'company' && !!(formData.number_of_owners && formData.number_of_owners > 0)}
               helpText={`Total workforce converted to full-time equivalents. Part-time employees count proportionally (e.g., 2 half-time = 1 FTE). Excludes contractors and external consultants. Used to assess operational scale and key person risk.${formData.business_type === 'company' && formData.number_of_owners && formData.number_of_owners > 0 ? ' Required when owner count is provided. Owner concentration risk (7-20% discount) cannot be calculated without this data.' : ''}`}
             />
           </div>
