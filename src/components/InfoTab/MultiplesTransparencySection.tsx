@@ -290,7 +290,9 @@ export const MultiplesTransparencySection: React.FC<MultiplesTransparencySection
                   {result.multiples_valuation.primary_multiple_method === 'ebitda_multiple' && ' ⭐'}
                 </h5>
                 <p className="text-2xl font-bold mb-2">
-                  {result.multiples_valuation.ebitda_multiple?.toFixed(2)}x
+                  {result.multiples_valuation.ebitda_multiple != null 
+                    ? `${result.multiples_valuation.ebitda_multiple.toFixed(2)}x`
+                    : 'N/A'}
                 </p>
                 <p className="text-xs text-gray-600">
                   Best for: Profitable companies with &gt;10% EBITDA margin
@@ -314,7 +316,9 @@ export const MultiplesTransparencySection: React.FC<MultiplesTransparencySection
                   {result.multiples_valuation.primary_multiple_method === 'revenue_multiple' && ' ⭐'}
                 </h5>
                 <p className="text-2xl font-bold mb-2">
-                  {result.multiples_valuation.revenue_multiple?.toFixed(2)}x
+                  {result.multiples_valuation.revenue_multiple != null 
+                    ? `${result.multiples_valuation.revenue_multiple.toFixed(2)}x`
+                    : 'N/A'}
                 </p>
                 <p className="text-xs text-gray-600">
                   Best for: Low-margin businesses, SaaS, E-commerce
@@ -337,30 +341,54 @@ export const MultiplesTransparencySection: React.FC<MultiplesTransparencySection
                   <>
                     <div className="flex justify-between">
                       <span className="text-gray-600">EBITDA:</span>
-                      <span className="font-semibold">€{result.current_year_data?.ebitda?.toLocaleString()}</span>
+                      <span className="font-semibold">
+                        {result.current_year_data?.ebitda != null 
+                          ? `€${result.current_year_data.ebitda.toLocaleString()}`
+                          : 'N/A'}
+                      </span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-gray-600">× EBITDA Multiple:</span>
-                      <span className="font-semibold">{result.multiples_valuation.ebitda_multiple?.toFixed(2)}x</span>
+                      <span className="font-semibold">
+                        {result.multiples_valuation.ebitda_multiple != null 
+                          ? `${result.multiples_valuation.ebitda_multiple.toFixed(2)}x`
+                          : 'N/A'}
+                      </span>
                     </div>
                     <div className="flex justify-between pt-2 border-t border-gray-300 font-semibold text-base">
                       <span>Enterprise Value:</span>
-                      <span className="text-blue-700">€{result.multiples_valuation.enterprise_value?.toLocaleString()}</span>
+                      <span className="text-blue-700">
+                        {result.multiples_valuation.enterprise_value != null 
+                          ? `€${result.multiples_valuation.enterprise_value.toLocaleString()}`
+                          : 'N/A'}
+                      </span>
                     </div>
                   </>
                 ) : (
                   <>
                     <div className="flex justify-between">
                       <span className="text-gray-600">Revenue:</span>
-                      <span className="font-semibold">€{result.current_year_data?.revenue?.toLocaleString()}</span>
+                      <span className="font-semibold">
+                        {result.current_year_data?.revenue != null 
+                          ? `€${result.current_year_data.revenue.toLocaleString()}`
+                          : 'N/A'}
+                      </span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-gray-600">× Revenue Multiple:</span>
-                      <span className="font-semibold">{result.multiples_valuation.revenue_multiple?.toFixed(2)}x</span>
+                      <span className="font-semibold">
+                        {result.multiples_valuation.revenue_multiple != null 
+                          ? `${result.multiples_valuation.revenue_multiple.toFixed(2)}x`
+                          : 'N/A'}
+                      </span>
                     </div>
                     <div className="flex justify-between pt-2 border-t border-gray-300 font-semibold text-base">
                       <span>Enterprise Value:</span>
-                      <span className="text-blue-700">€{result.multiples_valuation.enterprise_value?.toLocaleString()}</span>
+                      <span className="text-blue-700">
+                        {result.multiples_valuation.enterprise_value != null 
+                          ? `€${result.multiples_valuation.enterprise_value.toLocaleString()}`
+                          : 'N/A'}
+                      </span>
                     </div>
                   </>
                 )}

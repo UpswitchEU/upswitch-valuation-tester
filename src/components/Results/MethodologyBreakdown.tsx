@@ -404,11 +404,11 @@ export const MethodologyBreakdown: React.FC<MethodologyBreakdownProps> = ({ resu
               
               <div className="space-y-2 text-sm text-gray-600">
                 <div className={result.multiples_valuation?.primary_multiple_method === 'revenue_multiple' ? 'font-semibold text-blue-700' : ''}>
-                  • <Tooltip content="Company valuation divided by annual revenue - used to compare similar companies">Revenue Multiple</Tooltip>: {revenueMultiple.toFixed(1)}x (industry median)
+                  • <Tooltip content="Company valuation divided by annual revenue - used to compare similar companies">Revenue Multiple</Tooltip>: {typeof revenueMultiple === 'number' && !isNaN(revenueMultiple) ? `${revenueMultiple.toFixed(1)}x` : 'N/A'} (industry median)
                   {result.multiples_valuation?.primary_multiple_method === 'revenue_multiple' && ' ⭐ PRIMARY'}
                 </div>
                 <div className={result.multiples_valuation?.primary_multiple_method === 'ebitda_multiple' ? 'font-semibold text-blue-700' : ''}>
-                  • <Tooltip content="Earnings Before Interest, Taxes, Depreciation, and Amortization - a measure of operating profitability">EBITDA</Tooltip> Multiple: {ebitdaMultiple.toFixed(1)}x (industry median)
+                  • <Tooltip content="Earnings Before Interest, Taxes, Depreciation, and Amortization - a measure of operating profitability">EBITDA</Tooltip> Multiple: {typeof ebitdaMultiple === 'number' && !isNaN(ebitdaMultiple) ? `${ebitdaMultiple.toFixed(1)}x` : 'N/A'} (industry median)
                   {result.multiples_valuation?.primary_multiple_method === 'ebitda_multiple' && ' ⭐ PRIMARY'}
                 </div>
                 <div>• Comparables: {comparablesCount} similar companies</div>
