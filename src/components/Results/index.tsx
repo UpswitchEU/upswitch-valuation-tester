@@ -9,6 +9,7 @@ import { CompetitiveComparison } from './CompetitiveComparison';
 import { GrowthMetrics } from './GrowthMetrics';
 import { MethodologyBreakdown } from './MethodologyBreakdown';
 import { OwnerConcentrationAnalysis } from './OwnerConcentrationAnalysis';
+import { OwnerConcentrationSummaryCard } from './OwnerConcentrationSummaryCard';
 import { OwnershipAdjustments } from './OwnershipAdjustments';
 import { ResultsHeader } from './ResultsHeader';
 import { RiskFactors } from './RiskFactors';
@@ -37,10 +38,17 @@ export const Results: React.FC = () => {
       {/* Main Results Header */}
       <ResultsHeader result={result} />
       
+      {/* Owner Concentration Summary Card - Prominent display in main preview */}
+      {result.multiples_valuation?.owner_concentration && (
+        <ErrorBoundary fallback={<div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg text-yellow-700">Error loading owner concentration summary</div>}>
+          <OwnerConcentrationSummaryCard result={result} />
+        </ErrorBoundary>
+      )}
+      
       {/* Ownership Adjustments */}
       <OwnershipAdjustments result={result} />
       
-      {/* Owner Concentration Analysis (if applicable) */}
+      {/* Owner Concentration Analysis (if applicable) - Detailed analysis */}
       {result.multiples_valuation?.owner_concentration && (
         <ErrorBoundary fallback={<div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg text-yellow-700">Error loading owner concentration analysis</div>}>
           <OwnerConcentrationAnalysis result={result} />

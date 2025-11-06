@@ -191,6 +191,9 @@ export const useValuationStore = create<ValuationStore>((set, get) => ({
       console.log('[DIAGNOSTIC-FRONTEND] _internal_dcf_preference:', formData._internal_dcf_preference);
       console.log('[DIAGNOSTIC-FRONTEND] _internal_multiples_preference:', formData._internal_multiples_preference);
       console.log('[DIAGNOSTIC-FRONTEND] _internal_owner_dependency_impact:', formData._internal_owner_dependency_impact);
+      console.log('[DIAGNOSTIC-FRONTEND] number_of_employees (raw):', formData.number_of_employees);
+      console.log('[DIAGNOSTIC-FRONTEND] number_of_owners (raw):', formData.number_of_owners);
+      console.log('[DIAGNOSTIC-FRONTEND] business_type:', formData.business_type);
       
       const request: ValuationRequest = {
         company_name: companyName,
@@ -225,12 +228,17 @@ export const useValuationStore = create<ValuationStore>((set, get) => ({
             : [], // Don't send historical data if current data is invalid
         // Only include owner concentration fields for companies (not sole traders)
         // Sole traders are inherently owner-operated, so owner concentration analysis doesn't apply
+        // CRITICAL FIX: Check for undefined/null explicitly, not falsy (0 is valid!)
         number_of_employees: (formData.business_type === 'sole-trader')
           ? undefined 
-          : (formData.number_of_employees && formData.number_of_employees >= 0 ? formData.number_of_employees : undefined),
+          : (formData.number_of_employees !== undefined && formData.number_of_employees !== null && formData.number_of_employees >= 0 
+              ? formData.number_of_employees 
+              : undefined),
         number_of_owners: (formData.business_type === 'sole-trader')
           ? undefined 
-          : (formData.number_of_owners && formData.number_of_owners >= 1 ? formData.number_of_owners : 1),
+          : (formData.number_of_owners !== undefined && formData.number_of_owners !== null && formData.number_of_owners >= 1 
+              ? formData.number_of_owners 
+              : 1),
         recurring_revenue_percentage: recurringRevenue,
         use_dcf: true,
         use_multiples: true,
@@ -251,6 +259,8 @@ export const useValuationStore = create<ValuationStore>((set, get) => ({
       
       // DIAGNOSTIC: Log business_context after building request
       console.log('[DIAGNOSTIC-FRONTEND] business_context in request:', JSON.stringify(request.business_context));
+      console.log('[DEBUG-OWNER-CONCENTRATION] number_of_employees being sent:', request.number_of_employees);
+      console.log('[DEBUG-OWNER-CONCENTRATION] number_of_owners being sent:', request.number_of_owners);
       
       storeLogger.info('Sending manual valuation request (FREE)', { 
         companyName: request.company_name,

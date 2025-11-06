@@ -260,10 +260,122 @@ export const MultiplesTransparencySection: React.FC<MultiplesTransparencySection
         </div>
       </ExpandableSection>
 
+      {/* Primary Multiple Method Section */}
+      {result.multiples_valuation?.primary_multiple_method && (
+        <ExpandableSection
+          title="1b. Primary Valuation Multiple"
+          value={result.multiples_valuation.primary_multiple_method === 'ebitda_multiple' ? 'EBITDA Multiple' : 'Revenue Multiple'}
+          isExpanded={expandedSections.has('primary-method')}
+          onToggle={() => toggleSection('primary-method')}
+          color="blue"
+        >
+          <div className="space-y-4">
+            <div className="bg-blue-50 p-4 rounded-lg border-l-4 border-blue-500">
+              <h4 className="font-semibold text-gray-900 mb-2">Methodology Selection</h4>
+              <p className="text-sm text-gray-700">
+                {result.multiples_valuation.primary_multiple_reason || 
+                 'EBITDA multiple is the standard approach for profitable companies'}
+              </p>
+            </div>
+            
+            {/* Show both methods with primary highlighted */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className={`p-4 rounded-lg border-2 ${
+                result.multiples_valuation.primary_multiple_method === 'ebitda_multiple' 
+                  ? 'border-blue-500 bg-blue-50' 
+                  : 'border-gray-200 bg-gray-50'
+              }`}>
+                <h5 className="font-semibold mb-2">
+                  EBITDA Multiple
+                  {result.multiples_valuation.primary_multiple_method === 'ebitda_multiple' && ' ⭐'}
+                </h5>
+                <p className="text-2xl font-bold mb-2">
+                  {result.multiples_valuation.ebitda_multiple?.toFixed(2)}x
+                </p>
+                <p className="text-xs text-gray-600">
+                  Best for: Profitable companies with &gt;10% EBITDA margin
+                </p>
+                {result.multiples_valuation.primary_multiple_method === 'ebitda_multiple' && (
+                  <div className="mt-2 pt-2 border-t border-blue-300">
+                    <p className="text-xs text-blue-700 font-semibold">
+                      ✓ Used as PRIMARY method for this valuation
+                    </p>
+                  </div>
+                )}
+              </div>
+              
+              <div className={`p-4 rounded-lg border-2 ${
+                result.multiples_valuation.primary_multiple_method === 'revenue_multiple' 
+                  ? 'border-blue-500 bg-blue-50' 
+                  : 'border-gray-200 bg-gray-50'
+              }`}>
+                <h5 className="font-semibold mb-2">
+                  Revenue Multiple
+                  {result.multiples_valuation.primary_multiple_method === 'revenue_multiple' && ' ⭐'}
+                </h5>
+                <p className="text-2xl font-bold mb-2">
+                  {result.multiples_valuation.revenue_multiple?.toFixed(2)}x
+                </p>
+                <p className="text-xs text-gray-600">
+                  Best for: Low-margin businesses, SaaS, E-commerce
+                </p>
+                {result.multiples_valuation.primary_multiple_method === 'revenue_multiple' && (
+                  <div className="mt-2 pt-2 border-t border-blue-300">
+                    <p className="text-xs text-blue-700 font-semibold">
+                      ✓ Used as PRIMARY method for this valuation
+                    </p>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Enterprise Value Calculation */}
+            <div className="bg-white border border-gray-200 rounded-lg p-4">
+              <h4 className="font-semibold text-gray-900 mb-3">Enterprise Value Calculation</h4>
+              <div className="space-y-2 text-sm font-mono">
+                {result.multiples_valuation.primary_multiple_method === 'ebitda_multiple' ? (
+                  <>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">EBITDA:</span>
+                      <span className="font-semibold">€{result.current_year_data?.ebitda?.toLocaleString()}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">× EBITDA Multiple:</span>
+                      <span className="font-semibold">{result.multiples_valuation.ebitda_multiple?.toFixed(2)}x</span>
+                    </div>
+                    <div className="flex justify-between pt-2 border-t border-gray-300 font-semibold text-base">
+                      <span>Enterprise Value:</span>
+                      <span className="text-blue-700">€{result.multiples_valuation.enterprise_value?.toLocaleString()}</span>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Revenue:</span>
+                      <span className="font-semibold">€{result.current_year_data?.revenue?.toLocaleString()}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">× Revenue Multiple:</span>
+                      <span className="font-semibold">{result.multiples_valuation.revenue_multiple?.toFixed(2)}x</span>
+                    </div>
+                    <div className="flex justify-between pt-2 border-t border-gray-300 font-semibold text-base">
+                      <span>Enterprise Value:</span>
+                      <span className="text-blue-700">€{result.multiples_valuation.enterprise_value?.toLocaleString()}</span>
+                    </div>
+                  </>
+                )}
+              </div>
+            </div>
+          </div>
+        </ExpandableSection>
+      )}
+
       {/* Owner Concentration Adjustment Section */}
       {result.multiples_valuation?.owner_concentration && 
-       result.multiples_valuation.owner_concentration.number_of_employees > 0 && (() => {
+       result.multiples_valuation.owner_concentration.number_of_employees !== undefined && 
+       result.multiples_valuation.owner_concentration.number_of_employees !== null && (() => {
         const ownerConcentration = result.multiples_valuation.owner_concentration;
+        const isFullyOwnerOperated = ownerConcentration.number_of_employees === 0;
         const calibration = ownerConcentration.calibration;
         
         // Calculate unadjusted multiples if not provided
@@ -282,15 +394,52 @@ export const MultiplesTransparencySection: React.FC<MultiplesTransparencySection
         
         return (
           <ExpandableSection
-            title="1b. Owner Concentration Risk Adjustment"
+            title="1c. Owner Concentration Risk Adjustment"
             value={`${Math.abs(ownerConcentration.adjustment_factor * 100).toFixed(0)}% discount`}
             isExpanded={expandedSections.has('owner-concentration')}
             onToggle={() => toggleSection('owner-concentration')}
             color="green"
           >
             <div className="space-y-6">
+              {/* Critical Warning Banner for 100% Owner-Operated */}
+              {isFullyOwnerOperated && (
+                <div className="bg-red-50 border-2 border-red-500 rounded-lg p-4">
+                  <div className="flex items-start gap-3">
+                    <div className="flex-shrink-0 mt-0.5">
+                      <svg className="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                      </svg>
+                    </div>
+                    <div className="flex-1">
+                      <h4 className="text-red-900 font-bold text-lg mb-2">⚠️ 100% Owner-Operated Business - CRITICAL Key Person Risk</h4>
+                      <p className="text-red-800 text-sm mb-3">
+                        This business has <strong>zero non-owner employees</strong>, meaning ALL operational capacity, client relationships, and technical expertise reside with {ownerConcentration.number_of_owners} owner{ownerConcentration.number_of_owners > 1 ? 's' : ''}. This represents the <strong>maximum possible key person risk</strong>.
+                      </p>
+                      <div className="bg-white border border-red-200 rounded p-3 mb-3">
+                        <p className="text-red-900 text-sm font-semibold mb-2">Business Buyer Concerns:</p>
+                        <ul className="text-sm text-red-800 space-y-1 list-disc list-inside">
+                          <li>❌ <strong>No management depth</strong> or operational redundancy</li>
+                          <li>❌ <strong>Zero transferability</strong> - buyer must immediately replace all capacity</li>
+                          <li>❌ <strong>Total revenue dependency</strong> on owner knowledge/relationships</li>
+                          <li>❌ <strong>No succession team</strong> to transition the business to</li>
+                        </ul>
+                      </div>
+                      <div className="bg-green-50 border border-green-300 rounded p-3">
+                        <p className="text-green-900 text-sm font-semibold mb-2">💡 How to Increase Value by 50-100%:</p>
+                        <ul className="text-sm text-green-800 space-y-1">
+                          <li>✅ <strong>Hire 2-3 non-owner employees</strong> to reduce owner ratio to &lt;30% (+€150K-200K)</li>
+                          <li>✅ <strong>Document all processes</strong> and systematize operations (+€50K-75K)</li>
+                          <li>✅ <strong>Build a management layer</strong> to demonstrate business runs without owners (+€100K-150K)</li>
+                          <li>✅ <strong>Grow revenue</strong> past €1.5M to reduce size discount (+€75K)</li>
+                        </ul>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+              
               {/* Ratio Calculation */}
-              <div className="bg-yellow-50 p-4 rounded-lg border-l-4 border-yellow-500">
+              <div className={`p-4 rounded-lg border-l-4 ${isFullyOwnerOperated ? 'bg-red-50 border-red-500' : 'bg-yellow-50 border-yellow-500'}`}>
                 <h4 className="font-semibold text-gray-900 mb-2">Owner/Employee Ratio Calculation</h4>
                 <div className="space-y-2 text-sm font-mono">
                   <div className="flex justify-between">
@@ -307,7 +456,15 @@ export const MultiplesTransparencySection: React.FC<MultiplesTransparencySection
                   </div>
                 </div>
                 <p className="text-xs text-gray-600 mt-2">
-                  Formula: {ownerConcentration.number_of_owners} ÷ {ownerConcentration.number_of_employees} = {ownerConcentration.ratio.toFixed(3)}
+                  {isFullyOwnerOperated ? (
+                    <>
+                      <strong>Formula:</strong> {ownerConcentration.number_of_owners} owners ÷ 0 employees = 1.0 (100% owner-operated, maximum risk)
+                    </>
+                  ) : (
+                    <>
+                      Formula: {ownerConcentration.number_of_owners} ÷ {ownerConcentration.number_of_employees} = {ownerConcentration.ratio.toFixed(3)}
+                    </>
+                  )}
                 </p>
               </div>
               

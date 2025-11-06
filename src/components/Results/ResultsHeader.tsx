@@ -143,7 +143,12 @@ export const ResultsHeader: React.FC<ResultsHeaderProps> = ({ result }) => {
             </div>
           </div>
         
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Enterprise Value</h3>
+        <div className="mb-4">
+          <h3 className="text-lg font-semibold text-gray-900">Valuation Range</h3>
+          <p className="text-xs text-gray-500 mt-1">
+            Equity value after all adjustments (size, liquidity, owner concentration)
+          </p>
+        </div>
         
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 mb-6">
           <div className="text-center p-3 sm:p-4 bg-gray-50 rounded">

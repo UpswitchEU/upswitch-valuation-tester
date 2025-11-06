@@ -387,9 +387,30 @@ export const MethodologyBreakdown: React.FC<MethodologyBreakdownProps> = ({ resu
           {multiplesWeight > 0 && (
             <div>
               <h4 className="font-medium text-gray-900 mb-3">Market Multiples</h4>
+              
+              {/* Primary Method Indicator */}
+              {result.multiples_valuation?.primary_multiple_method && (
+                <div className="mb-3 p-2 bg-blue-50 border border-blue-200 rounded">
+                  <p className="text-sm font-semibold text-blue-900">
+                    Primary Method: {result.multiples_valuation.primary_multiple_method === 'ebitda_multiple' ? 'EBITDA Multiple' : 'Revenue Multiple'}
+                  </p>
+                  {result.multiples_valuation.primary_multiple_reason && (
+                    <p className="text-xs text-blue-700 mt-1">
+                      {result.multiples_valuation.primary_multiple_reason}
+                    </p>
+                  )}
+                </div>
+              )}
+              
               <div className="space-y-2 text-sm text-gray-600">
-                <div>• <Tooltip content="Company valuation divided by annual revenue - used to compare similar companies">Revenue Multiple</Tooltip>: {revenueMultiple.toFixed(1)}x (industry median)</div>
-                <div>• <Tooltip content="Earnings Before Interest, Taxes, Depreciation, and Amortization - a measure of operating profitability">EBITDA</Tooltip> Multiple: {ebitdaMultiple.toFixed(1)}x (industry median)</div>
+                <div className={result.multiples_valuation?.primary_multiple_method === 'revenue_multiple' ? 'font-semibold text-blue-700' : ''}>
+                  • <Tooltip content="Company valuation divided by annual revenue - used to compare similar companies">Revenue Multiple</Tooltip>: {revenueMultiple.toFixed(1)}x (industry median)
+                  {result.multiples_valuation?.primary_multiple_method === 'revenue_multiple' && ' ⭐ PRIMARY'}
+                </div>
+                <div className={result.multiples_valuation?.primary_multiple_method === 'ebitda_multiple' ? 'font-semibold text-blue-700' : ''}>
+                  • <Tooltip content="Earnings Before Interest, Taxes, Depreciation, and Amortization - a measure of operating profitability">EBITDA</Tooltip> Multiple: {ebitdaMultiple.toFixed(1)}x (industry median)
+                  {result.multiples_valuation?.primary_multiple_method === 'ebitda_multiple' && ' ⭐ PRIMARY'}
+                </div>
                 <div>• Comparables: {comparablesCount} similar companies</div>
                 <div>• Geographic Focus: European SMEs</div>
               </div>
