@@ -87,6 +87,50 @@ export const ValuationForm: React.FC = () => {
     debouncedQuickCalc(formData);
   }, [formData.revenue, formData.ebitda, formData.industry, formData.country_code]);
 
+  // Convert historicalInputs to formData.historical_years_data
+  // Backend requires chronological order (oldest first), but UI shows most recent first
+  useEffect(() => {
+    const currentYear = new Date().getFullYear();
+    const historicalYears: { year: number; revenue: number; ebitda: number }[] = [];
+    
+    // Extract all years from historicalInputs
+    const yearSet = new Set<number>();
+    Object.keys(historicalInputs).forEach(key => {
+      const match = key.match(/^(\d{4})_(revenue|ebitda)$/);
+      if (match) {
+        const year = parseInt(match[1]);
+        if (year >= 2000 && year <= currentYear) {
+          yearSet.add(year);
+        }
+      }
+    });
+    
+    // Build historical_years_data array
+    yearSet.forEach(year => {
+      const revenueKey = `${year}_revenue`;
+      const ebitdaKey = `${year}_ebitda`;
+      const revenue = historicalInputs[revenueKey];
+      const ebitda = historicalInputs[ebitdaKey];
+      
+      // Only include if at least one field has a value
+      if (revenue || ebitda) {
+        historicalYears.push({
+          year,
+          revenue: revenue ? parseFloat(revenue.replace(/,/g, '')) || 0 : 0,
+          ebitda: ebitda ? parseFloat(ebitda.replace(/,/g, '')) || 0 : 0,
+        });
+      }
+    });
+    
+    // Sort chronologically (oldest first) for backend compatibility
+    historicalYears.sort((a, b) => a.year - b.year);
+    
+    // Update formData with sorted historical data
+    updateFormData({
+      historical_years_data: historicalYears.length > 0 ? historicalYears : undefined
+    });
+  }, [historicalInputs, updateFormData]);
+
   // Clear owner concentration fields when switching to sole-trader
   // Set defaults when switching to company
   useEffect(() => {
@@ -470,7 +514,7 @@ export const ValuationForm: React.FC = () => {
                 const isCritical = formData.number_of_employees === 0;
                 
                 return (
-                  <div className={`mt-6 p-3 rounded-lg border-l-4 ${isCritical ? 'bg-red-50 border-red-500' : 'bg-yellow-50 border-yellow-500'}`}>
+                  <div className={`p-3 rounded-lg border-l-4 ${isCritical ? 'bg-red-50 border-red-500' : 'bg-yellow-50 border-yellow-500'}`}>
                     <div className="flex items-start gap-2">
                       <svg className={`w-5 h-5 flex-shrink-0 mt-0.5 ${isCritical ? 'text-red-600' : 'text-yellow-600'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
@@ -648,60 +692,62 @@ export const ValuationForm: React.FC = () => {
       </div>
 
       {/* Data Quality Progress */}
-      <div className="bg-zinc-800/50 rounded-lg p-6 border border-zinc-700">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-sm font-semibold text-zinc-300">Data Quality</h3>
-          <span className="text-xs text-zinc-400">
-            {(() => {
-              let score = 0;
-              if (formData.revenue && formData.ebitda) score += 40;
-              if (formData.industry) score += 20;
-              if (formData.business_model) score += 20;
-              if (formData.founding_year) score += 10;
-              if (Object.keys(historicalInputs).length > 0) score += 10;
-              return `${score}%`;
-            })()}
-          </span>
-        </div>
-        <div className="w-full bg-zinc-700 rounded-full h-2">
-          <div 
-            className="bg-gradient-to-r from-green-500 to-blue-500 h-2 rounded-full transition-all duration-300"
-            style={{ 
-              width: `${(() => {
+      <div className="space-y-6">
+        <div className="bg-zinc-800/50 rounded-lg p-6 border border-zinc-700">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-sm font-semibold text-zinc-300">Data Quality</h3>
+            <span className="text-xs text-zinc-400">
+              {(() => {
                 let score = 0;
                 if (formData.revenue && formData.ebitda) score += 40;
                 if (formData.industry) score += 20;
                 if (formData.business_model) score += 20;
                 if (formData.founding_year) score += 10;
                 if (Object.keys(historicalInputs).length > 0) score += 10;
-                return score;
-              })()}%` 
-            }}
-          />
-        </div>
-        <div className="mt-2 text-xs text-zinc-400 space-y-1">
-          {formData.revenue && formData.ebitda && <div className="text-green-400">✓ Revenue & EBITDA provided</div>}
-          {formData.industry && (
-            <div className="text-green-400">
-              ✓ Industry selected
-              {isValidatingIndustry && <span className="ml-2 text-yellow-400">(validating...)</span>}
-            </div>
-          )}
-          {industryValidationError && (
-            <div className="text-yellow-400">
-              ⚠️ {industryValidationError}
-            </div>
-          )}
-          {formData.business_model && <div className="text-green-400">✓ Business model selected</div>}
-          {formData.founding_year && <div className="text-green-400">✓ Founding year provided</div>}
-          {Object.keys(historicalInputs).length === 0 && (
-            <div className="text-yellow-400">
-              ⚠️ No historical data (reduces confidence by 15%)
-            </div>
-          )}
-          {Object.keys(historicalInputs).length > 0 && (
-            <div className="text-green-400">✓ Historical data provided</div>
-          )}
+                return `${score}%`;
+              })()}
+            </span>
+          </div>
+          <div className="w-full bg-zinc-700 rounded-full h-2">
+            <div 
+              className="bg-gradient-to-r from-green-500 to-blue-500 h-2 rounded-full transition-all duration-300"
+              style={{ 
+                width: `${(() => {
+                  let score = 0;
+                  if (formData.revenue && formData.ebitda) score += 40;
+                  if (formData.industry) score += 20;
+                  if (formData.business_model) score += 20;
+                  if (formData.founding_year) score += 10;
+                  if (Object.keys(historicalInputs).length > 0) score += 10;
+                  return score;
+                })()}%` 
+              }}
+            />
+          </div>
+          <div className="mt-2 text-xs text-zinc-400 space-y-1">
+            {formData.revenue && formData.ebitda && <div className="text-green-400">✓ Revenue & EBITDA provided</div>}
+            {formData.industry && (
+              <div className="text-green-400">
+                ✓ Industry selected
+                {isValidatingIndustry && <span className="ml-2 text-yellow-400">(validating...)</span>}
+              </div>
+            )}
+            {industryValidationError && (
+              <div className="text-yellow-400">
+                ⚠️ {industryValidationError}
+              </div>
+            )}
+            {formData.business_model && <div className="text-green-400">✓ Business model selected</div>}
+            {formData.founding_year && <div className="text-green-400">✓ Founding year provided</div>}
+            {Object.keys(historicalInputs).length === 0 && (
+              <div className="text-yellow-400">
+                ⚠️ No historical data (reduces confidence by 15%)
+              </div>
+            )}
+            {Object.keys(historicalInputs).length > 0 && (
+              <div className="text-green-400">✓ Historical data provided</div>
+            )}
+          </div>
         </div>
       </div>
 
@@ -723,6 +769,7 @@ export const ValuationForm: React.FC = () => {
           onChange={setHistoricalInputs}
           onBlur={() => {}}
           foundingYear={formData.founding_year}
+          currentYear={new Date().getFullYear()}
         />
       </div>
 

@@ -342,16 +342,37 @@ export const CustomBusinessTypeSearch: React.FC<CustomBusinessTypeSearchProps> =
 
       {/* Selected type info */}
       {selectedType && !isOpen && (
-        <div className="mt-2 text-sm text-gray-500 bg-gray-50 border border-gray-200 rounded-lg p-3">
-          <div className="flex items-start gap-2">
-            <span className="text-lg">{selectedType.icon}</span>
-            <div className="flex-1">
-              <div className="text-gray-700 font-medium">{selectedType.description}</div>
-              <div className="mt-1 text-xs">
-                <span className="font-semibold">Industry:</span> {selectedType.industry || selectedType.industryMapping}
-                {selectedType.category && (
-                  <> • <span className="font-semibold">Category:</span> {selectedType.category}</>
-                )}
+        <div className="mt-2 relative overflow-hidden rounded-xl bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 border border-blue-200/60 shadow-sm">
+          {/* Decorative accent */}
+          <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500"></div>
+          
+          <div className="p-4">
+            <div className="flex items-start gap-3">
+              {/* Icon badge */}
+              <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-sm">
+                <span className="text-xl">{selectedType.icon}</span>
+              </div>
+              
+              <div className="flex-1 min-w-0">
+                <div className="text-base font-semibold text-gray-900 mb-1.5 leading-tight">
+                  {selectedType.description}
+                </div>
+                <div className="flex flex-wrap items-center gap-2 text-xs">
+                  <span className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-white/70 backdrop-blur-sm border border-blue-200/50 text-gray-700">
+                    <svg className="w-3 h-3 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                    </svg>
+                    <span className="font-medium text-gray-900">{selectedType.industry || selectedType.industryMapping}</span>
+                  </span>
+                  {selectedType.category && (
+                    <span className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-white/70 backdrop-blur-sm border border-indigo-200/50 text-gray-700">
+                      <svg className="w-3 h-3 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
+                      </svg>
+                      <span className="font-medium text-gray-900">{selectedType.category}</span>
+                    </span>
+                  )}
+                </div>
               </div>
             </div>
           </div>
