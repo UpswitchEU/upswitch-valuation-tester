@@ -178,12 +178,13 @@ export const ValuationForm: React.FC = () => {
     e.preventDefault();
     
     // Validate employee count when owner count is provided
+    // NOTE: 0 employees is valid when there are only owner-managers (no other staff)
     if (formData.business_type === 'company' && 
         formData.number_of_owners && 
         formData.number_of_owners > 0 && 
-        (!formData.number_of_employees || formData.number_of_employees === 0)) {
-      setEmployeeCountError("Employee count is required when owner count is provided to calculate owner concentration risk");
-      toast.error("Please provide employee count to calculate owner concentration risk");
+        formData.number_of_employees === undefined) {
+      setEmployeeCountError("Employee count is required when owner count is provided to calculate owner concentration risk. Enter 0 if there are no employees besides the owner-managers.");
+      toast.error("Please provide employee count (0 is valid if only owner-managers)");
       return;
     }
     
@@ -431,10 +432,12 @@ export const ValuationForm: React.FC = () => {
               placeholder="e.g., 12 (include part-time as FTE)"
               value={formData.number_of_employees || ''}
               onChange={(e) => {
-                const value = parseInt(e.target.value) || undefined;
+                const inputValue = e.target.value;
+                // Allow empty string, 0, or positive numbers
+                const value = inputValue === '' ? undefined : (parseInt(inputValue) >= 0 ? parseInt(inputValue) : undefined);
                 updateFormData({ number_of_employees: value });
-                // Clear error when user starts typing
-                if (employeeCountError && value) {
+                // Clear error when user provides a valid value (including 0)
+                if (employeeCountError && value !== undefined) {
                   setEmployeeCountError(null);
                 }
               }}
@@ -445,7 +448,7 @@ export const ValuationForm: React.FC = () => {
               error={employeeCountError || undefined}
               touched={!!employeeCountError}
               required={formData.business_type === 'company' && !!(formData.number_of_owners && formData.number_of_owners > 0)}
-              helpText={`Total workforce converted to full-time equivalents. Part-time employees count proportionally (e.g., 2 half-time = 1 FTE). Excludes contractors and external consultants. Used to assess operational scale and key person risk.${formData.business_type === 'company' && formData.number_of_owners && formData.number_of_owners > 0 ? ' Required when owner count is provided. Owner concentration risk (7-20% discount) cannot be calculated without this data.' : ''}`}
+              helpText={`Total workforce converted to full-time equivalents. Part-time employees count proportionally (e.g., 2 half-time = 1 FTE). Excludes contractors and external consultants. Enter 0 if there are no employees besides the owner-managers. Used to assess operational scale and key person risk.${formData.business_type === 'company' && formData.number_of_owners && formData.number_of_owners > 0 ? ' Required when owner count is provided. Owner concentration risk (7-20% discount) cannot be calculated without this data. 0 is a valid value when there are only owner-managers.' : ''}`}
             />
           </div>
         )}
