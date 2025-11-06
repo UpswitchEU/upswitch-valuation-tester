@@ -409,10 +409,18 @@ export const calculateEVToEquityConversion = (result: ValuationResponse, previou
   const equityMid = previousStep.result.mid - netDebt;
   const equityHigh = previousStep.result.high - netDebt;
   
+  // Check if DCF is included to provide context-aware explanation
+  const dcfWeight = result.dcf_weight || 0;
+  const isDCFIncluded = dcfWeight > 0 && result.dcf_valuation;
+  
+  const explanation = isDCFIncluded
+    ? 'This is the Multiples-only equity value after all adjustments. In the next step, this value will be combined with the DCF equity value using weighted averages to create the final base valuation.'
+    : 'Enterprise Value represents the total value of the company. Equity Value is what shareholders own after accounting for debt obligations and cash holdings. This is the final base equity value before applying the range methodology.';
+  
   return {
     stepNumber: previousStep.stepNumber + 1,
     title: 'Enterprise Value to Equity Value',
-    subtitle: 'Converting to shareholder value',
+    subtitle: isDCFIncluded ? 'Multiples Equity Value (Before Combination)' : 'Converting to shareholder value',
     formula: 'Equity Value = Enterprise Value - Net Debt',
     inputs: [
       { label: 'Enterprise Value (After Adjustments)', value: formatCurrency(previousStep.result.mid), highlight: true },
@@ -429,7 +437,7 @@ export const calculateEVToEquityConversion = (result: ValuationResponse, previou
     adjustmentPercent: 0,
     color: 'blue',
     icon: '💼',
-    explanation: 'Enterprise Value represents the total value of the company. Equity Value is what shareholders own after accounting for debt obligations and cash holdings.'
+    explanation
   };
 };
 
@@ -688,8 +696,8 @@ export const calculateWeightedAverageStep = (
   return {
     stepNumber: dcfStep.stepNumber + 1, // After both methodologies
     title: 'Methodology Combination',
-    subtitle: 'Weighted Average of DCF and Multiples',
-    formula: 'Final Value = (DCF Value × DCF Weight) + (Multiples Value × Multiples Weight)',
+    subtitle: 'Final Base Value: Weighted Average of DCF and Multiples',
+    formula: 'Final Base Value = (DCF Value × DCF Weight) + (Multiples Value × Multiples Weight)',
     inputs,
     calculation,
     result: {
@@ -699,7 +707,7 @@ export const calculateWeightedAverageStep = (
     },
     color: 'green',
     icon: '⚖️',
-    explanation: 'The final valuation combines DCF and Multiples methodologies using weighted averages. This approach balances intrinsic value (DCF) with market comparables (Multiples) for a more robust estimate.'
+    explanation: 'This is the FINAL base equity value after combining both methodologies. The weighted average balances intrinsic value (DCF) with market comparables (Multiples). The range methodology (confidence spread or multiple dispersion) is then applied to this combined value to generate the final Low/Mid/High estimates shown below.'
   };
 };
 
