@@ -695,58 +695,58 @@ export const ValuationForm: React.FC = () => {
       <div className="space-y-6">
         <div className="bg-zinc-800/50 rounded-lg p-6 border border-zinc-700">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-sm font-semibold text-zinc-300">Data Quality</h3>
-            <span className="text-xs text-zinc-400">
-              {(() => {
+          <h3 className="text-sm font-semibold text-zinc-300">Data Quality</h3>
+          <span className="text-xs text-zinc-400">
+            {(() => {
+              let score = 0;
+              if (formData.revenue && formData.ebitda) score += 40;
+              if (formData.industry) score += 20;
+              if (formData.business_model) score += 20;
+              if (formData.founding_year) score += 10;
+              if (Object.keys(historicalInputs).length > 0) score += 10;
+              return `${score}%`;
+            })()}
+          </span>
+        </div>
+        <div className="w-full bg-zinc-700 rounded-full h-2">
+          <div 
+            className="bg-gradient-to-r from-green-500 to-blue-500 h-2 rounded-full transition-all duration-300"
+            style={{ 
+              width: `${(() => {
                 let score = 0;
                 if (formData.revenue && formData.ebitda) score += 40;
                 if (formData.industry) score += 20;
                 if (formData.business_model) score += 20;
                 if (formData.founding_year) score += 10;
                 if (Object.keys(historicalInputs).length > 0) score += 10;
-                return `${score}%`;
-              })()}
-            </span>
-          </div>
-          <div className="w-full bg-zinc-700 rounded-full h-2">
-            <div 
-              className="bg-gradient-to-r from-green-500 to-blue-500 h-2 rounded-full transition-all duration-300"
-              style={{ 
-                width: `${(() => {
-                  let score = 0;
-                  if (formData.revenue && formData.ebitda) score += 40;
-                  if (formData.industry) score += 20;
-                  if (formData.business_model) score += 20;
-                  if (formData.founding_year) score += 10;
-                  if (Object.keys(historicalInputs).length > 0) score += 10;
-                  return score;
-                })()}%` 
-              }}
-            />
-          </div>
-          <div className="mt-2 text-xs text-zinc-400 space-y-1">
-            {formData.revenue && formData.ebitda && <div className="text-green-400">✓ Revenue & EBITDA provided</div>}
-            {formData.industry && (
-              <div className="text-green-400">
-                ✓ Industry selected
-                {isValidatingIndustry && <span className="ml-2 text-yellow-400">(validating...)</span>}
-              </div>
-            )}
-            {industryValidationError && (
-              <div className="text-yellow-400">
-                ⚠️ {industryValidationError}
-              </div>
-            )}
-            {formData.business_model && <div className="text-green-400">✓ Business model selected</div>}
-            {formData.founding_year && <div className="text-green-400">✓ Founding year provided</div>}
-            {Object.keys(historicalInputs).length === 0 && (
-              <div className="text-yellow-400">
-                ⚠️ No historical data (reduces confidence by 15%)
-              </div>
-            )}
-            {Object.keys(historicalInputs).length > 0 && (
-              <div className="text-green-400">✓ Historical data provided</div>
-            )}
+                return score;
+              })()}%` 
+            }}
+          />
+        </div>
+        <div className="mt-2 text-xs text-zinc-400 space-y-1">
+          {formData.revenue && formData.ebitda && <div className="text-green-400">✓ Revenue & EBITDA provided</div>}
+          {formData.industry && (
+            <div className="text-green-400">
+              ✓ Industry selected
+              {isValidatingIndustry && <span className="ml-2 text-yellow-400">(validating...)</span>}
+            </div>
+          )}
+          {industryValidationError && (
+            <div className="text-yellow-400">
+              ⚠️ {industryValidationError}
+            </div>
+          )}
+          {formData.business_model && <div className="text-green-400">✓ Business model selected</div>}
+          {formData.founding_year && <div className="text-green-400">✓ Founding year provided</div>}
+          {Object.keys(historicalInputs).length === 0 && (
+            <div className="text-yellow-400">
+              ⚠️ No historical data (reduces confidence by 15%)
+            </div>
+          )}
+          {Object.keys(historicalInputs).length > 0 && (
+            <div className="text-green-400">✓ Historical data provided</div>
+          )}
           </div>
         </div>
       </div>

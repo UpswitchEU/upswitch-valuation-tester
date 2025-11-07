@@ -14,9 +14,9 @@ export const ValuationInfoPanel: React.FC<ValuationInfoPanelProps> = ({
   return (
     <div className="h-full overflow-y-auto">
       <CalculationJourney 
-        result={result} 
-        inputData={inputData || null} 
-      />
+          result={result} 
+          inputData={inputData || null} 
+        />
     </div>
   );
 };

@@ -51,19 +51,21 @@ export const JourneyStep9_RangeMethodology: React.FC<JourneyStep9Props> = ({ res
   // The waterfall calculation (Step 7) is the source of truth
   const isMultiplesOnly = !result.dcf_valuation || (result.dcf_weight || 0) === 0;
   
-  // CRITICAL FIX: Handle zero/negative step7Equity edge case
-  // If step7Equity is 0 or negative, use finalMid as fallback (should not happen in normal cases)
+  // CRITICAL FIX: For multiples-only, baseMid MUST equal step7Equity (the waterfall value)
+  // This ensures consistency between Step 7 and Step 9
+  // For hybrid valuations, use finalMid if it's close to step7Equity (within 1%), otherwise use step7Equity
   const baseMid = isMultiplesOnly 
-    ? (step7Equity > 0 ? step7Equity : finalMid) 
+    ? (step7Equity > 0 ? step7Equity : (finalMid > 0 ? finalMid : 0)) 
     : (step7Equity > 0 && Math.abs(finalMid - step7Equity) < (step7Equity * 0.01) ? finalMid : step7Equity);
   
-  // Validate that baseMid equals step7Equity for multiples-only (only if step7Equity is valid)
+  // CRITICAL VALIDATION: For multiples-only, ensure baseMid equals step7Equity
   if (isMultiplesOnly && step7Equity > 0 && Math.abs(baseMid - step7Equity) > 1) {
-    console.warn('[VALUATION-AUDIT] Step 9 baseMid should equal step7Equity for multiples-only', {
+    console.error('[VALUATION-AUDIT] CRITICAL: Step 9 baseMid must equal step7Equity for multiples-only', {
       baseMid,
       step7Equity,
+      finalMid,
       difference: Math.abs(baseMid - step7Equity),
-      note: 'Using step7Equity as authoritative base'
+      note: 'For multiples-only valuations, baseMid should always equal step7Equity. This indicates a data flow issue.'
     });
   }
   
@@ -269,17 +271,36 @@ export const JourneyStep9_RangeMethodology: React.FC<JourneyStep9Props> = ({ res
               <div className="space-y-2 text-sm">
                 <p className="text-gray-700 font-medium">Applying confidence spread:</p>
                 <div className="bg-white border border-blue-200 rounded p-2 space-y-1 font-mono text-xs">
-                  <div>Low: {formatCurrency(baseMid)} × (1 - {(cappedSpreadLow * 100).toFixed(0)}%) = <strong>{formatCurrency(finalLow)}</strong></div>
+                  {/* CRITICAL FIX: Display correct formulas using calculated spreads */}
+                  <div>Low: {formatCurrency(baseMid)} × (1 - {(cappedSpreadLow * 100).toFixed(0)}%) = <strong>{formatCurrency(Math.max(0, baseMid * (1 - cappedSpreadLow)))}</strong></div>
                   <div className="text-blue-700 font-semibold">Mid: {formatCurrency(baseMid)} (unchanged) = <strong>{formatCurrency(baseMid)}</strong></div>
-                  <div>High: {formatCurrency(baseMid)} × (1 + {(cappedSpreadHigh * 100).toFixed(0)}%) = <strong>{formatCurrency(finalHigh)}</strong></div>
+                  <div>High: {formatCurrency(baseMid)} × (1 + {(cappedSpreadHigh * 100).toFixed(0)}%) = <strong>{formatCurrency(baseMid * (1 + cappedSpreadHigh))}</strong></div>
                 </div>
+                {/* Validation: Show warning if calculated values don't match final values */}
+                {Math.abs(baseMid * (1 - cappedSpreadLow) - finalLow) > 1 && (
+                  <div className="bg-yellow-50 border border-yellow-300 rounded p-2 mt-2">
+                    <p className="text-xs text-yellow-800">
+                      ⚠️ Note: Calculated low value ({formatCurrency(baseMid * (1 - cappedSpreadLow))}) differs from final low ({formatCurrency(finalLow)}). 
+                      Final values may have been adjusted by backend for consistency.
+                    </p>
+                  </div>
+                )}
+                {Math.abs(baseMid * (1 + cappedSpreadHigh) - finalHigh) > 1 && (
+                  <div className="bg-yellow-50 border border-yellow-300 rounded p-2 mt-2">
+                    <p className="text-xs text-yellow-800">
+                      ⚠️ Note: Calculated high value ({formatCurrency(baseMid * (1 + cappedSpreadHigh))}) differs from final high ({formatCurrency(finalHigh)}). 
+                      Final values may have been adjusted by backend for consistency.
+                    </p>
+                  </div>
+                )}
                 <p className="text-xs text-gray-600 italic">
                   Spread of ±{(avgSpread * 100).toFixed(0)}% reflects valuation uncertainty based on {confidenceScore.toFixed(0)}% confidence score and company size.
                 </p>
-                {Math.abs(finalMid - step7Equity) > (step7Equity * 0.01) && (
+                {Math.abs(finalMid - step7Equity) > (step7Equity * 0.01) && step7Equity > 0 && (
                   <div className="bg-yellow-50 border border-yellow-300 rounded p-2 mt-2">
                     <p className="text-xs text-yellow-800">
-                      ⚠️ Note: Range mid-point adjusted to match Step 7 equity value ({formatCurrency(step7Equity)}) for consistency with waterfall calculation.
+                      ⚠️ Note: Range mid-point ({formatCurrency(finalMid)}) differs from Step 7 equity value ({formatCurrency(step7Equity)}). 
+                      Using Step 7 value ({formatCurrency(step7Equity)}) as authoritative base for consistency with waterfall calculation.
                     </p>
                   </div>
                 )}
