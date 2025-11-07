@@ -17,15 +17,21 @@ export const JourneyStep9_RangeMethodology: React.FC<JourneyStep9Props> = ({ res
   const confidenceScore = result.confidence_score || 0;
   
   // Calculate spread from Step 7 equity value to final range
+  // CRITICAL: For multiples-only, the mid-point should equal Step 7 equity value
+  // The backend fix ensures equity_value_mid matches adjusted_equity_value_for_range
   const step7Equity = beforeValues.mid; // From Step 7 (EV to Equity conversion)
   const finalMid = result.equity_value_mid;
   const finalLow = result.equity_value_low;
   const finalHigh = result.equity_value_high;
   
-  // Calculate spreads
-  const spreadLow = step7Equity > 0 ? ((step7Equity - finalLow) / step7Equity) * 100 : 0;
-  const spreadHigh = step7Equity > 0 ? ((finalHigh - step7Equity) / step7Equity) * 100 : 0;
-  const avgSpread = (spreadLow + spreadHigh) / 2;
+  // CRITICAL FIX: Use step7Equity as the authoritative base for mid-point
+  // If finalMid differs significantly, use step7Equity (the waterfall value is correct)
+  const baseMid = Math.abs(finalMid - step7Equity) < (step7Equity * 0.01) ? finalMid : step7Equity;
+  
+  // Calculate spreads correctly: spread = (final - base) / base
+  const spreadLow = baseMid > 0 ? ((baseMid - finalLow) / baseMid) : 0;
+  const spreadHigh = baseMid > 0 ? ((finalHigh - baseMid) / baseMid) : 0;
+  const avgSpread = (Math.abs(spreadLow) + spreadHigh) / 2;
 
   return (
     <StepCard
@@ -182,13 +188,20 @@ export const JourneyStep9_RangeMethodology: React.FC<JourneyStep9Props> = ({ res
               <div className="space-y-2 text-sm">
                 <p className="text-gray-700 font-medium">Applying confidence spread:</p>
                 <div className="bg-white border border-blue-200 rounded p-2 space-y-1 font-mono text-xs">
-                  <div>Low: {formatCurrency(step7Equity)} × (1 - {avgSpread.toFixed(0)}%) = <strong>{formatCurrency(finalLow)}</strong></div>
-                  <div className="text-blue-700 font-semibold">Mid: {formatCurrency(step7Equity)} (unchanged) = <strong>{formatCurrency(finalMid)}</strong></div>
-                  <div>High: {formatCurrency(step7Equity)} × (1 + {avgSpread.toFixed(0)}%) = <strong>{formatCurrency(finalHigh)}</strong></div>
+                  <div>Low: {formatCurrency(baseMid)} × (1 - {Math.abs(spreadLow * 100).toFixed(0)}%) = <strong>{formatCurrency(finalLow)}</strong></div>
+                  <div className="text-blue-700 font-semibold">Mid: {formatCurrency(baseMid)} (unchanged) = <strong>{formatCurrency(baseMid)}</strong></div>
+                  <div>High: {formatCurrency(baseMid)} × (1 + {(spreadHigh * 100).toFixed(0)}%) = <strong>{formatCurrency(finalHigh)}</strong></div>
                 </div>
                 <p className="text-xs text-gray-600 italic">
                   Spread of ±{avgSpread.toFixed(0)}% reflects valuation uncertainty based on {confidenceScore.toFixed(0)}% confidence score and company size.
                 </p>
+                {Math.abs(finalMid - step7Equity) > (step7Equity * 0.01) && (
+                  <div className="bg-yellow-50 border border-yellow-300 rounded p-2 mt-2">
+                    <p className="text-xs text-yellow-800">
+                      ⚠️ Note: Range mid-point adjusted to match Step 7 equity value ({formatCurrency(step7Equity)}) for consistency with waterfall calculation.
+                    </p>
+                  </div>
+                )}
               </div>
             )}
           </div>
@@ -232,9 +245,9 @@ export const JourneyStep9_RangeMethodology: React.FC<JourneyStep9Props> = ({ res
                       <path d="m12 5 7 7-7 7"></path>
                     </svg>
                   </td>
-                  <td className="px-4 py-3 text-right font-mono font-bold text-blue-900">{formatCurrency(finalMid)}</td>
+                  <td className="px-4 py-3 text-right font-mono font-bold text-blue-900">{formatCurrency(baseMid)}</td>
                   <td className="px-4 py-3 text-right font-mono text-xs font-semibold text-blue-600">
-                    {((finalMid - beforeValues.mid) / beforeValues.mid * 100).toFixed(1)}%
+                    {Math.abs(baseMid - beforeValues.mid) < 1 ? '0.0%' : ((baseMid - beforeValues.mid) / beforeValues.mid * 100).toFixed(1) + '%'}
                   </td>
                 </tr>
                 <tr>
