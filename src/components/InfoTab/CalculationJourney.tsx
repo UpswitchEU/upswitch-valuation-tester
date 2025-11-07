@@ -249,6 +249,40 @@ export const CalculationJourney: React.FC<CalculationJourneyProps> = ({ result, 
       high: step6.high - netDebt
     };
 
+    // CRITICAL VALIDATION: Ensure Step 7 matches backend adjusted_equity_value
+    // Backend is the source of truth - use it if available and close enough
+    const backendAdjustedEquity = multiples.adjusted_equity_value;
+    if (backendAdjustedEquity && backendAdjustedEquity > 0) {
+      const tolerance = Math.max(backendAdjustedEquity * 0.01, 100); // 1% or €100
+      const difference = Math.abs(step7.mid - backendAdjustedEquity);
+      
+      if (difference > tolerance) {
+        console.warn(
+          '[VALUATION-AUDIT] Info tab Step 7 mismatch with backend adjusted_equity_value',
+          {
+            calculated: step7.mid,
+            backend: backendAdjustedEquity,
+            difference,
+            tolerance,
+            percentageDiff: (difference / backendAdjustedEquity * 100).toFixed(2) + '%'
+          }
+        );
+        // Use backend value as authoritative source
+        const ratio = backendAdjustedEquity / step7.mid;
+        return {
+          step3,
+          step4,
+          step5,
+          step6,
+          step7: {
+            low: step7.low * ratio,
+            mid: backendAdjustedEquity, // Use backend as source of truth
+            high: step7.high * ratio
+          }
+        };
+      }
+    }
+
     return { step3, step4, step5, step6, step7 };
   };
 

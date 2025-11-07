@@ -793,8 +793,36 @@ export const generateCalculationSteps = (result: ValuationResponse): Calculation
 
 /**
  * Get final valuation result step
+ * CRITICAL: Validates that waterfall calculation matches backend adjusted_equity_value
  */
 export const getFinalValuationStep = (result: ValuationResponse): { low: number; mid: number; high: number } => {
+  // For multiples-only, validate that equity_value_mid matches adjusted_equity_value
+  const dcfWeight = result.dcf_weight || 0;
+  const isMultiplesOnly = dcfWeight === 0 || !!result.dcf_exclusion_reason;
+  
+  if (isMultiplesOnly) {
+    const backendAdjustedEquity = result.multiples_valuation?.adjusted_equity_value;
+    const rangeMid = result.equity_value_mid;
+    
+    if (backendAdjustedEquity && backendAdjustedEquity > 0 && rangeMid > 0) {
+      const tolerance = Math.max(backendAdjustedEquity * 0.01, 100); // 1% or €100
+      const difference = Math.abs(rangeMid - backendAdjustedEquity);
+      
+      if (difference > tolerance) {
+        console.warn(
+          '[VALUATION-AUDIT] Waterfall range mid-point mismatch with backend adjusted_equity_value',
+          {
+            rangeMid,
+            backendAdjustedEquity,
+            difference,
+            tolerance,
+            percentageDiff: (difference / backendAdjustedEquity * 100).toFixed(2) + '%'
+          }
+        );
+      }
+    }
+  }
+  
   return {
     low: result.equity_value_low,
     mid: result.equity_value_mid,

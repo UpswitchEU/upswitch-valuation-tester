@@ -20,10 +20,12 @@ export const JourneyStep7_EVToEquity: React.FC<JourneyStep7Props> = ({ beforeVal
   const netDebt = totalDebt - cash;
 
   // Calculate equity value
+  // CRITICAL FIX: netDebt = totalDebt - cash, so formula is: EV - netDebt = EV - (totalDebt - cash) = EV - totalDebt + cash
+  // This is correct: we subtract total debt and add cash back
   const equityValues = {
-    low: beforeValues.low - netDebt + cash,
-    mid: beforeValues.mid - netDebt + cash,
-    high: beforeValues.high - netDebt + cash
+    low: beforeValues.low - netDebt,
+    mid: beforeValues.mid - netDebt,
+    high: beforeValues.high - netDebt
   };
 
   return (
@@ -70,11 +72,14 @@ export const JourneyStep7_EVToEquity: React.FC<JourneyStep7Props> = ({ beforeVal
         <div>
           <h4 className="font-semibold text-gray-900 mb-3">Calculation for All Estimates</h4>
           <div className="bg-blue-50 border border-blue-300 rounded-lg p-4 space-y-2 font-mono text-sm">
-            <div>Low: {formatCurrency(beforeValues.low)} - {formatCurrency(netDebt)} + {formatCurrency(cash)} = <strong>{formatCurrency(equityValues.low)}</strong></div>
+            <div>Low: {formatCurrency(beforeValues.low)} - {formatCurrency(netDebt)} = <strong>{formatCurrency(equityValues.low)}</strong></div>
             <div className="text-teal-700 font-semibold">
-              Mid: {formatCurrency(beforeValues.mid)} - {formatCurrency(netDebt)} + {formatCurrency(cash)} = <strong>{formatCurrency(equityValues.mid)}</strong>
+              Mid: {formatCurrency(beforeValues.mid)} - {formatCurrency(netDebt)} = <strong>{formatCurrency(equityValues.mid)}</strong>
             </div>
-            <div>High: {formatCurrency(beforeValues.high)} - {formatCurrency(netDebt)} + {formatCurrency(cash)} = <strong>{formatCurrency(equityValues.high)}</strong></div>
+            <div>High: {formatCurrency(beforeValues.high)} - {formatCurrency(netDebt)} = <strong>{formatCurrency(equityValues.high)}</strong></div>
+            <div className="text-xs text-gray-600 pt-2 border-t border-blue-300">
+              Note: Net Debt = {formatCurrency(totalDebt)} (Total Debt) - {formatCurrency(cash)} (Cash) = {formatCurrency(netDebt)}
+            </div>
           </div>
         </div>
 
