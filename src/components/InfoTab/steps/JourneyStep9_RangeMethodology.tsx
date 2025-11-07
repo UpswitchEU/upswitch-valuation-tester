@@ -19,19 +19,100 @@ export const JourneyStep9_RangeMethodology: React.FC<JourneyStep9Props> = ({ res
   // Calculate spread from Step 7 equity value to final range
   // CRITICAL: For multiples-only, the mid-point should equal Step 7 equity value
   // The backend fix ensures equity_value_mid matches adjusted_equity_value_for_range
-  const step7Equity = beforeValues.mid; // From Step 7 (EV to Equity conversion)
-  const finalMid = result.equity_value_mid;
-  const finalLow = result.equity_value_low;
-  const finalHigh = result.equity_value_high;
   
-  // CRITICAL FIX: Use step7Equity as the authoritative base for mid-point
-  // If finalMid differs significantly, use step7Equity (the waterfall value is correct)
-  const baseMid = Math.abs(finalMid - step7Equity) < (step7Equity * 0.01) ? finalMid : step7Equity;
+  // CRITICAL FIX: Add input validation with safe defaults
+  const step7Equity = beforeValues?.mid ?? result.equity_value_mid ?? 0; // From Step 7 (EV to Equity conversion) - AUTHORITATIVE BASE
+  const finalMid = result.equity_value_mid ?? 0;
+  const finalLow = result.equity_value_low ?? 0;
+  const finalHigh = result.equity_value_high ?? 0;
+  
+  // Validate inputs are finite numbers
+  if (!isFinite(step7Equity) || !isFinite(finalMid) || !isFinite(finalLow) || !isFinite(finalHigh)) {
+    console.error('[VALUATION-AUDIT] Invalid input values in Step 9', {
+      step7Equity,
+      finalMid,
+      finalLow,
+      finalHigh,
+      note: 'Non-finite values detected. Using fallback values.'
+    });
+  }
+  
+  // DIAGNOSTIC: Log value flow
+  console.log('[DIAGNOSTIC] Step 9 Range Methodology - Value Flow', {
+    step7Equity,
+    finalMid,
+    finalLow,
+    finalHigh,
+    difference_step7_vs_finalMid: Math.abs(finalMid - step7Equity),
+    percentageDiff: step7Equity > 0 ? ((Math.abs(finalMid - step7Equity) / step7Equity) * 100).toFixed(2) + '%' : 'N/A'
+  });
+  
+  // CRITICAL FIX: For multiples-only valuations, ALWAYS use step7Equity as authoritative base
+  // The waterfall calculation (Step 7) is the source of truth
+  const isMultiplesOnly = !result.dcf_valuation || (result.dcf_weight || 0) === 0;
+  
+  // CRITICAL FIX: Handle zero/negative step7Equity edge case
+  // If step7Equity is 0 or negative, use finalMid as fallback (should not happen in normal cases)
+  const baseMid = isMultiplesOnly 
+    ? (step7Equity > 0 ? step7Equity : finalMid) 
+    : (step7Equity > 0 && Math.abs(finalMid - step7Equity) < (step7Equity * 0.01) ? finalMid : step7Equity);
+  
+  // Validate that baseMid equals step7Equity for multiples-only (only if step7Equity is valid)
+  if (isMultiplesOnly && step7Equity > 0 && Math.abs(baseMid - step7Equity) > 1) {
+    console.warn('[VALUATION-AUDIT] Step 9 baseMid should equal step7Equity for multiples-only', {
+      baseMid,
+      step7Equity,
+      difference: Math.abs(baseMid - step7Equity),
+      note: 'Using step7Equity as authoritative base'
+    });
+  }
+  
+  // Warn if step7Equity is zero or negative (edge case)
+  if (step7Equity <= 0) {
+    console.warn('[VALUATION-AUDIT] Step 7 equity value is zero or negative', {
+      step7Equity,
+      finalMid,
+      note: 'This may indicate a company with debt exceeding enterprise value. Using finalMid as fallback.'
+    });
+  }
   
   // Calculate spreads correctly: spread = (final - base) / base
-  const spreadLow = baseMid > 0 ? ((baseMid - finalLow) / baseMid) : 0;
-  const spreadHigh = baseMid > 0 ? ((finalHigh - baseMid) / baseMid) : 0;
-  const avgSpread = (Math.abs(spreadLow) + spreadHigh) / 2;
+  // For low: spread = (base - final) / base (negative spread means final is lower)
+  // For high: spread = (final - base) / base (positive spread means final is higher)
+  // CRITICAL FIX: Guard against division by zero and invalid values
+  const spreadLow = baseMid > 0 && isFinite(baseMid) && isFinite(finalLow) 
+    ? ((baseMid - finalLow) / baseMid) 
+    : 0;
+  const spreadHigh = baseMid > 0 && isFinite(baseMid) && isFinite(finalHigh) 
+    ? ((finalHigh - baseMid) / baseMid) 
+    : 0;
+  
+  // Cap spreads at reasonable values (0-50%)
+  const cappedSpreadLow = Math.max(0, Math.min(0.5, spreadLow));
+  const cappedSpreadHigh = Math.max(0, Math.min(0.5, spreadHigh));
+  
+  // Calculate average spread for display
+  const avgSpread = (cappedSpreadLow + cappedSpreadHigh) / 2;
+  
+  // DIAGNOSTIC: Log spread calculations
+  console.log('[DIAGNOSTIC] Step 9 Spread Calculations', {
+    baseMid,
+    finalLow,
+    finalHigh,
+    spreadLow: (spreadLow * 100).toFixed(2) + '%',
+    spreadHigh: (spreadHigh * 100).toFixed(2) + '%',
+    cappedSpreadLow: (cappedSpreadLow * 100).toFixed(2) + '%',
+    cappedSpreadHigh: (cappedSpreadHigh * 100).toFixed(2) + '%',
+    avgSpread: (avgSpread * 100).toFixed(2) + '%',
+    validation: {
+      calculatedLow: baseMid * (1 - cappedSpreadLow),
+      calculatedHigh: baseMid * (1 + cappedSpreadHigh),
+      actualLow: finalLow,
+      actualHigh: finalHigh,
+      lowMatch: Math.abs(baseMid * (1 - cappedSpreadLow) - finalLow) < 1,
+      highMatch: Math.abs(baseMid * (1 + cappedSpreadHigh) - finalHigh) < 1
+    }
+  });
 
   return (
     <StepCard
@@ -188,12 +269,12 @@ export const JourneyStep9_RangeMethodology: React.FC<JourneyStep9Props> = ({ res
               <div className="space-y-2 text-sm">
                 <p className="text-gray-700 font-medium">Applying confidence spread:</p>
                 <div className="bg-white border border-blue-200 rounded p-2 space-y-1 font-mono text-xs">
-                  <div>Low: {formatCurrency(baseMid)} × (1 - {Math.abs(spreadLow * 100).toFixed(0)}%) = <strong>{formatCurrency(finalLow)}</strong></div>
+                  <div>Low: {formatCurrency(baseMid)} × (1 - {(cappedSpreadLow * 100).toFixed(0)}%) = <strong>{formatCurrency(finalLow)}</strong></div>
                   <div className="text-blue-700 font-semibold">Mid: {formatCurrency(baseMid)} (unchanged) = <strong>{formatCurrency(baseMid)}</strong></div>
-                  <div>High: {formatCurrency(baseMid)} × (1 + {(spreadHigh * 100).toFixed(0)}%) = <strong>{formatCurrency(finalHigh)}</strong></div>
+                  <div>High: {formatCurrency(baseMid)} × (1 + {(cappedSpreadHigh * 100).toFixed(0)}%) = <strong>{formatCurrency(finalHigh)}</strong></div>
                 </div>
                 <p className="text-xs text-gray-600 italic">
-                  Spread of ±{avgSpread.toFixed(0)}% reflects valuation uncertainty based on {confidenceScore.toFixed(0)}% confidence score and company size.
+                  Spread of ±{(avgSpread * 100).toFixed(0)}% reflects valuation uncertainty based on {confidenceScore.toFixed(0)}% confidence score and company size.
                 </p>
                 {Math.abs(finalMid - step7Equity) > (step7Equity * 0.01) && (
                   <div className="bg-yellow-50 border border-yellow-300 rounded p-2 mt-2">

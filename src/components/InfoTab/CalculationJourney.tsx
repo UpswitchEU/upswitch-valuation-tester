@@ -244,17 +244,47 @@ export const CalculationJourney: React.FC<CalculationJourneyProps> = ({ result, 
     // Step 7: EV to Equity conversion (subtract net debt, add cash)
     const netDebt = (currentData.total_debt || 0) - (currentData.cash || 0);
     const step7 = {
-      low: step6.low - netDebt,
-      mid: step6.mid - netDebt,
-      high: step6.high - netDebt
+      // CRITICAL FIX: Clamp to minimum 0 to handle negative equity gracefully
+      // Negative equity can occur when debt exceeds enterprise value
+      low: Math.max(0, step6.low - netDebt),
+      mid: Math.max(0, step6.mid - netDebt),
+      high: Math.max(0, step6.high - netDebt)
     };
+    
+    // Log warning if equity would be negative (indicates high debt scenario)
+    if (step6.mid - netDebt < 0) {
+      console.warn('[VALUATION-AUDIT] Negative equity detected, clamped to 0', {
+        step6_mid: step6.mid,
+        netDebt,
+        calculated_equity: step6.mid - netDebt,
+        note: 'Equity value clamped to 0. This indicates debt exceeds enterprise value.'
+      });
+    }
+
+    // DIAGNOSTIC: Log Step 7 calculation details
+    console.log('[DIAGNOSTIC] Step 7 calculation', {
+      step6_mid: step6.mid,
+      netDebt,
+      calculated_step7_mid: step7.mid,
+      formula: `${step6.mid} - ${netDebt} = ${step7.mid}`
+    });
 
     // CRITICAL VALIDATION: Ensure Step 7 matches backend adjusted_equity_value
-    // Backend is the source of truth - use it if available and close enough
+    // Only override if backend value is truly authoritative and difference is significant
     const backendAdjustedEquity = multiples.adjusted_equity_value;
     if (backendAdjustedEquity && backendAdjustedEquity > 0) {
       const tolerance = Math.max(backendAdjustedEquity * 0.01, 100); // 1% or €100
       const difference = Math.abs(step7.mid - backendAdjustedEquity);
+      const percentageDiff = (difference / backendAdjustedEquity) * 100;
+      
+      console.log('[DIAGNOSTIC] Step 7 validation check', {
+        calculated_step7_mid: step7.mid,
+        backend_adjusted_equity: backendAdjustedEquity,
+        difference,
+        tolerance,
+        percentageDiff: percentageDiff.toFixed(2) + '%',
+        withinTolerance: difference <= tolerance
+      });
       
       if (difference > tolerance) {
         console.warn(
@@ -264,23 +294,55 @@ export const CalculationJourney: React.FC<CalculationJourneyProps> = ({ result, 
             backend: backendAdjustedEquity,
             difference,
             tolerance,
-            percentageDiff: (difference / backendAdjustedEquity * 100).toFixed(2) + '%'
+            percentageDiff: percentageDiff.toFixed(2) + '%',
+            calculation_breakdown: {
+              step3_mid: step3.mid,
+              step4_mid: step4.mid,
+              step5_mid: step5.mid,
+              step6_mid: step6.mid,
+              netDebt,
+              calculated_step7: step7.mid,
+              backend_value: backendAdjustedEquity
+            },
+            note: 'Frontend calculation may differ due to rounding or sequential application differences. Using backend value as authoritative source.'
           }
         );
-        // Use backend value as authoritative source
-        const ratio = backendAdjustedEquity / step7.mid;
+        // Use backend value as authoritative source, but scale all values proportionally
+        // CRITICAL FIX: Guard against division by zero
+        const ratio = step7.mid > 0 ? backendAdjustedEquity / step7.mid : 1;
+        const adjustedStep7 = {
+          low: step7.low * ratio,
+          mid: backendAdjustedEquity, // Use backend as source of truth
+          high: step7.high * ratio
+        };
+        
+        console.log('[DIAGNOSTIC] Step 7 adjusted to match backend', {
+          original_step7: step7,
+          adjusted_step7: adjustedStep7,
+          ratio,
+          note: 'All values scaled proportionally to match backend adjusted_equity_value'
+        });
+        
         return {
           step3,
           step4,
           step5,
           step6,
-          step7: {
-            low: step7.low * ratio,
-            mid: backendAdjustedEquity, // Use backend as source of truth
-            high: step7.high * ratio
-          }
+          step7: adjustedStep7
         };
+      } else {
+        console.log('[DIAGNOSTIC] Step 7 matches backend within tolerance', {
+          calculated: step7.mid,
+          backend: backendAdjustedEquity,
+          difference,
+          tolerance
+        });
       }
+    } else {
+      console.warn('[DIAGNOSTIC] Backend adjusted_equity_value not available', {
+        backendAdjustedEquity,
+        using_calculated_step7: step7.mid
+      });
     }
 
     return { step3, step4, step5, step6, step7 };

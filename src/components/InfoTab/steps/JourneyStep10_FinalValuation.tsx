@@ -21,6 +21,39 @@ export const JourneyStep10_FinalValuation: React.FC<JourneyStep10Props> = ({ res
   const confidenceScore = result.confidence_score || 0;
   // Backend returns confidence_score as integer 0-100, not decimal 0-1
   const confidenceLevel = confidenceScore >= 80 ? 'HIGH' : confidenceScore >= 60 ? 'MEDIUM' : 'LOW';
+  
+  // For multiples-only valuations, validate that mid-point matches adjusted_equity_value
+  const isMultiplesOnly = !result.dcf_valuation || (result.dcf_weight || 0) === 0;
+  const backendAdjustedEquity = result.multiples_valuation?.adjusted_equity_value;
+  
+  // DIAGNOSTIC: Log final range values
+  console.log('[DIAGNOSTIC] Step 10 Final Valuation Range', {
+    finalLow,
+    finalMid,
+    finalHigh,
+    isMultiplesOnly,
+    backendAdjustedEquity,
+    difference_mid_vs_adjusted: backendAdjustedEquity ? Math.abs(finalMid - backendAdjustedEquity) : null,
+    percentageDiff: backendAdjustedEquity && finalMid > 0 
+      ? ((Math.abs(finalMid - backendAdjustedEquity) / backendAdjustedEquity) * 100).toFixed(2) + '%'
+      : 'N/A'
+  });
+  
+  // For multiples-only, validate mid-point consistency
+  if (isMultiplesOnly && backendAdjustedEquity && backendAdjustedEquity > 0) {
+    const tolerance = Math.max(backendAdjustedEquity * 0.01, 100);
+    const difference = Math.abs(finalMid - backendAdjustedEquity);
+    if (difference > tolerance) {
+      console.warn('[VALUATION-AUDIT] Step 10 final mid-point mismatch with backend adjusted_equity_value', {
+        finalMid,
+        backendAdjustedEquity,
+        difference,
+        tolerance,
+        percentageDiff: (difference / backendAdjustedEquity * 100).toFixed(2) + '%',
+        note: 'For multiples-only valuations, final mid should equal adjusted_equity_value from Step 7'
+      });
+    }
+  }
 
   return (
     <StepCard
