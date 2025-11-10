@@ -246,6 +246,12 @@ export const useValuationStore = create<ValuationStore>((set, get) => ({
         comparables: formData.comparables || [],
         // NEW: Include PostgreSQL business type ID and context metadata
         business_type_id: formData.business_type_id,
+        // Include business_type (form uses this, backend expects it)
+        business_type: formData.business_type,
+        // Include shares_for_sale for ownership adjustment (Step 8)
+        shares_for_sale: formData.shares_for_sale !== undefined && formData.shares_for_sale !== null
+          ? Math.max(0, Math.min(100, Number(formData.shares_for_sale))) // Clamp to 0-100
+          : 100, // Default to 100% if not provided
         business_context: formData.business_type_id ? {
           // Values already converted to numbers in ValuationForm.tsx, but validate range as defensive check
           dcfPreference: validatePreference(formData._internal_dcf_preference),
