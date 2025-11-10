@@ -3,11 +3,11 @@ import { Target } from 'lucide-react';
 import { StepCard } from '../shared/StepCard';
 import type { ValuationResponse } from '../../../types/valuation';
 
-interface JourneyStep8Props {
+interface JourneyStep9Props {
   result: ValuationResponse;
 }
 
-export const JourneyStep8_ConfidenceScore: React.FC<JourneyStep8Props> = ({ result }) => {
+export const JourneyStep9_ConfidenceScore: React.FC<JourneyStep9Props> = ({ result }) => {
   const confidenceScore = result.confidence_score || 0;
   // Backend returns confidence_score as integer 0-100, not decimal 0-1
   const confidenceLevel = 

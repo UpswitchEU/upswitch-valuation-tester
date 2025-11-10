@@ -8,9 +8,10 @@ import { JourneyStep4_OwnerConcentration } from './steps/JourneyStep4_OwnerConce
 import { JourneyStep5_SizeDiscount } from './steps/JourneyStep5_SizeDiscount';
 import { JourneyStep6_LiquidityDiscount } from './steps/JourneyStep6_LiquidityDiscount';
 import { JourneyStep7_EVToEquity } from './steps/JourneyStep7_EVToEquity';
-import { JourneyStep8_ConfidenceScore } from './steps/JourneyStep8_ConfidenceScore';
-import { JourneyStep9_RangeMethodology } from './steps/JourneyStep9_RangeMethodology';
-import { JourneyStep10_FinalValuation } from './steps/JourneyStep10_FinalValuation';
+import { JourneyStep8_OwnershipAdjustment } from './steps/JourneyStep8_OwnershipAdjustment';
+import { JourneyStep9_ConfidenceScore } from './steps/JourneyStep9_ConfidenceScore';
+import { JourneyStep10_RangeMethodology } from './steps/JourneyStep10_RangeMethodology';
+import { JourneyStep11_FinalValuation } from './steps/JourneyStep11_FinalValuation';
 import type { ValuationResponse, ValuationInputData } from '../../types/valuation';
 
 interface CalculationJourneyProps {
@@ -50,9 +51,10 @@ export const CalculationJourney: React.FC<CalculationJourneyProps> = ({ result, 
     { id: 'step-5-size', number: 5, title: 'Size Discount', completed: true },
     { id: 'step-6-liquidity', number: 6, title: 'Liquidity Discount', completed: true },
     { id: 'step-7-equity', number: 7, title: 'EV to Equity Conversion', completed: true },
-    { id: 'step-8-confidence', number: 8, title: 'Confidence Score Analysis', completed: true },
-    { id: 'step-9-range', number: 9, title: 'Range Methodology', completed: true },
-    { id: 'step-10-final', number: 10, title: 'Final Valuation Range', completed: true }
+    { id: 'step-8-ownership', number: 8, title: 'Ownership Adjustment', completed: true },
+    { id: 'step-9-confidence', number: 9, title: 'Confidence Score Analysis', completed: true },
+    { id: 'step-10-range', number: 10, title: 'Range Methodology', completed: true },
+    { id: 'step-11-final', number: 11, title: 'Final Valuation Range', completed: true }
   ];
 
   const handleStepClick = (stepId: string) => {
@@ -191,7 +193,8 @@ export const CalculationJourney: React.FC<CalculationJourneyProps> = ({ result, 
         step4: { low: 0, mid: 0, high: 0 },
         step5: { low: 0, mid: 0, high: 0 },
         step6: { low: 0, mid: 0, high: 0 },
-        step7: { low: 0, mid: 0, high: 0 } // Step 7: Equity values
+        step7: { low: 0, mid: 0, high: 0 }, // Step 7: Equity values
+        step8: { low: 0, mid: 0, high: 0 } // Step 8: Ownership-adjusted equity values
       };
     }
 
@@ -249,6 +252,21 @@ export const CalculationJourney: React.FC<CalculationJourneyProps> = ({ result, 
       low: Math.max(0, step6.low - netDebt),
       mid: Math.max(0, step6.mid - netDebt),
       high: Math.max(0, step6.high - netDebt)
+    };
+    
+    // Step 8: Ownership adjustment (control premium / minority discount)
+    const sharesForSale = result.input_data?.shares_for_sale || 100;
+    const ownershipPercentage = sharesForSale / 100.0;
+    
+    // Get adjustment from calculation_steps if available
+    const step8Data = result.transparency_report?.calculation_steps?.find((step: any) => step.step === 8);
+    const adjustmentPercentage = step8Data?.key_outputs?.adjustment_percentage || 0;
+    const adjustmentFactor = 1.0 + (adjustmentPercentage / 100.0);
+    
+    const step8 = {
+      low: step7.low * ownershipPercentage * adjustmentFactor,
+      mid: step7.mid * ownershipPercentage * adjustmentFactor,
+      high: step7.high * ownershipPercentage * adjustmentFactor
     };
     
     // Log warning if equity would be negative (indicates high debt scenario)
@@ -323,12 +341,20 @@ export const CalculationJourney: React.FC<CalculationJourneyProps> = ({ result, 
           note: 'All values scaled proportionally to match backend adjusted_equity_value'
         });
         
+        // Recalculate Step 8 with adjusted Step 7
+        const adjustedStep8 = {
+          low: adjustedStep7.low * ownershipPercentage * adjustmentFactor,
+          mid: adjustedStep7.mid * ownershipPercentage * adjustmentFactor,
+          high: adjustedStep7.high * ownershipPercentage * adjustmentFactor
+        };
+        
         return {
           step3,
           step4,
           step5,
           step6,
-          step7: adjustedStep7
+          step7: adjustedStep7,
+          step8: adjustedStep8
         };
       } else {
         console.log('[DIAGNOSTIC] Step 7 matches backend within tolerance', {
@@ -345,7 +371,7 @@ export const CalculationJourney: React.FC<CalculationJourneyProps> = ({ result, 
       });
     }
 
-    return { step3, step4, step5, step6, step7 };
+    return { step3, step4, step5, step6, step7, step8 };
   };
 
   const intermediateValues = calculateIntermediateValues();
@@ -423,19 +449,26 @@ export const CalculationJourney: React.FC<CalculationJourneyProps> = ({ result, 
               />
             </div>
 
-            <div ref={(el) => (stepRefs.current['step-8-confidence'] = el)} data-step-id="step-8-confidence">
-              <JourneyStep8_ConfidenceScore result={result} />
-            </div>
-
-            <div ref={(el) => (stepRefs.current['step-9-range'] = el)} data-step-id="step-9-range">
-              <JourneyStep9_RangeMethodology 
-                result={result} 
-                beforeValues={intermediateValues.step7} // Use Step 7 (equity values) as base for range
+            <div ref={(el) => (stepRefs.current['step-8-ownership'] = el)} data-step-id="step-8-ownership">
+              <JourneyStep8_OwnershipAdjustment 
+                result={result}
+                beforeValues={intermediateValues.step7}
               />
             </div>
 
-            <div ref={(el) => (stepRefs.current['step-10-final'] = el)} data-step-id="step-10-final">
-              <JourneyStep10_FinalValuation result={result} />
+            <div ref={(el) => (stepRefs.current['step-9-confidence'] = el)} data-step-id="step-9-confidence">
+              <JourneyStep9_ConfidenceScore result={result} />
+            </div>
+
+            <div ref={(el) => (stepRefs.current['step-10-range'] = el)} data-step-id="step-10-range">
+              <JourneyStep10_RangeMethodology 
+                result={result} 
+                beforeValues={intermediateValues.step8 || intermediateValues.step7} // Use Step 8 (ownership-adjusted) if available, fallback to Step 7
+              />
+            </div>
+
+            <div ref={(el) => (stepRefs.current['step-11-final'] = el)} data-step-id="step-11-final">
+              <JourneyStep11_FinalValuation result={result} />
             </div>
           </div>
         </div>
