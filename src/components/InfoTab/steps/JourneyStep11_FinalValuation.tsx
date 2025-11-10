@@ -3,7 +3,7 @@ import { Trophy } from 'lucide-react';
 import { StepCard } from '../shared/StepCard';
 import type { ValuationResponse } from '../../../types/valuation';
 
-interface JourneyStep10Props {
+interface JourneyStep11Props {
   result: ValuationResponse;
 }
 
@@ -14,7 +14,7 @@ const formatCurrencyCompact = (value: number): string => {
   return formatCurrency(value);
 };
 
-export const JourneyStep10_FinalValuation: React.FC<JourneyStep10Props> = ({ result }) => {
+export const JourneyStep11_FinalValuation: React.FC<JourneyStep11Props> = ({ result }) => {
   const finalLow = result.equity_value_low;
   const finalMid = result.equity_value_mid;
   const finalHigh = result.equity_value_high;
@@ -68,8 +68,8 @@ export const JourneyStep10_FinalValuation: React.FC<JourneyStep10Props> = ({ res
 
   return (
     <StepCard
-      id="step-10-final"
-      stepNumber={10}
+      id="step-11-final"
+      stepNumber={11}
       title="Final Valuation Range"
       subtitle="Complete valuation after all adjustments"
       icon={<Trophy className="w-5 h-5" />}

@@ -3,14 +3,14 @@ import { GitBranch } from 'lucide-react';
 import { StepCard } from '../shared/StepCard';
 import type { ValuationResponse } from '../../../types/valuation';
 
-interface JourneyStep9Props {
+interface JourneyStep10Props {
   result: ValuationResponse;
   beforeValues: { low: number; mid: number; high: number };
 }
 
 const formatCurrency = (value: number): string => `€${Math.round(value).toLocaleString()}`;
 
-export const JourneyStep9_RangeMethodology: React.FC<JourneyStep9Props> = ({ result, beforeValues }) => {
+export const JourneyStep10_RangeMethodology: React.FC<JourneyStep10Props> = ({ result, beforeValues }) => {
   const rangeMethod = result.range_methodology || 'confidence_spread';
   const isMultipleDispersion = rangeMethod === 'multiple_dispersion';
   const multiples = result.multiples_valuation;
@@ -28,7 +28,7 @@ export const JourneyStep9_RangeMethodology: React.FC<JourneyStep9Props> = ({ res
   
   // Validate inputs are finite numbers
   if (!isFinite(step7Equity) || !isFinite(finalMid) || !isFinite(finalLow) || !isFinite(finalHigh)) {
-    console.error('[VALUATION-AUDIT] Invalid input values in Step 9', {
+    console.error('[VALUATION-AUDIT] Invalid input values in Step 10', {
       step7Equity,
       finalMid,
       finalLow,
@@ -118,8 +118,8 @@ export const JourneyStep9_RangeMethodology: React.FC<JourneyStep9Props> = ({ res
 
   return (
     <StepCard
-      id="step-9-range"
-      stepNumber={9}
+      id="step-10-range"
+      stepNumber={10}
       title="Range Methodology Selection"
       subtitle={isMultipleDispersion ? 'Multiple Dispersion (Market-Based)' : 'Confidence Spread (Size-Adjusted)'}
       icon={<GitBranch className="w-5 h-5" />}

@@ -28,8 +28,8 @@ export const JourneyStep9_ConfidenceScore: React.FC<JourneyStep9Props> = ({ resu
 
   return (
     <StepCard
-      id="step-8-confidence"
-      stepNumber={8}
+      id="step-9-confidence"
+      stepNumber={9}
       title="Confidence Score Analysis"
       subtitle={`${confidenceLevel} Confidence - ${confidenceScore.toFixed(0)}%`}
       icon={<Target className="w-5 h-5" />}
