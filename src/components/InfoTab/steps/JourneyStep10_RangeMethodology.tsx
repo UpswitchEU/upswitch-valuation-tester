@@ -38,7 +38,7 @@ export const JourneyStep10_RangeMethodology: React.FC<JourneyStep10Props> = ({ r
   }
   
   // DIAGNOSTIC: Log value flow
-  console.log('[DIAGNOSTIC] Step 9 Range Methodology - Value Flow', {
+  console.log('[DIAGNOSTIC] Step 10 Range Methodology - Value Flow', {
     step7Equity,
     finalMid,
     finalLow,
@@ -52,7 +52,7 @@ export const JourneyStep10_RangeMethodology: React.FC<JourneyStep10Props> = ({ r
   const isMultiplesOnly = !result.dcf_valuation || (result.dcf_weight || 0) === 0;
   
   // CRITICAL FIX: For multiples-only, baseMid MUST equal step7Equity (the waterfall value)
-  // This ensures consistency between Step 7 and Step 9
+  // This ensures consistency between Step 7 and Step 10
   // For hybrid valuations, use finalMid if it's close to step7Equity (within 1%), otherwise use step7Equity
   const baseMid = isMultiplesOnly 
     ? (step7Equity > 0 ? step7Equity : (finalMid > 0 ? finalMid : 0)) 
@@ -60,7 +60,7 @@ export const JourneyStep10_RangeMethodology: React.FC<JourneyStep10Props> = ({ r
   
   // CRITICAL VALIDATION: For multiples-only, ensure baseMid equals step7Equity
   if (isMultiplesOnly && step7Equity > 0 && Math.abs(baseMid - step7Equity) > 1) {
-    console.error('[VALUATION-AUDIT] CRITICAL: Step 9 baseMid must equal step7Equity for multiples-only', {
+    console.error('[VALUATION-AUDIT] CRITICAL: Step 10 baseMid must equal step7Equity for multiples-only', {
       baseMid,
       step7Equity,
       finalMid,
@@ -97,7 +97,7 @@ export const JourneyStep10_RangeMethodology: React.FC<JourneyStep10Props> = ({ r
   const avgSpread = (cappedSpreadLow + cappedSpreadHigh) / 2;
   
   // DIAGNOSTIC: Log spread calculations
-  console.log('[DIAGNOSTIC] Step 9 Spread Calculations', {
+  console.log('[DIAGNOSTIC] Step 10 Spread Calculations', {
     baseMid,
     finalLow,
     finalHigh,

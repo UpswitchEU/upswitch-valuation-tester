@@ -255,12 +255,12 @@ export const CalculationJourney: React.FC<CalculationJourneyProps> = ({ result, 
     };
     
     // Step 8: Ownership adjustment (control premium / minority discount)
-    const sharesForSale = result.input_data?.shares_for_sale || 100;
+    const step8Data = result.transparency?.calculation_steps?.find((step: any) => step.step_number === 8);
+    const sharesForSale = step8Data?.outputs?.ownership_percentage || step8Data?.inputs?.shares_for_sale || 100;
     const ownershipPercentage = sharesForSale / 100.0;
     
     // Get adjustment from calculation_steps if available
-    const step8Data = result.transparency_report?.calculation_steps?.find((step: any) => step.step === 8);
-    const adjustmentPercentage = step8Data?.key_outputs?.adjustment_percentage || 0;
+    const adjustmentPercentage = step8Data?.outputs?.adjustment_percentage || 0;
     const adjustmentFactor = 1.0 + (adjustmentPercentage / 100.0);
     
     const step8 = {

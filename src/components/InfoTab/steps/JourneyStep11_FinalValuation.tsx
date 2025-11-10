@@ -27,7 +27,7 @@ export const JourneyStep11_FinalValuation: React.FC<JourneyStep11Props> = ({ res
   const backendAdjustedEquity = result.multiples_valuation?.adjusted_equity_value;
   
   // DIAGNOSTIC: Log final range values
-  console.log('[DIAGNOSTIC] Step 10 Final Valuation Range', {
+  console.log('[DIAGNOSTIC] Step 11 Final Valuation Range', {
     finalLow,
     finalMid,
     finalHigh,
@@ -40,14 +40,14 @@ export const JourneyStep11_FinalValuation: React.FC<JourneyStep11Props> = ({ res
   });
   
   // CRITICAL VALIDATION: For multiples-only, final mid-point MUST equal adjusted_equity_value from Step 7
-  // This ensures consistency between Step 7, Step 9, and Step 10
+  // This ensures consistency between Step 7, Step 10, and Step 11
   if (isMultiplesOnly && backendAdjustedEquity && backendAdjustedEquity > 0) {
     const tolerance = Math.max(backendAdjustedEquity * 0.005, 50); // 0.5% or €50 (stricter than before)
     const difference = Math.abs(finalMid - backendAdjustedEquity);
     const percentageDiff = (difference / backendAdjustedEquity * 100);
     
     if (difference > tolerance) {
-      console.error('[VALUATION-AUDIT] CRITICAL: Step 10 final mid-point mismatch with backend adjusted_equity_value', {
+      console.error('[VALUATION-AUDIT] CRITICAL: Step 11 final mid-point mismatch with backend adjusted_equity_value', {
         finalMid,
         backendAdjustedEquity,
         difference,
@@ -56,7 +56,7 @@ export const JourneyStep11_FinalValuation: React.FC<JourneyStep11Props> = ({ res
         note: 'For multiples-only valuations, final mid MUST equal adjusted_equity_value from Step 7. This indicates a backend calculation error.'
       });
     } else {
-      console.log('[DIAGNOSTIC] Step 10 mid-point validation passed', {
+      console.log('[DIAGNOSTIC] Step 11 mid-point validation passed', {
         finalMid,
         backendAdjustedEquity,
         difference,

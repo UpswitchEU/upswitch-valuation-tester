@@ -15,15 +15,13 @@ const formatCurrency = (value: number): string => `€${Math.round(value).toLoca
 
 export const JourneyStep8_OwnershipAdjustment: React.FC<JourneyStep8Props> = ({ result, beforeValues }) => {
   // Extract ownership adjustment data from result
-  // Note: This data should come from Step 8 result in the calculation journey
-  // For now, we'll extract from input data or result metadata
-  const sharesForSale = result.input_data?.shares_for_sale || 100;
+  // Get adjustment data from calculation_steps if available
+  const step8Data = result.transparency?.calculation_steps?.find((step: any) => step.step_number === 8);
+  const sharesForSale = step8Data?.outputs?.ownership_percentage || step8Data?.inputs?.shares_for_sale || 100;
   const ownershipPercentage = sharesForSale / 100.0;
   
-  // Get adjustment data from calculation_steps if available
-  const step8Data = result.transparency_report?.calculation_steps?.find((step: any) => step.step === 8);
-  const adjustmentType = step8Data?.key_outputs?.adjustment_type || 'none';
-  const adjustmentPercentage = step8Data?.key_outputs?.adjustment_percentage || 0;
+  const adjustmentType = step8Data?.outputs?.adjustment_type || 'none';
+  const adjustmentPercentage = step8Data?.outputs?.adjustment_percentage || 0;
   const adjustmentFactor = 1.0 + (adjustmentPercentage / 100.0);
   
   // Calculate adjusted equity values
@@ -36,22 +34,16 @@ export const JourneyStep8_OwnershipAdjustment: React.FC<JourneyStep8Props> = ({ 
   // Determine adjustment label and color
   let adjustmentLabel = 'Ownership Adjustment';
   let adjustmentColor = 'blue';
-  let adjustmentDescription = '';
   
   if (adjustmentType === 'control_premium') {
     adjustmentLabel = 'Control Premium';
     adjustmentColor = 'green';
-    adjustmentDescription = `Majority control (${sharesForSale}% ownership) - Premium applied for operational control`;
   } else if (adjustmentType === 'minority_discount') {
     adjustmentLabel = 'Minority Discount';
     adjustmentColor = 'red';
-    adjustmentDescription = `Minority stake (${sharesForSale}% ownership) - Discount applied for limited control`;
   } else if (adjustmentType === 'deadlock_discount') {
     adjustmentLabel = 'Deadlock Risk Discount';
     adjustmentColor = 'orange';
-    adjustmentDescription = `Equal control (${sharesForSale}% ownership) - Discount applied for deadlock risk`;
-  } else {
-    adjustmentDescription = `Full ownership (100%) - No adjustment needed`;
   }
   
   // Skip rendering if 100% ownership and no adjustment
@@ -147,10 +139,10 @@ export const JourneyStep8_OwnershipAdjustment: React.FC<JourneyStep8Props> = ({ 
           <h4 className="font-semibold text-gray-900 mb-2">Understanding Ownership Adjustments</h4>
           <div className="text-sm text-gray-700 space-y-2">
             <p>
-              <strong>Control Premium:</strong> Applied for majority stakes (>50%) to reflect the value of operational control and strategic decision-making ability.
+              <strong>Control Premium:</strong> Applied for majority stakes (&gt;50%) to reflect the value of operational control and strategic decision-making ability.
             </p>
             <p>
-              <strong>Minority Discount:</strong> Applied for minority stakes (<50%) to reflect limited control and influence over company decisions.
+              <strong>Minority Discount:</strong> Applied for minority stakes (&lt;50%) to reflect limited control and influence over company decisions.
             </p>
             <p>
               <strong>Deadlock Risk:</strong> Applied for 50% ownership to reflect the risk of decision-making deadlocks.
@@ -165,8 +157,8 @@ export const JourneyStep8_OwnershipAdjustment: React.FC<JourneyStep8Props> = ({ 
         <div className="bg-blue-50 border-l-4 border-blue-500 p-4 rounded">
           <p className="text-sm text-blue-900">
             <strong>Academic Sources:</strong> Control premiums typically range from 10-30% for majority stakes, 
-            while minority discounts range from 15-30% for <50% stakes (McKinsey Valuation, 2015; Mergerstat Review, 2020; 
-            Pratt & Niculita, 2008).
+            while minority discounts range from 15-30% for &lt;50% stakes (McKinsey Valuation, 2015; Mergerstat Review, 2020; 
+            Pratt &amp; Niculita, 2008).
           </p>
         </div>
       </div>
