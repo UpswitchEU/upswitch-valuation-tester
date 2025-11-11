@@ -1,6 +1,9 @@
 import React from 'react';
 import { GitBranch } from 'lucide-react';
 import { StepCard } from '../shared/StepCard';
+import { StepMetadata } from '../../shared/StepMetadata';
+import { getStepData } from '../../../utils/valuationDataExtractor';
+import { getStepResultData } from '../../../utils/stepDataMapper';
 import type { ValuationResponse } from '../../../types/valuation';
 
 interface JourneyStep10Props {
@@ -11,7 +14,11 @@ interface JourneyStep10Props {
 const formatCurrency = (value: number): string => `€${Math.round(value).toLocaleString()}`;
 
 export const JourneyStep10_RangeMethodology: React.FC<JourneyStep10Props> = ({ result, beforeValues }) => {
-  const rangeMethod = result.range_methodology || 'confidence_spread';
+  // Extract backend step data
+  const step10Data = getStepData(result, 10);
+  const step10Result = getStepResultData(result, 10);
+  
+  const rangeMethod = step10Result?.methodology_selected || result.range_methodology || 'confidence_spread';
   const isMultipleDispersion = rangeMethod === 'multiple_dispersion';
   const multiples = result.multiples_valuation;
   const confidenceScore = result.confidence_score || 0;
@@ -127,6 +134,16 @@ export const JourneyStep10_RangeMethodology: React.FC<JourneyStep10Props> = ({ r
       defaultExpanded={true}
     >
       <div className="space-y-6">
+        {/* Step Metadata */}
+        {step10Data && (
+          <StepMetadata
+            stepData={step10Data}
+            stepNumber={10}
+            showExecutionTime={true}
+            showStatus={true}
+          />
+        )}
+
         {/* Method Selection */}
         <div className={`border-2 rounded-lg p-4 ${
           isMultipleDispersion ? 'bg-green-50 border-green-500' : 'bg-blue-50 border-blue-500'

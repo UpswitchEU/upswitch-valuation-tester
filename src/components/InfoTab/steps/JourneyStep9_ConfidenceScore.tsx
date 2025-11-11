@@ -1,6 +1,9 @@
 import React from 'react';
 import { Target } from 'lucide-react';
 import { StepCard } from '../shared/StepCard';
+import { StepMetadata } from '../../shared/StepMetadata';
+import { getStepData } from '../../../utils/valuationDataExtractor';
+import { getStepResultData } from '../../../utils/stepDataMapper';
 import type { ValuationResponse } from '../../../types/valuation';
 
 interface JourneyStep9Props {
@@ -8,7 +11,11 @@ interface JourneyStep9Props {
 }
 
 export const JourneyStep9_ConfidenceScore: React.FC<JourneyStep9Props> = ({ result }) => {
-  const confidenceScore = result.confidence_score || 0;
+  // Extract backend step data
+  const step9Data = getStepData(result, 9);
+  const step9Result = getStepResultData(result, 9);
+  
+  const confidenceScore = step9Result?.overall_confidence_score || result.confidence_score || 0;
   // Backend returns confidence_score as integer 0-100, not decimal 0-1
   const confidenceLevel = 
     confidenceScore >= 80 ? 'HIGH' :
@@ -37,6 +44,16 @@ export const JourneyStep9_ConfidenceScore: React.FC<JourneyStep9Props> = ({ resu
       defaultExpanded={true}
     >
       <div className="space-y-6">
+        {/* Step Metadata */}
+        {step9Data && (
+          <StepMetadata
+            stepData={step9Data}
+            stepNumber={9}
+            showExecutionTime={true}
+            showStatus={true}
+          />
+        )}
+
         {/* Overall Score */}
         <div className={`border-2 rounded-lg p-4 ${
           confidenceLevel === 'HIGH' ? 'bg-green-50 border-green-500' :

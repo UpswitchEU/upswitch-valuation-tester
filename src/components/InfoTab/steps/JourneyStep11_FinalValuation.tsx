@@ -1,6 +1,9 @@
 import React from 'react';
 import { Trophy } from 'lucide-react';
 import { StepCard } from '../shared/StepCard';
+import { StepMetadata } from '../../shared/StepMetadata';
+import { getStepData } from '../../../utils/valuationDataExtractor';
+import { getStepResultData } from '../../../utils/stepDataMapper';
 import type { ValuationResponse } from '../../../types/valuation';
 
 interface JourneyStep11Props {
@@ -15,9 +18,13 @@ const formatCurrencyCompact = (value: number): string => {
 };
 
 export const JourneyStep11_FinalValuation: React.FC<JourneyStep11Props> = ({ result }) => {
-  const finalLow = result.equity_value_low;
-  const finalMid = result.equity_value_mid;
-  const finalHigh = result.equity_value_high;
+  // Extract backend step data
+  const step11Data = getStepData(result, 11);
+  const step11Result = getStepResultData(result, 11);
+  
+  const finalLow = step11Result?.final_low || result.equity_value_low;
+  const finalMid = step11Result?.final_mid || result.equity_value_mid;
+  const finalHigh = step11Result?.final_high || result.equity_value_high;
   const confidenceScore = result.confidence_score || 0;
   // Backend returns confidence_score as integer 0-100, not decimal 0-1
   const confidenceLevel = confidenceScore >= 80 ? 'HIGH' : confidenceScore >= 60 ? 'MEDIUM' : 'LOW';
@@ -77,6 +84,16 @@ export const JourneyStep11_FinalValuation: React.FC<JourneyStep11Props> = ({ res
       defaultExpanded={true}
     >
       <div className="space-y-6">
+        {/* Step Metadata */}
+        {step11Data && (
+          <StepMetadata
+            stepData={step11Data}
+            stepNumber={11}
+            showExecutionTime={true}
+            showStatus={true}
+          />
+        )}
+
         {/* Final Range Display */}
         <div className="bg-gradient-to-br from-green-50 to-blue-50 border-2 border-green-500 rounded-xl p-6 shadow-lg">
           <div className="text-center mb-4">
