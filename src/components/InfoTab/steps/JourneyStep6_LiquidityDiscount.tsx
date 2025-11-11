@@ -1,8 +1,11 @@
 import React from 'react';
 import { Droplets } from 'lucide-react';
 import { StepCard } from '../shared/StepCard';
+import { StepMetadata } from '../../shared/StepMetadata';
 import { FormulaBox } from '../shared/FormulaBox';
 import { BeforeAfterTable } from '../shared/BeforeAfterTable';
+import { getStepData } from '../../../utils/valuationDataExtractor';
+import { getStepResultData } from '../../../utils/stepDataMapper';
 import type { ValuationResponse } from '../../../types/valuation';
 import { normalizeMarginFormat } from '../../Results/utils/valuationCalculations';
 
@@ -14,6 +17,10 @@ interface JourneyStep6Props {
 const formatCurrency = (value: number): string => `€${Math.round(value).toLocaleString()}`;
 
 export const JourneyStep6_LiquidityDiscount: React.FC<JourneyStep6Props> = ({ result, beforeValues }) => {
+  // Extract backend step data
+  const step6Data = getStepData(result, 6);
+  const step6Result = getStepResultData(result, 6);
+  
   const liquidityDiscount = result.multiples_valuation?.liquidity_discount || 0;
   // Normalize margin format (handles both decimal 0-1 and percentage 0-100 from backend)
   const ebitdaMarginRaw = result.financial_metrics?.ebitda_margin;
@@ -40,6 +47,16 @@ export const JourneyStep6_LiquidityDiscount: React.FC<JourneyStep6Props> = ({ re
       defaultExpanded={true}
     >
       <div className="space-y-6">
+        {/* Step Metadata */}
+        {step6Data && (
+          <StepMetadata
+            stepData={step6Data}
+            stepNumber={6}
+            showExecutionTime={true}
+            showStatus={true}
+          />
+        )}
+
         {/* Formula */}
         <FormulaBox
           formula="Value × (1 + Liquidity Discount)"
