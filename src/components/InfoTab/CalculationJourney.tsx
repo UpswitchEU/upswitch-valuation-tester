@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { JourneyNavigation } from './JourneyNavigation';
 import { JourneyStep0_HistoricalTrends } from './steps/JourneyStep0_HistoricalTrends';
+import { JourneyStep0_DataQuality } from './steps/JourneyStep0_DataQuality';
 import { JourneyStep1_Inputs } from './steps/JourneyStep1_Inputs';
 import { JourneyStep2_Benchmarking } from './steps/JourneyStep2_Benchmarking';
 import { JourneyStep3_BaseEV } from './steps/JourneyStep3_BaseEV';

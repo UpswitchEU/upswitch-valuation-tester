@@ -1,6 +1,9 @@
 import React from 'react';
-import { TrendingUp, TrendingDown, Minus } from 'lucide-react';
+import { TrendingUp, TrendingDown, Minus, CheckCircle, AlertTriangle } from 'lucide-react';
 import { StepCard } from '../shared/StepCard';
+import { StepMetadata } from '../../shared/StepMetadata';
+import { getStepData, getStepResultData } from '../../../utils/valuationDataExtractor';
+import { getStepResultData as getStepResult } from '../../../utils/stepDataMapper';
 import type { ValuationResponse } from '../../../types/valuation';
 
 interface JourneyStep0Props {
