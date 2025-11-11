@@ -1,7 +1,9 @@
 import { BarChart3 } from 'lucide-react';
 import React from 'react';
 import type { ValuationResponse } from '../../../types/valuation';
-import { getStepData, getStepResultData } from '../../../utils/valuationDataExtractor';
+import { getStepResultData } from '../../../utils/stepDataMapper';
+import { getStepData } from '../../../utils/valuationDataExtractor';
+import { StepMetadata } from '../../shared/StepMetadata';
 import { StepCard } from '../shared/StepCard';
 
 interface JourneyStep2Props {
