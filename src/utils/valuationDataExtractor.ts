@@ -13,6 +13,7 @@ import type {
   EnhancedCalculationStep
 } from '../types/valuation';
 import { dataExtractionLogger, createPerformanceLogger } from './logger';
+import { normalizeCalculationSteps } from './calculationStepsNormalizer';
 
 /**
  * Extract step data with fallback priority:
@@ -55,7 +56,8 @@ export function getStepData(
 
   // Priority 2: transparency.calculation_steps
   if (result.transparency?.calculation_steps) {
-    const step = result.transparency.calculation_steps.find(
+    const normalizedSteps = normalizeCalculationSteps(result.transparency.calculation_steps);
+    const step = normalizedSteps.find(
       (s) => s.step === stepNumber || s.step_number === stepNumber
     );
     if (step) {
@@ -70,40 +72,13 @@ export function getStepData(
     }
   }
 
-  // Priority 3: Legacy calculation_steps (if exists)
-  if (result.transparency?.calculation_steps) {
-    const legacyStep = (result.transparency.calculation_steps as any[]).find(
-      (s: any) => s.step_number === stepNumber
-    );
-    if (legacyStep) {
-      dataExtractionLogger.info('Step data extracted from legacy format', {
-        step: stepNumber,
-        dataSource: 'legacy',
-        fallbackUsed: true
-      });
-      perfLogger.end({ dataSource: 'legacy', hasData: true, fallbackUsed: true });
-      return {
-        step: legacyStep.step_number,
-        step_number: legacyStep.step_number,
-        name: legacyStep.description || `Step ${stepNumber}`,
-        description: legacyStep.description || legacyStep.explanation || '',
-        status: 'completed', // Legacy doesn't have status, assume completed
-        execution_time_ms: 0,
-        formula: legacyStep.formula,
-        inputs: legacyStep.inputs,
-        outputs: legacyStep.outputs,
-        explanation: legacyStep.explanation
-      };
-    }
-  }
-
   dataExtractionLogger.warn('Step data not found in any source', {
     step: stepNumber,
     dataSource: 'none',
     hasModularSystem: !!result.modular_system,
     hasTransparency: !!result.transparency,
     modularSystemStepsCount: result.modular_system?.step_details?.length || 0,
-    transparencyStepsCount: result.transparency?.calculation_steps?.length || 0
+    transparencyStepsCount: normalizeCalculationSteps(result.transparency?.calculation_steps).length
   });
   perfLogger.end({ dataSource: 'none', hasData: false });
   return null;
@@ -144,14 +119,15 @@ export function getAllStepData(
 
   // Fallback to transparency
   if (result.transparency?.calculation_steps) {
-    const stepCount = result.transparency.calculation_steps.length;
+    const normalizedSteps = normalizeCalculationSteps(result.transparency.calculation_steps);
+    const stepCount = normalizedSteps.length;
     dataExtractionLogger.info('All step data extracted from transparency', {
       dataSource: 'transparency',
       stepCount,
       fallbackUsed: true
     });
     perfLogger.end({ dataSource: 'transparency', stepCount, fallbackUsed: true });
-    return result.transparency.calculation_steps;
+    return normalizedSteps;
   }
 
   dataExtractionLogger.warn('No step data available from any source', {
@@ -308,7 +284,7 @@ export function getStepsSummary(result: ValuationResponse) {
 
   // Fallback: count from transparency
   if (result.transparency?.calculation_steps) {
-    const steps = result.transparency.calculation_steps;
+    const steps = normalizeCalculationSteps(result.transparency.calculation_steps);
     const summary = {
       total: steps.length,
       completed: steps.filter((s) => s.status === 'completed').length,

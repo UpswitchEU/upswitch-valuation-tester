@@ -7,6 +7,7 @@
 
 import axios, { AxiosInstance, AxiosResponse } from 'axios';
 import type { ValuationRequest, ValuationResponse } from '../types/valuation';
+import { normalizeCalculationSteps } from '../utils/calculationStepsNormalizer';
 import { apiLogger, extractCorrelationId, setCorrelationFromResponse, createPerformanceLogger } from '../utils/logger';
 
 class BackendAPI {
@@ -47,7 +48,9 @@ class BackendAPI {
             hasValuationId: !!responseData?.valuation_id,
             hasTransparency: !!responseData?.transparency,
             hasModularSystem: !!responseData?.modular_system,
-            transparencyStepsCount: responseData?.transparency?.calculation_steps?.length || 0,
+            transparencyStepsCount: responseData?.transparency?.calculation_steps 
+              ? normalizeCalculationSteps(responseData.transparency.calculation_steps).length 
+              : 0,
             modularSystemStepsCount: responseData?.modular_system?.step_details?.length || 0,
             correlationId
           });

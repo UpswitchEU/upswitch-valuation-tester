@@ -1,6 +1,7 @@
 import { Percent } from 'lucide-react';
 import React, { useEffect, useRef } from 'react';
 import type { ValuationResponse } from '../../../types/valuation';
+import { normalizeCalculationSteps } from '../../../utils/calculationStepsNormalizer';
 import { getStepResultData } from '../../../utils/stepDataMapper';
 import { getStepData } from '../../../utils/valuationDataExtractor';
 import { StepMetadata } from '../../shared/StepMetadata';
@@ -43,8 +44,11 @@ export const JourneyStep8_OwnershipAdjustment: React.FC<JourneyStep8Props> = ({ 
   const step8Result = getStepResultData(result, 8);
   
   // Extract ownership adjustment data with fallback to old logic
+  const normalizedSteps = result.transparency?.calculation_steps 
+    ? normalizeCalculationSteps(result.transparency.calculation_steps)
+    : [];
   const sharesForSale = step8Result?.shares_for_sale || step8Result?.ownership_percentage || 
-                        result.transparency?.calculation_steps?.find((step: any) => step.step_number === 8)?.outputs?.ownership_percentage || 100;
+                        normalizedSteps.find((step: any) => step.step_number === 8)?.outputs?.ownership_percentage || 100;
   const ownershipPercentage = sharesForSale / 100.0;
   
   const adjustmentType = step8Result?.adjustment_type || 'none';

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { generateReportId, isValidReportId } from '../utils/reportIdGenerator';
 import UrlGeneratorService from '../services/urlGenerator';
 import { FlowSelectionScreen } from './FlowSelectionScreen';
@@ -17,6 +17,7 @@ type Stage = 'loading' | 'flow-selection' | 'data-entry' | 'processing';
 export const ValuationReport: React.FC = () => {
   const { reportId } = useParams<{ reportId: string }>();
   const navigate = useNavigate();
+  const location = useLocation();
   const { isAuthenticated } = useAuth();
   
   const [currentReportId, setCurrentReportId] = useState<string>('');
@@ -24,6 +25,10 @@ export const ValuationReport: React.FC = () => {
   const [stage, setStage] = useState<Stage>('loading');
   const [error, setError] = useState<string | null>(null);
   const [showOutOfCreditsModal, setShowOutOfCreditsModal] = useState(false);
+  
+  // Extract prefilled query from location state
+  const prefilledQuery = (location.state as any)?.prefilledQuery || null;
+  const autoSend = (location.state as any)?.autoSend || false;
 
   // Check if report exists and load appropriate state
   const checkReportExists = useCallback(async (reportId: string) => {
@@ -178,6 +183,8 @@ export const ValuationReport: React.FC = () => {
           <AIAssistedValuation 
             reportId={currentReportId}
             onComplete={handleValuationComplete}
+            initialQuery={prefilledQuery}
+            autoSend={autoSend}
           />
         )}
         

@@ -13,6 +13,7 @@ import { JourneyStep9_ConfidenceScore } from './steps/JourneyStep9_ConfidenceSco
 import { JourneyStep10_RangeMethodology } from './steps/JourneyStep10_RangeMethodology';
 import { JourneyStep11_FinalValuation } from './steps/JourneyStep11_FinalValuation';
 import type { ValuationResponse, ValuationInputData } from '../../types/valuation';
+import { normalizeCalculationSteps } from '../../utils/calculationStepsNormalizer';
 import { componentLogger, createPerformanceLogger } from '../../utils/logger';
 import { getStepsSummary } from '../../utils/valuationDataExtractor';
 
@@ -55,7 +56,9 @@ export const CalculationJourney: React.FC<CalculationJourneyProps> = ({ result, 
       skippedSteps: summary.skipped,
       hasTransparency: !!result.transparency,
       hasModularSystem: !!result.modular_system,
-      transparencyStepsCount: result.transparency?.calculation_steps?.length || 0,
+      transparencyStepsCount: result.transparency?.calculation_steps 
+        ? normalizeCalculationSteps(result.transparency.calculation_steps).length 
+        : 0,
       modularSystemStepsCount: result.modular_system?.step_details?.length || 0
     });
     
@@ -287,7 +290,10 @@ export const CalculationJourney: React.FC<CalculationJourneyProps> = ({ result, 
     };
     
     // Step 8: Ownership adjustment (control premium / minority discount)
-    const step8Data = result.transparency?.calculation_steps?.find((step: any) => step.step_number === 8);
+    const normalizedSteps = result.transparency?.calculation_steps 
+      ? normalizeCalculationSteps(result.transparency.calculation_steps)
+      : [];
+    const step8Data = normalizedSteps.find((step: any) => step.step_number === 8);
     const sharesForSale = step8Data?.outputs?.ownership_percentage || step8Data?.inputs?.shares_for_sale || 100;
     const ownershipPercentage = sharesForSale / 100.0;
     

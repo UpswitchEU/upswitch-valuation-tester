@@ -29,9 +29,16 @@ type FlowStage = 'chat' | 'results' | 'blocked';
 interface AIAssistedValuationProps {
   reportId: string;
   onComplete: (result: ValuationResponse) => void;
+  initialQuery?: string | null;
+  autoSend?: boolean;
 }
 
-export const AIAssistedValuation: React.FC<AIAssistedValuationProps> = ({ reportId, onComplete }) => {
+export const AIAssistedValuation: React.FC<AIAssistedValuationProps> = ({ 
+  reportId, 
+  onComplete,
+  initialQuery = null,
+  autoSend = false
+}) => {
   const { user, isAuthenticated } = useAuth();
   const [stage, setStage] = useState<FlowStage>('chat');
   const [valuationResult, setValuationResult] = useState<ValuationResponse | null>(null);
@@ -1120,6 +1127,8 @@ export const AIAssistedValuation: React.FC<AIAssistedValuationProps> = ({ report
                   onHtmlPreviewUpdate={handleHtmlPreviewUpdate}
                   className="h-full"
                   placeholder="Ask about your business valuation..."
+                  initialMessage={initialQuery}
+                  autoSend={autoSend}
                 />
               </ErrorBoundary>
             </div>

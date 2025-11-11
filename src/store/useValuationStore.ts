@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { api } from '../services/api';
 import { backendAPI } from '../services/backendApi';
 import type { QuickValuationRequest, ValuationFormData, ValuationInputData, ValuationRequest, ValuationResponse } from '../types/valuation';
+import { normalizeCalculationSteps } from '../utils/calculationStepsNormalizer';
 import { storeLogger, correlationContext } from '../utils/logger';
 import { validatePreference } from '../utils/numberUtils';
 // import { useReportsStore } from './useReportsStore'; // Deprecated: Now saving to database
@@ -304,7 +305,9 @@ export const useValuationStore = create<ValuationStore>((set, get) => ({
           valuationId: response.valuation_id,
           hasTransparency: !!response.transparency,
           hasModularSystem: !!response.modular_system,
-          transparencyStepsCount: response.transparency?.calculation_steps?.length || 0,
+          transparencyStepsCount: response.transparency?.calculation_steps 
+            ? normalizeCalculationSteps(response.transparency.calculation_steps).length 
+            : 0,
           modularSystemStepsCount: response.modular_system?.step_details?.length || 0
         });
       }

@@ -50,6 +50,8 @@ export interface StreamingChatProps {
   className?: string;
   placeholder?: string;
   disabled?: boolean;
+  initialMessage?: string | null;
+  autoSend?: boolean;
 }
 
 /**
@@ -79,7 +81,9 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
   onReportComplete,
   onHtmlPreviewUpdate,
   className = '',
-  disabled = false
+  disabled = false,
+  initialMessage = null,
+  autoSend = false
 }) => {
   // Get user data from AuthContext
   const { user } = useAuth();
@@ -139,6 +143,9 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
   
   // CRITICAL FIX: Store event handler in ref so onStreamStart callback can access it
   const eventHandlerRef = useRef<StreamEventHandler | null>(null);
+  
+  // Track if initial message has been sent
+  const initialMessageSentRef = useRef(false);
   
   // Create event handler with all callbacks
   // CRITICAL FIX: Removed state.messages from dependencies to prevent recreation on every update
@@ -645,6 +652,22 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
       });
     }
   }, [state.input, state.isStreaming, state.setIsStreaming, disabled, sessionId, pythonSessionId, userId, inputValidator, addMessage, updateStreamingMessage, onHtmlPreviewUpdate, trackConversationCompletion, streamingManager, eventHandler]);
+  
+  // Auto-send initial message if provided
+  useEffect(() => {
+    if (initialMessage && autoSend && !initialMessageSentRef.current && !state.isStreaming && !isRequestInProgressRef.current && state.messages.length === 0) {
+      initialMessageSentRef.current = true;
+      // Set input value and trigger send
+      state.setInput(initialMessage);
+      // Use setTimeout to ensure state is updated before sending
+      setTimeout(() => {
+        const syntheticEvent = {
+          preventDefault: () => {},
+        } as React.FormEvent;
+        handleSubmit(syntheticEvent);
+      }, 100);
+    }
+  }, [initialMessage, autoSend, state.isStreaming, state.setInput, state.messages.length, handleSubmit]);
   
   // Handle suggestion selection
   const handleSuggestionSelect = useCallback((suggestion: string) => {

@@ -2,6 +2,7 @@ import { Scale, TrendingDown, TrendingUp } from 'lucide-react';
 import React from 'react';
 import type { ValuationInputData, ValuationResponse } from '../../types/valuation';
 import { calculateVariance } from '../../utils/calculationHelpers';
+import { normalizeCalculationSteps } from '../../utils/calculationStepsNormalizer';
 import { formatGrowthRate } from '../../utils/growthFormatHelpers';
 import { formatCurrency, formatPercent } from '../Results/utils/formatters';
 
@@ -186,7 +187,10 @@ export const WeightingLogicSection: React.FC<WeightingLogicSectionProps> = ({ re
 
       {/* NEW: Dynamic Weighting Decision from Transparency */}
       {(() => {
-        const weightingStep = result.transparency?.calculation_steps?.find(
+        const normalizedSteps = result.transparency?.calculation_steps 
+          ? normalizeCalculationSteps(result.transparency.calculation_steps)
+          : [];
+        const weightingStep = normalizedSteps.find(
           step => step.description === "Dynamic Weighting Decision"
         );
         

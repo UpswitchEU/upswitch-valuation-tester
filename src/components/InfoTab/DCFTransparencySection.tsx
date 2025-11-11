@@ -2,6 +2,7 @@ import { ChevronDown, ChevronRight, TrendingUp } from 'lucide-react';
 import React, { useState } from 'react';
 import { FINANCIAL_CONSTANTS } from '../../config/financialConstants';
 import type { ValuationInputData, ValuationResponse } from '../../types/valuation';
+import { normalizeCalculationSteps } from '../../utils/calculationStepsNormalizer';
 import { formatCurrency, formatPercent } from '../Results/utils/formatters';
 
 interface DCFTransparencySectionProps {
@@ -275,7 +276,10 @@ export const DCFTransparencySection: React.FC<DCFTransparencySectionProps> = ({ 
 
       {/* NEW: FCF Projection Assumptions */}
       {(() => {
-        const fcfAssumptions = result.transparency?.calculation_steps?.find(
+        const normalizedSteps = result.transparency?.calculation_steps 
+          ? normalizeCalculationSteps(result.transparency.calculation_steps)
+          : [];
+        const fcfAssumptions = normalizedSteps.find(
           step => step.description === "FCF Projection Assumptions"
         );
 
@@ -338,7 +342,10 @@ export const DCFTransparencySection: React.FC<DCFTransparencySectionProps> = ({ 
       >
         {/* NEW: Enhanced FCF Table with Year-by-Year Breakdown */}
         {(() => {
-          const fcfYearSteps = result.transparency?.calculation_steps?.filter(
+          const normalizedSteps = result.transparency?.calculation_steps 
+            ? normalizeCalculationSteps(result.transparency.calculation_steps)
+            : [];
+          const fcfYearSteps = normalizedSteps.filter(
             step => step.description.startsWith("FCF Year") && step.description.includes("Projection")
           ) || [];
 

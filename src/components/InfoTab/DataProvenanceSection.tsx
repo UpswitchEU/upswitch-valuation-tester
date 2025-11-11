@@ -1,6 +1,7 @@
 import { AlertCircle, CheckCircle, ChevronDown, ChevronUp, Clock, Database } from 'lucide-react';
 import React, { useState } from 'react';
 import type { DataSource as DataSourceType, ValuationInputData, ValuationResponse } from '../../types/valuation';
+import { normalizeCalculationSteps } from '../../utils/calculationStepsNormalizer';
 import { formatGrowthRate } from '../../utils/growthFormatHelpers';
 import { formatCurrency, formatPercent } from '../Results/utils/formatters';
 
@@ -357,11 +358,14 @@ export const DataProvenanceSection: React.FC<DataProvenanceSectionProps> = ({ re
 
       {/* NEW: 8-Factor Confidence Breakdown */}
       {(() => {
-        const confidenceSteps = result.transparency?.calculation_steps?.filter(
+        const normalizedSteps = result.transparency?.calculation_steps 
+          ? normalizeCalculationSteps(result.transparency.calculation_steps)
+          : [];
+        const confidenceSteps = normalizedSteps.filter(
           step => step.description.startsWith("Confidence Factor:")
         ) || [];
 
-        const overallConfidenceStep = result.transparency?.calculation_steps?.find(
+        const overallConfidenceStep = normalizedSteps.find(
           step => step.description === "Overall Confidence Score"
         );
 

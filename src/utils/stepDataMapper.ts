@@ -16,6 +16,7 @@ import type {
   Step6LiquidityDiscountResult
 } from '../types/valuation';
 import { dataExtractionLogger, createPerformanceLogger } from './logger';
+import { normalizeCalculationSteps } from './calculationStepsNormalizer';
 
 /**
  * Get step result data with fallback priority:
@@ -108,7 +109,10 @@ export function getStep0DataQualityResult(result: ValuationResponse) {
   dataExtractionLogger.debug('Extracting Step 0 data quality result', { step: 0 });
   
   // Priority 1: transparency.calculation_steps
-  const step = result.transparency?.calculation_steps?.find(
+  const normalizedSteps = result.transparency?.calculation_steps 
+    ? normalizeCalculationSteps(result.transparency.calculation_steps)
+    : [];
+  const step = normalizedSteps.find(
     (s) => s.step === 0 || s.step_number === 0
   );
   
@@ -173,7 +177,10 @@ export function getStep1InputResult(result: ValuationResponse) {
   const perfLogger = createPerformanceLogger('getStep1InputResult', 'data-extraction');
   dataExtractionLogger.debug('Extracting Step 1 input result', { step: 1 });
   
-  const step = result.transparency?.calculation_steps?.find(
+  const normalizedSteps = result.transparency?.calculation_steps 
+    ? normalizeCalculationSteps(result.transparency.calculation_steps)
+    : [];
+  const step = normalizedSteps.find(
     (s) => s.step === 1 || s.step_number === 1
   );
 
@@ -234,7 +241,10 @@ export function getStep2BenchmarkingResult(result: ValuationResponse) {
   const perfLogger = createPerformanceLogger('getStep2BenchmarkingResult', 'data-extraction');
   dataExtractionLogger.debug('Extracting Step 2 benchmarking result', { step: 2 });
   
-  const step = result.transparency?.calculation_steps?.find(
+  const normalizedSteps = result.transparency?.calculation_steps 
+    ? normalizeCalculationSteps(result.transparency.calculation_steps)
+    : [];
+  const step = normalizedSteps.find(
     (s) => s.step === 2 || s.step_number === 2
   );
 
@@ -304,7 +314,10 @@ export function getStep3BaseEVResult(result: ValuationResponse) {
   const perfLogger = createPerformanceLogger('getStep3BaseEVResult', 'data-extraction');
   dataExtractionLogger.debug('Extracting Step 3 base EV result', { step: 3 });
   
-  const step = result.transparency?.calculation_steps?.find(
+  const normalizedSteps = result.transparency?.calculation_steps 
+    ? normalizeCalculationSteps(result.transparency.calculation_steps)
+    : [];
+  const step = normalizedSteps.find(
     (s) => s.step === 3 || s.step_number === 3
   );
 
@@ -385,7 +398,10 @@ export function getStep4OwnerConcentrationResult(result: ValuationResponse) {
   const perfLogger = createPerformanceLogger('getStep4OwnerConcentrationResult', 'data-extraction');
   dataExtractionLogger.debug('Extracting Step 4 owner concentration result', { step: 4 });
   
-  const step = result.transparency?.calculation_steps?.find(
+  const normalizedSteps = result.transparency?.calculation_steps 
+    ? normalizeCalculationSteps(result.transparency.calculation_steps)
+    : [];
+  const step = normalizedSteps.find(
     (s) => s.step === 4 || s.step_number === 4
   );
 
@@ -488,7 +504,10 @@ export function getStep5SizeDiscountResult(result: ValuationResponse) {
   const perfLogger = createPerformanceLogger('getStep5SizeDiscountResult', 'data-extraction');
   dataExtractionLogger.debug('Extracting Step 5 size discount result', { step: 5 });
   
-  const step = result.transparency?.calculation_steps?.find(
+  const normalizedSteps = result.transparency?.calculation_steps 
+    ? normalizeCalculationSteps(result.transparency.calculation_steps)
+    : [];
+  const step = normalizedSteps.find(
     (s) => s.step === 5 || s.step_number === 5
   );
 
@@ -550,7 +569,10 @@ export function getStep6LiquidityDiscountResult(result: ValuationResponse) {
   const perfLogger = createPerformanceLogger('getStep6LiquidityDiscountResult', 'data-extraction');
   dataExtractionLogger.debug('Extracting Step 6 liquidity discount result', { step: 6 });
   
-  const step = result.transparency?.calculation_steps?.find(
+  const normalizedSteps = result.transparency?.calculation_steps 
+    ? normalizeCalculationSteps(result.transparency.calculation_steps)
+    : [];
+  const step = normalizedSteps.find(
     (s) => s.step === 6 || s.step_number === 6
   );
 
@@ -611,7 +633,10 @@ export function getStep7EVToEquityResult(result: ValuationResponse) {
   const perfLogger = createPerformanceLogger('getStep7EVToEquityResult', 'data-extraction');
   dataExtractionLogger.debug('Extracting Step 7 EV to equity result', { step: 7 });
   
-  const step = result.transparency?.calculation_steps?.find(
+  const normalizedSteps = result.transparency?.calculation_steps 
+    ? normalizeCalculationSteps(result.transparency.calculation_steps)
+    : [];
+  const step = normalizedSteps.find(
     (s) => s.step === 7 || s.step_number === 7
   );
 
@@ -678,7 +703,10 @@ export function getStep8OwnershipAdjustmentResult(result: ValuationResponse) {
   const perfLogger = createPerformanceLogger('getStep8OwnershipAdjustmentResult', 'data-extraction');
   dataExtractionLogger.debug('Extracting Step 8 ownership adjustment result', { step: 8 });
   
-  const step = result.transparency?.calculation_steps?.find(
+  const normalizedSteps = result.transparency?.calculation_steps 
+    ? normalizeCalculationSteps(result.transparency.calculation_steps)
+    : [];
+  const step = normalizedSteps.find(
     (s) => s.step === 8 || s.step_number === 8
   );
 
@@ -765,7 +793,10 @@ export function getStep9ConfidenceScoreResult(result: ValuationResponse) {
   const perfLogger = createPerformanceLogger('getStep9ConfidenceScoreResult', 'data-extraction');
   dataExtractionLogger.debug('Extracting Step 9 confidence score result', { step: 9 });
   
-  const step = result.transparency?.calculation_steps?.find(
+  const normalizedSteps = result.transparency?.calculation_steps 
+    ? normalizeCalculationSteps(result.transparency.calculation_steps)
+    : [];
+  const step = normalizedSteps.find(
     (s) => s.step === 9 || s.step_number === 9
   );
 
@@ -838,7 +869,10 @@ export function getStep10RangeMethodologyResult(result: ValuationResponse) {
   const perfLogger = createPerformanceLogger('getStep10RangeMethodologyResult', 'data-extraction');
   dataExtractionLogger.debug('Extracting Step 10 range methodology result', { step: 10 });
   
-  const step = result.transparency?.calculation_steps?.find(
+  const normalizedSteps = result.transparency?.calculation_steps 
+    ? normalizeCalculationSteps(result.transparency.calculation_steps)
+    : [];
+  const step = normalizedSteps.find(
     (s) => s.step === 10 || s.step_number === 10
   );
 
@@ -908,7 +942,10 @@ export function getStep11FinalValuationResult(result: ValuationResponse) {
   const perfLogger = createPerformanceLogger('getStep11FinalValuationResult', 'data-extraction');
   dataExtractionLogger.debug('Extracting Step 11 final valuation result', { step: 11 });
   
-  const step = result.transparency?.calculation_steps?.find(
+  const normalizedSteps = result.transparency?.calculation_steps 
+    ? normalizeCalculationSteps(result.transparency.calculation_steps)
+    : [];
+  const step = normalizedSteps.find(
     (s) => s.step === 11 || s.step_number === 11
   );
 
@@ -1026,7 +1063,10 @@ export function getStepInputs(
   result: ValuationResponse,
   stepNumber: number
 ): Record<string, any> | null {
-  const step = result.transparency?.calculation_steps?.find(
+  const normalizedSteps = result.transparency?.calculation_steps 
+    ? normalizeCalculationSteps(result.transparency.calculation_steps)
+    : [];
+  const step = normalizedSteps.find(
     (s) => s.step === stepNumber || s.step_number === stepNumber
   );
   return step?.inputs || null;
@@ -1039,7 +1079,10 @@ export function getStepOutputs(
   result: ValuationResponse,
   stepNumber: number
 ): Record<string, any> | null {
-  const step = result.transparency?.calculation_steps?.find(
+  const normalizedSteps = result.transparency?.calculation_steps 
+    ? normalizeCalculationSteps(result.transparency.calculation_steps)
+    : [];
+  const step = normalizedSteps.find(
     (s) => s.step === stepNumber || s.step_number === stepNumber
   );
   return step?.outputs || step?.key_outputs || null;
@@ -1052,7 +1095,10 @@ export function getStepFormula(
   result: ValuationResponse,
   stepNumber: number
 ): string | null {
-  const step = result.transparency?.calculation_steps?.find(
+  const normalizedSteps = result.transparency?.calculation_steps 
+    ? normalizeCalculationSteps(result.transparency.calculation_steps)
+    : [];
+  const step = normalizedSteps.find(
     (s) => s.step === stepNumber || s.step_number === stepNumber
   );
   return step?.formula || null;
@@ -1065,7 +1111,10 @@ export function getStepExplanation(
   result: ValuationResponse,
   stepNumber: number
 ): string | null {
-  const step = result.transparency?.calculation_steps?.find(
+  const normalizedSteps = result.transparency?.calculation_steps 
+    ? normalizeCalculationSteps(result.transparency.calculation_steps)
+    : [];
+  const step = normalizedSteps.find(
     (s) => s.step === stepNumber || s.step_number === stepNumber
   );
   return step?.explanation || step?.methodology_note || null;

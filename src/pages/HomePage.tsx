@@ -1,13 +1,17 @@
-import React, { useEffect } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
-import { FileText, Edit3, Upload, ArrowRight, ExternalLink } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { MinimalHeader } from '../components/MinimalHeader';
 import { ScrollToTop } from '../utils';
 import { generalLogger } from '../utils/logger';
 import { generateReportId } from '../utils/reportIdGenerator';
+import UrlGeneratorService from '../services/urlGenerator';
+import { VideoBackground } from '../components/VideoBackground';
 
 export const HomePage: React.FC = () => {
   const navigate = useNavigate();
+  const location = useLocation();
+  const [query, setQuery] = useState('');
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   // Auto-redirect to instant valuation if token is present
   // BUT NOT if coming from main platform (upswitch.biz) - let user choose
@@ -26,207 +30,161 @@ export const HomePage: React.FC = () => {
     }
   }, [navigate]);
 
-  // Handle method click with new tab logic for desktop
-  const handleMethodClick = (method: typeof valuationMethods[0]) => {
-    if (method.disabled) return;
-    
-    // Open BOTH AI-Guided and Manual in new tab on desktop (>= 1024px)
-    if (window.innerWidth >= 1024) {
-      window.open(method.path, '_blank', 'noopener,noreferrer');
-    } else {
-      navigate(method.path);
+  // Auto-focus the textarea when component mounts
+  useEffect(() => {
+    if (textareaRef.current) {
+      textareaRef.current.focus();
+    }
+  }, []);
+
+  // Remove body background for video visibility
+  useEffect(() => {
+    const originalBodyBg = document.body.style.backgroundColor;
+    document.body.style.backgroundColor = 'transparent';
+
+    return () => {
+      document.body.style.backgroundColor = originalBodyBg || 'black';
+    };
+  }, []);
+
+  const handleQuerySubmit = () => {
+    if (!query.trim()) return;
+
+    try {
+      // Generate new report ID
+      const newReportId = generateReportId();
+      
+      // Navigate to AI-guided flow with query context
+      const url = `${UrlGeneratorService.reportById(newReportId)}?flow=ai-guided`;
+      
+      navigate(url, {
+        state: {
+          prefilledQuery: query.trim(),
+          autoSend: true,
+        },
+      });
+    } catch (error) {
+      generalLogger.error('Error submitting query', { error });
     }
   };
 
-  const valuationMethods = [
-    {
-      id: 'ai-guided',
-      icon: FileText,
-      title: 'AI-Guided Valuation',
-      description: 'Start with AI-powered conversational guidance for your business valuation',
-      badge: 'Recommended',
-      badgeColor: 'bg-blue-500/20 text-blue-300 border-blue-500/30',
-      features: [
-        'AI-powered conversational flow',
-        'Unique report URL for sharing',
-        'Professional-grade analysis',
-        'Save and revisit anytime'
-      ],
-      path: '/ai-guided',
-      bgGradient: 'from-primary-900/20 via-blue-900/20 to-cyan-900/20',
-      borderColor: 'border-primary-500/30 hover:border-primary-400/50',
-      glowColor: 'group-hover:shadow-primary-500/20',
-    },
-    {
-      id: 'manual',
-      icon: Edit3,
-      title: 'Manual Input',
-      description: 'Full control over your valuation with comprehensive financial data entry',
-      badge: null,
-      badgeColor: '',
-      features: [
-        'Complete data control',
-        'Live preview as you type',
-        'Historical data support',
-        'Custom assumptions'
-      ],
-      path: '/manual',
-      bgGradient: 'from-zinc-800/20 via-zinc-700/20 to-zinc-800/20',
-      borderColor: 'border-zinc-600/30 hover:border-zinc-500/50',
-      glowColor: 'group-hover:shadow-zinc-500/20',
-    },
-    {
-      id: 'document',
-      icon: Upload,
-      title: 'File Upload',
-      description: 'Extract financial data from your documents automatically (PDF, Excel, CSV)',
-      badge: 'Coming soon',
-      badgeColor: 'bg-yellow-500/20 text-yellow-300 border-yellow-500/30',
-      features: [
-        'PDF & Excel support',
-        'Automatic data extraction',
-        'Review before valuation',
-        '60-70% accuracy (improving)'
-      ],
-      path: '/upload',
-      bgGradient: 'from-yellow-900/10 via-orange-900/10 to-yellow-900/10',
-      borderColor: 'border-yellow-600/30 hover:border-yellow-500/50',
-      glowColor: 'group-hover:shadow-yellow-500/20',
-      disabled: true,
-    },
+  // Sample query suggestions for valuation context
+  const quickQueries = [
+    'What is my business worth?',
+    'How to value a SaaS company?',
+    'Valuation for e-commerce business',
+    'Calculate business value with revenue',
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-zinc-950 via-zinc-900 to-zinc-950">
+    <>
       <ScrollToTop />
       <MinimalHeader />
 
+      {/* Video Background */}
+      <VideoBackground 
+        videos={[
+          '/videos/home/business-1.mp4',
+          '/videos/home/business-2.mp4',
+          '/videos/home/business-3.mp4',
+        ]}
+        opacity={0.5}
+        overlayGradient="from-black/40 via-black/30 to-black/60"
+        disableAutoRotation={true}
+        disableKeyboardInteraction={true}
+      />
 
-      {/* Hero Section */}
-      <div className="container mx-auto px-4 sm:px-6 py-8 sm:py-12 md:py-16 max-w-7xl">
-        <div className="text-center mb-8 sm:mb-12 md:mb-16">
-          <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-3 sm:mb-4 px-2">
-            Business Valuation Engine
-          </h1>
-          <p className="text-base sm:text-lg md:text-xl text-zinc-400 max-w-2xl mx-auto px-4">
-            Professional-grade valuations powered by AI
-          </p>
-
-        </div>
-
-        {/* Valuation Method Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 max-w-7xl mx-auto">
-          {valuationMethods.map((method) => {
-            const IconComponent = method.icon;
-            const isDisabled = method.disabled;
-            return (
-              <button
-                key={method.id}
-                onClick={() => handleMethodClick(method)}
-                disabled={isDisabled}
-                className={`group relative bg-gradient-to-br ${method.bgGradient} rounded-xl sm:rounded-2xl border ${method.borderColor} p-6 sm:p-8 transition-all duration-300 ${
-                  isDisabled 
-                    ? 'opacity-50 cursor-not-allowed' 
-                    : 'active:scale-95 md:hover:scale-105 hover:shadow-2xl'
-                } ${method.glowColor} text-left w-full`}
-              >
-                {/* Badge */}
-                {method.badge && (
-                  <div className="absolute top-3 right-3 sm:top-4 sm:right-4">
-                    <span className={`px-2 sm:px-3 py-1 rounded-full text-xs font-semibold border ${method.badgeColor}`}>
-                      {method.badge}
-                    </span>
-                  </div>
-                )}
-
-                {/* External Link Icon for AI-Guided on Desktop */}
-                {method.id === 'ai-guided' && !isDisabled && (
-                  <div className="absolute top-3 left-3 sm:top-4 sm:left-4 opacity-0 group-hover:opacity-100 transition-opacity duration-200 hidden lg:block">
-                    <ExternalLink className="w-4 h-4 text-zinc-400 group-hover:text-primary-400" />
-                  </div>
-                )}
-
-                {/* Icon */}
-                <div className={`w-12 h-12 sm:w-14 sm:h-14 rounded-lg sm:rounded-xl bg-zinc-800/50 border border-zinc-700/50 flex items-center justify-center mb-4 sm:mb-6 transition-colors ${
-                  isDisabled ? '' : 'group-hover:bg-zinc-700/50'
-                }`}>
-                  <IconComponent className={`w-6 h-6 sm:w-7 sm:h-7 transition-colors ${
-                    isDisabled ? 'text-zinc-500' : 'text-zinc-300 group-hover:text-white'
-                  }`} />
-                </div>
-
-                {/* Title */}
-                <h3 className={`text-xl sm:text-2xl font-bold mb-2 sm:mb-3 transition-colors ${
-                  isDisabled ? 'text-zinc-500' : 'text-white group-hover:text-primary-300'
-                }`}>
-                  {method.title}
-                </h3>
-
-                {/* Description */}
-                <p className={`text-sm mb-4 sm:mb-6 leading-relaxed ${
-                  isDisabled ? 'text-zinc-600' : 'text-zinc-400'
-                }`}>
-                  {method.description}
-                </p>
-
-                {/* Features */}
-                <ul className="space-y-2 mb-6">
-                  {method.features.map((feature, idx) => (
-                    <li key={idx} className={`flex items-center gap-2 text-sm ${
-                      isDisabled ? 'text-zinc-600' : 'text-zinc-300'
-                    }`}>
-                      <div className={`w-1.5 h-1.5 rounded-full ${
-                        isDisabled ? 'bg-zinc-600' : 'bg-primary-500'
-                      }`} />
-                      <span>{feature}</span>
-                    </li>
-                  ))}
-                </ul>
-
-                {/* CTA */}
-                <div className="flex items-center justify-between pt-6 border-t border-zinc-700/50">
-                  <span className={`text-sm font-medium transition-colors ${
-                    isDisabled ? 'text-zinc-600' : 'text-zinc-400 group-hover:text-primary-300'
-                  }`}>
-                    {isDisabled ? 'Coming Soon' : 'Get Started'}
+      <div className="min-h-screen relative">
+        {/* Hero Section with Video Background */}
+        <section className="relative z-10 py-20 md:py-24 flex items-center justify-center min-h-screen">
+          <div className="w-full max-w-6xl mx-auto px-4">
+            <div className="text-center space-y-6">
+              {/* Hero Content */}
+              <div className="space-y-6">
+                <h1 className="text-5xl md:text-6xl lg:text-7xl xl:text-8xl font-bold leading-tight tracking-tight text-white">
+                  Understand Your Business Value.
+                  <br />
+                  <span className="bg-gradient-to-r from-success-300 to-primary-300 bg-clip-text text-transparent">
+                    Get Professional Valuation.
                   </span>
-                  <ArrowRight className={`w-5 h-5 transition-all ${
-                    isDisabled 
-                      ? 'text-zinc-600' 
-                      : 'text-zinc-500 group-hover:text-primary-400 group-hover:translate-x-1'
-                  }`} />
-                </div>
-              </button>
-            );
-          })}
-        </div>
-
-
-        {/* Professional Disclaimer */}
-        <div className="mt-8 sm:mt-12 max-w-3xl mx-auto">
-          <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg sm:rounded-xl p-4 sm:p-6">
-            <div className="flex items-start gap-3 sm:gap-4">
-              <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-blue-500/20 flex items-center justify-center flex-shrink-0">
-                <svg className="w-4 h-4 sm:w-5 sm:h-5 text-blue-400" viewBox="0 0 20 20" fill="currentColor">
-                  <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
-                </svg>
-              </div>
-              <div>
-                <h4 className="text-blue-300 font-semibold mb-2 text-sm sm:text-base">Professional-Grade Valuation Engine</h4>
-                <p className="text-blue-200/80 text-xs sm:text-sm leading-relaxed">
-                  This valuation engine uses institutional-quality methodologies (DCF + Market Multiples) with 85-95% accuracy, comparable to Big 4 advisory services. While our calculations are professional-grade and transparent, valuations should be considered as informed estimates. For critical business decisions, we recommend consulting with qualified financial advisors and conducting additional due diligence.{' '}
-                  <Link 
-                    to="/privacy-explainer" 
-                    className="font-semibold underline hover:text-blue-300 transition-colors inline-block mt-1"
-                  >
-                    Learn how we protect your financial data →
-                  </Link>
+                </h1>
+                <p className="text-lg md:text-lg text-zinc-300 max-w-4xl mx-auto leading-relaxed">
+                  Professional-grade business valuations powered by AI. Get insights about your business value
+                  — by chatting with AI.
                 </p>
+              </div>
+
+              {/* Enhanced Query Interface - Ilara Style */}
+              <div className="max-w-4xl mx-auto">
+                <form
+                  onSubmit={e => {
+                    e.preventDefault();
+                    handleQuerySubmit();
+                  }}
+                  className="focus-within:bg-zinc-900/30 group flex flex-col gap-3 p-4 duration-150 w-full rounded-3xl border border-zinc-700/50 bg-zinc-900/20 text-base shadow-xl transition-all ease-in-out focus-within:border-zinc-500/40 hover:border-zinc-600/30 focus-within:hover:border-zinc-500/40 backdrop-blur-sm"
+                >
+                  {/* Main textarea container */}
+                  <div className="relative flex items-center">
+                    <textarea
+                      value={query}
+                      onChange={e => setQuery(e.target.value)}
+                      placeholder="Ask about your business valuation, company worth, or financial insights..."
+                      className="textarea-seamless flex w-full rounded-md px-3 py-3 ring-offset-background placeholder:text-zinc-400 focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 disabled:cursor-not-allowed disabled:opacity-50 resize-none text-base leading-snug placeholder-shown:text-ellipsis placeholder-shown:whitespace-nowrap md:text-base max-h-[200px] bg-transparent focus:bg-transparent flex-1 text-white"
+                      style={{ minHeight: '80px', height: '80px' }}
+                      onKeyPress={e => {
+                        if (e.key === 'Enter' && !e.shiftKey) {
+                          e.preventDefault();
+                          handleQuerySubmit();
+                        }
+                      }}
+                      ref={textareaRef}
+                      autoFocus
+                      spellCheck="false"
+                    />
+                  </div>
+
+                  {/* Action buttons row - quick query suggestions */}
+                  <div className="flex gap-2 flex-wrap items-center">
+                    {quickQueries.map((quickQuery, index) => (
+                      <button
+                        key={index}
+                        type="button"
+                        onClick={() => setQuery(quickQuery)}
+                        className="px-3 py-1.5 bg-zinc-800/50 hover:bg-zinc-700/60 border border-zinc-700/50 hover:border-zinc-600/60 rounded-full text-xs text-zinc-300 
+                                  hover:text-white transition-all duration-200 hover:shadow-md hover:shadow-black/20"
+                      >
+                        {quickQuery}
+                      </button>
+                    ))}
+
+                    {/* Right side with send button */}
+                    <div className="flex flex-grow items-center justify-end gap-2">
+                      <div className="relative flex items-center gap-2">
+                        <button
+                          type="submit"
+                          disabled={!query.trim()}
+                          className="submit-button-white flex h-8 w-8 items-center justify-center rounded-full bg-white hover:bg-zinc-100 transition-all duration-150 ease-out disabled:cursor-not-allowed disabled:opacity-50 disabled:bg-zinc-600"
+                        >
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            width="100%"
+                            height="100%"
+                            viewBox="0 -960 960 960"
+                            className="shrink-0 h-5 w-5 text-black"
+                            fill="currentColor"
+                          >
+                            <path d="M452-644 303-498q-9 9-21 8.5t-21-9.5-9-21 9-21l199-199q9-9 21-9t21 9l199 199q9 9 9 21t-9 21-21 9-21-9L512-646v372q0 13-8.5 21.5T482-244t-21.5-8.5T452-274z" />
+                          </svg>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </form>
               </div>
             </div>
           </div>
-        </div>
+        </section>
       </div>
-    </div>
+    </>
   );
 };
