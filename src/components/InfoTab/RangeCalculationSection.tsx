@@ -225,15 +225,15 @@ export const RangeCalculationSection: React.FC<RangeCalculationSectionProps> = (
                 <div className="grid grid-cols-3 gap-3">
                   <div className="bg-red-50 p-3 rounded border border-red-200">
                     <p className="text-xs text-gray-600 mb-1">P25 (Conservative)</p>
-                    <p className="text-lg font-bold text-red-600">{result.multiples_valuation.p25_revenue_multiple?.toFixed(2) || 'N/A'}x</p>
+                    <p className="text-lg font-bold text-red-600">{result.multiples_valuation.p25_revenue_multiple?.toFixed(2) ?? 'N/A'}x</p>
                   </div>
                   <div className="bg-green-50 p-3 rounded border-2 border-green-400">
                     <p className="text-xs text-gray-600 mb-1">P50 (Median)</p>
-                    <p className="text-lg font-bold text-green-600">{result.multiples_valuation.p50_revenue_multiple?.toFixed(2) || result.multiples_valuation.revenue_multiple?.toFixed(2) || 'N/A'}x</p>
+                    <p className="text-lg font-bold text-green-600">{result.multiples_valuation.p50_revenue_multiple?.toFixed(2) ?? result.multiples_valuation.revenue_multiple?.toFixed(2) ?? 'N/A'}x</p>
                   </div>
                   <div className="bg-blue-50 p-3 rounded border border-blue-200">
                     <p className="text-xs text-gray-600 mb-1">P75 (Optimistic)</p>
-                    <p className="text-lg font-bold text-blue-600">{result.multiples_valuation.p75_revenue_multiple?.toFixed(2) || 'N/A'}x</p>
+                    <p className="text-lg font-bold text-blue-600">{result.multiples_valuation.p75_revenue_multiple?.toFixed(2) ?? 'N/A'}x</p>
                   </div>
                 </div>
               </div>

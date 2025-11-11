@@ -164,19 +164,19 @@ export const JourneyStep2_Benchmarking: React.FC<JourneyStep2Props> = ({ result 
                   <div className="flex justify-between">
                     <span className="text-gray-600">P25 (Low):</span>
                     <span className="font-mono font-semibold">
-                      {multiples.p25_revenue_multiple?.toFixed(2) || 'N/A'}x
+                      {multiples.p25_revenue_multiple?.toFixed(2) ?? 'N/A'}x
                     </span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-600">P50 (Median):</span>
                     <span className="font-mono font-bold text-green-700">
-                      {multiples.p50_revenue_multiple?.toFixed(2) || multiples.revenue_multiple?.toFixed(2) || 'N/A'}x
+                      {multiples.p50_revenue_multiple?.toFixed(2) ?? multiples.revenue_multiple?.toFixed(2) ?? 'N/A'}x
                     </span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-600">P75 (High):</span>
                     <span className="font-mono font-semibold">
-                      {multiples.p75_revenue_multiple?.toFixed(2) || 'N/A'}x
+                      {multiples.p75_revenue_multiple?.toFixed(2) ?? 'N/A'}x
                     </span>
                   </div>
                 </div>

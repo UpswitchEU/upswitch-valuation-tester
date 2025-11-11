@@ -337,7 +337,7 @@ export const MultiplesTransparencySection: React.FC<MultiplesTransparencySection
                 </h5>
                 <p className="text-2xl font-bold mb-2">
                   {result.multiples_valuation.revenue_multiple != null 
-                    ? `${result.multiples_valuation.revenue_multiple.toFixed(2)}x`
+                    ? `${result.multiples_valuation.revenue_multiple?.toFixed(2) ?? 'N/A'}x`
                     : 'N/A'}
                 </p>
                 <p className="text-xs text-gray-600">
@@ -398,7 +398,7 @@ export const MultiplesTransparencySection: React.FC<MultiplesTransparencySection
                       <span className="text-gray-600">× Revenue Multiple:</span>
                       <span className="font-semibold">
                         {result.multiples_valuation.revenue_multiple != null 
-                          ? `${result.multiples_valuation.revenue_multiple.toFixed(2)}x`
+                          ? `${result.multiples_valuation.revenue_multiple?.toFixed(2) ?? 'N/A'}x`
                           : 'N/A'}
                       </span>
                     </div>
@@ -827,7 +827,7 @@ export const MultiplesTransparencySection: React.FC<MultiplesTransparencySection
                 </div>
                 <div>
                   <span className="text-gray-600">Revenue Multiple:</span>
-                  <p className="font-semibold font-mono">{company.revenue_multiple?.toFixed(1) || 'N/A'}x</p>
+                  <p className="font-semibold font-mono">{company.revenue_multiple?.toFixed(1) ?? 'N/A'}x</p>
                 </div>
               </div>
               

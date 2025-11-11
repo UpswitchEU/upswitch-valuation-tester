@@ -201,20 +201,20 @@ export const ResultsHeader: React.FC<ResultsHeaderProps> = ({ result }) => {
                   </p>
                   <p className="text-2xl font-bold text-purple-700">
                     {result.multiples_valuation.primary_multiple_method === 'ebitda_multiple' 
-                      ? `${result.multiples_valuation.ebitda_multiple?.toFixed(2)}x`
-                      : `${result.multiples_valuation.revenue_multiple?.toFixed(2)}x`
+                      ? `${result.multiples_valuation.ebitda_multiple?.toFixed(2) ?? 'N/A'}x`
+                      : `${result.multiples_valuation.revenue_multiple?.toFixed(2) ?? 'N/A'}x`
                     }
                   </p>
                   <p className="text-xs text-gray-600">
                     {result.multiples_valuation.primary_multiple_method === 'ebitda_multiple' ? (
                       result.current_year_data?.ebitda != null && result.current_year_data.ebitda > 0 ? (
-                        `${formatCurrencyCompact(result.current_year_data.ebitda)} × ${result.multiples_valuation.ebitda_multiple?.toFixed(2)}x`
+                        `${formatCurrencyCompact(result.current_year_data.ebitda)} × ${result.multiples_valuation.ebitda_multiple?.toFixed(2) ?? 'N/A'}x`
                       ) : (
                         <span className="text-yellow-600 font-medium" title="Please enter EBITDA to calculate enterprise value">EBITDA: Required</span>
                       )
                     ) : (
                       result.current_year_data?.revenue != null && result.current_year_data.revenue > 0 ? (
-                        `${formatCurrencyCompact(result.current_year_data.revenue)} × ${result.multiples_valuation.revenue_multiple?.toFixed(2)}x`
+                        `${formatCurrencyCompact(result.current_year_data.revenue)} × ${result.multiples_valuation.revenue_multiple?.toFixed(2) ?? 'N/A'}x`
                       ) : (
                         <span className="text-yellow-600 font-medium" title="Please enter revenue to calculate enterprise value">Revenue: Required</span>
                       )
@@ -235,8 +235,8 @@ export const ResultsHeader: React.FC<ResultsHeaderProps> = ({ result }) => {
                         <span className="text-gray-600">Low (P25):</span>
                         <span className="font-bold text-gray-900">
                           {result.multiples_valuation.primary_multiple_method === 'ebitda_multiple'
-                            ? `${result.multiples_valuation.p25_ebitda_multiple?.toFixed(2)}x`
-                            : `${result.multiples_valuation.p25_revenue_multiple?.toFixed(2)}x`
+                            ? `${result.multiples_valuation.p25_ebitda_multiple?.toFixed(2) ?? 'N/A'}x`
+                            : `${result.multiples_valuation.p25_revenue_multiple?.toFixed(2) ?? 'N/A'}x`
                           }
                         </span>
                       </div>
@@ -244,8 +244,8 @@ export const ResultsHeader: React.FC<ResultsHeaderProps> = ({ result }) => {
                         <span className="text-gray-600">Mid (P50):</span>
                         <span className="font-bold text-purple-700">
                           {result.multiples_valuation.primary_multiple_method === 'ebitda_multiple'
-                            ? `${result.multiples_valuation.p50_ebitda_multiple?.toFixed(2)}x`
-                            : `${result.multiples_valuation.p50_revenue_multiple?.toFixed(2)}x`
+                            ? `${result.multiples_valuation.p50_ebitda_multiple?.toFixed(2) ?? 'N/A'}x`
+                            : `${result.multiples_valuation.p50_revenue_multiple?.toFixed(2) ?? 'N/A'}x`
                           }
                         </span>
                       </div>
@@ -253,8 +253,8 @@ export const ResultsHeader: React.FC<ResultsHeaderProps> = ({ result }) => {
                         <span className="text-gray-600">High (P75):</span>
                         <span className="font-bold text-gray-900">
                           {result.multiples_valuation.primary_multiple_method === 'ebitda_multiple'
-                            ? `${result.multiples_valuation.p75_ebitda_multiple?.toFixed(2)}x`
-                            : `${result.multiples_valuation.p75_revenue_multiple?.toFixed(2)}x`
+                            ? `${result.multiples_valuation.p75_ebitda_multiple?.toFixed(2) ?? 'N/A'}x`
+                            : `${result.multiples_valuation.p75_revenue_multiple?.toFixed(2) ?? 'N/A'}x`
                           }
                         </span>
                       </div>
@@ -268,8 +268,8 @@ export const ResultsHeader: React.FC<ResultsHeaderProps> = ({ result }) => {
                         <span className="text-gray-600">Base Multiple:</span>
                         <span className="font-bold text-purple-700">
                           {result.multiples_valuation.primary_multiple_method === 'ebitda_multiple'
-                            ? `${result.multiples_valuation.ebitda_multiple?.toFixed(2)}x`
-                            : `${result.multiples_valuation.revenue_multiple?.toFixed(2)}x`
+                            ? `${result.multiples_valuation.ebitda_multiple?.toFixed(2) ?? 'N/A'}x`
+                            : `${result.multiples_valuation.revenue_multiple?.toFixed(2) ?? 'N/A'}x`
                           }
                         </span>
                       </div>
