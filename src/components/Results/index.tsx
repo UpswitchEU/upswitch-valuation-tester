@@ -16,15 +16,7 @@ import { RiskFactors } from './RiskFactors';
 import { ValuationWaterfall } from './ValuationWaterfall';
 import { ValueDrivers } from './ValueDrivers';
 // NEW: Phase 2 Main Report Enhancement Components
-import { CalculationJourneyOverview } from './CalculationJourneyOverview';
-import { AdjustmentsSummary } from './AdjustmentsSummary';
-import { DataQualityConfidence } from './DataQualityConfidence';
 // NEW: Phase 5/6 Shared Components
-import { AcademicSources } from '../shared/AcademicSources';
-import { MethodologyStatement } from '../shared/MethodologyStatement';
-import { ProfessionalReviewReadiness } from '../shared/ProfessionalReviewReadiness';
-import { TransparencyReport } from '../shared/TransparencyReport';
-import { ValueChainValidation } from '../shared/ValueChainValidation';
 
 /**
  * Results Component - Modular Architecture
@@ -74,6 +66,21 @@ export const Results: React.FC = () => {
         </ErrorBoundary>
       )}
       
+      {/* NEW: 12-Step Calculation Journey Overview */}
+      <ErrorBoundary fallback={<div className="p-4 bg-red-50 border border-red-200 rounded-lg text-red-700">Error loading calculation journey</div>}>
+        <CalculationJourneyOverview result={result} />
+      </ErrorBoundary>
+
+      {/* NEW: Adjustments Summary */}
+      <ErrorBoundary fallback={<div className="p-4 bg-red-50 border border-red-200 rounded-lg text-red-700">Error loading adjustments summary</div>}>
+        <AdjustmentsSummary result={result} />
+      </ErrorBoundary>
+
+      {/* NEW: Data Quality & Confidence */}
+      <ErrorBoundary fallback={<div className="p-4 bg-red-50 border border-red-200 rounded-lg text-red-700">Error loading data quality</div>}>
+        <DataQualityConfidence result={result} />
+      </ErrorBoundary>
+
       {/* Methodology Breakdown - Enhanced with transparency */}
       <ErrorBoundary fallback={<div className="p-4 bg-red-50 border border-red-200 rounded-lg text-red-700">Error loading methodology breakdown</div>}>
         <MethodologyBreakdown result={result} />
@@ -87,6 +94,26 @@ export const Results: React.FC = () => {
       
       {/* Risk Factors */}
       <RiskFactors result={result} />
+      
+      {/* NEW: Value Chain Validation */}
+      <ErrorBoundary fallback={<div className="p-4 bg-red-50 border border-red-200 rounded-lg text-red-700">Error loading value chain validation</div>}>
+        <ValueChainValidation result={result} />
+      </ErrorBoundary>
+
+      {/* NEW: Transparency Report */}
+      <ErrorBoundary fallback={<div className="p-4 bg-red-50 border border-red-200 rounded-lg text-red-700">Error loading transparency report</div>}>
+        <TransparencyReport result={result} />
+      </ErrorBoundary>
+
+      {/* NEW: Academic Sources */}
+      <ErrorBoundary fallback={<div className="p-4 bg-red-50 border border-red-200 rounded-lg text-red-700">Error loading academic sources</div>}>
+        <AcademicSources result={result} />
+      </ErrorBoundary>
+
+      {/* NEW: Professional Review Readiness */}
+      <ErrorBoundary fallback={<div className="p-4 bg-red-50 border border-red-200 rounded-lg text-red-700">Error loading review readiness</div>}>
+        <ProfessionalReviewReadiness result={result} showBadge={false} />
+      </ErrorBoundary>
       
       {/* Methodology & Data Sources */}
       <CompetitiveComparison />
