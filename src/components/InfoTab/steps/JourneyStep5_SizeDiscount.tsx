@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import { Ruler } from 'lucide-react';
 import { StepCard } from '../shared/StepCard';
 import { StepMetadata } from '../../shared/StepMetadata';
@@ -7,6 +7,7 @@ import { BeforeAfterTable } from '../shared/BeforeAfterTable';
 import { getStepData } from '../../../utils/valuationDataExtractor';
 import { getStepResultData } from '../../../utils/stepDataMapper';
 import type { ValuationResponse } from '../../../types/valuation';
+import { stepLogger, createPerformanceLogger } from '../../../utils/logger';
 
 interface JourneyStep5Props {
   result: ValuationResponse;
@@ -16,6 +17,26 @@ interface JourneyStep5Props {
 const formatCurrency = (value: number): string => `€${Math.round(value).toLocaleString()}`;
 
 export const JourneyStep5_SizeDiscount: React.FC<JourneyStep5Props> = ({ result, beforeValues }) => {
+  const renderPerfLogger = useRef(createPerformanceLogger('JourneyStep5_SizeDiscount.render', 'step'));
+  
+  // Component mount logging
+  useEffect(() => {
+    const step5Data = getStepData(result, 5);
+    const step5Result = getStepResultData(result, 5);
+    
+    stepLogger.info('JourneyStep5_SizeDiscount mounted', {
+      component: 'JourneyStep5_SizeDiscount',
+      step: 5,
+      hasStepData: !!step5Data,
+      hasStepResult: !!step5Result,
+      valuationId: result.valuation_id
+    });
+    
+    return () => {
+      stepLogger.debug('JourneyStep5_SizeDiscount unmounting', { step: 5 });
+    };
+  }, [result.valuation_id]);
+  
   // Extract backend step data
   const step5Data = getStepData(result, 5);
   const step5Result = getStepResultData(result, 5);
@@ -27,6 +48,23 @@ export const JourneyStep5_SizeDiscount: React.FC<JourneyStep5Props> = ({ result,
   const revenueTier = step5Result?.revenue_tier;
   const baseDiscount = step5Result?.base_discount;
   const soleTraderAdjustment = step5Result?.sole_trader_adjustment;
+  
+  // Render performance logging
+  useEffect(() => {
+    const renderTime = renderPerfLogger.current.end({
+      step: 5,
+      hasStepData: !!step5Data,
+      hasStepResult: !!step5Result,
+      sizeDiscount
+    });
+    
+    stepLogger.debug('JourneyStep5_SizeDiscount rendered', {
+      step: 5,
+      renderTime: Math.round(renderTime * 100) / 100
+    });
+    
+    renderPerfLogger.current = createPerformanceLogger('JourneyStep5_SizeDiscount.render', 'step');
+  });
   
   const afterValues = {
     low: beforeValues.low * (1 + sizeDiscount),

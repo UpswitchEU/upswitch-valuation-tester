@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import { Database, TrendingUp } from 'lucide-react';
 import { StepCard } from '../shared/StepCard';
 import { StepMetadata } from '../../shared/StepMetadata';
@@ -6,6 +6,7 @@ import { getStepData } from '../../../utils/valuationDataExtractor';
 import { getStepResultData } from '../../../utils/stepDataMapper';
 import type { ValuationResponse } from '../../../types/valuation';
 import type { ValuationInputData } from '../../../types/valuation';
+import { stepLogger, createPerformanceLogger } from '../../../utils/logger';
 
 interface JourneyStep1Props {
   result: ValuationResponse;
@@ -15,6 +16,27 @@ interface JourneyStep1Props {
 const formatCurrency = (value: number): string => `€${Math.round(value).toLocaleString()}`;
 
 export const JourneyStep1_Inputs: React.FC<JourneyStep1Props> = ({ result, inputData }) => {
+  const renderPerfLogger = useRef(createPerformanceLogger('JourneyStep1_Inputs.render', 'step'));
+  
+  // Component mount logging
+  useEffect(() => {
+    const step1Data = getStepData(result, 1);
+    const step1Result = getStepResultData(result, 1);
+    
+    stepLogger.info('JourneyStep1_Inputs mounted', {
+      component: 'JourneyStep1_Inputs',
+      step: 1,
+      hasStepData: !!step1Data,
+      hasStepResult: !!step1Result,
+      hasInputData: !!inputData,
+      valuationId: result.valuation_id
+    });
+    
+    return () => {
+      stepLogger.debug('JourneyStep1_Inputs unmounting', { step: 1 });
+    };
+  }, [result.valuation_id]);
+  
   // Extract backend step data
   const step1Data = getStepData(result, 1);
   const step1Result = getStepResultData(result, 1);
@@ -28,6 +50,24 @@ export const JourneyStep1_Inputs: React.FC<JourneyStep1Props> = ({ result, input
   // Check for weighted metrics from backend
   const usingWeightedMetrics = step1Result?.using_weighted_metrics || false;
   const weightedRevenue = step1Result?.weighted_revenue;
+  
+  // Render performance logging
+  useEffect(() => {
+    const renderTime = renderPerfLogger.current.end({
+      step: 1,
+      hasStepData: !!step1Data,
+      hasStepResult: !!step1Result,
+      hasRevenue: revenue > 0,
+      hasEbitda: ebitda > 0
+    });
+    
+    stepLogger.debug('JourneyStep1_Inputs rendered', {
+      step: 1,
+      renderTime: Math.round(renderTime * 100) / 100
+    });
+    
+    renderPerfLogger.current = createPerformanceLogger('JourneyStep1_Inputs.render', 'step');
+  });
   const weightedEbitda = step1Result?.weighted_ebitda;
   const weightedEbitdaMargin = step1Result?.weighted_ebitda_margin;
 

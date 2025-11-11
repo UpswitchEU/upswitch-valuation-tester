@@ -1,5 +1,5 @@
 import { ArrowRightLeft } from 'lucide-react';
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import type { ValuationResponse } from '../../../types/valuation';
 import { getStepResultData } from '../../../utils/stepDataMapper';
 import { getStepData } from '../../../utils/valuationDataExtractor';
@@ -7,6 +7,7 @@ import { StepMetadata } from '../../shared/StepMetadata';
 import { FormulaBox } from '../shared/FormulaBox';
 import { StepCard } from '../shared/StepCard';
 import { ValueGrid } from '../shared/ValueGrid';
+import { stepLogger, createPerformanceLogger } from '../../../utils/logger';
 
 interface JourneyStep7Props {
   beforeValues: { low: number; mid: number; high: number };
@@ -16,6 +17,27 @@ interface JourneyStep7Props {
 const formatCurrency = (value: number): string => `€${Math.round(value).toLocaleString()}`;
 
 export const JourneyStep7_EVToEquity: React.FC<JourneyStep7Props> = ({ beforeValues, result }) => {
+  const renderPerfLogger = useRef(createPerformanceLogger('JourneyStep7_EVToEquity.render', 'step'));
+  
+  // Component mount logging
+  useEffect(() => {
+    const step7Data = getStepData(result, 7);
+    const step7Result = getStepResultData(result, 7);
+    
+    stepLogger.info('JourneyStep7_EVToEquity mounted', {
+      component: 'JourneyStep7_EVToEquity',
+      step: 7,
+      hasStepData: !!step7Data,
+      hasStepResult: !!step7Result,
+      hasCurrentData: !!result.current_year_data,
+      valuationId: result.valuation_id
+    });
+    
+    return () => {
+      stepLogger.debug('JourneyStep7_EVToEquity unmounting', { step: 7 });
+    };
+  }, [result.valuation_id]);
+  
   // Extract backend step data
   const step7Data = getStepData(result, 7);
   const step7Result = getStepResultData(result, 7);
@@ -37,6 +59,24 @@ export const JourneyStep7_EVToEquity: React.FC<JourneyStep7Props> = ({ beforeVal
     mid: beforeValues.mid - netDebt,
     high: beforeValues.high - netDebt
   };
+  
+  // Render performance logging
+  useEffect(() => {
+    const renderTime = renderPerfLogger.current.end({
+      step: 7,
+      hasStepData: !!step7Data,
+      hasStepResult: !!step7Result,
+      netDebt,
+      equityMid: equityValues.mid
+    });
+    
+    stepLogger.debug('JourneyStep7_EVToEquity rendered', {
+      step: 7,
+      renderTime: Math.round(renderTime * 100) / 100
+    });
+    
+    renderPerfLogger.current = createPerformanceLogger('JourneyStep7_EVToEquity.render', 'step');
+  });
 
   return (
     <StepCard

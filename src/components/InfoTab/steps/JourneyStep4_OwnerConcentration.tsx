@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import { Users } from 'lucide-react';
 import { StepCard } from '../shared/StepCard';
 import { StepMetadata } from '../../shared/StepMetadata';
@@ -7,6 +7,7 @@ import { BeforeAfterTable } from '../shared/BeforeAfterTable';
 import { getStepData } from '../../../utils/valuationDataExtractor';
 import { getStepResultData } from '../../../utils/stepDataMapper';
 import type { ValuationResponse } from '../../../types/valuation';
+import { stepLogger, createPerformanceLogger } from '../../../utils/logger';
 
 interface JourneyStep4Props {
   result: ValuationResponse;
@@ -14,6 +15,27 @@ interface JourneyStep4Props {
 }
 
 export const JourneyStep4_OwnerConcentration: React.FC<JourneyStep4Props> = ({ result, beforeValues }) => {
+  const renderPerfLogger = useRef(createPerformanceLogger('JourneyStep4_OwnerConcentration.render', 'step'));
+  
+  // Component mount logging
+  useEffect(() => {
+    const step4Data = getStepData(result, 4);
+    const step4Result = getStepResultData(result, 4);
+    
+    stepLogger.info('JourneyStep4_OwnerConcentration mounted', {
+      component: 'JourneyStep4_OwnerConcentration',
+      step: 4,
+      hasStepData: !!step4Data,
+      hasStepResult: !!step4Result,
+      hasOwnerConcentration: !!result.multiples_valuation?.owner_concentration,
+      valuationId: result.valuation_id
+    });
+    
+    return () => {
+      stepLogger.debug('JourneyStep4_OwnerConcentration unmounting', { step: 4 });
+    };
+  }, [result.valuation_id]);
+  
   // Extract backend step data
   const step4Data = getStepData(result, 4);
   const step4Result = getStepResultData(result, 4);
@@ -24,6 +46,24 @@ export const JourneyStep4_OwnerConcentration: React.FC<JourneyStep4Props> = ({ r
   const ratio = step4Result?.owner_employee_ratio;
   const tier = step4Result?.tier;
   const calibrationType = step4Result?.calibration_type;
+  
+  // Render performance logging
+  useEffect(() => {
+    const renderTime = renderPerfLogger.current.end({
+      step: 4,
+      hasStepData: !!step4Data,
+      hasStepResult: !!step4Result,
+      hasOwnerConcentration: !!ownerConc,
+      adjustmentFactor: ownerConc?.adjustment_factor || 0
+    });
+    
+    stepLogger.debug('JourneyStep4_OwnerConcentration rendered', {
+      step: 4,
+      renderTime: Math.round(renderTime * 100) / 100
+    });
+    
+    renderPerfLogger.current = createPerformanceLogger('JourneyStep4_OwnerConcentration.render', 'step');
+  });
   
   if (!ownerConc || ownerConc.adjustment_factor === 0) {
     // Skip this step if no owner concentration adjustment

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import { Droplets } from 'lucide-react';
 import { StepCard } from '../shared/StepCard';
 import { StepMetadata } from '../../shared/StepMetadata';
@@ -8,6 +8,7 @@ import { getStepData } from '../../../utils/valuationDataExtractor';
 import { getStepResultData } from '../../../utils/stepDataMapper';
 import type { ValuationResponse } from '../../../types/valuation';
 import { normalizeMarginFormat } from '../../Results/utils/valuationCalculations';
+import { stepLogger, createPerformanceLogger } from '../../../utils/logger';
 
 interface JourneyStep6Props {
   result: ValuationResponse;
@@ -17,6 +18,26 @@ interface JourneyStep6Props {
 const formatCurrency = (value: number): string => `€${Math.round(value).toLocaleString()}`;
 
 export const JourneyStep6_LiquidityDiscount: React.FC<JourneyStep6Props> = ({ result, beforeValues }) => {
+  const renderPerfLogger = useRef(createPerformanceLogger('JourneyStep6_LiquidityDiscount.render', 'step'));
+  
+  // Component mount logging
+  useEffect(() => {
+    const step6Data = getStepData(result, 6);
+    const step6Result = getStepResultData(result, 6);
+    
+    stepLogger.info('JourneyStep6_LiquidityDiscount mounted', {
+      component: 'JourneyStep6_LiquidityDiscount',
+      step: 6,
+      hasStepData: !!step6Data,
+      hasStepResult: !!step6Result,
+      valuationId: result.valuation_id
+    });
+    
+    return () => {
+      stepLogger.debug('JourneyStep6_LiquidityDiscount unmounting', { step: 6 });
+    };
+  }, [result.valuation_id]);
+  
   // Extract backend step data
   const step6Data = getStepData(result, 6);
   const step6Result = getStepResultData(result, 6);
@@ -25,6 +46,23 @@ export const JourneyStep6_LiquidityDiscount: React.FC<JourneyStep6Props> = ({ re
   // Normalize margin format (handles both decimal 0-1 and percentage 0-100 from backend)
   const ebitdaMarginRaw = result.financial_metrics?.ebitda_margin;
   const ebitdaMargin = normalizeMarginFormat(ebitdaMarginRaw) || 0;
+  
+  // Render performance logging
+  useEffect(() => {
+    const renderTime = renderPerfLogger.current.end({
+      step: 6,
+      hasStepData: !!step6Data,
+      hasStepResult: !!step6Result,
+      liquidityDiscount
+    });
+    
+    stepLogger.debug('JourneyStep6_LiquidityDiscount rendered', {
+      step: 6,
+      renderTime: Math.round(renderTime * 100) / 100
+    });
+    
+    renderPerfLogger.current = createPerformanceLogger('JourneyStep6_LiquidityDiscount.render', 'step');
+  });
   
   const afterValues = {
     low: beforeValues.low * (1 + liquidityDiscount),

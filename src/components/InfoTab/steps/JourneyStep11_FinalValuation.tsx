@@ -1,10 +1,11 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import { Trophy } from 'lucide-react';
 import { StepCard } from '../shared/StepCard';
 import { StepMetadata } from '../../shared/StepMetadata';
 import { getStepData } from '../../../utils/valuationDataExtractor';
 import { getStepResultData } from '../../../utils/stepDataMapper';
 import type { ValuationResponse } from '../../../types/valuation';
+import { stepLogger, createPerformanceLogger } from '../../../utils/logger';
 
 interface JourneyStep11Props {
   result: ValuationResponse;
@@ -18,6 +19,26 @@ const formatCurrencyCompact = (value: number): string => {
 };
 
 export const JourneyStep11_FinalValuation: React.FC<JourneyStep11Props> = ({ result }) => {
+  const renderPerfLogger = useRef(createPerformanceLogger('JourneyStep11_FinalValuation.render', 'step'));
+  
+  // Component mount logging
+  useEffect(() => {
+    const step11Data = getStepData(result, 11);
+    const step11Result = getStepResultData(result, 11);
+    
+    stepLogger.info('JourneyStep11_FinalValuation mounted', {
+      component: 'JourneyStep11_FinalValuation',
+      step: 11,
+      hasStepData: !!step11Data,
+      hasStepResult: !!step11Result,
+      valuationId: result.valuation_id
+    });
+    
+    return () => {
+      stepLogger.debug('JourneyStep11_FinalValuation unmounting', { step: 11 });
+    };
+  }, [result.valuation_id]);
+  
   // Extract backend step data
   const step11Data = getStepData(result, 11);
   const step11Result = getStepResultData(result, 11);
@@ -28,6 +49,24 @@ export const JourneyStep11_FinalValuation: React.FC<JourneyStep11Props> = ({ res
   const confidenceScore = result.confidence_score || 0;
   // Backend returns confidence_score as integer 0-100, not decimal 0-1
   const confidenceLevel = confidenceScore >= 80 ? 'HIGH' : confidenceScore >= 60 ? 'MEDIUM' : 'LOW';
+  
+  // Render performance logging
+  useEffect(() => {
+    const renderTime = renderPerfLogger.current.end({
+      step: 11,
+      hasStepData: !!step11Data,
+      hasStepResult: !!step11Result,
+      finalMid,
+      confidenceScore
+    });
+    
+    stepLogger.debug('JourneyStep11_FinalValuation rendered', {
+      step: 11,
+      renderTime: Math.round(renderTime * 100) / 100
+    });
+    
+    renderPerfLogger.current = createPerformanceLogger('JourneyStep11_FinalValuation.render', 'step');
+  });
   
   // For multiples-only valuations, validate that mid-point matches adjusted_equity_value
   const isMultiplesOnly = !result.dcf_valuation || (result.dcf_weight || 0) === 0;

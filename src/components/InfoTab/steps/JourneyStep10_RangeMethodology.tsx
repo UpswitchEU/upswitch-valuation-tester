@@ -1,10 +1,11 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import { GitBranch } from 'lucide-react';
 import { StepCard } from '../shared/StepCard';
 import { StepMetadata } from '../../shared/StepMetadata';
 import { getStepData } from '../../../utils/valuationDataExtractor';
 import { getStepResultData } from '../../../utils/stepDataMapper';
 import type { ValuationResponse } from '../../../types/valuation';
+import { stepLogger, createPerformanceLogger } from '../../../utils/logger';
 
 interface JourneyStep10Props {
   result: ValuationResponse;
@@ -14,6 +15,26 @@ interface JourneyStep10Props {
 const formatCurrency = (value: number): string => `€${Math.round(value).toLocaleString()}`;
 
 export const JourneyStep10_RangeMethodology: React.FC<JourneyStep10Props> = ({ result, beforeValues }) => {
+  const renderPerfLogger = useRef(createPerformanceLogger('JourneyStep10_RangeMethodology.render', 'step'));
+  
+  // Component mount logging
+  useEffect(() => {
+    const step10Data = getStepData(result, 10);
+    const step10Result = getStepResultData(result, 10);
+    
+    stepLogger.info('JourneyStep10_RangeMethodology mounted', {
+      component: 'JourneyStep10_RangeMethodology',
+      step: 10,
+      hasStepData: !!step10Data,
+      hasStepResult: !!step10Result,
+      valuationId: result.valuation_id
+    });
+    
+    return () => {
+      stepLogger.debug('JourneyStep10_RangeMethodology unmounting', { step: 10 });
+    };
+  }, [result.valuation_id]);
+  
   // Extract backend step data
   const step10Data = getStepData(result, 10);
   const step10Result = getStepResultData(result, 10);
@@ -22,6 +43,23 @@ export const JourneyStep10_RangeMethodology: React.FC<JourneyStep10Props> = ({ r
   const isMultipleDispersion = rangeMethod === 'multiple_dispersion';
   const multiples = result.multiples_valuation;
   const confidenceScore = result.confidence_score || 0;
+  
+  // Render performance logging
+  useEffect(() => {
+    const renderTime = renderPerfLogger.current.end({
+      step: 10,
+      hasStepData: !!step10Data,
+      hasStepResult: !!step10Result,
+      rangeMethod
+    });
+    
+    stepLogger.debug('JourneyStep10_RangeMethodology rendered', {
+      step: 10,
+      renderTime: Math.round(renderTime * 100) / 100
+    });
+    
+    renderPerfLogger.current = createPerformanceLogger('JourneyStep10_RangeMethodology.render', 'step');
+  });
   
   // Calculate spread from Step 7 equity value to final range
   // CRITICAL: For multiples-only, the mid-point should equal Step 7 equity value

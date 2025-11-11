@@ -1,4 +1,5 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
+import { stepLogger, createPerformanceLogger } from '../../../utils/logger';
 import { TrendingUp, TrendingDown, Minus, CheckCircle, AlertTriangle } from 'lucide-react';
 import { StepCard } from '../shared/StepCard';
 import { StepMetadata } from '../../shared/StepMetadata';
@@ -13,6 +14,37 @@ interface JourneyStep0Props {
 const formatCurrency = (value: number): string => `€${Math.round(value).toLocaleString()}`;
 
 export const JourneyStep0_HistoricalTrends: React.FC<JourneyStep0Props> = ({ result }) => {
+  const renderPerfLogger = useRef(createPerformanceLogger('JourneyStep0_HistoricalTrends.render', 'step'));
+  
+  // Component mount logging
+  useEffect(() => {
+    stepLogger.info('JourneyStep0_HistoricalTrends mounted', {
+      component: 'JourneyStep0_HistoricalTrends',
+      step: 0,
+      hasHistoricalData: !!(result.historical_years_data && result.historical_years_data.length > 0),
+      historicalYearsCount: result.historical_years_data?.length || 0,
+      valuationId: result.valuation_id
+    });
+    
+    return () => {
+      stepLogger.debug('JourneyStep0_HistoricalTrends unmounting', { step: 0 });
+    };
+  }, [result.valuation_id]);
+  
+  // Render performance logging
+  useEffect(() => {
+    const renderTime = renderPerfLogger.current.end({
+      step: 0,
+      hasHistoricalData: !!(result.historical_years_data && result.historical_years_data.length > 0)
+    });
+    
+    stepLogger.debug('JourneyStep0_HistoricalTrends rendered', {
+      step: 0,
+      renderTime: Math.round(renderTime * 100) / 100
+    });
+    
+    renderPerfLogger.current = createPerformanceLogger('JourneyStep0_HistoricalTrends.render', 'step');
+  });
   const historicalData = result.historical_years_data || [];
   const currentData = result.current_year_data;
   

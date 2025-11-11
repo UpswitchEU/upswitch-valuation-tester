@@ -1,5 +1,5 @@
 import { Percent } from 'lucide-react';
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import type { ValuationResponse } from '../../../types/valuation';
 import { getStepResultData } from '../../../utils/stepDataMapper';
 import { getStepData } from '../../../utils/valuationDataExtractor';
@@ -8,6 +8,7 @@ import { BeforeAfterTable } from '../shared/BeforeAfterTable';
 import { FormulaBox } from '../shared/FormulaBox';
 import { StepCard } from '../shared/StepCard';
 import { ValueGrid } from '../shared/ValueGrid';
+import { stepLogger, createPerformanceLogger } from '../../../utils/logger';
 
 interface JourneyStep8Props {
   result: ValuationResponse;
@@ -17,6 +18,26 @@ interface JourneyStep8Props {
 const formatCurrency = (value: number): string => `€${Math.round(value).toLocaleString()}`;
 
 export const JourneyStep8_OwnershipAdjustment: React.FC<JourneyStep8Props> = ({ result, beforeValues }) => {
+  const renderPerfLogger = useRef(createPerformanceLogger('JourneyStep8_OwnershipAdjustment.render', 'step'));
+  
+  // Component mount logging
+  useEffect(() => {
+    const step8Data = getStepData(result, 8);
+    const step8Result = getStepResultData(result, 8);
+    
+    stepLogger.info('JourneyStep8_OwnershipAdjustment mounted', {
+      component: 'JourneyStep8_OwnershipAdjustment',
+      step: 8,
+      hasStepData: !!step8Data,
+      hasStepResult: !!step8Result,
+      valuationId: result.valuation_id
+    });
+    
+    return () => {
+      stepLogger.debug('JourneyStep8_OwnershipAdjustment unmounting', { step: 8 });
+    };
+  }, [result.valuation_id]);
+  
   // Extract backend step data (using new utilities)
   const step8Data = getStepData(result, 8);
   const step8Result = getStepResultData(result, 8);
@@ -28,6 +49,24 @@ export const JourneyStep8_OwnershipAdjustment: React.FC<JourneyStep8Props> = ({ 
   
   const adjustmentType = step8Result?.adjustment_type || 'none';
   const adjustmentPercentage = step8Result?.adjustment_percentage || 0;
+  
+  // Render performance logging
+  useEffect(() => {
+    const renderTime = renderPerfLogger.current.end({
+      step: 8,
+      hasStepData: !!step8Data,
+      hasStepResult: !!step8Result,
+      ownershipPercentage,
+      adjustmentType
+    });
+    
+    stepLogger.debug('JourneyStep8_OwnershipAdjustment rendered', {
+      step: 8,
+      renderTime: Math.round(renderTime * 100) / 100
+    });
+    
+    renderPerfLogger.current = createPerformanceLogger('JourneyStep8_OwnershipAdjustment.render', 'step');
+  });
   const calibrationType = step8Result?.calibration_type;
   const adjustmentFactor = 1.0 + (adjustmentPercentage / 100.0);
   

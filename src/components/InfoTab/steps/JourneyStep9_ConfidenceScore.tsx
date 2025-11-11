@@ -1,16 +1,37 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import { Target } from 'lucide-react';
 import { StepCard } from '../shared/StepCard';
 import { StepMetadata } from '../../shared/StepMetadata';
 import { getStepData } from '../../../utils/valuationDataExtractor';
 import { getStepResultData } from '../../../utils/stepDataMapper';
 import type { ValuationResponse } from '../../../types/valuation';
+import { stepLogger, createPerformanceLogger } from '../../../utils/logger';
 
 interface JourneyStep9Props {
   result: ValuationResponse;
 }
 
 export const JourneyStep9_ConfidenceScore: React.FC<JourneyStep9Props> = ({ result }) => {
+  const renderPerfLogger = useRef(createPerformanceLogger('JourneyStep9_ConfidenceScore.render', 'step'));
+  
+  // Component mount logging
+  useEffect(() => {
+    const step9Data = getStepData(result, 9);
+    const step9Result = getStepResultData(result, 9);
+    
+    stepLogger.info('JourneyStep9_ConfidenceScore mounted', {
+      component: 'JourneyStep9_ConfidenceScore',
+      step: 9,
+      hasStepData: !!step9Data,
+      hasStepResult: !!step9Result,
+      valuationId: result.valuation_id
+    });
+    
+    return () => {
+      stepLogger.debug('JourneyStep9_ConfidenceScore unmounting', { step: 9 });
+    };
+  }, [result.valuation_id]);
+  
   // Extract backend step data
   const step9Data = getStepData(result, 9);
   const step9Result = getStepResultData(result, 9);
@@ -20,6 +41,24 @@ export const JourneyStep9_ConfidenceScore: React.FC<JourneyStep9Props> = ({ resu
   const confidenceLevel = 
     confidenceScore >= 80 ? 'HIGH' :
     confidenceScore >= 60 ? 'MEDIUM' : 'LOW';
+  
+  // Render performance logging
+  useEffect(() => {
+    const renderTime = renderPerfLogger.current.end({
+      step: 9,
+      hasStepData: !!step9Data,
+      hasStepResult: !!step9Result,
+      confidenceScore,
+      confidenceLevel
+    });
+    
+    stepLogger.debug('JourneyStep9_ConfidenceScore rendered', {
+      step: 9,
+      renderTime: Math.round(renderTime * 100) / 100
+    });
+    
+    renderPerfLogger.current = createPerformanceLogger('JourneyStep9_ConfidenceScore.render', 'step');
+  });
 
   // Confidence factors (using dummy data if not available)
   const factors = [

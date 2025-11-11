@@ -1,5 +1,6 @@
 import { BarChart3 } from 'lucide-react';
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
+import { stepLogger, createPerformanceLogger } from '../../../utils/logger';
 import type { ValuationResponse } from '../../../types/valuation';
 import { getStepResultData } from '../../../utils/stepDataMapper';
 import { getStepData } from '../../../utils/valuationDataExtractor';
@@ -11,6 +12,27 @@ interface JourneyStep2Props {
 }
 
 export const JourneyStep2_Benchmarking: React.FC<JourneyStep2Props> = ({ result }) => {
+  const renderPerfLogger = useRef(createPerformanceLogger('JourneyStep2_Benchmarking.render', 'step'));
+  
+  // Component mount logging
+  useEffect(() => {
+    const step2Data = getStepData(result, 2);
+    const step2Result = getStepResultData(result, 2);
+    
+    stepLogger.info('JourneyStep2_Benchmarking mounted', {
+      component: 'JourneyStep2_Benchmarking',
+      step: 2,
+      hasStepData: !!step2Data,
+      hasStepResult: !!step2Result,
+      hasMultiples: !!result.multiples_valuation,
+      valuationId: result.valuation_id
+    });
+    
+    return () => {
+      stepLogger.debug('JourneyStep2_Benchmarking unmounting', { step: 2 });
+    };
+  }, [result.valuation_id]);
+  
   const multiples = result.multiples_valuation;
   const isPrimaryEBITDA = multiples?.primary_multiple_method === 'ebitda_multiple';
   const dcfWeight = result.dcf_weight || 0;
@@ -26,6 +48,24 @@ export const JourneyStep2_Benchmarking: React.FC<JourneyStep2Props> = ({ result 
     (isDCFExcluded ? 'MULTIPLES_ONLY' : dcfWeight > 0.5 ? 'HYBRID_DCF_PRIMARY' : 'HYBRID_MULTIPLES_PRIMARY');
   const suitabilityScore = step2Result?.suitability_score || {};
   const dataSource = step2Result?.data_source || multiples?.comparables_quality || 'estimated';
+  
+  // Render performance logging
+  useEffect(() => {
+    const renderTime = renderPerfLogger.current.end({
+      step: 2,
+      hasStepData: !!step2Data,
+      hasStepResult: !!step2Result,
+      isPrimaryEBITDA,
+      methodologyDecision
+    });
+    
+    stepLogger.debug('JourneyStep2_Benchmarking rendered', {
+      step: 2,
+      renderTime: Math.round(renderTime * 100) / 100
+    });
+    
+    renderPerfLogger.current = createPerformanceLogger('JourneyStep2_Benchmarking.render', 'step');
+  });
   
   return (
     <StepCard
