@@ -5,9 +5,16 @@
  * Priority: transparency.calculation_steps → legacy fields → computed values
  * 
  * Phase 4: Data Extraction & Transformation
+ * 
+ * CTO Audit: All type assertions removed, proper type guards and validation added
  */
 
-import type { ValuationResponse } from '../types/valuation';
+import type {
+  ValuationResponse,
+  Step4OwnerConcentrationResult,
+  Step5SizeDiscountResult,
+  Step6LiquidityDiscountResult
+} from '../types/valuation';
 import { dataExtractionLogger, createPerformanceLogger } from './logger';
 
 /**
@@ -16,6 +23,81 @@ import { dataExtractionLogger, createPerformanceLogger } from './logger';
  * 2. Legacy fields from multiples_valuation, dcf_valuation, etc.
  * 3. Compute from available data
  */
+
+// ============================================================================
+// Type Guard Functions (CTO Audit: Runtime validation)
+// ============================================================================
+
+/**
+ * Type guard: Check if value is an object (not null, not array, not primitive)
+ */
+function isObject(value: unknown): value is Record<string, unknown> {
+  return value !== null && typeof value === 'object' && !Array.isArray(value);
+}
+
+/**
+ * Type guard: Check if value is a number
+ */
+function isNumber(value: unknown): value is number {
+  return typeof value === 'number' && !isNaN(value);
+}
+
+/**
+ * Type guard: Check if object has property
+ */
+function hasProperty<T extends string>(
+  obj: unknown,
+  prop: T
+): obj is Record<T, unknown> {
+  return isObject(obj) && prop in obj;
+}
+
+/**
+ * Safe property access with type checking
+ */
+function getProperty<T>(
+  obj: unknown,
+  prop: string,
+  defaultValue: T
+): T {
+  if (hasProperty(obj, prop)) {
+    const value = obj[prop];
+    return (value as T) ?? defaultValue;
+  }
+  return defaultValue;
+}
+
+/**
+ * Check if size_discount is an object (modular system) or number (legacy)
+ */
+function isSizeDiscountObject(
+  value: number | Step5SizeDiscountResult
+): value is Step5SizeDiscountResult {
+  return isObject(value) && 'size_discount_percentage' in value;
+}
+
+/**
+ * Check if liquidity_discount is an object (modular system) or number (legacy)
+ */
+function isLiquidityDiscountObject(
+  value: number | Step6LiquidityDiscountResult
+): value is Step6LiquidityDiscountResult {
+  return isObject(value) && 'total_discount_percentage' in value;
+}
+
+/**
+ * Validate Step4Result structure
+ */
+function isValidStep4Result(value: unknown): value is Step4OwnerConcentrationResult {
+  if (!isObject(value)) return false;
+  return (
+    isNumber(value.enterprise_value_low) &&
+    isNumber(value.enterprise_value_mid) &&
+    isNumber(value.enterprise_value_high) &&
+    isNumber(value.adjustment_percentage)
+  );
+}
+
 
 // ============================================================================
 // Step 0: Data Quality Assessment
@@ -134,9 +216,13 @@ export function getStep1InputResult(result: ValuationResponse) {
     weighted_ebitda: currentData.ebitda,
     using_weighted_metrics: false,
     company_name: result.company_name,
-    industry: (result as any).industry || (result.transparency as any)?.data_provenance?.industry || 'Unknown',
-    country: (result as any).country_code || 'BE',
-    num_employees: (result as any).number_of_employees || 0
+    industry: getProperty(result, 'industry', null) ||
+              (isObject(result.transparency) && hasProperty(result.transparency, 'data_provenance') && isObject(result.transparency.data_provenance)
+                ? getProperty(result.transparency.data_provenance, 'industry', null)
+                : null) ||
+              'Unknown',
+    country: getProperty(result, 'country_code', 'BE'),
+    num_employees: getProperty(result, 'number_of_employees', 0)
   };
   }
 
@@ -179,14 +265,21 @@ export function getStep2BenchmarkingResult(result: ValuationResponse) {
     dataSource: 'legacy',
     fallbackUsed: true,
     primaryMethod: multiples.primary_multiple_method,
-    hasComparables: !!(multiples as any).comparables
+    hasComparables: hasProperty(multiples, 'comparables') && Array.isArray(multiples.comparables)
   });
   perfLogger.end({ dataSource: 'legacy', hasData: true, fallbackUsed: true });
+  
+  const comparables = hasProperty(multiples, 'comparables') && Array.isArray(multiples.comparables)
+    ? multiples.comparables
+    : [];
+  
   return {
     primary_method: multiples.primary_multiple_method === 'ebitda_multiple' 
       ? 'EV/EBITDA' 
       : 'EV/Revenue',
-    primary_method_reason: (multiples as any).primary_method_reason || multiples.primary_multiple_reason || 'Standard methodology',
+    primary_method_reason: getProperty(multiples, 'primary_method_reason', null) ||
+                          multiples.primary_multiple_reason ||
+                          'Standard methodology',
     ev_ebitda_multiple: multiples.ebitda_multiple || 0,
     ev_revenue_multiple: multiples.revenue_multiple || 0,
     p25_ebitda_multiple: multiples.p25_ebitda_multiple || null,
@@ -195,9 +288,9 @@ export function getStep2BenchmarkingResult(result: ValuationResponse) {
     p25_revenue_multiple: multiples.p25_revenue_multiple || null,
     p50_revenue_multiple: multiples.revenue_multiple || null,
     p75_revenue_multiple: multiples.p75_revenue_multiple || null,
-    comparables_count: (multiples as any).comparables?.length || 0,
-    comparables_quality: (multiples as any).comparables?.length > 5 ? 'good' : 'limited',
-    data_source: (multiples as any).industry || 'default',
+    comparables_count: comparables.length,
+    comparables_quality: comparables.length > 5 ? 'good' : 'limited',
+    data_source: getProperty(multiples, 'industry', 'default'),
     dcf_eligible: result.dcf_weight > 0,
     recommended_methodology: result.dcf_weight > 0 ? 'HYBRID' : 'MULTIPLES_ONLY'
   };
@@ -318,31 +411,73 @@ export function getStep4OwnerConcentrationResult(result: ValuationResponse) {
     return null;
   }
 
+  // Validate legacy data structure before accessing
+  const adjustmentPercentage = getProperty(oc, 'adjustment_percentage', null) ||
+                                ((oc.adjustment_factor - 1) * 100) || 0;
+  
   dataExtractionLogger.info('Step 4 data extracted from legacy owner_concentration', {
     step: 4,
     dataSource: 'legacy',
     fallbackUsed: true,
     riskLevel: oc.risk_level,
-    hasAdjustment: !!(oc as any).adjustment_percentage || oc.adjustment_factor !== 0
+    hasAdjustment: !!adjustmentPercentage || oc.adjustment_factor !== 0
   });
   perfLogger.end({ dataSource: 'legacy', hasData: true, fallbackUsed: true });
-  const ocAny = oc as any;
-  return {
-    enterprise_value_low: ocAny.adjusted_ev_low || 0,
-    enterprise_value_mid: ocAny.adjusted_ev || 0,
-    enterprise_value_high: ocAny.adjusted_ev_high || 0,
-    owner_employee_ratio: oc.ratio || ocAny.owner_employee_ratio || 0,
+  
+  // Legacy owner_concentration doesn't have all step result properties
+  // Return null to indicate incomplete data rather than fake values
+  dataExtractionLogger.warn('Step 4 fallback: Legacy owner_concentration missing step result properties', {
+    step: 4,
+    hasAdjustedEV: hasProperty(oc, 'adjusted_ev_low') || hasProperty(oc, 'adjusted_ev'),
+    hasUnadjustedEV: hasProperty(oc, 'unadjusted_ev_low') || hasProperty(oc, 'unadjusted_ev'),
+    recommendation: 'Use transparency.calculation_steps for complete data'
+  });
+  
+  // Return partial data with validation - prefer null over fake 0 values
+  const step4Result: Partial<Step4OwnerConcentrationResult> = {
+    owner_employee_ratio: oc.ratio || getProperty(oc, 'owner_employee_ratio', null) || 0,
     risk_level: oc.risk_level || 'LOW',
-    adjustment_percentage: ocAny.adjustment_percentage || (oc.adjustment_factor - 1) * 100 || 0,
+    adjustment_percentage: adjustmentPercentage,
     number_of_owners: oc.number_of_owners || 0,
     number_of_employees: oc.number_of_employees || 0,
-    calibration_type: ocAny.business_type_calibration ? 'industry-specific' : (oc.calibration?.calibration_type || 'standard'),
-    business_type_id: oc.calibration?.business_type_id || ocAny.business_type_id || null,
-    ev_low_before: ocAny.unadjusted_ev_low || 0,
-    ev_mid_before: ocAny.unadjusted_ev || 0,
-    ev_high_before: ocAny.unadjusted_ev_high || 0,
+    calibration_type: (oc.calibration?.calibration_type || 
+                      (hasProperty(oc, 'business_type_calibration') ? 'industry-specific' : 'standard')) as 'industry-specific' | 'universal' | 'standard',
+    business_type_id: oc.calibration?.business_type_id || getProperty(oc, 'business_type_id', null),
     skipped: false
   };
+  
+  // Only include EV values if they exist in legacy structure
+  const adjustedEVLow = getProperty(oc, 'adjusted_ev_low', null);
+  const adjustedEVMid = getProperty(oc, 'adjusted_ev', null);
+  const adjustedEVHigh = getProperty(oc, 'adjusted_ev_high', null);
+  
+  if (adjustedEVLow !== null || adjustedEVMid !== null || adjustedEVHigh !== null) {
+    step4Result.enterprise_value_low = adjustedEVLow ?? 0;
+    step4Result.enterprise_value_mid = adjustedEVMid ?? 0;
+    step4Result.enterprise_value_high = adjustedEVHigh ?? 0;
+    
+    const unadjustedEVLow = getProperty(oc, 'unadjusted_ev_low', null);
+    const unadjustedEVMid = getProperty(oc, 'unadjusted_ev', null);
+    const unadjustedEVHigh = getProperty(oc, 'unadjusted_ev_high', null);
+    
+    if (unadjustedEVLow !== null || unadjustedEVMid !== null || unadjustedEVHigh !== null) {
+      step4Result.ev_low_before = unadjustedEVLow ?? 0;
+      step4Result.ev_mid_before = unadjustedEVMid ?? 0;
+      step4Result.ev_high_before = unadjustedEVHigh ?? 0;
+    }
+  }
+  
+  // Return null if critical data is missing (better than fake values)
+  if (!isValidStep4Result(step4Result)) {
+    dataExtractionLogger.warn('Step 4 legacy data incomplete, returning null', {
+      step: 4,
+      hasEnterpriseValues: !!(step4Result.enterprise_value_mid),
+      hasAdjustmentPercentage: !!(step4Result.adjustment_percentage)
+    });
+    return null;
+  }
+  
+  return step4Result as Step4OwnerConcentrationResult;
 }
 
 // ============================================================================
@@ -369,8 +504,8 @@ export function getStep5SizeDiscountResult(result: ValuationResponse) {
 
   // Fallback to small_firm_adjustments
   const sfa = result.small_firm_adjustments;
-  if (!sfa?.size_discount) {
-    dataExtractionLogger.warn('Step 5 data not available, no size_discount', {
+  if (!sfa) {
+    dataExtractionLogger.warn('Step 5 data not available, no small_firm_adjustments', {
       step: 5,
       dataSource: 'none',
       fallbackUsed: false
@@ -379,28 +514,32 @@ export function getStep5SizeDiscountResult(result: ValuationResponse) {
     return null;
   }
 
-  const sd = sfa.size_discount as any;
-  dataExtractionLogger.info('Step 5 data extracted from small_firm_adjustments', {
+  // Handle both legacy (number) and modular (object) formats
+  const sizeDiscount = sfa.size_discount;
+  
+  if (isSizeDiscountObject(sizeDiscount)) {
+    // Modular system format: already a Step5Result object
+    dataExtractionLogger.info('Step 5 data extracted from small_firm_adjustments (modular format)', {
+      step: 5,
+      dataSource: 'legacy',
+      fallbackUsed: true,
+      revenueTier: sizeDiscount.revenue_tier,
+      hasDiscount: !!sizeDiscount.size_discount_percentage
+    });
+    perfLogger.end({ dataSource: 'legacy', hasData: true, fallbackUsed: true });
+    return sizeDiscount;
+  }
+  
+  // Legacy format: just a number, cannot reconstruct full step result
+  dataExtractionLogger.warn('Step 5 fallback: Legacy size_discount is number, cannot reconstruct step result', {
     step: 5,
-    dataSource: 'legacy',
-    fallbackUsed: true,
-    revenueTier: sd?.revenue_tier,
-    hasDiscount: !!sd?.size_discount_percentage
+    sizeDiscountValue: sizeDiscount,
+    recommendation: 'Use transparency.calculation_steps for complete data'
   });
-  perfLogger.end({ dataSource: 'legacy', hasData: true, fallbackUsed: true });
-  return {
-    enterprise_value_low: 0, // Cannot compute without before values
-    enterprise_value_mid: 0,
-    enterprise_value_high: 0,
-    revenue_tier: sd?.revenue_tier || 'Unknown',
-    base_discount: sd?.base_discount || 0,
-    adjustment_multiplier: sd?.business_type_multiplier || 1.0,
-    size_discount_percentage: sd?.size_discount_percentage || 0,
-    business_category: sd?.business_category || 'UNKNOWN',
-    ev_low_before: 0,
-    ev_mid_before: 0,
-    ev_high_before: 0
-  };
+  perfLogger.end({ dataSource: 'legacy', hasData: false, fallbackUsed: true });
+  
+  // Return null instead of fake data - legacy number format doesn't have step result properties
+  return null;
 }
 
 // ============================================================================
@@ -427,8 +566,8 @@ export function getStep6LiquidityDiscountResult(result: ValuationResponse) {
 
   // Fallback to small_firm_adjustments
   const sfa = result.small_firm_adjustments;
-  if (!sfa?.liquidity_discount) {
-    dataExtractionLogger.warn('Step 6 data not available, no liquidity_discount', {
+  if (!sfa) {
+    dataExtractionLogger.warn('Step 6 data not available, no small_firm_adjustments', {
       step: 6,
       dataSource: 'none',
       fallbackUsed: false
@@ -437,30 +576,31 @@ export function getStep6LiquidityDiscountResult(result: ValuationResponse) {
     return null;
   }
 
-  const ld = sfa.liquidity_discount as any;
-  dataExtractionLogger.info('Step 6 data extracted from small_firm_adjustments', {
+  // Handle both legacy (number) and modular (object) formats
+  const liquidityDiscount = sfa.liquidity_discount;
+  
+  if (isLiquidityDiscountObject(liquidityDiscount)) {
+    // Modular system format: already a Step6Result object
+    dataExtractionLogger.info('Step 6 data extracted from small_firm_adjustments (modular format)', {
+      step: 6,
+      dataSource: 'legacy',
+      fallbackUsed: true,
+      hasDiscount: !!liquidityDiscount.total_discount_percentage
+    });
+    perfLogger.end({ dataSource: 'legacy', hasData: true, fallbackUsed: true });
+    return liquidityDiscount;
+  }
+  
+  // Legacy format: just a number, cannot reconstruct full step result
+  dataExtractionLogger.warn('Step 6 fallback: Legacy liquidity_discount is number, cannot reconstruct step result', {
     step: 6,
-    dataSource: 'legacy',
-    fallbackUsed: true,
-    hasDiscount: !!ld?.liquidity_discount_percentage
+    liquidityDiscountValue: liquidityDiscount,
+    recommendation: 'Use transparency.calculation_steps for complete data'
   });
-  perfLogger.end({ dataSource: 'legacy', hasData: true, fallbackUsed: true });
-  return {
-    enterprise_value_low: 0,
-    enterprise_value_mid: 0,
-    enterprise_value_high: 0,
-    base_discount: ld?.base_discount || 0,
-    margin_bonus: ld?.adjustments?.margin || 0,
-    growth_bonus: ld?.adjustments?.growth || 0,
-    recurring_revenue_bonus: ld?.adjustments?.recurring_revenue || 0,
-    size_bonus: ld?.adjustments?.size || 0,
-    total_discount_percentage: ld?.liquidity_discount_percentage || 0,
-    business_category: ld?.business_category || 'UNKNOWN',
-    base_step: 5,
-    ev_low_before: 0,
-    ev_mid_before: 0,
-    ev_high_before: 0
-  };
+  perfLogger.end({ dataSource: 'legacy', hasData: false, fallbackUsed: true });
+  
+  // Return null instead of fake data - legacy number format doesn't have step result properties
+  return null;
 }
 
 // ============================================================================
@@ -524,9 +664,9 @@ export function getStep7EVToEquityResult(result: ValuationResponse) {
     ev_source_step: 6,
     exemption_applied: false,
     range_validated: true,
-    ev_low: (multiples as any).enterprise_value_low || multiples.enterprise_value || 0,
+    ev_low: getProperty(multiples, 'enterprise_value_low', multiples.enterprise_value || 0),
     ev_mid: multiples.enterprise_value || 0,
-    ev_high: (multiples as any).enterprise_value_high || multiples.enterprise_value || 0
+    ev_high: getProperty(multiples, 'enterprise_value_high', multiples.enterprise_value || 0)
   };
 }
 
@@ -553,9 +693,15 @@ export function getStep8OwnershipAdjustmentResult(result: ValuationResponse) {
   }
 
   // Fallback: check for ownership_adjustments
-  const oa = (result.multiples_valuation as any)?.ownership_adjustments;
+  const oa = result.multiples_valuation && hasProperty(result.multiples_valuation, 'ownership_adjustments')
+    ? (result.multiples_valuation as Record<string, unknown>).ownership_adjustments
+    : null;
   
-  if (!oa || oa.shares_for_sale_percentage === 100) {
+  const sharesForSalePct = isObject(oa) && hasProperty(oa, 'shares_for_sale_percentage')
+    ? (oa.shares_for_sale_percentage as number)
+    : null;
+  
+  if (!oa || sharesForSalePct === 100) {
     dataExtractionLogger.info('Step 8 skipped (100% ownership sale)', {
       step: 8,
       dataSource: 'computed',
@@ -577,24 +723,36 @@ export function getStep8OwnershipAdjustmentResult(result: ValuationResponse) {
     };
   }
 
+  if (!isObject(oa)) {
+    dataExtractionLogger.warn('Step 8 ownership_adjustments is not an object, returning null', {
+      step: 8,
+      oaType: typeof oa
+    });
+    return null;
+  }
+  
+  const ownershipPct = getProperty(oa, 'shares_for_sale_percentage', 100);
+  const adjustmentType = getProperty(oa, 'adjustment_type', 'none');
+  
   dataExtractionLogger.info('Step 8 data extracted from ownership_adjustments', {
     step: 8,
     dataSource: 'legacy',
     fallbackUsed: true,
-    ownershipPercentage: oa.shares_for_sale_percentage,
-    adjustmentType: oa.adjustment_type
+    ownershipPercentage: ownershipPct,
+    adjustmentType
   });
   perfLogger.end({ dataSource: 'legacy', hasData: true, fallbackUsed: true });
+  
   return {
-    equity_value_low: oa.adjusted_equity_low || result.equity_value_low,
-    equity_value_mid: oa.adjusted_equity || result.equity_value_mid,
-    equity_value_high: oa.adjusted_equity_high || result.equity_value_high,
-    ownership_percentage: oa.shares_for_sale_percentage || 100,
-    adjustment_type: oa.adjustment_type || 'none',
-    adjustment_percentage: oa.adjustment_percentage || 0,
-    equity_low_before: oa.equity_before_adjustment_low || result.equity_value_low,
-    equity_mid_before: oa.equity_before_adjustment || result.equity_value_mid,
-    equity_high_before: oa.equity_before_adjustment_high || result.equity_value_high,
+    equity_value_low: getProperty(oa, 'adjusted_equity_low', result.equity_value_low),
+    equity_value_mid: getProperty(oa, 'adjusted_equity', result.equity_value_mid),
+    equity_value_high: getProperty(oa, 'adjusted_equity_high', result.equity_value_high),
+    ownership_percentage: ownershipPct,
+    adjustment_type: adjustmentType,
+    adjustment_percentage: getProperty(oa, 'adjustment_percentage', 0),
+    equity_low_before: getProperty(oa, 'equity_before_adjustment_low', result.equity_value_low),
+    equity_mid_before: getProperty(oa, 'equity_before_adjustment', result.equity_value_mid),
+    equity_high_before: getProperty(oa, 'equity_before_adjustment_high', result.equity_value_high),
     skipped: false
   };
 }

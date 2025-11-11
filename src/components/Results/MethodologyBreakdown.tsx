@@ -78,7 +78,13 @@ export const MethodologyBreakdown: React.FC<MethodologyBreakdownProps> = ({ resu
   const upside = equityValueMid > 0 ? ((equityValueHigh - equityValueMid) / equityValueMid) * 100 : 0;
 
   // Check if size discount applies
-  const sizeDiscount = result.small_firm_adjustments?.size_discount || 0;
+  // CTO Audit: Handle union type (number | Step5SizeDiscountResult)
+  const sizeDiscountRaw = result.small_firm_adjustments?.size_discount;
+  const sizeDiscount = typeof sizeDiscountRaw === 'number' 
+    ? sizeDiscountRaw 
+    : (sizeDiscountRaw && 'size_discount_percentage' in sizeDiscountRaw)
+      ? sizeDiscountRaw.size_discount_percentage
+      : 0;
   const hasSizeDiscount = sizeDiscount < -0.001; // More than 0.1% discount
   const revenue = result.current_year_data?.revenue || 0;
 

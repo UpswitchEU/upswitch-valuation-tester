@@ -1,9 +1,29 @@
 import React from 'react';
-import { ValuationResponse } from '../../types/valuation';
+import { ValuationResponse, Step5SizeDiscountResult, Step6LiquidityDiscountResult } from '../../types/valuation';
 import { formatCurrency } from './utils/formatters';
 
 interface SmallFirmAdjustmentsProps {
   result: ValuationResponse;
+}
+
+/**
+ * Extract numeric discount value from union type (number | object)
+ * CTO Audit: Type-safe extraction for union types
+ */
+function extractDiscountValue(
+  value: number | Step5SizeDiscountResult | Step6LiquidityDiscountResult
+): number {
+  if (typeof value === 'number') {
+    return value;
+  }
+  // Object format: extract the discount percentage
+  if ('size_discount_percentage' in value) {
+    return (value as Step5SizeDiscountResult).size_discount_percentage;
+  }
+  if ('total_discount_percentage' in value) {
+    return (value as Step6LiquidityDiscountResult).total_discount_percentage;
+  }
+  return 0;
 }
 
 export const SmallFirmAdjustments: React.FC<SmallFirmAdjustmentsProps> = ({ result }) => {
@@ -18,6 +38,10 @@ export const SmallFirmAdjustments: React.FC<SmallFirmAdjustmentsProps> = ({ resu
     const sign = value > 0 ? '+' : '';
     return `${sign}${(value * 100).toFixed(1)}%`;
   };
+  
+  // Extract numeric values from union types
+  const sizeDiscount = extractDiscountValue(adjustments.size_discount);
+  const liquidityDiscount = extractDiscountValue(adjustments.liquidity_discount);
 
   return (
     <div className="bg-white rounded-lg border border-gray-200 p-6 shadow-sm">
@@ -36,7 +60,7 @@ export const SmallFirmAdjustments: React.FC<SmallFirmAdjustmentsProps> = ({ resu
           <div className="flex justify-between items-baseline mb-1">
             <h4 className="font-semibold text-gray-900">1. Size Discount</h4>
             <span className="text-lg font-bold text-blue-600">
-              {formatAdjustment(adjustments.size_discount)}
+              {formatAdjustment(sizeDiscount)}
             </span>
           </div>
           <p className="text-sm text-gray-600">{adjustments.size_discount_reason}</p>
@@ -50,7 +74,7 @@ export const SmallFirmAdjustments: React.FC<SmallFirmAdjustmentsProps> = ({ resu
           <div className="flex justify-between items-baseline mb-1">
             <h4 className="font-semibold text-gray-900">2. Liquidity Discount</h4>
             <span className="text-lg font-bold text-purple-600">
-              {formatAdjustment(adjustments.liquidity_discount)}
+              {formatAdjustment(liquidityDiscount)}
             </span>
           </div>
           <p className="text-sm text-gray-600">{adjustments.liquidity_discount_reason}</p>
@@ -108,11 +132,11 @@ export const SmallFirmAdjustments: React.FC<SmallFirmAdjustmentsProps> = ({ resu
             </div>
             <div className="flex justify-between text-gray-600 pt-1">
               <span>Size Discount:</span>
-              <span>{formatAdjustment(adjustments.size_discount)}</span>
+              <span>{formatAdjustment(sizeDiscount)}</span>
             </div>
             <div className="flex justify-between text-gray-600">
               <span>Liquidity Discount:</span>
-              <span>{formatAdjustment(adjustments.liquidity_discount)}</span>
+              <span>{formatAdjustment(liquidityDiscount)}</span>
             </div>
             {Math.abs(adjustments.country_adjustment) > 0.001 && (
               <div className="flex justify-between text-gray-600">
@@ -171,10 +195,10 @@ export const SmallFirmAdjustments: React.FC<SmallFirmAdjustmentsProps> = ({ resu
         <h4 className="font-semibold text-blue-900 mb-2">💡 How to Increase Your Valuation</h4>
         <p className="text-sm text-blue-800 mb-3">Based on these adjustments, you could increase your value by:</p>
         <ul className="text-sm text-blue-800 space-y-1">
-          {adjustments.size_discount < -0.15 && (
+          {sizeDiscount < -0.15 && (
             <li>• <strong>Growing revenue to next tier</strong> → Reduce size discount → Potential +10-15% value</li>
           )}
-          {adjustments.liquidity_discount < -0.18 && (
+          {liquidityDiscount < -0.18 && (
             <li>• <strong>Increasing recurring revenue to 80%+</strong> → Improve liquidity discount → Potential +5-8% value</li>
           )}
           {adjustments.growth_premium === 0 && (

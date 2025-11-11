@@ -1,7 +1,27 @@
 import { BarChart3, Building2, ChevronDown, ChevronRight } from 'lucide-react';
 import React, { useState } from 'react';
-import type { ComparableCompany, ValuationInputData, ValuationResponse } from '../../types/valuation';
+import type { ComparableCompany, ValuationInputData, ValuationResponse, Step5SizeDiscountResult, Step6LiquidityDiscountResult } from '../../types/valuation';
 import { formatCurrency, formatPercent } from '../Results/utils/formatters';
+
+/**
+ * Extract numeric discount value from union type (number | object)
+ * CTO Audit: Type-safe extraction for union types
+ */
+function extractDiscountValue(
+  value: number | Step5SizeDiscountResult | Step6LiquidityDiscountResult
+): number {
+  if (typeof value === 'number') {
+    return value;
+  }
+  // Object format: extract the discount percentage
+  if ('size_discount_percentage' in value) {
+    return (value as Step5SizeDiscountResult).size_discount_percentage;
+  }
+  if ('total_discount_percentage' in value) {
+    return (value as Step6LiquidityDiscountResult).total_discount_percentage;
+  }
+  return 0;
+}
 
 interface MultiplesTransparencySectionProps {
   result: ValuationResponse;
@@ -636,6 +656,10 @@ export const MultiplesTransparencySection: React.FC<MultiplesTransparencySection
           return `${sign}${(value * 100).toFixed(1)}%`;
         };
         
+        // Extract numeric values from union types
+        const sizeDiscount = extractDiscountValue(adjustments.size_discount);
+        const liquidityDiscount = extractDiscountValue(adjustments.liquidity_discount);
+        
         return (
           <ExpandableSection
             title="1c. Small Business Valuation Adjustments"
@@ -656,7 +680,7 @@ export const MultiplesTransparencySection: React.FC<MultiplesTransparencySection
                 <div className="flex justify-between items-baseline mb-2">
                   <h4 className="font-semibold text-gray-900">1. Size Discount</h4>
                   <span className="text-lg font-bold text-blue-600">
-                    {formatAdjustment(adjustments.size_discount)}
+                    {formatAdjustment(sizeDiscount)}
                   </span>
                 </div>
                 <p className="text-sm text-gray-600 mb-2">{adjustments.size_discount_reason}</p>
@@ -670,7 +694,7 @@ export const MultiplesTransparencySection: React.FC<MultiplesTransparencySection
                 <div className="flex justify-between items-baseline mb-2">
                   <h4 className="font-semibold text-gray-900">2. Liquidity Discount</h4>
                   <span className="text-lg font-bold text-purple-600">
-                    {formatAdjustment(adjustments.liquidity_discount)}
+                    {formatAdjustment(liquidityDiscount)}
                   </span>
                 </div>
                 <p className="text-sm text-gray-600 mb-2">{adjustments.liquidity_discount_reason}</p>
@@ -1022,15 +1046,15 @@ export const MultiplesTransparencySection: React.FC<MultiplesTransparencySection
                       <div className="flex justify-between">
                         <span className="text-gray-600">Size Discount:</span>
                         <span className="font-mono font-semibold text-red-600">
-                          {result.small_firm_adjustments.size_discount < 0 ? '' : '+'}
-                          {(result.small_firm_adjustments.size_discount * 100).toFixed(1)}%
+                          {extractDiscountValue(result.small_firm_adjustments.size_discount) < 0 ? '' : '+'}
+                          {(extractDiscountValue(result.small_firm_adjustments.size_discount) * 100).toFixed(1)}%
                         </span>
                       </div>
                       <div className="flex justify-between">
                         <span className="text-gray-600">Liquidity Discount:</span>
                         <span className="font-mono font-semibold text-red-600">
-                          {result.small_firm_adjustments.liquidity_discount < 0 ? '' : '+'}
-                          {(result.small_firm_adjustments.liquidity_discount * 100).toFixed(1)}%
+                          {extractDiscountValue(result.small_firm_adjustments.liquidity_discount) < 0 ? '' : '+'}
+                          {(extractDiscountValue(result.small_firm_adjustments.liquidity_discount) * 100).toFixed(1)}%
                         </span>
                       </div>
                       {Math.abs(result.small_firm_adjustments.country_adjustment) > 0.001 && (

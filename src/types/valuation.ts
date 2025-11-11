@@ -344,11 +344,177 @@ export interface ValidationWarning {
   recommended_action?: string;
 }
 
+// ============================================================================
+// Step Result Type Definitions (from Modular System)
+// ============================================================================
+
+/**
+ * Step 4: Owner Concentration Adjustment Result
+ * Matches backend StepOutput.result structure from step_4_owner_concentration.py
+ */
+export interface Step4OwnerConcentrationResult {
+  enterprise_value_low: number;
+  enterprise_value_mid: number;
+  enterprise_value_high: number;
+  owner_employee_ratio?: number | null;
+  normalized_ratio?: number;
+  risk_level?: string;
+  adjustment_percentage: number;
+  ev_change?: number;
+  calibration_used?: boolean;
+  // Legacy compatibility fields (from metadata)
+  ev_low_before?: number;
+  ev_mid_before?: number;
+  ev_high_before?: number;
+  ev_low_after?: number;
+  ev_mid_after?: number;
+  ev_high_after?: number;
+  calibration_type?: 'industry-specific' | 'universal' | 'standard';
+  business_type_id?: string | null;
+  number_of_owners?: number;
+  number_of_employees?: number;
+  skipped?: boolean;
+}
+
+/**
+ * Step 5: Size Discount Result
+ * Matches backend StepOutput.result structure from step_5_size_discount.py
+ */
+export interface Step5SizeDiscountResult {
+  enterprise_value_low: number;
+  enterprise_value_mid: number;
+  enterprise_value_high: number;
+  size_tier?: string;
+  base_discount: number;
+  adjustment_multiplier?: number;
+  size_discount_percentage: number;
+  business_category?: string;
+  ev_change?: number;
+  // Legacy compatibility fields (from metadata)
+  ev_low_before?: number;
+  ev_mid_before?: number;
+  ev_high_before?: number;
+  ev_low_after?: number;
+  ev_mid_after?: number;
+  ev_high_after?: number;
+  revenue_tier?: string;
+  sole_trader_adjustment?: number;
+}
+
+/**
+ * Step 6: Liquidity Discount Result
+ * Matches backend StepOutput.result structure from step_6_liquidity_discount.py
+ */
+export interface Step6LiquidityDiscountResult {
+  enterprise_value_low: number;
+  enterprise_value_mid: number;
+  enterprise_value_high: number;
+  base_discount: number;
+  margin_bonus?: number;
+  growth_bonus?: number;
+  recurring_revenue_bonus?: number;
+  size_bonus?: number;
+  total_discount_percentage: number;
+  ebitda_margin?: number;
+  growth_rate?: number;
+  recurring_revenue_pct?: number;
+  revenue?: number;
+  business_category?: string;
+  // Legacy compatibility fields (from metadata)
+  ev_low_before?: number;
+  ev_mid_before?: number;
+  ev_high_before?: number;
+  ev_low_after?: number;
+  ev_mid_after?: number;
+  ev_high_after?: number;
+  base_step?: number;
+  adjustments?: {
+    margin?: number;
+    growth?: number;
+    recurring_revenue?: number;
+    size?: number;
+  };
+  sole_trader_adjustment?: number;
+  is_sole_trader?: boolean;
+}
+
+/**
+ * Step 7: EV to Equity Conversion Result
+ * Matches backend StepOutput.result structure from step_7_ev_to_equity.py
+ */
+export interface Step7EVToEquityResult {
+  equity_value_low: number;
+  equity_value_mid: number;
+  equity_value_high: number;
+  total_debt?: number;
+  cash?: number;
+  operating_cash?: number;
+  excess_cash?: number;
+  operating_cash_pct?: number;
+  net_debt: number;
+  debt_to_ev_ratio?: number;
+  cash_to_ev_ratio?: number;
+  net_debt_to_ev_ratio?: number;
+  exemption_applied?: boolean;
+  exemption_rationale?: string;
+  size_tier?: string;
+  business_category?: string | null;
+  range_validated?: boolean;
+  range_corrected?: boolean;
+  balance_sheet_available?: boolean;
+  ev_source_step?: number;
+  calculated_equity_mid?: number;
+  // Legacy compatibility fields
+  ev_low?: number;
+  ev_mid?: number;
+  ev_high?: number;
+  balance_sheet_validation?: {
+    warnings?: string[];
+    notes?: string[];
+    negative_debt?: boolean;
+    negative_cash?: boolean;
+    high_debt_ratio?: boolean;
+    high_cash_ratio?: boolean;
+  };
+  edge_case_notes?: string[];
+}
+
+/**
+ * Step 8: Ownership Adjustment Result
+ * Matches backend StepOutput.result structure from step_8_ownership_adjustment.py
+ */
+export interface Step8OwnershipAdjustmentResult {
+  equity_value_low: number;
+  equity_value_mid: number;
+  equity_value_high: number;
+  ownership_percentage: number;
+  adjustment_type: string;
+  adjustment_percentage: number;
+  ownership_multiplier?: number;
+  // Legacy compatibility fields (from metadata)
+  equity_low_before?: number;
+  equity_mid_before?: number;
+  equity_high_before?: number;
+  equity_low_after?: number;
+  equity_mid_after?: number;
+  equity_high_after?: number;
+  base_adjustment?: number;
+  base_adjustment_pct?: number;
+  business_type_multiplier?: number;
+  revenue_multiplier?: number;
+  rationale?: string;
+  tier_description?: string;
+  shares_for_sale?: number;
+  calibration_type?: string;
+}
+
 // Small Firm Effect Transparency Types
+// Updated to support both legacy (number) and modular (object) formats
 export interface SmallFirmAdjustments {
-  size_discount: number;
+  // Legacy format: numbers
+  size_discount: number | Step5SizeDiscountResult;
   size_discount_reason: string;
-  liquidity_discount: number;
+  liquidity_discount: number | Step6LiquidityDiscountResult;
   liquidity_discount_reason: string;
   country_adjustment: number;
   country_adjustment_reason: string;
@@ -485,6 +651,7 @@ export interface ValuationResponse {
     confidence_score: number;
     
     // Owner concentration details
+    // Supports both legacy format (from multiples_valuation) and modular system format (from step results)
     owner_concentration?: {
       ratio: number;  // 0.0 to 1.0
       adjustment_factor: number;  // e.g., -0.12 for -12%
@@ -497,6 +664,21 @@ export interface ValuationResponse {
         owner_dependency_impact?: number;
         tier_used?: string;  // "CRITICAL" | "HIGH" | "MEDIUM" | "LOW"
       };
+      // Extended properties from modular system step results (optional for backward compatibility)
+      enterprise_value_low?: number;
+      enterprise_value_mid?: number;
+      enterprise_value_high?: number;
+      owner_employee_ratio?: number | null;
+      normalized_ratio?: number;
+      adjustment_percentage?: number;
+      ev_change?: number;
+      calibration_used?: boolean;
+      ev_low_before?: number;
+      ev_mid_before?: number;
+      ev_high_before?: number;
+      ev_low_after?: number;
+      ev_mid_after?: number;
+      ev_high_after?: number;
     };
     
     // Original (unadjusted) multiples for transparency
