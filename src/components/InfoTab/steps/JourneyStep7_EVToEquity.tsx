@@ -1,9 +1,11 @@
 import React from 'react';
 import { ArrowRightLeft } from 'lucide-react';
 import { StepCard } from '../shared/StepCard';
+import { StepMetadata } from '../../shared/StepMetadata';
 import { FormulaBox } from '../shared/FormulaBox';
 import { ValueGrid } from '../shared/ValueGrid';
-
+import { getStepData } from '../../../utils/valuationDataExtractor';
+import { getStepResultData } from '../../../utils/stepDataMapper';
 import type { ValuationResponse } from '../../../types/valuation';
 
 interface JourneyStep7Props {
@@ -14,10 +16,18 @@ interface JourneyStep7Props {
 const formatCurrency = (value: number): string => `€${Math.round(value).toLocaleString()}`;
 
 export const JourneyStep7_EVToEquity: React.FC<JourneyStep7Props> = ({ beforeValues, result }) => {
+  // Extract backend step data
+  const step7Data = getStepData(result, 7);
+  const step7Result = getStepResultData(result, 7);
+  
   // Get debt and cash from current_year_data
   const totalDebt = result.current_year_data?.total_debt || 0;
   const cash = result.current_year_data?.cash || 0;
   const netDebt = totalDebt - cash;
+  
+  // Extract backend-specific data
+  const operatingCash = step7Result?.operating_cash;
+  const excessCash = step7Result?.excess_cash;
 
   // Calculate equity value
   // CRITICAL FIX: netDebt = totalDebt - cash, so formula is: EV - netDebt = EV - (totalDebt - cash) = EV - totalDebt + cash
@@ -39,6 +49,16 @@ export const JourneyStep7_EVToEquity: React.FC<JourneyStep7Props> = ({ beforeVal
       defaultExpanded={true}
     >
       <div className="space-y-6">
+        {/* Step Metadata */}
+        {step7Data && (
+          <StepMetadata
+            stepData={step7Data}
+            stepNumber={7}
+            showExecutionTime={true}
+            showStatus={true}
+          />
+        )}
+
         {/* Formula */}
         <FormulaBox
           formula="Equity Value = Enterprise Value - Net Debt + Cash"

@@ -1,9 +1,12 @@
 import React from 'react';
 import { Percent } from 'lucide-react';
 import { StepCard } from '../shared/StepCard';
+import { StepMetadata } from '../../shared/StepMetadata';
 import { FormulaBox } from '../shared/FormulaBox';
 import { BeforeAfterTable } from '../shared/BeforeAfterTable';
 import { ValueGrid } from '../shared/ValueGrid';
+import { getStepData } from '../../../utils/valuationDataExtractor';
+import { getStepResultData } from '../../../utils/stepDataMapper';
 import type { ValuationResponse } from '../../../types/valuation';
 
 interface JourneyStep8Props {
@@ -14,14 +17,18 @@ interface JourneyStep8Props {
 const formatCurrency = (value: number): string => `€${Math.round(value).toLocaleString()}`;
 
 export const JourneyStep8_OwnershipAdjustment: React.FC<JourneyStep8Props> = ({ result, beforeValues }) => {
-  // Extract ownership adjustment data from result
-  // Get adjustment data from calculation_steps if available
-  const step8Data = result.transparency?.calculation_steps?.find((step: any) => step.step_number === 8);
-  const sharesForSale = step8Data?.outputs?.ownership_percentage || step8Data?.inputs?.shares_for_sale || 100;
+  // Extract backend step data (using new utilities)
+  const step8Data = getStepData(result, 8);
+  const step8Result = getStepResultData(result, 8);
+  
+  // Extract ownership adjustment data with fallback to old logic
+  const sharesForSale = step8Result?.shares_for_sale || step8Result?.ownership_percentage || 
+                        result.transparency?.calculation_steps?.find((step: any) => step.step_number === 8)?.outputs?.ownership_percentage || 100;
   const ownershipPercentage = sharesForSale / 100.0;
   
-  const adjustmentType = step8Data?.outputs?.adjustment_type || 'none';
-  const adjustmentPercentage = step8Data?.outputs?.adjustment_percentage || 0;
+  const adjustmentType = step8Result?.adjustment_type || 'none';
+  const adjustmentPercentage = step8Result?.adjustment_percentage || 0;
+  const calibrationType = step8Result?.calibration_type;
   const adjustmentFactor = 1.0 + (adjustmentPercentage / 100.0);
   
   // Calculate adjusted equity values
@@ -62,6 +69,17 @@ export const JourneyStep8_OwnershipAdjustment: React.FC<JourneyStep8Props> = ({ 
       defaultExpanded={true}
     >
       <div className="space-y-6">
+        {/* Step Metadata */}
+        {step8Data && (
+          <StepMetadata
+            stepData={step8Data}
+            stepNumber={8}
+            showExecutionTime={true}
+            showStatus={true}
+            calibrationType={calibrationType}
+          />
+        )}
+
         {/* Formula */}
         <FormulaBox
           formula="Adjusted Equity = Equity × Ownership % × (1 + Adjustment)"
