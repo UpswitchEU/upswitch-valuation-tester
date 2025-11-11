@@ -154,15 +154,96 @@ export interface QuickValuationRequest {
 // Quick valuation uses same response format as full valuation
 export type QuickValuationResponse = ValuationResponse;
 
-// Transparency-related interfaces
+// =============================================================================
+// MODULAR SYSTEM INTERFACES (Phase 1: Backend Data Structure)
+// =============================================================================
+
+/**
+ * Modular System metadata from backend
+ * Contains information about the 12-step calculation system execution
+ */
+export interface ModularSystem {
+  enabled: boolean;
+  total_steps: number;
+  steps_completed: number;
+  steps_skipped: number;
+  steps_failed?: number;
+  total_execution_time_ms: number;
+  step_details: StepDetail[];
+}
+
+/**
+ * Individual step detail from modular system
+ */
+export interface StepDetail {
+  step: number;
+  name: string;
+  status: 'completed' | 'skipped' | 'failed' | 'pending' | 'executing';
+  execution_time_ms: number;
+  error?: string;
+  reason?: string; // Reason for skip
+}
+
+/**
+ * Step status enum matching backend StepStatus
+ */
+export enum StepStatus {
+  PENDING = 'pending',
+  EXECUTING = 'executing',
+  COMPLETED = 'completed',
+  SKIPPED = 'skipped',
+  FAILED = 'failed'
+}
+
+// =============================================================================
+// TRANSPARENCY & METHODOLOGY INTERFACES
+// =============================================================================
+
+/**
+ * Academic source reference
+ */
+export interface AcademicSource {
+  author: string;
+  year: number | string;
+  title: string;
+  relevance: string;
+  edition?: string;
+  publisher?: string;
+  journal?: string;
+  volume?: string;
+  pages?: string;
+}
+
+/**
+ * Professional review readiness assessment
+ */
+export interface ProfessionalReviewReady {
+  ready: boolean;
+  status: 'PROFESSIONAL_REVIEW_READY' | 'NOT_READY' | 'REVIEW_RECOMMENDED';
+  checks: string[];
+  warnings: string[];
+  notes: string[];
+}
+
+/**
+ * Enhanced transparency data with full step information
+ */
 export interface TransparencyData {
   data_sources: DataSource[];
-  calculation_steps: CalculationStep[];
+  calculation_steps: EnhancedCalculationStep[];
   comparable_companies?: ComparableCompany[];
   confidence_breakdown: ConfidenceBreakdown;
   range_methodology: RangeMethodology;
+  adjustments_applied?: AdjustmentDetail[];
+  standards_compliance?: string[];
+  methodology_statement?: string;
+  academic_sources?: AcademicSource[];
+  professional_review_ready?: ProfessionalReviewReady;
 }
 
+/**
+ * Data source information
+ */
 export interface DataSource {
   name: string;
   value: any;
@@ -171,8 +252,32 @@ export interface DataSource {
   confidence: number;
   api_url?: string;
   cache_status?: string;
+  type?: string; // e.g., 'Multiples', 'DCF', etc.
 }
 
+/**
+ * Enhanced calculation step with status and metadata
+ */
+export interface EnhancedCalculationStep {
+  step: number; // Step number (0-11)
+  step_number?: number; // Alias for backward compatibility
+  name: string; // Step name
+  description: string; // Human-readable description
+  status: 'completed' | 'skipped' | 'failed' | 'not_executed';
+  execution_time_ms: number;
+  key_outputs?: Record<string, any>; // Key outputs from step
+  reason?: string; // Reason for skip
+  error?: string; // Error message if failed
+  methodology_note?: string; // Methodology-specific note
+  formula?: string; // Calculation formula (legacy)
+  inputs?: Record<string, any>; // Input data (legacy)
+  outputs?: Record<string, any>; // Output data (legacy)
+  explanation?: string; // Explanation (legacy)
+}
+
+/**
+ * Legacy calculation step interface for backward compatibility
+ */
 export interface CalculationStep {
   step_number: number;
   description: string;
@@ -180,6 +285,20 @@ export interface CalculationStep {
   inputs: Record<string, any>;
   outputs: Record<string, any>;
   explanation: string;
+}
+
+/**
+ * Adjustment detail with comprehensive information
+ */
+export interface AdjustmentDetail {
+  step: string; // Step name
+  step_number: number;
+  adjustment: number; // Decimal format (e.g., -0.12 for -12%)
+  adjustment_pct: number; // Percentage format (e.g., -12)
+  type: string; // 'owner_concentration' | 'size_discount' | 'liquidity_discount' | 'control_premium' | 'minority_discount' | 'deadlock_discount'
+  rationale: string;
+  tier?: string; // Size tier, risk level, etc.
+  ownership_percentage?: number; // For ownership adjustments
 }
 
 export interface ComparableCompany {
@@ -273,6 +392,14 @@ export interface ValuationResponse {
   
   // Transparency data
   transparency?: TransparencyData;
+  
+  // NEW: Modular system metadata (Phase 1: Backend Integration)
+  modular_system?: ModularSystem;
+  
+  // NEW: Methodology statement and academic sources (from Step 11)
+  methodology_statement?: string;
+  academic_sources?: AcademicSource[];
+  professional_review_ready?: ProfessionalReviewReady;
   
   // Owner Dependency Assessment (Phase 4: 12-factor analysis)
   owner_dependency_result?: {
