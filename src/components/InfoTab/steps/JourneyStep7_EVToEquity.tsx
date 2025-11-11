@@ -1,12 +1,12 @@
-import React from 'react';
 import { ArrowRightLeft } from 'lucide-react';
-import { StepCard } from '../shared/StepCard';
+import React from 'react';
+import type { ValuationResponse } from '../../../types/valuation';
+import { getStepResultData } from '../../../utils/stepDataMapper';
+import { getStepData } from '../../../utils/valuationDataExtractor';
 import { StepMetadata } from '../../shared/StepMetadata';
 import { FormulaBox } from '../shared/FormulaBox';
+import { StepCard } from '../shared/StepCard';
 import { ValueGrid } from '../shared/ValueGrid';
-import { getStepData } from '../../../utils/valuationDataExtractor';
-import { getStepResultData } from '../../../utils/stepDataMapper';
-import type { ValuationResponse } from '../../../types/valuation';
 
 interface JourneyStep7Props {
   beforeValues: { low: number; mid: number; high: number };
