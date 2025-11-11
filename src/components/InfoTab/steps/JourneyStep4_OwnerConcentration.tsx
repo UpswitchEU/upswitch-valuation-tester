@@ -1,8 +1,11 @@
 import React from 'react';
 import { Users } from 'lucide-react';
 import { StepCard } from '../shared/StepCard';
+import { StepMetadata } from '../../shared/StepMetadata';
 import { FormulaBox } from '../shared/FormulaBox';
 import { BeforeAfterTable } from '../shared/BeforeAfterTable';
+import { getStepData } from '../../../utils/valuationDataExtractor';
+import { getStepResultData } from '../../../utils/stepDataMapper';
 import type { ValuationResponse } from '../../../types/valuation';
 
 interface JourneyStep4Props {
@@ -11,7 +14,16 @@ interface JourneyStep4Props {
 }
 
 export const JourneyStep4_OwnerConcentration: React.FC<JourneyStep4Props> = ({ result, beforeValues }) => {
+  // Extract backend step data
+  const step4Data = getStepData(result, 4);
+  const step4Result = getStepResultData(result, 4);
+  
   const ownerConc = result.multiples_valuation?.owner_concentration;
+  
+  // Extract backend-specific data
+  const ratio = step4Result?.owner_employee_ratio;
+  const tier = step4Result?.tier;
+  const calibrationType = step4Result?.calibration_type;
   
   if (!ownerConc || ownerConc.adjustment_factor === 0) {
     // Skip this step if no owner concentration adjustment
@@ -56,6 +68,17 @@ export const JourneyStep4_OwnerConcentration: React.FC<JourneyStep4Props> = ({ r
       defaultExpanded={true}
     >
       <div className="space-y-6">
+        {/* Step Metadata */}
+        {step4Data && (
+          <StepMetadata
+            stepData={step4Data}
+            stepNumber={4}
+            showExecutionTime={true}
+            showStatus={true}
+            calibrationType={calibrationType}
+          />
+        )}
+
         {/* Critical Warning for 100% owner-operated */}
         {isFullyOwnerOperated && (
           <div className="bg-red-50 border-2 border-red-500 rounded-lg p-4">

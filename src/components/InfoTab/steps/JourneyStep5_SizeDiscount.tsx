@@ -1,8 +1,11 @@
 import React from 'react';
 import { Ruler } from 'lucide-react';
 import { StepCard } from '../shared/StepCard';
+import { StepMetadata } from '../../shared/StepMetadata';
 import { FormulaBox } from '../shared/FormulaBox';
 import { BeforeAfterTable } from '../shared/BeforeAfterTable';
+import { getStepData } from '../../../utils/valuationDataExtractor';
+import { getStepResultData } from '../../../utils/stepDataMapper';
 import type { ValuationResponse } from '../../../types/valuation';
 
 interface JourneyStep5Props {
@@ -13,8 +16,17 @@ interface JourneyStep5Props {
 const formatCurrency = (value: number): string => `€${Math.round(value).toLocaleString()}`;
 
 export const JourneyStep5_SizeDiscount: React.FC<JourneyStep5Props> = ({ result, beforeValues }) => {
+  // Extract backend step data
+  const step5Data = getStepData(result, 5);
+  const step5Result = getStepResultData(result, 5);
+  
   const sizeDiscount = result.multiples_valuation?.size_discount || 0;
   const revenue = result.current_year_data?.revenue || 0;
+  
+  // Extract backend-specific data
+  const revenueTier = step5Result?.revenue_tier;
+  const baseDiscount = step5Result?.base_discount;
+  const soleTraderAdjustment = step5Result?.sole_trader_adjustment;
   
   const afterValues = {
     low: beforeValues.low * (1 + sizeDiscount),
@@ -50,6 +62,16 @@ export const JourneyStep5_SizeDiscount: React.FC<JourneyStep5Props> = ({ result,
       defaultExpanded={true}
     >
       <div className="space-y-6">
+        {/* Step Metadata */}
+        {step5Data && (
+          <StepMetadata
+            stepData={step5Data}
+            stepNumber={5}
+            showExecutionTime={true}
+            showStatus={true}
+          />
+        )}
+
         {/* Formula */}
         <FormulaBox
           formula="Enterprise Value × (1 + Size Discount)"

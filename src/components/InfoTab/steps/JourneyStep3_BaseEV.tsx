@@ -1,8 +1,11 @@
 import React from 'react';
-import { TrendingUp } from 'lucide-react';
+import { TrendingUp, AlertCircle } from 'lucide-react';
 import { StepCard } from '../shared/StepCard';
+import { StepMetadata } from '../../shared/StepMetadata';
 import { FormulaBox } from '../shared/FormulaBox';
 import { ValueGrid } from '../shared/ValueGrid';
+import { getStepData } from '../../../utils/valuationDataExtractor';
+import { getStepResultData } from '../../../utils/stepDataMapper';
 import type { ValuationResponse } from '../../../types/valuation';
 
 interface JourneyStep3Props {
@@ -12,6 +15,10 @@ interface JourneyStep3Props {
 const formatCurrency = (value: number): string => `€${Math.round(value).toLocaleString()}`;
 
 export const JourneyStep3_BaseEV: React.FC<JourneyStep3Props> = ({ result }) => {
+  // Extract backend step data
+  const step3Data = getStepData(result, 3);
+  const step3Result = getStepResultData(result, 3);
+  
   const multiples = result.multiples_valuation;
   const currentData = result.current_year_data;
   
@@ -19,7 +26,8 @@ export const JourneyStep3_BaseEV: React.FC<JourneyStep3Props> = ({ result }) => 
     return null;
   }
 
-  const isPrimaryEBITDA = multiples.primary_multiple_method === 'ebitda_multiple';
+  const isPrimaryEBITDA = step3Result?.metric_used === 'EBITDA' || multiples.primary_multiple_method === 'ebitda_multiple';
+  const autoCorrection = step3Result?.auto_corrected || false;
   
   // Use unadjusted multiples if available (before owner concentration adjustment)
   const baseMultiple_mid = isPrimaryEBITDA 
@@ -53,6 +61,30 @@ export const JourneyStep3_BaseEV: React.FC<JourneyStep3Props> = ({ result }) => 
       defaultExpanded={true}
     >
       <div className="space-y-6">
+        {/* Step Metadata */}
+        {step3Data && (
+          <StepMetadata
+            stepData={step3Data}
+            stepNumber={3}
+            showExecutionTime={true}
+            showStatus={true}
+          />
+        )}
+
+        {/* Auto-Correction Notice */}
+        {autoCorrection && (
+          <div className="bg-yellow-50 border-2 border-yellow-300 rounded-lg p-4">
+            <div className="flex items-center gap-3 mb-2">
+              <AlertCircle className="w-5 h-5 text-yellow-600" />
+              <h4 className="font-semibold text-yellow-900">Range Auto-Corrected</h4>
+            </div>
+            <p className="text-sm text-yellow-800">
+              The calculated valuation range was inverted or invalid and has been auto-corrected 
+              to ensure low ≤ mid ≤ high. This may occur due to extreme multiples or negative values.
+            </p>
+          </div>
+        )}
+
         {/* Formula */}
         <FormulaBox
           formula={`${metricName} × ${metricName} Multiple = Enterprise Value`}
