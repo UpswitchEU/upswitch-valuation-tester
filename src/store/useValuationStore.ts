@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import { api } from '../services/api';
 import { backendAPI } from '../services/backendApi';
 import type { QuickValuationRequest, ValuationFormData, ValuationInputData, ValuationRequest, ValuationResponse } from '../types/valuation';
-import { storeLogger } from '../utils/logger';
+import { storeLogger, correlationContext, setCorrelationFromResponse } from '../utils/logger';
 import { validatePreference } from '../utils/numberUtils';
 // import { useReportsStore } from './useReportsStore'; // Deprecated: Now saving to database
 
@@ -46,6 +46,10 @@ interface ValuationStore {
   // Saved valuation ID (from backend)
   savedValuationId: string | null;
   setSavedValuationId: (id: string | null) => void;
+  
+  // Correlation ID for logging (links frontend and backend logs)
+  correlationId: string | null;
+  setCorrelationId: (id: string | null) => void;
   
   // Actions
   calculateValuation: () => Promise<void>;
@@ -130,6 +134,17 @@ export const useValuationStore = create<ValuationStore>((set, get) => ({
   // Saved valuation ID
   savedValuationId: null,
   setSavedValuationId: (savedValuationId) => set({ savedValuationId }),
+  
+  // Correlation ID for logging
+  correlationId: null,
+  setCorrelationId: (correlationId) => {
+    set({ correlationId });
+    // Also update global correlation context
+    correlationContext.setCorrelationId(correlationId);
+    if (correlationId) {
+      storeLogger.info('Correlation ID set', { correlationId });
+    }
+  },
   
   // Actions
   calculateValuation: async () => {
@@ -277,6 +292,22 @@ export const useValuationStore = create<ValuationStore>((set, get) => ({
         requestData: request
       });
       const response = await backendAPI.calculateManualValuation(request);
+      
+      // Extract and store correlation ID from response
+      // Note: backendAPI should extract from headers, but we also check response body
+      if (response?.valuation_id) {
+        const { setCorrelationId } = get();
+        setCorrelationId(response.valuation_id);
+        // Also update global correlation context
+        correlationContext.setValuationId(response.valuation_id);
+        storeLogger.info('Valuation response received', {
+          valuationId: response.valuation_id,
+          hasTransparency: !!response.transparency,
+          hasModularSystem: !!response.modular_system,
+          transparencyStepsCount: response.transparency?.calculation_steps?.length || 0,
+          modularSystemStepsCount: response.modular_system?.step_details?.length || 0
+        });
+      }
       
       // DIAGNOSTIC: Log backend response structure (FIXED - now extracts nested data)
       console.log('DIAGNOSTIC: Backend response (FIXED):', {

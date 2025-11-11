@@ -1,16 +1,38 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import { Database, CheckCircle, AlertTriangle, TrendingUp } from 'lucide-react';
 import { StepCard } from '../shared/StepCard';
 import { StepMetadata } from '../../shared/StepMetadata';
 import { getStepData } from '../../../utils/valuationDataExtractor';
 import { getStepResultData } from '../../../utils/stepDataMapper';
 import type { ValuationResponse } from '../../../types/valuation';
+import { stepLogger, createPerformanceLogger } from '../../../utils/logger';
 
 interface JourneyStep0Props {
   result: ValuationResponse;
 }
 
 export const JourneyStep0_DataQuality: React.FC<JourneyStep0Props> = ({ result }) => {
+  const renderPerfLogger = useRef(createPerformanceLogger('JourneyStep0_DataQuality.render', 'step'));
+  
+  // Component mount logging
+  useEffect(() => {
+    const step0Data = getStepData(result, 0);
+    const step0Result = getStepResultData(result, 0);
+    
+    stepLogger.info('JourneyStep0_DataQuality mounted', {
+      component: 'JourneyStep0_DataQuality',
+      step: 0,
+      hasStepData: !!step0Data,
+      hasStepResult: !!step0Result,
+      hasQualityScore: !!step0Result?.quality_score,
+      valuationId: result.valuation_id
+    });
+    
+    return () => {
+      stepLogger.debug('JourneyStep0_DataQuality unmounting', { step: 0 });
+    };
+  }, [result.valuation_id]); // Re-log if valuation changes
+  
   // Extract backend step data
   const step0Data = getStepData(result, 0);
   const step0Result = getStepResultData(result, 0);
@@ -20,6 +42,24 @@ export const JourneyStep0_DataQuality: React.FC<JourneyStep0Props> = ({ result }
   const dimensionScores = step0Result?.dimension_scores || {};
   const dcfEligible = step0Result?.dcf_eligible !== undefined ? step0Result.dcf_eligible : (result.dcf_weight || 0) > 0;
   const qualityWarnings = step0Result?.warnings || [];
+  
+  // Render performance logging
+  useEffect(() => {
+    const renderTime = renderPerfLogger.current.end({
+      step: 0,
+      hasStepData: !!step0Data,
+      hasStepResult: !!step0Result,
+      qualityScore
+    });
+    
+    stepLogger.debug('JourneyStep0_DataQuality rendered', {
+      step: 0,
+      renderTime: Math.round(renderTime * 100) / 100
+    });
+    
+    // Reset for next render
+    renderPerfLogger.current = createPerformanceLogger('JourneyStep0_DataQuality.render', 'step');
+  });
   
   return (
     <StepCard

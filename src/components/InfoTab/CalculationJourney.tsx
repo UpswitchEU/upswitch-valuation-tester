@@ -14,6 +14,8 @@ import { JourneyStep9_ConfidenceScore } from './steps/JourneyStep9_ConfidenceSco
 import { JourneyStep10_RangeMethodology } from './steps/JourneyStep10_RangeMethodology';
 import { JourneyStep11_FinalValuation } from './steps/JourneyStep11_FinalValuation';
 import type { ValuationResponse, ValuationInputData } from '../../types/valuation';
+import { componentLogger, createPerformanceLogger } from '../../utils/logger';
+import { getAllStepData, getStepsSummary } from '../../utils/valuationDataExtractor';
 
 interface CalculationJourneyProps {
   result: ValuationResponse;
@@ -33,11 +35,36 @@ const SCROLL_SPY_CONFIG = {
 } as const;
 
 export const CalculationJourney: React.FC<CalculationJourneyProps> = ({ result, inputData }) => {
+  const renderPerfLogger = useRef(createPerformanceLogger('CalculationJourney.render', 'component'));
   const [activeStep, setActiveStep] = useState('step-1-inputs');
   const stepRefs = useRef<{ [key: string]: HTMLDivElement | null }>({});
   const isScrollingProgrammatically = useRef(false);
   const observerRef = useRef<IntersectionObserver | null>(null);
   const rafIdRef = useRef<number | null>(null);
+
+  // Component mount logging
+  useEffect(() => {
+    const stepData = getAllStepData(result);
+    const summary = getStepsSummary(result);
+    
+    componentLogger.info('CalculationJourney mounted', {
+      component: 'CalculationJourney',
+      hasResult: !!result,
+      hasInputData: !!inputData,
+      valuationId: result.valuation_id,
+      totalSteps: summary.total,
+      completedSteps: summary.completed,
+      skippedSteps: summary.skipped,
+      hasTransparency: !!result.transparency,
+      hasModularSystem: !!result.modular_system,
+      transparencyStepsCount: result.transparency?.calculation_steps?.length || 0,
+      modularSystemStepsCount: result.modular_system?.step_details?.length || 0
+    });
+    
+    return () => {
+      componentLogger.debug('CalculationJourney unmounting');
+    };
+  }, []); // Only on mount/unmount
 
   // Check if historical trend analysis should be shown
   const hasHistoricalData = result.historical_years_data && result.historical_years_data.length >= 1 && result.current_year_data;
@@ -59,6 +86,12 @@ export const CalculationJourney: React.FC<CalculationJourneyProps> = ({ result, 
   ];
 
   const handleStepClick = (stepId: string) => {
+    componentLogger.debug('Step clicked in CalculationJourney', {
+      component: 'CalculationJourney',
+      stepId,
+      previousActiveStep: activeStep
+    });
+    
     setActiveStep(stepId);
     const element = stepRefs.current[stepId];
     if (element) {
@@ -376,6 +409,25 @@ export const CalculationJourney: React.FC<CalculationJourneyProps> = ({ result, 
   };
 
   const intermediateValues = calculateIntermediateValues();
+
+  // Render performance logging
+  useEffect(() => {
+    const renderTime = renderPerfLogger.current.end({
+      activeStep,
+      stepsCount: steps.length,
+      hasIntermediateValues: !!intermediateValues.step7
+    });
+    
+    componentLogger.debug('CalculationJourney rendered', {
+      component: 'CalculationJourney',
+      renderTime: Math.round(renderTime * 100) / 100,
+      activeStep,
+      stepsCount: steps.length
+    });
+    
+    // Reset performance logger for next render
+    renderPerfLogger.current = createPerformanceLogger('CalculationJourney.render', 'component');
+  });
 
   return (
     <div className="relative bg-gradient-to-br from-gray-50 to-blue-50 min-h-screen">

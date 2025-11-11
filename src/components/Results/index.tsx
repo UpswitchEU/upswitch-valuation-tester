@@ -16,7 +16,9 @@ import { RiskFactors } from './RiskFactors';
 import { ValuationWaterfall } from './ValuationWaterfall';
 import { ValueDrivers } from './ValueDrivers';
 // NEW: Phase 2 Main Report Enhancement Components
-// NEW: Phase 5/6 Shared Components
+import { CalculationJourneyOverview } from './CalculationJourneyOverview';
+import { AdjustmentsSummary } from './AdjustmentsSummary';
+import { DataQualityConfidence } from './DataQualityConfidence';
 
 /**
  * Results Component - Modular Architecture
@@ -95,25 +97,23 @@ export const Results: React.FC = () => {
       {/* Risk Factors */}
       <RiskFactors result={result} />
       
-      {/* NEW: Value Chain Validation */}
+      {/* TODO: Add back when components are created
       <ErrorBoundary fallback={<div className="p-4 bg-red-50 border border-red-200 rounded-lg text-red-700">Error loading value chain validation</div>}>
         <ValueChainValidation result={result} />
       </ErrorBoundary>
 
-      {/* NEW: Transparency Report */}
       <ErrorBoundary fallback={<div className="p-4 bg-red-50 border border-red-200 rounded-lg text-red-700">Error loading transparency report</div>}>
         <TransparencyReport result={result} />
       </ErrorBoundary>
 
-      {/* NEW: Academic Sources */}
       <ErrorBoundary fallback={<div className="p-4 bg-red-50 border border-red-200 rounded-lg text-red-700">Error loading academic sources</div>}>
         <AcademicSources result={result} />
       </ErrorBoundary>
 
-      {/* NEW: Professional Review Readiness */}
       <ErrorBoundary fallback={<div className="p-4 bg-red-50 border border-red-200 rounded-lg text-red-700">Error loading review readiness</div>}>
         <ProfessionalReviewReadiness result={result} showBadge={false} />
       </ErrorBoundary>
+      */}
       
       {/* Methodology & Data Sources */}
       <CompetitiveComparison />

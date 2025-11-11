@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import { TrendingUp, AlertCircle } from 'lucide-react';
 import { StepCard } from '../shared/StepCard';
 import { StepMetadata } from '../../shared/StepMetadata';
@@ -7,6 +7,7 @@ import { ValueGrid } from '../shared/ValueGrid';
 import { getStepData } from '../../../utils/valuationDataExtractor';
 import { getStepResultData } from '../../../utils/stepDataMapper';
 import type { ValuationResponse } from '../../../types/valuation';
+import { stepLogger, createPerformanceLogger } from '../../../utils/logger';
 
 interface JourneyStep3Props {
   result: ValuationResponse;
@@ -26,7 +27,7 @@ export const JourneyStep3_BaseEV: React.FC<JourneyStep3Props> = ({ result }) => 
     return null;
   }
 
-  const isPrimaryEBITDA = step3Result?.metric_used === 'EBITDA' || multiples.primary_multiple_method === 'ebitda_multiple';
+  const isPrimaryEBITDA = step3Result?.metric_used === 'EBITDA' || step3Result?.primary_method === 'EV/EBITDA' || multiples.primary_multiple_method === 'ebitda_multiple';
   const autoCorrection = step3Result?.auto_corrected || false;
   
   // Use unadjusted multiples if available (before owner concentration adjustment)

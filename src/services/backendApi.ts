@@ -5,9 +5,9 @@
  * for credit management and valuation processing
  */
 
-import axios, { AxiosInstance } from 'axios';
+import axios, { AxiosInstance, AxiosResponse } from 'axios';
 import type { ValuationRequest, ValuationResponse } from '../types/valuation';
-import { apiLogger } from '../utils/logger';
+import { apiLogger, extractCorrelationId, setCorrelationFromResponse, createPerformanceLogger } from '../utils/logger';
 
 class BackendAPI {
   private client: AxiosInstance;
@@ -24,14 +24,45 @@ class BackendAPI {
       withCredentials: true, // Send authentication cookies
     });
 
-    // Response interceptor for error handling
+    // Response interceptor for correlation ID extraction and logging
     this.client.interceptors.response.use(
-      response => response,
+      (response: AxiosResponse) => {
+        // Extract correlation ID from response headers
+        const correlationId = extractCorrelationId(response);
+        if (correlationId) {
+          setCorrelationFromResponse(response);
+          apiLogger.debug('Correlation ID extracted from response', {
+            correlationId,
+            url: response.config.url,
+            status: response.status
+          });
+        }
+        
+        // Log response structure for valuation endpoints
+        if (response.config.url?.includes('/calculate')) {
+          const responseData = response.data?.data || response.data;
+          apiLogger.info('Valuation API response received', {
+            url: response.config.url,
+            status: response.status,
+            hasValuationId: !!responseData?.valuation_id,
+            hasTransparency: !!responseData?.transparency,
+            hasModularSystem: !!responseData?.modular_system,
+            transparencyStepsCount: responseData?.transparency?.calculation_steps?.length || 0,
+            modularSystemStepsCount: responseData?.modular_system?.step_details?.length || 0,
+            correlationId
+          });
+        }
+        
+        return response;
+      },
       error => {
+        const correlationId = error.response ? extractCorrelationId(error.response) : null;
         apiLogger.error('Backend API Error', {
           error: error.response?.data || error.message,
-          status: error.response?.status
-        });
+          status: error.response?.status,
+          url: error.config?.url,
+          correlationId
+        }, error);
         throw error;
       }
     );
@@ -42,23 +73,53 @@ class BackendAPI {
    * Routes through Node.js backend for analytics tracking
    */
   async calculateManualValuation(data: ValuationRequest): Promise<ValuationResponse> {
+    const perfLogger = createPerformanceLogger('calculateManualValuation', 'api');
     try {
-      console.log('Manual valuation request data:', {
+      apiLogger.info('Sending manual valuation request', {
         company_name: data.company_name,
         revenue: data.current_year_data?.revenue,
         ebitda: data.current_year_data?.ebitda,
-        revenueType: typeof data.current_year_data?.revenue,
-        ebitdaType: typeof data.current_year_data?.ebitda,
-        fullData: data
+        industry: data.industry,
+        business_type_id: data.business_type_id
       });
 
       // Call Node.js backend which handles logging and proxies to Python engine
       const response = await this.client.post('/api/valuations/calculate/manual', data);
       
-      console.log('Backend response for manual valuation:', response.data);
-      return response.data.data; // Extract nested data from { success, data, message }
+      // Extract correlation ID and valuation ID from response
+      const responseData = response.data.data || response.data;
+      const correlationId = extractCorrelationId(response);
+      const valuationId = responseData?.valuation_id;
+      
+      if (correlationId || valuationId) {
+        setCorrelationFromResponse(response);
+        apiLogger.info('Manual valuation response received', {
+          valuationId,
+          correlationId: correlationId || valuationId,
+          hasTransparency: !!responseData?.transparency,
+          hasModularSystem: !!responseData?.modular_system,
+          transparencyStepsCount: responseData?.transparency?.calculation_steps?.length || 0,
+          modularSystemStepsCount: responseData?.modular_system?.step_details?.length || 0,
+          equityValueMid: responseData?.equity_value_mid
+        });
+      }
+      
+      perfLogger.end({ 
+        valuationId,
+        correlationId: correlationId || valuationId,
+        hasData: !!responseData 
+      });
+      
+      return responseData; // Extract nested data from { success, data, message }
     } catch (error: any) {
-      console.error('Manual valuation failed:', error);
+      const correlationId = error.response ? extractCorrelationId(error.response) : null;
+      apiLogger.error('Manual valuation failed', {
+        error: error.response?.data?.error || error.message,
+        status: error.response?.status,
+        correlationId
+      }, error);
+      
+      perfLogger.end({ error: true, correlationId });
       
       // Enhanced error handling
       if (error.response?.data?.error) {
