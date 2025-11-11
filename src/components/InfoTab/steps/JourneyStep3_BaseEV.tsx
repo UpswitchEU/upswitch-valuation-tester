@@ -16,6 +16,28 @@ interface JourneyStep3Props {
 const formatCurrency = (value: number): string => `€${Math.round(value).toLocaleString()}`;
 
 export const JourneyStep3_BaseEV: React.FC<JourneyStep3Props> = ({ result }) => {
+  const renderPerfLogger = useRef(createPerformanceLogger('JourneyStep3_BaseEV.render', 'step'));
+  
+  // Component mount logging
+  useEffect(() => {
+    const step3Data = getStepData(result, 3);
+    const step3Result = getStepResultData(result, 3);
+    
+    stepLogger.info('JourneyStep3_BaseEV mounted', {
+      component: 'JourneyStep3_BaseEV',
+      step: 3,
+      hasStepData: !!step3Data,
+      hasStepResult: !!step3Result,
+      hasMultiples: !!result.multiples_valuation,
+      hasCurrentData: !!result.current_year_data,
+      valuationId: result.valuation_id
+    });
+    
+    return () => {
+      stepLogger.debug('JourneyStep3_BaseEV unmounting', { step: 3 });
+    };
+  }, [result.valuation_id]);
+  
   // Extract backend step data
   const step3Data = getStepData(result, 3);
   const step3Result = getStepResultData(result, 3);
@@ -24,11 +46,35 @@ export const JourneyStep3_BaseEV: React.FC<JourneyStep3Props> = ({ result }) => 
   const currentData = result.current_year_data;
   
   if (!multiples || !currentData) {
+    stepLogger.warn('JourneyStep3_BaseEV missing required data', {
+      step: 3,
+      hasMultiples: !!multiples,
+      hasCurrentData: !!currentData
+    });
     return null;
   }
 
   const isPrimaryEBITDA = step3Result?.metric_used === 'EBITDA' || step3Result?.primary_method === 'EV/EBITDA' || multiples.primary_multiple_method === 'ebitda_multiple';
   const autoCorrection = step3Result?.auto_corrected || false;
+  
+  // Render performance logging
+  useEffect(() => {
+    const renderTime = renderPerfLogger.current.end({
+      step: 3,
+      hasStepData: !!step3Data,
+      hasStepResult: !!step3Result,
+      isPrimaryEBITDA,
+      autoCorrection
+    });
+    
+    stepLogger.debug('JourneyStep3_BaseEV rendered', {
+      step: 3,
+      renderTime: Math.round(renderTime * 100) / 100
+    });
+    
+    // Reset for next render
+    renderPerfLogger.current = createPerformanceLogger('JourneyStep3_BaseEV.render', 'step');
+  });
   
   // Use unadjusted multiples if available (before owner concentration adjustment)
   const baseMultiple_mid = isPrimaryEBITDA 
