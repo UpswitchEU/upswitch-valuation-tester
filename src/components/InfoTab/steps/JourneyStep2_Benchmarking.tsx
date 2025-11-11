@@ -1,7 +1,8 @@
-import React from 'react';
 import { BarChart3 } from 'lucide-react';
-import { StepCard } from '../shared/StepCard';
+import React from 'react';
 import type { ValuationResponse } from '../../../types/valuation';
+import { getStepData, getStepResultData } from '../../../utils/valuationDataExtractor';
+import { StepCard } from '../shared/StepCard';
 
 interface JourneyStep2Props {
   result: ValuationResponse;
@@ -13,6 +14,16 @@ export const JourneyStep2_Benchmarking: React.FC<JourneyStep2Props> = ({ result 
   const dcfWeight = result.dcf_weight || 0;
   const revenue = result.current_year_data?.revenue || 0;
   const isDCFExcluded = dcfWeight === 0;
+  
+  // Extract step data from backend
+  const step2Data = getStepData(result, 2);
+  const step2Result = getStepResultData(result, 2);
+  
+  // Extract methodology decision and suitability score
+  const methodologyDecision = step2Result?.methodology_decision || 
+    (isDCFExcluded ? 'MULTIPLES_ONLY' : dcfWeight > 0.5 ? 'HYBRID_DCF_PRIMARY' : 'HYBRID_MULTIPLES_PRIMARY');
+  const suitabilityScore = step2Result?.suitability_score || {};
+  const dataSource = step2Result?.data_source || multiples?.comparables_quality || 'estimated';
   
   return (
     <StepCard
@@ -142,6 +153,38 @@ export const JourneyStep2_Benchmarking: React.FC<JourneyStep2Props> = ({ result 
             <p className="text-sm text-gray-600 mt-2">
               Quality: <span className="font-semibold">{multiples.comparables_quality || 'Good'}</span>
             </p>
+          </div>
+        )}
+
+        {/* Step Metadata */}
+        {step2Data && (
+          <StepMetadata
+            stepData={step2Data}
+            stepNumber={2}
+            dataSource={dataSource === 'fmp_api' || dataSource === 'cache' ? 'real' : 'estimated'}
+            calibrationType={step2Result?.calibration_type || null}
+          />
+        )}
+
+        {/* Methodology Decision */}
+        {methodologyDecision && (
+          <div className="bg-purple-50 border-l-4 border-purple-500 p-4 rounded">
+            <h4 className="font-semibold text-purple-900 mb-2">Methodology Decision</h4>
+            <p className="text-sm text-purple-800">
+              <strong>Selected:</strong> {methodologyDecision.replace(/_/g, ' ')}
+            </p>
+            {Object.keys(suitabilityScore).length > 0 && (
+              <div className="mt-2 text-xs text-purple-700">
+                <strong>Suitability Score Breakdown:</strong>
+                <ul className="list-disc list-inside mt-1 space-y-1">
+                  {Object.entries(suitabilityScore).map(([key, value]: [string, any]) => (
+                    <li key={key}>
+                      {key.replace(/_/g, ' ')}: {typeof value === 'number' ? value.toFixed(1) : value}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
           </div>
         )}
 

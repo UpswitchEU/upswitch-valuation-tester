@@ -15,6 +15,16 @@ import { ResultsHeader } from './ResultsHeader';
 import { RiskFactors } from './RiskFactors';
 import { ValuationWaterfall } from './ValuationWaterfall';
 import { ValueDrivers } from './ValueDrivers';
+// NEW: Phase 2 Main Report Enhancement Components
+import { CalculationJourneyOverview } from './CalculationJourneyOverview';
+import { AdjustmentsSummary } from './AdjustmentsSummary';
+import { DataQualityConfidence } from './DataQualityConfidence';
+// NEW: Phase 5/6 Shared Components
+import { AcademicSources } from '../shared/AcademicSources';
+import { MethodologyStatement } from '../shared/MethodologyStatement';
+import { ProfessionalReviewReadiness } from '../shared/ProfessionalReviewReadiness';
+import { TransparencyReport } from '../shared/TransparencyReport';
+import { ValueChainValidation } from '../shared/ValueChainValidation';
 
 /**
  * Results Component - Modular Architecture
