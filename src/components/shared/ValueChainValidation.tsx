@@ -8,8 +8,9 @@
  */
 
 import React from 'react';
-import { CheckCircle, AlertTriangle, TrendingUp, ArrowRight } from 'lucide-react';
-import { getStepData, getStepResultData } from '../../utils/valuationDataExtractor';
+import { CheckCircle, AlertTriangle, ArrowRight } from 'lucide-react';
+import { getStepData } from '../../utils/valuationDataExtractor';
+import { getStepResultData } from '../../utils/stepDataMapper';
 import type { ValuationResponse } from '../../types/valuation';
 
 interface ValueChainValidationProps {
@@ -21,13 +22,10 @@ export const ValueChainValidation: React.FC<ValueChainValidationProps> = ({
   result,
   className = ''
 }) => {
-  const step7Data = getStepData(result, 7);
   const step7Result = getStepResultData(result, 7);
   const step8Data = getStepData(result, 8);
   const step8Result = getStepResultData(result, 8);
-  const step10Data = getStepData(result, 10);
   const step10Result = getStepResultData(result, 10);
-  const step11Data = getStepData(result, 11);
   const step11Result = getStepResultData(result, 11);
 
   // Extract values from steps

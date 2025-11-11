@@ -13,10 +13,11 @@
  */
 
 import React, { useState } from 'react';
-import { ChevronDown, ChevronRight, TrendingDown, Info, Database, Calculator } from 'lucide-react';
-import { getStepData, getStepResultData } from '../../utils/valuationDataExtractor';
+import { ChevronDown, ChevronRight, TrendingDown, Info, Calculator } from 'lucide-react';
+import { getStepData } from '../../utils/valuationDataExtractor';
+import { getStepResultData } from '../../utils/stepDataMapper';
 import { StepStatusBadge } from '../shared/StepStatusIndicator';
-import type { ValuationResponse, AdjustmentDetail } from '../../types/valuation';
+import type { ValuationResponse } from '../../types/valuation';
 
 interface AdjustmentsSummaryProps {
   result: ValuationResponse;
@@ -29,9 +30,6 @@ export const AdjustmentsSummary: React.FC<AdjustmentsSummaryProps> = ({
 }) => {
   const [isExpanded, setIsExpanded] = useState(false);
   const [expandedAdjustments, setExpandedAdjustments] = useState<Set<number>>(new Set());
-
-  // Extract adjustments from transparency report
-  const adjustments = result.transparency?.adjustments_applied || [];
 
   // Also extract from step data for comprehensive view
   const step4Data = getStepData(result, 4); // Owner Concentration
@@ -106,7 +104,7 @@ export const AdjustmentsSummary: React.FC<AdjustmentsSummaryProps> = ({
 
   // Step 4: Owner Concentration
   if (step4Data && step4Data.status === 'completed') {
-    const step4Result = getStepResultData(result, 4);
+    // Step 4 result available via getStepResultData if needed
     const ownerConcentration = result.multiples_valuation?.owner_concentration;
     if (ownerConcentration) {
       allAdjustments.push({

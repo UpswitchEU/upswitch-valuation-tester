@@ -10,10 +10,7 @@
 import type {
   ValuationResponse,
   ModularSystem,
-  EnhancedCalculationStep,
-  CalculationStep,
-  StepDetail,
-  StepStatus
+  EnhancedCalculationStep
 } from '../types/valuation';
 import { dataExtractionLogger, createPerformanceLogger } from './logger';
 
@@ -348,7 +345,7 @@ export function getDataSources(result: ValuationResponse) {
  */
 export function getComparableCompanies(result: ValuationResponse) {
   const fromTransparency = result.transparency?.comparable_companies || [];
-  const fromLegacy = result.multiples_valuation?.comparables || [];
+  const fromLegacy = (result.multiples_valuation as any)?.comparables || [];
   const companies = fromTransparency.length > 0 ? fromTransparency : fromLegacy;
   
   dataExtractionLogger.debug('Getting comparable companies', {

@@ -12,7 +12,7 @@
  */
 
 import React from 'react';
-import { StepStatusIndicator, StepStatusBadge } from './StepStatusIndicator';
+import { StepStatusBadge } from './StepStatusIndicator';
 import { Clock, AlertTriangle, Info, Database, Calculator } from 'lucide-react';
 import { formatExecutionTime } from '../../utils/stepDataMapper';
 import type { EnhancedCalculationStep } from '../../types/valuation';
@@ -32,7 +32,7 @@ interface StepMetadataProps {
 
 export const StepMetadata: React.FC<StepMetadataProps> = ({
   stepData,
-  stepNumber,
+  stepNumber: _stepNumber,
   showExecutionTime = true,
   showStatus = true,
   showWarnings = true,

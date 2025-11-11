@@ -190,7 +190,7 @@ export const WeightingLogicSection: React.FC<WeightingLogicSectionProps> = ({ re
           step => step.description === "Dynamic Weighting Decision"
         );
         
-        if (weightingStep && weightingStep.inputs.factors) {
+        if (weightingStep && weightingStep.inputs?.factors) {
           return (
             <div className="bg-gradient-to-r from-blue-50 to-purple-50 border-2 border-blue-400 rounded-lg p-4 sm:p-6">
               <h3 className="text-xl font-semibold text-gray-900 mb-4">
@@ -199,7 +199,7 @@ export const WeightingLogicSection: React.FC<WeightingLogicSectionProps> = ({ re
               
               {/* Weighting Factors */}
               <div className="space-y-4 mb-6">
-                {weightingStep.inputs.factors.map((factor: any, i: number) => (
+                {weightingStep.inputs?.factors?.map((factor: any, i: number) => (
                   <div key={i} className="flex items-center justify-between bg-white rounded-lg p-4 border border-blue-200 hover:border-blue-400 transition-colors">
                     <div className="flex-1">
                       <div className="font-semibold text-gray-900">{factor.name}</div>

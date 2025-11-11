@@ -8,7 +8,7 @@
  */
 
 import React, { useState } from 'react';
-import { ChevronDown, ChevronRight, Book, ExternalLink } from 'lucide-react';
+import { ChevronDown, ChevronRight, Book } from 'lucide-react';
 import { getAcademicSources } from '../../utils/valuationDataExtractor';
 import type { ValuationResponse, AcademicSource } from '../../types/valuation';
 

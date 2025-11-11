@@ -134,9 +134,9 @@ export function getStep1InputResult(result: ValuationResponse) {
     weighted_ebitda: currentData.ebitda,
     using_weighted_metrics: false,
     company_name: result.company_name,
-    industry: result.financial_metrics?.industry || 'Unknown',
-    country: currentData.country || 'BE',
-    num_employees: currentData.number_of_employees || 0
+    industry: (result as any).industry || (result.transparency as any)?.data_provenance?.industry || 'Unknown',
+    country: (result as any).country_code || 'BE',
+    num_employees: (result as any).number_of_employees || 0
   };
   }
 
@@ -179,14 +179,14 @@ export function getStep2BenchmarkingResult(result: ValuationResponse) {
     dataSource: 'legacy',
     fallbackUsed: true,
     primaryMethod: multiples.primary_multiple_method,
-    hasComparables: !!multiples.comparables
+    hasComparables: !!(multiples as any).comparables
   });
   perfLogger.end({ dataSource: 'legacy', hasData: true, fallbackUsed: true });
   return {
     primary_method: multiples.primary_multiple_method === 'ebitda_multiple' 
       ? 'EV/EBITDA' 
       : 'EV/Revenue',
-    primary_method_reason: multiples.primary_method_reason || 'Standard methodology',
+    primary_method_reason: (multiples as any).primary_method_reason || multiples.primary_multiple_reason || 'Standard methodology',
     ev_ebitda_multiple: multiples.ebitda_multiple || 0,
     ev_revenue_multiple: multiples.revenue_multiple || 0,
     p25_ebitda_multiple: multiples.p25_ebitda_multiple || null,
@@ -195,9 +195,9 @@ export function getStep2BenchmarkingResult(result: ValuationResponse) {
     p25_revenue_multiple: multiples.p25_revenue_multiple || null,
     p50_revenue_multiple: multiples.revenue_multiple || null,
     p75_revenue_multiple: multiples.p75_revenue_multiple || null,
-    comparables_count: multiples.comparables?.length || 0,
-    comparables_quality: multiples.comparables?.length > 5 ? 'good' : 'limited',
-    data_source: multiples.industry || 'default',
+    comparables_count: (multiples as any).comparables?.length || 0,
+    comparables_quality: (multiples as any).comparables?.length > 5 ? 'good' : 'limited',
+    data_source: (multiples as any).industry || 'default',
     dcf_eligible: result.dcf_weight > 0,
     recommended_methodology: result.dcf_weight > 0 ? 'HYBRID' : 'MULTIPLES_ONLY'
   };
@@ -323,23 +323,24 @@ export function getStep4OwnerConcentrationResult(result: ValuationResponse) {
     dataSource: 'legacy',
     fallbackUsed: true,
     riskLevel: oc.risk_level,
-    hasAdjustment: !!oc.adjustment_percentage
+    hasAdjustment: !!(oc as any).adjustment_percentage || oc.adjustment_factor !== 0
   });
   perfLogger.end({ dataSource: 'legacy', hasData: true, fallbackUsed: true });
+  const ocAny = oc as any;
   return {
-    enterprise_value_low: oc.adjusted_ev_low || 0,
-    enterprise_value_mid: oc.adjusted_ev || 0,
-    enterprise_value_high: oc.adjusted_ev_high || 0,
-    owner_employee_ratio: oc.owner_employee_ratio || 0,
+    enterprise_value_low: ocAny.adjusted_ev_low || 0,
+    enterprise_value_mid: ocAny.adjusted_ev || 0,
+    enterprise_value_high: ocAny.adjusted_ev_high || 0,
+    owner_employee_ratio: oc.ratio || ocAny.owner_employee_ratio || 0,
     risk_level: oc.risk_level || 'LOW',
-    adjustment_percentage: oc.adjustment_percentage || 0,
+    adjustment_percentage: ocAny.adjustment_percentage || (oc.adjustment_factor - 1) * 100 || 0,
     number_of_owners: oc.number_of_owners || 0,
     number_of_employees: oc.number_of_employees || 0,
-    calibration_type: oc.business_type_calibration ? 'industry-specific' : 'standard',
-    business_type_id: oc.business_type_id || null,
-    ev_low_before: oc.unadjusted_ev_low || 0,
-    ev_mid_before: oc.unadjusted_ev || 0,
-    ev_high_before: oc.unadjusted_ev_high || 0,
+    calibration_type: ocAny.business_type_calibration ? 'industry-specific' : (oc.calibration?.calibration_type || 'standard'),
+    business_type_id: oc.calibration?.business_type_id || ocAny.business_type_id || null,
+    ev_low_before: ocAny.unadjusted_ev_low || 0,
+    ev_mid_before: ocAny.unadjusted_ev || 0,
+    ev_high_before: ocAny.unadjusted_ev_high || 0,
     skipped: false
   };
 }
@@ -378,24 +379,24 @@ export function getStep5SizeDiscountResult(result: ValuationResponse) {
     return null;
   }
 
-  const sd = sfa.size_discount;
+  const sd = sfa.size_discount as any;
   dataExtractionLogger.info('Step 5 data extracted from small_firm_adjustments', {
     step: 5,
     dataSource: 'legacy',
     fallbackUsed: true,
-    revenueTier: sd.revenue_tier,
-    hasDiscount: !!sd.size_discount_percentage
+    revenueTier: sd?.revenue_tier,
+    hasDiscount: !!sd?.size_discount_percentage
   });
   perfLogger.end({ dataSource: 'legacy', hasData: true, fallbackUsed: true });
   return {
     enterprise_value_low: 0, // Cannot compute without before values
     enterprise_value_mid: 0,
     enterprise_value_high: 0,
-    revenue_tier: sd.revenue_tier || 'Unknown',
-    base_discount: sd.base_discount || 0,
-    adjustment_multiplier: sd.business_type_multiplier || 1.0,
-    size_discount_percentage: sd.size_discount_percentage || 0,
-    business_category: sd.business_category || 'UNKNOWN',
+    revenue_tier: sd?.revenue_tier || 'Unknown',
+    base_discount: sd?.base_discount || 0,
+    adjustment_multiplier: sd?.business_type_multiplier || 1.0,
+    size_discount_percentage: sd?.size_discount_percentage || 0,
+    business_category: sd?.business_category || 'UNKNOWN',
     ev_low_before: 0,
     ev_mid_before: 0,
     ev_high_before: 0
@@ -436,25 +437,25 @@ export function getStep6LiquidityDiscountResult(result: ValuationResponse) {
     return null;
   }
 
-  const ld = sfa.liquidity_discount;
+  const ld = sfa.liquidity_discount as any;
   dataExtractionLogger.info('Step 6 data extracted from small_firm_adjustments', {
     step: 6,
     dataSource: 'legacy',
     fallbackUsed: true,
-    hasDiscount: !!ld.liquidity_discount_percentage
+    hasDiscount: !!ld?.liquidity_discount_percentage
   });
   perfLogger.end({ dataSource: 'legacy', hasData: true, fallbackUsed: true });
   return {
     enterprise_value_low: 0,
     enterprise_value_mid: 0,
     enterprise_value_high: 0,
-    base_discount: ld.base_discount || 0,
-    margin_bonus: ld.adjustments?.margin || 0,
-    growth_bonus: ld.adjustments?.growth || 0,
-    recurring_revenue_bonus: ld.adjustments?.recurring_revenue || 0,
-    size_bonus: ld.adjustments?.size || 0,
-    total_discount_percentage: ld.liquidity_discount_percentage || 0,
-    business_category: ld.business_category || 'UNKNOWN',
+    base_discount: ld?.base_discount || 0,
+    margin_bonus: ld?.adjustments?.margin || 0,
+    growth_bonus: ld?.adjustments?.growth || 0,
+    recurring_revenue_bonus: ld?.adjustments?.recurring_revenue || 0,
+    size_bonus: ld?.adjustments?.size || 0,
+    total_discount_percentage: ld?.liquidity_discount_percentage || 0,
+    business_category: ld?.business_category || 'UNKNOWN',
     base_step: 5,
     ev_low_before: 0,
     ev_mid_before: 0,
@@ -523,9 +524,9 @@ export function getStep7EVToEquityResult(result: ValuationResponse) {
     ev_source_step: 6,
     exemption_applied: false,
     range_validated: true,
-    ev_low: multiples.enterprise_value_low || 0,
+    ev_low: (multiples as any).enterprise_value_low || multiples.enterprise_value || 0,
     ev_mid: multiples.enterprise_value || 0,
-    ev_high: multiples.enterprise_value_high || 0
+    ev_high: (multiples as any).enterprise_value_high || multiples.enterprise_value || 0
   };
 }
 
@@ -552,7 +553,7 @@ export function getStep8OwnershipAdjustmentResult(result: ValuationResponse) {
   }
 
   // Fallback: check for ownership_adjustments
-  const oa = result.multiples_valuation?.ownership_adjustments;
+  const oa = (result.multiples_valuation as any)?.ownership_adjustments;
   
   if (!oa || oa.shares_for_sale_percentage === 100) {
     dataExtractionLogger.info('Step 8 skipped (100% ownership sale)', {

@@ -71,6 +71,7 @@ export interface ValuationRequest {
   number_of_employees?: number;
   number_of_owners?: number; // Number of operational owners (C-level + working shareholders)
   recurring_revenue_percentage?: number; // 0.0 to 1.0
+  shares_for_sale?: number; // Percentage of shares for sale (0-100), used for ownership adjustment
   
   // Additional business context
   business_type?: string;

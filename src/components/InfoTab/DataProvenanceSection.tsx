@@ -379,7 +379,7 @@ export const DataProvenanceSection: React.FC<DataProvenanceSectionProps> = ({ re
               <div className="space-y-3">
                 {confidenceSteps.map((step, i) => {
                   const factorName = step.description.replace("Confidence Factor: ", "");
-                  const factorScore = Object.values(step.outputs)[0] as number;
+                  const factorScore = step.outputs ? (Object.values(step.outputs)[0] as number) : 0;
                   const scoreColor = factorScore >= 85 ? 'text-green-600 bg-green-50' : 
                                     factorScore >= 70 ? 'text-blue-600 bg-blue-50' : 
                                     factorScore >= 50 ? 'text-yellow-600 bg-yellow-50' : 'text-red-600 bg-red-50';
@@ -428,14 +428,14 @@ export const DataProvenanceSection: React.FC<DataProvenanceSectionProps> = ({ re
                           <div className="bg-blue-50 rounded-lg p-4 mb-3">
                             <div className="text-xs font-semibold text-blue-700 uppercase mb-2">Input Values</div>
                             <div className="grid grid-cols-2 gap-2 text-sm">
-                              {Object.entries(step.inputs).map(([key, value]) => (
+                              {step.inputs ? Object.entries(step.inputs).map(([key, value]) => (
                                 <div key={key} className="flex justify-between">
                                   <span className="text-gray-600">{key.replace(/_/g, ' ')}:</span>
                                   <span className="font-semibold text-gray-900">
                                     {typeof value === 'number' ? value.toFixed(2) : String(value)}
                                   </span>
                                 </div>
-                              ))}
+                              )) : null}
                             </div>
                           </div>
                           

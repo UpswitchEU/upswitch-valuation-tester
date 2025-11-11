@@ -48,8 +48,7 @@ export const JourneyStep7_EVToEquity: React.FC<JourneyStep7Props> = ({ beforeVal
   const netDebt = totalDebt - cash;
   
   // Extract backend-specific data
-  const operatingCash = step7Result?.operating_cash;
-  const excessCash = step7Result?.excess_cash;
+  // Note: operatingCash and excessCash available in step7Result for future use
 
   // Calculate equity value
   // CRITICAL FIX: netDebt = totalDebt - cash, so formula is: EV - netDebt = EV - (totalDebt - cash) = EV - totalDebt + cash

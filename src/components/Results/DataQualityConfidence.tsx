@@ -11,9 +11,9 @@
  */
 
 import React, { useState } from 'react';
-import { ChevronDown, ChevronRight, CheckCircle, AlertTriangle, Info, TrendingUp } from 'lucide-react';
-import { getStepData, getStepResultData } from '../../utils/valuationDataExtractor';
-import { getMethodologyStatement, getAcademicSources, getProfessionalReviewReady } from '../../utils/valuationDataExtractor';
+import { ChevronDown, ChevronRight, CheckCircle, AlertTriangle, Info } from 'lucide-react';
+import { getStepResultData } from '../../utils/stepDataMapper';
+import { getProfessionalReviewReady } from '../../utils/valuationDataExtractor';
 import type { ValuationResponse } from '../../types/valuation';
 
 interface DataQualityConfidenceProps {
@@ -28,10 +28,7 @@ export const DataQualityConfidence: React.FC<DataQualityConfidenceProps> = ({
   const [isExpanded, setIsExpanded] = useState(false);
   const [expandedSection, setExpandedSection] = useState<string | null>(null);
 
-  const step0Data = getStepData(result, 0);
   const step0Result = getStepResultData(result, 0);
-  const step9Data = getStepData(result, 9);
-  const step9Result = getStepResultData(result, 9);
 
   // Extract data quality scores
   const qualityScore = step0Result?.quality_score || result.transparency?.confidence_breakdown?.data_quality || 0;

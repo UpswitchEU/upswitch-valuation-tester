@@ -43,9 +43,8 @@ export const JourneyStep4_OwnerConcentration: React.FC<JourneyStep4Props> = ({ r
   const ownerConc = result.multiples_valuation?.owner_concentration;
   
   // Extract backend-specific data
-  const ratio = step4Result?.owner_employee_ratio;
-  const tier = step4Result?.tier;
   const calibrationType = step4Result?.calibration_type;
+  // Note: ratio and tier available in step4Result for future use
   
   // Render performance logging
   useEffect(() => {

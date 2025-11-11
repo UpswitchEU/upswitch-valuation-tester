@@ -45,9 +45,7 @@ export const JourneyStep5_SizeDiscount: React.FC<JourneyStep5Props> = ({ result,
   const revenue = result.current_year_data?.revenue || 0;
   
   // Extract backend-specific data
-  const revenueTier = step5Result?.revenue_tier;
-  const baseDiscount = step5Result?.base_discount;
-  const soleTraderAdjustment = step5Result?.sole_trader_adjustment;
+  // Note: revenueTier, baseDiscount, and soleTraderAdjustment available in step5Result for future use
   
   // Render performance logging
   useEffect(() => {

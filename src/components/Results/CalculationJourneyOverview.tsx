@@ -12,7 +12,7 @@
 
 import React, { useState } from 'react';
 import { ChevronDown, ChevronRight, ExternalLink, TrendingUp, TrendingDown, Minus } from 'lucide-react';
-import { StepStatusIndicator, StepStatusBadge } from '../shared/StepStatusIndicator';
+import { StepStatusBadge } from '../shared/StepStatusIndicator';
 import { formatExecutionTime } from '../../utils/stepDataMapper';
 import { getAllStepData, getStepsSummary } from '../../utils/valuationDataExtractor';
 import type { ValuationResponse } from '../../types/valuation';

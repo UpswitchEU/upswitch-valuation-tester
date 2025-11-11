@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import { api } from '../services/api';
 import { backendAPI } from '../services/backendApi';
 import type { QuickValuationRequest, ValuationFormData, ValuationInputData, ValuationRequest, ValuationResponse } from '../types/valuation';
-import { storeLogger, correlationContext, setCorrelationFromResponse } from '../utils/logger';
+import { storeLogger, correlationContext } from '../utils/logger';
 import { validatePreference } from '../utils/numberUtils';
 // import { useReportsStore } from './useReportsStore'; // Deprecated: Now saving to database
 

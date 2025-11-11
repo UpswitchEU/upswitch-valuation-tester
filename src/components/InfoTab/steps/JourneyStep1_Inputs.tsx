@@ -69,7 +69,7 @@ export const JourneyStep1_Inputs: React.FC<JourneyStep1Props> = ({ result, input
     renderPerfLogger.current = createPerformanceLogger('JourneyStep1_Inputs.render', 'step');
   });
   const weightedEbitda = step1Result?.weighted_ebitda;
-  const weightedEbitdaMargin = step1Result?.weighted_ebitda_margin;
+  // Note: weightedEbitdaMargin available in step1Result for future use
 
   return (
     <StepCard

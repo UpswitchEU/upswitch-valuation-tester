@@ -148,13 +148,14 @@ export const StepStatusBadge: React.FC<{
   status: StepStatusType;
   size?: 'sm' | 'md';
 }> = ({ status, size = 'sm' }) => {
-  const config = {
+  const statusConfigs: Record<StepStatusType, { color: string }> = {
     completed: { color: 'bg-green-100 text-green-800 border-green-200' },
     skipped: { color: 'bg-yellow-100 text-yellow-800 border-yellow-200' },
     failed: { color: 'bg-red-100 text-red-800 border-red-200' },
     not_executed: { color: 'bg-gray-100 text-gray-600 border-gray-200' },
     unknown: { color: 'bg-gray-100 text-gray-600 border-gray-200' }
-  }[status] || config.unknown;
+  };
+  const config = statusConfigs[status] || statusConfigs.unknown;
 
   const sizeClasses = size === 'sm' ? 'px-2 py-0.5 text-xs' : 'px-2.5 py-1 text-sm';
 
