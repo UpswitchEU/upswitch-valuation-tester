@@ -296,9 +296,9 @@ export const ResultsHeader: React.FC<ResultsHeaderProps> = ({ result }) => {
             )}
             
             {/* Adjustments Applied Note */}
-            {(result.multiples_valuation.owner_concentration || 
-              result.multiples_valuation.size_discount || 
-              result.multiples_valuation.liquidity_discount) && (
+            {(result.multiples_valuation.owner_concentration != null || 
+              result.multiples_valuation.size_discount != null || 
+              result.multiples_valuation.liquidity_discount != null) && (
               <div className="mt-3 pt-3 border-t border-purple-200">
                 <p className="text-xs text-purple-800">
                   <span className="font-semibold">Note:</span> Multiples shown above are <strong>final adjusted values</strong> after applying:
