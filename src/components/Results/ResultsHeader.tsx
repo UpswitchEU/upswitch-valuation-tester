@@ -382,7 +382,7 @@ export const ResultsHeader: React.FC<ResultsHeaderProps> = ({ result }) => {
                         : '📈 Confidence Spread (size-adjusted)'
                       }
                     </span>
-                    {result.range_methodology === 'multiple_dispersion' && result.multiples_valuation?.comparables_count && (
+                    {result.range_methodology === 'multiple_dispersion' && result.multiples_valuation?.comparables_count != null && result.multiples_valuation.comparables_count > 0 && (
                       <span className="text-xs text-gray-600">
                         ({result.multiples_valuation.comparables_count} comparable companies)
                       </span>

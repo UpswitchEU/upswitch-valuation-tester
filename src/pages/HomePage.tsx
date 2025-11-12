@@ -67,12 +67,12 @@ export const HomePage: React.FC = () => {
     }
   };
 
-  // Sample query suggestions for valuation context
+  // Business-focused examples that guide users to provide name + type (triage entry point)
   const quickQueries = [
-    'What is my business worth?',
-    'How to value a SaaS company?',
-    'Valuation for e-commerce business',
-    'Calculate business value with revenue',
+    'Acme Corp, a SaaS company',
+    'My restaurant in Brussels',
+    'E-commerce business, 5 years old',
+    'Tech startup, founded 2020',
   ];
 
   return (
@@ -93,7 +93,7 @@ export const HomePage: React.FC = () => {
         disableKeyboardInteraction={true}
       />
 
-      <div className="min-h-screen relative">
+      <div className="min-h-screen relative pt-16 md:pt-20">
         {/* Hero Section with Video Background */}
         <section className="relative z-10 py-20 md:py-24 flex items-center justify-center min-h-screen">
           <div className="w-full max-w-6xl mx-auto px-4">
@@ -127,7 +127,7 @@ export const HomePage: React.FC = () => {
                     <textarea
                       value={query}
                       onChange={e => setQuery(e.target.value)}
-                      placeholder="Ask about your business valuation, company worth, or financial insights..."
+                      placeholder="Tell me about your business (e.g., 'Acme Corp, a SaaS company')"
                       className="textarea-seamless flex w-full rounded-md px-3 py-3 ring-offset-background placeholder:text-zinc-400 focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 disabled:cursor-not-allowed disabled:opacity-50 resize-none text-base leading-snug placeholder-shown:text-ellipsis placeholder-shown:whitespace-nowrap md:text-base max-h-[200px] bg-transparent focus:bg-transparent flex-1 text-white"
                       style={{ minHeight: '80px', height: '80px' }}
                       onKeyPress={e => {
