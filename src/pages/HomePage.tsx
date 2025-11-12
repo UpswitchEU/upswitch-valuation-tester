@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { MinimalHeader } from '../components/MinimalHeader';
 import { ScrollToTop } from '../utils';
 import { generalLogger } from '../utils/logger';
@@ -9,7 +9,6 @@ import { VideoBackground } from '../components/VideoBackground';
 
 export const HomePage: React.FC = () => {
   const navigate = useNavigate();
-  const location = useLocation();
   const [query, setQuery] = useState('');
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
