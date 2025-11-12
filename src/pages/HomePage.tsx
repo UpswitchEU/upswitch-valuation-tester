@@ -101,15 +101,15 @@ export const HomePage: React.FC = () => {
               {/* Hero Content */}
               <div className="space-y-6">
                 <h1 className="text-5xl md:text-6xl lg:text-7xl xl:text-8xl font-bold leading-tight tracking-tight text-white">
-                  Understand Your Business Value.
+                  Know What Your Business
                   <br />
                   <span className="bg-gradient-to-r from-success-300 to-primary-300 bg-clip-text text-transparent">
-                    Get Professional Valuation.
+                    Is Really Worth
                   </span>
                 </h1>
-                <p className="text-lg md:text-lg text-zinc-300 max-w-4xl mx-auto leading-relaxed">
-                  Professional-grade business valuations powered by AI. Get insights about your business value
-                  — by chatting with AI.
+                <p className="text-lg md:text-xl text-zinc-300 max-w-4xl mx-auto leading-relaxed">
+                  Professional-grade valuations powered by AI. Discover your business's true value
+                  — simply by chatting with AI.
                 </p>
               </div>
 
