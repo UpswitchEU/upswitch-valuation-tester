@@ -151,6 +151,9 @@ export const useValuationStore = create<ValuationStore>((set, get) => ({
   calculateValuation: async () => {
     const { formData, setIsCalculating, setResult, setError, setInputData } = get();
     
+    // Clear previous errors
+    setError(null);
+    
     setIsCalculating(true);
     setError(null);
     
@@ -375,7 +378,16 @@ export const useValuationStore = create<ValuationStore>((set, get) => ({
       
       // Extract detailed error message
       let errorMessage = 'Failed to calculate valuation';
-      if (error.response?.data?.detail) {
+      if (error.response?.data?.error) {
+        const errorData = error.response.data.error;
+        if (typeof errorData === 'string') {
+          errorMessage = errorData;
+        } else if (errorData?.message) {
+          errorMessage = errorData.message;
+        } else if (errorData?.error) {
+          errorMessage = errorData.error;
+        }
+      } else if (error.response?.data?.detail) {
         if (typeof error.response.data.detail === 'string') {
           errorMessage = error.response.data.detail;
         } else if (Array.isArray(error.response.data.detail)) {
@@ -387,6 +399,11 @@ export const useValuationStore = create<ValuationStore>((set, get) => ({
         }
       } else if (error.message) {
         errorMessage = error.message;
+      }
+      
+      // Special handling for timeout errors
+      if (errorMessage.includes('timeout') || errorMessage.includes('504') || error.response?.status === 504) {
+        errorMessage = 'The valuation calculation is taking longer than expected. This may be due to high server load. Please try again in a moment.';
       }
       
       setError(errorMessage);
