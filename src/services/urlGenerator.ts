@@ -4,6 +4,7 @@
  */
 class UrlGeneratorService {
   static root = () => '/';
+  static home = () => '/home';
 
   // Valuation Reports Routes with unique keys
   static reports = () => '/reports';

@@ -80,7 +80,14 @@ function App() {
       <Route path="/ai-guided" element={<LegacyRedirect />} />
       <Route path="/instant" element={<LegacyRedirect />} />
       
-      {/* Home redirects to new report */}
+      {/* HomePage - accessible via both /home and / */}
+      <Route path="/home" element={
+        <Suspense fallback={<LoadingFallback />}>
+          <HomePage />
+        </Suspense>
+      } />
+      
+      {/* Root path also shows HomePage */}
       <Route path="/" element={
         <Suspense fallback={<LoadingFallback />}>
           <HomePage />
