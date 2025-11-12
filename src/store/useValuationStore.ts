@@ -155,7 +155,6 @@ export const useValuationStore = create<ValuationStore>((set, get) => ({
     setError(null);
     
     setIsCalculating(true);
-    setError(null);
     
     try {
       // Validate and construct proper request
