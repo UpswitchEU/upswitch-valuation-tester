@@ -24,11 +24,32 @@ export const MethodologyBreakdown: React.FC<MethodologyBreakdownProps> = ({ resu
   
   // Helper function: Determine if EBITDA is the primary method with enhanced fallback logic
   const isPrimaryEBITDA = () => {
-    return (
-      result.multiples_valuation?.primary_multiple_method === 'ebitda_multiple' ||
-      result.multiples_valuation?.primary_method === 'EV/EBITDA' ||
-      result.primary_method === 'EV/EBITDA'
-    );
+    const multiples = result.multiples_valuation;
+    
+    // Priority 1: Check primary_multiple_method (most authoritative)
+    if (multiples?.primary_multiple_method) {
+      return multiples.primary_multiple_method === 'ebitda_multiple';
+    }
+    
+    // Priority 2: Check primary_method field (string format)
+    if (multiples?.primary_method) {
+      return multiples.primary_method === 'EV/EBITDA';
+    }
+    
+    // Priority 3: Check top-level primary_method
+    if (result.primary_method) {
+      return result.primary_method === 'EV/EBITDA';
+    }
+    
+    // Priority 4: Infer from available data
+    // If we have positive EBITDA and an EBITDA multiple, assume EBITDA is primary
+    const currentData = result.current_year_data;
+    if (currentData?.ebitda && currentData.ebitda > 0 && multiples?.ebitda_multiple && multiples.ebitda_multiple > 0) {
+      return true;
+    }
+    
+    // Default to Revenue if cannot determine
+    return false;
   };
   
   if (!hasDCF && !hasMultiples && !hasWeights) {
@@ -71,18 +92,39 @@ export const MethodologyBreakdown: React.FC<MethodologyBreakdownProps> = ({ resu
   const comparablesCount = result.multiples_valuation?.comparables_count ?? 0;
   const hasComparables = comparablesCount > 0;
   
-  // Final calculation
+  // CRITICAL: Use backend equity values as single source of truth
+  // The backend has already calculated the correct weighted averages
+  const equityValueMid = result.equity_value_mid || 0;
+  const equityValueLow = result.equity_value_low || 0;
+  const equityValueHigh = result.equity_value_high || 0;
+  
+  // For display purposes only: Extract component values (not used for final calculation)
   const dcfValue = result.dcf_valuation?.equity_value || 0;
-  // Use adjusted equity value (not enterprise value) for display clarity
   const multiplesValue = result.multiples_valuation?.adjusted_equity_value || result.multiples_valuation?.ev_ebitda_valuation || 0;
   const enterpriseValue = result.multiples_valuation?.ev_ebitda_valuation || 0; // Keep for reference
   
-  // Use equity_value_mid from backend as source of truth (it's the weighted average when DCF included)
-  // Fallback to calculated weighted average if backend doesn't provide it
-  const equityValueMid = result.equity_value_mid || ((dcfValue * dcfWeight) + (multiplesValue * multiplesWeight));
-  const finalValue = equityValueMid; // Use backend value as authoritative
-  const equityValueLow = result.equity_value_low || 0;
-  const equityValueHigh = result.equity_value_high || 0;
+  // Validation: Warn if frontend would calculate differently (debugging only)
+  if (equityValueMid > 0 && (dcfWeight > 0 || multiplesWeight > 0)) {
+    const calculatedMid = (dcfValue * dcfWeight) + (multiplesValue * multiplesWeight);
+    const difference = Math.abs(equityValueMid - calculatedMid);
+    const tolerance = Math.max(equityValueMid * 0.01, 100); // 1% or €100
+    
+    if (difference > tolerance) {
+      console.warn(
+        '[VALUATION-AUDIT] Frontend calculated value differs from backend equity_value_mid',
+        {
+          backend: equityValueMid,
+          calculated: calculatedMid,
+          difference,
+          tolerance,
+          percentageDiff: ((difference / equityValueMid) * 100).toFixed(2) + '%',
+          note: 'Using backend value (correct)'
+        }
+      );
+    }
+  }
+  
+  const finalValue = equityValueMid; // Backend value is authoritative
   
   // Calculate spreads for low/high estimates
   const downside = equityValueMid > 0 ? ((equityValueMid - equityValueLow) / equityValueMid) * 100 : 0;

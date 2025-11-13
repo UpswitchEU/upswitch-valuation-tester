@@ -13,14 +13,31 @@ export const ResultsHeader: React.FC<ResultsHeaderProps> = ({ result }) => {
   // Helper function: Determine if EBITDA is the primary method with enhanced fallback logic
   const isPrimaryEBITDA = () => {
     const multiples = result.multiples_valuation;
-    if (!multiples) {
+    
+    // Priority 1: Check primary_multiple_method (most authoritative)
+    if (multiples?.primary_multiple_method) {
+      return multiples.primary_multiple_method === 'ebitda_multiple';
+    }
+    
+    // Priority 2: Check primary_method field (string format)
+    if (multiples?.primary_method) {
+      return multiples.primary_method === 'EV/EBITDA';
+    }
+    
+    // Priority 3: Check top-level primary_method
+    if (result.primary_method) {
       return result.primary_method === 'EV/EBITDA';
     }
-    return (
-      multiples.primary_multiple_method === 'ebitda_multiple' ||
-      multiples.primary_method === 'EV/EBITDA' ||
-      result.primary_method === 'EV/EBITDA'
-    );
+    
+    // Priority 4: Infer from available data
+    // If we have positive EBITDA and an EBITDA multiple, assume EBITDA is primary
+    const currentData = result.current_year_data;
+    if (currentData?.ebitda && currentData.ebitda > 0 && multiples?.ebitda_multiple && multiples.ebitda_multiple > 0) {
+      return true;
+    }
+    
+    // Default to Revenue if cannot determine
+    return false;
   };
 
   // Dynamic methodology description based on actual weights
