@@ -688,6 +688,7 @@ export interface ValuationResponse {
     // Primary multiple method transparency (from backend)
     primary_multiple_method?: string;  // "ebitda_multiple" or "revenue_multiple"
     primary_multiple_reason?: string;  // Explanation of why this method was selected
+    primary_method?: string;  // "EV/EBITDA" or "EV/Revenue" (from backend Step 2)
   };
   
   // Financial Metrics (comprehensive)
