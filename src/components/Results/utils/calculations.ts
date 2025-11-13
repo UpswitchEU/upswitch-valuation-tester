@@ -33,36 +33,43 @@ export const calculateGrowthMetrics = (result: ValuationResponse) => {
       
     // Determine years from actual year difference (first historical year to current year)
     // This matches the backend calculation which uses year difference, not historical_years_data.length
-      const hasHistoricalData = resultAny.historical_years_data && resultAny.historical_years_data.length > 0;
-    let years = 2; // Default fallback
+    // CRITICAL FIX: Require at least 2 years of historical data for valid CAGR calculation
+    const historicalYearsData = resultAny.historical_years_data || [];
+    const hasHistoricalData = Array.isArray(historicalYearsData) && historicalYearsData.length >= 2; // Need at least 2 years for CAGR
     
-    if (hasHistoricalData && resultAny.historical_years_data.length > 0) {
-      const firstHistoricalYear = resultAny.historical_years_data[0]?.year;
+    let years = 0; // Default to 0 when no historical data
+    
+    if (hasHistoricalData && historicalYearsData.length >= 2) {
+      const firstHistoricalYear = historicalYearsData[0]?.year;
       const currentYear = resultAny.current_year_data?.year;
       
       // Calculate actual year difference (matches backend logic: current_year - first_year)
       if (firstHistoricalYear && currentYear && typeof firstHistoricalYear === 'number' && typeof currentYear === 'number') {
         if (currentYear > firstHistoricalYear) {
-        years = currentYear - firstHistoricalYear;
+          years = currentYear - firstHistoricalYear;
         } else if (currentYear === firstHistoricalYear) {
           // Same year edge case: use 1 year minimum for CAGR calculation
           years = 1;
         } else {
           // Invalid: current year before historical year - fallback to length
-          years = Math.max(1, resultAny.historical_years_data.length);
+          years = Math.max(1, historicalYearsData.length);
         }
       } else {
         // Fallback to length if year fields not available (backward compatibility)
-        years = Math.max(1, resultAny.historical_years_data.length);
+        years = Math.max(1, historicalYearsData.length);
       }
     }
-      
-      return { 
-        cagr: cagrDecimal, 
+    
+    // CRITICAL FIX: If no historical data or insufficient data, CAGR should be 0
+    // Only return CAGR if we have valid historical data AND years > 0
+    const validCagr = hasHistoricalData && years > 0 ? cagrDecimal : 0.0;
+    
+    return { 
+      cagr: validCagr, 
       hasHistoricalData: hasHistoricalData && years > 0, 
-        years 
-      };
-    }
+      years 
+    };
+  }
     
   // If financial_metrics is missing, show no data (backend should always provide this)
   // Log warning but don't calculate - backend is source of truth
