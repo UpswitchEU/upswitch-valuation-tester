@@ -3,7 +3,19 @@ import { Trophy } from 'lucide-react';
 import { StepCard } from '../shared/StepCard';
 import { StepMetadata } from '../../shared/StepMetadata';
 import { getStepData } from '../../../utils/valuationDataExtractor';
-import { getStepResultData, getStep8OwnershipAdjustmentResult } from '../../../utils/stepDataMapper';
+import { 
+  getStepResultData, 
+  getStep1InputResult,
+  getStep2BenchmarkingResult,
+  getStep3BaseEVResult,
+  getStep4OwnerConcentrationResult,
+  getStep5SizeDiscountResult,
+  getStep6LiquidityDiscountResult,
+  getStep7EVToEquityResult,
+  getStep8OwnershipAdjustmentResult,
+  getStep9ConfidenceScoreResult,
+  getStep10RangeMethodologyResult
+} from '../../../utils/stepDataMapper';
 import type { ValuationResponse } from '../../../types/valuation';
 import { stepLogger, createPerformanceLogger } from '../../../utils/logger';
 
@@ -50,12 +62,121 @@ export const JourneyStep11_FinalValuation: React.FC<JourneyStep11Props> = ({ res
   // Backend returns confidence_score as integer 0-100, not decimal 0-1
   const confidenceLevel = confidenceScore >= 80 ? 'HIGH' : confidenceScore >= 60 ? 'MEDIUM' : 'LOW';
   
-  // Extract Step 8 (Ownership Adjustment) data
+  // Extract data from all steps for detailed breakdown
+  const step1Data = getStep1InputResult(result);
+  const step2Data = getStep2BenchmarkingResult(result);
+  const step3Data = getStep3BaseEVResult(result);
+  const step4Data = getStep4OwnerConcentrationResult(result);
+  const step5Data = getStep5SizeDiscountResult(result);
+  const step6Data = getStep6LiquidityDiscountResult(result);
+  const step7Data = getStep7EVToEquityResult(result);
   const step8Data = getStep8OwnershipAdjustmentResult(result);
+  const step9Data = getStep9ConfidenceScoreResult(result);
+  const step10Data = getStep10RangeMethodologyResult(result);
+  
+  // Step 1: Input Data
+  const revenue = result.current_year_data?.revenue || step1Data?.revenue || 0;
+  const ebitda = result.current_year_data?.ebitda || step1Data?.ebitda || 0;
+  const ebitdaMargin = ebitda && revenue > 0 ? (ebitda / revenue) * 100 : 0;
+  const industry = result.request?.industry || step1Data?.industry || 'N/A';
+  const businessModel = result.request?.business_model || step1Data?.business_model || 'N/A';
+  const country = result.request?.country || step1Data?.country || 'N/A';
+  const employees = result.request?.number_of_employees || step1Data?.num_employees || 0;
+  
+  // Step 2: Benchmarking
+  const primaryMethod = step2Data?.primary_method || (result.multiples_valuation?.primary_multiple_method === 'ebitda_multiple' ? 'EV/EBITDA' : 'EV/Revenue');
+  const isPrimaryEBITDA = primaryMethod === 'EV/EBITDA';
+  const multiples = result.multiples_valuation;
+  const p25Multiple = isPrimaryEBITDA 
+    ? (multiples?.p25_ebitda_multiple || step2Data?.p25_ebitda_multiple || null)
+    : (multiples?.p25_revenue_multiple || step2Data?.p25_revenue_multiple || null);
+  const p50Multiple = isPrimaryEBITDA
+    ? (multiples?.p50_ebitda_multiple || step2Data?.p50_ebitda_multiple || multiples?.ebitda_multiple || null)
+    : (multiples?.p50_revenue_multiple || step2Data?.p50_revenue_multiple || multiples?.revenue_multiple || null);
+  const p75Multiple = isPrimaryEBITDA
+    ? (multiples?.p75_ebitda_multiple || step2Data?.p75_ebitda_multiple || null)
+    : (multiples?.p75_revenue_multiple || step2Data?.p75_revenue_multiple || null);
+  const comparablesCount = step2Data?.comparables_count || (Array.isArray(multiples?.comparables) ? multiples.comparables.length : 0);
+  const dataSource = step2Data?.data_source || multiples?.comparables_quality || 'Estimated';
+  
+  // Step 3: Base Valuation
+  const metricValue = step3Data?.metric_value || (isPrimaryEBITDA ? ebitda : revenue);
+  const metricName = step3Data?.metric_used || (isPrimaryEBITDA ? 'EBITDA' : 'Revenue');
+  const multipleP25 = step3Data?.multiple_low || step3Data?.multiple_p25 || p25Multiple || 0;
+  const multipleP50 = step3Data?.multiple_mid || step3Data?.multiple_p50 || p50Multiple || 0;
+  const multipleP75 = step3Data?.multiple_high || step3Data?.multiple_p75 || p75Multiple || 0;
+  const evLow = step3Data?.enterprise_value_low || 0;
+  const evMid = step3Data?.enterprise_value_mid || 0;
+  const evHigh = step3Data?.enterprise_value_high || 0;
+  
+  // Step 4: Owner Concentration
+  const step4Skipped = step4Data?.skipped || false;
+  const ownerRatio = step4Data?.owner_employee_ratio || 0;
+  const numOwners = step4Data?.number_of_owners || 0;
+  const numEmployees = step4Data?.number_of_employees || employees || 0;
+  const riskLevel = step4Data?.risk_level || 'LOW';
+  const step4AdjustmentPct = step4Data?.adjustment_percentage || (result.multiples_valuation?.owner_concentration?.adjustment_factor 
+    ? (result.multiples_valuation.owner_concentration.adjustment_factor - 1) * 100 
+    : 0);
+  const evBeforeStep4 = step4Data?.ev_mid_before || evMid;
+  const evAfterStep4 = step4Data?.enterprise_value_mid || evMid;
+  
+  // Step 5: Size Discount
+  const revenueTier = step5Data?.revenue_tier || step5Data?.size_tier || 
+    (revenue < 1_000_000 ? 'Micro (<€1M)' :
+     revenue < 5_000_000 ? 'Small (€1M-€5M)' :
+     revenue < 25_000_000 ? 'Medium (€5M-€25M)' : 'Large (>€25M)');
+  // size_discount_percentage is already a percentage (0-100), size_discount is decimal (0-1)
+  const step5DiscountPct = step5Data?.size_discount_percentage !== undefined
+    ? step5Data.size_discount_percentage
+    : (step5Data?.base_discount !== undefined ? step5Data.base_discount * 100 : 
+       ((result.multiples_valuation?.size_discount || 0) * 100));
+  const evBeforeStep5 = step5Data?.ev_mid_before || evAfterStep4;
+  const evAfterStep5 = step5Data?.enterprise_value_mid || evAfterStep4;
+  
+  // Step 6: Liquidity Discount
+  const step6BaseDiscount = step6Data?.base_discount || -0.15;
+  const step6MarginBonus = step6Data?.margin_bonus || 0;
+  const step6GrowthBonus = step6Data?.growth_bonus || 0;
+  const step6RecurringBonus = step6Data?.recurring_revenue_bonus || 0;
+  const step6SizeBonus = step6Data?.size_bonus || 0;
+  // total_discount_percentage is already a percentage (0-100), liquidity_discount is decimal (0-1)
+  const step6TotalDiscountPct = step6Data?.total_discount_percentage !== undefined 
+    ? step6Data.total_discount_percentage
+    : ((result.multiples_valuation?.liquidity_discount || 0) * 100);
+  const evBeforeStep6 = step6Data?.ev_mid_before || evAfterStep5;
+  const evAfterStep6 = step6Data?.enterprise_value_mid || evAfterStep5;
+  
+  // Step 7: EV to Equity
+  const totalDebt = step7Data?.total_debt || result.current_year_data?.total_debt || 0;
+  const cash = step7Data?.cash || result.current_year_data?.cash || 0;
+  const netDebt = step7Data?.net_debt || (totalDebt - cash);
+  const equityLow = step7Data?.equity_value_low || 0;
+  const equityMid = step7Data?.equity_value_mid || result.equity_value_mid || 0;
+  const equityHigh = step7Data?.equity_value_high || 0;
+  
+  // Step 8: Ownership Adjustment
   const step8Skipped = step8Data?.skipped || step8Data?.ownership_percentage === 100;
   const step8OwnershipPct = step8Data?.ownership_percentage || 100;
   const step8AdjustmentType = step8Data?.adjustment_type || 'none';
   const step8AdjustmentPct = step8Data?.adjustment_percentage || 0;
+  
+  // Step 9: Confidence Analysis
+  const step9ConfidenceScore = step9Data?.overall_confidence_score || confidenceScore;
+  const step9ConfidenceLevel = step9Data?.confidence_level || confidenceLevel;
+  const factorScores = step9Data?.factor_scores || {};
+  const topFactors = Object.entries(factorScores)
+    .filter(([_, score]) => typeof score === 'number' && score > 0)
+    .sort(([_, a], [__, b]) => (b as number) - (a as number))
+    .slice(0, 3)
+    .map(([factor, score]) => ({ factor: factor.replace(/_/g, ' '), score: score as number }));
+  
+  // Step 10: Range Methodology
+  const rangeMethodology = step10Data?.methodology || result.range_methodology || 'confidence_spread';
+  const isMultipleDispersion = rangeMethodology === 'multiple_dispersion';
+  const baseSpread = step10Data?.base_spread || 0.18;
+  const totalSpread = step10Data?.total_spread || baseSpread;
+  const step7EquityMid = step10Data?.step7_equity_value_mid || equityMid;
   
   // Render performance logging
   useEffect(() => {
@@ -201,63 +322,180 @@ export const JourneyStep11_FinalValuation: React.FC<JourneyStep11Props> = ({ res
         <div>
           <h4 className="font-semibold text-gray-900 mb-3">Calculation Journey Summary</h4>
           <div className="bg-white border border-gray-200 rounded-lg p-4">
-            <ol className="space-y-2 text-sm">
+            <ol className="space-y-3 text-sm">
+              {/* Step 1: Input Data */}
               <li className="flex items-start gap-2">
                 <span className="flex-shrink-0 w-6 h-6 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center text-xs font-bold">1</span>
-                <span className="text-gray-700"><strong>Input Data:</strong> Collected company financials and business information</span>
+                <div className="flex-1">
+                  <span className="text-gray-700"><strong>Input Data:</strong> </span>
+                  <span className="text-gray-700">
+                    Revenue: {formatCurrencyCompact(revenue)}, EBITDA: {formatCurrencyCompact(ebitda)}
+                    {ebitdaMargin > 0 && ` (${ebitdaMargin.toFixed(1)}% margin)`}
+                    {industry !== 'N/A' && ` | Industry: ${industry}`}
+                    {businessModel !== 'N/A' && ` | Model: ${businessModel}`}
+                    {country !== 'N/A' && ` | ${country}`}
+                    {employees > 0 && ` | ${employees} employees`}
+                  </span>
+                </div>
               </li>
+              
+              {/* Step 2: Benchmarking */}
               <li className="flex items-start gap-2">
                 <span className="flex-shrink-0 w-6 h-6 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center text-xs font-bold">2</span>
-                <span className="text-gray-700"><strong>Benchmarking:</strong> Selected {result.multiples_valuation?.primary_multiple_method === 'ebitda_multiple' ? 'EBITDA' : 'Revenue'} multiple from comparable companies</span>
+                <div className="flex-1">
+                  <span className="text-gray-700"><strong>Benchmarking:</strong> </span>
+                  <span className="text-gray-700">
+                    Selected {primaryMethod} multiple
+                    {p25Multiple && p50Multiple && p75Multiple && (
+                      <>: P25 {p25Multiple.toFixed(2)}x, P50 {p50Multiple.toFixed(2)}x, P75 {p75Multiple.toFixed(2)}x</>
+                    )}
+                    {comparablesCount > 0 && ` | ${comparablesCount} comparables`}
+                    {dataSource && ` | Source: ${dataSource}`}
+                  </span>
+                </div>
               </li>
+              
+              {/* Step 3: Base Valuation */}
               <li className="flex items-start gap-2">
                 <span className="flex-shrink-0 w-6 h-6 rounded-full bg-purple-100 text-purple-700 flex items-center justify-center text-xs font-bold">3</span>
-                <span className="text-gray-700"><strong>Base Valuation:</strong> Calculated enterprise value using industry multiples</span>
+                <div className="flex-1">
+                  <span className="text-gray-700"><strong>Base Valuation:</strong> </span>
+                  <span className="text-gray-700">
+                    {metricName} {formatCurrencyCompact(metricValue)} × P50 {multipleP50.toFixed(2)}x = {formatCurrencyCompact(evMid)} (mid)
+                    {evLow > 0 && evHigh > 0 && (
+                      <> | Range: {formatCurrencyCompact(evLow)} (P25) - {formatCurrencyCompact(evHigh)} (P75)</>
+                    )}
+                  </span>
+                </div>
               </li>
-              {result.multiples_valuation?.owner_concentration && (
-                <li className="flex items-start gap-2">
-                  <span className="flex-shrink-0 w-6 h-6 rounded-full bg-orange-100 text-orange-700 flex items-center justify-center text-xs font-bold">4</span>
-                  <span className="text-gray-700"><strong>Owner Concentration:</strong> Applied {(result.multiples_valuation.owner_concentration.adjustment_factor * 100).toFixed(0)}% adjustment for key person risk</span>
-                </li>
-              )}
+              
+              {/* Step 4: Owner Concentration */}
+              <li className="flex items-start gap-2">
+                <span className="flex-shrink-0 w-6 h-6 rounded-full bg-orange-100 text-orange-700 flex items-center justify-center text-xs font-bold">4</span>
+                <div className="flex-1">
+                  <span className="text-gray-700"><strong>Owner Concentration:</strong> </span>
+                  {step4Skipped || step4AdjustmentPct === 0 ? (
+                    <span className="text-gray-700">No adjustment applied</span>
+                  ) : (
+                    <span className="text-gray-700">
+                      {numOwners > 0 && numEmployees > 0 ? (
+                        <>Ratio: {numOwners}/{numEmployees} = {(ownerRatio * 100).toFixed(0)}% | </>
+                      ) : null}
+                      Risk: {riskLevel} | Adjustment: {step4AdjustmentPct.toFixed(1)}%
+                      {evBeforeStep4 > 0 && evAfterStep4 > 0 && evBeforeStep4 !== evAfterStep4 && (
+                        <> | {formatCurrencyCompact(evBeforeStep4)} → {formatCurrencyCompact(evAfterStep4)}</>
+                      )}
+                    </span>
+                  )}
+                </div>
+              </li>
+              
+              {/* Step 5: Size Discount */}
               <li className="flex items-start gap-2">
                 <span className="flex-shrink-0 w-6 h-6 rounded-full bg-orange-100 text-orange-700 flex items-center justify-center text-xs font-bold">5</span>
-                <span className="text-gray-700"><strong>Size Discount:</strong> Applied {(result.multiples_valuation?.size_discount || 0) * 100}% for company size</span>
+                <div className="flex-1">
+                  <span className="text-gray-700"><strong>Size Discount:</strong> </span>
+                  <span className="text-gray-700">
+                    {revenueTier} | Adjustment: {step5DiscountPct.toFixed(1)}%
+                    {evBeforeStep5 > 0 && evAfterStep5 > 0 && evBeforeStep5 !== evAfterStep5 && (
+                      <> | {formatCurrencyCompact(evBeforeStep5)} → {formatCurrencyCompact(evAfterStep5)}</>
+                    )}
+                  </span>
+                </div>
               </li>
+              
+              {/* Step 6: Liquidity Discount */}
               <li className="flex items-start gap-2">
                 <span className="flex-shrink-0 w-6 h-6 rounded-full bg-orange-100 text-orange-700 flex items-center justify-center text-xs font-bold">6</span>
-                <span className="text-gray-700"><strong>Liquidity Discount:</strong> Applied {(result.multiples_valuation?.liquidity_discount || 0) * 100}% for private company illiquidity</span>
+                <div className="flex-1">
+                  <span className="text-gray-700"><strong>Liquidity Discount:</strong> </span>
+                  <span className="text-gray-700">
+                    Base {(step6BaseDiscount * 100).toFixed(0)}%
+                    {step6MarginBonus !== 0 && <> + Margin bonus {(step6MarginBonus * 100).toFixed(1)}%</>}
+                    {step6GrowthBonus !== 0 && <> + Growth bonus {(step6GrowthBonus * 100).toFixed(1)}%</>}
+                    {step6RecurringBonus !== 0 && <> + Recurring bonus {(step6RecurringBonus * 100).toFixed(1)}%</>}
+                    {step6SizeBonus !== 0 && <> + Size bonus {(step6SizeBonus * 100).toFixed(1)}%</>}
+                    <> = {step6TotalDiscountPct.toFixed(1)}% total</>
+                    {evBeforeStep6 > 0 && evAfterStep6 > 0 && evBeforeStep6 !== evAfterStep6 && (
+                      <> | {formatCurrencyCompact(evBeforeStep6)} → {formatCurrencyCompact(evAfterStep6)}</>
+                    )}
+                  </span>
+                </div>
               </li>
+              
+              {/* Step 7: EV to Equity */}
               <li className="flex items-start gap-2">
                 <span className="flex-shrink-0 w-6 h-6 rounded-full bg-teal-100 text-teal-700 flex items-center justify-center text-xs font-bold">7</span>
-                <span className="text-gray-700"><strong>EV to Equity:</strong> Converted enterprise value to equity value</span>
+                <div className="flex-1">
+                  <span className="text-gray-700"><strong>EV to Equity:</strong> </span>
+                  <span className="text-gray-700">
+                    Net Debt: {formatCurrencyCompact(totalDebt)} - {formatCurrencyCompact(cash)} = {formatCurrencyCompact(netDebt)}
+                    {equityMid > 0 && <> | Equity: {formatCurrencyCompact(equityMid)}</>}
+                    {evAfterStep6 > 0 && equityMid > 0 && (
+                      <> | {formatCurrencyCompact(evAfterStep6)} - {formatCurrencyCompact(netDebt)} = {formatCurrencyCompact(equityMid)}</>
+                    )}
+                  </span>
+                </div>
               </li>
+              
+              {/* Step 8: Ownership Adjustment */}
               <li className="flex items-start gap-2">
                 <span className="flex-shrink-0 w-6 h-6 rounded-full bg-teal-100 text-teal-700 flex items-center justify-center text-xs font-bold">8</span>
-                <span className="text-gray-700">
-                  <strong>Ownership Adjustment:</strong>{' '}
+                <div className="flex-1">
+                  <span className="text-gray-700"><strong>Ownership Adjustment:</strong> </span>
                   {step8Skipped ? (
-                    <>No adjustment (100% ownership sale)</>
+                    <span className="text-gray-700">No adjustment (100% ownership sale)</span>
                   ) : step8AdjustmentPct !== 0 ? (
-                    <>
+                    <span className="text-gray-700">
                       Applied {step8AdjustmentPct > 0 ? '+' : ''}{step8AdjustmentPct.toFixed(1)}% {step8AdjustmentType.replace('_', ' ')} for {step8OwnershipPct.toFixed(0)}% ownership
-                    </>
+                    </span>
                   ) : (
-                    <>No adjustment applied</>
+                    <span className="text-gray-700">No adjustment applied</span>
                   )}
-                </span>
+                </div>
               </li>
+              
+              {/* Step 9: Confidence Analysis */}
               <li className="flex items-start gap-2">
                 <span className="flex-shrink-0 w-6 h-6 rounded-full bg-indigo-100 text-indigo-700 flex items-center justify-center text-xs font-bold">9</span>
-                <span className="text-gray-700"><strong>Confidence Analysis:</strong> Scored data quality at {confidenceScore.toFixed(0)}%</span>
+                <div className="flex-1">
+                  <span className="text-gray-700"><strong>Confidence Analysis:</strong> </span>
+                  <span className="text-gray-700">
+                    {step9ConfidenceScore.toFixed(0)}% ({step9ConfidenceLevel})
+                    {topFactors.length > 0 && (
+                      <> | Top factors: {topFactors.map(f => `${f.factor} ${f.score.toFixed(0)}%`).join(', ')}</>
+                    )}
+                  </span>
+                </div>
               </li>
+              
+              {/* Step 10: Range Methodology */}
               <li className="flex items-start gap-2">
                 <span className="flex-shrink-0 w-6 h-6 rounded-full bg-indigo-100 text-indigo-700 flex items-center justify-center text-xs font-bold">10</span>
-                <span className="text-gray-700"><strong>Range Methodology:</strong> Used {result.range_methodology === 'multiple_dispersion' ? 'multiple dispersion' : 'confidence spread'} approach</span>
+                <div className="flex-1">
+                  <span className="text-gray-700"><strong>Range Methodology:</strong> </span>
+                  <span className="text-gray-700">
+                    {isMultipleDispersion ? 'Multiple dispersion' : 'Confidence spread'}
+                    {!isMultipleDispersion && (
+                      <> | Base ±{(baseSpread * 100).toFixed(0)}% → Total ±{(totalSpread * 100).toFixed(0)}%</>
+                    )}
+                    {step7EquityMid > 0 && (
+                      <> | Base: {formatCurrencyCompact(step7EquityMid)}</>
+                    )}
+                  </span>
+                </div>
               </li>
+              
+              {/* Step 11: Final Result */}
               <li className="flex items-start gap-2">
                 <span className="flex-shrink-0 w-6 h-6 rounded-full bg-green-100 text-green-700 flex items-center justify-center text-xs font-bold">11</span>
-                <span className="text-gray-700"><strong>Final Result:</strong> Arrived at valuation range of {formatCurrencyCompact(finalLow)} - {formatCurrencyCompact(finalHigh)}</span>
+                <div className="flex-1">
+                  <span className="text-gray-700"><strong>Final Result:</strong> </span>
+                  <span className="text-gray-700">
+                    Valuation range: {formatCurrencyCompact(finalLow)} - {formatCurrencyCompact(finalHigh)}
+                    {finalMid > 0 && <> (mid: {formatCurrencyCompact(finalMid)})</>}
+                  </span>
+                </div>
               </li>
             </ol>
           </div>
