@@ -46,7 +46,7 @@ export const calculateGrowthMetrics = (result: ValuationResponse) => {
       // Calculate actual year difference (matches backend logic: current_year - first_year)
       if (firstHistoricalYear && currentYear && typeof firstHistoricalYear === 'number' && typeof currentYear === 'number') {
         if (currentYear > firstHistoricalYear) {
-          years = currentYear - firstHistoricalYear;
+        years = currentYear - firstHistoricalYear;
         } else if (currentYear === firstHistoricalYear) {
           // Same year edge case: use 1 year minimum for CAGR calculation
           years = 1;
@@ -63,13 +63,13 @@ export const calculateGrowthMetrics = (result: ValuationResponse) => {
     // CRITICAL FIX: If no historical data or insufficient data, CAGR should be 0
     // Only return CAGR if we have valid historical data AND years > 0
     const validCagr = hasHistoricalData && years > 0 ? cagrDecimal : 0.0;
-    
-    return { 
+      
+      return { 
       cagr: validCagr, 
       hasHistoricalData: hasHistoricalData && years > 0, 
-      years 
-    };
-  }
+        years 
+      };
+    }
     
   // If financial_metrics is missing, show no data (backend should always provide this)
   // Log warning but don't calculate - backend is source of truth

@@ -292,11 +292,12 @@ export function getStep2BenchmarkingResult(result: ValuationResponse) {
                           'Standard methodology',
     ev_ebitda_multiple: multiples.ebitda_multiple || 0,
     ev_revenue_multiple: multiples.revenue_multiple || 0,
+    // CRITICAL FIX: Use actual P50 percentiles, not median multiples
     p25_ebitda_multiple: multiples.p25_ebitda_multiple || null,
-    p50_ebitda_multiple: multiples.ebitda_multiple || null,
+    p50_ebitda_multiple: multiples.p50_ebitda_multiple || multiples.ebitda_multiple || null,
     p75_ebitda_multiple: multiples.p75_ebitda_multiple || null,
     p25_revenue_multiple: multiples.p25_revenue_multiple || null,
-    p50_revenue_multiple: multiples.revenue_multiple || null,
+    p50_revenue_multiple: multiples.p50_revenue_multiple || multiples.revenue_multiple || null,
     p75_revenue_multiple: multiples.p75_revenue_multiple || null,
     comparables_count: comparables.length,
     comparables_quality: comparables.length > 5 ? 'good' : 'limited',
@@ -407,13 +408,16 @@ export function getStep3BaseEVResult(result: ValuationResponse) {
     ? (currentData.ebitda || 0) 
     : (currentData.revenue || 0);
   
+  // CRITICAL FIX: Use P25/P50/P75 percentiles instead of median multiples
+  // This ensures frontend displays correct low/mid/high values from Step 3
   const multiple_low = isPrimaryEBITDA
     ? (multiples.p25_ebitda_multiple || multiples.unadjusted_ebitda_multiple || multiples.ebitda_multiple || 0)
     : (multiples.p25_revenue_multiple || multiples.unadjusted_revenue_multiple || multiples.revenue_multiple || 0);
   
+  // CRITICAL FIX: Prioritize P50 percentile over median multiple
   const multiple_mid = isPrimaryEBITDA
-    ? (multiples.unadjusted_ebitda_multiple || multiples.ebitda_multiple || 0)
-    : (multiples.unadjusted_revenue_multiple || multiples.revenue_multiple || 0);
+    ? (multiples.p50_ebitda_multiple || multiples.unadjusted_ebitda_multiple || multiples.ebitda_multiple || 0)
+    : (multiples.p50_revenue_multiple || multiples.unadjusted_revenue_multiple || multiples.revenue_multiple || 0);
   
   const multiple_high = isPrimaryEBITDA
     ? (multiples.p75_ebitda_multiple || multiples.unadjusted_ebitda_multiple || multiples.ebitda_multiple || 0)

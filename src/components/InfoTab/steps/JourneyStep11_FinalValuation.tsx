@@ -3,7 +3,7 @@ import { Trophy } from 'lucide-react';
 import { StepCard } from '../shared/StepCard';
 import { StepMetadata } from '../../shared/StepMetadata';
 import { getStepData } from '../../../utils/valuationDataExtractor';
-import { getStepResultData } from '../../../utils/stepDataMapper';
+import { getStepResultData, getStep8OwnershipAdjustmentResult } from '../../../utils/stepDataMapper';
 import type { ValuationResponse } from '../../../types/valuation';
 import { stepLogger, createPerformanceLogger } from '../../../utils/logger';
 
@@ -49,6 +49,13 @@ export const JourneyStep11_FinalValuation: React.FC<JourneyStep11Props> = ({ res
   const confidenceScore = result.confidence_score || 0;
   // Backend returns confidence_score as integer 0-100, not decimal 0-1
   const confidenceLevel = confidenceScore >= 80 ? 'HIGH' : confidenceScore >= 60 ? 'MEDIUM' : 'LOW';
+  
+  // Extract Step 8 (Ownership Adjustment) data
+  const step8Data = getStep8OwnershipAdjustmentResult(result);
+  const step8Skipped = step8Data?.skipped || step8Data?.ownership_percentage === 100;
+  const step8OwnershipPct = step8Data?.ownership_percentage || 100;
+  const step8AdjustmentType = step8Data?.adjustment_type || 'none';
+  const step8AdjustmentPct = step8Data?.adjustment_percentage || 0;
   
   // Render performance logging
   useEffect(() => {
@@ -214,27 +221,42 @@ export const JourneyStep11_FinalValuation: React.FC<JourneyStep11Props> = ({ res
                 </li>
               )}
               <li className="flex items-start gap-2">
-                <span className="flex-shrink-0 w-6 h-6 rounded-full bg-orange-100 text-orange-700 flex items-center justify-center text-xs font-bold">{result.multiples_valuation?.owner_concentration ? '5' : '4'}</span>
+                <span className="flex-shrink-0 w-6 h-6 rounded-full bg-orange-100 text-orange-700 flex items-center justify-center text-xs font-bold">5</span>
                 <span className="text-gray-700"><strong>Size Discount:</strong> Applied {(result.multiples_valuation?.size_discount || 0) * 100}% for company size</span>
               </li>
               <li className="flex items-start gap-2">
-                <span className="flex-shrink-0 w-6 h-6 rounded-full bg-orange-100 text-orange-700 flex items-center justify-center text-xs font-bold">{result.multiples_valuation?.owner_concentration ? '6' : '5'}</span>
+                <span className="flex-shrink-0 w-6 h-6 rounded-full bg-orange-100 text-orange-700 flex items-center justify-center text-xs font-bold">6</span>
                 <span className="text-gray-700"><strong>Liquidity Discount:</strong> Applied {(result.multiples_valuation?.liquidity_discount || 0) * 100}% for private company illiquidity</span>
               </li>
               <li className="flex items-start gap-2">
-                <span className="flex-shrink-0 w-6 h-6 rounded-full bg-teal-100 text-teal-700 flex items-center justify-center text-xs font-bold">{result.multiples_valuation?.owner_concentration ? '7' : '6'}</span>
+                <span className="flex-shrink-0 w-6 h-6 rounded-full bg-teal-100 text-teal-700 flex items-center justify-center text-xs font-bold">7</span>
                 <span className="text-gray-700"><strong>EV to Equity:</strong> Converted enterprise value to equity value</span>
               </li>
               <li className="flex items-start gap-2">
-                <span className="flex-shrink-0 w-6 h-6 rounded-full bg-indigo-100 text-indigo-700 flex items-center justify-center text-xs font-bold">{result.multiples_valuation?.owner_concentration ? '8' : '7'}</span>
+                <span className="flex-shrink-0 w-6 h-6 rounded-full bg-teal-100 text-teal-700 flex items-center justify-center text-xs font-bold">8</span>
+                <span className="text-gray-700">
+                  <strong>Ownership Adjustment:</strong>{' '}
+                  {step8Skipped ? (
+                    <>No adjustment (100% ownership sale)</>
+                  ) : step8AdjustmentPct !== 0 ? (
+                    <>
+                      Applied {step8AdjustmentPct > 0 ? '+' : ''}{step8AdjustmentPct.toFixed(1)}% {step8AdjustmentType.replace('_', ' ')} for {step8OwnershipPct.toFixed(0)}% ownership
+                    </>
+                  ) : (
+                    <>No adjustment applied</>
+                  )}
+                </span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="flex-shrink-0 w-6 h-6 rounded-full bg-indigo-100 text-indigo-700 flex items-center justify-center text-xs font-bold">9</span>
                 <span className="text-gray-700"><strong>Confidence Analysis:</strong> Scored data quality at {confidenceScore.toFixed(0)}%</span>
               </li>
               <li className="flex items-start gap-2">
-                <span className="flex-shrink-0 w-6 h-6 rounded-full bg-indigo-100 text-indigo-700 flex items-center justify-center text-xs font-bold">{result.multiples_valuation?.owner_concentration ? '9' : '8'}</span>
+                <span className="flex-shrink-0 w-6 h-6 rounded-full bg-indigo-100 text-indigo-700 flex items-center justify-center text-xs font-bold">10</span>
                 <span className="text-gray-700"><strong>Range Methodology:</strong> Used {result.range_methodology === 'multiple_dispersion' ? 'multiple dispersion' : 'confidence spread'} approach</span>
               </li>
               <li className="flex items-start gap-2">
-                <span className="flex-shrink-0 w-6 h-6 rounded-full bg-green-100 text-green-700 flex items-center justify-center text-xs font-bold">10</span>
+                <span className="flex-shrink-0 w-6 h-6 rounded-full bg-green-100 text-green-700 flex items-center justify-center text-xs font-bold">11</span>
                 <span className="text-gray-700"><strong>Final Result:</strong> Arrived at valuation range of {formatCurrencyCompact(finalLow)} - {formatCurrencyCompact(finalHigh)}</span>
               </li>
             </ol>

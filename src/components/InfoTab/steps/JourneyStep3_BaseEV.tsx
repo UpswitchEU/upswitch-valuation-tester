@@ -82,12 +82,12 @@ export const JourneyStep3_BaseEV: React.FC<JourneyStep3Props> = ({ result }) => 
   // Only recompute if step3Result is not available (fallback)
   const baseEV_low = step3Result?.enterprise_value_low ?? (() => {
     // Fallback computation (should rarely be needed)
-    const baseMultiple_mid = isPrimaryEBITDA 
-      ? (multiples.unadjusted_ebitda_multiple || multiples.ebitda_multiple)
-      : (multiples.unadjusted_revenue_multiple || multiples.revenue_multiple);
-    const baseMultiple_low = isPrimaryEBITDA
-      ? (multiples.p25_ebitda_multiple || baseMultiple_mid * 0.8)
-      : (multiples.p25_revenue_multiple || baseMultiple_mid * 0.8);
+  const baseMultiple_mid = isPrimaryEBITDA 
+    ? (multiples.unadjusted_ebitda_multiple || multiples.ebitda_multiple)
+    : (multiples.unadjusted_revenue_multiple || multiples.revenue_multiple);
+  const baseMultiple_low = isPrimaryEBITDA
+    ? (multiples.p25_ebitda_multiple || baseMultiple_mid * 0.8)
+    : (multiples.p25_revenue_multiple || baseMultiple_mid * 0.8);
     const primaryMetric = isPrimaryEBITDA ? currentData.ebitda : currentData.revenue;
     return primaryMetric * baseMultiple_low;
   })();
@@ -106,10 +106,10 @@ export const JourneyStep3_BaseEV: React.FC<JourneyStep3Props> = ({ result }) => 
     const baseMultiple_mid = isPrimaryEBITDA 
       ? (multiples.unadjusted_ebitda_multiple || multiples.ebitda_multiple)
       : (multiples.unadjusted_revenue_multiple || multiples.revenue_multiple);
-    const baseMultiple_high = isPrimaryEBITDA
-      ? (multiples.p75_ebitda_multiple || baseMultiple_mid * 1.2)
-      : (multiples.p75_revenue_multiple || baseMultiple_mid * 1.2);
-    const primaryMetric = isPrimaryEBITDA ? currentData.ebitda : currentData.revenue;
+  const baseMultiple_high = isPrimaryEBITDA
+    ? (multiples.p75_ebitda_multiple || baseMultiple_mid * 1.2)
+    : (multiples.p75_revenue_multiple || baseMultiple_mid * 1.2);
+  const primaryMetric = isPrimaryEBITDA ? currentData.ebitda : currentData.revenue;
     return primaryMetric * baseMultiple_high;
   })();
   

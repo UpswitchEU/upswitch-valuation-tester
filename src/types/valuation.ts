@@ -530,6 +530,7 @@ export interface MethodologySelection {
   dcf_included: boolean;
   dcf_weight: number;
   dcf_exclusion_reason?: string;
+  methodology_downgrade_reason?: string;
   multiples_included: boolean;
   multiples_weight: number;
   selection_rationale: string;
@@ -773,7 +774,8 @@ export interface ValuationResponse {
   // Small Firm Effect Transparency (Phase: Small Firm Transparency)
   methodology_selection?: MethodologySelection;
   small_firm_adjustments?: SmallFirmAdjustments;
-  dcf_exclusion_reason?: string; // Backward compatibility field
+  dcf_exclusion_reason?: string;
+  methodology_downgrade_reason?: string; // Backward compatibility field
   
   // Additional data
   current_year_data?: YearDataInput; // For accessing revenue, ebitda, etc.

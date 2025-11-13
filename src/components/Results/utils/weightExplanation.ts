@@ -91,19 +91,23 @@ export const getWeightExplanation = (
 export const calculateConfidenceFactors = (result: ValuationResponse) => {
   // PRIORITY 1: Try to get from backend transparency data (preferred)
   // Backend uses weighted average calculation with actual market data
-  // CRITICAL FIX: Backend returns confidence_breakdown (ConfidenceBreakdown object), not confidence_factors
+  // CRITICAL FIX: Backend returns confidence_breakdown with 'factors' dictionary containing all 8 factor scores
   if (result.transparency?.confidence_breakdown) {
-    const breakdown = result.transparency.confidence_breakdown;
-    // Return in the same format expected by frontend
+    const breakdown = result.transparency.confidence_breakdown as any;
+    // Backend structure: { overall_score, level, factors: { data_quality: X, historical_data: Y, ... } }
+    const factors = breakdown.factors || {};
+    
+    // Extract factor scores from backend calculation
+    // Map backend factor names to frontend expected names
     return {
-      data_quality: breakdown.data_quality,
-      historical_data: breakdown.historical_data,
-      methodology_agreement: breakdown.methodology_agreement,
-      industry_benchmarks: breakdown.industry_benchmarks,
-      company_profile: breakdown.company_profile,
-      market_conditions: breakdown.market_conditions,
-      geographic_data: breakdown.geographic_data,
-      business_model_clarity: breakdown.business_model_clarity
+      data_quality: factors.data_quality || breakdown.data_quality || 0,
+      historical_data: factors.historical_data || 0,
+      methodology_agreement: factors.methodology_agreement || 0,
+      industry_benchmarks: factors.industry_benchmarks || 0,
+      company_profile: factors.company_profile || 0,
+      market_conditions: factors.market_conditions || 0,
+      geographic_data: factors.geographic_data || 0,
+      business_model_clarity: factors.business_model_clarity || 0
     };
   }
   

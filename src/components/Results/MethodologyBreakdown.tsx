@@ -373,14 +373,14 @@ export const MethodologyBreakdown: React.FC<MethodologyBreakdownProps> = ({ resu
               <div>• <span className="font-semibold text-blue-700">EBITDA Multiple: <span className="font-mono">{ebitdaMultiple.toFixed(1)}x</span> (industry median) ⭐ PRIMARY</span></div>
               <div>• Comparables: {comparablesCount} similar companies</div>
               {/* Primary Multiple Method (Transparency) */}
-              <div className="mt-2 pt-2 border-t border-green-300">
-                <div className="text-xs text-green-800">
+                <div className="mt-2 pt-2 border-t border-green-300">
+                  <div className="text-xs text-green-800">
                   <strong>Primary Method:</strong> {isPrimaryEBITDA() ? 'EBITDA Multiple' : 'Revenue Multiple'}
                   {result.multiples_valuation?.primary_multiple_reason && (
-                    <span className="text-green-700"> - {result.multiples_valuation.primary_multiple_reason}</span>
-                  )}
+                      <span className="text-green-700"> - {result.multiples_valuation.primary_multiple_reason}</span>
+                    )}
+                  </div>
                 </div>
-              </div>
             </div>
           </div>
         </div>
@@ -436,16 +436,16 @@ export const MethodologyBreakdown: React.FC<MethodologyBreakdownProps> = ({ resu
               <h4 className="font-medium text-gray-900 mb-3">Market Multiples</h4>
               
               {/* Primary Method Indicator */}
-              <div className="mb-3 p-2 bg-blue-50 border border-blue-200 rounded">
-                <p className="text-sm font-semibold text-blue-900">
+                <div className="mb-3 p-2 bg-blue-50 border border-blue-200 rounded">
+                  <p className="text-sm font-semibold text-blue-900">
                   Primary Method: {isPrimaryEBITDA() ? 'EBITDA Multiple' : 'Revenue Multiple'}
-                </p>
-                {result.multiples_valuation?.primary_multiple_reason && (
-                  <p className="text-xs text-blue-700 mt-1">
-                    {result.multiples_valuation.primary_multiple_reason}
                   </p>
-                )}
-              </div>
+                {result.multiples_valuation?.primary_multiple_reason && (
+                    <p className="text-xs text-blue-700 mt-1">
+                      {result.multiples_valuation.primary_multiple_reason}
+                    </p>
+                  )}
+                </div>
               
               <div className="space-y-2 text-sm text-gray-600">
                 <div className={!isPrimaryEBITDA() ? 'font-semibold text-blue-700' : ''}>
