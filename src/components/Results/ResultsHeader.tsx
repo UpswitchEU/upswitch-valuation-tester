@@ -10,6 +10,19 @@ interface ResultsHeaderProps {
 export const ResultsHeader: React.FC<ResultsHeaderProps> = ({ result }) => {
   const [showConfidenceModal, setShowConfidenceModal] = useState(false);
 
+  // Helper function: Determine if EBITDA is the primary method with enhanced fallback logic
+  const isPrimaryEBITDA = () => {
+    const multiples = result.multiples_valuation;
+    if (!multiples) {
+      return result.primary_method === 'EV/EBITDA';
+    }
+    return (
+      multiples.primary_multiple_method === 'ebitda_multiple' ||
+      multiples.primary_method === 'EV/EBITDA' ||
+      result.primary_method === 'EV/EBITDA'
+    );
+  };
+
   // Dynamic methodology description based on actual weights
   const getMethodologyDescription = () => {
     const dcfWeight = result.dcf_weight || 0;
@@ -197,16 +210,16 @@ export const ResultsHeader: React.FC<ResultsHeaderProps> = ({ result }) => {
                 </div>
                 <div className="space-y-1">
                   <p className="text-sm font-bold text-gray-900">
-                    {result.multiples_valuation.primary_multiple_method === 'ebitda_multiple' ? 'EBITDA Multiple' : 'Revenue Multiple'}
+                    {isPrimaryEBITDA() ? 'EBITDA Multiple' : 'Revenue Multiple'}
                   </p>
                   <p className="text-2xl font-bold text-purple-700">
-                    {result.multiples_valuation.primary_multiple_method === 'ebitda_multiple' 
+                    {isPrimaryEBITDA()
                       ? `${result.multiples_valuation.ebitda_multiple?.toFixed(2) ?? 'N/A'}x`
                       : `${result.multiples_valuation.revenue_multiple?.toFixed(2) ?? 'N/A'}x`
                     }
                   </p>
                   <p className="text-xs text-gray-600">
-                    {result.multiples_valuation.primary_multiple_method === 'ebitda_multiple' ? (
+                    {isPrimaryEBITDA() ? (
                       result.current_year_data?.ebitda != null && result.current_year_data.ebitda > 0 ? (
                         `${formatCurrencyCompact(result.current_year_data.ebitda)} × ${result.multiples_valuation.ebitda_multiple?.toFixed(2) ?? 'N/A'}x`
                       ) : (
@@ -234,7 +247,7 @@ export const ResultsHeader: React.FC<ResultsHeaderProps> = ({ result }) => {
                       <div className="flex justify-between items-center">
                         <span className="text-gray-600">Low (P25):</span>
                         <span className="font-bold text-gray-900">
-                          {result.multiples_valuation.primary_multiple_method === 'ebitda_multiple'
+                          {isPrimaryEBITDA()
                             ? `${result.multiples_valuation.p25_ebitda_multiple?.toFixed(2) ?? 'N/A'}x`
                             : `${result.multiples_valuation.p25_revenue_multiple?.toFixed(2) ?? 'N/A'}x`
                           }
@@ -243,7 +256,7 @@ export const ResultsHeader: React.FC<ResultsHeaderProps> = ({ result }) => {
                       <div className="flex justify-between items-center">
                         <span className="text-gray-600">Mid (P50):</span>
                         <span className="font-bold text-purple-700">
-                          {result.multiples_valuation.primary_multiple_method === 'ebitda_multiple'
+                          {isPrimaryEBITDA()
                             ? `${result.multiples_valuation.p50_ebitda_multiple?.toFixed(2) ?? 'N/A'}x`
                             : `${result.multiples_valuation.p50_revenue_multiple?.toFixed(2) ?? 'N/A'}x`
                           }
@@ -252,7 +265,7 @@ export const ResultsHeader: React.FC<ResultsHeaderProps> = ({ result }) => {
                       <div className="flex justify-between items-center">
                         <span className="text-gray-600">High (P75):</span>
                         <span className="font-bold text-gray-900">
-                          {result.multiples_valuation.primary_multiple_method === 'ebitda_multiple'
+                          {isPrimaryEBITDA()
                             ? `${result.multiples_valuation.p75_ebitda_multiple?.toFixed(2) ?? 'N/A'}x`
                             : `${result.multiples_valuation.p75_revenue_multiple?.toFixed(2) ?? 'N/A'}x`
                           }
@@ -267,7 +280,7 @@ export const ResultsHeader: React.FC<ResultsHeaderProps> = ({ result }) => {
                       <div className="flex justify-between items-center">
                         <span className="text-gray-600">Base Multiple:</span>
                         <span className="font-bold text-purple-700">
-                          {result.multiples_valuation.primary_multiple_method === 'ebitda_multiple'
+                          {isPrimaryEBITDA()
                             ? `${result.multiples_valuation.ebitda_multiple?.toFixed(2) ?? 'N/A'}x`
                             : `${result.multiples_valuation.revenue_multiple?.toFixed(2) ?? 'N/A'}x`
                           }

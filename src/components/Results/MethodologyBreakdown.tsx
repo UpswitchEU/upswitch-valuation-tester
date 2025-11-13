@@ -22,6 +22,15 @@ export const MethodologyBreakdown: React.FC<MethodologyBreakdownProps> = ({ resu
   // Always show if we have weights, even if detailed breakdowns aren't available
   const hasWeights = (result.dcf_weight || 0) > 0 || (result.multiples_weight || 0) > 0;
   
+  // Helper function: Determine if EBITDA is the primary method with enhanced fallback logic
+  const isPrimaryEBITDA = () => {
+    return (
+      result.multiples_valuation?.primary_multiple_method === 'ebitda_multiple' ||
+      result.multiples_valuation?.primary_method === 'EV/EBITDA' ||
+      result.primary_method === 'EV/EBITDA'
+    );
+  };
+  
   if (!hasDCF && !hasMultiples && !hasWeights) {
     return null;
   }
@@ -58,7 +67,9 @@ export const MethodologyBreakdown: React.FC<MethodologyBreakdownProps> = ({ resu
   // Multiples details
   const revenueMultiple = resultAny.multiples_valuation?.revenue_multiple || resultAny.revenue_multiple || 2.1;
   const ebitdaMultiple = resultAny.multiples_valuation?.ebitda_multiple || resultAny.ebitda_multiple || 8.5;
-  const comparablesCount = resultAny.comparables_count || 15;
+  // Use actual comparables_count from multiples_valuation; avoid optimistic defaults
+  const comparablesCount = result.multiples_valuation?.comparables_count ?? 0;
+  const hasComparables = comparablesCount > 0;
   
   // Final calculation
   const dcfValue = result.dcf_valuation?.equity_value || 0;
@@ -330,20 +341,14 @@ export const MethodologyBreakdown: React.FC<MethodologyBreakdownProps> = ({ resu
               )}
               <div>• Comparables: {comparablesCount} similar companies</div>
               {/* Primary Multiple Method (Transparency) */}
-              {result.multiples_valuation?.primary_multiple_method && (
-                <div className="mt-2 pt-2 border-t border-green-300">
-                  <div className="text-xs text-green-800">
-                    <strong>Primary Method:</strong> {result.multiples_valuation.primary_multiple_method === 'ebitda_multiple' 
-                      ? 'EBITDA Multiple' 
-                      : result.multiples_valuation.primary_multiple_method === 'revenue_multiple'
-                      ? 'Revenue Multiple'
-                      : result.multiples_valuation.primary_multiple_method}
-                    {result.multiples_valuation.primary_multiple_reason && (
-                      <span className="text-green-700"> - {result.multiples_valuation.primary_multiple_reason}</span>
-                    )}
-                  </div>
+              <div className="mt-2 pt-2 border-t border-green-300">
+                <div className="text-xs text-green-800">
+                  <strong>Primary Method:</strong> {isPrimaryEBITDA() ? 'EBITDA Multiple' : 'Revenue Multiple'}
+                  {result.multiples_valuation?.primary_multiple_reason && (
+                    <span className="text-green-700"> - {result.multiples_valuation.primary_multiple_reason}</span>
+                  )}
                 </div>
-              )}
+              </div>
             </div>
           </div>
         </div>
@@ -399,29 +404,32 @@ export const MethodologyBreakdown: React.FC<MethodologyBreakdownProps> = ({ resu
               <h4 className="font-medium text-gray-900 mb-3">Market Multiples</h4>
               
               {/* Primary Method Indicator */}
-              {result.multiples_valuation?.primary_multiple_method && (
-                <div className="mb-3 p-2 bg-blue-50 border border-blue-200 rounded">
-                  <p className="text-sm font-semibold text-blue-900">
-                    Primary Method: {result.multiples_valuation.primary_multiple_method === 'ebitda_multiple' ? 'EBITDA Multiple' : 'Revenue Multiple'}
+              <div className="mb-3 p-2 bg-blue-50 border border-blue-200 rounded">
+                <p className="text-sm font-semibold text-blue-900">
+                  Primary Method: {isPrimaryEBITDA() ? 'EBITDA Multiple' : 'Revenue Multiple'}
+                </p>
+                {result.multiples_valuation?.primary_multiple_reason && (
+                  <p className="text-xs text-blue-700 mt-1">
+                    {result.multiples_valuation.primary_multiple_reason}
                   </p>
-                  {result.multiples_valuation.primary_multiple_reason && (
-                    <p className="text-xs text-blue-700 mt-1">
-                      {result.multiples_valuation.primary_multiple_reason}
-                    </p>
-                  )}
-                </div>
-              )}
+                )}
+              </div>
               
               <div className="space-y-2 text-sm text-gray-600">
-                <div className={result.multiples_valuation?.primary_multiple_method === 'revenue_multiple' ? 'font-semibold text-blue-700' : ''}>
+                <div className={!isPrimaryEBITDA() ? 'font-semibold text-blue-700' : ''}>
                   • <Tooltip content="Company valuation divided by annual revenue - used to compare similar companies">Revenue Multiple</Tooltip>: {typeof revenueMultiple === 'number' && !isNaN(revenueMultiple) ? `${revenueMultiple.toFixed(1)}x` : 'N/A'} (industry median)
-                  {result.multiples_valuation?.primary_multiple_method === 'revenue_multiple' && ' ⭐ PRIMARY'}
+                  {!isPrimaryEBITDA() && ' ⭐ PRIMARY'}
                 </div>
-                <div className={result.multiples_valuation?.primary_multiple_method === 'ebitda_multiple' ? 'font-semibold text-blue-700' : ''}>
+                <div className={isPrimaryEBITDA() ? 'font-semibold text-blue-700' : ''}>
                   • <Tooltip content="Earnings Before Interest, Taxes, Depreciation, and Amortization - a measure of operating profitability">EBITDA</Tooltip> Multiple: {typeof ebitdaMultiple === 'number' && !isNaN(ebitdaMultiple) ? `${ebitdaMultiple.toFixed(1)}x` : 'N/A'} (industry median)
-                  {result.multiples_valuation?.primary_multiple_method === 'ebitda_multiple' && ' ⭐ PRIMARY'}
+                  {isPrimaryEBITDA() && ' ⭐ PRIMARY'}
                 </div>
-                <div>• Comparables: {comparablesCount} similar companies</div>
+                <div>
+                  • Comparables:{' '}
+                  {hasComparables
+                    ? `${comparablesCount} similar companies`
+                    : 'Calibrated benchmark multiples (live comparables required for detailed peer list)'}
+                </div>
                 <div>• Geographic Focus: European SMEs</div>
               </div>
             </div>

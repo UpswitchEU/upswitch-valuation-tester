@@ -116,7 +116,7 @@ export const Results: React.FC = () => {
       */}
       
       {/* Methodology & Data Sources */}
-      <CompetitiveComparison />
+      <CompetitiveComparison result={result} />
     </div>
   );
 };
