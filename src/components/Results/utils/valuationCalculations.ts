@@ -456,14 +456,23 @@ export const calculateEVToEquityConversion = (result: ValuationResponse, previou
   const dcfWeight = result.dcf_weight || 0;
   const isDCFIncluded = dcfWeight > 0 && result.dcf_valuation;
   
+  // Determine title and subtitle based on net debt
+  const hasNetDebt = Math.abs(netDebt) > 0.01; // Use small threshold to handle floating point precision
+  const title = hasNetDebt ? 'Enterprise Value to Equity Value' : 'Final Equity Value';
+  const subtitle = hasNetDebt 
+    ? (isDCFIncluded ? 'Multiples Equity Value (Before Combination)' : 'Converting to shareholder value')
+    : (isDCFIncluded ? 'Multiples Equity Value (no debt adjustment)' : 'No debt adjustment needed');
+  
   const explanation = isDCFIncluded
     ? 'This is the Multiples-only equity value after all adjustments. In the next step, this value will be combined with the DCF equity value using weighted averages to create the final base valuation.'
-    : 'Enterprise Value represents the total value of the company. Equity Value is what shareholders own after accounting for debt obligations and cash holdings. This is the final base equity value before applying the range methodology.';
+    : (hasNetDebt 
+        ? 'Enterprise Value represents the total value of the company. Equity Value is what shareholders own after accounting for debt obligations and cash holdings. This is the final base equity value before applying the range methodology.'
+        : 'Since the company has no net debt (debt and cash are balanced), the Enterprise Value equals the Equity Value. This is the final base equity value before applying the range methodology.');
   
   return {
     stepNumber: previousStep.stepNumber + 1,
-    title: 'Enterprise Value to Equity Value',
-    subtitle: isDCFIncluded ? 'Multiples Equity Value (Before Combination)' : 'Converting to shareholder value',
+    title,
+    subtitle,
     formula: 'Equity Value = Enterprise Value - Net Debt',
     inputs: [
       { label: 'Enterprise Value (After Adjustments)', value: formatCurrency(previousStep.result.mid), highlight: true },

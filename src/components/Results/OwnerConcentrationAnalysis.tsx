@@ -46,18 +46,9 @@ export const OwnerConcentrationAnalysis: React.FC<OwnerConcentrationAnalysisProp
     tierExplanation = 'Low owner concentration (<10%) suggests minimal key person risk with a diversified management structure and operational processes.';
   }
 
-  // Calculate unadjusted multiples if not provided
-  // Guard against division by zero (adjustmentFactor === -1.0)
-  const adjustedEbitda = result.multiples_valuation?.ebitda_multiple || 0;
-  const adjustedRevenue = result.multiples_valuation?.revenue_multiple || 0;
-  const unadjustedEbitda = result.multiples_valuation?.unadjusted_ebitda_multiple || 
-                           (adjustmentFactor === -1 
-                             ? adjustedEbitda 
-                             : (adjustedEbitda / (1 + adjustmentFactor)));
-  const unadjustedRevenue = result.multiples_valuation?.unadjusted_revenue_multiple || 
-                            (adjustmentFactor === -1 
-                              ? adjustedRevenue 
-                              : (adjustedRevenue / (1 + adjustmentFactor)));
+  // Get base multiples (industry benchmarks - these don't change)
+  const ebitdaMultiple = result.multiples_valuation?.ebitda_multiple || 0;
+  const revenueMultiple = result.multiples_valuation?.revenue_multiple || 0;
 
   const ratioPercentage = (ratio * 100).toFixed(0);
   const adjustmentPercentage = Math.abs(adjustmentFactor * 100).toFixed(0);
@@ -119,28 +110,29 @@ export const OwnerConcentrationAnalysis: React.FC<OwnerConcentrationAnalysisProp
         <p className="text-sm text-gray-700 leading-relaxed">{tierExplanation}</p>
       </div>
 
-      {/* Impact on Multiples */}
+      {/* Impact on Valuation */}
       <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4">
         <h4 className="font-semibold text-sm text-gray-900 mb-2">Impact on Valuation</h4>
         <p className="text-sm text-gray-700 mb-3">
-          Multiples reduced by <strong className="text-yellow-900">{adjustmentPercentage}%</strong> due to {riskLevel.toLowerCase()} owner concentration
+          Enterprise value reduced by <strong className="text-yellow-900">{adjustmentPercentage}%</strong> due to {riskLevel.toLowerCase()} owner concentration risk
         </p>
         <div className="space-y-2 text-xs text-gray-700">
           <div className="flex items-center justify-between">
-            <span>EBITDA Multiple:</span>
-            <span className="font-mono">
-              <span className="text-gray-500 line-through">{unadjustedEbitda.toFixed(1)}x</span>
-              {' → '}
-              <span className="font-semibold text-yellow-900">{adjustedEbitda.toFixed(1)}x</span>
+            <span>Industry Benchmark Multiples:</span>
+            <span className="font-mono font-semibold text-gray-900">
+              {ebitdaMultiple.toFixed(1)}x EBITDA, {revenueMultiple.toFixed(2)}x Revenue
             </span>
           </div>
           <div className="flex items-center justify-between">
-            <span>Revenue Multiple:</span>
-            <span className="font-mono">
-              <span className="text-gray-500 line-through">{unadjustedRevenue.toFixed(2)}x</span>
-              {' → '}
-              <span className="font-semibold text-yellow-900">{adjustedRevenue.toFixed(2)}x</span>
+            <span>Valuation Adjustment:</span>
+            <span className="font-semibold text-yellow-900">
+              -{adjustmentPercentage}% applied to enterprise value
             </span>
+          </div>
+          <div className="mt-2 pt-2 border-t border-yellow-300">
+            <p className="text-xs text-gray-600 italic">
+              Note: Multiples remain unchanged. The discount is applied to the enterprise value calculation, not to the industry benchmarks.
+            </p>
           </div>
         </div>
       </div>

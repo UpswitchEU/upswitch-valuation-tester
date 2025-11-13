@@ -189,6 +189,29 @@ export const ValuationWaterfall: React.FC<ValuationWaterfallProps> = ({ result }
   const steps = generateCalculationSteps(result);
   const finalResult = getFinalValuationStep(result);
 
+  // Helper function: Determine if EBITDA is the primary method with enhanced fallback logic
+  const isPrimaryEBITDA = () => {
+    const multiples = result.multiples_valuation;
+    
+    // Priority 1: Check primary_multiple_method (most authoritative)
+    if (multiples?.primary_multiple_method) {
+      return multiples.primary_multiple_method === 'ebitda_multiple';
+    }
+    
+    // Priority 2: Check primary_method field (string format)
+    if (multiples?.primary_method) {
+      return multiples.primary_method === 'EV/EBITDA' || multiples.primary_method.includes('EBITDA');
+    }
+    
+    // Priority 3: Check top-level primary_method
+    if (result.primary_method) {
+      return result.primary_method === 'EV/EBITDA' || result.primary_method.includes('EBITDA');
+    }
+    
+    // Priority 4: Infer from EBITDA availability (fallback)
+    return !!result.current_year_data?.ebitda;
+  };
+
   return (
     <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-6">
       {/* Header */}
@@ -259,7 +282,7 @@ export const ValuationWaterfall: React.FC<ValuationWaterfallProps> = ({ result }
       {/* Methodology Note */}
       <div className="mt-4 bg-blue-50 border-l-4 border-blue-500 p-4 rounded">
         <p className="text-sm text-blue-900">
-          <strong>📚 Methodology:</strong> This valuation uses the {result.multiples_valuation?.primary_multiple_method === 'ebitda_multiple' ? 'EBITDA Multiple' : 'Revenue Multiple'} approach as the primary method, 
+          <strong>📚 Methodology:</strong> This valuation uses the {isPrimaryEBITDA() ? 'EBITDA Multiple' : 'Revenue Multiple'} approach as the primary method, 
           with industry-standard adjustments for owner concentration, company size, and illiquidity. 
           All calculations follow European market standards and academic research.
         </p>

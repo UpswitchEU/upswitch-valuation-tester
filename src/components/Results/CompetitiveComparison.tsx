@@ -23,6 +23,13 @@ export const CompetitiveComparison: React.FC<CompetitiveComparisonProps> = ({ re
     (!hasMultiplesValuation || multiplesWeight < 0.01) &&
     !dcfExcluded;
 
+  // Check if we have real comparable data or just placeholders
+  // Note: comparables_list is returned by backend but not in type definition
+  const comparablesListRaw = (result.multiples_valuation as any)?.comparables_list || [];
+  const hasPlaceholderOnly = comparablesListRaw.length > 0 && comparablesListRaw.every((comp: any) => comp.is_placeholder === true);
+  const comparablesCount = result.multiples_valuation?.comparables_count || 0;
+  const hasRealComparables = comparablesCount > 0 && !hasPlaceholderOnly;
+
   return (
     <div className="bg-white rounded-lg border border-gray-200 p-4 sm:p-6 shadow-sm">
       <h3 className="text-lg font-semibold text-gray-900 mb-4">Methodology & Data Sources</h3>
@@ -113,7 +120,12 @@ export const CompetitiveComparison: React.FC<CompetitiveComparisonProps> = ({ re
             </div>
             <div className="flex items-center justify-between p-2 bg-gray-50 rounded">
               <span className="text-sm text-gray-700">Market Data</span>
-              <span className="text-sm font-medium text-gray-900">FMP comparable companies</span>
+              <span className="text-sm font-medium text-gray-900">
+                {hasRealComparables 
+                  ? `FMP comparable companies (${comparablesCount} found)` 
+                  : 'Calibrated benchmark multiples (live comparables pending FMP API integration)'
+                }
+              </span>
             </div>
             <div className="flex items-center justify-between p-2 bg-gray-50 rounded">
               <span className="text-sm text-gray-700">Company Registry</span>

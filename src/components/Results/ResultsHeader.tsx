@@ -331,25 +331,25 @@ export const ResultsHeader: React.FC<ResultsHeaderProps> = ({ result }) => {
               result.multiples_valuation.liquidity_discount != null) && (
               <div className="mt-3 pt-3 border-t border-purple-200">
                 <p className="text-xs text-purple-800">
-                  <span className="font-semibold">Note:</span> Multiples shown above are <strong>final adjusted values</strong> after applying:
+                  <span className="font-semibold">Note:</span> Multiples shown above reflect <strong>industry benchmarks</strong>. Valuation adjustments for
                   {result.multiples_valuation.owner_concentration && (
                     <span className="ml-1">
-                      Owner Concentration ({(result.multiples_valuation.owner_concentration.adjustment_factor * 100).toFixed(0)}%)
+                      owner concentration ({(result.multiples_valuation.owner_concentration.adjustment_factor * 100).toFixed(0)}%)
                     </span>
                   )}
                   {result.multiples_valuation.size_discount && (
                     <span className="ml-1">
                       {result.multiples_valuation.owner_concentration ? ', ' : ''}
-                      Size Discount ({(result.multiples_valuation.size_discount * 100).toFixed(0)}%)
+                      size ({(result.multiples_valuation.size_discount * 100).toFixed(0)}%)
                     </span>
                   )}
                   {result.multiples_valuation.liquidity_discount && (
                     <span className="ml-1">
-                      {(result.multiples_valuation.owner_concentration || result.multiples_valuation.size_discount) ? ', ' : ''}
-                      Liquidity Discount ({(result.multiples_valuation.liquidity_discount * 100).toFixed(0)}%)
+                      {(result.multiples_valuation.owner_concentration || result.multiples_valuation.size_discount) ? ', and ' : ''}
+                      liquidity ({(result.multiples_valuation.liquidity_discount * 100).toFixed(0)}%)
                     </span>
                   )}
-                  . See calculation breakdown below for details.
+                  {' '}are applied to <strong>enterprise value</strong>, not the multiples themselves. See calculation breakdown below for details.
                 </p>
               </div>
             )}
