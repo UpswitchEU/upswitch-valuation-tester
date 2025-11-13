@@ -78,10 +78,10 @@ export const JourneyStep11_FinalValuation: React.FC<JourneyStep11Props> = ({ res
   const revenue = result.current_year_data?.revenue || step1Data?.revenue || 0;
   const ebitda = result.current_year_data?.ebitda || step1Data?.ebitda || 0;
   const ebitdaMargin = ebitda && revenue > 0 ? (ebitda / revenue) * 100 : 0;
-  const industry = result.request?.industry || step1Data?.industry || 'N/A';
-  const businessModel = result.request?.business_model || step1Data?.business_model || 'N/A';
-  const country = result.request?.country || step1Data?.country || 'N/A';
-  const employees = result.request?.number_of_employees || step1Data?.num_employees || 0;
+  const industry = step1Data?.industry || 'N/A';
+  const businessModel = step1Data?.business_model || 'N/A';
+  const country = step1Data?.country || 'N/A';
+  const employees = step1Data?.num_employees || 0;
   
   // Step 2: Benchmarking
   const primaryMethod = step2Data?.primary_method || (result.multiples_valuation?.primary_multiple_method === 'ebitda_multiple' ? 'EV/EBITDA' : 'EV/Revenue');
@@ -96,15 +96,13 @@ export const JourneyStep11_FinalValuation: React.FC<JourneyStep11Props> = ({ res
   const p75Multiple = isPrimaryEBITDA
     ? (multiples?.p75_ebitda_multiple || step2Data?.p75_ebitda_multiple || null)
     : (multiples?.p75_revenue_multiple || step2Data?.p75_revenue_multiple || null);
-  const comparablesCount = step2Data?.comparables_count || (Array.isArray(multiples?.comparables) ? multiples.comparables.length : 0);
+  const comparablesCount = step2Data?.comparables_count || multiples?.comparables_count || 0;
   const dataSource = step2Data?.data_source || multiples?.comparables_quality || 'Estimated';
   
   // Step 3: Base Valuation
   const metricValue = step3Data?.metric_value || (isPrimaryEBITDA ? ebitda : revenue);
   const metricName = step3Data?.metric_used || (isPrimaryEBITDA ? 'EBITDA' : 'Revenue');
-  const multipleP25 = step3Data?.multiple_low || step3Data?.multiple_p25 || p25Multiple || 0;
   const multipleP50 = step3Data?.multiple_mid || step3Data?.multiple_p50 || p50Multiple || 0;
-  const multipleP75 = step3Data?.multiple_high || step3Data?.multiple_p75 || p75Multiple || 0;
   const evLow = step3Data?.enterprise_value_low || 0;
   const evMid = step3Data?.enterprise_value_mid || 0;
   const evHigh = step3Data?.enterprise_value_high || 0;
@@ -151,9 +149,7 @@ export const JourneyStep11_FinalValuation: React.FC<JourneyStep11Props> = ({ res
   const totalDebt = step7Data?.total_debt || result.current_year_data?.total_debt || 0;
   const cash = step7Data?.cash || result.current_year_data?.cash || 0;
   const netDebt = step7Data?.net_debt || (totalDebt - cash);
-  const equityLow = step7Data?.equity_value_low || 0;
   const equityMid = step7Data?.equity_value_mid || result.equity_value_mid || 0;
-  const equityHigh = step7Data?.equity_value_high || 0;
   
   // Step 8: Ownership Adjustment
   const step8Skipped = step8Data?.skipped || step8Data?.ownership_percentage === 100;
