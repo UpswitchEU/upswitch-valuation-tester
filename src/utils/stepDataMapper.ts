@@ -314,6 +314,7 @@ export function getStep3BaseEVResult(result: ValuationResponse) {
   const perfLogger = createPerformanceLogger('getStep3BaseEVResult', 'data-extraction');
   dataExtractionLogger.debug('Extracting Step 3 base EV result', { step: 3 });
   
+  // DIAGNOSTIC: Log transparency data availability
   const normalizedSteps = result.transparency?.calculation_steps 
     ? normalizeCalculationSteps(result.transparency.calculation_steps)
     : [];
@@ -321,11 +322,22 @@ export function getStep3BaseEVResult(result: ValuationResponse) {
     (s) => s.step === 3 || s.step_number === 3
   );
 
+  // DIAGNOSTIC: Log transparency step availability
+  console.log('[DIAGNOSTIC-STEP3] Transparency step check', {
+    hasTransparency: !!result.transparency,
+    hasCalculationSteps: !!result.transparency?.calculation_steps,
+    normalizedStepsCount: normalizedSteps.length,
+    step3Found: !!step,
+    step3HasKeyOutputs: !!step?.key_outputs,
+    step3KeyOutputs: step?.key_outputs ? Object.keys(step.key_outputs) : []
+  });
+
   if (step?.key_outputs) {
     dataExtractionLogger.info('Step 3 data extracted from transparency', {
       step: 3,
       dataSource: 'transparency',
-      hasEnterpriseValues: !!(step.key_outputs.enterprise_value_mid)
+      hasEnterpriseValues: !!(step.key_outputs.enterprise_value_mid),
+      keyOutputsKeys: Object.keys(step.key_outputs)
     });
     perfLogger.end({ dataSource: 'transparency', hasData: true });
     return step.key_outputs;
@@ -347,7 +359,50 @@ export function getStep3BaseEVResult(result: ValuationResponse) {
     return null;
   }
 
-  const isPrimaryEBITDA = multiples.primary_multiple_method === 'ebitda_multiple';
+  // CRITICAL FIX: Enhanced primary method detection with multiple fallbacks
+  // Priority: primary_multiple_method → primary_method → infer from available data
+  let isPrimaryEBITDA = false;
+  let primaryMethodSource = 'unknown';
+  
+  // Check 1: primary_multiple_method field (preferred)
+  if (multiples.primary_multiple_method === 'ebitda_multiple') {
+    isPrimaryEBITDA = true;
+    primaryMethodSource = 'primary_multiple_method=ebitda_multiple';
+  } else if (multiples.primary_multiple_method === 'revenue_multiple') {
+    isPrimaryEBITDA = false;
+    primaryMethodSource = 'primary_multiple_method=revenue_multiple';
+  }
+  // Check 2: primary_method field (fallback)
+  else if (multiples.primary_method === 'EV/EBITDA' || result.primary_method === 'EV/EBITDA') {
+    isPrimaryEBITDA = true;
+    primaryMethodSource = 'primary_method=EV/EBITDA';
+  } else if (multiples.primary_method === 'EV/Revenue' || result.primary_method === 'EV/Revenue') {
+    isPrimaryEBITDA = false;
+    primaryMethodSource = 'primary_method=EV/Revenue';
+  }
+  // Check 3: Infer from available EBITDA and multiples (last resort)
+  else if (currentData.ebitda && currentData.ebitda > 0 && multiples.ebitda_multiple && multiples.ebitda_multiple > 0) {
+    // If EBITDA is available and positive, prefer EBITDA method
+    isPrimaryEBITDA = true;
+    primaryMethodSource = 'inferred_from_ebitda_available';
+  } else {
+    // Default to Revenue if EBITDA not available
+    isPrimaryEBITDA = false;
+    primaryMethodSource = 'default_to_revenue';
+  }
+
+  // DIAGNOSTIC: Log primary method detection
+  console.log('[DIAGNOSTIC-STEP3] Primary method detection', {
+    primary_multiple_method: multiples.primary_multiple_method,
+    primary_method: multiples.primary_method || result.primary_method,
+    isPrimaryEBITDA,
+    primaryMethodSource,
+    hasEBITDA: !!(currentData.ebitda && currentData.ebitda > 0),
+    hasRevenue: !!(currentData.revenue && currentData.revenue > 0),
+    ebitdaMultiple: multiples.ebitda_multiple,
+    revenueMultiple: multiples.revenue_multiple
+  });
+
   const metric_value = isPrimaryEBITDA 
     ? (currentData.ebitda || 0) 
     : (currentData.revenue || 0);
@@ -364,12 +419,28 @@ export function getStep3BaseEVResult(result: ValuationResponse) {
     ? (multiples.p75_ebitda_multiple || multiples.unadjusted_ebitda_multiple || multiples.ebitda_multiple || 0)
     : (multiples.p75_revenue_multiple || multiples.unadjusted_revenue_multiple || multiples.revenue_multiple || 0);
 
+  // DIAGNOSTIC: Log calculation inputs
+  console.log('[DIAGNOSTIC-STEP3] Calculation inputs', {
+    metric_used: isPrimaryEBITDA ? 'EBITDA' : 'Revenue',
+    metric_value,
+    multiple_low,
+    multiple_mid,
+    multiple_high,
+    calculated_low: metric_value * multiple_low,
+    calculated_mid: metric_value * multiple_mid,
+    calculated_high: metric_value * multiple_high
+  });
+
   dataExtractionLogger.info('Step 3 data computed from multiples', {
     step: 3,
     dataSource: 'computed',
     fallbackUsed: true,
     metricUsed: isPrimaryEBITDA ? 'EBITDA' : 'Revenue',
-    hasMultiples: !!(multiple_mid > 0)
+    hasMultiples: !!(multiple_mid > 0),
+    primaryMethodSource,
+    metric_value,
+    multiple_mid,
+    calculated_mid: metric_value * multiple_mid
   });
   perfLogger.end({ dataSource: 'computed', hasData: true, fallbackUsed: true });
   return {
@@ -386,7 +457,8 @@ export function getStep3BaseEVResult(result: ValuationResponse) {
     multiple_p75: multiple_high,
     percentile_source: multiples.p25_ebitda_multiple || multiples.p25_revenue_multiple ? 'real' : 'estimated',
     primary_method: isPrimaryEBITDA ? 'EV/EBITDA' : 'EV/Revenue',
-    auto_corrected: false
+    auto_corrected: false,
+    primary_method_source: primaryMethodSource // For debugging
   };
 }
 

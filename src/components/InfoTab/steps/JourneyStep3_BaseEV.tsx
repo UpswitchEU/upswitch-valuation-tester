@@ -54,6 +54,8 @@ export const JourneyStep3_BaseEV: React.FC<JourneyStep3Props> = ({ result }) => 
     return null;
   }
 
+  // CRITICAL FIX: Use extracted step3Result values instead of recomputing
+  // This ensures consistency with the fixed primary method detection in stepDataMapper.ts
   const isPrimaryEBITDA = step3Result?.metric_used === 'EBITDA' || step3Result?.primary_method === 'EV/EBITDA' || multiples.primary_multiple_method === 'ebitda_multiple';
   const autoCorrection = step3Result?.auto_corrected || false;
   
@@ -76,26 +78,53 @@ export const JourneyStep3_BaseEV: React.FC<JourneyStep3Props> = ({ result }) => 
     renderPerfLogger.current = createPerformanceLogger('JourneyStep3_BaseEV.render', 'step');
   });
   
-  // Use unadjusted multiples if available (before owner concentration adjustment)
-  const baseMultiple_mid = isPrimaryEBITDA 
+  // CRITICAL FIX: Use values from step3Result if available (from fixed extraction function)
+  // Only recompute if step3Result is not available (fallback)
+  const baseEV_low = step3Result?.enterprise_value_low ?? (() => {
+    // Fallback computation (should rarely be needed)
+    const baseMultiple_mid = isPrimaryEBITDA 
+      ? (multiples.unadjusted_ebitda_multiple || multiples.ebitda_multiple)
+      : (multiples.unadjusted_revenue_multiple || multiples.revenue_multiple);
+    const baseMultiple_low = isPrimaryEBITDA
+      ? (multiples.p25_ebitda_multiple || baseMultiple_mid * 0.8)
+      : (multiples.p25_revenue_multiple || baseMultiple_mid * 0.8);
+    const primaryMetric = isPrimaryEBITDA ? currentData.ebitda : currentData.revenue;
+    return primaryMetric * baseMultiple_low;
+  })();
+  
+  const baseEV_mid = step3Result?.enterprise_value_mid ?? (() => {
+    // Fallback computation (should rarely be needed)
+    const baseMultiple_mid = isPrimaryEBITDA 
+      ? (multiples.unadjusted_ebitda_multiple || multiples.ebitda_multiple)
+      : (multiples.unadjusted_revenue_multiple || multiples.revenue_multiple);
+    const primaryMetric = isPrimaryEBITDA ? currentData.ebitda : currentData.revenue;
+    return primaryMetric * baseMultiple_mid;
+  })();
+  
+  const baseEV_high = step3Result?.enterprise_value_high ?? (() => {
+    // Fallback computation (should rarely be needed)
+    const baseMultiple_mid = isPrimaryEBITDA 
+      ? (multiples.unadjusted_ebitda_multiple || multiples.ebitda_multiple)
+      : (multiples.unadjusted_revenue_multiple || multiples.revenue_multiple);
+    const baseMultiple_high = isPrimaryEBITDA
+      ? (multiples.p75_ebitda_multiple || baseMultiple_mid * 1.2)
+      : (multiples.p75_revenue_multiple || baseMultiple_mid * 1.2);
+    const primaryMetric = isPrimaryEBITDA ? currentData.ebitda : currentData.revenue;
+    return primaryMetric * baseMultiple_high;
+  })();
+  
+  // Extract metric info from step3Result if available
+  const metricName = step3Result?.metric_used || (isPrimaryEBITDA ? 'EBITDA' : 'Revenue');
+  const baseMultiple_mid = step3Result?.multiple_mid ?? (isPrimaryEBITDA 
     ? (multiples.unadjusted_ebitda_multiple || multiples.ebitda_multiple)
-    : (multiples.unadjusted_revenue_multiple || multiples.revenue_multiple);
-  
-  const baseMultiple_low = isPrimaryEBITDA
+    : (multiples.unadjusted_revenue_multiple || multiples.revenue_multiple));
+  const baseMultiple_low = step3Result?.multiple_low ?? (isPrimaryEBITDA
     ? (multiples.p25_ebitda_multiple || baseMultiple_mid * 0.8)
-    : (multiples.p25_revenue_multiple || baseMultiple_mid * 0.8);
-    
-  const baseMultiple_high = isPrimaryEBITDA
+    : (multiples.p25_revenue_multiple || baseMultiple_mid * 0.8));
+  const baseMultiple_high = step3Result?.multiple_high ?? (isPrimaryEBITDA
     ? (multiples.p75_ebitda_multiple || baseMultiple_mid * 1.2)
-    : (multiples.p75_revenue_multiple || baseMultiple_mid * 1.2);
-
-  const primaryMetric = isPrimaryEBITDA ? currentData.ebitda : currentData.revenue;
-  const metricName = isPrimaryEBITDA ? 'EBITDA' : 'Revenue';
-  
-  // Calculate base enterprise value (before adjustments)
-  const baseEV_low = primaryMetric * baseMultiple_low;
-  const baseEV_mid = primaryMetric * baseMultiple_mid;
-  const baseEV_high = primaryMetric * baseMultiple_high;
+    : (multiples.p75_revenue_multiple || baseMultiple_mid * 1.2));
+  const primaryMetric = step3Result?.metric_value ?? (isPrimaryEBITDA ? currentData.ebitda : currentData.revenue);
 
   return (
     <StepCard

@@ -16,6 +16,12 @@ import type { ValuationResponse, ValuationInputData } from '../../types/valuatio
 import { normalizeCalculationSteps } from '../../utils/calculationStepsNormalizer';
 import { componentLogger, createPerformanceLogger } from '../../utils/logger';
 import { getStepsSummary } from '../../utils/valuationDataExtractor';
+import { 
+  getStep3BaseEVResult, 
+  getStep4OwnerConcentrationResult,
+  getStep5SizeDiscountResult,
+  getStep6LiquidityDiscountResult
+} from '../../utils/stepDataMapper';
 
 interface CalculationJourneyProps {
   result: ValuationResponse;
@@ -218,6 +224,7 @@ export const CalculationJourney: React.FC<CalculationJourneyProps> = ({ result, 
   }, []); // Empty dependency array - set up once, refs are stable
 
   // Calculate intermediate values for before/after comparisons
+  // CRITICAL FIX: Use extracted step data instead of recomputing to ensure consistency
   const calculateIntermediateValues = () => {
     const multiples = result.multiples_valuation;
     const currentData = result.current_year_data;
@@ -233,50 +240,51 @@ export const CalculationJourney: React.FC<CalculationJourneyProps> = ({ result, 
       };
     }
 
-    const isPrimaryEBITDA = multiples.primary_multiple_method === 'ebitda_multiple';
-    const primaryMetric = isPrimaryEBITDA ? currentData.ebitda : currentData.revenue;
-    
-    // Step 3: Base EV (unadjusted multiples)
-    const baseMultiple_mid = isPrimaryEBITDA 
-      ? (multiples.unadjusted_ebitda_multiple || multiples.ebitda_multiple)
-      : (multiples.unadjusted_revenue_multiple || multiples.revenue_multiple);
-    
-    const baseMultiple_low = isPrimaryEBITDA
-      ? (multiples.p25_ebitda_multiple || baseMultiple_mid * 0.8)
-      : (multiples.p25_revenue_multiple || baseMultiple_mid * 0.8);
-      
-    const baseMultiple_high = isPrimaryEBITDA
-      ? (multiples.p75_ebitda_multiple || baseMultiple_mid * 1.2)
-      : (multiples.p75_revenue_multiple || baseMultiple_mid * 1.2);
+    // CRITICAL FIX: Extract Step 3 data using fixed extraction function (uses correct primary method detection)
+    const step3Result = getStep3BaseEVResult(result);
+    const step3 = step3Result ? {
+      low: step3Result.enterprise_value_low || 0,
+      mid: step3Result.enterprise_value_mid || 0,
+      high: step3Result.enterprise_value_high || 0
+    } : { low: 0, mid: 0, high: 0 };
 
-    const step3 = {
-      low: primaryMetric * baseMultiple_low,
-      mid: primaryMetric * baseMultiple_mid,
-      high: primaryMetric * baseMultiple_high
+    // CRITICAL FIX: Extract Step 4 data from transparency or legacy fields
+    const step4Result = getStep4OwnerConcentrationResult(result);
+    const step4 = step4Result && step4Result.enterprise_value_mid ? {
+      low: step4Result.enterprise_value_low || step3.low,
+      mid: step4Result.enterprise_value_mid || step3.mid,
+      high: step4Result.enterprise_value_high || step3.high
+    } : {
+      // Fallback: Apply owner concentration adjustment if Step 4 data not available
+      low: step3.low * (1 + (multiples.owner_concentration?.adjustment_factor || 0)),
+      mid: step3.mid * (1 + (multiples.owner_concentration?.adjustment_factor || 0)),
+      high: step3.high * (1 + (multiples.owner_concentration?.adjustment_factor || 0))
     };
 
-    // Step 4: After owner concentration adjustment
-    const ownerAdjustment = multiples.owner_concentration?.adjustment_factor || 0;
-    const step4 = {
-      low: step3.low * (1 + ownerAdjustment),
-      mid: step3.mid * (1 + ownerAdjustment),
-      high: step3.high * (1 + ownerAdjustment)
+    // CRITICAL FIX: Extract Step 5 data from transparency or legacy fields
+    const step5Result = getStep5SizeDiscountResult(result);
+    const step5 = step5Result && step5Result.enterprise_value_mid ? {
+      low: step5Result.enterprise_value_low || step4.low,
+      mid: step5Result.enterprise_value_mid || step4.mid,
+      high: step5Result.enterprise_value_high || step4.high
+    } : {
+      // Fallback: Apply size discount if Step 5 data not available
+      low: step4.low * (1 + (multiples.size_discount || 0)),
+      mid: step4.mid * (1 + (multiples.size_discount || 0)),
+      high: step4.high * (1 + (multiples.size_discount || 0))
     };
 
-    // Step 5: After size discount
-    const sizeDiscount = multiples.size_discount || 0;
-    const step5 = {
-      low: step4.low * (1 + sizeDiscount),
-      mid: step4.mid * (1 + sizeDiscount),
-      high: step4.high * (1 + sizeDiscount)
-    };
-
-    // Step 6: After liquidity discount
-    const liquidityDiscount = multiples.liquidity_discount || 0;
-    const step6 = {
-      low: step5.low * (1 + liquidityDiscount),
-      mid: step5.mid * (1 + liquidityDiscount),
-      high: step5.high * (1 + liquidityDiscount)
+    // CRITICAL FIX: Extract Step 6 data from transparency or legacy fields
+    const step6Result = getStep6LiquidityDiscountResult(result);
+    const step6 = step6Result && step6Result.enterprise_value_mid ? {
+      low: step6Result.enterprise_value_low || step5.low,
+      mid: step6Result.enterprise_value_mid || step5.mid,
+      high: step6Result.enterprise_value_high || step5.high
+    } : {
+      // Fallback: Apply liquidity discount if Step 6 data not available
+      low: step5.low * (1 + (multiples.liquidity_discount || 0)),
+      mid: step5.mid * (1 + (multiples.liquidity_discount || 0)),
+      high: step5.high * (1 + (multiples.liquidity_discount || 0))
     };
 
     // Step 7: EV to Equity conversion (subtract net debt, add cash)

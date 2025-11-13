@@ -143,7 +143,50 @@ export const calculateBaseEnterpriseValue = (result: ValuationResponse): Calcula
     };
   }
 
-  const isPrimaryEBITDA = multiples.primary_multiple_method === 'ebitda_multiple';
+  // CRITICAL FIX: Enhanced primary method detection with multiple fallbacks (same as stepDataMapper.ts)
+  // Priority: primary_multiple_method → primary_method → infer from available data
+  let isPrimaryEBITDA = false;
+  let primaryMethodSource = 'unknown';
+  
+  // Check 1: primary_multiple_method field (preferred)
+  if (multiples.primary_multiple_method === 'ebitda_multiple') {
+    isPrimaryEBITDA = true;
+    primaryMethodSource = 'primary_multiple_method=ebitda_multiple';
+  } else if (multiples.primary_multiple_method === 'revenue_multiple') {
+    isPrimaryEBITDA = false;
+    primaryMethodSource = 'primary_multiple_method=revenue_multiple';
+  }
+  // Check 2: primary_method field (fallback)
+  else if (multiples.primary_method === 'EV/EBITDA' || result.primary_method === 'EV/EBITDA') {
+    isPrimaryEBITDA = true;
+    primaryMethodSource = 'primary_method=EV/EBITDA';
+  } else if (multiples.primary_method === 'EV/Revenue' || result.primary_method === 'EV/Revenue') {
+    isPrimaryEBITDA = false;
+    primaryMethodSource = 'primary_method=EV/Revenue';
+  }
+  // Check 3: Infer from available EBITDA and multiples (last resort)
+  else if (currentData.ebitda && currentData.ebitda > 0 && multiples.ebitda_multiple && multiples.ebitda_multiple > 0) {
+    // If EBITDA is available and positive, prefer EBITDA method
+    isPrimaryEBITDA = true;
+    primaryMethodSource = 'inferred_from_ebitda_available';
+  } else {
+    // Default to Revenue if EBITDA not available
+    isPrimaryEBITDA = false;
+    primaryMethodSource = 'default_to_revenue';
+  }
+
+  // DIAGNOSTIC: Log primary method detection
+  console.log('[DIAGNOSTIC-VALUATION] calculateBaseEnterpriseValue - Primary method detection', {
+    primary_multiple_method: multiples.primary_multiple_method,
+    primary_method: multiples.primary_method || result.primary_method,
+    isPrimaryEBITDA,
+    primaryMethodSource,
+    hasEBITDA: !!(currentData.ebitda && currentData.ebitda > 0),
+    hasRevenue: !!(currentData.revenue && currentData.revenue > 0),
+    ebitdaMultiple: multiples.ebitda_multiple,
+    revenueMultiple: multiples.revenue_multiple
+  });
+
   const primaryMultiple = isPrimaryEBITDA ? multiples.unadjusted_ebitda_multiple || multiples.ebitda_multiple : multiples.unadjusted_revenue_multiple || multiples.revenue_multiple;
   const primaryMetric = isPrimaryEBITDA ? currentData.ebitda : currentData.revenue;
   const metricName = isPrimaryEBITDA ? 'EBITDA' : 'Revenue';
