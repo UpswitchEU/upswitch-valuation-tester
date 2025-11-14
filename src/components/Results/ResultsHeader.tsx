@@ -235,7 +235,7 @@ export const ResultsHeader: React.FC<ResultsHeaderProps> = ({ result }) => {
               <h4 className="text-sm font-bold text-purple-900">Final Multiples Used</h4>
             </div>
             
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               {/* Primary Multiple */}
               <div className="bg-white rounded-lg p-3 border-2 border-purple-500">
                 <div className="flex items-center gap-2 mb-2">
@@ -268,6 +268,39 @@ export const ResultsHeader: React.FC<ResultsHeaderProps> = ({ result }) => {
                   </p>
                 </div>
               </div>
+
+              {/* Secondary Multiple (when available) */}
+              {((isPrimaryEBITDA() && result.multiples_valuation.revenue_multiple && result.multiples_valuation.revenue_multiple > 0) ||
+                (!isPrimaryEBITDA() && result.multiples_valuation.ebitda_multiple && result.multiples_valuation.ebitda_multiple > 0 && 
+                 result.current_year_data?.ebitda && result.current_year_data.ebitda > 0)) && (
+                <div className="bg-white rounded-lg p-3 border border-gray-300">
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="text-xs font-semibold text-gray-700 uppercase">Alternative Method</span>
+                  </div>
+                  <div className="space-y-1">
+                    <p className="text-sm font-bold text-gray-900">
+                      {isPrimaryEBITDA() ? 'Revenue Multiple' : 'EBITDA Multiple'}
+                    </p>
+                    <p className="text-2xl font-bold text-gray-700">
+                      {isPrimaryEBITDA()
+                        ? `${result.multiples_valuation.revenue_multiple?.toFixed(2) ?? 'N/A'}x`
+                        : `${result.multiples_valuation.ebitda_multiple?.toFixed(2) ?? 'N/A'}x`
+                      }
+                    </p>
+                    <p className="text-xs text-gray-600">
+                      {isPrimaryEBITDA() ? (
+                        result.current_year_data?.revenue != null && result.current_year_data.revenue > 0 ? (
+                          `${formatCurrencyCompact(result.current_year_data.revenue)} × ${result.multiples_valuation.revenue_multiple?.toFixed(2) ?? 'N/A'}x`
+                        ) : null
+                      ) : (
+                        result.current_year_data?.ebitda != null && result.current_year_data.ebitda > 0 ? (
+                          `${formatCurrencyCompact(result.current_year_data.ebitda)} × ${result.multiples_valuation.ebitda_multiple?.toFixed(2) ?? 'N/A'}x`
+                        ) : null
+                      )}
+                    </p>
+                  </div>
+                </div>
+              )}
 
               {/* Range Calculation */}
               <div className="bg-white rounded-lg p-3 border border-gray-300">
@@ -337,6 +370,23 @@ export const ResultsHeader: React.FC<ResultsHeaderProps> = ({ result }) => {
               <div className="mt-3 pt-3 border-t border-purple-200">
                 <p className="text-xs text-purple-800">
                   <span className="font-semibold">Note:</span> DCF methodology was excluded for this valuation. {result.dcf_exclusion_reason} Market Multiples methodology is more reliable for businesses of this size.
+                </p>
+              </div>
+            )}
+            
+            {/* Primary Method Selection Note */}
+            {!isPrimaryEBITDA() && result.multiples_valuation.ebitda_multiple && result.multiples_valuation.ebitda_multiple > 0 && 
+             result.current_year_data?.ebitda && result.current_year_data.ebitda > 0 && (
+              <div className="mt-3 pt-3 border-t border-purple-200">
+                <p className="text-xs text-purple-800">
+                  <span className="font-semibold">Primary Method Selection:</span> Revenue multiple was selected as primary because this is a micro business (&lt;€1M revenue). Per Big 4 methodology, revenue multiples are more reliable for small companies as revenue is less volatile and easier to verify than EBITDA. EBITDA multiple ({result.multiples_valuation.ebitda_multiple.toFixed(2)}x) is shown above as an alternative approach for reference.
+                </p>
+              </div>
+            )}
+            {isPrimaryEBITDA() && result.multiples_valuation.revenue_multiple && result.multiples_valuation.revenue_multiple > 0 && (
+              <div className="mt-3 pt-3 border-t border-purple-200">
+                <p className="text-xs text-purple-800">
+                  <span className="font-semibold">Primary Method Selection:</span> EBITDA multiple was selected as primary due to strong profitability and EBITDA margin. Revenue multiple ({result.multiples_valuation.revenue_multiple.toFixed(2)}x) is shown above as an alternative approach for reference.
                 </p>
               </div>
             )}
