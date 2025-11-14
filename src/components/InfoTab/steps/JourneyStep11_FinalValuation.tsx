@@ -108,14 +108,26 @@ export const JourneyStep11_FinalValuation: React.FC<JourneyStep11Props> = ({ res
   const evHigh = step3Data?.enterprise_value_high || 0;
   
   // Step 4: Owner Concentration
+  // CRITICAL FIX: Extract correct risk level and adjustment from Step 4 transparency data
   const step4Skipped = step4Data?.skipped || false;
   const ownerRatio = step4Data?.owner_employee_ratio || 0;
   const numOwners = step4Data?.number_of_owners || 0;
   const numEmployees = step4Data?.number_of_employees || employees || 0;
-  const riskLevel = step4Data?.risk_level || 'LOW';
-  const step4AdjustmentPct = step4Data?.adjustment_percentage || (result.multiples_valuation?.owner_concentration?.adjustment_factor 
-    ? (result.multiples_valuation.owner_concentration.adjustment_factor - 1) * 100 
-    : 0);
+  
+  // CRITICAL FIX: Extract risk_level from Step 4 transparency data, not legacy fallback
+  // Priority: Step 4 transparency data > legacy owner_concentration > default 'LOW'
+  const riskLevel = step4Data?.risk_level || 
+                    result.multiples_valuation?.owner_concentration?.risk_level || 
+                    'LOW';
+  
+  // CRITICAL FIX: Extract adjustment_percentage from Step 4 transparency data
+  // Priority: Step 4 transparency data > calculate from adjustment_factor > default 0
+  const step4AdjustmentPct = step4Data?.adjustment_percentage !== undefined && step4Data?.adjustment_percentage !== null
+    ? step4Data.adjustment_percentage
+    : (result.multiples_valuation?.owner_concentration?.adjustment_factor !== undefined
+        ? (result.multiples_valuation.owner_concentration.adjustment_factor - 1) * 100
+        : 0);
+  
   const evBeforeStep4 = step4Data?.ev_mid_before || evMid;
   const evAfterStep4 = step4Data?.enterprise_value_mid || evMid;
   

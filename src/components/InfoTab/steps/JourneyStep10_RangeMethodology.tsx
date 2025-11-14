@@ -65,11 +65,20 @@ export const JourneyStep10_RangeMethodology: React.FC<JourneyStep10Props> = ({ r
   // CRITICAL: For multiples-only, the mid-point should equal Step 7 equity value
   // The backend fix ensures equity_value_mid matches adjusted_equity_value_for_range
   
-  // CRITICAL FIX: Add input validation with safe defaults
-  const step7Equity = beforeValues?.mid ?? result.equity_value_mid ?? 0; // From Step 7 (EV to Equity conversion) - AUTHORITATIVE BASE
-  const finalMid = result.equity_value_mid ?? 0;
-  const finalLow = result.equity_value_low ?? 0;
-  const finalHigh = result.equity_value_high ?? 0;
+  // CRITICAL FIX: Extract Step 10 values from transparency data instead of using final values
+  // Step 10 values are the actual calculated range from Step 10's range methodology
+  const step10Result = getStepResultData(result, 10);
+  const step10Low = step10Result?.valuation_low ?? result.equity_value_low ?? 0;
+  const step10Mid = step10Result?.valuation_mid ?? result.equity_value_mid ?? 0;
+  const step10High = step10Result?.valuation_high ?? result.equity_value_high ?? 0;
+  
+  // Step 7 equity is the base value before range methodology
+  const step7Equity = beforeValues?.mid ?? result.equity_value_mid ?? 0;
+  
+  // Use Step 10 values for display (these are the actual Step 10 calculated values)
+  const finalLow = step10Low;
+  const finalMid = step10Mid;
+  const finalHigh = step10High;
   
   // Validate inputs are finite numbers
   if (!isFinite(step7Equity) || !isFinite(finalMid) || !isFinite(finalLow) || !isFinite(finalHigh)) {
@@ -123,7 +132,15 @@ export const JourneyStep10_RangeMethodology: React.FC<JourneyStep10Props> = ({ r
     });
   }
   
-  // Calculate spreads correctly: spread = (final - base) / base
+  // CRITICAL FIX: Extract actual spread from Step 10 metadata if available
+  // Otherwise calculate from Step 10 values
+  const step10Metadata = step10Data?.metadata || {};
+  const step10SpreadBreakdown = step10Metadata?.spread_calculation || {};
+  const step10TotalSpread = step10SpreadBreakdown?.total_spread;
+  const step10BaseSpread = step10SpreadBreakdown?.base_spread;
+  const step10SizeAdjustment = step10SpreadBreakdown?.size_adjustment;
+  
+  // Calculate spreads from Step 10 values: spread = (final - base) / base
   // For low: spread = (base - final) / base (negative spread means final is lower)
   // For high: spread = (final - base) / base (positive spread means final is higher)
   // CRITICAL FIX: Guard against division by zero and invalid values
@@ -134,12 +151,16 @@ export const JourneyStep10_RangeMethodology: React.FC<JourneyStep10Props> = ({ r
     ? ((finalHigh - baseMid) / baseMid) 
     : 0;
   
+  // Use Step 10's actual spread if available, otherwise use calculated spread
+  const actualSpreadLow = step10TotalSpread ? (step10TotalSpread / 2) : spreadLow;
+  const actualSpreadHigh = step10TotalSpread ? (step10TotalSpread / 2) : spreadHigh;
+  
   // Cap spreads at reasonable values (0-50%)
-  const cappedSpreadLow = Math.max(0, Math.min(0.5, spreadLow));
-  const cappedSpreadHigh = Math.max(0, Math.min(0.5, spreadHigh));
+  const cappedSpreadLow = Math.max(0, Math.min(0.5, actualSpreadLow));
+  const cappedSpreadHigh = Math.max(0, Math.min(0.5, actualSpreadHigh));
   
   // Calculate average spread for display
-  const avgSpread = (cappedSpreadLow + cappedSpreadHigh) / 2;
+  const avgSpread = step10TotalSpread ? (step10TotalSpread / 2) : ((cappedSpreadLow + cappedSpreadHigh) / 2);
   
   // DIAGNOSTIC: Log spread calculations
   console.log('[DIAGNOSTIC] Step 10 Spread Calculations', {
@@ -273,15 +294,17 @@ export const JourneyStep10_RangeMethodology: React.FC<JourneyStep10Props> = ({ r
                   </div>
                   <div className="flex justify-between items-center">
                     <span className="text-gray-600">Base Spread:</span>
-                    <span className="font-semibold">±18%</span>
+                    <span className="font-semibold">±{(step10BaseSpread ? (step10BaseSpread * 100).toFixed(0) : '18')}%</span>
                   </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-gray-600">Size Adjustment:</span>
-                    <span className="font-semibold">+7%</span>
-                  </div>
+                  {step10SizeAdjustment && (
+                    <div className="flex justify-between items-center">
+                      <span className="text-gray-600">Size Adjustment:</span>
+                      <span className="font-semibold">+{(step10SizeAdjustment * 100).toFixed(0)}%</span>
+                    </div>
+                  )}
                   <div className="flex justify-between items-center bg-blue-50 p-2 rounded">
                     <span className="text-blue-700 font-semibold">Total Spread:</span>
-                    <span className="font-bold text-blue-700">±25%</span>
+                    <span className="font-bold text-blue-700">±{(step10TotalSpread ? (step10TotalSpread * 100).toFixed(0) : (avgSpread * 100).toFixed(0))}%</span>
                   </div>
                 </div>
               </div>
@@ -326,10 +349,10 @@ export const JourneyStep10_RangeMethodology: React.FC<JourneyStep10Props> = ({ r
               <div className="space-y-2 text-sm">
                 <p className="text-gray-700 font-medium">Applying confidence spread:</p>
                 <div className="bg-white border border-blue-200 rounded p-2 space-y-1 font-mono text-xs">
-                  {/* CRITICAL FIX: Display correct formulas using calculated spreads */}
-                  <div>Low: {formatCurrency(baseMid)} × (1 - {(cappedSpreadLow * 100).toFixed(0)}%) = <strong>{formatCurrency(Math.max(0, baseMid * (1 - cappedSpreadLow)))}</strong></div>
-                  <div className="text-blue-700 font-semibold">Mid: {formatCurrency(baseMid)} (unchanged) = <strong>{formatCurrency(baseMid)}</strong></div>
-                  <div>High: {formatCurrency(baseMid)} × (1 + {(cappedSpreadHigh * 100).toFixed(0)}%) = <strong>{formatCurrency(baseMid * (1 + cappedSpreadHigh))}</strong></div>
+                  {/* CRITICAL FIX: Display actual Step 10 calculated values, not recalculated values */}
+                  <div>Low: {formatCurrency(baseMid)} × (1 - {(cappedSpreadLow * 100).toFixed(0)}%) = <strong>{formatCurrency(finalLow)}</strong></div>
+                  <div className="text-blue-700 font-semibold">Mid: {formatCurrency(baseMid)} (unchanged) = <strong>{formatCurrency(finalMid)}</strong></div>
+                  <div>High: {formatCurrency(baseMid)} × (1 + {(cappedSpreadHigh * 100).toFixed(0)}%) = <strong>{formatCurrency(finalHigh)}</strong></div>
                 </div>
                 {/* Validation: Show warning if calculated values don't match final values */}
                 {Math.abs(baseMid * (1 - cappedSpreadLow) - finalLow) > 1 && (
