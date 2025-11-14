@@ -95,26 +95,36 @@ export function getAllStepData(
   
   const steps: EnhancedCalculationStep[] = [];
 
-  // Try modular_system first
+  // Try modular_system first, but validate it has all 12 steps
   if (result.modular_system?.step_details) {
     const stepCount = result.modular_system.step_details.length;
-    dataExtractionLogger.info('All step data extracted from modular_system', {
-      dataSource: 'modular_system',
+    // Validate: Should have 12 steps (0-11), if fewer, fall back to transparency
+    if (stepCount >= 10 && stepCount <= 12) {
+      dataExtractionLogger.info('All step data extracted from modular_system', {
+        dataSource: 'modular_system',
+        stepCount,
+        completedCount: result.modular_system.steps_completed,
+        skippedCount: result.modular_system.steps_skipped
+      });
+      perfLogger.end({ dataSource: 'modular_system', stepCount });
+      return result.modular_system.step_details.map((detail) => ({
+        step: detail.step,
+        step_number: detail.step,
+        name: detail.name,
+        description: `Step ${detail.step}: ${detail.name}`,
+        status: detail.status as 'completed' | 'skipped' | 'failed' | 'not_executed',
+        execution_time_ms: detail.execution_time_ms,
+        reason: detail.reason,
+        error: detail.error
+      }));
+    }
+    // Invalid step count, log warning and fall through to transparency
+    dataExtractionLogger.warn('modular_system.step_details has invalid step count', {
       stepCount,
-      completedCount: result.modular_system.steps_completed,
-      skippedCount: result.modular_system.steps_skipped
+      expected: 12,
+      hasTransparency: !!result.transparency?.calculation_steps,
+      fallingBackToTransparency: true
     });
-    perfLogger.end({ dataSource: 'modular_system', stepCount });
-    return result.modular_system.step_details.map((detail) => ({
-      step: detail.step,
-      step_number: detail.step,
-      name: detail.name,
-      description: `Step ${detail.step}: ${detail.name}`,
-      status: detail.status as 'completed' | 'skipped' | 'failed' | 'not_executed',
-      execution_time_ms: detail.execution_time_ms,
-      reason: detail.reason,
-      error: detail.error
-    }));
   }
 
   // Fallback to transparency
@@ -271,36 +281,49 @@ export function getTotalExecutionTime(result: ValuationResponse): number {
 export function getStepsSummary(result: ValuationResponse) {
   dataExtractionLogger.debug('Getting steps summary');
   
-  if (result.modular_system) {
-    const summary = {
-      total: result.modular_system.total_steps,
-      completed: result.modular_system.steps_completed,
-      skipped: result.modular_system.steps_skipped,
-      failed: result.modular_system.steps_failed || 0
-    };
-    dataExtractionLogger.debug('Steps summary from modular_system', summary);
-    return summary;
-  }
-
-  // Fallback: count from transparency
+  // Priority 1: Use transparency.calculation_steps if available (most reliable)
   if (result.transparency?.calculation_steps) {
     const steps = normalizeCalculationSteps(result.transparency.calculation_steps);
     const summary = {
-      total: steps.length,
+      total: steps.length || 12, // Default to 12 if empty but transparency exists
       completed: steps.filter((s) => s.status === 'completed').length,
       skipped: steps.filter((s) => s.status === 'skipped').length,
       failed: steps.filter((s) => s.status === 'failed').length
     };
-    dataExtractionLogger.debug('Steps summary from transparency (fallback)', summary);
+    dataExtractionLogger.debug('Steps summary from transparency (priority)', summary);
     return summary;
   }
 
-  dataExtractionLogger.warn('No steps summary available', {
+  // Priority 2: Use modular_system but validate it
+  if (result.modular_system) {
+    const totalSteps = result.modular_system.total_steps || 0;
+    // Validate: total_steps should be 12, if it's wrong (< 10), treat as invalid
+    if (totalSteps >= 10 && totalSteps <= 12) {
+      const summary = {
+        total: totalSteps,
+        completed: result.modular_system.steps_completed || 0,
+        skipped: result.modular_system.steps_skipped || 0,
+        failed: result.modular_system.steps_failed || 0
+      };
+      dataExtractionLogger.debug('Steps summary from modular_system', summary);
+      return summary;
+    }
+    // Invalid modular_system data, log warning
+    dataExtractionLogger.warn('modular_system.total_steps is invalid', {
+      total_steps: totalSteps,
+      expected: 12,
+      hasTransparency: !!result.transparency
+    });
+  }
+
+  // Fallback: Return default for 12 steps
+  dataExtractionLogger.warn('No steps summary available, using default', {
     hasModularSystem: !!result.modular_system,
-    hasTransparency: !!result.transparency
+    hasTransparency: !!result.transparency,
+    modularSystemTotalSteps: result.modular_system?.total_steps
   });
   return {
-    total: 0,
+    total: 12,
     completed: 0,
     skipped: 0,
     failed: 0
