@@ -213,6 +213,30 @@ export const JourneyStep4_OwnerConcentration: React.FC<JourneyStep4Props> = ({ r
           </div>
         </div>
 
+        {/* Multiple Adjustment (NEW: Multiple-First Discounting) */}
+        {step4Result?.multiple_before_mid && step4Result?.multiple_after_mid && (
+          <div className="bg-purple-50 border-l-4 border-purple-500 p-4 rounded">
+            <h4 className="text-sm font-semibold text-purple-900 mb-2">Multiple Adjustment</h4>
+            <div className="space-y-2 text-sm text-purple-800">
+              <div className="flex justify-between">
+                <span>Multiple Before:</span>
+                <span className="font-semibold">{step4Result.multiple_before_mid.toFixed(2)}x</span>
+              </div>
+              <div className="flex justify-between">
+                <span>Discount Applied:</span>
+                <span className="font-semibold text-red-600">{adjustmentPercentage.toFixed(1)}%</span>
+              </div>
+              <div className="flex justify-between border-t border-purple-200 pt-2">
+                <span>Multiple After:</span>
+                <span className="font-bold text-lg">{step4Result.multiple_after_mid.toFixed(2)}x</span>
+              </div>
+            </div>
+            <p className="text-xs text-purple-700 mt-2">
+              Discount applied to the multiple itself, not just the final price. This ensures transparent traceability of valuation adjustments.
+            </p>
+          </div>
+        )}
+
         {/* Before/After Comparison */}
         <BeforeAfterTable
           before={beforeValues}

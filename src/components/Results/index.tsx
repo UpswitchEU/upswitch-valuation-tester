@@ -19,6 +19,8 @@ import { ValueDrivers } from './ValueDrivers';
 import { CalculationJourneyOverview } from './CalculationJourneyOverview';
 import { AdjustmentsSummary } from './AdjustmentsSummary';
 import { DataQualityConfidence } from './DataQualityConfidence';
+// NEW: Multiple-First Discounting
+import { MultipleWaterfall } from './MultipleWaterfall';
 
 /**
  * Results Component - Modular Architecture
@@ -45,6 +47,13 @@ export const Results: React.FC = () => {
     <div className="space-y-4 sm:space-y-6">
       {/* Main Results Header */}
       <ResultsHeader result={result} />
+      
+      {/* Multiple Discount Waterfall - NEW: Multiple-First Discounting feature */}
+      {result.multiple_pipeline && result.multiple_pipeline.stages && result.multiple_pipeline.stages.length > 0 && (
+        <ErrorBoundary fallback={<div className="p-4 bg-red-50 border border-red-200 rounded-lg text-red-700">Error loading multiple waterfall</div>}>
+          <MultipleWaterfall pipeline={result.multiple_pipeline} />
+        </ErrorBoundary>
+      )}
       
       {/* Valuation Calculation Waterfall - Detailed step-by-step breakdown */}
       <ErrorBoundary fallback={<div className="p-4 bg-red-50 border border-red-200 rounded-lg text-red-700">Error loading calculation breakdown</div>}>

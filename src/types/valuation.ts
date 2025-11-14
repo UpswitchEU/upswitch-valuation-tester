@@ -536,6 +536,29 @@ export interface MethodologySelection {
   selection_rationale: string;
 }
 
+// Multiple-First Discounting (NEW)
+export interface MultiplePipelineStage {
+  step_number: number;
+  step_name: string;
+  discount_type: string;  // 'owner_concentration', 'size', 'liquidity', 'ownership'
+  discount_percentage: number;  // e.g., -20.0 for 20% discount
+  multiple_before: number;
+  multiple_after: number;
+  metric_value: number;
+  ev_before: number;
+  ev_after: number;
+  explanation: string;
+}
+
+export interface MultiplePipeline {
+  initial_multiple: number;  // Starting multiple (e.g., 10x)
+  final_multiple: number;  // Final adjusted multiple (e.g., 6.48x)
+  total_reduction_percentage: number;  // e.g., -35.2%
+  metric_type: 'EBITDA' | 'Revenue';
+  metric_value: number;
+  stages: MultiplePipelineStage[];
+}
+
 export interface ValuationResponse {
   valuation_id: string;
   company_name: string;
@@ -776,6 +799,9 @@ export interface ValuationResponse {
   small_firm_adjustments?: SmallFirmAdjustments;
   dcf_exclusion_reason?: string;
   methodology_downgrade_reason?: string; // Backward compatibility field
+  
+  // Multiple-First Discounting pipeline (NEW)
+  multiple_pipeline?: MultiplePipeline; // Complete multiple discount pipeline
   
   // Additional data
   current_year_data?: YearDataInput; // For accessing revenue, ebitda, etc.
