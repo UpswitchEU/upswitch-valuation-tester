@@ -42,6 +42,23 @@ export const JourneyStep4_OwnerConcentration: React.FC<JourneyStep4Props> = ({ r
   
   const ownerConc = result.multiples_valuation?.owner_concentration;
   
+  // CRITICAL FIX: Extract risk_level and adjustment_percentage from Step 4 transparency data
+  // Priority: Step 4 transparency data > legacy owner_concentration > defaults
+  const riskLevel = step4Result?.risk_level || 
+                    ownerConc?.risk_level || 
+                    'UNKNOWN';
+  
+  // CRITICAL FIX: Extract adjustment_percentage from Step 4 transparency data
+  // Priority: Step 4 transparency data > calculate from adjustment_factor > default 0
+  const adjustmentPercentage = step4Result?.adjustment_percentage !== undefined && step4Result?.adjustment_percentage !== null
+    ? step4Result.adjustment_percentage
+    : (ownerConc?.adjustment_factor !== undefined
+        ? (ownerConc.adjustment_factor - 1) * 100
+        : 0);
+  
+  // Use adjustmentPercentage for display (convert from percentage to factor for calculations)
+  const adjustmentFactor = adjustmentPercentage / 100;
+  
   // Extract backend-specific data
   const calibrationType = step4Result?.calibration_type;
   // Note: ratio and tier available in step4Result for future use
@@ -86,15 +103,14 @@ export const JourneyStep4_OwnerConcentration: React.FC<JourneyStep4Props> = ({ r
     );
   }
 
-  const adjustmentFactor = ownerConc.adjustment_factor;
+  // adjustmentFactor already extracted above from Step 4 transparency data
   const afterValues = {
     low: beforeValues.low * (1 + adjustmentFactor),
     mid: beforeValues.mid * (1 + adjustmentFactor),
     high: beforeValues.high * (1 + adjustmentFactor)
   };
 
-  const isFullyOwnerOperated = ownerConc.number_of_employees === 0;
-  const riskLevel = ownerConc.risk_level || 'UNKNOWN';
+  const isFullyOwnerOperated = ownerConc?.number_of_employees === 0;
 
   return (
     <StepCard
