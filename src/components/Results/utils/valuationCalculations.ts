@@ -254,7 +254,12 @@ export const calculateOwnerConcentrationImpact = (result: ValuationResponse, pre
   const ownerConc = multiples?.owner_concentration;
   
   // Always show this step, even if no adjustment was applied
-  if (!ownerConc || ownerConc.adjustment_factor === 0) {
+  // Check both adjustment_factor and adjustment_percentage for backward compatibility
+  const hasNoAdjustment = !ownerConc || 
+    (ownerConc.adjustment_factor === 0 || ownerConc.adjustment_factor === null || ownerConc.adjustment_factor === undefined) &&
+    (ownerConc.adjustment_percentage === 0 || ownerConc.adjustment_percentage === null || ownerConc.adjustment_percentage === undefined);
+  
+  if (hasNoAdjustment) {
     // Try to get owner/employee data from the request if available
     const owners = ownerConc?.number_of_owners;
     const employees = ownerConc?.number_of_employees;
@@ -288,7 +293,23 @@ export const calculateOwnerConcentrationImpact = (result: ValuationResponse, pre
   const owners = ownerConc.number_of_owners;
   const employees = ownerConc.number_of_employees;
   const ratio = ownerConc.ratio;
-  const adjustmentFactor = ownerConc.adjustment_factor;
+  
+  // CRITICAL FIX: Handle both adjustment_percentage (percentage) and adjustment_factor (decimal)
+  // Backend may send either format, normalize to decimal for calculations
+  let adjustmentFactor: number;
+  if (ownerConc.adjustment_percentage !== undefined && ownerConc.adjustment_percentage !== null) {
+    // If adjustment_percentage exists, convert from percentage to decimal
+    adjustmentFactor = ownerConc.adjustment_percentage / 100;
+  } else if (ownerConc.adjustment_factor !== undefined && ownerConc.adjustment_factor !== null) {
+    // If adjustment_factor exists, check if it's already a decimal or percentage
+    // If absolute value > 1, assume it's a percentage and convert
+    adjustmentFactor = Math.abs(ownerConc.adjustment_factor) > 1 
+      ? ownerConc.adjustment_factor / 100 
+      : ownerConc.adjustment_factor;
+  } else {
+    adjustmentFactor = 0;
+  }
+  
   const riskLevel = ownerConc.risk_level || 'UNKNOWN';
 
   // Calculate adjusted values
