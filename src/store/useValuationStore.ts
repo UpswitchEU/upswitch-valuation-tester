@@ -387,14 +387,33 @@ export const useValuationStore = create<ValuationStore>((set, get) => ({
           errorMessage = errorData.error;
         }
       } else if (error.response?.data?.detail) {
-        if (typeof error.response.data.detail === 'string') {
-          errorMessage = error.response.data.detail;
-        } else if (Array.isArray(error.response.data.detail)) {
+        const detail = error.response.data.detail;
+        if (typeof detail === 'string') {
+          errorMessage = detail;
+        } else if (Array.isArray(detail)) {
           // Handle Pydantic validation errors (array format)
-          errorMessage = error.response.data.detail.map((err: any) => {
+          errorMessage = detail.map((err: any) => {
             const field = err.loc?.join('.') || 'unknown field';
             return `${field}: ${err.msg}`;
           }).join('; ');
+        } else if (typeof detail === 'object' && detail !== null) {
+          // Handle business logic validation errors (object format with errors array)
+          if (Array.isArray(detail.errors) && detail.errors.length > 0) {
+            // Extract validation error messages from errors array
+            errorMessage = detail.errors.map((err: any) => {
+              // Format: "field: message" or just "message" if field is not available
+              return err.field && err.message 
+                ? `${err.field}: ${err.message}`
+                : err.message || err.field || 'Validation error';
+            }).join('; ');
+          } else if (detail.error) {
+            // Fallback to error field if errors array is empty or missing
+            errorMessage = typeof detail.error === 'string' ? detail.error : detail.hint || 'Validation failed';
+          } else if (detail.hint) {
+            errorMessage = detail.hint;
+          } else if (detail.message) {
+            errorMessage = detail.message;
+          }
         }
       } else if (error.message) {
         errorMessage = error.message;

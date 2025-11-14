@@ -84,6 +84,7 @@ export const JourneyStep8_OwnershipAdjustment: React.FC<JourneyStep8Props> = ({ 
   // Determine adjustment label and color
   let adjustmentLabel = 'Ownership Adjustment';
   let adjustmentColor = 'blue';
+  const hasNoAdjustment = sharesForSale === 100 && adjustmentPercentage === 0;
   
   if (adjustmentType === 'control_premium') {
     adjustmentLabel = 'Control Premium';
@@ -94,11 +95,9 @@ export const JourneyStep8_OwnershipAdjustment: React.FC<JourneyStep8Props> = ({ 
   } else if (adjustmentType === 'deadlock_discount') {
     adjustmentLabel = 'Deadlock Risk Discount';
     adjustmentColor = 'orange';
-  }
-  
-  // Skip rendering if 100% ownership and no adjustment
-  if (sharesForSale === 100 && adjustmentPercentage === 0) {
-    return null;
+  } else if (hasNoAdjustment) {
+    adjustmentLabel = 'No Adjustment';
+    adjustmentColor = 'gray';
   }
   
   return (
@@ -106,7 +105,7 @@ export const JourneyStep8_OwnershipAdjustment: React.FC<JourneyStep8Props> = ({ 
       id="step-8-ownership"
       stepNumber={8}
       title="Ownership Adjustment"
-      subtitle={`${adjustmentLabel} - ${sharesForSale}% Ownership`}
+      subtitle={hasNoAdjustment ? `No adjustment (100% ownership sale)` : `${adjustmentLabel} - ${sharesForSale}% Ownership`}
       icon={<Percent className="w-5 h-5" />}
       color={adjustmentColor as any}
       defaultExpanded={true}
@@ -121,6 +120,26 @@ export const JourneyStep8_OwnershipAdjustment: React.FC<JourneyStep8Props> = ({ 
             showStatus={true}
             calibrationType={calibrationType}
           />
+        )}
+
+        {/* No Adjustment Message */}
+        {hasNoAdjustment && (
+          <div className="bg-blue-50 border-l-4 border-blue-500 p-4 rounded">
+            <div className="flex items-start">
+              <div className="flex-shrink-0">
+                <svg className="h-5 w-5 text-blue-400" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                </svg>
+              </div>
+              <div className="ml-3 flex-1">
+                <h4 className="text-sm font-medium text-blue-800">No Adjustment Applied</h4>
+                <p className="mt-1 text-sm text-blue-700">
+                  Since this is a 100% ownership sale, no control premium or minority discount is applied. 
+                  The equity value remains unchanged from Step 7.
+                </p>
+              </div>
+            </div>
+          </div>
         )}
 
         {/* Formula */}
@@ -163,35 +182,39 @@ export const JourneyStep8_OwnershipAdjustment: React.FC<JourneyStep8Props> = ({ 
         </div>
         
         {/* Calculation */}
-        <div>
-          <h4 className="font-semibold text-gray-900 mb-3">Calculation</h4>
-          <div className="bg-blue-50 border border-blue-300 rounded-lg p-4 space-y-2 font-mono text-sm">
-            <div>
-              Low: {formatCurrency(beforeValues.low)} × {ownershipPercentage.toFixed(2)} × {adjustmentFactor.toFixed(4)} = <strong>{formatCurrency(afterValues.low)}</strong>
-            </div>
-            <div className="text-blue-700 font-semibold">
-              Mid: {formatCurrency(beforeValues.mid)} × {ownershipPercentage.toFixed(2)} × {adjustmentFactor.toFixed(4)} = <strong>{formatCurrency(afterValues.mid)}</strong>
-            </div>
-            <div>
-              High: {formatCurrency(beforeValues.high)} × {ownershipPercentage.toFixed(2)} × {adjustmentFactor.toFixed(4)} = <strong>{formatCurrency(afterValues.high)}</strong>
+        {!hasNoAdjustment && (
+          <div>
+            <h4 className="font-semibold text-gray-900 mb-3">Calculation</h4>
+            <div className="bg-blue-50 border border-blue-300 rounded-lg p-4 space-y-2 font-mono text-sm">
+              <div>
+                Low: {formatCurrency(beforeValues.low)} × {ownershipPercentage.toFixed(2)} × {adjustmentFactor.toFixed(4)} = <strong>{formatCurrency(afterValues.low)}</strong>
+              </div>
+              <div className="text-blue-700 font-semibold">
+                Mid: {formatCurrency(beforeValues.mid)} × {ownershipPercentage.toFixed(2)} × {adjustmentFactor.toFixed(4)} = <strong>{formatCurrency(afterValues.mid)}</strong>
+              </div>
+              <div>
+                High: {formatCurrency(beforeValues.high)} × {ownershipPercentage.toFixed(2)} × {adjustmentFactor.toFixed(4)} = <strong>{formatCurrency(afterValues.high)}</strong>
+              </div>
             </div>
           </div>
-        </div>
+        )}
         
         {/* Before/After Comparison */}
-        <BeforeAfterTable
-          before={beforeValues}
-          after={afterValues}
-          adjustmentLabel={adjustmentLabel}
-          adjustmentPercent={adjustmentPercentage / 100.0}
-        />
+        {!hasNoAdjustment && (
+          <BeforeAfterTable
+            before={beforeValues}
+            after={afterValues}
+            adjustmentLabel={adjustmentLabel}
+            adjustmentPercent={adjustmentPercentage / 100.0}
+          />
+        )}
         
         {/* Results */}
         <ValueGrid
           low={afterValues.low}
           mid={afterValues.mid}
           high={afterValues.high}
-          label="Ownership-Adjusted Equity Value"
+          label={hasNoAdjustment ? "Equity Value (Unchanged)" : "Ownership-Adjusted Equity Value"}
           highlightMid={true}
         />
         
