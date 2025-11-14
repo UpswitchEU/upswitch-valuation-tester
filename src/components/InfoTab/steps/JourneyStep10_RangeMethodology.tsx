@@ -482,6 +482,16 @@ export const JourneyStep10_RangeMethodology: React.FC<JourneyStep10Props> = ({ r
           </div>
         </div>
 
+        {/* Step 11 Rounding Clarification */}
+        <div className="bg-yellow-50 border-l-4 border-yellow-500 p-4 rounded">
+          <p className="text-sm text-yellow-900">
+            <strong>Note:</strong> The values shown above are the calculated range from Step 10's methodology. 
+            In Step 11 (Final Valuation Synthesis), these values are rounded to appropriate precision for presentation 
+            (e.g., €407,063 → €407K, €710,628 → €711K). The mid-point remains unchanged as it represents the 
+            authoritative equity value from Step 7.
+          </p>
+        </div>
+
         {/* Academic Source */}
         <div className="bg-indigo-50 border-l-4 border-indigo-500 p-4 rounded">
           <p className="text-sm text-indigo-900">
