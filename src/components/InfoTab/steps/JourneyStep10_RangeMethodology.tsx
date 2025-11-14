@@ -67,7 +67,7 @@ export const JourneyStep10_RangeMethodology: React.FC<JourneyStep10Props> = ({ r
   
   // CRITICAL FIX: Extract Step 10 values from transparency data instead of using final values
   // Step 10 values are the actual calculated range from Step 10's range methodology
-  const step10Result = getStepResultData(result, 10);
+  // step10Result already declared above on line 40
   const step10Low = step10Result?.valuation_low ?? result.equity_value_low ?? 0;
   const step10Mid = step10Result?.valuation_mid ?? result.equity_value_mid ?? 0;
   const step10High = step10Result?.valuation_high ?? result.equity_value_high ?? 0;
@@ -134,7 +134,8 @@ export const JourneyStep10_RangeMethodology: React.FC<JourneyStep10Props> = ({ r
   
   // CRITICAL FIX: Extract actual spread from Step 10 metadata if available
   // Otherwise calculate from Step 10 values
-  const step10Metadata = step10Data?.metadata || {};
+  // Metadata is in step10Result, not step10Data
+  const step10Metadata = (step10Result as any)?.metadata || {};
   const step10SpreadBreakdown = step10Metadata?.spread_calculation || {};
   const step10TotalSpread = step10SpreadBreakdown?.total_spread;
   const step10BaseSpread = step10SpreadBreakdown?.base_spread;
