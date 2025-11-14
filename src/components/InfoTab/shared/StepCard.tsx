@@ -6,7 +6,7 @@ export interface StepCardProps {
   title: string;
   subtitle: string;
   icon: React.ReactNode;
-  color: 'blue' | 'purple' | 'orange' | 'teal' | 'indigo' | 'green';
+  color: 'blue' | 'purple' | 'orange' | 'teal' | 'indigo' | 'green' | 'gray' | 'red';
   children: React.ReactNode;
   defaultExpanded?: boolean;
   id?: string;
@@ -54,6 +54,20 @@ const colorClasses = {
     badge: 'bg-green-500',
     text: 'text-green-900',
     icon: 'text-green-600'
+  },
+  gray: {
+    border: 'border-gray-500',
+    bg: 'bg-gray-50',
+    badge: 'bg-gray-500',
+    text: 'text-gray-900',
+    icon: 'text-gray-600'
+  },
+  red: {
+    border: 'border-red-500',
+    bg: 'bg-red-50',
+    badge: 'bg-red-500',
+    text: 'text-red-900',
+    icon: 'text-red-600'
   }
 };
 
@@ -68,7 +82,11 @@ export const StepCard: React.FC<StepCardProps> = ({
   id
 }) => {
   const [isExpanded, setIsExpanded] = useState(defaultExpanded);
-  const colors = colorClasses[color];
+  // CRITICAL FIX: Add explicit null/undefined check and type validation
+  // Handle edge cases where color might be null, undefined, or invalid
+  const validColor: keyof typeof colorClasses = 
+    (color && color in colorClasses) ? color as keyof typeof colorClasses : 'blue';
+  const colors = colorClasses[validColor];
 
   return (
     <div id={id} className="scroll-mt-24">

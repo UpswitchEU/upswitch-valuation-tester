@@ -83,7 +83,8 @@ export const JourneyStep8_OwnershipAdjustment: React.FC<JourneyStep8Props> = ({ 
   
   // Determine adjustment label and color
   let adjustmentLabel = 'Ownership Adjustment';
-  let adjustmentColor = 'blue';
+  // Type-safe color assignment - always one of the valid StepCard colors
+  let adjustmentColor: 'blue' | 'green' | 'red' | 'orange' | 'gray' = 'blue';
   const hasNoAdjustment = sharesForSale === 100 && adjustmentPercentage === 0;
   
   if (adjustmentType === 'control_premium') {
@@ -107,7 +108,7 @@ export const JourneyStep8_OwnershipAdjustment: React.FC<JourneyStep8Props> = ({ 
       title="Ownership Adjustment"
       subtitle={hasNoAdjustment ? `No adjustment (100% ownership sale)` : `${adjustmentLabel} - ${sharesForSale}% Ownership`}
       icon={<Percent className="w-5 h-5" />}
-      color={adjustmentColor as any}
+      color={adjustmentColor}
       defaultExpanded={true}
     >
       <div className="space-y-6">

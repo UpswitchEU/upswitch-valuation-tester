@@ -97,7 +97,8 @@ export const JourneyStep0_HistoricalTrends: React.FC<JourneyStep0Props> = ({ res
   const isStable = !isDeclining && !isGrowing;
   
   const trendDirection = isDeclining ? 'Declining' : isGrowing ? 'Growing' : 'Stable';
-  const trendColor: 'blue' | 'green' | 'orange' | 'purple' | 'teal' = isDeclining ? 'orange' : isGrowing ? 'green' : 'blue';
+  // Type matches actual assigned values: orange (declining), green (growing), blue (stable)
+  const trendColor: 'blue' | 'green' | 'orange' = isDeclining ? 'orange' : isGrowing ? 'green' : 'blue';
   const TrendIcon = isDeclining ? TrendingDown : isGrowing ? TrendingUp : Minus;
   
   return (
