@@ -70,7 +70,7 @@ export const JourneyStep4_OwnerConcentration: React.FC<JourneyStep4Props> = ({ r
       hasStepData: !!step4Data,
       hasStepResult: !!step4Result,
       hasOwnerConcentration: !!ownerConc,
-      adjustmentFactor: ownerConc?.adjustment_factor || 0
+      adjustmentFactor: adjustmentFactor || 0
     });
     
     stepLogger.debug('JourneyStep4_OwnerConcentration rendered', {
@@ -81,7 +81,9 @@ export const JourneyStep4_OwnerConcentration: React.FC<JourneyStep4Props> = ({ r
     renderPerfLogger.current = createPerformanceLogger('JourneyStep4_OwnerConcentration.render', 'step');
   });
   
-  if (!ownerConc || ownerConc.adjustment_factor === 0) {
+  // CRITICAL FIX: Check if adjustment should be skipped using Step 4 transparency data
+  const step4Skipped = step4Result?.skipped || false;
+  if (!ownerConc || (adjustmentFactor === 0 && !step4Skipped)) {
     // Skip this step if no owner concentration adjustment
     return (
       <StepCard
@@ -117,7 +119,7 @@ export const JourneyStep4_OwnerConcentration: React.FC<JourneyStep4Props> = ({ r
       id="step-4-owner"
       stepNumber={4}
       title="Owner Concentration Adjustment"
-      subtitle={`${riskLevel} Key Person Risk - ${(adjustmentFactor * 100).toFixed(0)}% Adjustment`}
+      subtitle={`${riskLevel} Key Person Risk - ${adjustmentPercentage.toFixed(1)}% Adjustment`}
       icon={<Users className="w-5 h-5" />}
       color="orange"
       defaultExpanded={true}
@@ -204,9 +206,9 @@ export const JourneyStep4_OwnerConcentration: React.FC<JourneyStep4Props> = ({ r
                 : `${ownerConc.number_of_owners} owners / ${ownerConc.number_of_employees} employees = ${(ownerConc.ratio * 100).toFixed(0)}% ratio`
               }
             </div>
-            <div>Risk Level: <strong>{riskLevel}</strong> → Adjustment: <strong className="text-orange-600">{(adjustmentFactor * 100).toFixed(0)}%</strong></div>
+            <div>Risk Level: <strong>{riskLevel}</strong> → Adjustment: <strong className="text-orange-600">{adjustmentPercentage.toFixed(1)}%</strong></div>
             <div className="pt-2 border-t border-blue-300">
-              Formula: Enterprise Value × (1 + {(adjustmentFactor * 100).toFixed(0)}%)
+              Formula: Enterprise Value × (1 + {adjustmentPercentage.toFixed(1)}%)
             </div>
           </div>
         </div>
