@@ -374,19 +374,19 @@ export const ResultsHeader: React.FC<ResultsHeaderProps> = ({ result }) => {
               </div>
             )}
             
-            {/* Primary Method Selection Note */}
+            {/* Primary Method Selection Note (McKinsey/Bain 2025) */}
             {!isPrimaryEBITDA() && result.multiples_valuation.ebitda_multiple && result.multiples_valuation.ebitda_multiple > 0 && 
              result.current_year_data?.ebitda && result.current_year_data.ebitda > 0 && (
               <div className="mt-3 pt-3 border-t border-purple-200">
                 <p className="text-xs text-purple-800">
-                  <span className="font-semibold">Primary Method Selection:</span> Revenue multiple was selected as primary because this is a micro business (&lt;€1M revenue). Per Big 4 methodology, revenue multiples are more reliable for small companies as revenue is less volatile and easier to verify than EBITDA. EBITDA multiple ({result.multiples_valuation.ebitda_multiple.toFixed(2)}x) is shown above as an alternative approach for reference.
+                  <span className="font-semibold">Primary Method Selection:</span> Revenue multiple was selected as primary for one of the following reasons: (1) Company is loss-making (EBITDA ≤ 0), (2) EBITDA margin is very low (&lt;3%, unreliable for valuation), or (3) Growth-stage SaaS/marketplace prioritizing revenue scale over current profitability. EBITDA multiple ({result.multiples_valuation.ebitda_multiple.toFixed(2)}x) is shown above as an alternative approach for reference.
                 </p>
               </div>
             )}
             {isPrimaryEBITDA() && result.multiples_valuation.revenue_multiple && result.multiples_valuation.revenue_multiple > 0 && (
               <div className="mt-3 pt-3 border-t border-purple-200">
                 <p className="text-xs text-purple-800">
-                  <span className="font-semibold">Primary Method Selection:</span> EBITDA multiple was selected as primary due to strong profitability and EBITDA margin. Revenue multiple ({result.multiples_valuation.revenue_multiple.toFixed(2)}x) is shown above as an alternative approach for reference.
+                  <span className="font-semibold">Primary Method Selection:</span> EBITDA multiple was selected as primary per McKinsey/Bain standards - profitability drives value for all company sizes. Revenue multiple ({result.multiples_valuation.revenue_multiple.toFixed(2)}x) is shown above as an alternative approach for reference. Any size concerns (if applicable) are reflected in confidence scoring, not methodology choice.
                 </p>
               </div>
             )}
