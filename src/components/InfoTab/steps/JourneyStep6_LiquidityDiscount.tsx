@@ -168,6 +168,43 @@ export const JourneyStep6_LiquidityDiscount: React.FC<JourneyStep6Props> = ({ re
           </div>
         )}
 
+        {/* SME Calibration Interaction Notice (NEW) */}
+        {step6Result?.sme_calibration_interaction?.sme_calibration_applied && (
+          <div className="bg-green-50 border-l-4 border-green-500 p-4 rounded mt-4">
+            <h4 className="text-sm font-semibold text-green-900 mb-2">
+              ✅ Liquidity Discount Adjusted for SME Calibration
+            </h4>
+            <p className="text-sm text-green-800 mb-2">
+              Step 2 SME calibration already removed baseline liquidity premium (~20%) from database multiples. 
+              Liquidity discount reduced to capture only <strong>incremental company-specific</strong> illiquidity factors.
+            </p>
+            
+            <div className="bg-white rounded p-3 mb-2">
+              <div className="grid grid-cols-2 gap-2 text-sm">
+                <div>
+                  <span className="text-gray-600">Standard Bounds:</span>
+                  <span className="font-mono ml-2 text-gray-500 line-through">
+                    {step6Result.sme_calibration_interaction.standard_liquidity_bounds}
+                  </span>
+                </div>
+                <div>
+                  <span className="text-gray-600">SME Bounds:</span>
+                  <span className="font-mono ml-2 font-bold text-green-700">
+                    {step6Result.sme_calibration_interaction.sme_liquidity_bounds}
+                  </span>
+                </div>
+              </div>
+            </div>
+            
+            <p className="text-xs text-green-700 mt-2">
+              <strong>Rationale:</strong> {step6Result.sme_calibration_interaction.adjustment_rationale}
+            </p>
+            <p className="text-xs text-gray-500 mt-1">
+              <strong>Academic Reference:</strong> {step6Result.sme_calibration_interaction.academic_reference}
+            </p>
+          </div>
+        )}
+
         {/* Before/After Comparison */}
         <BeforeAfterTable
           before={beforeValues}

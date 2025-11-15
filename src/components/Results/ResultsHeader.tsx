@@ -129,6 +129,29 @@ export const ResultsHeader: React.FC<ResultsHeaderProps> = ({ result }) => {
                   </div>
                 </div>
               )}
+              
+              {/* SME Calibration Notice (NEW: McKinsey standard for SME multiples) */}
+              {result.transparency?.calculation_steps?.[2]?.sme_calibration?.applied && (
+                <div className="bg-blue-50 border-l-4 border-blue-500 p-4 rounded mt-2">
+                  <div className="flex items-start gap-3">
+                    <svg className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <div className="flex-1">
+                      <h4 className="text-sm font-semibold text-blue-900 mb-1">SME Multiple Calibration Applied</h4>
+                      <p className="text-sm text-blue-800">
+                        Database multiples have been calibrated for SME size. Raw multiples (from large company databases) were scaled down{' '}
+                        {result.transparency.calculation_steps[2].sme_calibration.ebitda_multiple?.reduction_percentage != null && (
+                          <span className="font-semibold">
+                            {Math.abs(result.transparency.calculation_steps[2].sme_calibration.ebitda_multiple.reduction_percentage).toFixed(0)}%
+                          </span>
+                        )}
+                        {' '}to reflect realistic SME valuations. This follows McKinsey/Bain standards for SME valuation accuracy.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
             <div className="text-right">
               {/* Confidence Score - Enhanced Design - Clickable */}

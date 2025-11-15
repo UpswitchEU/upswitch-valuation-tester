@@ -198,6 +198,85 @@ export const JourneyStep2_Benchmarking: React.FC<JourneyStep2Props> = ({ result 
           </div>
         )}
 
+        {/* SME Calibration Notice (NEW) */}
+        {step2Result?.sme_calibration?.applied && (
+          <div className="bg-blue-50 border-l-4 border-blue-500 p-4 rounded">
+            <h4 className="text-sm font-semibold text-blue-900 mb-2">
+              📊 SME Multiple Calibration Applied
+            </h4>
+            <p className="text-sm text-blue-800 mb-3">
+              Database multiples are biased toward larger companies (€50M+ revenue). 
+              For SMEs, McKinsey standards require systematic calibration to avoid overvaluation.
+            </p>
+            
+            {step2Result.sme_calibration.ebitda_multiple && step2Result.sme_calibration.ebitda_multiple.calibrated && (
+              <div className="bg-white rounded p-3 mb-2">
+                <div className="flex justify-between items-center mb-1">
+                  <span className="text-sm text-gray-600 font-semibold">EBITDA Multiple:</span>
+                </div>
+                <div className="space-y-1 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Database (Raw):</span>
+                    <span className="font-mono font-semibold text-gray-400 line-through">
+                      {step2Result.sme_calibration.ebitda_multiple.raw?.toFixed(2)}x
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Calibration Factor:</span>
+                    <span className="font-mono font-semibold text-blue-700">
+                      {(step2Result.sme_calibration.ebitda_multiple.calibration_factor * 100).toFixed(0)}%
+                    </span>
+                  </div>
+                  <div className="flex justify-between border-t border-gray-200 pt-1 mt-1">
+                    <span className="text-gray-900 font-semibold">SME Baseline:</span>
+                    <span className="font-mono font-bold text-blue-900 text-lg">
+                      {step2Result.sme_calibration.ebitda_multiple.calibrated.toFixed(2)}x
+                    </span>
+                  </div>
+                </div>
+              </div>
+            )}
+            
+            {step2Result.sme_calibration.revenue_multiple && step2Result.sme_calibration.revenue_multiple.calibrated && (
+              <div className="bg-white rounded p-3">
+                <div className="flex justify-between items-center mb-1">
+                  <span className="text-sm text-gray-600 font-semibold">Revenue Multiple:</span>
+                </div>
+                <div className="space-y-1 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Database (Raw):</span>
+                    <span className="font-mono font-semibold text-gray-400 line-through">
+                      {step2Result.sme_calibration.revenue_multiple.raw?.toFixed(2)}x
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Calibration Factor:</span>
+                    <span className="font-mono font-semibold text-blue-700">
+                      {(step2Result.sme_calibration.revenue_multiple.calibration_factor * 100).toFixed(0)}%
+                    </span>
+                  </div>
+                  <div className="flex justify-between border-t border-gray-200 pt-1 mt-1">
+                    <span className="text-gray-900 font-semibold">SME Baseline:</span>
+                    <span className="font-mono font-bold text-blue-900 text-lg">
+                      {step2Result.sme_calibration.revenue_multiple.calibrated.toFixed(2)}x
+                    </span>
+                  </div>
+                </div>
+              </div>
+            )}
+            
+            <div className="mt-3 text-xs text-blue-700">
+              <p><strong>Revenue:</strong> €{(step2Result.sme_calibration.revenue || 0).toLocaleString()}</p>
+              {step2Result.sme_calibration.calibration_tier && (
+                <p><strong>Tier:</strong> {step2Result.sme_calibration.calibration_tier}</p>
+              )}
+              {step2Result.sme_calibration.ebitda_multiple?.explanation && (
+                <p className="mt-1"><strong>Rationale:</strong> {step2Result.sme_calibration.ebitda_multiple.explanation}</p>
+              )}
+            </div>
+          </div>
+        )}
+
         {/* Step Metadata */}
         {step2Data && (
           <StepMetadata
