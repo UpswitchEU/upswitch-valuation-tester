@@ -274,6 +274,26 @@ export interface EnhancedCalculationStep {
   inputs?: Record<string, any>; // Input data (legacy)
   outputs?: Record<string, any>; // Output data (legacy)
   explanation?: string; // Explanation (legacy)
+  sme_calibration?: {
+    applied: boolean;
+    revenue: number;
+    ebitda_multiple?: {
+      raw: number;
+      calibrated: number;
+      calibration_factor: number;
+      reduction_percentage: number;
+      explanation: string;
+    };
+    revenue_multiple?: {
+      raw: number;
+      calibrated: number;
+      calibration_factor: number;
+      reduction_percentage: number;
+      explanation: string;
+    };
+    academic_reference?: string;
+    rationale?: string;
+  };
 }
 
 /**
