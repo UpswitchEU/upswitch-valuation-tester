@@ -168,40 +168,48 @@ export const JourneyStep6_LiquidityDiscount: React.FC<JourneyStep6Props> = ({ re
           </div>
         )}
 
-        {/* SME Calibration Interaction Notice (NEW) */}
+        {/* SME Calibration Interaction Notice (NEW - Phase 2 Recalibration) */}
         {step6Result?.sme_calibration_interaction?.sme_calibration_applied && (
-          <div className="bg-green-50 border-l-4 border-green-500 p-4 rounded mt-4">
-            <h4 className="text-sm font-semibold text-green-900 mb-2">
-              ✅ Liquidity Discount Adjusted for SME Calibration
+          <div className="bg-blue-50 border-l-4 border-blue-500 p-4 rounded mt-4">
+            <h4 className="text-sm font-semibold text-blue-900 mb-2">
+              🚫 Step 6 REMOVED for SME (&lt;€5M Revenue)
             </h4>
-            <p className="text-sm text-green-800 mb-2">
-              Step 2 SME calibration already removed baseline liquidity premium (~20%) from database multiples. 
-              Liquidity discount reduced to capture only <strong>incremental company-specific</strong> illiquidity factors.
+            <p className="text-sm text-blue-800 mb-2">
+              Liquidity discount completely removed for SME valuations to eliminate triple-counting. 
+              Illiquidity is <strong>fully captured</strong> in earlier steps:
             </p>
             
             <div className="bg-white rounded p-3 mb-2">
-              <div className="grid grid-cols-2 gap-2 text-sm">
-                <div>
-                  <span className="text-gray-600">Standard Bounds:</span>
-                  <span className="font-mono ml-2 text-gray-500 line-through">
-                    {step6Result.sme_calibration_interaction.standard_liquidity_bounds}
-                  </span>
+              <div className="space-y-2 text-sm">
+                <div className="flex items-center">
+                  <span className="text-green-600 mr-2">✓</span>
+                  <span><strong>Step 2:</strong> Baseline market liquidity (18-20%)</span>
                 </div>
-                <div>
-                  <span className="text-gray-600">SME Bounds:</span>
-                  <span className="font-mono ml-2 font-bold text-green-700">
-                    {step6Result.sme_calibration_interaction.sme_liquidity_bounds}
-                  </span>
+                <div className="flex items-center">
+                  <span className="text-green-600 mr-2">✓</span>
+                  <span><strong>Step 4:</strong> SOLE_TRADER tier includes incremental illiquidity (5-10%)</span>
+                </div>
+                <div className="flex items-center">
+                  <span className="text-red-600 mr-2">✗</span>
+                  <span className="line-through"><strong>Step 6:</strong> Would triple-count illiquidity</span>
                 </div>
               </div>
             </div>
             
-            <p className="text-xs text-green-700 mt-2">
-              <strong>Rationale:</strong> {step6Result.sme_calibration_interaction.adjustment_rationale}
+            <p className="text-xs text-blue-700 mt-2">
+              <strong>Academic Standard:</strong> {step6Result.sme_calibration_interaction.adjustment_rationale}
             </p>
             <p className="text-xs text-gray-500 mt-1">
-              <strong>Academic Reference:</strong> {step6Result.sme_calibration_interaction.academic_reference}
+              <strong>References:</strong> {step6Result.sme_calibration_interaction.academic_reference}
             </p>
+          </div>
+        )}
+
+        {/* Show "Step Skipped" message when discount is 0 */}
+        {step6Result?.liquidity_discount_percentage === 0 && step6Result?.sme_calibration_interaction?.sme_calibration_applied && (
+          <div className="text-center py-8 bg-gray-50 rounded">
+            <p className="text-lg font-semibold text-gray-700">Step 6: Liquidity Discount = 0%</p>
+            <p className="text-sm text-gray-600 mt-2">Illiquidity fully captured in Steps 2 + 4</p>
           </div>
         )}
 
