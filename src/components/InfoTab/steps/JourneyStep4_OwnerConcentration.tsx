@@ -50,10 +50,12 @@ export const JourneyStep4_OwnerConcentration: React.FC<JourneyStep4Props> = ({ r
   
   // CRITICAL FIX: Extract adjustment_percentage from Step 4 transparency data
   // Priority: Step 4 transparency data > calculate from adjustment_factor > default 0
+  // NOTE: adjustment_factor in legacy format is already a decimal (-0.2), not a multiplier (0.8)
+  // So we multiply by 100 directly, not (adjustment_factor - 1) * 100
   const adjustmentPercentage = step4Result?.adjustment_percentage !== undefined && step4Result?.adjustment_percentage !== null
     ? step4Result.adjustment_percentage
-    : (ownerConc?.adjustment_factor !== undefined
-        ? (ownerConc.adjustment_factor - 1) * 100
+    : (ownerConc?.adjustment_factor !== undefined && ownerConc.adjustment_factor !== null
+        ? ownerConc.adjustment_factor * 100  // CRITICAL FIX: adjustment_factor is decimal (-0.2), multiply by 100 to get percentage (-20%)
         : 0);
   
   // Use adjustmentPercentage for display (convert from percentage to factor for calculations)

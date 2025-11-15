@@ -334,14 +334,50 @@ export function getStep3BaseEVResult(result: ValuationResponse) {
   });
 
   if (step?.key_outputs) {
+    // CRITICAL FIX: Verify primary_method matches the percentiles being used
+    // If primary_method is "EV/EBITDA", ensure we're using EBITDA percentiles
+    // If primary_method is "EV/Revenue", ensure we're using Revenue percentiles
+    const primaryMethod = step.key_outputs.primary_method || 
+                         step.key_outputs.primary_method_from_step2 ||
+                         (step.key_outputs.metric_used === 'EBITDA' ? 'EV/EBITDA' : 'EV/Revenue');
+    const isPrimaryEBITDA = primaryMethod === 'EV/EBITDA';
+    
+    // If key_outputs has multiple_p25/p50/p75, verify they match primary_method
+    // If not, extract from correct source based on primary_method
+    const keyOutputs = { ...step.key_outputs };
+    
+    // If primary_method is EBITDA but we have Revenue percentiles (or vice versa), fix it
+    if (isPrimaryEBITDA && keyOutputs.multiple_p25 && keyOutputs.multiple_p25 < 1.0) {
+      // Likely Revenue percentiles (Revenue multiples are typically <2x), try to get EBITDA percentiles
+      const multiples = result.multiples_valuation;
+      if (multiples?.p25_ebitda_multiple) {
+        keyOutputs.multiple_p25 = multiples.p25_ebitda_multiple;
+        keyOutputs.multiple_p50 = multiples.p50_ebitda_multiple || keyOutputs.multiple_p50;
+        keyOutputs.multiple_p75 = multiples.p75_ebitda_multiple || keyOutputs.multiple_p75;
+      }
+    } else if (!isPrimaryEBITDA && keyOutputs.multiple_p25 && keyOutputs.multiple_p25 > 5.0) {
+      // Likely EBITDA percentiles (EBITDA multiples are typically >5x), try to get Revenue percentiles
+      const multiples = result.multiples_valuation;
+      if (multiples?.p25_revenue_multiple) {
+        keyOutputs.multiple_p25 = multiples.p25_revenue_multiple;
+        keyOutputs.multiple_p50 = multiples.p50_revenue_multiple || keyOutputs.multiple_p50;
+        keyOutputs.multiple_p75 = multiples.p75_revenue_multiple || keyOutputs.multiple_p75;
+      }
+    }
+    
     dataExtractionLogger.info('Step 3 data extracted from transparency', {
       step: 3,
       dataSource: 'transparency',
-      hasEnterpriseValues: !!(step.key_outputs.enterprise_value_mid),
-      keyOutputsKeys: Object.keys(step.key_outputs)
+      hasEnterpriseValues: !!(keyOutputs.enterprise_value_mid),
+      primaryMethod,
+      isPrimaryEBITDA,
+      keyOutputsKeys: Object.keys(keyOutputs),
+      multiple_p25: keyOutputs.multiple_p25,
+      multiple_p50: keyOutputs.multiple_p50,
+      multiple_p75: keyOutputs.multiple_p75
     });
     perfLogger.end({ dataSource: 'transparency', hasData: true });
-    return step.key_outputs;
+    return keyOutputs;
   }
 
   // Fallback: compute from multiples
@@ -504,8 +540,12 @@ export function getStep4OwnerConcentrationResult(result: ValuationResponse) {
   }
 
   // Validate legacy data structure before accessing
+  // CRITICAL FIX: adjustment_factor in legacy format is a decimal (-0.2), not a multiplier (0.8)
+  // So we multiply by 100 directly, not (adjustment_factor - 1) * 100
   const adjustmentPercentage = getProperty(oc, 'adjustment_percentage', null) ||
-                                ((oc.adjustment_factor - 1) * 100) || 0;
+                                (oc.adjustment_factor !== undefined && oc.adjustment_factor !== null
+                                  ? oc.adjustment_factor * 100  // Convert decimal to percentage
+                                  : 0);
   
   dataExtractionLogger.info('Step 4 data extracted from legacy owner_concentration', {
     step: 4,

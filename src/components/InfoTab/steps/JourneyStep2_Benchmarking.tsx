@@ -34,14 +34,21 @@ export const JourneyStep2_Benchmarking: React.FC<JourneyStep2Props> = ({ result 
   }, [result.valuation_id]);
   
   const multiples = result.multiples_valuation;
-  const isPrimaryEBITDA = multiples?.primary_multiple_method === 'ebitda_multiple';
-  const dcfWeight = result.dcf_weight || 0;
-  const revenue = result.current_year_data?.revenue || 0;
-  const isDCFExcluded = dcfWeight === 0;
   
   // Extract step data from backend
   const step2Data = getStepData(result, 2);
   const step2Result = getStepResultData(result, 2);
+  
+  // CRITICAL FIX: Use primary_method from Step 2 transparency data (e.g., "EV/EBITDA" or "EV/Revenue")
+  // Priority: Step 2 transparency data > legacy multiples_valuation > fallback
+  const primaryMethod = step2Result?.primary_method || 
+                       multiples?.primary_method || 
+                       (multiples?.primary_multiple_method === 'ebitda_multiple' ? 'EV/EBITDA' : 'EV/Revenue');
+  const isPrimaryEBITDA = primaryMethod === 'EV/EBITDA';
+  
+  const dcfWeight = result.dcf_weight || 0;
+  const revenue = result.current_year_data?.revenue || 0;
+  const isDCFExcluded = dcfWeight === 0;
   
   // Extract methodology decision and suitability score
   const methodologyDecision = step2Result?.methodology_decision || 
@@ -115,7 +122,9 @@ export const JourneyStep2_Benchmarking: React.FC<JourneyStep2Props> = ({ result 
               </span>
             </div>
             <p className="text-sm text-gray-700">
-              {multiples?.primary_multiple_reason || 
+              {step2Result?.primary_method_reason || 
+               multiples?.primary_multiple_reason || 
+               multiples?.primary_method_reason ||
                (isPrimaryEBITDA 
                  ? 'EBITDA multiple is standard for profitable companies with stable margins'
                  : 'Revenue multiple is used for companies with low or negative EBITDA')}
