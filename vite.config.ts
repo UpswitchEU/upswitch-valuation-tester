@@ -38,14 +38,19 @@ export default defineConfig({
         manualChunks: (id) => {
           // Vendor chunks
           if (id.includes('node_modules')) {
-            // React ecosystem - Keep React in main bundle to ensure it's always available
-            // This prevents "Cannot read properties of undefined (reading 'useState')" errors
-            if (id.includes('react') || id.includes('react-dom') || id.includes('react-router')) {
-              // Don't split React - keep it in main bundle for reliability
-              // This ensures React is always available before other vendor code loads
-              return undefined; // undefined means it goes to main bundle
+            // React ecosystem - MUST be in its own chunk that loads first
+            // Include React-dependent libraries here to ensure React is available
+            if (
+              id.includes('react') || 
+              id.includes('react-dom') || 
+              id.includes('react-router') ||
+              id.includes('zustand') || // zustand depends on React
+              id.includes('react-hot-toast') || // React-dependent
+              id.includes('react-dropzone') // React-dependent
+            ) {
+              return 'react-vendor';
             }
-            // UI libraries (depend on React)
+            // UI libraries (depend on React, but load after react-vendor)
             if (id.includes('@heroui') || id.includes('lucide-react') || id.includes('framer-motion')) {
               return 'ui-vendor';
             }
@@ -57,8 +62,8 @@ export default defineConfig({
             if (id.includes('recharts') || id.includes('chart')) {
               return 'charts-vendor';
             }
-            // Utility libraries
-            if (id.includes('axios') || id.includes('pino') || id.includes('zustand')) {
+            // Utility libraries (non-React dependent)
+            if (id.includes('axios') || id.includes('pino')) {
               return 'utils-vendor';
             }
             // Other node_modules
