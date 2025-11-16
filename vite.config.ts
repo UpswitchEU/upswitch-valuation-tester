@@ -32,53 +32,23 @@ export default defineConfig({
     outDir: 'dist',
     sourcemap: false,
     target: 'es2020',
-    chunkSizeWarningLimit: 600, // Increase limit slightly but still warn for very large chunks
+    chunkSizeWarningLimit: 600,
+    // Remove manual chunking - let Vite handle it automatically
+    // This prevents React loading order issues
     rollupOptions: {
       output: {
+        // Only split out the largest libraries to keep bundle sizes reasonable
         manualChunks: (id) => {
-          // Vendor chunks
-          if (id.includes('node_modules')) {
-            // CRITICAL: Keep React in main bundle (return undefined)
-            // This ensures React is always available when main.tsx executes
-            // Splitting React causes "Cannot read properties of undefined" errors
-            if (
-              id.includes('react') || 
-              id.includes('react-dom') || 
-              id.includes('react-router')
-            ) {
-              return undefined; // undefined = main bundle
-            }
-            // React-dependent libraries can be split, but React must be in main bundle
-            if (
-              id.includes('zustand') || 
-              id.includes('react-hot-toast') || 
-              id.includes('react-dropzone')
-            ) {
-              return 'react-vendor';
-            }
-            // UI libraries (depend on React)
-            if (id.includes('@heroui') || id.includes('lucide-react') || id.includes('framer-motion')) {
-              return 'ui-vendor';
-            }
-            // PDF/Canvas libraries (large, should be lazy-loaded)
-            if (id.includes('html2pdf') || id.includes('html2canvas') || id.includes('jspdf')) {
-              return 'pdf-vendor';
-            }
-            // Chart libraries
-            if (id.includes('recharts') || id.includes('chart')) {
-              return 'charts-vendor';
-            }
-            // Utility libraries (non-React dependent)
-            if (id.includes('axios') || id.includes('pino')) {
-              return 'utils-vendor';
-            }
-            // Other node_modules
-            return 'vendor';
+          // Only split out very large libraries that are rarely used
+          if (id.includes('html2pdf') || id.includes('html2canvas') || id.includes('jspdf')) {
+            return 'pdf-vendor';
           }
-          // Large components that should be code-split
+          // Split out ValuationReport component if it's large
           if (id.includes('ValuationReport')) {
             return 'valuation-report';
           }
+          // Let Vite automatically handle all other chunking
+          // This ensures React and dependencies load in correct order
         },
       }
     }
