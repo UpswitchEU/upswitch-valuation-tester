@@ -25,6 +25,9 @@ export default defineConfig({
       '@': path.resolve(__dirname, './src'),
     },
   },
+  optimizeDeps: {
+    include: ['react', 'react-dom', 'react-router-dom'],
+  },
   build: {
     outDir: 'dist',
     sourcemap: false,
@@ -35,11 +38,14 @@ export default defineConfig({
         manualChunks: (id) => {
           // Vendor chunks
           if (id.includes('node_modules')) {
-            // React ecosystem
+            // React ecosystem - Keep React in main bundle to ensure it's always available
+            // This prevents "Cannot read properties of undefined (reading 'useState')" errors
             if (id.includes('react') || id.includes('react-dom') || id.includes('react-router')) {
-              return 'react-vendor';
+              // Don't split React - keep it in main bundle for reliability
+              // This ensures React is always available before other vendor code loads
+              return undefined; // undefined means it goes to main bundle
             }
-            // UI libraries
+            // UI libraries (depend on React)
             if (id.includes('@heroui') || id.includes('lucide-react') || id.includes('framer-motion')) {
               return 'ui-vendor';
             }
@@ -62,7 +68,7 @@ export default defineConfig({
           if (id.includes('ValuationReport')) {
             return 'valuation-report';
           }
-        }
+        },
       }
     }
   },
