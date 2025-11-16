@@ -4,6 +4,7 @@ import { StepCard } from '../shared/StepCard';
 import { StepMetadata } from '../../shared/StepMetadata';
 import { FormulaBox } from '../shared/FormulaBox';
 import { BeforeAfterTable } from '../shared/BeforeAfterTable';
+import { DiscountBreakdownAccordion } from '../shared/DiscountBreakdownAccordion';
 import { getStepData } from '../../../utils/valuationDataExtractor';
 import { getStepResultData } from '../../../utils/stepDataMapper';
 import type { ValuationResponse } from '../../../types/valuation';
@@ -237,6 +238,15 @@ export const JourneyStep4_OwnerConcentration: React.FC<JourneyStep4Props> = ({ r
               Discount applied to the multiple itself, not just the final price. This ensures transparent traceability of valuation adjustments.
             </p>
           </div>
+        )}
+
+        {/* Discount Breakdown with Academic Sources (McKinsey-level transparency) */}
+        {step4Result?.pipeline_stage?.discount_breakdown && (
+          <DiscountBreakdownAccordion
+            breakdown={step4Result.pipeline_stage.discount_breakdown}
+            stepNumber={4}
+            stepName="Owner Concentration"
+          />
         )}
 
         {/* Before/After Comparison */}

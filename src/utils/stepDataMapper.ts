@@ -568,7 +568,7 @@ export function getStep3BaseEVResult(result: ValuationResponse) {
 // Step 4: Owner Concentration Adjustment
 // ============================================================================
 
-export function getStep4OwnerConcentrationResult(result: ValuationResponse) {
+export function getStep4OwnerConcentrationResult(result: ValuationResponse): Step4OwnerConcentrationResult | null {
   const perfLogger = createPerformanceLogger('getStep4OwnerConcentrationResult', 'data-extraction');
   dataExtractionLogger.debug('Extracting Step 4 owner concentration result', { step: 4 });
   
@@ -580,13 +580,21 @@ export function getStep4OwnerConcentrationResult(result: ValuationResponse) {
   );
 
   if (step?.key_outputs) {
+    // ENHANCEMENT (2025): Extract pipeline_stage with discount_breakdown if available
+    const enrichedOutput: Step4OwnerConcentrationResult = {
+      ...step.key_outputs,
+      pipeline_stage: step.key_outputs.pipeline_stage || null
+    } as Step4OwnerConcentrationResult;
+    
     dataExtractionLogger.info('Step 4 data extracted from transparency', {
       step: 4,
       dataSource: 'transparency',
-      hasAdjustment: !!step.key_outputs.adjustment_percentage
+      hasAdjustment: !!step.key_outputs.adjustment_percentage,
+      hasPipelineStage: !!enrichedOutput.pipeline_stage,
+      hasDiscountBreakdown: !!(enrichedOutput.pipeline_stage?.discount_breakdown)
     });
     perfLogger.end({ dataSource: 'transparency', hasData: true });
-    return step.key_outputs;
+    return enrichedOutput;
   }
 
   // Fallback to legacy owner_concentration field
@@ -678,7 +686,7 @@ export function getStep4OwnerConcentrationResult(result: ValuationResponse) {
 // Step 5: Size Discount
 // ============================================================================
 
-export function getStep5SizeDiscountResult(result: ValuationResponse) {
+export function getStep5SizeDiscountResult(result: ValuationResponse): Step5SizeDiscountResult | null {
   const perfLogger = createPerformanceLogger('getStep5SizeDiscountResult', 'data-extraction');
   dataExtractionLogger.debug('Extracting Step 5 size discount result', { step: 5 });
   
@@ -690,13 +698,21 @@ export function getStep5SizeDiscountResult(result: ValuationResponse) {
   );
 
   if (step?.key_outputs) {
+    // ENHANCEMENT (2025): Extract pipeline_stage with discount_breakdown if available
+    const enrichedOutput: Step5SizeDiscountResult = {
+      ...step.key_outputs,
+      pipeline_stage: step.key_outputs.pipeline_stage || null
+    } as Step5SizeDiscountResult;
+    
     dataExtractionLogger.info('Step 5 data extracted from transparency', {
       step: 5,
       dataSource: 'transparency',
-      hasDiscount: !!step.key_outputs.size_discount_percentage
+      hasDiscount: !!step.key_outputs.size_discount_percentage,
+      hasPipelineStage: !!enrichedOutput.pipeline_stage,
+      hasDiscountBreakdown: !!(enrichedOutput.pipeline_stage?.discount_breakdown)
     });
     perfLogger.end({ dataSource: 'transparency', hasData: true });
-    return step.key_outputs;
+    return enrichedOutput;
   }
 
   // Fallback to small_firm_adjustments
@@ -743,7 +759,7 @@ export function getStep5SizeDiscountResult(result: ValuationResponse) {
 // Step 6: Liquidity Discount
 // ============================================================================
 
-export function getStep6LiquidityDiscountResult(result: ValuationResponse) {
+export function getStep6LiquidityDiscountResult(result: ValuationResponse): Step6LiquidityDiscountResult | null {
   const perfLogger = createPerformanceLogger('getStep6LiquidityDiscountResult', 'data-extraction');
   dataExtractionLogger.debug('Extracting Step 6 liquidity discount result', { step: 6 });
   
@@ -755,13 +771,21 @@ export function getStep6LiquidityDiscountResult(result: ValuationResponse) {
   );
 
   if (step?.key_outputs) {
+    // ENHANCEMENT (2025): Extract pipeline_stage with discount_breakdown if available
+    const enrichedOutput: Step6LiquidityDiscountResult = {
+      ...step.key_outputs,
+      pipeline_stage: step.key_outputs.pipeline_stage || null
+    } as Step6LiquidityDiscountResult;
+    
     dataExtractionLogger.info('Step 6 data extracted from transparency', {
       step: 6,
       dataSource: 'transparency',
-      hasDiscount: !!step.key_outputs.total_discount_percentage
+      hasDiscount: !!step.key_outputs.total_discount_percentage,
+      hasPipelineStage: !!enrichedOutput.pipeline_stage,
+      hasDiscountBreakdown: !!(enrichedOutput.pipeline_stage?.discount_breakdown)
     });
     perfLogger.end({ dataSource: 'transparency', hasData: true });
-    return step.key_outputs;
+    return enrichedOutput;
   }
 
   // Fallback to small_firm_adjustments

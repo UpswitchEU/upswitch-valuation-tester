@@ -4,6 +4,7 @@ import { StepCard } from '../shared/StepCard';
 import { StepMetadata } from '../../shared/StepMetadata';
 import { FormulaBox } from '../shared/FormulaBox';
 import { BeforeAfterTable } from '../shared/BeforeAfterTable';
+import { DiscountBreakdownAccordion } from '../shared/DiscountBreakdownAccordion';
 import { getStepData } from '../../../utils/valuationDataExtractor';
 import { getStepResultData } from '../../../utils/stepDataMapper';
 import type { ValuationResponse } from '../../../types/valuation';
@@ -211,6 +212,15 @@ export const JourneyStep6_LiquidityDiscount: React.FC<JourneyStep6Props> = ({ re
             <p className="text-lg font-semibold text-gray-700">Step 6: Liquidity Discount = 0%</p>
             <p className="text-sm text-gray-600 mt-2">Illiquidity fully captured in Steps 2 + 4</p>
           </div>
+        )}
+
+        {/* Discount Breakdown with Academic Sources (McKinsey-level transparency) */}
+        {step6Result?.pipeline_stage?.discount_breakdown && (
+          <DiscountBreakdownAccordion
+            breakdown={step6Result.pipeline_stage.discount_breakdown}
+            stepNumber={6}
+            stepName="Liquidity Discount"
+          />
         )}
 
         {/* Before/After Comparison */}

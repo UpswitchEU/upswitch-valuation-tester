@@ -4,6 +4,7 @@ import { StepCard } from '../shared/StepCard';
 import { StepMetadata } from '../../shared/StepMetadata';
 import { FormulaBox } from '../shared/FormulaBox';
 import { BeforeAfterTable } from '../shared/BeforeAfterTable';
+import { DiscountBreakdownAccordion } from '../shared/DiscountBreakdownAccordion';
 import { getStepData } from '../../../utils/valuationDataExtractor';
 import { getStepResultData } from '../../../utils/stepDataMapper';
 import type { ValuationResponse } from '../../../types/valuation';
@@ -172,6 +173,15 @@ export const JourneyStep5_SizeDiscount: React.FC<JourneyStep5Props> = ({ result,
               Discount applied to the multiple itself, not just the final price. This ensures transparent traceability of valuation adjustments.
             </p>
           </div>
+        )}
+
+        {/* Discount Breakdown with Academic Sources (McKinsey-level transparency) */}
+        {step5Result?.pipeline_stage?.discount_breakdown && (
+          <DiscountBreakdownAccordion
+            breakdown={step5Result.pipeline_stage.discount_breakdown}
+            stepNumber={5}
+            stepName="Size Discount"
+          />
         )}
 
         {/* Before/After Comparison */}

@@ -394,6 +394,8 @@ export interface Step4OwnerConcentrationResult {
   number_of_owners?: number;
   number_of_employees?: number;
   skipped?: boolean;
+  // McKinsey-level transparency (2025)
+  pipeline_stage?: MultiplePipelineStage | null;
 }
 
 /**
@@ -419,6 +421,8 @@ export interface Step5SizeDiscountResult {
   ev_high_after?: number;
   revenue_tier?: string;
   sole_trader_adjustment?: number;
+  // McKinsey-level transparency (2025)
+  pipeline_stage?: MultiplePipelineStage | null;
 }
 
 /**
@@ -456,6 +460,15 @@ export interface Step6LiquidityDiscountResult {
   };
   sole_trader_adjustment?: number;
   is_sole_trader?: boolean;
+  liquidity_discount_percentage?: number;
+  sme_calibration_interaction?: {
+    sme_calibration_applied: boolean;
+    step6_skipped: boolean;
+    rationale: string;
+    academic_reference: string;
+  };
+  // McKinsey-level transparency (2025)
+  pipeline_stage?: MultiplePipelineStage | null;
 }
 
 /**
@@ -557,6 +570,42 @@ export interface MethodologySelection {
 }
 
 // Multiple-First Discounting (NEW)
+// Discount component breakdown (McKinsey-level transparency)
+export interface DiscountComponent {
+  name: string;  // e.g., "Owner Concentration Risk", "Management Absence"
+  percentage: number;  // e.g., -15.0
+  source: string;  // e.g., "Damodaran (2012)"
+  description: string;  // Explanation of this component
+}
+
+// Complete discount breakdown with academic sources
+export interface DiscountBreakdown {
+  base_adjustment?: number;  // Base discount percentage
+  risk_level?: string;  // e.g., "HIGH", "MEDIUM", "LOW"
+  owner_employee_ratio?: number;  // For owner concentration
+  revenue?: number;  // For size/liquidity context
+  revenue_tier?: string;  // e.g., "Micro (<€1M)"
+  sme_status?: string;  // e.g., "skipped", "applied"
+  components: DiscountComponent[];  // Component-level breakdown
+  total: number;  // Total discount percentage
+  academic_sources: string[];  // Full academic citations
+  rationale?: string;  // Overall rationale for discount
+}
+
+// Waterfall step for multiple progression visualization
+export interface WaterfallStep {
+  step: number | string;  // Step number or "Initial"
+  step_name: string;  // e.g., "Owner Concentration", "Base Multiple (Step 3)"
+  multiple_before_low?: number | null;
+  multiple_before_mid?: number | null;
+  multiple_before_high?: number | null;
+  multiple_after_low: number;
+  multiple_after_mid: number;
+  multiple_after_high: number;
+  discount_percentage: number;  // e.g., -20.0
+  description: string;  // Explanation of this step
+}
+
 export interface MultiplePipelineStage {
   step_number: number;
   step_name: string;
@@ -564,19 +613,38 @@ export interface MultiplePipelineStage {
   discount_percentage: number;  // e.g., -20.0 for 20% discount
   multiple_before: number;
   multiple_after: number;
+  // NEW: Enhanced multiple tracking (low/mid/high)
+  multiple_before_low?: number;
+  multiple_before_mid?: number;
+  multiple_before_high?: number;
+  multiple_after_low?: number;
+  multiple_after_mid?: number;
+  multiple_after_high?: number;
   metric_value: number;
   ev_before: number;
   ev_after: number;
   explanation: string;
+  description?: string;
+  // NEW: Detailed discount breakdown with academic sources
+  discount_breakdown?: DiscountBreakdown;
 }
 
 export interface MultiplePipeline {
-  initial_multiple: number;  // Starting multiple (e.g., 10x)
-  final_multiple: number;  // Final adjusted multiple (e.g., 6.48x)
+  initial_multiple: number;  // Starting multiple (e.g., 10x) - mid-point
+  final_multiple: number;  // Final adjusted multiple (e.g., 6.48x) - mid-point
+  // NEW: Enhanced multiple tracking (low/mid/high)
+  initial_multiple_low?: number;
+  initial_multiple_mid?: number;
+  initial_multiple_high?: number;
+  final_multiple_low?: number;
+  final_multiple_mid?: number;
+  final_multiple_high?: number;
   total_reduction_percentage: number;  // e.g., -35.2%
   metric_type: 'EBITDA' | 'Revenue';
   metric_value: number;
   stages: MultiplePipelineStage[];
+  // NEW: Complete discount waterfall for visualization
+  discount_waterfall?: WaterfallStep[];
 }
 
 export interface ValuationResponse {

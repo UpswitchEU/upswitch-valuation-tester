@@ -2,6 +2,7 @@ import React, { useEffect, useRef } from 'react';
 import { Trophy } from 'lucide-react';
 import { StepCard } from '../shared/StepCard';
 import { StepMetadata } from '../../shared/StepMetadata';
+import { MultipleWaterfallChart } from '../shared/MultipleWaterfallChart';
 import { getStepData } from '../../../utils/valuationDataExtractor';
 import { 
   getStepResultData, 
@@ -325,6 +326,14 @@ export const JourneyStep11_FinalValuation: React.FC<JourneyStep11Props> = ({ res
             </div>
           </div>
         </div>
+
+        {/* Multiple Discount Waterfall (McKinsey-level transparency) */}
+        {result.multiple_pipeline && result.multiple_pipeline.discount_waterfall && (
+          <div>
+            <h4 className="font-semibold text-gray-900 mb-3">Multiple Discount Waterfall</h4>
+            <MultipleWaterfallChart pipeline={result.multiple_pipeline} showLowHigh={false} />
+          </div>
+        )}
 
         {/* Journey Recap */}
         <div>
