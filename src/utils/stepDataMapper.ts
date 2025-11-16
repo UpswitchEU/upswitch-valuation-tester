@@ -261,7 +261,15 @@ export function getStep2BenchmarkingResult(result: ValuationResponse) {
       primaryMethod: step.key_outputs.primary_method
     });
     perfLogger.end({ dataSource: 'transparency', hasData: true });
-    return step.key_outputs;
+    // Ensure primary_method_reason is included (fallback to multiples_valuation if not present)
+    const multiples = result.multiples_valuation;
+    return {
+      ...step.key_outputs,
+      primary_method_reason: step.key_outputs.primary_method_reason ||
+                            getProperty(multiples, 'primary_method_reason', null) ||
+                            multiples?.primary_multiple_reason ||
+                            'Standard methodology'
+    };
   }
 
   // Fallback to multiples_valuation legacy fields
