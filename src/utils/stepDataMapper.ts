@@ -248,11 +248,17 @@ export function getStep2BenchmarkingResult(result: ValuationResponse) {
     (s) => s.step === 2 || s.step_number === 2
   );
 
+  // CRITICAL FIX: Extract primary_method from Step 2 transparency data first
+  // Priority: Step 2 transparency data > legacy multiples_valuation
+  const step2Transparency = step?.key_outputs;
+  const primaryMethodFromTransparency = step2Transparency?.primary_method; // 'EV/EBITDA' or 'EV/Revenue'
+
   if (step?.key_outputs) {
     dataExtractionLogger.info('Step 2 data extracted from transparency', {
       step: 2,
       dataSource: 'transparency',
-      hasPrimaryMethod: !!step.key_outputs.primary_method
+      hasPrimaryMethod: !!step.key_outputs.primary_method,
+      primaryMethod: step.key_outputs.primary_method
     });
     perfLogger.end({ dataSource: 'transparency', hasData: true });
     return step.key_outputs;
@@ -274,7 +280,8 @@ export function getStep2BenchmarkingResult(result: ValuationResponse) {
     step: 2,
     dataSource: 'legacy',
     fallbackUsed: true,
-    primaryMethod: multiples.primary_multiple_method,
+    primaryMethodFromTransparency,
+    primaryMethodFromLegacy: multiples.primary_multiple_method,
     hasComparables: hasProperty(multiples, 'comparables') && Array.isArray(multiples.comparables)
   });
   perfLogger.end({ dataSource: 'legacy', hasData: true, fallbackUsed: true });
@@ -284,9 +291,11 @@ export function getStep2BenchmarkingResult(result: ValuationResponse) {
     : [];
   
   return {
-    primary_method: multiples.primary_multiple_method === 'ebitda_multiple' 
-      ? 'EV/EBITDA' 
-      : 'EV/Revenue',
+    // CRITICAL FIX: Prioritize primary_method from Step 2 transparency data over legacy primary_multiple_method
+    primary_method: primaryMethodFromTransparency || 
+                     (multiples.primary_multiple_method === 'ebitda_multiple' 
+                       ? 'EV/EBITDA' 
+                       : 'EV/Revenue'),
     primary_method_reason: getProperty(multiples, 'primary_method_reason', null) ||
                           multiples.primary_multiple_reason ||
                           'Standard methodology',
@@ -344,41 +353,69 @@ export function getStep3BaseEVResult(result: ValuationResponse) {
                          (step.key_outputs.metric_used === 'EBITDA' ? 'EV/EBITDA' : 'EV/Revenue');
     const isPrimaryEBITDA = primaryMethod === 'EV/EBITDA';
     
-    // If key_outputs has multiple_p25/p50/p75, verify they match primary_method
-    // Use primary_method as authoritative source (not heuristic)
+    // CRITICAL FIX: Always use correct percentiles based on primary_method
+    // Priority: Use explicit EBITDA/Revenue percentiles from multiples_valuation based on primary_method
+    // Only use generic multiples_p25/p50/p75 as last resort
+    const multiples = result.multiples_valuation;
     const keyOutputs = { ...step.key_outputs };
     
-    // CRITICAL FIX: Use primary_method as authoritative source instead of heuristic
-    // If primary_method explicitly indicates mismatch, correct it
-    if (isPrimaryEBITDA && primaryMethodFromStep2 === 'EV/EBITDA') {
-      // Primary method is EBITDA - ensure we're using EBITDA percentiles
-      const multiples = result.multiples_valuation;
-      if (multiples?.p25_ebitda_multiple && (!keyOutputs.multiple_p25 || keyOutputs.multiple_p25 < 1.0)) {
-        // Heuristic fallback: If multiple_p25 < 1.0, likely Revenue percentiles - correct to EBITDA
+    // CRITICAL FIX: Use primary_method to determine which percentiles to use
+    // Always prioritize explicit ev_ebitda_p25/p50/p75 or ev_revenue_p25/p50/p75 over generic multiples_p25/p50/p75
+    if (isPrimaryEBITDA) {
+      // Primary method is EBITDA - use EBITDA percentiles from multiples_valuation
+      if (multiples?.p25_ebitda_multiple !== undefined && multiples?.p50_ebitda_multiple !== undefined && multiples?.p75_ebitda_multiple !== undefined) {
+        // Override with correct EBITDA percentiles
+        keyOutputs.multiple_p25 = multiples.p25_ebitda_multiple;
+        keyOutputs.multiple_p50 = multiples.p50_ebitda_multiple;
+        keyOutputs.multiple_p75 = multiples.p75_ebitda_multiple;
+        dataExtractionLogger.info('Step 3: Using EBITDA percentiles based on primary_method', {
+          step: 3,
+          primaryMethod,
+          multiple_p25: keyOutputs.multiple_p25,
+          multiple_p50: keyOutputs.multiple_p50,
+          multiple_p75: keyOutputs.multiple_p75
+        });
+      } else if (!keyOutputs.multiple_p25 || keyOutputs.multiple_p25 < 1.0) {
+        // Heuristic fallback: If multiple_p25 < 1.0, likely Revenue percentiles - warn and correct if possible
         dataExtractionLogger.warn('Step 3 percentile mismatch detected - correcting to EBITDA percentiles', {
           step: 3,
           primaryMethod,
           detectedMultipleP25: keyOutputs.multiple_p25,
           correctedToEBITDA: true
         });
-        keyOutputs.multiple_p25 = multiples.p25_ebitda_multiple;
-        keyOutputs.multiple_p50 = multiples.p50_ebitda_multiple || keyOutputs.multiple_p50;
-        keyOutputs.multiple_p75 = multiples.p75_ebitda_multiple || keyOutputs.multiple_p75;
+        if (multiples?.p25_ebitda_multiple) {
+          keyOutputs.multiple_p25 = multiples.p25_ebitda_multiple;
+          keyOutputs.multiple_p50 = multiples.p50_ebitda_multiple || keyOutputs.multiple_p50;
+          keyOutputs.multiple_p75 = multiples.p75_ebitda_multiple || keyOutputs.multiple_p75;
+        }
       }
-    } else if (!isPrimaryEBITDA && primaryMethodFromStep2 === 'EV/Revenue') {
-      // Primary method is Revenue - ensure we're using Revenue percentiles
-      const multiples = result.multiples_valuation;
-      if (multiples?.p25_revenue_multiple && (!keyOutputs.multiple_p25 || keyOutputs.multiple_p25 > 5.0)) {
-        // Heuristic fallback: If multiple_p25 > 5.0, likely EBITDA percentiles - correct to Revenue
+    } else {
+      // Primary method is Revenue - use Revenue percentiles from multiples_valuation
+      if (multiples?.p25_revenue_multiple !== undefined && multiples?.p50_revenue_multiple !== undefined && multiples?.p75_revenue_multiple !== undefined) {
+        // Override with correct Revenue percentiles
+        keyOutputs.multiple_p25 = multiples.p25_revenue_multiple;
+        keyOutputs.multiple_p50 = multiples.p50_revenue_multiple;
+        keyOutputs.multiple_p75 = multiples.p75_revenue_multiple;
+        dataExtractionLogger.info('Step 3: Using Revenue percentiles based on primary_method', {
+          step: 3,
+          primaryMethod,
+          multiple_p25: keyOutputs.multiple_p25,
+          multiple_p50: keyOutputs.multiple_p50,
+          multiple_p75: keyOutputs.multiple_p75
+        });
+      } else if (!keyOutputs.multiple_p25 || keyOutputs.multiple_p25 > 5.0) {
+        // Heuristic fallback: If multiple_p25 > 5.0, likely EBITDA percentiles - warn and correct if possible
         dataExtractionLogger.warn('Step 3 percentile mismatch detected - correcting to Revenue percentiles', {
           step: 3,
           primaryMethod,
           detectedMultipleP25: keyOutputs.multiple_p25,
           correctedToRevenue: true
         });
-        keyOutputs.multiple_p25 = multiples.p25_revenue_multiple;
-        keyOutputs.multiple_p50 = multiples.p50_revenue_multiple || keyOutputs.multiple_p50;
-        keyOutputs.multiple_p75 = multiples.p75_revenue_multiple || keyOutputs.multiple_p75;
+        if (multiples?.p25_revenue_multiple) {
+          keyOutputs.multiple_p25 = multiples.p25_revenue_multiple;
+          keyOutputs.multiple_p50 = multiples.p50_revenue_multiple || keyOutputs.multiple_p50;
+          keyOutputs.multiple_p75 = multiples.p75_revenue_multiple || keyOutputs.multiple_p75;
+        }
       }
     }
     
