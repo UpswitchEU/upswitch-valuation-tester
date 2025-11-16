@@ -38,19 +38,25 @@ export default defineConfig({
         manualChunks: (id) => {
           // Vendor chunks
           if (id.includes('node_modules')) {
-            // React ecosystem - MUST be in its own chunk that loads first
-            // Include React-dependent libraries here to ensure React is available
+            // CRITICAL: Keep React in main bundle (return undefined)
+            // This ensures React is always available when main.tsx executes
+            // Splitting React causes "Cannot read properties of undefined" errors
             if (
               id.includes('react') || 
               id.includes('react-dom') || 
-              id.includes('react-router') ||
-              id.includes('zustand') || // zustand depends on React
-              id.includes('react-hot-toast') || // React-dependent
-              id.includes('react-dropzone') // React-dependent
+              id.includes('react-router')
+            ) {
+              return undefined; // undefined = main bundle
+            }
+            // React-dependent libraries can be split, but React must be in main bundle
+            if (
+              id.includes('zustand') || 
+              id.includes('react-hot-toast') || 
+              id.includes('react-dropzone')
             ) {
               return 'react-vendor';
             }
-            // UI libraries (depend on React, but load after react-vendor)
+            // UI libraries (depend on React)
             if (id.includes('@heroui') || id.includes('lucide-react') || id.includes('framer-motion')) {
               return 'ui-vendor';
             }
