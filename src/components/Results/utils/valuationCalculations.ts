@@ -356,6 +356,10 @@ export const calculateOwnerConcentrationImpact = (result: ValuationResponse, pre
     ? '100% (fully owner-operated)' 
     : `${(ratio * 100).toFixed(0)}%`;
 
+  // Define variables for partnership and sole trader detection (used in explanations)
+  const isPartnership = owners >= 2;
+  const isSoleTrader = owners === 1 && employees <= 1;
+
   // Build detailed explanation for owner concentration discount
   // Prefer backend explanation if available, otherwise generate frontend explanation
   let detailedExplanation: DetailedExplanation | undefined;
@@ -381,8 +385,6 @@ export const calculateOwnerConcentrationImpact = (result: ValuationResponse, pre
     };
   } else if (adjustmentFactor !== 0) {
     // Generate frontend explanation (fallback)
-    const isPartnership = owners >= 2;
-    const isSoleTrader = owners === 1 && employees <= 1;
     const standardCriticalDiscount = -0.20;
     const partnershipDiscount = -0.12;
     const componentBreakdown: ComponentBreakdown[] = [];
