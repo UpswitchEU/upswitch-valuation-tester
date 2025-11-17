@@ -11,6 +11,73 @@ interface ValuationWaterfallProps {
   result: ValuationResponse;
 }
 
+const InputsTable: React.FC<{ 
+  inputs: Array<{ 
+    label: string; 
+    value: string; 
+    highlight?: boolean;
+    explanation?: string;
+    academicSource?: string;
+  }>; 
+  colors: { text: string; bg: string; border: string } 
+}> = ({ inputs, colors }) => {
+  const [expandedInputs, setExpandedInputs] = useState<Set<number>>(new Set());
+
+  const toggleInput = (idx: number) => {
+    const newExpanded = new Set(expandedInputs);
+    if (newExpanded.has(idx)) {
+      newExpanded.delete(idx);
+    } else {
+      newExpanded.add(idx);
+    }
+    setExpandedInputs(newExpanded);
+  };
+
+  return (
+    <div>
+      <p className="text-xs text-gray-500 font-semibold uppercase mb-2">Inputs</p>
+      <div className="bg-white border border-gray-200 rounded-lg divide-y divide-gray-200">
+        {inputs.map((input, idx) => (
+          <div key={idx}>
+            <div className="flex justify-between items-center px-4 py-2">
+              <span className="text-sm text-gray-600">{input.label}</span>
+              <div className="flex items-center gap-2">
+                <span className={`text-sm font-semibold ${input.highlight ? colors.text : 'text-gray-900'}`}>
+                  {input.value}
+                </span>
+                {input.explanation && (
+                  <button
+                    onClick={() => toggleInput(idx)}
+                    className="text-blue-600 hover:text-blue-800 transition-colors"
+                    aria-label="Show explanation"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                  </button>
+                )}
+              </div>
+            </div>
+            {input.explanation && expandedInputs.has(idx) && (
+              <div className="px-4 pb-3 bg-blue-50 border-l-4 border-blue-400">
+                <div className="pt-2 space-y-1">
+                  <p className="text-xs font-semibold text-blue-900">Why {input.value}?</p>
+                  <p className="text-xs text-gray-700 leading-relaxed">{input.explanation}</p>
+                  {input.academicSource && (
+                    <p className="text-xs text-gray-600 italic mt-1">
+                      <span className="font-semibold">Source:</span> {input.academicSource}
+                    </p>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
+
 const StepCard: React.FC<{ step: CalculationStep; isLast?: boolean }> = ({ step, isLast = false }) => {
   const [isExpanded, setIsExpanded] = useState(true);
 
@@ -109,19 +176,7 @@ const StepCard: React.FC<{ step: CalculationStep; isLast?: boolean }> = ({ step,
 
             {/* Inputs Table */}
             {step.inputs.length > 0 && (
-              <div>
-                <p className="text-xs text-gray-500 font-semibold uppercase mb-2">Inputs</p>
-                <div className="bg-white border border-gray-200 rounded-lg divide-y divide-gray-200">
-                  {step.inputs.map((input, idx) => (
-                    <div key={idx} className="flex justify-between items-center px-4 py-2">
-                      <span className="text-sm text-gray-600">{input.label}</span>
-                      <span className={`text-sm font-semibold ${input.highlight ? colors.text : 'text-gray-900'}`}>
-                        {input.value}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </div>
+              <InputsTable inputs={step.inputs} colors={colors} />
             )}
 
             {/* Calculation */}
@@ -134,6 +189,82 @@ const StepCard: React.FC<{ step: CalculationStep; isLast?: boolean }> = ({ step,
             {step.explanation && (
               <div className="bg-gray-50 border-l-4 border-gray-400 p-3">
                 <p className="text-sm text-gray-700">{step.explanation}</p>
+              </div>
+            )}
+
+            {/* Detailed Explanation with Academic Sources */}
+            {step.detailedExplanation && (
+              <div className="bg-gradient-to-br from-blue-50 to-indigo-50 border-2 border-blue-300 rounded-lg p-4 space-y-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  </svg>
+                  <h4 className="text-sm font-bold text-blue-900">Detailed Explanation: Why {step.detailedExplanation.percentage.toFixed(0)}%?</h4>
+                </div>
+
+                {/* Academic Sources */}
+                {step.detailedExplanation.academicSources.length > 0 && (
+                  <div className="bg-white rounded-lg p-3 border border-blue-200">
+                    <p className="text-xs font-semibold text-blue-800 uppercase mb-2">Academic Sources</p>
+                    <div className="space-y-2">
+                      {step.detailedExplanation.academicSources.map((source, idx) => (
+                        <div key={idx} className="text-xs text-gray-700">
+                          <p className="font-semibold text-gray-900">
+                            {source.author} ({source.year})
+                          </p>
+                          <p className="text-gray-600 italic">{source.citation}</p>
+                          {source.pageReference && (
+                            <p className="text-gray-500 text-xs mt-0.5">{source.pageReference}</p>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Logic */}
+                <div className="bg-white rounded-lg p-3 border border-blue-200">
+                  <p className="text-xs font-semibold text-blue-800 uppercase mb-2">Logic & Rationale</p>
+                  <p className="text-sm text-gray-700 leading-relaxed">{step.detailedExplanation.logic}</p>
+                </div>
+
+                {/* Component Breakdown */}
+                {step.detailedExplanation.componentBreakdown && step.detailedExplanation.componentBreakdown.length > 0 && (
+                  <div className="bg-white rounded-lg p-3 border border-blue-200">
+                    <p className="text-xs font-semibold text-blue-800 uppercase mb-2">Component Breakdown</p>
+                    <div className="space-y-2">
+                      {step.detailedExplanation.componentBreakdown.map((component, idx) => (
+                        <div key={idx} className="flex items-start justify-between gap-3 py-2 border-b border-gray-100 last:border-b-0">
+                          <div className="flex-1">
+                            <p className="text-sm font-medium text-gray-900">{component.component}</p>
+                            <p className="text-xs text-gray-600 mt-0.5">{component.explanation}</p>
+                          </div>
+                          <div className="text-right">
+                            <p className={`text-sm font-bold ${component.value < 0 ? 'text-red-600' : component.value > 0 ? 'text-green-600' : 'text-gray-600'}`}>
+                              {component.value > 0 ? '+' : ''}{component.value.toFixed(0)}%
+                            </p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Risk Level & Tier */}
+                {(step.detailedExplanation.riskLevel || step.detailedExplanation.tier) && (
+                  <div className="flex items-center gap-2 text-xs text-blue-700">
+                    {step.detailedExplanation.riskLevel && (
+                      <span className="px-2 py-1 bg-blue-100 rounded border border-blue-300 font-semibold">
+                        Risk Level: {step.detailedExplanation.riskLevel}
+                      </span>
+                    )}
+                    {step.detailedExplanation.tier && (
+                      <span className="px-2 py-1 bg-blue-100 rounded border border-blue-300 font-semibold">
+                        Tier: {step.detailedExplanation.tier}
+                      </span>
+                    )}
+                  </div>
+                )}
               </div>
             )}
 
