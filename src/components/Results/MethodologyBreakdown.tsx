@@ -140,31 +140,60 @@ export const MethodologyBreakdown: React.FC<MethodologyBreakdownProps> = ({ resu
       : 0;
   const hasSizeDiscount = sizeDiscount < -0.001; // More than 0.1% discount
   const revenue = result.current_year_data?.revenue || 0;
+  
+  // Check if Step 2 calibration was applied (to explain why Step 5 might be 0%)
+  const step2Data = (result as any).step_results?.step_2_benchmarking;
+  const calibrationFactor = step2Data?.calibration_factor || step2Data?.base_calibration_factor;
+  const smeCalibrationApplied = step2Data?.sme_calibration?.applied || (calibrationFactor && calibrationFactor < 1.0);
+  const sizeDiscountIsZero = Math.abs(sizeDiscount) < 0.001;
 
   return (
     <div className="space-y-6">
       {/* DCF Exclusion Notice (if DCF not used) */}
       <DCFExclusionNotice result={result} />
       
-      {/* Size Discount Notice (if size discount applies) */}
-      {hasSizeDiscount && (
-        <div className="bg-amber-50 border-2 border-amber-300 rounded-lg p-4 sm:p-5">
+      {/* Size Discount Notice - ALWAYS show (even when 0% to explain why) */}
+      {(hasSizeDiscount || (sizeDiscountIsZero && smeCalibrationApplied)) && (
+        <div className={`border-2 rounded-lg p-4 sm:p-5 ${
+          hasSizeDiscount 
+            ? 'bg-amber-50 border-amber-300' 
+            : 'bg-blue-50 border-blue-300'
+        }`}>
           <div className="flex items-start gap-3">
             <div className="flex-shrink-0 mt-0.5">
-              <svg className="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className={`w-5 h-5 ${hasSizeDiscount ? 'text-amber-600' : 'text-blue-600'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
             </div>
             <div className="flex-1">
-              <h4 className="text-sm font-semibold text-amber-900 mb-2">Size Discount Applied</h4>
-              <p className="text-sm text-amber-800 mb-2">
-                Revenue of <strong>{formatCurrency(revenue)}</strong> is below the €5M threshold. 
-                A <strong>{(Math.abs(sizeDiscount) * 100).toFixed(0)}%</strong> size discount has been applied to reflect higher risk and lower liquidity for small companies (McKinsey standard).
-              </p>
-              <p className="text-xs text-amber-700 mt-2">
-                Multiples from databases (Bloomberg, Capital IQ, PitchBook) become correct at around €5M revenue. 
-                Companies below this threshold require size-based corrections. See full adjustment breakdown in the Small Business Valuation Adjustments section below.
-              </p>
+              <h4 className={`text-sm font-semibold mb-2 ${
+                hasSizeDiscount ? 'text-amber-900' : 'text-blue-900'
+              }`}>
+                {hasSizeDiscount ? 'Size Discount Applied' : 'Size Discount: Handled in Step 2 Calibration'}
+              </h4>
+              {hasSizeDiscount ? (
+                <>
+                  <p className="text-sm text-amber-800 mb-2">
+                    Revenue of <strong>{formatCurrency(revenue)}</strong> is below the €5M threshold. 
+                    A <strong>{(Math.abs(sizeDiscount) * 100).toFixed(0)}%</strong> size discount has been applied to reflect higher risk and lower liquidity for small companies (McKinsey standard).
+                  </p>
+                  <p className="text-xs text-amber-700 mt-2">
+                    Multiples from databases (Bloomberg, Capital IQ, PitchBook) become correct at around €5M revenue. 
+                    Companies below this threshold require size-based corrections. See full adjustment breakdown in the Small Business Valuation Adjustments section below.
+                  </p>
+                </>
+              ) : (
+                <>
+                  <p className="text-sm text-blue-800 mb-2">
+                    Revenue of <strong>{formatCurrency(revenue)}</strong> is below the €5M threshold, but <strong>no additional size discount</strong> is applied in Step 5 because size risk is already fully captured in <strong>Step 2 (SME Multiple Calibration)</strong>.
+                  </p>
+                  <p className="text-xs text-blue-700 mt-2">
+                    Step 2 calibration (factor: <strong>{calibrationFactor?.toFixed(4) || 'N/A'}</strong>) already removes database size premium bias (10-12% per Damodaran 2024). 
+                    Applying an additional Step 5 discount would double-count size risk, violating McKinsey's risk factor segregation principle: each risk factor must be addressed only once.
+                    See full explanation in the valuation waterfall below.
+                  </p>
+                </>
+              )}
             </div>
           </div>
         </div>

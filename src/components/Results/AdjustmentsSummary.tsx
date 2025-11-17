@@ -122,23 +122,33 @@ export const AdjustmentsSummary: React.FC<AdjustmentsSummaryProps> = ({
     }
   }
 
-  // Step 5: Size Discount
+  // Step 5: Size Discount - ALWAYS show (even when 0% to explain why)
   if (step5Data && step5Data.status === 'completed') {
     const step5Result = getStepResultData(result, 5);
     const sizeDiscount = result.multiples_valuation?.size_discount || 0;
-    if (sizeDiscount < 0) {
-      allAdjustments.push({
-        stepNumber: 5,
-        name: 'Size Discount',
-        type: 'size_discount',
-        adjustment: sizeDiscount,
-        adjustmentPct: sizeDiscount * 100,
-        rationale: 'McKinsey Size Premium discount for small company size',
-        tier: step5Result?.size_tier,
-        status: step5Data.status,
-        stepData: step5Data
-      });
-    }
+    // CRITICAL: Always show Step 5, even when discount is 0%, to explain why
+    // This ensures transparency: users see that size risk was handled in Step 2 calibration
+    const step2Data = (result as any).step_results?.step_2_benchmarking;
+    const calibrationFactor = step2Data?.calibration_factor || step2Data?.base_calibration_factor;
+    const smeCalibrationApplied = step2Data?.sme_calibration?.applied || (calibrationFactor && calibrationFactor < 1.0);
+    
+    const rationale = sizeDiscount < 0
+      ? 'McKinsey Size Premium discount for small company size'
+      : smeCalibrationApplied
+      ? `Size risk already handled in Step 2 calibration (factor ${calibrationFactor?.toFixed(4) || 'N/A'}) - no double-counting per McKinsey risk factor segregation principle`
+      : 'No size discount applied - size risk not applicable for this company';
+    
+    allAdjustments.push({
+      stepNumber: 5,
+      name: 'Size Discount',
+      type: 'size_discount',
+      adjustment: sizeDiscount,
+      adjustmentPct: sizeDiscount * 100,
+      rationale: rationale,
+      tier: step5Result?.size_tier || (sizeDiscount === 0 ? 'Size risk handled in Step 2 calibration' : 'N/A'),
+      status: step5Data.status,
+      stepData: step5Data
+    });
   }
 
   // Step 6: Liquidity Discount

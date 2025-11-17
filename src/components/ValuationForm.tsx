@@ -151,7 +151,6 @@ export const ValuationForm: React.FC = () => {
         updateFormData({ number_of_owners: 1 });
       }
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [formData.business_type]); // Only depend on business_type to avoid loops
 
   // businessTypes now comes directly from useBusinessTypes() hook with full PostgreSQL metadata

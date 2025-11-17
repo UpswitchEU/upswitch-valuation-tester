@@ -18,6 +18,8 @@ const InputsTable: React.FC<{
     highlight?: boolean;
     explanation?: string;
     academicSource?: string;
+    type?: string;
+    tableData?: Array<{ ratioRange: string; riskLevel: string; discount: string; note: string }>;
   }>; 
   colors: { text: string; bg: string; border: string } 
 }> = ({ inputs, colors }) => {
@@ -37,42 +39,86 @@ const InputsTable: React.FC<{
     <div>
       <p className="text-xs text-gray-500 font-semibold uppercase mb-2">Inputs</p>
       <div className="bg-white border border-gray-200 rounded-lg divide-y divide-gray-200">
-        {inputs.map((input, idx) => (
-          <div key={idx}>
-            <div className="flex justify-between items-center px-4 py-2">
-              <span className="text-sm text-gray-600">{input.label}</span>
-              <div className="flex items-center gap-2">
-                <span className={`text-sm font-semibold ${input.highlight ? colors.text : 'text-gray-900'}`}>
-                  {input.value}
-                </span>
-                {input.explanation && (
-                  <button
-                    onClick={() => toggleInput(idx)}
-                    className="text-blue-600 hover:text-blue-800 transition-colors"
-                    aria-label="Show explanation"
-                  >
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                  </button>
-                )}
+        {inputs.map((input, idx) => {
+          // Handle table type inputs
+          if (input.type === 'table' && input.tableData) {
+            return (
+              <div key={idx} className="px-4 py-3">
+                <p className="text-sm font-semibold text-gray-700 mb-3">{input.label}</p>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-xs border-collapse">
+                    <thead>
+                      <tr className="bg-gray-50 border-b-2 border-gray-300">
+                        <th className="text-left py-2 px-3 font-semibold text-gray-700">Owner/FTE Ratio</th>
+                        <th className="text-left py-2 px-3 font-semibold text-gray-700">Risk Level</th>
+                        <th className="text-left py-2 px-3 font-semibold text-gray-700">Discount</th>
+                        <th className="text-left py-2 px-3 font-semibold text-gray-700">Note</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {input.tableData.map((row, rowIdx) => (
+                        <tr key={rowIdx} className="border-b border-gray-100 hover:bg-gray-50">
+                          <td className="py-2 px-3 text-gray-900 font-mono">{row.ratioRange}</td>
+                          <td className="py-2 px-3">
+                            <span className={`px-2 py-1 rounded text-xs font-semibold ${
+                              row.riskLevel === 'SOLE_TRADER' ? 'bg-red-100 text-red-800' :
+                              row.riskLevel === 'CRITICAL' ? 'bg-orange-100 text-orange-800' :
+                              row.riskLevel === 'HIGH' ? 'bg-yellow-100 text-yellow-800' :
+                              row.riskLevel === 'MEDIUM' ? 'bg-blue-100 text-blue-800' :
+                              'bg-green-100 text-green-800'
+                            }`}>
+                              {row.riskLevel}
+                            </span>
+                          </td>
+                          <td className="py-2 px-3 text-red-600 font-semibold">{row.discount}</td>
+                          <td className="py-2 px-3 text-gray-600 text-xs italic">{row.note || '-'}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
               </div>
-            </div>
-            {input.explanation && expandedInputs.has(idx) && (
-              <div className="px-4 pb-3 bg-blue-50 border-l-4 border-blue-400">
-                <div className="pt-2 space-y-1">
-                  <p className="text-xs font-semibold text-blue-900">Why {input.value}?</p>
-                  <p className="text-xs text-gray-700 leading-relaxed">{input.explanation}</p>
-                  {input.academicSource && (
-                    <p className="text-xs text-gray-600 italic mt-1">
-                      <span className="font-semibold">Source:</span> {input.academicSource}
-                    </p>
+            );
+          }
+
+          // Regular input row
+          return (
+            <div key={idx}>
+              <div className="flex justify-between items-center px-4 py-2">
+                <span className="text-sm text-gray-600">{input.label}</span>
+                <div className="flex items-center gap-2">
+                  <span className={`text-sm font-semibold ${input.highlight ? colors.text : 'text-gray-900'}`}>
+                    {input.value}
+                  </span>
+                  {input.explanation && (
+                    <button
+                      onClick={() => toggleInput(idx)}
+                      className="text-blue-600 hover:text-blue-800 transition-colors"
+                      aria-label="Show explanation"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                    </button>
                   )}
                 </div>
               </div>
-            )}
-          </div>
-        ))}
+              {input.explanation && expandedInputs.has(idx) && (
+                <div className="px-4 pb-3 bg-blue-50 border-l-4 border-blue-400">
+                  <div className="pt-2 space-y-1">
+                    <p className="text-xs font-semibold text-blue-900">Why {input.value}?</p>
+                    <p className="text-xs text-gray-700 leading-relaxed">{input.explanation}</p>
+                    {input.academicSource && (
+                      <p className="text-xs text-gray-600 italic mt-1">
+                        <span className="font-semibold">Source:</span> {input.academicSource}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+          );
+        })}
       </div>
     </div>
   );

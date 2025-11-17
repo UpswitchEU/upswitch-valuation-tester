@@ -12,7 +12,8 @@ import { useAuth } from '../hooks/useAuth';
 import { useTypingAnimation } from '../hooks/useTypingAnimation';
 import { debugLogger } from '../utils/debugLogger';
 import { chatLogger } from '../utils/logger';
-import { hasKBOSuggestions, KBOSuggestionsList, parseKBOSuggestions } from './KBOSuggestionsList';
+import { KBOSuggestionsList } from './KBOSuggestionsList';
+import { hasKBOSuggestions, parseKBOSuggestions } from './utils/kboParsing';
 import { SuggestionChips } from './SuggestionChips';
 import { TypingIndicator } from './TypingIndicator';
 // Note: Business extraction utilities available if needed
