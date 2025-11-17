@@ -18,6 +18,7 @@ export interface ComponentBreakdown {
   component: string;
   value: number;
   explanation: string;
+  displayType?: "multiple" | "percentage"; // Optional: "multiple" for X.XXx format, "percentage" for X% format
 }
 
 export interface DetailedExplanation {
@@ -271,7 +272,8 @@ export const calculateBaseEnterpriseValue = (result: ValuationResponse): Calcula
     if (unadjustedMultiple) {
       componentBreakdown.push({
         component: 'Database multiple (industry median)',
-        value: 0,
+        value: unadjustedMultiple,
+        displayType: 'multiple',
         explanation: `Base multiple from comparable public companies: ${unadjustedMultiple.toFixed(2)}x (Capital IQ, 2024)`
       });
     }
@@ -281,6 +283,7 @@ export const calculateBaseEnterpriseValue = (result: ValuationResponse): Calcula
       componentBreakdown.push({
         component: 'SME calibration adjustment',
         value: -calibrationReduction,
+        displayType: 'percentage',
         explanation: `Calibration factor ${calibrationFactor.toFixed(4)} removes ${calibrationReduction.toFixed(1)}% size premium bias (McKinsey 2015, non-linear interpolation for <€1M revenue)`
       });
     }
@@ -290,13 +293,15 @@ export const calculateBaseEnterpriseValue = (result: ValuationResponse): Calcula
       componentBreakdown.push({
         component: 'Margin premium',
         value: (marginPremium / unadjustedMultiple) * 100,
+        displayType: 'percentage',
         explanation: `EBITDA margin ${(ebitdaMargin * 100).toFixed(1)}% exceeds industry average (${industryAvgMargin}%) by ${marginExcess.toFixed(1)}% - ${marginPremium.toFixed(1)}x premium applied per Damodaran (2012)`
       });
     }
     
     componentBreakdown.push({
       component: 'Final EBITDA multiple',
-      value: 0,
+      value: primaryMultiple,
+      displayType: 'multiple',
       explanation: `${primaryMultiple.toFixed(2)}x (after all adjustments)`
     });
 

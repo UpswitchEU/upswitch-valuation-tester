@@ -140,7 +140,7 @@ export const MethodologyBreakdown: React.FC<MethodologyBreakdownProps> = ({ resu
       : 0;
   const hasSizeDiscount = sizeDiscount < -0.001; // More than 0.1% discount
   const revenue = result.current_year_data?.revenue || 0;
-  
+
   // Check if Step 2 calibration was applied (to explain why Step 5 might be 0%)
   const step2Data = (result as any).step_results?.step_2_benchmarking;
   const calibrationFactor = step2Data?.calibration_factor || step2Data?.base_calibration_factor;
@@ -173,14 +173,14 @@ export const MethodologyBreakdown: React.FC<MethodologyBreakdownProps> = ({ resu
               </h4>
               {hasSizeDiscount ? (
                 <>
-                  <p className="text-sm text-amber-800 mb-2">
-                    Revenue of <strong>{formatCurrency(revenue)}</strong> is below the €5M threshold. 
-                    A <strong>{(Math.abs(sizeDiscount) * 100).toFixed(0)}%</strong> size discount has been applied to reflect higher risk and lower liquidity for small companies (McKinsey standard).
-                  </p>
-                  <p className="text-xs text-amber-700 mt-2">
-                    Multiples from databases (Bloomberg, Capital IQ, PitchBook) become correct at around €5M revenue. 
-                    Companies below this threshold require size-based corrections. See full adjustment breakdown in the Small Business Valuation Adjustments section below.
-                  </p>
+              <p className="text-sm text-amber-800 mb-2">
+                Revenue of <strong>{formatCurrency(revenue)}</strong> is below the €5M threshold. 
+                A <strong>{(Math.abs(sizeDiscount) * 100).toFixed(0)}%</strong> size discount has been applied to reflect higher risk and lower liquidity for small companies (McKinsey standard).
+              </p>
+              <p className="text-xs text-amber-700 mt-2">
+                Multiples from databases (Bloomberg, Capital IQ, PitchBook) become correct at around €5M revenue. 
+                Companies below this threshold require size-based corrections. See full adjustment breakdown in the Small Business Valuation Adjustments section below.
+              </p>
                 </>
               ) : (
                 <>

@@ -138,17 +138,17 @@ export const AdjustmentsSummary: React.FC<AdjustmentsSummaryProps> = ({
       ? `Size risk already handled in Step 2 calibration (factor ${calibrationFactor?.toFixed(4) || 'N/A'}) - no double-counting per McKinsey risk factor segregation principle`
       : 'No size discount applied - size risk not applicable for this company';
     
-    allAdjustments.push({
-      stepNumber: 5,
-      name: 'Size Discount',
-      type: 'size_discount',
-      adjustment: sizeDiscount,
-      adjustmentPct: sizeDiscount * 100,
+      allAdjustments.push({
+        stepNumber: 5,
+        name: 'Size Discount',
+        type: 'size_discount',
+        adjustment: sizeDiscount,
+        adjustmentPct: sizeDiscount * 100,
       rationale: rationale,
       tier: step5Result?.size_tier || (sizeDiscount === 0 ? 'Size risk handled in Step 2 calibration' : 'N/A'),
-      status: step5Data.status,
-      stepData: step5Data
-    });
+        status: step5Data.status,
+        stepData: step5Data
+      });
   }
 
   // Step 6: Liquidity Discount
