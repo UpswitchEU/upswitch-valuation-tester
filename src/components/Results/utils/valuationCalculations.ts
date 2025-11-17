@@ -272,7 +272,7 @@ export const calculateBaseEnterpriseValue = (result: ValuationResponse): Calcula
     color: 'blue',
     icon: '📊',
     explanation: multiples.primary_multiple_reason || (isPrimaryEBITDA 
-      ? `The ${(primaryMultiple || 0).toFixed(2)}x EBITDA multiple reflects three components: (1) Database multiple: Industry median for ${multiples.industry || 'this sector'} from comparable public companies (Capital IQ, 2024), (2) SME Calibration: Applied per McKinsey (2015, "Valuing Small and Medium Enterprises", Ch. 11, p. 356-389) to adjust for size-related database bias - uses non-linear interpolation (power 0.90) for companies under €1M revenue to remove systematic size premium (10-12% per Damodaran 2024), (3) Margin Premium: If EBITDA margin exceeds industry average (typically 10-15%), an additional premium is applied per Damodaran (2012, "Investment Valuation", Ch. 3, p. 78-95), which documents 0.3-0.5x premium range for above-average margins with discretion for exceptional performance. For margins significantly above average (>4% excess), discretionary extension beyond 0.5x may be justified based on relative margin improvement (e.g., 4.6%/12.5% = 36.8% relative excess).`
+      ? `The ${(primaryMultiple || 0).toFixed(2)}x EBITDA multiple reflects three components: (1) Database multiple: Industry median from comparable public companies (Capital IQ, 2024), (2) SME Calibration: Applied per McKinsey (2015, "Valuing Small and Medium Enterprises", Ch. 11, p. 356-389) to adjust for size-related database bias - uses non-linear interpolation (power 0.90) for companies under €1M revenue to remove systematic size premium (10-12% per Damodaran 2024), (3) Margin Premium: If EBITDA margin exceeds industry average (typically 10-15%), an additional premium is applied per Damodaran (2012, "Investment Valuation", Ch. 3, p. 78-95), which documents 0.3-0.5x premium range for above-average margins with discretion for exceptional performance. For margins significantly above average (>4% excess), discretionary extension beyond 0.5x may be justified based on relative margin improvement (e.g., 4.6%/12.5% = 36.8% relative excess).`
       : `${multipleName} is the standard approach for this industry. Revenue multiples are typically used for early-stage, high-growth, or unprofitable companies where EBITDA may be negative or not representative of long-term potential.`)
   };
 };
@@ -478,13 +478,6 @@ export const calculateOwnerConcentrationImpact = (result: ValuationResponse, pre
       };
     } else {
       // Standard tier discounts (HIGH, MEDIUM, LOW)
-      const tierDiscounts: { [key: string]: number } = {
-        'CRITICAL': -0.20,
-        'HIGH': -0.12,
-        'MEDIUM': -0.07,
-        'LOW': -0.03
-      };
-      
       detailedExplanation = {
         percentage: adjustmentFactor * 100,
         academicSources: [
@@ -544,7 +537,7 @@ export const calculateOwnerConcentrationImpact = (result: ValuationResponse, pre
         value: `${(adjustmentFactor * 100).toFixed(0)}%`, 
         highlight: true,
         explanation: isPartnership && riskLevel === 'CRITICAL'
-          ? `Partnership discount (${num_owners}+ owners). Lower bound of academic 15-18% range per Damodaran (2012). Partnerships have redundancy benefits vs. sole traders - if one owner leaves, business continues with remaining owner(s).`
+          ? `Partnership discount (${owners}+ owners). Lower bound of academic 15-18% range per Damodaran (2012). Partnerships have redundancy benefits vs. sole traders - if one owner leaves, business continues with remaining owner(s).`
           : isSoleTrader && riskLevel === 'SOLE_TRADER'
           ? `SOLE_TRADER discount consolidates all sole trader-specific risks: owner concentration (15-18%), management absence (5-7%), and incremental illiquidity (5-10%) per PwC (2023), Deloitte (2022), Koeplin et al. (2000).`
           : `Standard ${riskLevel} tier discount per academic valuation standards. Higher ratios mean greater key person dependency and reduced business transferability.`,
