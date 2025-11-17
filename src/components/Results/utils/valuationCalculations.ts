@@ -40,6 +40,8 @@ export interface CalculationStep {
     highlight?: boolean;
     explanation?: string;  // NEW: Inline explanation for this value
     academicSource?: string;  // NEW: Quick academic reference
+    type?: string;  // NEW: Special input type (e.g., 'table')
+    tableData?: Array<{ ratioRange: string; riskLevel: string; discount: string; note: string }>;  // NEW: Table data for table type inputs
   }[];
   calculation: string;
   result: { low: number; mid: number; high: number };
@@ -847,11 +849,9 @@ export const calculateSizeDiscountImpact = (result: ValuationResponse, previousS
     };
   }
 
-  // Get calibration factor from Step 2 if available
-  // Try to extract from step_results or use default
-  const step2Data = (result as any).step_results?.step_2_benchmarking;
-  const calibrationFactor = step2Data?.calibration_factor || step2Data?.base_calibration_factor || 0.78;
-  const calibrationFactorDisplay = calibrationFactor.toFixed(4);
+  // Use calibration factor already extracted above (lines 725-726)
+  // If not available, use default
+  const calibrationFactorDisplay = (calibrationFactor || 0.78).toFixed(4);
 
   return {
     stepNumber: previousStep.stepNumber + 1,
