@@ -28,7 +28,8 @@ export class RegistryService {
   private pendingRequests: Map<string, Promise<any>>;
 
   constructor(config?: Partial<RegistryServiceConfig>) {
-    this.baseURL = config?.baseURL || import.meta.env.VITE_VALUATION_ENGINE_URL || 'https://upswitch-valuation-engine-production.up.railway.app';
+    // Use Node.js backend instead of direct Python engine calls
+    this.baseURL = config?.baseURL || import.meta.env.VITE_BACKEND_URL || import.meta.env.VITE_API_BASE_URL || 'https://api.upswitch.biz';
     this.timeout = config?.timeout || 10000;
     this.cache = new RegistryCache(config?.maxCacheSize, config?.cacheTTL);
     this.pendingRequests = new Map();
@@ -109,7 +110,7 @@ export class RegistryService {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), this.timeout);
       
-      const response = await fetch(`${this.baseURL}/api/registry/search`, {
+      const response = await fetch(`${this.baseURL}/api/v1/registry/search`, {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',

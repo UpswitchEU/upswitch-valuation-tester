@@ -151,13 +151,18 @@ class HealthCheckService {
   }
 
   private async makeHealthRequest(serviceName: string): Promise<Response> {
-    const baseUrl = process.env.REACT_APP_VALUATION_ENGINE_URL || 'http://localhost:8000';
+    // NOTE: Health checks use Python engine directly (not through Node.js backend)
+    // This is intentional - we need to verify Python engine health independently
+    // Node.js backend health is checked separately via /api/health endpoint
+    const pythonEngineUrl = import.meta.env.VITE_VALUATION_ENGINE_URL || 
+                           import.meta.env.VITE_VALUATION_API_URL || 
+                           'https://upswitch-valuation-engine-production.up.railway.app';
     
     const endpoints = {
-      valuation_engine: `${baseUrl}/api/health`,
-      streaming: `${baseUrl}/api/v1/intelligent-conversation/health`,
-      triage: `${baseUrl}/api/v1/intelligent-conversation/start`,
-      registry: `${baseUrl}/api/registry/health`
+      valuation_engine: `${pythonEngineUrl}/api/health`,
+      streaming: `${pythonEngineUrl}/api/v1/intelligent-conversation/health`,
+      triage: `${pythonEngineUrl}/api/v1/intelligent-conversation/start`,
+      registry: `${pythonEngineUrl}/api/registry/health`
     };
 
     const url = endpoints[serviceName as keyof typeof endpoints];

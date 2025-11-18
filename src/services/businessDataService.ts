@@ -363,11 +363,12 @@ class BusinessDataService {
    */
   async getBusinessTypeAnalysis(businessType: string): Promise<BusinessTypeAnalysis | null> {
     try {
-      const valuationEngineUrl = import.meta.env.VITE_VALUATION_ENGINE_URL || 
-                                import.meta.env.VITE_VALUATION_API_URL || 
-                                'https://upswitch-valuation-engine-production.up.railway.app';
+      // Use Node.js backend instead of direct Python engine calls
+      const backendUrl = import.meta.env.VITE_BACKEND_URL || 
+                        import.meta.env.VITE_API_BASE_URL || 
+                        'https://api.upswitch.biz';
 
-      const response = await fetch(`${valuationEngineUrl}/api/v1/analyze`, {
+      const response = await fetch(`${backendUrl}/api/v1/analyze`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
