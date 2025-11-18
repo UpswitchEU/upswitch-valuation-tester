@@ -361,7 +361,7 @@ class BackendAPI {
 
   /**
    * Download Accountant View PDF report
-   * Calls Python engine directly for PDF generation
+   * Calls Node.js backend which proxies to Python engine
    */
   async downloadAccountantViewPDF(
     request: ValuationRequest,
@@ -373,38 +373,34 @@ class BackendAPI {
     const perfLogger = createPerformanceLogger('downloadAccountantViewPDF', 'api');
     
     try {
-      // Use Python engine URL directly for PDF generation
-      const pythonEngineUrl = import.meta.env.VITE_PYTHON_ENGINE_URL || 
-                             'https://upswitch-valuation-engine-production.up.railway.app';
-      
-      const pdfUrl = `${pythonEngineUrl}/api/v1/valuation/pdf/accountant-view`;
-      
-      apiLogger.info('Requesting Accountant View PDF', {
+      // Call Node.js backend endpoint which proxies to Python engine
+      apiLogger.info('Requesting Accountant View PDF via Node.js backend', {
         company_name: request.company_name,
-        pdfUrl
+        endpoint: '/api/valuations/pdf/accountant-view'
       });
 
-      const response = await axios.post(pdfUrl, request, {
-        responseType: 'blob', // Important: request as blob for PDF
-        signal: options?.signal,
-        timeout: 120000, // 2 minutes for PDF generation
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        onDownloadProgress: (progressEvent) => {
-          if (options?.onProgress && progressEvent.total) {
-            const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
-            options.onProgress(percentCompleted);
+      const response = await this.client.post(
+        '/api/valuations/pdf/accountant-view',
+        request,
+        {
+          responseType: 'blob', // Important: request as blob for PDF
+          signal: options?.signal,
+          timeout: 120000, // 2 minutes for PDF generation
+          onDownloadProgress: (progressEvent) => {
+            if (options?.onProgress && progressEvent.total) {
+              const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+              options.onProgress(percentCompleted);
+            }
           }
         }
-      });
+      );
 
       perfLogger.end({
         pdfSize: response.data.size,
         contentType: response.headers['content-type']
       });
 
-      apiLogger.info('Accountant View PDF received', {
+      apiLogger.info('Accountant View PDF received via Node.js backend', {
         pdfSize: response.data.size,
         contentType: response.headers['content-type']
       });
