@@ -17,6 +17,17 @@ import { useValuationStore } from '../../store/useValuationStore';
 export const Results: React.FC = () => {
   const { result } = useValuationStore();
 
+  // DIAGNOSTIC: Log result state
+  React.useEffect(() => {
+    console.log('[DIAGNOSTIC-RESULTS] Results component render:', {
+      hasResult: !!result,
+      hasHtmlReport: !!result?.html_report,
+      htmlReportLength: result?.html_report?.length || 0,
+      htmlReportPreview: result?.html_report?.substring(0, 200) || 'N/A',
+      resultKeys: result ? Object.keys(result) : []
+    });
+  }, [result]);
+
   if (!result) {
     return null;
   }

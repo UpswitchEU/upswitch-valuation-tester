@@ -315,7 +315,7 @@ export const useValuationStore = create<ValuationStore>((set, get) => ({
       }
       
       // DIAGNOSTIC: Log backend response structure (FIXED - now extracts nested data)
-      console.log('DIAGNOSTIC: Backend response (FIXED):', {
+      console.log('[DIAGNOSTIC-FRONTEND-STORE] Backend response received:', {
         responseType: typeof response,
         responseKeys: Object.keys(response || {}),
         equityValues: {
@@ -328,14 +328,15 @@ export const useValuationStore = create<ValuationStore>((set, get) => ({
         htmlReport: {
           present: !!response?.html_report,
           length: response?.html_report?.length || 0,
-          preview: response?.html_report?.substring(0, 100) || 'N/A'
+          preview: response?.html_report?.substring(0, 200) || 'N/A',
+          type: typeof response?.html_report
         },
         fullData: response
       });
       
       // DIAGNOSTIC: Log report data sections
       const responseAny = response as any;
-      console.log('DIAGNOSTIC: Report data sections:', {
+      console.log('[DIAGNOSTIC-FRONTEND-STORE] Report data sections:', {
         keyValueDrivers: responseAny?.key_value_drivers,
         riskFactors: responseAny?.risk_factors,
         financialMetrics: responseAny?.financial_metrics,
@@ -344,7 +345,30 @@ export const useValuationStore = create<ValuationStore>((set, get) => ({
         methodologyNotes: responseAny?.methodology_notes
       });
       
+      // DIAGNOSTIC: Log before storing in Zustand
+      storeLogger.info('DIAGNOSTIC: About to store result in Zustand store', {
+        hasHtmlReport: !!response?.html_report,
+        htmlReportLength: response?.html_report?.length || 0,
+        valuationId: response?.valuation_id
+      });
+      
       setResult(response);
+      
+      // DIAGNOSTIC: Verify result was stored correctly
+      const storedResult = get().result;
+      console.log('[DIAGNOSTIC-FRONTEND-STORE] Result stored in Zustand:', {
+        stored: !!storedResult,
+        storedHasHtmlReport: !!storedResult?.html_report,
+        storedHtmlReportLength: storedResult?.html_report?.length || 0,
+        storedHtmlReportPreview: storedResult?.html_report?.substring(0, 200) || 'N/A',
+        storedKeys: storedResult ? Object.keys(storedResult) : []
+      });
+      
+      storeLogger.info('DIAGNOSTIC: Result stored in Zustand store', {
+        stored: !!storedResult,
+        storedHasHtmlReport: !!storedResult?.html_report,
+        storedHtmlReportLength: storedResult?.html_report?.length || 0
+      });
       
       // Update inputData with metrics from response
       if (response.financial_metrics && inputData) {

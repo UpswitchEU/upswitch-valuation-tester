@@ -107,7 +107,25 @@ class BackendAPI {
           inResponseDataData: !!response.data.data?.html_report,
           inResponseDirect: !!response.data?.html_report,
           length: responseData?.html_report?.length || 0,
-          preview: responseData?.html_report?.substring(0, 100) || 'N/A'
+          preview: responseData?.html_report?.substring(0, 200) || 'N/A',
+          type: typeof responseData?.html_report
+        }
+      });
+
+      // DIAGNOSTIC: Console log for browser debugging
+      console.log('[DIAGNOSTIC-FRONTEND-API] Response structure:', {
+        responseStatus: response.status,
+        responseDataStructure: {
+          success: response.data.success,
+          hasData: !!response.data.data,
+          dataKeys: response.data.data ? Object.keys(response.data.data) : [],
+          dataHasHtmlReport: !!response.data.data?.html_report,
+          dataHtmlReportLength: response.data.data?.html_report?.length || 0
+        },
+        extractedResponseData: {
+          hasHtmlReport: !!responseData?.html_report,
+          htmlReportLength: responseData?.html_report?.length || 0,
+          htmlReportPreview: responseData?.html_report?.substring(0, 200) || 'N/A'
         }
       });
       
