@@ -185,6 +185,16 @@ export const ManualValuationFlow: React.FC<ManualValuationFlowProps> = memo(({ o
 
   // Handle stream completion
   const handleStreamComplete = useCallback((htmlReport: string, valuationId: string, fullResponse?: any) => {
+    const requestId = requestIdRef.current;
+    if (requestId) {
+      const duration = performanceTracker.markEnd(requestId);
+      performanceTracker.trackReportGeneration(requestId, duration);
+      
+      // Log performance summary
+      const summary = performanceTracker.getSummary(requestId);
+      console.log('[ManualValuationFlow] Performance Summary:', summary);
+    }
+    
     setFinalReportHtml(htmlReport);
     setIsStreaming(false);
     setStreamProgress(100);
@@ -206,6 +216,9 @@ export const ManualValuationFlow: React.FC<ManualValuationFlowProps> = memo(({ o
       hasHtmlReport: !!htmlReport,
       htmlReportLength: htmlReport.length
     });
+    
+    // Clear request ID after completion
+    requestIdRef.current = null;
   }, [result, setResult]);
 
   // Handle stream errors
@@ -495,7 +508,9 @@ export const ManualValuationFlow: React.FC<ManualValuationFlowProps> = memo(({ o
                     isGenerating={isStreaming || isCalculating || retryState.isRetrying}
                   />
                 ) : result ? (
-                  <Results />
+                  <Suspense fallback={<ComponentLoader message="Loading report..." />}>
+                    <Results />
+                  </Suspense>
                 ) : (
                   <div className="flex flex-col items-center justify-center h-full p-6 sm:p-8 text-center">
                     <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-zinc-100 flex items-center justify-center mb-3 sm:mb-4">
@@ -518,7 +533,9 @@ export const ManualValuationFlow: React.FC<ManualValuationFlowProps> = memo(({ o
               <div className="h-full">
                 {result ? (
                   <div className="p-4 sm:p-6">
-                    <ValuationInfoPanel result={result} inputData={inputData} />
+                    <Suspense fallback={<ComponentLoader message="Loading calculation details..." />}>
+                      <ValuationInfoPanel result={result} inputData={inputData} />
+                    </Suspense>
                   </div>
                 ) : (
                   <div className="flex flex-col items-center justify-center h-full p-6 sm:p-8 text-center">
