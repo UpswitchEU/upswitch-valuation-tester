@@ -371,14 +371,36 @@ class BackendAPI {
     }
   ): Promise<Blob> {
     const perfLogger = createPerformanceLogger('downloadAccountantViewPDF', 'api');
+    const requestStartTime = performance.now();
+    const requestId = `req_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
     
     try {
-      // Call Node.js backend endpoint which proxies to Python engine
-      apiLogger.info('Requesting Accountant View PDF via Node.js backend', {
+      // Log request initiation
+      apiLogger.info('[BackendAPI] PDF download request initiated', {
+        requestId,
         company_name: request.company_name,
-        endpoint: '/api/valuations/pdf/accountant-view'
+        endpoint: '/api/valuations/pdf/accountant-view',
+        hasSignal: !!options?.signal,
+        hasProgressCallback: !!options?.onProgress,
+        requestSize: JSON.stringify(request).length,
+        timestamp: new Date().toISOString()
       });
 
+      // Log request details
+      apiLogger.debug('[BackendAPI] PDF request details', {
+        requestId,
+        company_name: request.company_name,
+        industry: request.industry,
+        business_model: request.business_model,
+        revenue: request.current_year_data?.revenue,
+        ebitda: request.current_year_data?.ebitda,
+        number_of_employees: request.number_of_employees,
+        number_of_owners: request.number_of_owners
+      });
+
+      const httpRequestStartTime = performance.now();
+      
+      // Call Node.js backend endpoint which proxies to Python engine
       const response = await this.client.post(
         '/api/valuations/pdf/accountant-view',
         request,
@@ -390,31 +412,121 @@ class BackendAPI {
             if (options?.onProgress && progressEvent.total) {
               const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
               options.onProgress(percentCompleted);
+              
+              // Log progress milestones
+              if (percentCompleted % 25 === 0 || percentCompleted === 100) {
+                apiLogger.debug('[BackendAPI] PDF download progress', {
+                  requestId,
+                  progress: percentCompleted,
+                  loaded: progressEvent.loaded,
+                  total: progressEvent.total,
+                  company_name: request.company_name
+                });
+              }
             }
           }
         }
       );
 
-      perfLogger.end({
+      const httpRequestDuration = performance.now() - httpRequestStartTime;
+      const totalDuration = performance.now() - requestStartTime;
+      const correlationId = extractCorrelationId(response);
+
+      // Log response details
+      apiLogger.info('[BackendAPI] PDF response received from Node.js backend', {
+        requestId,
+        correlationId,
+        status: response.status,
+        statusText: response.statusText,
         pdfSize: response.data.size,
-        contentType: response.headers['content-type']
+        pdfSizeKB: Math.round(response.data.size / 1024),
+        contentType: response.headers['content-type'],
+        contentDisposition: response.headers['content-disposition'],
+        httpRequestDurationMs: Math.round(httpRequestDuration),
+        totalDurationMs: Math.round(totalDuration),
+        company_name: request.company_name
       });
 
-      apiLogger.info('Accountant View PDF received via Node.js backend', {
+      perfLogger.end({
+        requestId,
         pdfSize: response.data.size,
-        contentType: response.headers['content-type']
+        contentType: response.headers['content-type'],
+        httpRequestDurationMs: Math.round(httpRequestDuration),
+        totalDurationMs: Math.round(totalDuration),
+        correlationId
+      });
+
+      // Validate PDF blob
+      if (!response.data || response.data.size === 0) {
+        throw new Error('Received empty PDF blob from backend');
+      }
+
+      if (response.data.size < 1000) {
+        apiLogger.warn('[BackendAPI] PDF size suspiciously small', {
+          requestId,
+          pdfSize: response.data.size,
+          company_name: request.company_name
+        });
+      }
+
+      apiLogger.info('[BackendAPI] PDF download completed successfully', {
+        requestId,
+        correlationId,
+        pdfSize: response.data.size,
+        pdfSizeKB: Math.round(response.data.size / 1024),
+        totalDurationMs: Math.round(totalDuration),
+        company_name: request.company_name,
+        timestamp: new Date().toISOString()
       });
 
       return response.data;
     } catch (error: any) {
-      perfLogger.end({ error: error.message });
-      
+      const errorDuration = performance.now() - requestStartTime;
       const correlationId = error.response ? extractCorrelationId(error.response) : null;
-      apiLogger.error('Accountant View PDF download failed', {
-        error: error.response?.data || error.message,
+      
+      // Comprehensive error logging
+      const errorDetails = {
+        requestId,
+        correlationId,
+        error: error.message,
+        errorType: error.name,
         status: error.response?.status,
+        statusText: error.response?.statusText,
+        errorData: error.response?.data,
+        errorDurationMs: Math.round(errorDuration),
+        company_name: request.company_name,
+        timestamp: new Date().toISOString()
+      };
+
+      apiLogger.error('[BackendAPI] PDF download failed', errorDetails);
+      
+      perfLogger.end({ 
+        requestId,
+        error: error.message,
+        errorType: error.name,
+        status: error.response?.status,
+        errorDurationMs: Math.round(errorDuration),
         correlationId
       });
+
+      // Log additional error context
+      if (error.code) {
+        apiLogger.error('[BackendAPI] Network error details', {
+          requestId,
+          errorCode: error.code,
+          errorMessage: error.message
+        });
+      }
+
+      if (error.response?.data) {
+        apiLogger.error('[BackendAPI] Error response data', {
+          requestId,
+          errorData: typeof error.response.data === 'string' 
+            ? error.response.data.substring(0, 500) 
+            : JSON.stringify(error.response.data).substring(0, 500)
+        });
+      }
+
       throw error;
     }
   }

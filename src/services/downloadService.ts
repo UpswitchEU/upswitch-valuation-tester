@@ -354,23 +354,75 @@ export class DownloadService {
       signal?: AbortSignal;
     }
   ): Promise<void> {
+    const startTime = performance.now();
+    const downloadId = `pdf_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    
     try {
+      console.log('[DownloadService] PDF download initiated', {
+        downloadId,
+        company_name: request.company_name,
+        timestamp: new Date().toISOString(),
+        hasSignal: !!options?.signal,
+        hasProgressCallback: !!options?.onProgress
+      });
+
       const filename = options?.filename || this.getDefaultFilename(request.company_name, 'pdf');
+      
+      console.log('[DownloadService] PDF filename determined', {
+        downloadId,
+        filename,
+        company_name: request.company_name
+      });
       
       // Show loading state if progress callback provided
       if (options?.onProgress) {
         options.onProgress(0);
+        console.log('[DownloadService] Progress callback initialized', { downloadId, progress: 0 });
       }
+
+      const apiCallStartTime = performance.now();
+      console.log('[DownloadService] Calling backend API for PDF generation', {
+        downloadId,
+        company_name: request.company_name,
+        endpoint: '/api/valuations/pdf/accountant-view'
+      });
 
       // Call backend API to generate PDF
       const pdfBlob = await backendAPI.downloadAccountantViewPDF(request, {
         signal: options?.signal,
-        onProgress: options?.onProgress
+        onProgress: (progress) => {
+          if (options?.onProgress) {
+            options.onProgress(progress);
+          }
+          console.log('[DownloadService] PDF download progress', {
+            downloadId,
+            progress,
+            company_name: request.company_name
+          });
+        }
+      });
+
+      const apiCallDuration = performance.now() - apiCallStartTime;
+      console.log('[DownloadService] Backend API call completed', {
+        downloadId,
+        company_name: request.company_name,
+        pdfSize: pdfBlob.size,
+        pdfSizeKB: Math.round(pdfBlob.size / 1024),
+        apiCallDurationMs: Math.round(apiCallDuration),
+        contentType: pdfBlob.type || 'application/pdf'
       });
 
       if (options?.onProgress) {
         options.onProgress(100);
+        console.log('[DownloadService] Progress set to 100%', { downloadId });
       }
+
+      const downloadStartTime = performance.now();
+      console.log('[DownloadService] Initiating browser download', {
+        downloadId,
+        filename,
+        pdfSize: pdfBlob.size
+      });
 
       // Create download link
       const url = URL.createObjectURL(pdfBlob);
@@ -384,9 +436,39 @@ export class DownloadService {
       // Clean up
       URL.revokeObjectURL(url);
       
-      console.log(`PDF downloaded: ${filename} (${(pdfBlob.size / 1024).toFixed(2)} KB)`);
+      const downloadDuration = performance.now() - downloadStartTime;
+      const totalDuration = performance.now() - startTime;
+      
+      console.log('[DownloadService] PDF download completed successfully', {
+        downloadId,
+        filename,
+        pdfSize: pdfBlob.size,
+        pdfSizeKB: Math.round(pdfBlob.size / 1024),
+        downloadDurationMs: Math.round(downloadDuration),
+        totalDurationMs: Math.round(totalDuration),
+        company_name: request.company_name,
+        timestamp: new Date().toISOString()
+      });
     } catch (error) {
-      console.error('Accountant View PDF download failed:', error);
+      const errorDuration = performance.now() - startTime;
+      const errorDetails = {
+        downloadId,
+        company_name: request.company_name,
+        error: error instanceof Error ? error.message : 'Unknown error',
+        errorType: error instanceof Error ? error.constructor.name : typeof error,
+        durationMs: Math.round(errorDuration),
+        timestamp: new Date().toISOString()
+      };
+      
+      console.error('[DownloadService] PDF download failed', errorDetails);
+      
+      // Log additional error details if available
+      if (error instanceof Error && error.stack) {
+        console.error('[DownloadService] Error stack trace', {
+          downloadId,
+          stack: error.stack
+        });
+      }
       
       // Re-throw with user-friendly message
       if (error instanceof Error) {
