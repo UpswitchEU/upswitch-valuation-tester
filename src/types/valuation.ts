@@ -895,6 +895,9 @@ export interface ValuationResponse {
   // Additional data
   current_year_data?: YearDataInput; // For accessing revenue, ebitda, etc.
   historical_years_data?: YearDataInput[]; // Historical financial data for trend analysis
+  
+  // HTML Report (Complete Accountant View report from backend)
+  html_report?: string; // Complete Accountant View HTML report (20-30 pages)
 }
 
 export interface CompanyLookupResult {
