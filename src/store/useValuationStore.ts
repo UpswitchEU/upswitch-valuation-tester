@@ -53,7 +53,8 @@ interface ValuationStore {
   setCorrelationId: (id: string | null) => void;
   
   // Actions
-  calculateValuation: () => Promise<void>;
+  calculateValuation: (useStreaming?: boolean) => Promise<void>;
+  calculateValuationStreaming: (onProgress?: (progress: number) => void) => Promise<void>;
   quickValuation: () => Promise<void>;
   saveToBackend: (businessId?: string) => Promise<{ id: string } | null>;
 }

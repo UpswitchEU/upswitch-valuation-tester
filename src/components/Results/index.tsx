@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { memo } from 'react';
 import { useValuationStore } from '../../store/useValuationStore';
 
 /**
@@ -13,8 +13,10 @@ import { useValuationStore } from '../../store/useValuationStore';
  * on the professional report view.
  * 
  * This component does NOT render any React components - it only displays the HTML report.
+ * 
+ * PERFORMANCE: Memoized to prevent unnecessary re-renders
  */
-export const Results: React.FC = () => {
+export const Results: React.FC = memo(() => {
   const { result } = useValuationStore();
 
   // DIAGNOSTIC: Log result state
@@ -98,7 +100,7 @@ export const Results: React.FC = () => {
       />
     </div>
   );
-};
+});
 
 // Export individual components for Info tab usage
 export { ResultsHeader } from './ResultsHeader';

@@ -12,6 +12,8 @@ import { apiLogger, extractCorrelationId, setCorrelationFromResponse, createPerf
 
 class BackendAPI {
   private client: AxiosInstance;
+  private activeRequests: Map<string, AbortController> = new Map();
+  private requestTimeouts: Map<string, NodeJS.Timeout> = new Map();
 
   constructor() {
     this.client = axios.create({
@@ -72,22 +74,105 @@ class BackendAPI {
   }
 
   /**
+   * Generate request fingerprint for deduplication
+   */
+  private getRequestFingerprint(data: ValuationRequest): string {
+    const key = `${data.company_name}_${data.current_year_data?.revenue}_${data.current_year_data?.ebitda}_${data.industry}_${data.business_type_id}`;
+    return btoa(key).substring(0, 16);
+  }
+
+  /**
+   * Cancel a specific request
+   */
+  cancelRequest(requestId: string): void {
+    const controller = this.activeRequests.get(requestId);
+    if (controller) {
+      controller.abort();
+      this.activeRequests.delete(requestId);
+      
+      const timeout = this.requestTimeouts.get(requestId);
+      if (timeout) {
+        clearTimeout(timeout);
+        this.requestTimeouts.delete(requestId);
+      }
+      
+      apiLogger.info('Request cancelled', { requestId });
+    }
+  }
+
+  /**
+   * Cancel all active requests
+   */
+  cancelAllRequests(): void {
+    for (const [requestId, controller] of this.activeRequests.entries()) {
+      controller.abort();
+      
+      const timeout = this.requestTimeouts.get(requestId);
+      if (timeout) {
+        clearTimeout(timeout);
+      }
+    }
+    
+    this.activeRequests.clear();
+    this.requestTimeouts.clear();
+    apiLogger.info('All requests cancelled');
+  }
+
+  /**
    * Manual valuation - FREE (no credit consumption)
    * Routes through Node.js backend for analytics tracking
+   * Now supports request cancellation and deduplication
    */
-  async calculateManualValuation(data: ValuationRequest): Promise<ValuationResponse> {
+  async calculateManualValuation(
+    data: ValuationRequest, 
+    options?: { 
+      signal?: AbortSignal;
+      timeout?: number;
+      enableDeduplication?: boolean;
+    }
+  ): Promise<ValuationResponse> {
     const perfLogger = createPerformanceLogger('calculateManualValuation', 'api');
+    const requestId = this.getRequestFingerprint(data);
+    const timeout = options?.timeout || 90000; // Default 90 seconds
+    
+    // Check for duplicate request
+    if (options?.enableDeduplication !== false && this.activeRequests.has(requestId)) {
+      apiLogger.warn('Duplicate request detected, cancelling previous', { requestId });
+      this.cancelRequest(requestId);
+    }
+
+    // Create AbortController for this request
+    const abortController = new AbortController();
+    this.activeRequests.set(requestId, abortController);
+
+    // Use provided signal or create new one
+    const signal = options?.signal || abortController.signal;
+
+    // Set up timeout
+    const timeoutId = setTimeout(() => {
+      apiLogger.warn('Request timeout', { requestId, timeout });
+      abortController.abort();
+      this.activeRequests.delete(requestId);
+      this.requestTimeouts.delete(requestId);
+    }, timeout);
+    
+    this.requestTimeouts.set(requestId, timeoutId);
+
     try {
       apiLogger.info('Sending manual valuation request', {
+        requestId,
         company_name: data.company_name,
         revenue: data.current_year_data?.revenue,
         ebitda: data.current_year_data?.ebitda,
         industry: data.industry,
-        business_type_id: data.business_type_id
+        business_type_id: data.business_type_id,
+        timeout
       });
 
       // Call Node.js backend which handles logging and proxies to Python engine
-      const response = await this.client.post('/api/valuations/calculate/manual', data);
+      const response = await this.client.post('/api/valuations/calculate/manual', data, {
+        signal
+      });
       
       // Extract correlation ID and valuation ID from response
       const responseData = response.data.data || response.data;
@@ -149,9 +234,30 @@ class BackendAPI {
         correlationId: correlationId || valuationId,
         hasData: !!responseData 
       });
+
+      // Cleanup
+      this.activeRequests.delete(requestId);
+      const timeout = this.requestTimeouts.get(requestId);
+      if (timeout) {
+        clearTimeout(timeout);
+        this.requestTimeouts.delete(requestId);
+      }
       
       return responseData; // Extract nested data from { success, data, message }
     } catch (error: any) {
+      // Cleanup on error
+      this.activeRequests.delete(requestId);
+      const timeout = this.requestTimeouts.get(requestId);
+      if (timeout) {
+        clearTimeout(timeout);
+        this.requestTimeouts.delete(requestId);
+      }
+
+      // Handle abort errors gracefully
+      if (error.name === 'AbortError' || error.code === 'ERR_CANCELED') {
+        apiLogger.info('Request cancelled by user', { requestId });
+        throw new Error('Request cancelled');
+      }
       const correlationId = error.response ? extractCorrelationId(error.response) : null;
       apiLogger.error('Manual valuation failed', {
         error: error.response?.data?.error || error.message,
