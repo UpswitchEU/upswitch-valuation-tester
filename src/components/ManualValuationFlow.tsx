@@ -1,22 +1,35 @@
 import { Edit3, TrendingUp } from 'lucide-react';
-import React, { useEffect, useState, useRef, useCallback, memo, useMemo } from 'react';
+import React, { useEffect, useState, useRef, useCallback, memo, useMemo, lazy, Suspense } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import { useValuationStore } from '../store/useValuationStore';
 import { HTMLView } from './HTMLView';
-import { Results } from './Results';
 import { ValuationForm } from './ValuationForm';
-import { ValuationInfoPanel } from './ValuationInfoPanel';
 import { ValuationToolbar } from './ValuationToolbar';
 import { ProgressiveValuationReport } from './ProgressiveValuationReport';
 import { manualValuationStreamService } from '../services/manualValuationStreamService';
 import { ErrorRecovery } from './ErrorRecovery';
 import { useRetry, shouldRetryNetworkError } from '../hooks/useRetry';
+import { performanceTracker, measureWebVitals } from '../utils/performance';
 // import { DownloadService } from '../services/downloadService';
 import { MOBILE_BREAKPOINT, PANEL_CONSTRAINTS } from '../constants/panelConstants';
 import type { ValuationResponse } from '../types/valuation';
 import { NameGenerator } from '../utils/nameGenerator';
 import { ResizableDivider } from './ResizableDivider';
 import { extractErrorInfo } from '../utils/errorHandler';
+
+// Lazy load heavy components for code splitting
+const Results = lazy(() => import('./Results').then(m => ({ default: m.Results })));
+const ValuationInfoPanel = lazy(() => import('./ValuationInfoPanel').then(m => ({ default: m.ValuationInfoPanel })));
+
+// Loading fallback component
+const ComponentLoader: React.FC<{ message?: string }> = ({ message = 'Loading...' }) => (
+  <div className="flex items-center justify-center p-8">
+    <div className="flex items-center gap-3 text-gray-600">
+      <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
+      <span className="text-sm">{message}</span>
+    </div>
+  </div>
+);
 // import { useReportsStore } from '../store/useReportsStore'; // Deprecated: Now saving to database
 // import { urls } from '../router'; // Removed reports link
 
@@ -39,6 +52,16 @@ export const ManualValuationFlow: React.FC<ManualValuationFlowProps> = memo(({ o
   const [streamProgress, setStreamProgress] = useState<number>(0);
   const [streamError, setStreamError] = useState<Error | null>(null);
   const streamRef = useRef<any>(null);
+  const requestIdRef = useRef<string | null>(null);
+  
+  // Performance tracking
+  useEffect(() => {
+    if (isCalculating && !requestIdRef.current) {
+      requestIdRef.current = `manual_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      performanceTracker.markStart(requestIdRef.current);
+      measureWebVitals(requestIdRef.current);
+    }
+  }, [isCalculating]);
   
   // const { addReport } = useReportsStore(); // Deprecated: Now saving to database
   // const [reportSaved, setReportSaved] = useState(false); // Removed with success banner
@@ -101,6 +124,12 @@ export const ManualValuationFlow: React.FC<ManualValuationFlowProps> = memo(({ o
 
   // Handle progressive report section updates
   const handleSectionUpdate = useCallback((section: string, html: string, phase: number, progress: number) => {
+    const requestId = requestIdRef.current;
+    if (requestId) {
+      const duration = performanceTracker.markEnd(`${requestId}-section-${section}`);
+      performanceTracker.trackSectionRendering(requestId, section, duration);
+    }
+    
     setReportSections(prev => {
       const existingIndex = prev.findIndex(s => s.id === section);
       const newSection = {
@@ -126,6 +155,11 @@ export const ManualValuationFlow: React.FC<ManualValuationFlowProps> = memo(({ o
 
   // Handle section loading
   const handleSectionLoading = useCallback((section: string, phase: number, progress: number) => {
+    const requestId = requestIdRef.current;
+    if (requestId) {
+      performanceTracker.markStart(`${requestId}-section-${section}`);
+    }
+    
     setReportSections(prev => {
       const existingIndex = prev.findIndex(s => s.id === section);
       const newSection = {
