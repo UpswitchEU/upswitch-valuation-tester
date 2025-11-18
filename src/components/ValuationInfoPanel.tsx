@@ -27,8 +27,16 @@ interface ValuationInfoPanelProps {
 /**
  * ValuationInfoPanel - Info Tab Content
  * 
- * Now displays all detailed report components that were previously in the main Results area.
- * This allows the main report area to show the Accountant View HTML report.
+ * This component contains ALL the old report components that were previously displayed
+ * in the main report area (before the Accountant View HTML was introduced).
+ * 
+ * Structure:
+ * - ResultsHeader: Main valuation summary at the top
+ * - All breakdown components below (waterfalls, analyses, metrics, etc.)
+ * 
+ * The Preview tab now shows only the Accountant View HTML report (word-style formatted),
+ * while this Info tab provides all the detailed calculation breakdowns and analysis
+ * components for users who want to understand the valuation methodology and steps.
  */
 export const ValuationInfoPanel: React.FC<ValuationInfoPanelProps> = ({
   result,
