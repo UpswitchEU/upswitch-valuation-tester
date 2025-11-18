@@ -1,4 +1,7 @@
 // Download service for exporting valuation reports
+import type { ValuationRequest } from '../types/valuation';
+import { backendAPI } from './backendApi';
+
 export interface DownloadOptions {
   format: 'html' | 'pdf';
   includeBranding?: boolean;
@@ -336,6 +339,61 @@ export class DownloadService {
     </div>
 </body>
 </html>`;
+  }
+
+  /**
+   * Download Accountant View PDF from backend
+   * Uses the backend /api/v1/valuation/pdf/accountant-view endpoint
+   * which generates a professional PDF with all whitepaper sections
+   */
+  static async downloadAccountantViewPDF(
+    request: ValuationRequest,
+    options?: {
+      filename?: string;
+      onProgress?: (progress: number) => void;
+      signal?: AbortSignal;
+    }
+  ): Promise<void> {
+    try {
+      const filename = options?.filename || this.getDefaultFilename(request.company_name, 'pdf');
+      
+      // Show loading state if progress callback provided
+      if (options?.onProgress) {
+        options.onProgress(0);
+      }
+
+      // Call backend API to generate PDF
+      const pdfBlob = await backendAPI.downloadAccountantViewPDF(request, {
+        signal: options?.signal,
+        onProgress: options?.onProgress
+      });
+
+      if (options?.onProgress) {
+        options.onProgress(100);
+      }
+
+      // Create download link
+      const url = URL.createObjectURL(pdfBlob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      // Clean up
+      URL.revokeObjectURL(url);
+      
+      console.log(`PDF downloaded: ${filename} (${(pdfBlob.size / 1024).toFixed(2)} KB)`);
+    } catch (error) {
+      console.error('Accountant View PDF download failed:', error);
+      
+      // Re-throw with user-friendly message
+      if (error instanceof Error) {
+        throw new Error(`Failed to download PDF: ${error.message}`);
+      }
+      throw new Error('Failed to download PDF: Unknown error');
+    }
   }
 
   /**

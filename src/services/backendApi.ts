@@ -360,6 +360,70 @@ class BackendAPI {
   }
 
   /**
+   * Download Accountant View PDF report
+   * Calls Python engine directly for PDF generation
+   */
+  async downloadAccountantViewPDF(
+    request: ValuationRequest,
+    options?: {
+      signal?: AbortSignal;
+      onProgress?: (progress: number) => void;
+    }
+  ): Promise<Blob> {
+    const perfLogger = createPerformanceLogger('downloadAccountantViewPDF', 'api');
+    
+    try {
+      // Use Python engine URL directly for PDF generation
+      const pythonEngineUrl = import.meta.env.VITE_PYTHON_ENGINE_URL || 
+                             'https://upswitch-valuation-engine-production.up.railway.app';
+      
+      const pdfUrl = `${pythonEngineUrl}/api/v1/valuation/pdf/accountant-view`;
+      
+      apiLogger.info('Requesting Accountant View PDF', {
+        company_name: request.company_name,
+        pdfUrl
+      });
+
+      const response = await axios.post(pdfUrl, request, {
+        responseType: 'blob', // Important: request as blob for PDF
+        signal: options?.signal,
+        timeout: 120000, // 2 minutes for PDF generation
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        onDownloadProgress: (progressEvent) => {
+          if (options?.onProgress && progressEvent.total) {
+            const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+            options.onProgress(percentCompleted);
+          }
+        }
+      });
+
+      perfLogger.end({
+        pdfSize: response.data.size,
+        contentType: response.headers['content-type']
+      });
+
+      apiLogger.info('Accountant View PDF received', {
+        pdfSize: response.data.size,
+        contentType: response.headers['content-type']
+      });
+
+      return response.data;
+    } catch (error: any) {
+      perfLogger.end({ error: error.message });
+      
+      const correlationId = error.response ? extractCorrelationId(error.response) : null;
+      apiLogger.error('Accountant View PDF download failed', {
+        error: error.response?.data || error.message,
+        status: error.response?.status,
+        correlationId
+      });
+      throw error;
+    }
+  }
+
+  /**
    * Legacy valuation endpoint (defaults to instant behavior)
    */
   async calculateValuation(data: ValuationRequest): Promise<ValuationResponse> {

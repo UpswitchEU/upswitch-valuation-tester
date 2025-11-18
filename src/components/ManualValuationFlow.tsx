@@ -10,7 +10,7 @@ import { manualValuationStreamService } from '../services/manualValuationStreamS
 import { ErrorRecovery } from './ErrorRecovery';
 import { useRetry, shouldRetryNetworkError } from '../hooks/useRetry';
 import { performanceTracker, measureWebVitals } from '../utils/performance';
-// import { DownloadService } from '../services/downloadService';
+import { DownloadService } from '../services/downloadService';
 import { MOBILE_BREAKPOINT, PANEL_CONSTRAINTS } from '../constants/panelConstants';
 import type { ValuationResponse } from '../types/valuation';
 import { NameGenerator } from '../utils/nameGenerator';
@@ -39,10 +39,11 @@ interface ManualValuationFlowProps {
 }
 
 export const ManualValuationFlow: React.FC<ManualValuationFlowProps> = memo(({ onComplete }) => {
-  const { result, clearResult, inputData, isCalculating, setIsCalculating, setResult } = useValuationStore();
+  const { result, clearResult, inputData, isCalculating, setIsCalculating, setResult, formData } = useValuationStore();
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState<'preview' | 'source' | 'info'>('preview');
   const [valuationName, setValuationName] = useState('');
+  const [isDownloadingPDF, setIsDownloadingPDF] = useState(false);
   
   // Progressive rendering state
   const [reportSections, setReportSections] = useState<any[]>([]);
@@ -367,14 +368,76 @@ export const ManualValuationFlow: React.FC<ManualValuationFlowProps> = memo(({ o
   };
 
   const handleDownload = async () => {
-    if (!result) return;
+    if (!result || !formData) {
+      console.warn('[ManualValuationFlow] Cannot download PDF: missing result or formData');
+      return;
+    }
+
+    setIsDownloadingPDF(true);
+    
     try {
-      // Use browser print API as fallback
-      window.print();
+      // Build ValuationRequest from formData (same structure as calculateValuation)
+      const currentYear = Math.min(Math.max(formData.current_year_data?.year || new Date().getFullYear(), 2000), 2100);
+      const foundingYear = Math.min(Math.max(formData.founding_year || currentYear - 5, 1900), 2100);
+      const companyName = formData.company_name?.trim() || 'Unknown Company';
+      const countryCode = (formData.country_code || 'BE').toUpperCase().substring(0, 2);
+      const industry = formData.industry || 'services';
+      const businessModel = formData.business_model || 'services';
+      const revenue = Math.max(Number(formData.revenue) || 100000, 1);
+      const ebitda = formData.ebitda !== undefined && formData.ebitda !== null ? Number(formData.ebitda) : 20000;
+
+      const pdfRequest = {
+        company_name: companyName,
+        country_code: countryCode,
+        industry: industry,
+        business_model: businessModel,
+        founding_year: foundingYear,
+        current_year_data: {
+          year: currentYear,
+          revenue: revenue,
+          ebitda: ebitda,
+          ...(formData.current_year_data?.total_assets && formData.current_year_data.total_assets >= 0 && { total_assets: Number(formData.current_year_data.total_assets) }),
+          ...(formData.current_year_data?.total_debt && formData.current_year_data.total_debt >= 0 && { total_debt: Number(formData.current_year_data.total_debt) }),
+          ...(formData.current_year_data?.cash && formData.current_year_data.cash >= 0 && { cash: Number(formData.current_year_data.cash) }),
+        },
+        historical_years_data: formData.historical_years_data || [],
+        number_of_employees: formData.number_of_employees,
+        number_of_owners: formData.number_of_owners,
+        recurring_revenue_percentage: formData.recurring_revenue_percentage || 0,
+        use_dcf: true,
+        use_multiples: true,
+        projection_years: 10,
+        comparables: formData.comparables || [],
+        business_type_id: formData.business_type_id,
+        business_type: formData.business_type,
+        shares_for_sale: formData.shares_for_sale || 100,
+        business_context: formData.business_type_id ? {
+          dcfPreference: formData._internal_dcf_preference,
+          multiplesPreference: formData._internal_multiples_preference,
+          ownerDependencyImpact: formData._internal_owner_dependency_impact,
+          keyMetrics: formData._internal_key_metrics,
+          typicalEmployeeRange: formData._internal_typical_employee_range,
+          typicalRevenueRange: formData._internal_typical_revenue_range,
+        } : undefined,
+      };
+
+      // Download PDF using backend endpoint
+      await DownloadService.downloadAccountantViewPDF(pdfRequest, {
+        filename: DownloadService.getDefaultFilename(companyName, 'pdf'),
+        onProgress: (progress) => {
+          console.log(`[ManualValuationFlow] PDF download progress: ${progress}%`);
+        }
+      });
+
+      console.log('[ManualValuationFlow] PDF downloaded successfully');
     } catch (error) {
-      console.error('Download failed:', error);
-      // Fallback to print
-      window.print();
+      console.error('[ManualValuationFlow] PDF download failed:', error);
+      
+      // Show user-friendly error message
+      const errorMessage = error instanceof Error ? error.message : 'Failed to download PDF';
+      alert(`PDF download failed: ${errorMessage}\n\nPlease try again or use the browser's print function.`);
+    } finally {
+      setIsDownloadingPDF(false);
     }
   };
 
@@ -436,7 +499,7 @@ export const ManualValuationFlow: React.FC<ManualValuationFlowProps> = memo(({ o
         onRefresh={handleRefresh}
         onDownload={handleDownload}
         onFullScreen={handleFullScreen}
-        isGenerating={false}
+        isGenerating={isCalculating || isStreaming || isDownloadingPDF}
         user={user}
         valuationName={valuationName}
         valuationId={result?.valuation_id}
