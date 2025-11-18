@@ -72,9 +72,9 @@ export const JourneyNavigation: React.FC<JourneyNavigationProps> = ({ steps, act
         </div>
       </div>
 
-      {/* Desktop: Vertical Sidebar - Fixed position within container */}
-      {/* Position accounts for: main navbar (64px/4rem) + minimal journey header (~74px) + extra clearance = ~176px total */}
-      <div className="hidden lg:block fixed top-44 w-64 bg-white border border-gray-200 rounded-lg shadow-sm p-4 max-h-[calc(100vh-11rem)] overflow-y-auto">
+      {/* Desktop: Vertical Sidebar - Sticky position, only sticks when scrolling within CalculationJourney section */}
+      {/* Sticky positioning relative to CalculationJourney container, not fixed to viewport top */}
+      <div className="hidden lg:block sticky top-4 self-start w-64 bg-white border border-gray-200 rounded-lg shadow-sm p-4 max-h-[calc(100vh-8rem)] overflow-y-auto">
         <h3 className="text-sm font-semibold text-gray-900 uppercase tracking-wide mb-4">
           Calculation Journey
         </h3>

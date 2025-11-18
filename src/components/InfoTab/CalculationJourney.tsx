@@ -452,17 +452,24 @@ export const CalculationJourney: React.FC<CalculationJourneyProps> = ({ result, 
           </p>
         </div>
 
-        {/* Navigation - Mobile horizontal (sticky), Desktop sidebar (sticky) */}
-        <JourneyNavigation
-          steps={steps}
-          activeStep={activeStep}
-          onStepClick={handleStepClick}
-        />
+        {/* Mobile: Horizontal sticky navigation above content */}
+        <div className="lg:hidden">
+          <JourneyNavigation
+            steps={steps}
+            activeStep={activeStep}
+            onStepClick={handleStepClick}
+          />
+        </div>
 
         <div className="lg:flex lg:gap-6 p-4 sm:p-6">
-          {/* Desktop: Sidebar spacer */}
+          {/* Desktop: Sidebar Navigation - Sticky within CalculationJourney section */}
+          {/* Sidebar only becomes sticky when scrolling within this CalculationJourney container */}
           <div className="hidden lg:block lg:w-64 lg:flex-shrink-0">
-            {/* Empty spacer - the actual sidebar is sticky positioned */}
+            <JourneyNavigation
+              steps={steps}
+              activeStep={activeStep}
+              onStepClick={handleStepClick}
+            />
           </div>
 
           {/* Main Content */}
