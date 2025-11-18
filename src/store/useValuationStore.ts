@@ -325,6 +325,11 @@ export const useValuationStore = create<ValuationStore>((set, get) => ({
         },
         recommendedAskingPrice: response?.recommended_asking_price,
         confidenceScore: response?.confidence_score,
+        htmlReport: {
+          present: !!response?.html_report,
+          length: response?.html_report?.length || 0,
+          preview: response?.html_report?.substring(0, 100) || 'N/A'
+        },
         fullData: response
       });
       

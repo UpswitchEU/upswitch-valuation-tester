@@ -94,6 +94,23 @@ class BackendAPI {
       const correlationId = extractCorrelationId(response);
       const valuationId = responseData?.valuation_id;
       
+      // DIAGNOSTIC: Log html_report presence in response
+      apiLogger.info('DIAGNOSTIC: Manual valuation response structure', {
+        responseStructure: {
+          hasData: !!response.data.data,
+          hasDirectData: !!response.data,
+          responseKeys: Object.keys(response.data || {}),
+          dataKeys: response.data.data ? Object.keys(response.data.data) : []
+        },
+        htmlReport: {
+          inResponseData: !!responseData?.html_report,
+          inResponseDataData: !!response.data.data?.html_report,
+          inResponseDirect: !!response.data?.html_report,
+          length: responseData?.html_report?.length || 0,
+          preview: responseData?.html_report?.substring(0, 100) || 'N/A'
+        }
+      });
+      
       if (correlationId || valuationId) {
         setCorrelationFromResponse(response);
         apiLogger.info('Manual valuation response received', {
@@ -103,7 +120,9 @@ class BackendAPI {
           hasModularSystem: !!responseData?.modular_system,
           transparencyStepsCount: responseData?.transparency?.calculation_steps?.length || 0,
           modularSystemStepsCount: responseData?.modular_system?.step_details?.length || 0,
-          equityValueMid: responseData?.equity_value_mid
+          equityValueMid: responseData?.equity_value_mid,
+          hasHtmlReport: !!responseData?.html_report,
+          htmlReportLength: responseData?.html_report?.length || 0
         });
       }
       
