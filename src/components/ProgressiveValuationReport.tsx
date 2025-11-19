@@ -165,12 +165,20 @@ export const ProgressiveValuationReport: React.FC<ProgressiveValuationReportProp
     return <div dangerouslySetInnerHTML={{ __html: section.html }} />;
   };
 
+  // Filter out sections with no content to avoid empty divs
+  const hasContent = (section: ReportSection): boolean => {
+    if (section.is_fallback || section.is_error) {
+      return true; // Always show fallback/error sections
+    }
+    return !!(section.html && section.html.trim() !== '');
+  };
+
   return (
     <div className={`progressive-report ${className}`}>
       {/* Render sections in order */}
       <div className="report-sections space-y-6">
         {sections
-          .filter(section => section.id && typeof section.id === 'string')
+          .filter(section => section.id && typeof section.id === 'string' && hasContent(section))
           .sort((a, b) => a.phase - b.phase || a.timestamp.getTime() - b.timestamp.getTime())
           .map(section => (
             <div key={section.id} className="report-section fade-in">
