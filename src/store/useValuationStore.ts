@@ -122,12 +122,12 @@ export const useValuationStore = create<ValuationStore>((set, get) => ({
     if (result && currentHasHtmlReport && !newHasHtmlReport) {
       storeLogger.info('DIAGNOSTIC: Preserving html_report in setResult', {
         preservedFrom: 'existing_result',
-        htmlReportLength: currentResult.html_report.length,
+        htmlReportLength: currentResult?.html_report?.length || 0,
         valuationId: result.valuation_id,
         newResultHadHtmlReport: !!result.html_report,
         newResultHtmlReportLength: result.html_report?.length || 0
       });
-      set({ result: { ...result, html_report: currentResult.html_report } });
+      set({ result: { ...result, html_report: currentResult?.html_report } });
     } else {
       set({ result });
     }

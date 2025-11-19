@@ -562,19 +562,16 @@ export const ManualValuationFlow: React.FC<ManualValuationFlowProps> = memo(({ o
                   </div>
                 )}
 
-                {/* Prioritize full HTML report over progressive sections */}
-                {result?.html_report ? (
-                  <Suspense fallback={<ComponentLoader message="Loading report..." />}>
-                    <Results />
-                  </Suspense>
-                ) : (isStreaming || (reportSections.length > 0 && !result?.html_report)) ? (
+                {/* Match AI-guided flow: Show ProgressiveValuationReport during streaming with finalHtml */}
+                {/* ProgressiveValuationReport displays final HTML report when finalHtml prop is provided */}
+                {(isStreaming || reportSections.length > 0 || finalReportHtml) ? (
                   <ProgressiveValuationReport
                     sections={reportSections}
                     phase={reportPhase}
-                    finalHtml={finalReportHtml}
+                    finalHtml={finalReportHtml || result?.html_report || ''}
                     isGenerating={isStreaming || isCalculating || retryState.isRetrying}
                   />
-                ) : result ? (
+                ) : result?.html_report ? (
                   <Suspense fallback={<ComponentLoader message="Loading report..." />}>
                     <Results />
                   </Suspense>
