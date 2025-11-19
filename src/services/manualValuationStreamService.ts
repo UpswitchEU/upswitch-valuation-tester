@@ -275,7 +275,18 @@ class ManualValuationStreamService {
 
       case 'report_section':
         if (event.section && event.html && event.phase !== undefined && event.progress !== undefined) {
-          callbacks.onSectionUpdate?.(event.section, event.html, event.phase, event.progress);
+          // Special handling for complete_report section - treat as completion event
+          if (event.section === 'complete_report' && event.valuation_id) {
+            // This is the full HTML report, trigger completion instead of section update
+            callbacks.onComplete?.(
+              event.html,
+              event.valuation_id,
+              event as any // Pass full event as fullResponse
+            );
+          } else {
+            // Regular section update
+            callbacks.onSectionUpdate?.(event.section, event.html, event.phase, event.progress);
+          }
         }
         break;
 

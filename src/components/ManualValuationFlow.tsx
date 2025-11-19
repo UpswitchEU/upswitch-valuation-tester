@@ -196,6 +196,9 @@ export const ManualValuationFlow: React.FC<ManualValuationFlowProps> = memo(({ o
     setIsStreaming(false);
     setStreamError(null);
     
+    // Clear progressive sections when full report is available
+    setReportSections([]);
+    
     // OPTIMISTIC UI: Update result with complete HTML report immediately
     const completeResult = {
       ...(result || {}),
@@ -554,8 +557,12 @@ export const ManualValuationFlow: React.FC<ManualValuationFlowProps> = memo(({ o
                   </div>
                 )}
 
-                {/* Show progressive report during streaming */}
-                {(isStreaming || (reportSections.length > 0 && !result)) ? (
+                {/* Prioritize full HTML report over progressive sections */}
+                {result?.html_report ? (
+                  <Suspense fallback={<ComponentLoader message="Loading report..." />}>
+                    <Results />
+                  </Suspense>
+                ) : (isStreaming || (reportSections.length > 0 && !result?.html_report)) ? (
                   <ProgressiveValuationReport
                     sections={reportSections}
                     phase={reportPhase}
