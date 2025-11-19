@@ -30,6 +30,29 @@ export const Results: React.FC = memo(() => {
     });
   }, [result]);
 
+  // Remove "Complete Valuation Report" header if present
+  React.useEffect(() => {
+    if (!result?.html_report) return;
+
+    // Use requestAnimationFrame to ensure DOM is updated
+    requestAnimationFrame(() => {
+      const reportElement = document.querySelector('.accountant-view-report');
+      if (!reportElement) return;
+
+      // Find and remove the header div with CheckCircle icon
+      // Look for divs containing both a circle-check SVG and "Complete Valuation Report" text
+      const allDivs = reportElement.querySelectorAll('div');
+      allDivs.forEach((div) => {
+        const hasCheckIcon = div.querySelector('svg[class*="circle-check"], svg.lucide-circle-check-big');
+        const hasCompleteReportText = div.textContent?.includes('Complete Valuation Report');
+        
+        if (hasCheckIcon && hasCompleteReportText) {
+          div.remove();
+        }
+      });
+    });
+  }, [result?.html_report]);
+
   if (!result) {
     return null;
   }
@@ -87,6 +110,33 @@ export const Results: React.FC = memo(() => {
           font-weight: bold;
         }
 
+        /* Ensure lists show bullet points */
+        .accountant-view-report ul,
+        .accountant-view-report ol {
+          margin-left: 36pt !important;
+          padding-left: 18pt !important;
+          list-style-type: disc !important;
+          list-style-position: outside !important;
+          display: block !important;
+        }
+
+        .accountant-view-report ol {
+          list-style-type: decimal !important;
+        }
+
+        .accountant-view-report li {
+          display: list-item !important;
+          list-style-position: outside !important;
+          margin-bottom: 6pt;
+        }
+
+        /* Hide "Complete Valuation Report" header */
+        .accountant-view-report div.flex.items-center.mb-4:has(svg.lucide-circle-check-big),
+        .accountant-view-report div:has(> svg.lucide-circle-check-big):has(> h2),
+        .accountant-view-report div:has(svg[class*="circle-check"]):has(h2) {
+          display: none !important;
+        }
+
         @media print {
           .accountant-view-report {
             padding: 0;
@@ -103,17 +153,17 @@ export const Results: React.FC = memo(() => {
 });
 
 // Export individual components for Info tab usage
-export { ResultsHeader } from './ResultsHeader';
-export { ValuationWaterfall } from './ValuationWaterfall';
+export { AdjustmentsSummary } from './AdjustmentsSummary';
+export { CalculationJourneyOverview } from './CalculationJourneyOverview';
+export { CompetitiveComparison } from './CompetitiveComparison';
+export { DataQualityConfidence } from './DataQualityConfidence';
+export { GrowthMetrics } from './GrowthMetrics';
+export { MethodologyBreakdown } from './MethodologyBreakdown';
+export { MultipleWaterfall } from './MultipleWaterfall';
+export { OwnerConcentrationAnalysis } from './OwnerConcentrationAnalysis';
 export { OwnerConcentrationSummaryCard } from './OwnerConcentrationSummaryCard';
 export { OwnershipAdjustments } from './OwnershipAdjustments';
-export { OwnerConcentrationAnalysis } from './OwnerConcentrationAnalysis';
-export { CalculationJourneyOverview } from './CalculationJourneyOverview';
-export { AdjustmentsSummary } from './AdjustmentsSummary';
-export { DataQualityConfidence } from './DataQualityConfidence';
-export { MethodologyBreakdown } from './MethodologyBreakdown';
-export { GrowthMetrics } from './GrowthMetrics';
-export { ValueDrivers } from './ValueDrivers';
+export { ResultsHeader } from './ResultsHeader';
 export { RiskFactors } from './RiskFactors';
-export { CompetitiveComparison } from './CompetitiveComparison';
-export { MultipleWaterfall } from './MultipleWaterfall';
+export { ValuationWaterfall } from './ValuationWaterfall';
+export { ValueDrivers } from './ValueDrivers';

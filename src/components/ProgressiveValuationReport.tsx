@@ -5,7 +5,7 @@
  */
 
 import { motion } from 'framer-motion';
-import { AlertCircle, AlertTriangle, CheckCircle, Loader2 } from 'lucide-react';
+import { AlertCircle, AlertTriangle, Loader2 } from 'lucide-react';
 import React from 'react';
 
 interface ReportSection {
@@ -38,6 +38,29 @@ export const ProgressiveValuationReport: React.FC<ProgressiveValuationReportProp
   // Use props directly instead of useState to prevent stale data
   const currentPhase = phase;
   const finalReport = finalHtml;
+
+  // Remove "Complete Valuation Report" header if present
+  React.useEffect(() => {
+    if (!finalReport) return;
+
+    // Use requestAnimationFrame to ensure DOM is updated
+    requestAnimationFrame(() => {
+      const reportElement = document.querySelector('.final-report');
+      if (!reportElement) return;
+
+      // Find and remove the header div with CheckCircle icon
+      // Look for divs containing both a circle-check SVG and "Complete Valuation Report" text
+      const allDivs = reportElement.querySelectorAll('div');
+      allDivs.forEach((div) => {
+        const hasCheckIcon = div.querySelector('svg[class*="circle-check"], svg.lucide-circle-check-big');
+        const hasCompleteReportText = div.textContent?.includes('Complete Valuation Report');
+        
+        if (hasCheckIcon && hasCompleteReportText) {
+          div.remove();
+        }
+      });
+    });
+  }, [finalReport]);
 
 
   // Get pending sections for current phase
@@ -201,10 +224,34 @@ export const ProgressiveValuationReport: React.FC<ProgressiveValuationReportProp
       {/* Final complete report */}
       {finalReport && (
         <div className="final-report mt-8 bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-          <div className="flex items-center mb-4">
-            <CheckCircle className="h-6 w-6 text-green-500 mr-2" />
-            <h2 className="text-xl font-semibold text-gray-900">Complete Valuation Report</h2>
-          </div>
+          <style>{`
+            /* Ensure lists show bullet points */
+            .final-report ul,
+            .final-report ol {
+              margin-left: 36pt !important;
+              padding-left: 18pt !important;
+              list-style-type: disc !important;
+              list-style-position: outside !important;
+              display: block !important;
+            }
+
+            .final-report ol {
+              list-style-type: decimal !important;
+            }
+
+            .final-report li {
+              display: list-item !important;
+              list-style-position: outside !important;
+              margin-bottom: 6pt;
+            }
+
+            /* Hide "Complete Valuation Report" header */
+            .final-report div.flex.items-center.mb-4:has(svg.lucide-circle-check-big),
+            .final-report div:has(> svg.lucide-circle-check-big):has(> h2),
+            .final-report div:has(svg[class*="circle-check"]):has(h2) {
+              display: none !important;
+            }
+          `}</style>
           <div 
             className="prose max-w-none"
             dangerouslySetInnerHTML={{ __html: finalReport }}
