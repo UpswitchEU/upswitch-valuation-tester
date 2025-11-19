@@ -399,6 +399,33 @@ export const useValuationStore = create<ValuationStore>((set, get) => ({
         html_report: htmlReportToPreserve
       };
       
+      // CRITICAL: Validate critical numeric fields for NaN/Infinity (log warnings only, don't modify)
+      // Components already handle NaN at display/calculation time, so we just log for debugging
+      const criticalFields = [
+        'equity_value_low',
+        'equity_value_mid', 
+        'equity_value_high',
+        'equity_value',
+        'enterprise_value',
+        'confidence_score'
+      ];
+      
+      const nanFields: string[] = [];
+      criticalFields.forEach(field => {
+        const value = (resultToStore as any)[field];
+        if (typeof value === 'number' && (isNaN(value) || !isFinite(value))) {
+          nanFields.push(field);
+        }
+      });
+      
+      if (nanFields.length > 0) {
+        storeLogger.warn('⚠️ Valuation result contains NaN/Infinity in critical fields', {
+          valuationId: response?.valuation_id,
+          nanFields,
+          note: 'Components will handle NaN at display time with fallback values'
+        });
+      }
+      
       setResult(resultToStore);
       
       // DIAGNOSTIC: Verify result was stored correctly
