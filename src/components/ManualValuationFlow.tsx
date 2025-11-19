@@ -1,5 +1,5 @@
 import { Edit3, TrendingUp } from 'lucide-react';
-import React, { useEffect, useState, useRef, useCallback, memo, useMemo, lazy, Suspense } from 'react';
+import React, { useEffect, useState, useRef, useCallback, memo, lazy, Suspense } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import { useValuationStore } from '../store/useValuationStore';
 import { HTMLView } from './HTMLView';
@@ -15,7 +15,6 @@ import { MOBILE_BREAKPOINT, PANEL_CONSTRAINTS } from '../constants/panelConstant
 import type { ValuationResponse } from '../types/valuation';
 import { NameGenerator } from '../utils/nameGenerator';
 import { ResizableDivider } from './ResizableDivider';
-import { extractErrorInfo } from '../utils/errorHandler';
 
 // Lazy load heavy components for code splitting
 const Results = lazy(() => import('./Results').then(m => ({ default: m.Results })));
@@ -50,7 +49,6 @@ export const ManualValuationFlow: React.FC<ManualValuationFlowProps> = memo(({ o
   const [reportPhase, setReportPhase] = useState<number>(0);
   const [finalReportHtml, setFinalReportHtml] = useState<string>('');
   const [isStreaming, setIsStreaming] = useState<boolean>(false);
-  const [streamProgress, setStreamProgress] = useState<number>(0);
   const [streamError, setStreamError] = useState<Error | null>(null);
   const streamRef = useRef<any>(null);
   const requestIdRef = useRef<string | null>(null);
@@ -151,7 +149,6 @@ export const ManualValuationFlow: React.FC<ManualValuationFlowProps> = memo(({ o
       }
     });
     setReportPhase(phase);
-    setStreamProgress(progress);
   }, []);
 
   // Handle section loading
@@ -181,7 +178,6 @@ export const ManualValuationFlow: React.FC<ManualValuationFlowProps> = memo(({ o
       }
     });
     setReportPhase(phase);
-    setStreamProgress(progress);
   }, []);
 
   // Handle stream completion
@@ -198,7 +194,6 @@ export const ManualValuationFlow: React.FC<ManualValuationFlowProps> = memo(({ o
     
     setFinalReportHtml(htmlReport);
     setIsStreaming(false);
-    setStreamProgress(100);
     setStreamError(null);
     
     // OPTIMISTIC UI: Update result with complete HTML report immediately
@@ -234,6 +229,11 @@ export const ManualValuationFlow: React.FC<ManualValuationFlowProps> = memo(({ o
     setIsCalculating(false);
     // Keep partial results if available
   }, [setIsCalculating]);
+
+  // Handle progress updates
+  const handleProgress = useCallback((progress: number, message: string) => {
+    console.log('[ManualValuationFlow] Progress:', progress, message);
+  }, []);
 
   // Retry handler with exponential backoff
   const startStreamingWithRetry = useCallback(async () => {
@@ -289,7 +289,6 @@ export const ManualValuationFlow: React.FC<ManualValuationFlowProps> = memo(({ o
       setStreamError(null);
       setReportSections([]);
       setFinalReportHtml('');
-      setStreamProgress(0);
 
       const stream = await manualValuationStreamService.streamManualValuation(
         request,
@@ -330,12 +329,6 @@ export const ManualValuationFlow: React.FC<ManualValuationFlowProps> = memo(({ o
     }
   );
 
-  // Handle progress updates
-  const handleProgress = useCallback((progress: number, message: string) => {
-    setStreamProgress(progress);
-    console.log('[ManualValuationFlow] Progress:', progress, message);
-  }, []);
-
   // Watch for calculation start and initiate streaming with optimistic UI
   useEffect(() => {
     if (isCalculating && !isStreaming) {
@@ -350,7 +343,6 @@ export const ManualValuationFlow: React.FC<ManualValuationFlowProps> = memo(({ o
         status: 'loading'
       }]);
       setFinalReportHtml('');
-      setStreamProgress(0);
       setStreamError(null);
 
       // Start streaming with retry

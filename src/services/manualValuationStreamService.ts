@@ -14,6 +14,7 @@ interface StreamEvent {
   section?: string;
   phase?: number;
   html?: string;
+  html_report?: string;
   request_id?: string;
   valuation_id?: string;
   error?: string;
@@ -30,16 +31,9 @@ interface StreamCallbacks {
 }
 
 class ManualValuationStreamService {
-  private baseUrl: string;
   private activeStreams: Map<string, { controller: AbortController; reader?: ReadableStreamDefaultReader }> = new Map();
   private streamTimeouts: Map<string, NodeJS.Timeout> = new Map();
   private readonly DEFAULT_TIMEOUT = 90000; // 90 seconds
-
-  constructor() {
-    this.baseUrl = import.meta.env.VITE_BACKEND_URL || 
-                   import.meta.env.VITE_API_BASE_URL || 
-                   'https://web-production-8d00b.up.railway.app';
-  }
 
   /**
    * Generate request fingerprint for deduplication
@@ -198,7 +192,7 @@ class ManualValuationStreamService {
     decoder: TextDecoder,
     callbacks: StreamCallbacks,
     streamId: string,
-    abortController: AbortController
+    _abortController: AbortController
   ): Promise<void> {
     let buffer = '';
 

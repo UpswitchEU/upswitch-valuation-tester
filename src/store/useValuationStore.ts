@@ -460,6 +460,18 @@ export const useValuationStore = create<ValuationStore>((set, get) => ({
     }
   },
   
+  calculateValuationStreaming: async (onProgress?: (progress: number) => void) => {
+    // Streaming is handled by ManualValuationFlow component
+    // This method exists for interface compatibility but streaming is initiated
+    // directly from the component using manualValuationStreamService
+    if (onProgress) {
+      onProgress(0);
+    }
+    // The actual streaming is handled in ManualValuationFlow.tsx
+    // This method is kept for type compatibility
+    return Promise.resolve();
+  },
+  
   quickValuation: async () => {
     const { formData, setIsCalculatingLive, setLiveEstimate } = get();
     

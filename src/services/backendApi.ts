@@ -149,12 +149,13 @@ class BackendAPI {
     const signal = options?.signal || abortController.signal;
 
     // Set up timeout
+    const requestTimeout = timeout; // Store timeout value for use in closure
     const timeoutId = setTimeout(() => {
-      apiLogger.warn('Request timeout', { requestId, timeout });
+      apiLogger.warn('Request timeout', { requestId, timeout: requestTimeout });
       abortController.abort();
       this.activeRequests.delete(requestId);
       this.requestTimeouts.delete(requestId);
-    }, timeout);
+    }, requestTimeout);
     
     this.requestTimeouts.set(requestId, timeoutId);
 
@@ -166,7 +167,7 @@ class BackendAPI {
         ebitda: data.current_year_data?.ebitda,
         industry: data.industry,
         business_type_id: data.business_type_id,
-        timeout
+        timeout: requestTimeout
       });
 
       // Call Node.js backend which handles logging and proxies to Python engine
