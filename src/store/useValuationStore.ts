@@ -112,7 +112,26 @@ export const useValuationStore = create<ValuationStore>((set, get) => ({
 
   // Results
   result: null,
-  setResult: (result) => set({ result }),
+  setResult: (result) => {
+    // CRITICAL: Preserve html_report from existing result if new result doesn't have it
+    // This ensures streaming HTML report is never lost when regular endpoint overwrites
+    const currentResult = get().result;
+    const currentHasHtmlReport = currentResult?.html_report && currentResult.html_report.length > 0;
+    const newHasHtmlReport = result?.html_report && result.html_report.length > 0;
+    
+    if (result && currentHasHtmlReport && !newHasHtmlReport) {
+      storeLogger.info('DIAGNOSTIC: Preserving html_report in setResult', {
+        preservedFrom: 'existing_result',
+        htmlReportLength: currentResult.html_report.length,
+        valuationId: result.valuation_id,
+        newResultHadHtmlReport: !!result.html_report,
+        newResultHtmlReportLength: result.html_report?.length || 0
+      });
+      set({ result: { ...result, html_report: currentResult.html_report } });
+    } else {
+      set({ result });
+    }
+  },
   clearResult: () => set({ result: null }),
   
   // Input data storage
@@ -353,7 +372,34 @@ export const useValuationStore = create<ValuationStore>((set, get) => ({
         valuationId: response?.valuation_id
       });
       
-      setResult(response);
+      // CRITICAL: Preserve html_report from streaming if regular endpoint response doesn't have it
+      // This happens when streaming completes first and sets html_report, then regular endpoint overwrites
+      const currentResult = get().result;
+      const responseHasHtmlReport = response?.html_report && response.html_report.length > 0;
+      const currentHasHtmlReport = currentResult?.html_report && currentResult.html_report.length > 0;
+      
+      // Prefer response html_report if it exists and is non-empty, otherwise preserve from current result
+      const htmlReportToPreserve = responseHasHtmlReport 
+        ? response.html_report 
+        : (currentHasHtmlReport ? currentResult.html_report : response?.html_report);
+      
+      if (currentHasHtmlReport && !responseHasHtmlReport) {
+        storeLogger.info('DIAGNOSTIC: Preserving html_report from streaming/previous result', {
+          preservedFrom: 'previous_result',
+          htmlReportLength: htmlReportToPreserve?.length || 0,
+          valuationId: response?.valuation_id,
+          responseHadHtmlReport: !!response?.html_report,
+          responseHtmlReportLength: response?.html_report?.length || 0
+        });
+      }
+      
+      // Merge response with preserved html_report
+      const resultToStore = {
+        ...response,
+        html_report: htmlReportToPreserve
+      };
+      
+      setResult(resultToStore);
       
       // DIAGNOSTIC: Verify result was stored correctly
       const storedResult = get().result;

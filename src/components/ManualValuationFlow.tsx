@@ -207,13 +207,18 @@ export const ManualValuationFlow: React.FC<ManualValuationFlowProps> = memo(({ o
       valuation_id: valuationId
     } as ValuationResponse;
     
+    // CRITICAL: Set result with html_report from streaming BEFORE regular endpoint can overwrite it
     setResult(completeResult);
     
-    // Reconcile with server response (if different, update)
+    // DIAGNOSTIC: Verify result was set correctly
     console.log('[ManualValuationFlow] Stream complete, result updated optimistically', {
       valuationId,
       hasHtmlReport: !!htmlReport,
-      htmlReportLength: htmlReport.length
+      htmlReportLength: htmlReport.length,
+      htmlReportPreview: htmlReport.substring(0, 200),
+      completeResultKeys: Object.keys(completeResult),
+      completeResultHasHtmlReport: !!completeResult.html_report,
+      note: 'This html_report should be preserved when regular endpoint response arrives'
     });
     
     // Clear request ID after completion
