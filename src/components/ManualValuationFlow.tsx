@@ -183,6 +183,19 @@ export const ManualValuationFlow: React.FC<ManualValuationFlowProps> = memo(({ o
   // Handle stream completion
   const handleStreamComplete = useCallback((htmlReport: string, valuationId: string, fullResponse?: any) => {
     const requestId = requestIdRef.current;
+    
+    // DIAGNOSTIC: Log stream completion with full details
+    console.log('[ManualValuationFlow] handleStreamComplete called', {
+      requestId,
+      valuationId,
+      hasHtmlReport: !!htmlReport,
+      htmlReportLength: htmlReport?.length || 0,
+      htmlReportType: typeof htmlReport,
+      htmlReportPreview: htmlReport?.substring(0, 200) || 'N/A',
+      hasFullResponse: !!fullResponse,
+      fullResponseKeys: fullResponse ? Object.keys(fullResponse) : []
+    });
+    
     if (requestId) {
       const duration = performanceTracker.markEnd(requestId);
       performanceTracker.trackReportGeneration(requestId, duration);
@@ -192,6 +205,18 @@ export const ManualValuationFlow: React.FC<ManualValuationFlowProps> = memo(({ o
       console.log('[ManualValuationFlow] Performance Summary:', summary);
     }
     
+    // CRITICAL: Ensure htmlReport is a valid string
+    if (!htmlReport || typeof htmlReport !== 'string' || htmlReport.length === 0) {
+      console.error('[ManualValuationFlow] Invalid htmlReport received in handleStreamComplete', {
+        valuationId,
+        htmlReportType: typeof htmlReport,
+        htmlReportLength: htmlReport?.length || 0,
+        htmlReportValue: htmlReport
+      });
+      return;
+    }
+    
+    // Set final report HTML - this is used by ProgressiveValuationReport component
     setFinalReportHtml(htmlReport);
     setIsStreaming(false);
     setStreamError(null);
@@ -218,6 +243,8 @@ export const ManualValuationFlow: React.FC<ManualValuationFlowProps> = memo(({ o
       htmlReportPreview: htmlReport.substring(0, 200),
       completeResultKeys: Object.keys(completeResult),
       completeResultHasHtmlReport: !!completeResult.html_report,
+      finalReportHtmlSet: true,
+      reportSectionsCleared: true,
       note: 'This html_report should be preserved when regular endpoint response arrives'
     });
     

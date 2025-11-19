@@ -277,26 +277,79 @@ class ManualValuationStreamService {
         if (event.section && event.html && event.phase !== undefined && event.progress !== undefined) {
           // Special handling for complete_report section - treat as completion event
           if (event.section === 'complete_report' && event.valuation_id) {
+            // DIAGNOSTIC: Log when complete_report is received
+            const htmlLength = event.html?.length || 0;
+            apiLogger.info('[STREAM-FRONTEND] Complete report section received', {
+              requestId: streamId,
+              section: event.section,
+              valuationId: event.valuation_id,
+              htmlLength,
+              htmlPreview: event.html?.substring(0, 200) || 'N/A',
+              phase: event.phase,
+              progress: event.progress,
+              hasOnCompleteCallback: !!callbacks.onComplete
+            });
+            
             // This is the full HTML report, trigger completion instead of section update
             callbacks.onComplete?.(
               event.html,
               event.valuation_id,
               event as any // Pass full event as fullResponse
             );
+            
+            apiLogger.info('[STREAM-FRONTEND] onComplete callback triggered for complete_report', {
+              requestId: streamId,
+              valuationId: event.valuation_id,
+              htmlLength
+            });
           } else {
             // Regular section update
+            apiLogger.debug('[STREAM-FRONTEND] Regular section update received', {
+              requestId: streamId,
+              section: event.section,
+              htmlLength: event.html?.length || 0,
+              phase: event.phase,
+              progress: event.progress
+            });
             callbacks.onSectionUpdate?.(event.section, event.html, event.phase, event.progress);
           }
         }
         break;
 
       case 'report_complete':
+        // DIAGNOSTIC: Log when report_complete event is received
+        const hasHtmlReport = !!event.html_report;
+        const htmlReportLength = event.html_report?.length || 0;
+        apiLogger.info('[STREAM-FRONTEND] report_complete event received', {
+          requestId: streamId,
+          valuationId: event.valuation_id,
+          hasHtmlReport,
+          htmlReportLength,
+          htmlReportPreview: event.html_report?.substring(0, 200) || 'N/A',
+          progress: event.progress,
+          status: event.status,
+          hasOnCompleteCallback: !!callbacks.onComplete
+        });
+        
         if (event.html_report && event.valuation_id) {
           callbacks.onComplete?.(
             event.html_report,
             event.valuation_id,
             event as any // Pass full event as fullResponse
           );
+          
+          apiLogger.info('[STREAM-FRONTEND] onComplete callback triggered for report_complete', {
+            requestId: streamId,
+            valuationId: event.valuation_id,
+            htmlReportLength
+          });
+        } else {
+          apiLogger.warn('[STREAM-FRONTEND] report_complete event missing html_report or valuation_id', {
+            requestId: streamId,
+            hasHtmlReport,
+            hasValuationId: !!event.valuation_id,
+            htmlReportLength
+          });
         }
         break;
 
