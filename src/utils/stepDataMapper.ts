@@ -446,12 +446,21 @@ export function getStep3BaseEVResult(result: ValuationResponse) {
   const multiples = result.multiples_valuation;
   const currentData = result.current_year_data;
   
-  if (!multiples || !currentData) {
-    dataExtractionLogger.warn('Step 3 data not available, missing multiples or currentData', {
+  // CRITICAL FIX: Check if currentData has valid revenue/EBITDA values
+  // If not, we'll need to compute from available data or return null
+  const hasValidData = currentData && (
+    (currentData.revenue && currentData.revenue > 0) || 
+    (currentData.ebitda && currentData.ebitda > 0)
+  );
+  
+  if (!multiples || !hasValidData) {
+    dataExtractionLogger.warn('Step 3 data not available, missing multiples or valid currentData', {
       step: 3,
       dataSource: 'none',
       hasMultiples: !!multiples,
       hasCurrentData: !!currentData,
+      hasValidRevenue: !!(currentData?.revenue && currentData.revenue > 0),
+      hasValidEBITDA: !!(currentData?.ebitda && currentData.ebitda > 0),
       fallbackUsed: false
     });
     perfLogger.end({ dataSource: 'none', hasData: false });
@@ -502,9 +511,24 @@ export function getStep3BaseEVResult(result: ValuationResponse) {
     revenueMultiple: multiples.revenue_multiple
   });
 
+  // CRITICAL FIX: Use currentData values, but ensure they're not 0
+  // If they are 0, the calculation will fail, so we should return null instead
   const metric_value = isPrimaryEBITDA 
     ? (currentData.ebitda || 0) 
     : (currentData.revenue || 0);
+  
+  // Validate metric_value is positive
+  if (metric_value <= 0) {
+    dataExtractionLogger.warn('Step 3 metric value is zero or negative', {
+      step: 3,
+      isPrimaryEBITDA,
+      metric_value,
+      ebitda: currentData.ebitda,
+      revenue: currentData.revenue
+    });
+    perfLogger.end({ dataSource: 'none', hasData: false });
+    return null;
+  }
   
   // CRITICAL FIX: Use P25/P50/P75 percentiles instead of median multiples
   // This ensures frontend displays correct low/mid/high values from Step 3

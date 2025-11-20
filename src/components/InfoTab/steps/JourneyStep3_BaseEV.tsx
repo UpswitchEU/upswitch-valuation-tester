@@ -45,11 +45,21 @@ export const JourneyStep3_BaseEV: React.FC<JourneyStep3Props> = ({ result }) => 
   const multiples = result.multiples_valuation;
   const currentData = result.current_year_data;
   
-  if (!multiples || !currentData) {
+  // CRITICAL FIX: Check if currentData has valid revenue/EBITDA values
+  // If revenue and EBITDA are both 0 or missing, we can't calculate
+  const hasValidRevenue = currentData?.revenue && currentData.revenue > 0;
+  const hasValidEBITDA = currentData?.ebitda && currentData.ebitda > 0;
+  const hasValidData = hasValidRevenue || hasValidEBITDA;
+  
+  if (!multiples || !currentData || !hasValidData) {
     stepLogger.warn('JourneyStep3_BaseEV missing required data', {
       step: 3,
       hasMultiples: !!multiples,
-      hasCurrentData: !!currentData
+      hasCurrentData: !!currentData,
+      hasValidRevenue,
+      hasValidEBITDA,
+      revenue: currentData?.revenue,
+      ebitda: currentData?.ebitda
     });
     return null;
   }
@@ -88,7 +98,9 @@ export const JourneyStep3_BaseEV: React.FC<JourneyStep3Props> = ({ result }) => 
   const baseMultiple_low = isPrimaryEBITDA
     ? (multiples.p25_ebitda_multiple || baseMultiple_mid * 0.8)
     : (multiples.p25_revenue_multiple || baseMultiple_mid * 0.8);
-    const primaryMetric = isPrimaryEBITDA ? currentData.ebitda : currentData.revenue;
+    const primaryMetric = isPrimaryEBITDA ? (currentData.ebitda || 0) : (currentData.revenue || 0);
+    // CRITICAL FIX: Return 0 if primaryMetric is 0 to avoid NaN
+    if (primaryMetric <= 0 || baseMultiple_low <= 0) return 0;
     return primaryMetric * baseMultiple_low;
   })();
   
@@ -97,7 +109,9 @@ export const JourneyStep3_BaseEV: React.FC<JourneyStep3Props> = ({ result }) => 
     const baseMultiple_mid = isPrimaryEBITDA 
       ? (multiples.unadjusted_ebitda_multiple || multiples.ebitda_multiple)
       : (multiples.unadjusted_revenue_multiple || multiples.revenue_multiple);
-    const primaryMetric = isPrimaryEBITDA ? currentData.ebitda : currentData.revenue;
+    const primaryMetric = isPrimaryEBITDA ? (currentData.ebitda || 0) : (currentData.revenue || 0);
+    // CRITICAL FIX: Return 0 if primaryMetric is 0 to avoid NaN
+    if (primaryMetric <= 0 || baseMultiple_mid <= 0) return 0;
     return primaryMetric * baseMultiple_mid;
   })();
   
@@ -124,7 +138,17 @@ export const JourneyStep3_BaseEV: React.FC<JourneyStep3Props> = ({ result }) => 
   const baseMultiple_high = step3Result?.multiple_high ?? (isPrimaryEBITDA
     ? (multiples.p75_ebitda_multiple || baseMultiple_mid * 1.2)
     : (multiples.p75_revenue_multiple || baseMultiple_mid * 1.2));
-  const primaryMetric = step3Result?.metric_value ?? (isPrimaryEBITDA ? currentData.ebitda : currentData.revenue);
+  const primaryMetric = step3Result?.metric_value ?? (isPrimaryEBITDA ? (currentData.ebitda || 0) : (currentData.revenue || 0));
+  // CRITICAL FIX: Ensure primaryMetric is valid
+  if (primaryMetric <= 0) {
+    stepLogger.warn('JourneyStep3_BaseEV: primaryMetric is zero or negative', {
+      step: 3,
+      primaryMetric,
+      isPrimaryEBITDA,
+      ebitda: currentData.ebitda,
+      revenue: currentData.revenue
+    });
+  }
 
   return (
     <StepCard
