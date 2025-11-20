@@ -29,9 +29,9 @@ export function getStepData(
   dataExtractionLogger.debug('Extracting step data', { step: stepNumber });
   
   // Priority 1: modular_system.step_details
-  if (result.modular_system?.step_details) {
+  if (result.modular_system?.step_details && Array.isArray(result.modular_system.step_details)) {
     const stepDetail = result.modular_system.step_details.find(
-      (s) => s.step === stepNumber
+      (s) => s && (s.step === stepNumber || s.step_number === stepNumber)
     );
     if (stepDetail) {
       dataExtractionLogger.info('Step data extracted from modular_system', {
@@ -42,33 +42,41 @@ export function getStepData(
       });
       perfLogger.end({ dataSource: 'modular_system', hasData: true });
       return {
-        step: stepDetail.step,
-        step_number: stepDetail.step,
-        name: stepDetail.name,
-        description: `Step ${stepDetail.step}: ${stepDetail.name}`,
-        status: stepDetail.status as 'completed' | 'skipped' | 'failed' | 'not_executed',
-        execution_time_ms: stepDetail.execution_time_ms,
-        reason: stepDetail.reason,
-        error: stepDetail.error
+        step: stepDetail.step ?? stepDetail.step_number ?? stepNumber,
+        step_number: stepDetail.step ?? stepDetail.step_number ?? stepNumber,
+        name: stepDetail.name ?? `Step ${stepNumber}`,
+        description: `Step ${stepDetail.step ?? stepDetail.step_number ?? stepNumber}: ${stepDetail.name ?? `Step ${stepNumber}`}`,
+        status: (stepDetail.status as 'completed' | 'skipped' | 'failed' | 'not_executed') ?? 'not_executed',
+        execution_time_ms: stepDetail.execution_time_ms ?? null,
+        reason: stepDetail.reason ?? null,
+        error: stepDetail.error ?? null
       };
     }
   }
 
   // Priority 2: transparency.calculation_steps
   if (result.transparency?.calculation_steps) {
-    const normalizedSteps = normalizeCalculationSteps(result.transparency.calculation_steps);
-    const step = normalizedSteps.find(
-      (s) => s.step === stepNumber || s.step_number === stepNumber
-    );
-    if (step) {
-      dataExtractionLogger.info('Step data extracted from transparency', {
+    try {
+      const normalizedSteps = normalizeCalculationSteps(result.transparency.calculation_steps);
+      const step = normalizedSteps.find(
+        (s) => s && (s.step === stepNumber || s.step_number === stepNumber)
+      );
+      if (step) {
+        dataExtractionLogger.info('Step data extracted from transparency', {
+          step: stepNumber,
+          dataSource: 'transparency',
+          status: step.status,
+          hasKeyOutputs: !!step.key_outputs
+        });
+        perfLogger.end({ dataSource: 'transparency', hasData: true, fallbackUsed: true });
+        return step;
+      }
+    } catch (error) {
+      dataExtractionLogger.warn('Failed to normalize calculation steps from transparency', {
         step: stepNumber,
-        dataSource: 'transparency',
-        status: step.status,
-        hasKeyOutputs: !!step.key_outputs
+        error: error instanceof Error ? error.message : String(error),
+        fallingBack: true
       });
-      perfLogger.end({ dataSource: 'transparency', hasData: true, fallbackUsed: true });
-      return step;
     }
   }
 
@@ -96,7 +104,7 @@ export function getAllStepData(
   const steps: EnhancedCalculationStep[] = [];
 
   // Try modular_system first, but validate it has all 12 steps
-  if (result.modular_system?.step_details) {
+  if (result.modular_system?.step_details && Array.isArray(result.modular_system.step_details)) {
     const stepCount = result.modular_system.step_details.length;
     // Validate: Should have 12 steps (0-11), if fewer, fall back to transparency
     if (stepCount >= 10 && stepCount <= 12) {
@@ -107,16 +115,18 @@ export function getAllStepData(
         skippedCount: result.modular_system.steps_skipped
       });
       perfLogger.end({ dataSource: 'modular_system', stepCount });
-      return result.modular_system.step_details.map((detail) => ({
-        step: detail.step,
-        step_number: detail.step,
-        name: detail.name,
-        description: `Step ${detail.step}: ${detail.name}`,
-        status: detail.status as 'completed' | 'skipped' | 'failed' | 'not_executed',
-        execution_time_ms: detail.execution_time_ms,
-        reason: detail.reason,
-        error: detail.error
-      }));
+      return result.modular_system.step_details
+        .filter((detail) => detail != null) // Filter out null/undefined entries
+        .map((detail) => ({
+          step: detail.step ?? detail.step_number ?? 0,
+          step_number: detail.step ?? detail.step_number ?? 0,
+          name: detail.name ?? `Step ${detail.step ?? detail.step_number ?? 0}`,
+          description: `Step ${detail.step ?? detail.step_number ?? 0}: ${detail.name ?? `Step ${detail.step ?? detail.step_number ?? 0}`}`,
+          status: (detail.status as 'completed' | 'skipped' | 'failed' | 'not_executed') ?? 'not_executed',
+          execution_time_ms: detail.execution_time_ms ?? null,
+          reason: detail.reason ?? null,
+          error: detail.error ?? null
+        }));
     }
     // Invalid step count, log warning and fall through to transparency
     dataExtractionLogger.warn('modular_system.step_details has invalid step count', {
@@ -129,15 +139,22 @@ export function getAllStepData(
 
   // Fallback to transparency
   if (result.transparency?.calculation_steps) {
-    const normalizedSteps = normalizeCalculationSteps(result.transparency.calculation_steps);
-    const stepCount = normalizedSteps.length;
-    dataExtractionLogger.info('All step data extracted from transparency', {
-      dataSource: 'transparency',
-      stepCount,
-      fallbackUsed: true
-    });
-    perfLogger.end({ dataSource: 'transparency', stepCount, fallbackUsed: true });
-    return normalizedSteps;
+    try {
+      const normalizedSteps = normalizeCalculationSteps(result.transparency.calculation_steps);
+      const stepCount = normalizedSteps.length;
+      dataExtractionLogger.info('All step data extracted from transparency', {
+        dataSource: 'transparency',
+        stepCount,
+        fallbackUsed: true
+      });
+      perfLogger.end({ dataSource: 'transparency', stepCount, fallbackUsed: true });
+      return normalizedSteps;
+    } catch (error) {
+      dataExtractionLogger.warn('Failed to normalize calculation steps from transparency', {
+        error: error instanceof Error ? error.message : String(error),
+        fallingBack: true
+      });
+    }
   }
 
   dataExtractionLogger.warn('No step data available from any source', {

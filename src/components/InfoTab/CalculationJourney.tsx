@@ -298,12 +298,18 @@ export const CalculationJourney: React.FC<CalculationJourneyProps> = ({ result, 
     };
     
     // Step 8: Ownership adjustment (control premium / minority discount)
-    const normalizedSteps = result.transparency?.calculation_steps 
-      ? normalizeCalculationSteps(result.transparency.calculation_steps)
-      : [];
-    const step8Data = normalizedSteps.find((step: any) => step.step_number === 8);
+    let normalizedSteps: any[] = [];
+    try {
+      normalizedSteps = result.transparency?.calculation_steps 
+        ? normalizeCalculationSteps(result.transparency.calculation_steps)
+        : [];
+    } catch (error) {
+      console.warn('[CalculationJourney] Failed to normalize calculation steps:', error);
+      normalizedSteps = [];
+    }
+    const step8Data = normalizedSteps.find((step: any) => step && (step.step_number === 8 || step.step === 8));
     const sharesForSale = step8Data?.outputs?.ownership_percentage || step8Data?.inputs?.shares_for_sale || 100;
-    const ownershipPercentage = sharesForSale / 100.0;
+    const ownershipPercentage = Math.max(0, Math.min(1, sharesForSale / 100.0)); // Clamp between 0 and 1
     
     // Get adjustment from calculation_steps if available
     const adjustmentPercentage = step8Data?.outputs?.adjustment_percentage || 0;

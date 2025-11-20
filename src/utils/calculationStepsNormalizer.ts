@@ -23,31 +23,39 @@ export function normalizeCalculationSteps(
     | null
     | undefined
 ): EnhancedCalculationStep[] {
-  // Handle null/undefined
-  if (!calculation_steps) {
-    return [];
-  }
+  try {
+    // Handle null/undefined
+    if (!calculation_steps) {
+      return [];
+    }
 
-  // If it's already an array, return as-is
-  if (Array.isArray(calculation_steps)) {
-    return calculation_steps;
-  }
+    // If it's already an array, filter out null/undefined entries and return
+    if (Array.isArray(calculation_steps)) {
+      return calculation_steps.filter((step) => step != null) as EnhancedCalculationStep[];
+    }
 
-  // If it's a dictionary/object, flatten all values into a single array
-  if (typeof calculation_steps === 'object') {
-    const flattened: EnhancedCalculationStep[] = [];
-    for (const key in calculation_steps) {
-      if (Object.prototype.hasOwnProperty.call(calculation_steps, key)) {
-        const steps = calculation_steps[key];
-        if (Array.isArray(steps)) {
-          flattened.push(...steps);
+    // If it's a dictionary/object, flatten all values into a single array
+    if (typeof calculation_steps === 'object' && !Array.isArray(calculation_steps)) {
+      const flattened: EnhancedCalculationStep[] = [];
+      for (const key in calculation_steps) {
+        if (Object.prototype.hasOwnProperty.call(calculation_steps, key)) {
+          const steps = calculation_steps[key];
+          if (Array.isArray(steps)) {
+            // Filter out null/undefined entries
+            const validSteps = steps.filter((step) => step != null) as EnhancedCalculationStep[];
+            flattened.push(...validSteps);
+          }
         }
       }
+      return flattened;
     }
-    return flattened;
-  }
 
-  // Fallback: return empty array
-  return [];
+    // Fallback: return empty array
+    return [];
+  } catch (error) {
+    // Log error but don't throw - return empty array to prevent crashes
+    console.warn('[normalizeCalculationSteps] Error normalizing calculation steps:', error);
+    return [];
+  }
 }
 
