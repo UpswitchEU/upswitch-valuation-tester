@@ -7,8 +7,8 @@
  * Phase 2: Main Report Enhancement (Simplified)
  */
 
-import React from 'react';
 import { ExternalLink, Info } from 'lucide-react';
+import React from 'react';
 import type { ValuationResponse } from '../../types/valuation';
 
 interface CalculationJourneyOverviewProps {

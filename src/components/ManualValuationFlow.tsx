@@ -1,20 +1,20 @@
 import { Edit3, TrendingUp } from 'lucide-react';
-import React, { useEffect, useState, useRef, useCallback, memo, lazy, Suspense } from 'react';
-import { useAuth } from '../hooks/useAuth';
-import { useValuationStore } from '../store/useValuationStore';
-import { HTMLView } from './HTMLView';
-import { ValuationForm } from './ValuationForm';
-import { ValuationToolbar } from './ValuationToolbar';
-import { ProgressiveValuationReport } from './ProgressiveValuationReport';
-import { manualValuationStreamService } from '../services/manualValuationStreamService';
-import { ErrorRecovery } from './ErrorRecovery';
-import { useRetry, shouldRetryNetworkError } from '../hooks/useRetry';
-import { performanceTracker, measureWebVitals } from '../utils/performance';
-import { DownloadService } from '../services/downloadService';
+import React, { lazy, memo, Suspense, useCallback, useEffect, useRef, useState } from 'react';
 import { MOBILE_BREAKPOINT, PANEL_CONSTRAINTS } from '../constants/panelConstants';
+import { useAuth } from '../hooks/useAuth';
+import { shouldRetryNetworkError, useRetry } from '../hooks/useRetry';
+import { DownloadService } from '../services/downloadService';
+import { manualValuationStreamService } from '../services/manualValuationStreamService';
+import { useValuationStore } from '../store/useValuationStore';
 import type { ValuationResponse } from '../types/valuation';
 import { NameGenerator } from '../utils/nameGenerator';
+import { measureWebVitals, performanceTracker } from '../utils/performance';
+import { ErrorRecovery } from './ErrorRecovery';
+import { HTMLView } from './HTMLView';
+import { ProgressiveValuationReport } from './ProgressiveValuationReport';
 import { ResizableDivider } from './ResizableDivider';
+import { ValuationForm } from './ValuationForm';
+import { ValuationToolbar } from './ValuationToolbar';
 
 // Lazy load heavy components for code splitting
 const Results = lazy(() => import('./Results').then(m => ({ default: m.Results })));
@@ -38,7 +38,7 @@ interface ManualValuationFlowProps {
 }
 
 export const ManualValuationFlow: React.FC<ManualValuationFlowProps> = memo(({ onComplete }) => {
-  const { result, clearResult, inputData, isCalculating, setIsCalculating, setResult, formData } = useValuationStore();
+  const { result, clearResult, isCalculating, setIsCalculating, setResult, formData } = useValuationStore();
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState<'preview' | 'source' | 'info'>('preview');
   const [valuationName, setValuationName] = useState('');

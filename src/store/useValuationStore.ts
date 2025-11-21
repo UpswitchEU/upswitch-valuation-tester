@@ -3,7 +3,7 @@ import { api } from '../services/api';
 import { backendAPI } from '../services/backendApi';
 import type { QuickValuationRequest, ValuationFormData, ValuationInputData, ValuationRequest, ValuationResponse } from '../types/valuation';
 // normalizeCalculationSteps removed - calculation steps now in server-generated info_tab_html
-import { storeLogger, correlationContext } from '../utils/logger';
+import { correlationContext, storeLogger } from '../utils/logger';
 import { validatePreference } from '../utils/numberUtils';
 // import { useReportsStore } from './useReportsStore'; // Deprecated: Now saving to database
 

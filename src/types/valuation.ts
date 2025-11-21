@@ -343,6 +343,9 @@ export interface ConfidenceBreakdown {
   geographic_data: number;
   business_model_clarity: number;
   overall_score: number;
+  // Optional extended properties
+  methodology_quality?: number;
+  market_data_quality?: number;
 }
 
 export interface RangeMethodology {

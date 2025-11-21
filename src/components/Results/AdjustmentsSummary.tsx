@@ -9,8 +9,8 @@
  * Phase 2: Main Report Enhancement (Simplified)
  */
 
+import { ChevronDown, ChevronRight, ExternalLink, Info, TrendingDown } from 'lucide-react';
 import React, { useState } from 'react';
-import { ChevronDown, ChevronRight, TrendingDown, Info, ExternalLink } from 'lucide-react';
 import type { ValuationResponse } from '../../types/valuation';
 
 interface AdjustmentsSummaryProps {
@@ -40,14 +40,14 @@ export const AdjustmentsSummary: React.FC<AdjustmentsSummaryProps> = ({
   }> = [];
 
   // Owner Concentration Adjustment
-  if (result.multiples_valuation?.owner_concentration_adjustment) {
-    const ownerConc = result.multiples_valuation.owner_concentration;
+  const ownerConc = result.multiples_valuation?.owner_concentration;
+  if (ownerConc && ownerConc.adjustment_factor !== undefined) {
     allAdjustments.push({
       name: 'Owner Concentration Adjustment',
       type: 'owner_concentration',
-      adjustment: result.multiples_valuation.owner_concentration_adjustment,
-      adjustmentPct: result.multiples_valuation.owner_concentration_adjustment_percentage || 0,
-      rationale: ownerConc?.explanation || 'Key person risk adjustment based on owner/employee ratio'
+      adjustment: ownerConc.adjustment_factor,
+      adjustmentPct: (ownerConc.adjustment_factor * 100) || 0,
+      rationale: 'Key person risk adjustment based on owner/employee ratio'
     });
   }
 
@@ -57,7 +57,7 @@ export const AdjustmentsSummary: React.FC<AdjustmentsSummaryProps> = ({
       name: 'Size Discount',
       type: 'size_discount',
       adjustment: result.multiples_valuation.size_discount,
-      adjustmentPct: result.multiples_valuation.size_discount_percentage || 0,
+      adjustmentPct: (result.multiples_valuation.size_discount * 100) || 0,
       rationale: 'Size risk adjustment for small company'
     });
   }
@@ -68,7 +68,7 @@ export const AdjustmentsSummary: React.FC<AdjustmentsSummaryProps> = ({
       name: 'Liquidity Discount',
       type: 'liquidity_discount',
       adjustment: result.multiples_valuation.liquidity_discount,
-      adjustmentPct: result.multiples_valuation.liquidity_discount_percentage || 0,
+      adjustmentPct: (result.multiples_valuation.liquidity_discount * 100) || 0,
       rationale: 'Private company illiquidity discount'
     });
   }
@@ -88,7 +88,6 @@ export const AdjustmentsSummary: React.FC<AdjustmentsSummaryProps> = ({
     return null;
   }
 
-  const totalAdjustment = allAdjustments.reduce((sum, adj) => sum + (adj.adjustment || 0), 0);
   const totalAdjustmentPct = allAdjustments.reduce((sum, adj) => sum + adj.adjustmentPct, 0);
 
   const hasInfoTabHtml = !!(result.info_tab_html && result.info_tab_html.length > 0);

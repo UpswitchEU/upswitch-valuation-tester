@@ -48,7 +48,6 @@ export const AIAssistedValuation: React.FC<AIAssistedValuationProps> = ({
   const [conversationContext, setConversationContext] = useState<ConversationContext | null>(null);
   const [inputData, setInputData] = useState<ValuationInputData | null>(null);
   
-  
   // Update context when conversation progresses
   const handleConversationUpdate = useCallback((context: ConversationContext) => {
     setConversationContext(context);
@@ -777,9 +776,7 @@ export const AIAssistedValuation: React.FC<AIAssistedValuationProps> = ({
 
       setValuationResult(backendResult);
       
-      // Extract input data for Info tab
-      const extractedInputData = extractInputData(businessProfile, conversationContext, backendResult);
-      setInputData(extractedInputData);
+      // Input data no longer needed - Info tab uses server-generated HTML (info_tab_html)
       
       setStage('results');
       

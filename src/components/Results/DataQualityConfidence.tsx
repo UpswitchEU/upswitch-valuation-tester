@@ -9,10 +9,10 @@
  * Phase 2: Main Report Enhancement (Simplified)
  */
 
+import { CheckCircle, ChevronDown, ChevronRight, ExternalLink, Info } from 'lucide-react';
 import React, { useState } from 'react';
-import { ChevronDown, ChevronRight, CheckCircle, AlertTriangle, Info, ExternalLink } from 'lucide-react';
-import { getProfessionalReviewReady } from '../../utils/valuationDataExtractor';
 import type { ValuationResponse } from '../../types/valuation';
+import { getProfessionalReviewReady } from '../../utils/valuationDataExtractor';
 
 interface DataQualityConfidenceProps {
   result: ValuationResponse;
@@ -122,16 +122,16 @@ export const DataQualityConfidence: React.FC<DataQualityConfidenceProps> = ({
                     <span className="font-semibold">{confidenceBreakdown.data_quality}%</span>
                   </div>
                 )}
-                {confidenceBreakdown.methodology_quality !== undefined && (
+                {confidenceBreakdown.methodology_agreement !== undefined && (
                   <div className="flex justify-between text-sm">
-                    <span className="text-gray-600">Methodology Quality:</span>
-                    <span className="font-semibold">{confidenceBreakdown.methodology_quality}%</span>
+                    <span className="text-gray-600">Methodology Agreement:</span>
+                    <span className="font-semibold">{confidenceBreakdown.methodology_agreement}%</span>
                   </div>
                 )}
-                {confidenceBreakdown.market_data_quality !== undefined && (
+                {confidenceBreakdown.industry_benchmarks !== undefined && (
                   <div className="flex justify-between text-sm">
-                    <span className="text-gray-600">Market Data Quality:</span>
-                    <span className="font-semibold">{confidenceBreakdown.market_data_quality}%</span>
+                    <span className="text-gray-600">Industry Benchmarks:</span>
+                    <span className="font-semibold">{confidenceBreakdown.industry_benchmarks}%</span>
                   </div>
                 )}
               </div>

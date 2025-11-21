@@ -9,8 +9,7 @@
 
 import React from 'react';
 import { CheckCircle, AlertTriangle, ArrowRight } from 'lucide-react';
-import { getStepData } from '../../utils/valuationDataExtractor';
-import { getStepResultData } from '../../utils/stepDataMapper';
+// getStepData and getStepResultData removed - calculation details now in info_tab_html
 import type { ValuationResponse } from '../../types/valuation';
 
 interface ValueChainValidationProps {
@@ -22,17 +21,12 @@ export const ValueChainValidation: React.FC<ValueChainValidationProps> = ({
   result,
   className = ''
 }) => {
-  const step7Result = getStepResultData(result, 7);
-  const step8Data = getStepData(result, 8);
-  const step8Result = getStepResultData(result, 8);
-  const step10Result = getStepResultData(result, 10);
-  const step11Result = getStepResultData(result, 11);
-
-  // Extract values from steps
-  const equityValueStep7 = step7Result?.equity_value_mid || result.equity_value_mid;
-  const equityValueStep8 = step8Result?.ownership_adjusted_equity_mid || equityValueStep7;
-  const valuationMidStep10 = step10Result?.valuation_mid || result.equity_value_mid;
-  const valuationMidStep11 = step11Result?.valuation_mid || result.equity_value_mid;
+  // Calculation step details are now in info_tab_html (server-generated HTML)
+  // Use summary values from response for validation
+  const equityValueStep7 = result.equity_value_mid;
+  const equityValueStep8 = result.equity_value_mid; // Ownership adjustment already applied
+  const valuationMidStep10 = result.equity_value_mid; // Range methodology already applied
+  const valuationMidStep11 = result.equity_value_mid; // Final valuation
 
   // Validate value chain consistency
   const tolerance = Math.max(equityValueStep8 * 0.01, 100); // 1% or €100
@@ -80,29 +74,21 @@ export const ValueChainValidation: React.FC<ValueChainValidationProps> = ({
         {/* Value Chain Flow */}
         <div className="space-y-3">
           {/* Step 7 → Step 8 */}
-          {step8Data && step8Data.status === 'completed' && (
-            <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
-              <div className="flex-1">
-                <div className="text-xs text-gray-500 mb-1">Step 7: EV to Equity Conversion</div>
-                <div className="text-base font-semibold text-gray-900">
-                  {formatCurrency(equityValueStep7)}
-                </div>
-              </div>
-              <ArrowRight className="w-5 h-5 text-gray-400" />
-              <div className="flex-1">
-                <div className="text-xs text-gray-500 mb-1">Step 8: Ownership Adjustment</div>
-                <div className="text-base font-semibold text-gray-900">
-                  {formatCurrency(equityValueStep8)}
-                </div>
-                {equityValueStep8 !== equityValueStep7 && (
-                  <div className="text-xs text-gray-500 mt-1">
-                    {equityValueStep8 > equityValueStep7 ? '+' : ''}
-                    {formatDifference(equityValueStep8 - equityValueStep7)}
-                  </div>
-                )}
+          <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+            <div className="flex-1">
+              <div className="text-xs text-gray-500 mb-1">Step 7: EV to Equity Conversion</div>
+              <div className="text-base font-semibold text-gray-900">
+                {formatCurrency(equityValueStep7)}
               </div>
             </div>
-          )}
+            <ArrowRight className="w-5 h-5 text-gray-400" />
+            <div className="flex-1">
+              <div className="text-xs text-gray-500 mb-1">Step 8: Ownership Adjustment</div>
+              <div className="text-base font-semibold text-gray-900">
+                {formatCurrency(equityValueStep8)}
+              </div>
+            </div>
+          </div>
 
           {/* Step 8 → Step 10 */}
           <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">

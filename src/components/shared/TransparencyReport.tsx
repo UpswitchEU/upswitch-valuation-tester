@@ -10,7 +10,7 @@
 import { Calculator, CheckCircle, ChevronDown, ChevronRight, Database, FileText } from 'lucide-react';
 import React, { useState } from 'react';
 import type { ValuationResponse } from '../../types/valuation';
-import { getAllStepData } from '../../utils/valuationDataExtractor';
+// getAllStepData removed - calculation steps now in info_tab_html
 import { AcademicSources } from './AcademicSources';
 import { MethodologyStatement } from './MethodologyStatement';
 import { ProfessionalReviewReadiness } from './ProfessionalReviewReadiness';
@@ -29,7 +29,6 @@ export const TransparencyReport: React.FC<TransparencyReportProps> = ({
   const [expandedSection, setExpandedSection] = useState<string | null>(null);
 
   const transparency = result.transparency;
-  const stepData = getAllStepData(result);
 
   if (!transparency) {
     return null;
@@ -82,21 +81,20 @@ export const TransparencyReport: React.FC<TransparencyReportProps> = ({
               )}
             </button>
             {expandedSection === 'steps' && (
-              <div className="mt-2 p-3 bg-gray-50 rounded-lg space-y-2">
-                {stepData.map((step) => (
-                  <div
-                    key={step.step}
-                    className="flex items-center justify-between p-2 bg-white rounded border border-gray-200"
-                  >
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm font-medium text-gray-700">
-                        Step {step.step}: {step.name}
-                      </span>
-                      <StepStatusBadge status={step.status} size="sm" />
-                    </div>
-                    <span className="text-xs text-gray-500">{step.description}</span>
-                  </div>
-                ))}
+              <div className="mt-2 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                <p className="text-sm text-blue-800 mb-2">
+                  <strong>Calculation steps are now available in the Info Tab HTML.</strong>
+                </p>
+                <p className="text-xs text-blue-700">
+                  Detailed step-by-step breakdown with all inputs, formulas, outputs, and decisions 
+                  is rendered server-side and displayed in the Info Tab. This ensures consistency 
+                  and reduces payload size by 50-70%.
+                </p>
+                {result.info_tab_html && result.info_tab_html.length > 0 && (
+                  <p className="text-xs text-blue-600 mt-2">
+                    ✓ Info Tab HTML is available ({Math.round(result.info_tab_html.length / 1024)}KB)
+                  </p>
+                )}
               </div>
             )}
           </div>

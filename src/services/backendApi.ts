@@ -8,7 +8,7 @@
 import axios, { AxiosInstance, AxiosResponse } from 'axios';
 import type { ValuationRequest, ValuationResponse } from '../types/valuation';
 // normalizeCalculationSteps removed - calculation steps now in server-generated info_tab_html
-import { apiLogger, extractCorrelationId, setCorrelationFromResponse, createPerformanceLogger } from '../utils/logger';
+import { apiLogger, createPerformanceLogger, extractCorrelationId, setCorrelationFromResponse } from '../utils/logger';
 
 class BackendAPI {
   private client: AxiosInstance;
@@ -50,11 +50,8 @@ class BackendAPI {
             hasValuationId: !!responseData?.valuation_id,
             hasTransparency: !!responseData?.transparency,
             hasModularSystem: !!responseData?.modular_system,
-            transparencyStepsCount: responseData?.transparency?.calculation_steps 
-              ? (typeof responseData.transparency.calculation_steps === 'object' && responseData.transparency.calculation_steps !== null
-                  ? Object.keys(responseData.transparency.calculation_steps).length 
-                  : 0)
-              : 0,
+            // calculation_steps deprecated - details now in info_tab_html
+            transparencyStepsCount: 0,
             modularSystemStepsCount: responseData?.modular_system?.step_details?.length || 0,
             correlationId
           });
