@@ -223,15 +223,16 @@ export const useValuationStore = create<ValuationStore>((set, get) => ({
       
       setInputData(inputData);
       
-      // DIAGNOSTIC: Log formData before building request
-      console.log('[DIAGNOSTIC-FRONTEND] FormData before building request:');
-      console.log('[DIAGNOSTIC-FRONTEND] business_type_id:', formData.business_type_id);
-      console.log('[DIAGNOSTIC-FRONTEND] _internal_dcf_preference:', formData._internal_dcf_preference);
-      console.log('[DIAGNOSTIC-FRONTEND] _internal_multiples_preference:', formData._internal_multiples_preference);
-      console.log('[DIAGNOSTIC-FRONTEND] _internal_owner_dependency_impact:', formData._internal_owner_dependency_impact);
-      console.log('[DIAGNOSTIC-FRONTEND] number_of_employees (raw):', formData.number_of_employees);
-      console.log('[DIAGNOSTIC-FRONTEND] number_of_owners (raw):', formData.number_of_owners);
-      console.log('[DIAGNOSTIC-FRONTEND] business_type:', formData.business_type);
+      // Log formData for debugging (structured logging)
+      storeLogger.debug('FormData before building request', {
+        business_type_id: formData.business_type_id,
+        _internal_dcf_preference: formData._internal_dcf_preference,
+        _internal_multiples_preference: formData._internal_multiples_preference,
+        _internal_owner_dependency_impact: formData._internal_owner_dependency_impact,
+        number_of_employees: formData.number_of_employees,
+        number_of_owners: formData.number_of_owners,
+        business_type: formData.business_type
+      });
       
       const request: ValuationRequest = {
         company_name: companyName,
