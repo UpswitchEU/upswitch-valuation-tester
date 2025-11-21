@@ -893,7 +893,7 @@ export interface ValuationResponse {
   dcf_exclusion_reason?: string;
   methodology_downgrade_reason?: string; // Backward compatibility field
   
-  // Multiple-First Discounting pipeline (NEW)
+  // Multiple-First Discounting pipeline
   /** @deprecated Use info_tab_html instead. Multiple pipeline details are now available in server-generated HTML. */
   multiple_pipeline?: MultiplePipeline;
   

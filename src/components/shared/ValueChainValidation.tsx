@@ -7,8 +7,8 @@
  * Phase 7: Value Chain Visualization
  */
 
+import { AlertTriangle, ArrowRight, CheckCircle } from 'lucide-react';
 import React from 'react';
-import { CheckCircle, AlertTriangle, ArrowRight } from 'lucide-react';
 // getStepData and getStepResultData removed - calculation details now in info_tab_html
 import type { ValuationResponse } from '../../types/valuation';
 
@@ -93,11 +93,7 @@ export const ValueChainValidation: React.FC<ValueChainValidationProps> = ({
           {/* Step 8 → Step 10 */}
           <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
             <div className="flex-1">
-              <div className="text-xs text-gray-500 mb-1">
-                {step8Data && step8Data.status === 'completed' 
-                  ? 'Step 8: Ownership-Adjusted Equity' 
-                  : 'Step 7: Equity Value'}
-              </div>
+              <div className="text-xs text-gray-500 mb-1">Step 8: Ownership-Adjusted Equity</div>
               <div className="text-base font-semibold text-gray-900">
                 {formatCurrency(equityValueStep8)}
               </div>

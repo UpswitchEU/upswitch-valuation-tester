@@ -14,7 +14,6 @@ import type { ValuationResponse } from '../../types/valuation';
 import { AcademicSources } from './AcademicSources';
 import { MethodologyStatement } from './MethodologyStatement';
 import { ProfessionalReviewReadiness } from './ProfessionalReviewReadiness';
-import { StepStatusBadge } from './StepStatusIndicator';
 
 interface TransparencyReportProps {
   result: ValuationResponse;

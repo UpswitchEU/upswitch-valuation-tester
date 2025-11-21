@@ -49,37 +49,79 @@ Valuation Engine API (Port 8000)
 
 ## 📄 Report Rendering Architecture
 
-### Server-Side HTML Rendering
+### Server-Side HTML Generation
 
-Both main report and Info Tab are rendered server-side for optimal performance.
+All calculation data and reports are generated server-side in Python for optimal performance and consistency.
 
-**Main Report (Preview Tab)**:
+**Data Flow**:
+1. **User Input** → Form submission in `ManualValuationFlow.tsx`
+2. **Node.js Backend** → Forwards request to Python engine
+3. **Python Engine** → Calculates valuation via triage system (11 steps)
+4. **Python Engine** → Generates HTML reports:
+   - `html_report`: Main report HTML (~50-80KB)
+   - `info_tab_html`: Info tab breakdown HTML (~30-50KB)
+5. **Streaming Response** → HTML reports streamed to frontend
+6. **Frontend** → Renders HTML directly via `dangerouslySetInnerHTML`
+
+### Main Report (Preview Tab)
+
+**Streaming Behavior**:
+- **Trigger**: User clicks "Calculate" button
 - **Source**: `result.html_report` (server-generated HTML)
-- **Component**: `src/components/Results/index.tsx`
-- **Rendering**: `dangerouslySetInnerHTML`
+- **Component**: `src/components/ProgressiveValuationReport.tsx`
+- **Rendering**: Streams HTML sections as they're generated, then renders complete HTML
 - **Size**: ~50-80KB HTML
+- **Endpoint**: `/api/v1/valuation/calculate/stream` (SSE streaming)
 
-**Info Tab**:
+**Implementation**:
+- Uses `manualValuationStreamService` for SSE streaming
+- Progressive rendering shows sections as they arrive
+- Falls back to full HTML when streaming completes
+
+### Info Tab (Lazy Loading)
+
+**Lazy Loading Behavior**:
+- **Trigger**: User clicks "Info" tab
 - **Source**: `result.info_tab_html` (server-generated HTML)
 - **Component**: `src/components/ValuationInfoPanel.tsx`
-- **Rendering**: `dangerouslySetInnerHTML`
+- **Rendering**: `dangerouslySetInnerHTML` (only when tab is active)
 - **Size**: ~30-50KB HTML
+- **Loading**: HTML included in streaming response completion event, rendered on-demand
+
+**Implementation**:
+- Info tab HTML is included in streaming response but only rendered when tab is clicked
+- No separate API call needed (HTML already in response)
+- Shows loading state if HTML not yet available
 
 ### Benefits
 
-- **Consistency**: Single source of truth (server-side)
+- **Consistency**: Single source of truth (server-side Python templates)
 - **Performance**: Smaller bundle, faster load, less runtime processing
 - **Payload**: 50-70% reduction in response size (~100-180KB saved per request)
 - **Maintainability**: No complex frontend data extraction logic
 - **Bundle Size**: ~150-200KB reduction (gzipped JavaScript)
+- **Streaming**: Progressive rendering for better UX
+- **Lazy Loading**: Info tab only loads when needed
 
 ### Architecture Flow
 
 ```
-Python Engine → Generate HTML → Node.js Proxy → Frontend → Render HTML
-     ↓              ↓                ↓              ↓           ↓
-  Calculate    html_report      Forward      Receive    dangerouslySetInnerHTML
-  Valuation    info_tab_html    Response     Response    (Direct render)
+User Input (Form)
+    ↓
+Node.js Backend (/api/valuations/calculate/manual)
+    ↓
+Python Engine (/api/v1/valuation/calculate)
+    ├─ Calculate valuation (triage system - 11 steps)
+    ├─ Generate html_report (main report HTML)
+    └─ Generate info_tab_html (info tab HTML)
+    ↓
+Streaming Response (SSE)
+    ├─ Stream html_report sections progressively
+    └─ Include info_tab_html in completion event
+    ↓
+Frontend
+    ├─ Main Report: Stream and render via ProgressiveValuationReport
+    └─ Info Tab: Render info_tab_html when tab clicked (lazy loading)
 ```
 
 ### Migration History
@@ -89,12 +131,15 @@ Python Engine → Generate HTML → Node.js Proxy → Frontend → Render HTML
 - Complex data extraction logic (`stepDataMapper.ts`, `calculationStepsNormalizer.ts`)
 - Large response payloads with detailed calculation data
 - ~5,500+ lines of frontend rendering code
+- Calculation data sent as JSON, frontend extracted and rendered
 
 **After (Current)**:
 - Server-side HTML generation in Python
 - Simple frontend rendering via `dangerouslySetInnerHTML`
 - Reduced payload (detailed data excluded when HTML present)
 - Single source of truth for report rendering
+- Streaming for progressive UX
+- Lazy loading for info tab
 
 ---
 

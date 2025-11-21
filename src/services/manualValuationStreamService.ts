@@ -320,12 +320,17 @@ class ManualValuationStreamService {
         // DIAGNOSTIC: Log when report_complete event is received
         const hasHtmlReport = !!event.html_report;
         const htmlReportLength = event.html_report?.length || 0;
+        const hasInfoTabHtml = !!(event as any).info_tab_html;
+        const infoTabHtmlLength = ((event as any).info_tab_html?.length || 0);
         apiLogger.info('[STREAM-FRONTEND] report_complete event received', {
           requestId: streamId,
           valuationId: event.valuation_id,
           hasHtmlReport,
           htmlReportLength,
+          hasInfoTabHtml,
+          infoTabHtmlLength,
           htmlReportPreview: event.html_report?.substring(0, 200) || 'N/A',
+          infoTabHtmlPreview: ((event as any).info_tab_html?.substring(0, 200) || 'N/A'),
           progress: event.progress,
           status: event.status,
           hasOnCompleteCallback: !!callbacks.onComplete
@@ -335,20 +340,24 @@ class ManualValuationStreamService {
           callbacks.onComplete?.(
             event.html_report,
             event.valuation_id,
-            event as any // Pass full event as fullResponse
+            event as any // Pass full event as fullResponse (includes info_tab_html)
           );
           
           apiLogger.info('[STREAM-FRONTEND] onComplete callback triggered for report_complete', {
             requestId: streamId,
             valuationId: event.valuation_id,
-            htmlReportLength
+            htmlReportLength,
+            hasInfoTabHtml,
+            infoTabHtmlLength
           });
         } else {
           apiLogger.warn('[STREAM-FRONTEND] report_complete event missing html_report or valuation_id', {
             requestId: streamId,
             hasHtmlReport,
             hasValuationId: !!event.valuation_id,
-            htmlReportLength
+            htmlReportLength,
+            hasInfoTabHtml,
+            infoTabHtmlLength
           });
         }
         break;

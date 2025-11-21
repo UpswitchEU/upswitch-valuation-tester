@@ -1,14 +1,14 @@
 # Info Tab Architecture Documentation
 
-**Date**: October 26, 2025  
-**Version**: 1.0  
+**Date**: January 2025  
+**Version**: 2.0  
 **Status**: ✅ IMPLEMENTED
 
 ---
 
 ## Overview
 
-The Info tab provides detailed calculation breakdowns and analysis for both manual and AI-guided valuation flows. This document describes the architecture, data flow, and component structure of the Info tab system.
+The Info tab provides detailed calculation breakdowns and analysis for both manual and AI-guided valuation flows. **All calculation data is generated server-side in Python and rendered as HTML for optimal performance and consistency.**
 
 ---
 
@@ -17,60 +17,69 @@ The Info tab provides detailed calculation breakdowns and analysis for both manu
 ### High-Level Data Flow
 
 ```
-Form Input (ManualValuationFlow/AIAssistedValuation)
+User Input (ManualValuationFlow/AIAssistedValuation)
     ↓
-Zustand Store (useValuationStore)
+Node.js Backend → Python Engine
     ↓
-Capture inputData before API call
+Python Engine: Calculate Valuation (Triage System - 11 steps)
     ↓
-Pass to ValuationInfoPanel
+Python Engine: Generate info_tab_html (Server-side HTML)
+    ├─ Transform ValuationResponse → template_data
+    ├─ Render 12-step calculation breakdown
+    └─ Include all calculation details, waterfalls, adjustments
     ↓
-Display in CalculationBreakdown
+Streaming Response (SSE)
+    └─ Include info_tab_html in completion event
     ↓
-Show real calculations with user data
+Frontend: Store in useValuationStore
+    ↓
+User Clicks "Info" Tab (Lazy Loading)
+    ↓
+ValuationInfoPanel: Render HTML via dangerouslySetInnerHTML
 ```
 
-### Component Hierarchy
+### Component Structure
 
 ```
-ValuationInfoPanel
-├── Input Parameters Section
-├── CalculationBreakdown
-│   ├── DCF Approach
-│   │   ├── WACC Calculation
-│   │   ├── Projected FCF
-│   │   └── Terminal Value
-│   ├── Multiples Approach
-│   │   ├── Revenue Multiple
-│   │   ├── EBITDA Multiple
-│   │   └── Comparables Analysis
-│   └── Weighted Average
-├── SensitivityAnalysis
-└── MethodologyBreakdown
+ValuationInfoPanel (Simple HTML Renderer)
+└── Server-Generated HTML (info_tab_html)
+    ├── 12-Step Calculation Journey
+    │   ├── Step 0: Historical Trend Analysis
+    │   ├── Step 1: Input Validation & Normalization
+    │   ├── Step 2: Industry Benchmarking
+    │   ├── Step 3: Base Enterprise Value
+    │   ├── Step 4: Owner Concentration
+    │   ├── Step 5: Size Discount
+    │   ├── Step 6: Liquidity Discount
+    │   ├── Step 7: EV to Equity Conversion
+    │   ├── Step 8: Confidence Score Analysis
+    │   ├── Step 9: Range Methodology Selection
+    │   ├── Step 10: Final Valuation Synthesis
+    │   └── Step 11: Final Output
+    ├── Valuation Waterfalls
+    ├── Adjustment Breakdowns
+    ├── Methodology Explanations
+    └── Academic References
 ```
 
 ---
 
 ## Data Types
 
-### ValuationInputData Interface
+### ValuationResponse Interface
 
 ```typescript
-export interface ValuationInputData {
-  revenue: number;
-  ebitda: number;
-  industry: string;
-  country_code: string;
-  founding_year?: number;
-  employees?: number;
-  business_model?: string;
-  historical_years_data?: YearDataInput[];
+export interface ValuationResponse {
+  // ... other fields
+  info_tab_html?: string;  // Server-generated HTML (30-50KB)
+  html_report?: string;    // Main report HTML (50-80KB)
+  // Calculation data NOT included (contained in HTML)
 }
 ```
 
-**Purpose**: Captures raw form input data for display in Info tab  
-**Usage**: Passed from store to components for real data display  
-**Type Safety**: Ensures all input data is properly typed
+**Purpose**: Contains server-generated HTML with all calculation details  
+**Usage**: Rendered directly via `dangerouslySetInnerHTML`  
+**Source**: Python engine generates complete HTML from templates
 
 ---
 
@@ -80,72 +89,40 @@ export interface ValuationInputData {
 
 **File**: `src/components/ValuationInfoPanel.tsx`
 
-**Purpose**: Main container for Info tab content  
+**Purpose**: Simple HTML renderer for server-generated Info Tab content  
 **Props**:
-- `result: ValuationResponse` - Valuation calculation results
-- `inputData?: ValuationInputData | null` - Raw form input data
+- `result: ValuationResponse` - Contains `info_tab_html` field
 
 **Key Features**:
-- Displays input parameters section
-- Renders calculation breakdown
-- Shows sensitivity analysis
-- Handles both manual and AI-guided flows
+- Lazy loading: Only renders when user clicks "Info" tab
+- Server-generated HTML: All calculation data embedded in HTML
+- Direct rendering: Uses `dangerouslySetInnerHTML` for performance
+- Error handling: Shows error state if HTML not available
 
-**Data Flow**:
+**Implementation**:
 ```typescript
-// Receives inputData from parent component
-<ValuationInfoPanel result={result} inputData={inputData} />
-
-// Passes inputData to CalculationBreakdown
-<CalculationBreakdown result={result} inputData={inputData || null} />
+export const ValuationInfoPanel: React.FC<ValuationInfoPanelProps> = ({
+  result
+}) => {
+  // Server-generated HTML (required)
+  if (result.info_tab_html && result.info_tab_html.length > 0) {
+    return (
+      <div 
+        className="h-full overflow-y-auto info-tab-html"
+        dangerouslySetInnerHTML={{ __html: result.info_tab_html }}
+      />
+    );
+  }
+  
+  // Error state: info_tab_html should always be present
+  return <ErrorState />;
+};
 ```
 
-### 2. CalculationBreakdown
-
-**File**: `src/components/InfoTab/CalculationBreakdown.tsx`
-
-**Purpose**: Detailed calculation breakdown with real data  
-**Props**:
-- `result: ValuationResponse` - Valuation results
-- `inputData: ValuationInputData | null` - Real input data
-
-**Key Features**:
-- DCF approach with real WACC and projections
-- Multiples approach with actual revenue/EBITDA
-- Weighted average calculation
-- Real data instead of hardcoded values
-
-**Data Usage**:
-```typescript
-// Uses real revenue and EBITDA from inputData
-const revenue = inputData?.revenue || 0;
-const ebitda = inputData?.ebitda || 0;
-
-// Displays actual values in calculations
-<span className="font-mono">{formatCurrency(revenue)}</span>
-<span className="font-mono">{formatCurrency(ebitda)}</span>
-```
-
-### 3. SensitivityAnalysis
-
-**File**: `src/components/InfoTab/SensitivityAnalysis.tsx`
-
-**Purpose**: Sensitivity analysis with real data  
-**Features**:
-- WACC sensitivity table
-- Growth rate sensitivity table
-- Real base values from inputData
-
-### 4. MethodologyBreakdown
-
-**File**: `src/components/InfoTab/MethodologyBreakdown.tsx`
-
-**Purpose**: Methodology explanation and confidence factors  
-**Features**:
-- Dynamic methodology descriptions
-- Confidence score breakdown
-- Tooltips and documentation links
-- Progressive disclosure
+**Lazy Loading Behavior**:
+- HTML is included in streaming response but not rendered until tab is clicked
+- No separate API call needed (HTML already in response)
+- Trigger: User clicks "Info" tab in `ManualValuationFlow.tsx`
 
 ---
 

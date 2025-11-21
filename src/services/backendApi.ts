@@ -234,7 +234,8 @@ class BackendAPI {
           correlationId: correlationId || valuationId,
           hasTransparency: !!responseData?.transparency,
           hasModularSystem: !!responseData?.modular_system,
-          transparencyStepsCount: responseData?.transparency?.calculation_steps?.length || 0,
+          // calculation_steps deprecated - details now in info_tab_html
+          transparencyStepsCount: 0,
           modularSystemStepsCount: responseData?.modular_system?.step_details?.length || 0,
           equityValueMid: responseData?.equity_value_mid,
           hasHtmlReport: !!responseData?.html_report,

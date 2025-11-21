@@ -11,11 +11,26 @@
  * Phase 4: Data Synchronization & Fallback Logic
  */
 
+import { AlertTriangle, Calculator, Clock, Database, Info } from 'lucide-react';
 import React from 'react';
 import { StepStatusBadge } from './StepStatusIndicator';
-import { Clock, AlertTriangle, Info, Database, Calculator } from 'lucide-react';
-import { formatExecutionTime } from '../../utils/stepDataMapper';
+// formatExecutionTime moved inline - stepDataMapper is deprecated
 import type { EnhancedCalculationStep } from '../../types/valuation';
+
+/**
+ * Format execution time in milliseconds to human-readable string
+ */
+function formatExecutionTime(ms: number): string {
+  if (ms < 1000) {
+    return `${Math.round(ms)}ms`;
+  } else if (ms < 60000) {
+    return `${(ms / 1000).toFixed(1)}s`;
+  } else {
+    const minutes = Math.floor(ms / 60000);
+    const seconds = ((ms % 60000) / 1000).toFixed(1);
+    return `${minutes}m ${seconds}s`;
+  }
+}
 
 interface StepMetadataProps {
   stepData: EnhancedCalculationStep | null;

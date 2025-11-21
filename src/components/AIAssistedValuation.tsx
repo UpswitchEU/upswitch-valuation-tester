@@ -13,7 +13,7 @@ import { backendAPI } from '../services/backendApi';
 import { businessDataService, type BusinessProfileData } from '../services/businessDataService';
 import { DownloadService } from '../services/downloadService';
 import { guestCreditService } from '../services/guestCreditService';
-import type { ConversationContext, ValuationInputData, ValuationRequest, ValuationResponse } from '../types/valuation';
+import type { ConversationContext, ValuationRequest, ValuationResponse } from '../types/valuation';
 import { chatLogger } from '../utils/logger';
 import { ErrorBoundary } from './ErrorBoundary';
 import { FullScreenModal } from './FullScreenModal';
@@ -46,8 +46,6 @@ export const AIAssistedValuation: React.FC<AIAssistedValuationProps> = ({
   const [showOutOfCreditsModal, setShowOutOfCreditsModal] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [conversationContext, setConversationContext] = useState<ConversationContext | null>(null);
-  const [inputData, setInputData] = useState<ValuationInputData | null>(null);
-  
   // Update context when conversation progresses
   const handleConversationUpdate = useCallback((context: ConversationContext) => {
     setConversationContext(context);
@@ -57,87 +55,6 @@ export const AIAssistedValuation: React.FC<AIAssistedValuationProps> = ({
       extractedFoundingYear: context.extracted_founding_year,
       confidence: context.extraction_confidence
     });
-  }, []);
-  
-
-  // Extract input data from business profile and conversation context
-  const extractInputData = useCallback((businessProfile: BusinessProfileData | null, conversationContext: ConversationContext | null, valuationResult: ValuationResponse | null): ValuationInputData | null => {
-    if (!businessProfile && !conversationContext && !valuationResult) {
-      return null;
-    }
-
-    // Extract revenue and EBITDA from various sources
-    const revenue = 
-      businessProfile?.revenue || 
-      (valuationResult as any)?.revenue || 
-      (conversationContext?.business_context as any)?.revenue || 
-      0;
-    
-    const ebitda = 
-      businessProfile?.ebitda || 
-      (valuationResult as any)?.ebitda || 
-      (conversationContext?.business_context as any)?.ebitda || 
-      0;
-
-    // Extract other business data
-    const industry = 
-      businessProfile?.industry || 
-      (conversationContext?.business_context as any)?.industry || 
-      (valuationResult as any)?.industry || 
-      'services';
-
-    const country_code = 
-      businessProfile?.country || 
-      (conversationContext?.business_context as any)?.country_code || 
-      (valuationResult as any)?.country_code || 
-      'BE';
-
-    const founding_year = 
-      businessProfile?.founded_year || 
-      (businessProfile?.years_in_operation ? new Date().getFullYear() - businessProfile.years_in_operation : undefined) ||
-      conversationContext?.extracted_founding_year ||
-      (conversationContext?.business_context as any)?.founding_year ||
-      (valuationResult as any)?.founding_year;
-
-    const employees = 
-      businessProfile?.employees || 
-      (conversationContext?.business_context as any)?.number_of_employees ||
-      (valuationResult as any)?.number_of_employees;
-
-    const business_model = 
-      businessProfile?.business_model || 
-      conversationContext?.extracted_business_model ||
-      (conversationContext?.business_context as any)?.business_model ||
-      (valuationResult as any)?.business_model ||
-      'services';
-
-    const inputData: ValuationInputData = {
-      revenue: revenue || 0,
-      ebitda: ebitda || 0,
-      industry: industry,
-      country_code: country_code,
-      founding_year: founding_year,
-      employees: employees,
-      business_model: business_model,
-      historical_years_data: (conversationContext?.business_context as any)?.historical_years_data || undefined,
-    };
-
-    chatLogger.info('Extracted input data for Info tab', {
-      revenue,
-      ebitda,
-      industry,
-      country_code,
-      founding_year,
-      employees,
-      business_model,
-      sources: {
-        businessProfile: !!businessProfile,
-        conversationContext: !!conversationContext,
-        valuationResult: !!valuationResult
-      }
-    });
-
-    return inputData;
   }, []);
   
   // NEW: Store session ID in component state (created once on mount)

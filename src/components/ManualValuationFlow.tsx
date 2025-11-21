@@ -184,7 +184,11 @@ export const ManualValuationFlow: React.FC<ManualValuationFlowProps> = memo(({ o
   const handleStreamComplete = useCallback((htmlReport: string, valuationId: string, fullResponse?: any) => {
     const requestId = requestIdRef.current;
     
-    // DIAGNOSTIC: Log stream completion with full details
+    // Extract info_tab_html from fullResponse if available
+    const infoTabHtml = fullResponse?.info_tab_html || null;
+    const hasInfoTabHtml = !!(infoTabHtml && typeof infoTabHtml === 'string' && infoTabHtml.length > 0);
+    
+    // DIAGNOSTIC: Log stream completion with full details including info_tab_html
     console.log('[ManualValuationFlow] handleStreamComplete called', {
       requestId,
       valuationId,
@@ -193,7 +197,10 @@ export const ManualValuationFlow: React.FC<ManualValuationFlowProps> = memo(({ o
       htmlReportType: typeof htmlReport,
       htmlReportPreview: htmlReport?.substring(0, 200) || 'N/A',
       hasFullResponse: !!fullResponse,
-      fullResponseKeys: fullResponse ? Object.keys(fullResponse) : []
+      fullResponseKeys: fullResponse ? Object.keys(fullResponse) : [],
+      hasInfoTabHtml,
+      infoTabHtmlLength: infoTabHtml?.length || 0,
+      infoTabHtmlPreview: infoTabHtml?.substring(0, 200) || 'N/A'
     });
     
     if (requestId) {
@@ -224,15 +231,16 @@ export const ManualValuationFlow: React.FC<ManualValuationFlowProps> = memo(({ o
     // Clear progressive sections when full report is available
     setReportSections([]);
     
-    // OPTIMISTIC UI: Update result with complete HTML report immediately
+    // OPTIMISTIC UI: Update result with complete HTML report and info_tab_html immediately
     const completeResult = {
       ...(result || {}),
       ...(fullResponse || {}),
       html_report: htmlReport,
+      info_tab_html: hasInfoTabHtml ? infoTabHtml : (result?.info_tab_html || undefined),
       valuation_id: valuationId
     } as ValuationResponse;
     
-    // CRITICAL: Set result with html_report from streaming BEFORE regular endpoint can overwrite it
+    // CRITICAL: Set result with html_report and info_tab_html from streaming BEFORE regular endpoint can overwrite it
     setResult(completeResult);
     
     // DIAGNOSTIC: Verify result was set correctly
@@ -241,11 +249,14 @@ export const ManualValuationFlow: React.FC<ManualValuationFlowProps> = memo(({ o
       hasHtmlReport: !!htmlReport,
       htmlReportLength: htmlReport.length,
       htmlReportPreview: htmlReport.substring(0, 200),
+      hasInfoTabHtml: !!completeResult.info_tab_html,
+      infoTabHtmlLength: completeResult.info_tab_html?.length || 0,
       completeResultKeys: Object.keys(completeResult),
       completeResultHasHtmlReport: !!completeResult.html_report,
+      completeResultHasInfoTabHtml: !!completeResult.info_tab_html,
       finalReportHtmlSet: true,
       reportSectionsCleared: true,
-      note: 'This html_report should be preserved when regular endpoint response arrives'
+      note: 'Both html_report and info_tab_html should be preserved when regular endpoint response arrives'
     });
     
     // Clear request ID after completion

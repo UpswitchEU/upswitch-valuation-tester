@@ -131,7 +131,8 @@ export const ResultsHeader: React.FC<ResultsHeaderProps> = ({ result }) => {
               )}
               
               {/* SME Calibration Notice (NEW: McKinsey standard for SME multiples) */}
-              {result.transparency?.calculation_steps?.[2]?.sme_calibration?.applied && (
+              {/* Note: Detailed SME calibration information is available in info_tab_html */}
+              {false && (
                 <div className="bg-blue-50 border-l-4 border-blue-500 p-4 rounded mt-2">
                   <div className="flex items-start gap-3">
                     <svg className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

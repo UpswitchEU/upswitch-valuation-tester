@@ -184,7 +184,7 @@ export function getAdjustmentsApplied(result: ValuationResponse) {
  * @deprecated Calculation details are now available in info_tab_html (server-generated HTML).
  * This function returns null. Use info_tab_html for step details.
  */
-export function getStepData(result: ValuationResponse, stepNumber: number) {
+export function getStepData(_result: ValuationResponse, _stepNumber: number) {
   // Calculation steps are now in server-generated info_tab_html
   // Return null to indicate data should come from HTML
   return null;
