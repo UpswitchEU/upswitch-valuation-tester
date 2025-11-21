@@ -7,7 +7,7 @@
 
 import axios, { AxiosInstance, AxiosResponse } from 'axios';
 import type { ValuationRequest, ValuationResponse } from '../types/valuation';
-import { normalizeCalculationSteps } from '../utils/calculationStepsNormalizer';
+// normalizeCalculationSteps removed - calculation steps now in server-generated info_tab_html
 import { apiLogger, extractCorrelationId, setCorrelationFromResponse, createPerformanceLogger } from '../utils/logger';
 
 class BackendAPI {
@@ -51,7 +51,9 @@ class BackendAPI {
             hasTransparency: !!responseData?.transparency,
             hasModularSystem: !!responseData?.modular_system,
             transparencyStepsCount: responseData?.transparency?.calculation_steps 
-              ? normalizeCalculationSteps(responseData.transparency.calculation_steps).length 
+              ? (typeof responseData.transparency.calculation_steps === 'object' && responseData.transparency.calculation_steps !== null
+                  ? Object.keys(responseData.transparency.calculation_steps).length 
+                  : 0)
               : 0,
             modularSystemStepsCount: responseData?.modular_system?.step_details?.length || 0,
             correlationId
@@ -180,7 +182,7 @@ class BackendAPI {
       const correlationId = extractCorrelationId(response);
       const valuationId = responseData?.valuation_id;
       
-      // DIAGNOSTIC: Log html_report presence in response
+      // DIAGNOSTIC: Log html_report and info_tab_html presence in response
       apiLogger.info('DIAGNOSTIC: Manual valuation response structure', {
         responseStructure: {
           hasData: !!response.data.data,
@@ -195,6 +197,14 @@ class BackendAPI {
           length: responseData?.html_report?.length || 0,
           preview: responseData?.html_report?.substring(0, 200) || 'N/A',
           type: typeof responseData?.html_report
+        },
+        infoTabHtml: {
+          inResponseData: !!responseData?.info_tab_html,
+          inResponseDataData: !!response.data.data?.info_tab_html,
+          inResponseDirect: !!response.data?.info_tab_html,
+          length: responseData?.info_tab_html?.length || 0,
+          preview: responseData?.info_tab_html?.substring(0, 200) || 'N/A',
+          type: typeof responseData?.info_tab_html
         }
       });
 
@@ -206,12 +216,17 @@ class BackendAPI {
           hasData: !!response.data.data,
           dataKeys: response.data.data ? Object.keys(response.data.data) : [],
           dataHasHtmlReport: !!response.data.data?.html_report,
-          dataHtmlReportLength: response.data.data?.html_report?.length || 0
+          dataHtmlReportLength: response.data.data?.html_report?.length || 0,
+          dataHasInfoTabHtml: !!response.data.data?.info_tab_html,
+          dataInfoTabHtmlLength: response.data.data?.info_tab_html?.length || 0
         },
         extractedResponseData: {
           hasHtmlReport: !!responseData?.html_report,
           htmlReportLength: responseData?.html_report?.length || 0,
-          htmlReportPreview: responseData?.html_report?.substring(0, 200) || 'N/A'
+          htmlReportPreview: responseData?.html_report?.substring(0, 200) || 'N/A',
+          hasInfoTabHtml: !!responseData?.info_tab_html,
+          infoTabHtmlLength: responseData?.info_tab_html?.length || 0,
+          infoTabHtmlPreview: responseData?.info_tab_html?.substring(0, 200) || 'N/A'
         }
       });
       
@@ -226,7 +241,9 @@ class BackendAPI {
           modularSystemStepsCount: responseData?.modular_system?.step_details?.length || 0,
           equityValueMid: responseData?.equity_value_mid,
           hasHtmlReport: !!responseData?.html_report,
-          htmlReportLength: responseData?.html_report?.length || 0
+          htmlReportLength: responseData?.html_report?.length || 0,
+          hasInfoTabHtml: !!responseData?.info_tab_html,
+          infoTabHtmlLength: responseData?.info_tab_html?.length || 0
         });
       }
       

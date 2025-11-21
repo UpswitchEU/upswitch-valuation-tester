@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import { api } from '../services/api';
 import { backendAPI } from '../services/backendApi';
 import type { QuickValuationRequest, ValuationFormData, ValuationInputData, ValuationRequest, ValuationResponse } from '../types/valuation';
-import { normalizeCalculationSteps } from '../utils/calculationStepsNormalizer';
+// normalizeCalculationSteps removed - calculation steps now in server-generated info_tab_html
 import { storeLogger, correlationContext } from '../utils/logger';
 import { validatePreference } from '../utils/numberUtils';
 // import { useReportsStore } from './useReportsStore'; // Deprecated: Now saving to database
@@ -327,10 +327,11 @@ export const useValuationStore = create<ValuationStore>((set, get) => ({
           valuationId: response.valuation_id,
           hasTransparency: !!response.transparency,
           hasModularSystem: !!response.modular_system,
-          transparencyStepsCount: response.transparency?.calculation_steps 
-            ? normalizeCalculationSteps(response.transparency.calculation_steps).length 
-            : 0,
-          modularSystemStepsCount: response.modular_system?.step_details?.length || 0
+          modularSystemStepsCount: response.modular_system?.step_details?.length || 0,
+          hasHtmlReport: !!response?.html_report,
+          htmlReportLength: response?.html_report?.length || 0,
+          hasInfoTabHtml: !!response?.info_tab_html,
+          infoTabHtmlLength: response?.info_tab_html?.length || 0
         });
       }
       
@@ -351,6 +352,12 @@ export const useValuationStore = create<ValuationStore>((set, get) => ({
           preview: response?.html_report?.substring(0, 200) || 'N/A',
           type: typeof response?.html_report
         },
+        infoTabHtml: {
+          present: !!response?.info_tab_html,
+          length: response?.info_tab_html?.length || 0,
+          preview: response?.info_tab_html?.substring(0, 200) || 'N/A',
+          type: typeof response?.info_tab_html
+        },
         fullData: response
       });
       
@@ -369,19 +376,28 @@ export const useValuationStore = create<ValuationStore>((set, get) => ({
       storeLogger.info('DIAGNOSTIC: About to store result in Zustand store', {
         hasHtmlReport: !!response?.html_report,
         htmlReportLength: response?.html_report?.length || 0,
+        hasInfoTabHtml: !!response?.info_tab_html,
+        infoTabHtmlLength: response?.info_tab_html?.length || 0,
         valuationId: response?.valuation_id
       });
       
-      // CRITICAL: Preserve html_report from streaming if regular endpoint response doesn't have it
+      // CRITICAL: Preserve html_report and info_tab_html from streaming if regular endpoint response doesn't have it
       // This happens when streaming completes first and sets html_report, then regular endpoint overwrites
       const currentResult = get().result;
       const responseHasHtmlReport = response?.html_report && response.html_report.length > 0;
       const currentHasHtmlReport = currentResult?.html_report && currentResult.html_report.length > 0;
+      const responseHasInfoTabHtml = response?.info_tab_html && response.info_tab_html.length > 0;
+      const currentHasInfoTabHtml = currentResult?.info_tab_html && currentResult.info_tab_html.length > 0;
       
       // Prefer response html_report if it exists and is non-empty, otherwise preserve from current result
       const htmlReportToPreserve = responseHasHtmlReport 
         ? response.html_report 
         : (currentHasHtmlReport ? currentResult.html_report : response?.html_report);
+      
+      // Prefer response info_tab_html if it exists and is non-empty, otherwise preserve from current result
+      const infoTabHtmlToPreserve = responseHasInfoTabHtml 
+        ? response.info_tab_html 
+        : (currentHasInfoTabHtml ? currentResult.info_tab_html : response?.info_tab_html);
       
       if (currentHasHtmlReport && !responseHasHtmlReport) {
         storeLogger.info('DIAGNOSTIC: Preserving html_report from streaming/previous result', {
@@ -393,10 +409,21 @@ export const useValuationStore = create<ValuationStore>((set, get) => ({
         });
       }
       
-      // Merge response with preserved html_report
+      if (currentHasInfoTabHtml && !responseHasInfoTabHtml) {
+        storeLogger.info('DIAGNOSTIC: Preserving info_tab_html from streaming/previous result', {
+          preservedFrom: 'previous_result',
+          infoTabHtmlLength: infoTabHtmlToPreserve?.length || 0,
+          valuationId: response?.valuation_id,
+          responseHadInfoTabHtml: !!response?.info_tab_html,
+          responseInfoTabHtmlLength: response?.info_tab_html?.length || 0
+        });
+      }
+      
+      // Merge response with preserved html_report and info_tab_html
       const resultToStore = {
         ...response,
-        html_report: htmlReportToPreserve
+        html_report: htmlReportToPreserve,
+        info_tab_html: infoTabHtmlToPreserve
       };
       
       // CRITICAL: Validate critical numeric fields for NaN/Infinity (log warnings only, don't modify)
@@ -435,13 +462,18 @@ export const useValuationStore = create<ValuationStore>((set, get) => ({
         storedHasHtmlReport: !!storedResult?.html_report,
         storedHtmlReportLength: storedResult?.html_report?.length || 0,
         storedHtmlReportPreview: storedResult?.html_report?.substring(0, 200) || 'N/A',
+        storedHasInfoTabHtml: !!storedResult?.info_tab_html,
+        storedInfoTabHtmlLength: storedResult?.info_tab_html?.length || 0,
+        storedInfoTabHtmlPreview: storedResult?.info_tab_html?.substring(0, 200) || 'N/A',
         storedKeys: storedResult ? Object.keys(storedResult) : []
       });
       
       storeLogger.info('DIAGNOSTIC: Result stored in Zustand store', {
         stored: !!storedResult,
         storedHasHtmlReport: !!storedResult?.html_report,
-        storedHtmlReportLength: storedResult?.html_report?.length || 0
+        storedHtmlReportLength: storedResult?.html_report?.length || 0,
+        storedHasInfoTabHtml: !!storedResult?.info_tab_html,
+        storedInfoTabHtmlLength: storedResult?.info_tab_html?.length || 0
       });
       
       // Update inputData with metrics from response

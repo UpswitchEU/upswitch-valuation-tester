@@ -625,7 +625,7 @@ export const ManualValuationFlow: React.FC<ManualValuationFlowProps> = memo(({ o
                 {result ? (
                   <div className="p-4 sm:p-6">
                     <Suspense fallback={<ComponentLoader message="Loading calculation details..." />}>
-                      <ValuationInfoPanel result={result} inputData={inputData} />
+                      <ValuationInfoPanel result={result} />
                     </Suspense>
                   </div>
                 ) : (

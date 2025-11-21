@@ -1346,7 +1346,7 @@ export const AIAssistedValuation: React.FC<AIAssistedValuationProps> = ({
           </div>
         )}
         {activeTab === 'info' && valuationResult && (
-          <ValuationInfoPanel result={valuationResult} inputData={inputData} />
+          <ValuationInfoPanel result={valuationResult} />
         )}
       </FullScreenModal>
 

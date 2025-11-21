@@ -231,7 +231,8 @@ export interface ProfessionalReviewReady {
  */
 export interface TransparencyData {
   data_sources: DataSource[];
-  calculation_steps: EnhancedCalculationStep[];
+  /** @deprecated Use info_tab_html instead. Calculation details are now available in server-generated HTML. */
+  calculation_steps?: EnhancedCalculationStep[];
   comparable_companies?: ComparableCompany[];
   confidence_breakdown: ConfidenceBreakdown;
   range_methodology: RangeMethodology;
@@ -890,14 +891,18 @@ export interface ValuationResponse {
   methodology_downgrade_reason?: string; // Backward compatibility field
   
   // Multiple-First Discounting pipeline (NEW)
-  multiple_pipeline?: MultiplePipeline; // Complete multiple discount pipeline
+  /** @deprecated Use info_tab_html instead. Multiple pipeline details are now available in server-generated HTML. */
+  multiple_pipeline?: MultiplePipeline;
   
   // Additional data
   current_year_data?: YearDataInput; // For accessing revenue, ebitda, etc.
   historical_years_data?: YearDataInput[]; // Historical financial data for trend analysis
   
-  // HTML Report (Complete Accountant View report from backend)
-  html_report?: string; // Complete Accountant View HTML report (20-30 pages)
+  // HTML Reports (REQUIRED for display)
+  /** Complete Accountant View HTML report (20-30 pages) */
+  html_report?: string;
+  /** Complete Info Tab HTML with 12-step calculation breakdown and all validation details */
+  info_tab_html?: string;
 }
 
 export interface CompanyLookupResult {

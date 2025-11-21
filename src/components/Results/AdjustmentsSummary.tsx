@@ -1,198 +1,97 @@
 /**
  * Adjustments Summary Component
  * 
- * Displays all adjustments applied during valuation:
- * - Owner Concentration
- * - Size Discount
- * - Liquidity Discount
- * - Ownership Adjustment
+ * Displays summary of adjustments applied during valuation.
  * 
- * Shows adjustment percentages, rationale, calibration details, and tier selection.
+ * NOTE: Detailed adjustment breakdowns are now available in the Info Tab HTML (info_tab_html).
+ * This component shows a simplified summary using only summary fields from the response.
  * 
- * Phase 2: Main Report Enhancement
+ * Phase 2: Main Report Enhancement (Simplified)
  */
 
 import React, { useState } from 'react';
-import { ChevronDown, ChevronRight, TrendingDown, Info, Calculator } from 'lucide-react';
-import { getStepData } from '../../utils/valuationDataExtractor';
-import { getStepResultData } from '../../utils/stepDataMapper';
-import { StepStatusBadge } from '../shared/StepStatusIndicator';
+import { ChevronDown, ChevronRight, TrendingDown, Info, ExternalLink } from 'lucide-react';
 import type { ValuationResponse } from '../../types/valuation';
 
 interface AdjustmentsSummaryProps {
   result: ValuationResponse;
   className?: string;
+  onViewDetails?: () => void; // Callback to navigate to info tab
 }
 
 export const AdjustmentsSummary: React.FC<AdjustmentsSummaryProps> = ({
   result,
-  className = ''
+  className = '',
+  onViewDetails
 }) => {
   const [isExpanded, setIsExpanded] = useState(false);
-  const [expandedAdjustments, setExpandedAdjustments] = useState<Set<number>>(new Set());
-
-  // Also extract from step data for comprehensive view
-  const step4Data = getStepData(result, 4); // Owner Concentration
-  const step5Data = getStepData(result, 5); // Size Discount
-  const step6Data = getStepData(result, 6); // Liquidity Discount
-  const step8Data = getStepData(result, 8); // Ownership Adjustment
-
-  const toggleAdjustment = (stepNumber: number) => {
-    const newExpanded = new Set(expandedAdjustments);
-    if (newExpanded.has(stepNumber)) {
-      newExpanded.delete(stepNumber);
-    } else {
-      newExpanded.add(stepNumber);
-    }
-    setExpandedAdjustments(newExpanded);
-  };
 
   const formatPercentage = (value: number): string => {
     return `${value >= 0 ? '+' : ''}${value.toFixed(1)}%`;
   };
 
-  const getAdjustmentIcon = (type: string) => {
-    switch (type) {
-      case 'owner_concentration':
-        return '👤';
-      case 'size_discount':
-        return '📏';
-      case 'liquidity_discount':
-        return '💧';
-      case 'control_premium':
-        return '⬆️';
-      case 'minority_discount':
-        return '⬇️';
-      case 'deadlock_discount':
-        return '⚖️';
-      default:
-        return '📊';
-    }
-  };
-
-  const getAdjustmentColor = (type: string) => {
-    switch (type) {
-      case 'owner_concentration':
-        return 'bg-red-50 border-red-200 text-red-700';
-      case 'size_discount':
-        return 'bg-yellow-50 border-yellow-200 text-yellow-700';
-      case 'liquidity_discount':
-        return 'bg-blue-50 border-blue-200 text-blue-700';
-      case 'control_premium':
-        return 'bg-green-50 border-green-200 text-green-700';
-      case 'minority_discount':
-      case 'deadlock_discount':
-        return 'bg-orange-50 border-orange-200 text-orange-700';
-      default:
-        return 'bg-gray-50 border-gray-200 text-gray-700';
-    }
-  };
-
-  // Build comprehensive adjustments list
+  // Build adjustments list from summary fields only
   const allAdjustments: Array<{
-    stepNumber: number;
     name: string;
     type: string;
     adjustment: number;
     adjustmentPct: number;
     rationale: string;
-    tier?: string;
-    calibrationType?: string;
-    status: 'completed' | 'skipped' | 'failed' | 'not_executed';
-    stepData: any;
   }> = [];
 
-  // Step 4: Owner Concentration
-  if (step4Data && step4Data.status === 'completed') {
-    // Step 4 result available via getStepResultData if needed
-    const ownerConcentration = result.multiples_valuation?.owner_concentration;
-    if (ownerConcentration) {
-      allAdjustments.push({
-        stepNumber: 4,
-        name: 'Owner Concentration Adjustment',
-        type: 'owner_concentration',
-        adjustment: ownerConcentration.adjustment_factor,
-        adjustmentPct: ownerConcentration.adjustment_factor * 100,
-        rationale: 'Key person risk adjustment based on owner/employee ratio',
-        tier: ownerConcentration.risk_level,
-        calibrationType: ownerConcentration.calibration?.calibration_type,
-        status: step4Data.status,
-        stepData: step4Data
-      });
-    }
+  // Owner Concentration Adjustment
+  if (result.multiples_valuation?.owner_concentration_adjustment) {
+    const ownerConc = result.multiples_valuation.owner_concentration;
+    allAdjustments.push({
+      name: 'Owner Concentration Adjustment',
+      type: 'owner_concentration',
+      adjustment: result.multiples_valuation.owner_concentration_adjustment,
+      adjustmentPct: result.multiples_valuation.owner_concentration_adjustment_percentage || 0,
+      rationale: ownerConc?.explanation || 'Key person risk adjustment based on owner/employee ratio'
+    });
   }
 
-  // Step 5: Size Discount - ALWAYS show (even when 0% to explain why)
-  if (step5Data && step5Data.status === 'completed') {
-    const step5Result = getStepResultData(result, 5);
-    const sizeDiscount = result.multiples_valuation?.size_discount || 0;
-    // CRITICAL: Always show Step 5, even when discount is 0%, to explain why
-    // This ensures transparency: users see that size risk was handled in Step 2 calibration
-    const step2Data = (result as any).step_results?.step_2_benchmarking;
-    const calibrationFactor = step2Data?.calibration_factor || step2Data?.base_calibration_factor;
-    const smeCalibrationApplied = step2Data?.sme_calibration?.applied || (calibrationFactor && calibrationFactor < 1.0);
-    
-    const rationale = sizeDiscount < 0
-      ? 'McKinsey Size Premium discount for small company size'
-      : smeCalibrationApplied
-      ? `Size risk already handled in Step 2 calibration (factor ${calibrationFactor?.toFixed(4) || 'N/A'}) - no double-counting per McKinsey risk factor segregation principle`
-      : 'No size discount applied - size risk not applicable for this company';
-    
-      allAdjustments.push({
-        stepNumber: 5,
-        name: 'Size Discount',
-        type: 'size_discount',
-        adjustment: sizeDiscount,
-        adjustmentPct: sizeDiscount * 100,
-      rationale: rationale,
-      tier: step5Result?.size_tier || (sizeDiscount === 0 ? 'Size risk handled in Step 2 calibration' : 'N/A'),
-        status: step5Data.status,
-        stepData: step5Data
-      });
+  // Size Discount
+  if (result.multiples_valuation?.size_discount !== undefined) {
+    allAdjustments.push({
+      name: 'Size Discount',
+      type: 'size_discount',
+      adjustment: result.multiples_valuation.size_discount,
+      adjustmentPct: result.multiples_valuation.size_discount_percentage || 0,
+      rationale: 'Size risk adjustment for small company'
+    });
   }
 
-  // Step 6: Liquidity Discount
-  if (step6Data && step6Data.status === 'completed') {
-    const liquidityDiscount = result.multiples_valuation?.liquidity_discount || 0;
-    if (liquidityDiscount < 0) {
-      allAdjustments.push({
-        stepNumber: 6,
-        name: 'Liquidity Discount',
-        type: 'liquidity_discount',
-        adjustment: liquidityDiscount,
-        adjustmentPct: liquidityDiscount * 100,
-        rationale: 'Private company illiquidity discount',
-        status: step6Data.status,
-        stepData: step6Data
-      });
-    }
+  // Liquidity Discount
+  if (result.multiples_valuation?.liquidity_discount !== undefined) {
+    allAdjustments.push({
+      name: 'Liquidity Discount',
+      type: 'liquidity_discount',
+      adjustment: result.multiples_valuation.liquidity_discount,
+      adjustmentPct: result.multiples_valuation.liquidity_discount_percentage || 0,
+      rationale: 'Private company illiquidity discount'
+    });
   }
 
-  // Step 8: Ownership Adjustment
-  if (step8Data && step8Data.status === 'completed') {
-    const step8Result = getStepResultData(result, 8);
-    const ownershipAdjustment = result.ownership_adjustment;
-    if (ownershipAdjustment && ownershipAdjustment.control_premium !== 0) {
-      const adjustmentType = ownershipAdjustment.control_premium > 0 ? 'control_premium' : 'minority_discount';
-      allAdjustments.push({
-        stepNumber: 8,
-        name: 'Ownership Adjustment',
-        type: adjustmentType,
-        adjustment: ownershipAdjustment.control_premium / 100, // Convert to decimal
-        adjustmentPct: ownershipAdjustment.control_premium,
-        rationale: step8Result?.tier_description || 'Ownership structure adjustment',
-        status: step8Data.status,
-        stepData: step8Data
-      });
-    }
+  // Ownership Adjustment
+  if (result.owner_dependency_adjustment !== undefined && result.owner_dependency_adjustment !== 0) {
+    allAdjustments.push({
+      name: 'Ownership Adjustment',
+      type: 'ownership_adjustment',
+      adjustment: result.owner_dependency_adjustment,
+      adjustmentPct: 0, // Calculate if needed
+      rationale: 'Owner dependency adjustment'
+    });
   }
 
   if (allAdjustments.length === 0) {
     return null;
   }
 
-  const totalAdjustment = allAdjustments.reduce((sum, adj) => sum + adj.adjustment, 0);
-  const totalAdjustmentPct = totalAdjustment * 100;
+  const totalAdjustment = allAdjustments.reduce((sum, adj) => sum + (adj.adjustment || 0), 0);
+  const totalAdjustmentPct = allAdjustments.reduce((sum, adj) => sum + adj.adjustmentPct, 0);
+
+  const hasInfoTabHtml = !!(result.info_tab_html && result.info_tab_html.length > 0);
 
   return (
     <div className={`bg-white rounded-lg border border-gray-200 shadow-sm ${className}`}>
@@ -224,111 +123,53 @@ export const AdjustmentsSummary: React.FC<AdjustmentsSummaryProps> = ({
       {/* Content */}
       {isExpanded && (
         <div className="border-t border-gray-200 p-4 space-y-3">
-          {allAdjustments.map((adjustment) => {
-            const isExpanded = expandedAdjustments.has(adjustment.stepNumber);
-            const stepResult = getStepResultData(result, adjustment.stepNumber);
-
-            return (
-              <div
-                key={adjustment.stepNumber}
-                className={`border rounded-lg ${getAdjustmentColor(adjustment.type)}`}
-              >
-                {/* Adjustment Header */}
-                <button
-                  onClick={() => toggleAdjustment(adjustment.stepNumber)}
-                  className="w-full flex items-center justify-between p-3 hover:opacity-80 transition-opacity"
-                >
-                  <div className="flex items-center gap-3 flex-1">
-                    <span className="text-xl">{getAdjustmentIcon(adjustment.type)}</span>
-                    <div className="flex-1 text-left">
-                      <div className="font-semibold text-sm">{adjustment.name}</div>
-                      <div className="text-xs opacity-75 mt-0.5">{adjustment.rationale}</div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <StepStatusBadge status={adjustment.status} size="sm" />
-                      <span className="font-bold text-lg">
-                        {formatPercentage(adjustment.adjustmentPct)}
-                      </span>
-                    </div>
-                  </div>
-                  {stepResult && (
-                    isExpanded ? (
-                      <ChevronDown className="w-4 h-4 ml-2" />
-                    ) : (
-                      <ChevronRight className="w-4 h-4 ml-2" />
-                    )
+          {/* Info Message */}
+          {hasInfoTabHtml && (
+            <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+              <div className="flex items-start gap-2">
+                <Info className="w-4 h-4 text-blue-600 mt-0.5 flex-shrink-0" />
+                <div className="flex-1">
+                  <p className="text-sm text-blue-800 mb-2">
+                    Detailed adjustment breakdowns with formulas, academic sources, and component analysis are available in the Info Tab.
+                  </p>
+                  {onViewDetails && (
+                    <button
+                      onClick={onViewDetails}
+                      className="inline-flex items-center gap-2 px-3 py-1.5 text-xs font-medium text-blue-700 bg-blue-100 hover:bg-blue-200 rounded transition-colors"
+                    >
+                      <ExternalLink className="w-3 h-3" />
+                      View Detailed Adjustments in Info Tab
+                    </button>
                   )}
-                </button>
-
-                {/* Adjustment Details (Expanded) */}
-                {isExpanded && stepResult && (
-                  <div className="border-t border-current/20 bg-white/50 p-3 space-y-2 text-sm">
-                    {/* Tier/Risk Level */}
-                    {adjustment.tier && (
-                      <div className="flex justify-between">
-                        <span className="text-gray-600">Risk Level / Tier:</span>
-                        <span className="font-semibold">{adjustment.tier}</span>
-                      </div>
-                    )}
-
-                    {/* Calibration Type */}
-                    {adjustment.calibrationType && (
-                      <div className="flex items-center justify-between">
-                        <span className="text-gray-600 flex items-center gap-1">
-                          <Calculator className="w-3.5 h-3.5" />
-                          Calibration:
-                        </span>
-                        <span className="font-semibold capitalize">
-                          {adjustment.calibrationType.replace('-', ' ')}
-                        </span>
-                      </div>
-                    )}
-
-                    {/* Step Status */}
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">Step Status:</span>
-                      <StepStatusBadge status={adjustment.status} size="sm" />
-                    </div>
-
-                    {/* Additional Details from Step Result */}
-                    {adjustment.stepNumber === 4 && stepResult.owner_employee_ratio !== undefined && (
-                      <div className="flex justify-between">
-                        <span className="text-gray-600">Owner/Employee Ratio:</span>
-                        <span className="font-mono">{stepResult.owner_employee_ratio.toFixed(2)}</span>
-                      </div>
-                    )}
-
-                    {adjustment.stepNumber === 5 && stepResult.revenue_tier && (
-                      <div className="flex justify-between">
-                        <span className="text-gray-600">Revenue Tier:</span>
-                        <span className="font-semibold">{stepResult.revenue_tier}</span>
-                      </div>
-                    )}
-
-                    {adjustment.stepNumber === 8 && stepResult.ownership_percentage !== undefined && (
-                      <div className="flex justify-between">
-                        <span className="text-gray-600">Ownership %:</span>
-                        <span className="font-semibold">{stepResult.ownership_percentage}%</span>
-                      </div>
-                    )}
-
-                    {/* Academic Sources Note */}
-                    <div className="mt-2 pt-2 border-t border-current/20">
-                      <div className="flex items-start gap-2 text-xs text-gray-600">
-                        <Info className="w-3.5 h-3.5 mt-0.5 flex-shrink-0" />
-                        <span>
-                          {adjustment.stepNumber === 4 && 'Based on Damodaran (2012) and McKinsey Valuation Handbook'}
-                          {adjustment.stepNumber === 5 && 'Based on McKinsey Size Premium methodology'}
-                          {adjustment.stepNumber === 6 && 'Based on Damodaran (2012) and PwC/Deloitte Restricted Stock Studies'}
-                          {adjustment.stepNumber === 8 && 'Based on control premium and minority discount research'}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                )}
+                </div>
               </div>
-            );
-          })}
+            </div>
+          )}
+
+          {/* Adjustments List */}
+          {allAdjustments.map((adjustment, index) => (
+            <div
+              key={index}
+              className="border border-gray-200 rounded-lg p-3 bg-gray-50"
+            >
+              <div className="flex items-center justify-between">
+                <div className="flex-1">
+                  <div className="font-semibold text-sm text-gray-900">{adjustment.name}</div>
+                  <div className="text-xs text-gray-600 mt-0.5">{adjustment.rationale}</div>
+                </div>
+                <div className="text-right">
+                  <div className="font-bold text-lg text-gray-900">
+                    {formatPercentage(adjustment.adjustmentPct)}
+                  </div>
+                  {adjustment.adjustment !== 0 && (
+                    <div className="text-xs text-gray-500">
+                      €{Math.abs(adjustment.adjustment).toLocaleString()}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          ))}
 
           {/* Total Impact Summary */}
           {allAdjustments.length > 1 && (
@@ -352,4 +193,3 @@ export const AdjustmentsSummary: React.FC<AdjustmentsSummaryProps> = ({
     </div>
   );
 };
-

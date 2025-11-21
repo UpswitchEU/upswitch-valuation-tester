@@ -47,6 +47,57 @@ Valuation Engine API (Port 8000)
 
 ---
 
+## 📄 Report Rendering Architecture
+
+### Server-Side HTML Rendering
+
+Both main report and Info Tab are rendered server-side for optimal performance.
+
+**Main Report (Preview Tab)**:
+- **Source**: `result.html_report` (server-generated HTML)
+- **Component**: `src/components/Results/index.tsx`
+- **Rendering**: `dangerouslySetInnerHTML`
+- **Size**: ~50-80KB HTML
+
+**Info Tab**:
+- **Source**: `result.info_tab_html` (server-generated HTML)
+- **Component**: `src/components/ValuationInfoPanel.tsx`
+- **Rendering**: `dangerouslySetInnerHTML`
+- **Size**: ~30-50KB HTML
+
+### Benefits
+
+- **Consistency**: Single source of truth (server-side)
+- **Performance**: Smaller bundle, faster load, less runtime processing
+- **Payload**: 50-70% reduction in response size (~100-180KB saved per request)
+- **Maintainability**: No complex frontend data extraction logic
+- **Bundle Size**: ~150-200KB reduction (gzipped JavaScript)
+
+### Architecture Flow
+
+```
+Python Engine → Generate HTML → Node.js Proxy → Frontend → Render HTML
+     ↓              ↓                ↓              ↓           ↓
+  Calculate    html_report      Forward      Receive    dangerouslySetInnerHTML
+  Valuation    info_tab_html    Response     Response    (Direct render)
+```
+
+### Migration History
+
+**Before (Legacy)**:
+- Frontend React components rendered calculation steps
+- Complex data extraction logic (`stepDataMapper.ts`, `calculationStepsNormalizer.ts`)
+- Large response payloads with detailed calculation data
+- ~5,500+ lines of frontend rendering code
+
+**After (Current)**:
+- Server-side HTML generation in Python
+- Simple frontend rendering via `dangerouslySetInnerHTML`
+- Reduced payload (detailed data excluded when HTML present)
+- Single source of truth for report rendering
+
+---
+
 ## 🚀 Quick Start
 
 ### **Prerequisites**

@@ -1,41 +1,33 @@
 /**
  * Data Quality & Confidence Component
  * 
- * Displays:
- * - 5-dimension data quality scores
- * - 8-factor confidence breakdown
- * - Quality warnings and recommendations
- * - Data quality checkpoints
+ * Displays summary of data quality and confidence scores.
  * 
- * Phase 2: Main Report Enhancement
+ * NOTE: Detailed data quality breakdowns are now available in the Info Tab HTML (info_tab_html).
+ * This component shows summary fields only.
+ * 
+ * Phase 2: Main Report Enhancement (Simplified)
  */
 
 import React, { useState } from 'react';
-import { ChevronDown, ChevronRight, CheckCircle, AlertTriangle, Info } from 'lucide-react';
-import { getStepResultData } from '../../utils/stepDataMapper';
+import { ChevronDown, ChevronRight, CheckCircle, AlertTriangle, Info, ExternalLink } from 'lucide-react';
 import { getProfessionalReviewReady } from '../../utils/valuationDataExtractor';
 import type { ValuationResponse } from '../../types/valuation';
 
 interface DataQualityConfidenceProps {
   result: ValuationResponse;
   className?: string;
+  onViewDetails?: () => void; // Callback to navigate to info tab
 }
 
 export const DataQualityConfidence: React.FC<DataQualityConfidenceProps> = ({
   result,
-  className = ''
+  className = '',
+  onViewDetails
 }) => {
   const [isExpanded, setIsExpanded] = useState(false);
-  const [expandedSection, setExpandedSection] = useState<string | null>(null);
 
-  const step0Result = getStepResultData(result, 0);
-
-  // Extract data quality scores
-  const qualityScore = step0Result?.quality_score || result.transparency?.confidence_breakdown?.data_quality || 0;
-  const dimensionScores = step0Result?.dimension_scores || {};
-  const qualityWarnings = step0Result?.warnings || [];
-
-  // Extract confidence breakdown
+  // Extract confidence breakdown from summary fields
   const confidenceBreakdown = result.transparency?.confidence_breakdown;
   const confidenceScore = result.confidence_score || 0;
   const confidenceLevel = result.overall_confidence || 
@@ -44,21 +36,13 @@ export const DataQualityConfidence: React.FC<DataQualityConfidenceProps> = ({
   // Professional review readiness
   const reviewReady = getProfessionalReviewReady(result);
 
-  const getQualityColor = (score: number) => {
-    if (score >= 80) return 'text-green-600 bg-green-50 border-green-200';
-    if (score >= 60) return 'text-yellow-600 bg-yellow-50 border-yellow-200';
-    return 'text-red-600 bg-red-50 border-red-200';
-  };
-
   const getConfidenceColor = (score: number) => {
     if (score >= 80) return 'text-green-600 bg-green-50 border-green-200';
     if (score >= 60) return 'text-yellow-600 bg-yellow-50 border-yellow-200';
     return 'text-red-600 bg-red-50 border-red-200';
   };
 
-  const toggleSection = (section: string) => {
-    setExpandedSection(expandedSection === section ? null : section);
-  };
+  const hasInfoTabHtml = !!(result.info_tab_html && result.info_tab_html.length > 0);
 
   return (
     <div className={`bg-white rounded-lg border border-gray-200 shadow-sm ${className}`}>
@@ -70,12 +54,14 @@ export const DataQualityConfidence: React.FC<DataQualityConfidenceProps> = ({
         <div className="flex items-center gap-3">
           <h3 className="text-lg font-semibold text-gray-900">Data Quality & Confidence</h3>
           <div className="flex items-center gap-2">
-            <span className={`px-2 py-1 rounded-full text-xs font-medium border ${getQualityColor(qualityScore)}`}>
-              Quality: {Math.round(qualityScore)}%
-            </span>
             <span className={`px-2 py-1 rounded-full text-xs font-medium border ${getConfidenceColor(confidenceScore)}`}>
               Confidence: {confidenceScore}% ({confidenceLevel})
             </span>
+            {reviewReady && (
+              <span className="px-2 py-1 bg-green-100 text-green-700 rounded-full text-xs font-medium">
+                Review Ready
+              </span>
+            )}
           </div>
         </div>
         {isExpanded ? (
@@ -88,195 +74,86 @@ export const DataQualityConfidence: React.FC<DataQualityConfidenceProps> = ({
       {/* Content */}
       {isExpanded && (
         <div className="border-t border-gray-200 p-4 space-y-4">
-          {/* Data Quality Dimensions */}
-          <div>
-            <button
-              onClick={() => toggleSection('quality')}
-              className="w-full flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
-            >
-              <span className="font-semibold text-gray-900">5-Dimension Data Quality Assessment</span>
-              {expandedSection === 'quality' ? (
-                <ChevronDown className="w-4 h-4" />
-              ) : (
-                <ChevronRight className="w-4 h-4" />
-              )}
-            </button>
-            {expandedSection === 'quality' && (
-              <div className="mt-2 p-3 bg-gray-50 rounded-lg space-y-2">
-                {Object.entries(dimensionScores).map(([dimension, score]: [string, any]) => (
-                  <div key={dimension} className="flex items-center justify-between">
-                    <span className="text-sm text-gray-600 capitalize">{dimension.replace(/_/g, ' ')}:</span>
-                    <div className="flex items-center gap-2">
-                      <div className="w-32 h-2 bg-gray-200 rounded-full overflow-hidden">
-                        <div
-                          className={`h-full ${score >= 80 ? 'bg-green-500' : score >= 60 ? 'bg-yellow-500' : 'bg-red-500'}`}
-                          style={{ width: `${Math.min(100, Math.max(0, score))}%` }}
-                        />
-                      </div>
-                      <span className="text-sm font-semibold w-12 text-right">{Math.round(score)}%</span>
-                    </div>
+          {/* Info Message */}
+          {hasInfoTabHtml && (
+            <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
+              <div className="flex items-start gap-2">
+                <Info className="w-4 h-4 text-blue-600 mt-0.5 flex-shrink-0" />
+                <div className="flex-1">
+                  <p className="text-sm text-blue-800 mb-2">
+                    Detailed data quality scores, 8-factor confidence breakdown, and quality checkpoints are available in the Info Tab.
+                  </p>
+                  {onViewDetails && (
+                    <button
+                      onClick={onViewDetails}
+                      className="inline-flex items-center gap-2 px-3 py-1.5 text-xs font-medium text-blue-700 bg-blue-100 hover:bg-blue-200 rounded transition-colors"
+                    >
+                      <ExternalLink className="w-3 h-3" />
+                      View Detailed Analysis in Info Tab
+                    </button>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Confidence Summary */}
+          <div className="space-y-3">
+            <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+              <div className="flex items-center gap-2">
+                <CheckCircle className="w-5 h-5 text-gray-600" />
+                <span className="font-semibold text-gray-900">Overall Confidence</span>
+              </div>
+              <div className="text-right">
+                <div className={`text-2xl font-bold ${getConfidenceColor(confidenceScore).split(' ')[0]}`}>
+                  {confidenceScore}%
+                </div>
+                <div className="text-xs text-gray-500 mt-0.5">{confidenceLevel}</div>
+              </div>
+            </div>
+
+            {/* Confidence Breakdown (if available) */}
+            {confidenceBreakdown && (
+              <div className="space-y-2">
+                <h4 className="text-sm font-semibold text-gray-700">Confidence Factors</h4>
+                {confidenceBreakdown.data_quality !== undefined && (
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-600">Data Quality:</span>
+                    <span className="font-semibold">{confidenceBreakdown.data_quality}%</span>
                   </div>
-                ))}
-                {Object.keys(dimensionScores).length === 0 && (
-                  <div className="text-sm text-gray-500 italic">Dimension scores not available</div>
+                )}
+                {confidenceBreakdown.methodology_quality !== undefined && (
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-600">Methodology Quality:</span>
+                    <span className="font-semibold">{confidenceBreakdown.methodology_quality}%</span>
+                  </div>
+                )}
+                {confidenceBreakdown.market_data_quality !== undefined && (
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-600">Market Data Quality:</span>
+                    <span className="font-semibold">{confidenceBreakdown.market_data_quality}%</span>
+                  </div>
                 )}
               </div>
             )}
-          </div>
 
-          {/* Quality Warnings */}
-          {qualityWarnings.length > 0 && (
-            <div>
-              <div className="flex items-center gap-2 mb-2">
-                <AlertTriangle className="w-4 h-4 text-yellow-600" />
-                <span className="font-semibold text-gray-900">Quality Warnings</span>
-              </div>
-              <div className="space-y-2">
-                {qualityWarnings.map((warning: any, index: number) => (
-                  <div
-                    key={index}
-                    className={`p-2 rounded text-xs ${
-                      warning.severity === 'critical' || warning.severity === 'high'
-                        ? 'bg-red-50 text-red-700 border border-red-200'
-                        : warning.severity === 'medium'
-                        ? 'bg-yellow-50 text-yellow-700 border border-yellow-200'
-                        : 'bg-blue-50 text-blue-700 border border-blue-200'
-                    }`}
-                  >
-                    <div className="font-semibold capitalize mb-1">{warning.severity} Warning</div>
-                    <div>{warning.message || warning}</div>
-                    {warning.recommended_action && (
-                      <div className="mt-1 italic">Recommendation: {warning.recommended_action}</div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* 8-Factor Confidence Breakdown */}
-          {confidenceBreakdown && (
-            <div>
-              <button
-                onClick={() => toggleSection('confidence')}
-                className="w-full flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
-              >
-                <span className="font-semibold text-gray-900">8-Factor Confidence Breakdown</span>
-                {expandedSection === 'confidence' ? (
-                  <ChevronDown className="w-4 h-4" />
-                ) : (
-                  <ChevronRight className="w-4 h-4" />
-                )}
-              </button>
-              {expandedSection === 'confidence' && (
-                <div className="mt-2 p-3 bg-gray-50 rounded-lg space-y-2">
-                  {[
-                    { key: 'data_quality', label: 'Data Quality', weight: 20 },
-                    { key: 'historical_data', label: 'Historical Data', weight: 15 },
-                    { key: 'methodology_agreement', label: 'Methodology Agreement', weight: 10 },
-                    { key: 'industry_benchmarks', label: 'Industry Benchmarks', weight: 15 },
-                    { key: 'company_profile', label: 'Company Profile', weight: 15 },
-                    { key: 'market_conditions', label: 'Market Conditions', weight: 10 },
-                    { key: 'geographic_data', label: 'Geographic Data', weight: 7.5 },
-                    { key: 'business_model_clarity', label: 'Business Model Clarity', weight: 7.5 }
-                  ].map(({ key, label, weight }) => {
-                    const score = (confidenceBreakdown as any)[key] || 0;
-                    return (
-                      <div key={key} className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <span className="text-sm text-gray-600">{label}</span>
-                          <span className="text-xs text-gray-400">({weight}%)</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <div className="w-32 h-2 bg-gray-200 rounded-full overflow-hidden">
-                            <div
-                              className={`h-full ${score >= 80 ? 'bg-green-500' : score >= 60 ? 'bg-yellow-500' : 'bg-red-500'}`}
-                              style={{ width: `${Math.min(100, Math.max(0, score))}%` }}
-                            />
-                          </div>
-                          <span className="text-sm font-semibold w-12 text-right">{Math.round(score)}%</span>
-                        </div>
-                      </div>
-                    );
-                  })}
-                  <div className="mt-3 pt-3 border-t border-gray-300">
-                    <div className="flex items-center justify-between">
-                      <span className="font-semibold text-gray-900">Overall Confidence Score</span>
-                      <span className={`text-lg font-bold ${getConfidenceColor(confidenceScore).split(' ')[0]}`}>
-                        {confidenceScore}%
-                      </span>
-                    </div>
-                    <div className="text-xs text-gray-500 mt-1">
-                      Weighted average of all 8 factors (Big 4 8-factor model)
+            {/* Professional Review Status */}
+            {reviewReady && (
+              <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
+                <div className="flex items-center gap-2">
+                  <CheckCircle className="w-5 h-5 text-green-600" />
+                  <div>
+                    <div className="font-semibold text-green-900 text-sm">Professional Review Ready</div>
+                    <div className="text-xs text-green-700 mt-0.5">
+                      This valuation meets professional review standards
                     </div>
                   </div>
                 </div>
-              )}
-            </div>
-          )}
-
-          {/* Professional Review Readiness */}
-          {reviewReady && (
-            <div>
-              <div className={`p-3 rounded-lg border-2 ${
-                reviewReady.ready
-                  ? 'bg-green-50 border-green-200'
-                  : 'bg-yellow-50 border-yellow-200'
-              }`}>
-                <div className="flex items-center gap-2 mb-2">
-                  {reviewReady.ready ? (
-                    <CheckCircle className="w-5 h-5 text-green-600" />
-                  ) : (
-                    <AlertTriangle className="w-5 h-5 text-yellow-600" />
-                  )}
-                  <span className="font-semibold text-gray-900">
-                    Professional Review Readiness: {reviewReady.status.replace(/_/g, ' ')}
-                  </span>
-                </div>
-                {reviewReady.checks.length > 0 && (
-                  <div className="mt-2 space-y-1">
-                    <div className="text-xs font-semibold text-gray-700 mb-1">Checks Passed:</div>
-                    {reviewReady.checks.map((check, index) => (
-                      <div key={index} className="text-xs text-gray-600 flex items-center gap-1">
-                        <CheckCircle className="w-3 h-3 text-green-600" />
-                        {check}
-                      </div>
-                    ))}
-                  </div>
-                )}
-                {reviewReady.warnings.length > 0 && (
-                  <div className="mt-2 space-y-1">
-                    <div className="text-xs font-semibold text-yellow-700 mb-1">Warnings:</div>
-                    {reviewReady.warnings.map((warning, index) => (
-                      <div key={index} className="text-xs text-yellow-700 flex items-center gap-1">
-                        <AlertTriangle className="w-3 h-3" />
-                        {warning}
-                      </div>
-                    ))}
-                  </div>
-                )}
-                {reviewReady.notes.length > 0 && (
-                  <div className="mt-2 pt-2 border-t border-current/20">
-                    {reviewReady.notes.map((note, index) => (
-                      <div key={index} className="text-xs text-gray-600">{note}</div>
-                    ))}
-                  </div>
-                )}
               </div>
-            </div>
-          )}
-
-          {/* Academic Sources Note */}
-          <div className="flex items-start gap-2 text-xs text-gray-500 bg-blue-50 p-2 rounded">
-            <Info className="w-3.5 h-3.5 mt-0.5 flex-shrink-0" />
-            <span>
-              Data quality assessment based on McKinsey/Bain 5-dimension framework. 
-              Confidence scoring uses Big 4 8-factor model (Damodaran 2012, PwC Valuation Standards).
-            </span>
+            )}
           </div>
         </div>
       )}
     </div>
   );
 };
-

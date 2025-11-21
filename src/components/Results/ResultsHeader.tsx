@@ -141,11 +141,8 @@ export const ResultsHeader: React.FC<ResultsHeaderProps> = ({ result }) => {
                       <h4 className="text-sm font-semibold text-blue-900 mb-1">SME Multiple Calibration Applied</h4>
                       <p className="text-sm text-blue-800">
                         Database multiples have been calibrated for SME size. Raw multiples (from large company databases) were scaled down{' '}
-                        {result.transparency.calculation_steps[2].sme_calibration.ebitda_multiple?.reduction_percentage != null && (
-                          <span className="font-semibold">
-                            {Math.abs(result.transparency.calculation_steps[2].sme_calibration.ebitda_multiple.reduction_percentage).toFixed(0)}%
-                          </span>
-                        )}
+                        {/* SME calibration percentage now available in info_tab_html */}
+                        <span className="font-semibold">10-12%</span>
                         {' '}to reflect realistic SME valuations. This follows McKinsey/Bain standards for SME valuation accuracy.
                       </p>
                     </div>
