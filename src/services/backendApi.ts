@@ -205,8 +205,8 @@ class BackendAPI {
         }
       });
 
-      // DIAGNOSTIC: Console log for browser debugging
-      console.log('[DIAGNOSTIC-FRONTEND-API] Response structure:', {
+      // Log response structure for debugging (structured logging)
+      apiLogger.debug('Response structure', {
         responseStatus: response.status,
         responseDataStructure: {
           success: response.data.success,

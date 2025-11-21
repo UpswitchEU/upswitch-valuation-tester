@@ -143,15 +143,8 @@ export const calculateBaseEnterpriseValue = (result: ValuationResponse): Calcula
   const multiples = result.multiples_valuation;
   const currentData = result.current_year_data;
   
-  // DIAGNOSTIC: Log current_year_data availability
-  console.log('[DIAGNOSTIC-VALUATION] calculateBaseEnterpriseValue:', {
-    hasMultiples: !!multiples,
-    hasCurrentData: !!currentData,
-    currentData: currentData,
-    revenue: currentData?.revenue,
-    ebitda: currentData?.ebitda,
-    resultKeys: Object.keys(result || {}),
-  });
+  // Note: Calculation details are now in server-generated HTML (info_tab_html)
+  // This function is kept for backward compatibility but data should come from HTML
   
   // Check if currentData exists and has valid revenue or EBITDA
   const hasValidData = currentData && (
@@ -208,7 +201,7 @@ export const calculateBaseEnterpriseValue = (result: ValuationResponse): Calcula
   }
 
   // DIAGNOSTIC: Log primary method detection
-  console.log('[DIAGNOSTIC-VALUATION] calculateBaseEnterpriseValue - Primary method detection', {
+  // Note: Primary method detection logging removed - details in server-generated HTML
     primary_multiple_method: multiples.primary_multiple_method,
     primary_method: multiples.primary_method || result.primary_method,
     isPrimaryEBITDA,

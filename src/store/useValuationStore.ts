@@ -303,9 +303,10 @@ export const useValuationStore = create<ValuationStore>((set, get) => ({
       };
       
       // DIAGNOSTIC: Log business_context after building request
-      console.log('[DIAGNOSTIC-FRONTEND] business_context in request:', JSON.stringify(request.business_context));
-      console.log('[DEBUG-OWNER-CONCENTRATION] number_of_employees being sent:', request.number_of_employees);
-      console.log('[DEBUG-OWNER-CONCENTRATION] number_of_owners being sent:', request.number_of_owners);
+      storeLogger.debug('Business context in request', {
+        business_context: request.business_context
+      });
+      // Owner concentration data already logged above
       
       storeLogger.info('Sending manual valuation request (FREE)', { 
         companyName: request.company_name,
@@ -337,7 +338,7 @@ export const useValuationStore = create<ValuationStore>((set, get) => ({
       }
       
       // DIAGNOSTIC: Log backend response structure (FIXED - now extracts nested data)
-      console.log('[DIAGNOSTIC-FRONTEND-STORE] Backend response received:', {
+      storeLogger.debug('Backend response received', {
         responseType: typeof response,
         responseKeys: Object.keys(response || {}),
         equityValues: {
@@ -456,20 +457,9 @@ export const useValuationStore = create<ValuationStore>((set, get) => ({
       
       setResult(resultToStore);
       
-      // DIAGNOSTIC: Verify result was stored correctly
+      // Verify result was stored correctly
       const storedResult = get().result;
-      console.log('[DIAGNOSTIC-FRONTEND-STORE] Result stored in Zustand:', {
-        stored: !!storedResult,
-        storedHasHtmlReport: !!storedResult?.html_report,
-        storedHtmlReportLength: storedResult?.html_report?.length || 0,
-        storedHtmlReportPreview: storedResult?.html_report?.substring(0, 200) || 'N/A',
-        storedHasInfoTabHtml: !!storedResult?.info_tab_html,
-        storedInfoTabHtmlLength: storedResult?.info_tab_html?.length || 0,
-        storedInfoTabHtmlPreview: storedResult?.info_tab_html?.substring(0, 200) || 'N/A',
-        storedKeys: storedResult ? Object.keys(storedResult) : []
-      });
-      
-      storeLogger.info('DIAGNOSTIC: Result stored in Zustand store', {
+      storeLogger.info('Result stored in Zustand store', {
         stored: !!storedResult,
         storedHasHtmlReport: !!storedResult?.html_report,
         storedHtmlReportLength: storedResult?.html_report?.length || 0,
