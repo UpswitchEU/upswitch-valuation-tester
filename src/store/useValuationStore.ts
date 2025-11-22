@@ -363,9 +363,9 @@ export const useValuationStore = create<ValuationStore>((set, get) => ({
         fullData: response
       });
       
-      // DIAGNOSTIC: Log report data sections
+      // Log report data sections
       const responseAny = response as any;
-      console.log('[DIAGNOSTIC-FRONTEND-STORE] Report data sections:', {
+      storeLogger.debug('Report data sections', {
         keyValueDrivers: responseAny?.key_value_drivers,
         riskFactors: responseAny?.risk_factors,
         financialMetrics: responseAny?.financial_metrics,

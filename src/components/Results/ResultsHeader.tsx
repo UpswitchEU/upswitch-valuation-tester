@@ -77,17 +77,8 @@ export const ResultsHeader: React.FC<ResultsHeaderProps> = ({ result }) => {
   const confidenceScore = result.confidence_score || 0;
   const dcfWeight = result.dcf_weight || 0;
 
-  // Diagnostic: Log methodology information
-  useEffect(() => {
-    console.log('[DIAGNOSTIC] Methodology Info', {
-      methodology: result.methodology,
-      dcf_weight: result.dcf_weight,
-      multiples_weight: result.multiples_weight,
-      dcf_exclusion_reason: result.dcf_exclusion_reason,
-      has_dcf_valuation: !!result.dcf_valuation,
-      revenue: result.current_year_data?.revenue
-    });
-  }, [result]);
+  // Note: Methodology information is available in server-generated HTML report
+  // Diagnostic logging removed - details in html_report
 
   return (
     <>

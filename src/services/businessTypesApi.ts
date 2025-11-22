@@ -90,20 +90,6 @@ class BusinessTypesApiService {
       if (businessTypesCache.hasValidCache()) {
         const cachedData = await businessTypesCache.getBusinessTypes();
         if (cachedData) {
-          // DIAGNOSTIC: Log cache hit with sample data
-          console.log('[DIAGNOSTIC-API] 🎯 SERVING FROM CACHE');
-          if (cachedData.businessTypes.length > 0) {
-            console.log('[DIAGNOSTIC-API] Sample cached business type:', {
-              id: cachedData.businessTypes[0].id,
-              title: cachedData.businessTypes[0].title,
-              dcfPreference: cachedData.businessTypes[0].dcfPreference,
-              multiplesPreference: cachedData.businessTypes[0].multiplesPreference,
-              ownerDependencyImpact: cachedData.businessTypes[0].ownerDependencyImpact,
-              keyMetrics: cachedData.businessTypes[0].keyMetrics,
-              hasAllFields: !!(cachedData.businessTypes[0].dcfPreference !== undefined && cachedData.businessTypes[0].multiplesPreference !== undefined),
-              cacheSource: 'IndexedDB/LocalStorage'
-            });
-          }
           if (import.meta.env.DEV) {
             console.log('[BusinessTypesAPI] Serving from cache', {
               businessTypes: cachedData.businessTypes.length,
@@ -116,7 +102,6 @@ class BusinessTypesApiService {
       }
 
       // Fetch from API
-      console.log('[DIAGNOSTIC-API] 🌐 FETCHING FROM API (cache miss or expired)');
       if (import.meta.env.DEV) {
         console.log('[BusinessTypesAPI] Fetching from API');
       }
@@ -128,27 +113,6 @@ class BusinessTypesApiService {
       if (typesResponse.data.success && typesResponse.data.data) {
         const businessTypes = typesResponse.data.data.business_types;
         const categories = categoriesResponse.data.success ? categoriesResponse.data.data : [];
-        
-        // DIAGNOSTIC: Log sample business type to verify preferences are present
-        console.log('[DIAGNOSTIC-API] ✅ API Response received');
-        if (businessTypes.length > 0) {
-          console.log('[DIAGNOSTIC-API] Sample business type from API:', {
-            id: businessTypes[0].id,
-            title: businessTypes[0].title,
-            dcfPreference: businessTypes[0].dcfPreference,
-            multiplesPreference: businessTypes[0].multiplesPreference,
-            ownerDependencyImpact: businessTypes[0].ownerDependencyImpact,
-            keyMetrics: businessTypes[0].keyMetrics,
-            hasAllFields: !!(businessTypes[0].dcfPreference !== undefined && businessTypes[0].multiplesPreference !== undefined),
-            apiEndpoint: `${this.baseUrl}/api/business-types/types`
-          });
-          
-          // DIAGNOSTIC: Also log raw API response structure
-          console.log('[DIAGNOSTIC-API] Raw API response structure:', {
-            responseKeys: Object.keys(businessTypes[0]),
-            sampleRawObject: JSON.stringify(businessTypes[0]).substring(0, 200) + '...'
-          });
-        }
         
         // Cache the complete data
         await businessTypesCache.setBusinessTypes({
@@ -168,23 +132,10 @@ class BusinessTypesApiService {
       console.error('[BusinessTypesAPI] Failed to fetch business types:', error);
       
       // Return hardcoded fallback
-      console.log('[DIAGNOSTIC-API] ⚠️ USING HARDCODED FALLBACK (API error)');
       if (import.meta.env.DEV) {
         console.log('[BusinessTypesAPI] Using hardcoded fallback data');
       }
       const fallbackData = this.getHardcodedBusinessTypes();
-      
-      // DIAGNOSTIC: Log fallback data structure
-      if (fallbackData.length > 0) {
-        console.log('[DIAGNOSTIC-API] Sample fallback business type:', {
-          id: fallbackData[0].id,
-          title: fallbackData[0].title,
-          dcfPreference: fallbackData[0].dcfPreference,
-          multiplesPreference: fallbackData[0].multiplesPreference,
-          hasAllFields: !!(fallbackData[0].dcfPreference !== undefined && fallbackData[0].multiplesPreference !== undefined),
-          source: 'Hardcoded Fallback'
-        });
-      }
       
       return fallbackData;
     }

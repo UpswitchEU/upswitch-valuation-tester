@@ -19,16 +19,7 @@ import { useValuationStore } from '../../store/useValuationStore';
 export const Results: React.FC = memo(() => {
   const { result } = useValuationStore();
 
-  // DIAGNOSTIC: Log result state
-  React.useEffect(() => {
-    console.log('[DIAGNOSTIC-RESULTS] Results component render:', {
-      hasResult: !!result,
-      hasHtmlReport: !!result?.html_report,
-      htmlReportLength: result?.html_report?.length || 0,
-      htmlReportPreview: result?.html_report?.substring(0, 200) || 'N/A',
-      resultKeys: result ? Object.keys(result) : []
-    });
-  }, [result]);
+  // Note: Result state logging removed - HTML report rendering is handled by dangerouslySetInnerHTML
 
   // Remove "Complete Valuation Report" header if present
   React.useEffect(() => {
