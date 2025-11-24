@@ -69,8 +69,8 @@ The UpSwitch Valuation System is a **three-tier microservices architecture** des
 │  │  - Business Type Intelligence (DB-driven multiples)       │  │
 │  │                                                           │  │
 │  │  Endpoints:                                               │  │
-│  │  - POST /api/v1/valuation/calculate                      │  │
-│  │  - POST /api/v1/valuation/quick                          │  │
+│  │  - POST /api/v1/valuation/calculate (Unified - all types)│  │
+│  │  - POST /api/v1/valuation/calculate/stream (Streaming)   │  │
 │  │  - POST /api/v1/intelligent-conversation/*               │  │
 │  └──────────────────────────────────────────────────────────┘  │
 └─────────────────────────────────────────────────────────────────┘

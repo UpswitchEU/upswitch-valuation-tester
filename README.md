@@ -32,8 +32,8 @@ This is a **standalone React frontend application** for testing and demonstratin
 React Frontend (Port 3001)
     ↓
 Valuation Engine API (Port 8000)
-    ├─ /api/v1/valuation/quick ✅
-    ├─ /api/v1/valuation/calculate ✅
+    ├─ /api/v1/valuation/calculate ✅ (Unified endpoint - handles all valuation types)
+    ├─ /api/v1/valuation/calculate/stream ✅ (Streaming endpoint)
     ├─ /api/v1/documents/parse ✅
     ├─ /api/v1/companies/lookup ✅
     ├─ /api/v1/registry/:country/:id ✅
