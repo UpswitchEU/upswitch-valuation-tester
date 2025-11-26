@@ -2,17 +2,16 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { generateReportId, isValidReportId } from '../utils/reportIdGenerator';
 import UrlGeneratorService from '../services/urlGenerator';
-import { FlowSelectionScreen } from './FlowSelectionScreen';
 import { AIAssistedValuation } from './AIAssistedValuation';
 import { ManualValuationFlow } from './ManualValuationFlow';
 import { useAuth } from '../hooks/useAuth';
 import { guestCreditService } from '../services/guestCreditService';
 import { OutOfCreditsModal } from './OutOfCreditsModal';
 import { reportApiService } from '../services/reportApi';
+import { useValuationSessionStore } from '../store/useValuationSessionStore';
 import type { ValuationResponse } from '../types/valuation';
 
-type FlowType = 'manual' | 'ai-guided' | null;
-type Stage = 'loading' | 'flow-selection' | 'data-entry' | 'processing';
+type Stage = 'loading' | 'data-entry' | 'processing';
 
 export const ValuationReport: React.FC = () => {
   const { reportId } = useParams<{ reportId: string }>();
@@ -20,8 +19,8 @@ export const ValuationReport: React.FC = () => {
   const location = useLocation();
   const { isAuthenticated } = useAuth();
   
+  const { session, initializeSession, loadSession } = useValuationSessionStore();
   const [currentReportId, setCurrentReportId] = useState<string>('');
-  const [flowType, setFlowType] = useState<FlowType>(null);
   const [stage, setStage] = useState<Stage>('loading');
   const [error, setError] = useState<string | null>(null);
   const [showOutOfCreditsModal, setShowOutOfCreditsModal] = useState(false);
@@ -30,56 +29,38 @@ export const ValuationReport: React.FC = () => {
   const prefilledQuery = (location.state as any)?.prefilledQuery || null;
   const autoSend = (location.state as any)?.autoSend || false;
 
-  // Check if report exists and load appropriate state
-  const checkReportExists = useCallback(async (reportId: string) => {
+  // Initialize session on mount
+  const initializeSessionForReport = useCallback(async (reportId: string) => {
     try {
-      // Try to load existing report from backend
-      const response = await reportApiService.getReport(reportId);
+      // Check for flow parameter in URL to set initial view
+      const searchParams = new URLSearchParams(window.location.search);
+      const flowParam = searchParams.get('flow');
+      const initialView = (flowParam === 'manual' || flowParam === 'ai-guided') 
+        ? flowParam 
+        : 'manual'; // Default to manual
       
-      if (response.success && response.data) {
-        // Report exists - load its state
-        if (response.data.valuation_data) {
-          // Report is completed - resume flow to show results in child component
-          setFlowType(response.data.flow_type);
-          setStage('data-entry');
-          return;
-        } else if (response.data.flow_type) {
-          // Report exists but not completed - resume flow
-          setFlowType(response.data.flow_type);
-          setStage('data-entry');
-          return;
-        }
-      }
-    } catch (error) {
-      // Report doesn't exist or error - check for flow parameter
-      console.log('Report not found, checking for flow parameter');
-    }
-    
-    // Check for flow parameter in URL
-    const searchParams = new URLSearchParams(window.location.search);
-    const flowParam = searchParams.get('flow');
-    
-    if (flowParam === 'manual' || flowParam === 'ai-guided') {
       // Validate credits for AI-guided (guests only)
-      if (flowParam === 'ai-guided' && !isAuthenticated) {
-        // For now, use local credit check as fallback
+      if (initialView === 'ai-guided' && !isAuthenticated) {
         const hasCredits = guestCreditService.hasCredits();
         if (!hasCredits) {
           setShowOutOfCreditsModal(true);
-          setStage('flow-selection');
+          // Still initialize session but with manual view
+          await initializeSession(reportId, 'manual');
+          setStage('data-entry');
           return;
         }
       }
       
-      // Auto-select flow and skip selection screen
-      setFlowType(flowParam);
+      // Initialize or load session
+      await initializeSession(reportId, initialView);
       setStage('data-entry');
-    } else {
-      setStage('flow-selection');
+    } catch (error) {
+      console.error('Failed to initialize session:', error);
+      setError('Failed to initialize valuation session');
     }
-  }, [isAuthenticated, navigate]);  // Add all dependencies
+  }, [isAuthenticated, initializeSession]);
 
-  // Validate and set report ID, then check if report exists
+  // Validate and set report ID, then initialize session
   useEffect(() => {
     if (!reportId || !isValidReportId(reportId)) {
       // Invalid or missing report ID - generate new one
@@ -89,34 +70,8 @@ export const ValuationReport: React.FC = () => {
     }
     
     setCurrentReportId(reportId);
-    checkReportExists(reportId);
-  }, [reportId, navigate, checkReportExists]);
-
-  // Handle flow selection
-  const handleFlowSelection = async (flow: 'manual' | 'ai-guided') => {
-    // Credit validation now handled by backend
-    // Frontend only shows UI feedback for guests
-    if (flow === 'ai-guided' && !isAuthenticated) {
-      const hasCredits = guestCreditService.hasCredits();
-      if (!hasCredits) {
-        setShowOutOfCreditsModal(true);
-        return;
-      }
-    }
-    
-    setFlowType(flow);
-    setStage('data-entry');
-    
-    // Update report in backend
-    try {
-      await reportApiService.updateReport(currentReportId, {
-        flow_type: flow,
-        stage: 'data-entry'
-      });
-    } catch (error) {
-      console.error('Failed to update report flow type:', error);
-    }
-  };
+    initializeSessionForReport(reportId);
+  }, [reportId, navigate, initializeSessionForReport]);
 
   // Handle valuation completion
   const handleValuationComplete = async (result: ValuationResponse) => {
@@ -168,24 +123,38 @@ export const ValuationReport: React.FC = () => {
           </div>
         )}
         
-        {stage === 'flow-selection' && (
-          <FlowSelectionScreen onSelectFlow={handleFlowSelection} />
-        )}
-        
-        {stage === 'data-entry' && flowType === 'manual' && (
-          <ManualValuationFlow 
-            reportId={currentReportId}
-            onComplete={handleValuationComplete}
-          />
-        )}
-        
-        {stage === 'data-entry' && flowType === 'ai-guided' && (
-          <AIAssistedValuation 
-            reportId={currentReportId}
-            onComplete={handleValuationComplete}
-            initialQuery={prefilledQuery}
-            autoSend={autoSend}
-          />
+        {stage === 'data-entry' && session && (
+          <div className="relative h-full w-full">
+            {/* Manual Flow Container */}
+            <div 
+              className={`absolute inset-0 w-full h-full transition-opacity duration-300 ease-in-out ${
+                session.currentView === 'manual' 
+                  ? 'opacity-100 z-10 pointer-events-auto' 
+                  : 'opacity-0 z-0 pointer-events-none'
+              }`}
+            >
+              <ManualValuationFlow 
+                reportId={currentReportId}
+                onComplete={handleValuationComplete}
+              />
+            </div>
+
+            {/* AI-Guided Flow Container */}
+            <div 
+              className={`absolute inset-0 w-full h-full transition-opacity duration-300 ease-in-out ${
+                session.currentView === 'ai-guided' 
+                  ? 'opacity-100 z-10 pointer-events-auto' 
+                  : 'opacity-0 z-0 pointer-events-none'
+              }`}
+            >
+              <AIAssistedValuation 
+                reportId={currentReportId}
+                onComplete={handleValuationComplete}
+                initialQuery={prefilledQuery}
+                autoSend={autoSend}
+              />
+            </div>
+          </div>
         )}
         
       </div>
@@ -199,10 +168,11 @@ export const ValuationReport: React.FC = () => {
           // TODO: Implement actual sign-up flow
           console.log('Sign up clicked');
         }}
-        onTryManual={() => {
+        onTryManual={async () => {
           setShowOutOfCreditsModal(false);
-          setFlowType('manual');
-          setStage('data-entry');
+          if (session) {
+            await useValuationSessionStore.getState().switchView('manual');
+          }
         }}
       />
     </div>

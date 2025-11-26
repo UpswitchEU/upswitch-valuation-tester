@@ -48,6 +48,7 @@ export interface ConversationInitializerCallbacks {
   setMessages: React.Dispatch<React.SetStateAction<Message[]>>;
   user?: UserProfile;
   onSessionIdUpdate?: (sessionId: string) => void;
+  initialData?: Partial<any>; // Pre-filled data from session (for resuming conversations)
 }
 
 /**
@@ -56,6 +57,7 @@ export interface ConversationInitializerCallbacks {
  * @param sessionId - Unique session identifier
  * @param userId - Optional user identifier
  * @param callbacks - Callback functions for message management
+ * @param initialData - Pre-filled data from session (for resuming conversations)
  * @returns Initialization state and control functions
  */
 export const useConversationInitializer = (

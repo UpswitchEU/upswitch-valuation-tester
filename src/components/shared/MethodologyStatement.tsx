@@ -11,6 +11,7 @@ import React, { useState } from 'react';
 import { ChevronDown, ChevronRight, FileText, Info } from 'lucide-react';
 import { getMethodologyStatement } from '../../utils/valuationDataExtractor';
 import type { ValuationResponse } from '../../types/valuation';
+import { HTMLProcessor } from '../../utils/htmlProcessor';
 
 interface MethodologyStatementProps {
   result: ValuationResponse;
@@ -53,7 +54,7 @@ export const MethodologyStatement: React.FC<MethodologyStatementProps> = ({
           <p
             key={index}
             className="text-sm text-gray-700 mb-2"
-            dangerouslySetInnerHTML={{ __html: formatted }}
+            dangerouslySetInnerHTML={{ __html: HTMLProcessor.sanitize(formatted) }}
           />
         );
       }

@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react';
 import type { ValuationResponse } from '../types/valuation';
 import { componentLogger } from '../utils/logger';
+import { HTMLProcessor } from '../utils/htmlProcessor';
 
 interface ValuationInfoPanelProps {
   result: ValuationResponse;
@@ -50,7 +51,7 @@ export const ValuationInfoPanel: React.FC<ValuationInfoPanelProps> = ({
     return (
       <div 
         className="h-full overflow-y-auto info-tab-html"
-        dangerouslySetInnerHTML={{ __html: result.info_tab_html }}
+        dangerouslySetInnerHTML={{ __html: HTMLProcessor.sanitize(result.info_tab_html) }}
       />
     );
   }

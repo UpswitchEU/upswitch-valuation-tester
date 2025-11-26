@@ -10,6 +10,7 @@ import { ProgressiveValuationReport } from './ProgressiveValuationReport';
 import { useAuth } from '../hooks/useAuth';
 import { api } from '../services/api';
 import { backendAPI } from '../services/backendApi';
+import { useValuationSessionStore } from '../store/useValuationSessionStore';
 import { businessDataService, type BusinessProfileData } from '../services/businessDataService';
 import { DownloadService } from '../services/downloadService';
 import { guestCreditService } from '../services/guestCreditService';
@@ -22,6 +23,7 @@ import { ResizableDivider } from './ResizableDivider';
 import { ValuationEmptyState } from './ValuationEmptyState';
 import { ValuationInfoPanel } from './ValuationInfoPanel';
 import { ValuationToolbar } from './ValuationToolbar';
+import { ValuationViewToggle } from './ValuationViewToggle';
 
 
 type FlowStage = 'chat' | 'results' | 'blocked';
@@ -40,6 +42,7 @@ export const AIAssistedValuation: React.FC<AIAssistedValuationProps> = ({
   autoSend = false
 }) => {
   const { user, isAuthenticated } = useAuth();
+  const { session, updateSessionData, getSessionData } = useValuationSessionStore();
   const [stage, setStage] = useState<FlowStage>('chat');
   const [valuationResult, setValuationResult] = useState<ValuationResponse | null>(null);
   const [reportSaved, setReportSaved] = useState(false);
@@ -224,7 +227,39 @@ export const AIAssistedValuation: React.FC<AIAssistedValuationProps> = ({
     const newProgress = Object.keys({ ...collectedData, ...data }).length;
     setDataCollectionProgress(newProgress);
     // Progressive report handles preview automatically
-  }, [collectedData]);
+    
+    // Sync collected data to session store
+    if (data.field && data.value !== undefined) {
+      // Convert collected data to ValuationRequest format
+      const sessionUpdate: Partial<any> = {};
+      
+      // Map common fields
+      if (data.field === 'revenue' || data.field === 'ebitda' || data.field === 'net_income') {
+        const numValue = typeof data.value === 'string' ? parseFloat(data.value.replace(/[^0-9.-]/g, '')) : data.value;
+        if (!isNaN(numValue)) {
+          if (!sessionUpdate.current_year_data) {
+            sessionUpdate.current_year_data = {};
+          }
+          sessionUpdate.current_year_data[data.field] = numValue;
+        }
+      } else if (data.field === 'company_name') {
+        sessionUpdate.company_name = data.value;
+      } else if (data.field === 'industry') {
+        sessionUpdate.industry = data.value;
+      } else if (data.field === 'country_code') {
+        sessionUpdate.country_code = data.value;
+      } else if (data.field === 'founding_year') {
+        sessionUpdate.founding_year = parseInt(data.value) || undefined;
+      }
+      
+      // Update session if we have data to sync
+      if (Object.keys(sessionUpdate).length > 0) {
+        updateSessionData(sessionUpdate).catch(err => {
+          chatLogger.warn('Failed to sync collected data to session:', err);
+        });
+      }
+    }
+  }, [collectedData, updateSessionData]);
 
   // NOTE: Progressive preview generation is now handled by the streaming backend
   // via section_loading and section_complete events. This function is kept for
@@ -508,6 +543,64 @@ export const AIAssistedValuation: React.FC<AIAssistedValuationProps> = ({
     }
   }, []);
 
+  // State to track if we have pre-existing session data
+  const [hasPreExistingData, setHasPreExistingData] = useState(false);
+  const [preExistingDataSummary, setPreExistingDataSummary] = useState<string>('');
+  
+  // Load session data into conversation context when switching to AI-guided view
+  useEffect(() => {
+    if (session && session.currentView === 'ai-guided') {
+      const sessionData = getSessionData();
+      if (sessionData && Object.keys(sessionData).length > 0) {
+        // Check completeness to determine if we have meaningful data
+        const completeness = useValuationSessionStore.getState().getCompleteness();
+        
+        if (completeness > 0) {
+          setHasPreExistingData(true);
+          
+          // Build summary of what data we have
+          const fields = [];
+          if (sessionData.company_name) fields.push('company name');
+          if (sessionData.industry) fields.push('industry');
+          if (sessionData.current_year_data?.revenue || sessionData.revenue) fields.push('revenue');
+          if (sessionData.current_year_data?.ebitda !== undefined || sessionData.ebitda !== undefined) fields.push('EBITDA');
+          if (sessionData.founding_year) fields.push('founding year');
+          if (sessionData.number_of_employees) fields.push('employees');
+          
+          const summary = fields.length > 0 
+            ? `I see you've already entered ${fields.join(', ')}. Let me help you complete the valuation!`
+            : 'Let me help you with your valuation!';
+          
+          setPreExistingDataSummary(summary);
+          
+          chatLogger.info('Pre-existing session data detected', { 
+            completeness,
+            fieldsCount: fields.length,
+            fields 
+          });
+        }
+        
+        // Pre-populate conversation context with session data
+        const context: ConversationContext = {
+          ...conversationContext,
+          extracted_company_name: sessionData.company_name,
+          extracted_industry: sessionData.industry,
+          extracted_business_model: sessionData.business_model,
+          extracted_founding_year: sessionData.founding_year,
+          extracted_revenue: sessionData.current_year_data?.revenue || sessionData.revenue,
+          extracted_ebitda: sessionData.current_year_data?.ebitda || sessionData.ebitda,
+          extracted_country: sessionData.country_code,
+          extraction_confidence: 0.9, // High confidence since data came from manual entry
+        };
+        setConversationContext(context);
+        chatLogger.info('Loaded session data into conversation context', { 
+          hasCompanyName: !!context.extracted_company_name,
+          hasRevenue: !!context.extracted_revenue 
+        });
+      }
+    }
+  }, [session?.currentView, session?.sessionId, getSessionData]);
+
   // NEW: Fetch business profile data on component mount
   useEffect(() => {
     const fetchBusinessProfile = async () => {
@@ -674,13 +767,30 @@ export const AIAssistedValuation: React.FC<AIAssistedValuationProps> = ({
         }
       });
 
-      // Use backend API which handles credit checks for AI-guided flow
-      const backendResult = await backendAPI.calculateAIGuidedValuation(request);
+      // Get session dataSource for unified calculation
+      const { session } = useValuationSessionStore.getState();
+      const dataSource = session?.dataSource || 'ai-guided';
       
-      chatLogger.info('AI-guided valuation completed through backend', {
+      // Use unified calculation endpoint with dataSource
+      const backendResult = await backendAPI.calculateValuationUnified(request, dataSource as 'manual' | 'ai-guided' | 'mixed');
+      
+      chatLogger.info('Unified valuation completed through backend', {
         valuationId: backendResult.valuation_id,
+        dataSource,
         flowType: 'ai-guided'
       });
+      
+      // Mark session as completed
+      if (session) {
+        try {
+          await backendAPI.updateValuationSession(session.reportId, {
+            completedAt: new Date().toISOString(),
+          });
+          chatLogger.info('Session marked as completed', { reportId: session.reportId });
+        } catch (error) {
+          chatLogger.warn('Failed to mark session as completed', { error });
+        }
+      }
 
       // Update frontend credit count using backend's creditsRemaining
       if (!isAuthenticated && (backendResult as any).creditsRemaining !== undefined) {
@@ -970,6 +1080,11 @@ export const AIAssistedValuation: React.FC<AIAssistedValuationProps> = ({
             width: isMobile ? '100%' : `${leftPanelWidth}%`
           }}
         >
+          {/* View Toggle - Always visible */}
+          <div className="p-4 border-b border-zinc-800">
+            <ValuationViewToggle />
+          </div>
+          
           {/* Success Banner when results are ready */}
           {stage === 'results' && valuationResult && (
             <div className="bg-gradient-to-r from-green-900/30 to-emerald-900/30 border border-green-700/50 rounded-lg sm:rounded-xl p-4 sm:p-6 m-3 sm:m-6 mb-0">
@@ -1005,6 +1120,13 @@ export const AIAssistedValuation: React.FC<AIAssistedValuationProps> = ({
               </div>
             </div>
           )}
+
+          {/* Resume Conversation Banner REMOVED - replaced by in-chat context message */}
+          {/* {hasPreExistingData && !reportSaved && stage === 'chat' && (
+            <div className="bg-blue-900/20 border-b border-blue-700/30 px-4 py-3 mx-4 mt-4 rounded-lg">
+              ...
+            </div>
+          )} */}
 
           {/* Chat - Always visible */}
           {(stage === 'chat' || stage === 'results') && (
@@ -1043,6 +1165,7 @@ export const AIAssistedValuation: React.FC<AIAssistedValuationProps> = ({
                   placeholder="Ask about your business valuation..."
                   initialMessage={initialQuery}
                   autoSend={autoSend}
+                  initialData={getSessionData()} // Pass session data for resuming
                 />
               </ErrorBoundary>
             </div>

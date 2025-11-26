@@ -3,6 +3,7 @@ import { Send, DollarSign } from 'lucide-react';
 import { serviceLogger } from '../utils/logger';
 import { LoadingDots } from './LoadingDots';
 import { useLoadingMessage } from '../hooks/useLoadingMessage';
+import { HTMLProcessor } from '../utils/htmlProcessor';
 
 interface ConversationalFinancialInputProps {
   companyId: string;
@@ -199,10 +200,12 @@ ${nextQ.question}
                     <div 
                       className="whitespace-pre-wrap text-sm"
                       dangerouslySetInnerHTML={{ 
-                        __html: message.content
-                          .replace(/\*\*(.*?)\*\*/g, '<strong class="font-bold">$1</strong>')
-                          .replace(/\n/g, '<br/>')
-                          .replace(/^• /gm, '&nbsp;&nbsp;• ')
+                        __html: HTMLProcessor.sanitize(
+                          message.content
+                            .replace(/\*\*(.*?)\*\*/g, '<strong class="font-bold">$1</strong>')
+                            .replace(/\n/g, '<br/>')
+                            .replace(/^• /gm, '&nbsp;&nbsp;• ')
+                        )
                       }}
                     />
                   )}

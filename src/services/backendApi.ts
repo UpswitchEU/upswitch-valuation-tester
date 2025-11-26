@@ -6,7 +6,7 @@
  */
 
 import axios, { AxiosInstance, AxiosResponse } from 'axios';
-import type { ValuationRequest, ValuationResponse } from '../types/valuation';
+import type { ValuationRequest, ValuationResponse, ValuationSession } from '../types/valuation';
 // normalizeCalculationSteps removed - calculation steps now in server-generated info_tab_html
 import { apiLogger, createPerformanceLogger, extractCorrelationId, setCorrelationFromResponse } from '../utils/logger';
 
@@ -602,6 +602,122 @@ class BackendAPI {
         throw new Error(`Preview error: ${error.response.status} ${error.response.statusText}`);
       } else {
         throw new Error(`HTML preview generation failed: ${error.message}`);
+      }
+    }
+  }
+
+  /**
+   * Valuation Session API Methods
+   */
+
+  /**
+   * Get valuation session by report ID
+   */
+  async getValuationSession(reportId: string): Promise<any> {
+    try {
+      const response = await this.client.get(`/api/valuation-sessions/${reportId}`);
+      return response.data.success ? response.data.data : null;
+    } catch (error: any) {
+      if (error.response?.status === 404) {
+        return null; // Session doesn't exist yet
+      }
+      apiLogger.error('Failed to get valuation session', {
+        error: error instanceof Error ? error.message : 'Unknown error',
+        reportId,
+      });
+      throw error;
+    }
+  }
+
+  /**
+   * Create new valuation session
+   */
+  async createValuationSession(session: any): Promise<any> {
+    try {
+      const response = await this.client.post('/api/valuation-sessions', session);
+      return response.data.success ? response.data.data : null;
+    } catch (error: any) {
+      apiLogger.error('Failed to create valuation session', {
+        error: error instanceof Error ? error.message : 'Unknown error',
+        session,
+      });
+      throw error;
+    }
+  }
+
+  /**
+   * Update valuation session data
+   */
+  async updateValuationSession(reportId: string, updates: any): Promise<any> {
+    try {
+      const response = await this.client.patch(`/api/valuation-sessions/${reportId}`, updates);
+      return response.data.success ? response.data.data : null;
+    } catch (error: any) {
+      apiLogger.error('Failed to update valuation session', {
+        error: error instanceof Error ? error.message : 'Unknown error',
+        reportId,
+        updates,
+      });
+      throw error;
+    }
+  }
+
+  /**
+   * Switch valuation session view (manual <-> AI-guided)
+   */
+  async switchValuationView(reportId: string, view: 'manual' | 'ai-guided'): Promise<any> {
+    try {
+      const response = await this.client.post(`/api/valuation-sessions/${reportId}/switch-view`, { view });
+      return response.data.success ? response.data.data : null;
+    } catch (error: any) {
+      apiLogger.error('Failed to switch valuation view', {
+        error: error instanceof Error ? error.message : 'Unknown error',
+        reportId,
+        view,
+      });
+      throw error;
+    }
+  }
+
+  /**
+   * Unified calculation endpoint (replaces calculateManualValuation and calculateAIGuidedValuation)
+   * Credit cost is determined by dataSource: FREE for manual, 1 credit for AI-guided/mixed
+   */
+  async calculateValuationUnified(
+    data: ValuationRequest,
+    dataSource: 'manual' | 'ai-guided' | 'mixed' = 'manual',
+    options?: {
+      signal?: AbortSignal;
+      timeout?: number;
+    }
+  ): Promise<ValuationResponse> {
+    const perfLogger = createPerformanceLogger('calculateValuationUnified', 'api');
+    const timeout = options?.timeout || 90000; // Default 90 seconds
+
+    try {
+      perfLogger.start();
+
+      // Use unified endpoint - backend determines credit cost based on dataSource
+      const response = await this.client.post(
+        '/api/valuations/calculate',
+        { ...data, dataSource },
+        {
+          signal: options?.signal,
+          timeout,
+        }
+      );
+
+      perfLogger.end();
+      return response.data.data || response.data; // Extract nested data if present
+    } catch (error: any) {
+      perfLogger.error(error);
+      
+      if (error.response?.data?.error) {
+        throw new Error(`Backend error: ${error.response.data.error}`);
+      } else if (error.response?.status === 402) {
+        throw new Error('Insufficient credits for valuation');
+      } else {
+        throw new Error(`Valuation calculation failed: ${error.message}`);
       }
     }
   }

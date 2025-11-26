@@ -7,6 +7,7 @@
 import { motion } from 'framer-motion';
 import { AlertCircle, AlertTriangle, Loader2 } from 'lucide-react';
 import React from 'react';
+import { HTMLProcessor } from '../utils/htmlProcessor';
 
 interface ReportSection {
   id: string;
@@ -122,7 +123,7 @@ export const ProgressiveValuationReport: React.FC<ProgressiveValuationReportProp
         <div className="text-sm text-yellow-700 mb-3">
           This section uses simplified industry benchmarks due to limited data availability.
         </div>
-        <div dangerouslySetInnerHTML={{ __html: section.html }} />
+        <div dangerouslySetInnerHTML={{ __html: HTMLProcessor.sanitize(section.html) }} />
       </div>
     );
   };
@@ -185,7 +186,7 @@ export const ProgressiveValuationReport: React.FC<ProgressiveValuationReportProp
     if (!section.html || section.html.trim() === '') {
       return null;
     }
-    return <div dangerouslySetInnerHTML={{ __html: section.html }} />;
+    return <div dangerouslySetInnerHTML={{ __html: HTMLProcessor.sanitize(section.html) }} />;
   };
 
   // Filter out sections with no content to avoid empty divs

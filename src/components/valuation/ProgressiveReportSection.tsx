@@ -1,6 +1,7 @@
 import React from 'react';
 import { LoadingSkeleton } from './LoadingSkeleton';
 import { SectionError } from './SectionError';
+import { HTMLProcessor } from '../../utils/htmlProcessor';
 
 export interface Section {
   id: string;
@@ -62,7 +63,7 @@ export const ProgressiveReportSection: React.FC<ProgressiveReportSectionProps> =
     >
       <div
         className="prose prose-sm max-w-none"
-        dangerouslySetInnerHTML={{ __html: section.html }}
+        dangerouslySetInnerHTML={{ __html: HTMLProcessor.sanitize(section.html) }}
       />
     </div>
   );

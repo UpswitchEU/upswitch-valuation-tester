@@ -171,67 +171,84 @@ export const useValuationStore = create<ValuationStore>((set, get) => ({
   calculateValuation: async () => {
     const { formData, setIsCalculating, setResult, setError, setInputData } = get();
     
+    // Get session data from session store
+    const sessionStore = useValuationSessionStore.getState();
+    const sessionData = sessionStore.getSessionData();
+    const session = sessionStore.session;
+    
     // Clear previous errors
     setError(null);
     
     setIsCalculating(true);
     
     try {
+      // Use session data (unified source) or fall back to formData
+      const dataSource = session?.dataSource || 'manual';
+      
+      // Use session data if available, otherwise use formData
+      const sourceData = sessionData || formData;
+      
       // Validate and construct proper request
-      if (!formData.company_name || formData.company_name.trim() === '') {
+      if (!sourceData.company_name || (sourceData.company_name as string).trim() === '') {
         throw new Error('Company name is required');
       }
-      if (!formData.industry) {
+      if (!sourceData.industry) {
         throw new Error('Industry is required');
       }
-      if (!formData.revenue || formData.revenue <= 0) {
+      const revenue = sourceData.revenue || sourceData.current_year_data?.revenue;
+      if (!revenue || revenue <= 0) {
         throw new Error('Revenue must be greater than 0');
       }
-      if (formData.ebitda === undefined || formData.ebitda === null) {
+      const ebitda = sourceData.ebitda !== undefined && sourceData.ebitda !== null 
+        ? sourceData.ebitda 
+        : sourceData.current_year_data?.ebitda;
+      if (ebitda === undefined || ebitda === null) {
         throw new Error('EBITDA is required');
       }
       
       // Ensure year values are within valid range (2000-2100)
-      const currentYear = Math.min(Math.max(formData.current_year_data?.year || new Date().getFullYear(), 2000), 2100);
-      const foundingYear = Math.min(Math.max(formData.founding_year || currentYear - 5, 1900), 2100);
+      const currentYear = Math.min(Math.max(sourceData.current_year_data?.year || new Date().getFullYear(), 2000), 2100);
+      const foundingYear = Math.min(Math.max(sourceData.founding_year || currentYear - 5, 1900), 2100);
       
       // Ensure recurring revenue percentage is between 0 and 1
-      const recurringRevenue = Math.min(Math.max(formData.recurring_revenue_percentage || 0.0, 0.0), 1.0);
+      const recurringRevenue = Math.min(Math.max(sourceData.recurring_revenue_percentage || 0.0, 0.0), 1.0);
       
       // Validate required fields and ensure proper data types
-      const companyName = formData.company_name?.trim() || 'Unknown Company';
-      const countryCode = (formData.country_code || 'BE').toUpperCase().substring(0, 2);
-      const industry = formData.industry || 'services';
-      const businessModel = formData.business_model || 'services';
-      const revenue = Math.max(Number(formData.revenue) || 100000, 1); // Ensure positive revenue
-      const ebitda = formData.ebitda !== undefined && formData.ebitda !== null ? Number(formData.ebitda) : 20000; // Preserve negative values
+      const companyName = (sourceData.company_name as string)?.trim() || 'Unknown Company';
+      const countryCode = ((sourceData.country_code as string) || 'BE').toUpperCase().substring(0, 2);
+      const industry = (sourceData.industry as string) || 'services';
+      const businessModel = (sourceData.business_model as string) || 'services';
+      const revenueValue = Math.max(Number(revenue) || 100000, 1); // Ensure positive revenue
+      const ebitdaValue = ebitda !== undefined && ebitda !== null ? Number(ebitda) : 20000; // Preserve negative values
       
       // Capture input data for Info tab
       const inputData: ValuationInputData = {
-        revenue: revenue,
-        ebitda: ebitda,
+        revenue: revenueValue,
+        ebitda: ebitdaValue,
         industry: industry,
         country_code: countryCode,
         founding_year: foundingYear,
-        employees: formData.number_of_employees,
+        employees: sourceData.number_of_employees,
         business_model: businessModel,
-        historical_years_data: formData.historical_years_data,
-        total_debt: formData.current_year_data?.total_debt,
-        cash: formData.current_year_data?.cash,
+        historical_years_data: sourceData.historical_years_data,
+        total_debt: sourceData.current_year_data?.total_debt,
+        cash: sourceData.current_year_data?.cash,
         // Metrics will be populated from response after valuation
       };
       
       setInputData(inputData);
       
-      // Log formData for debugging (structured logging)
-      storeLogger.debug('FormData before building request', {
-        business_type_id: formData.business_type_id,
-        _internal_dcf_preference: formData._internal_dcf_preference,
-        _internal_multiples_preference: formData._internal_multiples_preference,
-        _internal_owner_dependency_impact: formData._internal_owner_dependency_impact,
-        number_of_employees: formData.number_of_employees,
-        number_of_owners: formData.number_of_owners,
-        business_type: formData.business_type
+      // Log session/formData for debugging (structured logging)
+      storeLogger.debug('Data source before building request', {
+        dataSource,
+        usingSessionData: !!sessionData,
+        business_type_id: sourceData.business_type_id,
+        _internal_dcf_preference: (sourceData as any)._internal_dcf_preference,
+        _internal_multiples_preference: (sourceData as any)._internal_multiples_preference,
+        _internal_owner_dependency_impact: (sourceData as any)._internal_owner_dependency_impact,
+        number_of_employees: sourceData.number_of_employees,
+        number_of_owners: sourceData.number_of_owners,
+        business_type: sourceData.business_type
       });
       
       const request: ValuationRequest = {
@@ -242,15 +259,15 @@ export const useValuationStore = create<ValuationStore>((set, get) => ({
         founding_year: foundingYear,
         current_year_data: {
           year: currentYear,
-          revenue: revenue, // Ensure positive number
-          ebitda: ebitda,
+          revenue: revenueValue, // Ensure positive number
+          ebitda: ebitdaValue,
           // Include optional fields if present (ensure they're non-negative where required)
-          ...(formData.current_year_data?.total_assets && formData.current_year_data.total_assets >= 0 && { total_assets: Number(formData.current_year_data.total_assets) }),
-          ...(formData.current_year_data?.total_debt && formData.current_year_data.total_debt >= 0 && { total_debt: Number(formData.current_year_data.total_debt) }),
-          ...(formData.current_year_data?.cash && formData.current_year_data.cash >= 0 && { cash: Number(formData.current_year_data.cash) }),
+          ...(sourceData.current_year_data?.total_assets && sourceData.current_year_data.total_assets >= 0 && { total_assets: Number(sourceData.current_year_data.total_assets) }),
+          ...(sourceData.current_year_data?.total_debt && sourceData.current_year_data.total_debt >= 0 && { total_debt: Number(sourceData.current_year_data.total_debt) }),
+          ...(sourceData.current_year_data?.cash && sourceData.current_year_data.cash >= 0 && { cash: Number(sourceData.current_year_data.cash) }),
         },
-        historical_years_data: formData.historical_years_data && formData.historical_years_data.length > 0 
-          ? formData.historical_years_data
+        historical_years_data: sourceData.historical_years_data && sourceData.historical_years_data.length > 0 
+          ? sourceData.historical_years_data
               .filter(year => year.ebitda !== undefined && year.ebitda !== null) // Only include years with EBITDA values
               .map(year => ({
                 ...year,
@@ -258,47 +275,47 @@ export const useValuationStore = create<ValuationStore>((set, get) => ({
                 revenue: Math.max(Number(year.revenue) || 0, 1), // Ensure positive revenue
                 ebitda: Number(year.ebitda), // Preserve negative values (already filtered for undefined/null)
               }))
-          : (revenue > 0 && ebitda !== 0)
+          : (revenueValue > 0 && ebitdaValue !== 0)
             ? [{
                 year: Math.min(currentYear - 1, 2100),
-                revenue: Math.max(revenue * 0.9, 1), // Assume 10% growth, ensure positive
-                ebitda: ebitda * 0.9,
+                revenue: Math.max(revenueValue * 0.9, 1), // Assume 10% growth, ensure positive
+                ebitda: ebitdaValue * 0.9,
               }]
             : [], // Don't send historical data if current data is invalid
         // Only include owner concentration fields for companies (not sole traders)
         // Sole traders are inherently owner-operated, so owner concentration analysis doesn't apply
         // CRITICAL FIX: Check for undefined/null explicitly, not falsy (0 is valid!)
-        number_of_employees: (formData.business_type === 'sole-trader')
+        number_of_employees: (sourceData.business_type === 'sole-trader')
           ? undefined 
-          : (formData.number_of_employees !== undefined && formData.number_of_employees !== null && formData.number_of_employees >= 0 
-              ? formData.number_of_employees 
+          : (sourceData.number_of_employees !== undefined && sourceData.number_of_employees !== null && sourceData.number_of_employees >= 0 
+              ? sourceData.number_of_employees 
               : undefined),
-        number_of_owners: (formData.business_type === 'sole-trader')
+        number_of_owners: (sourceData.business_type === 'sole-trader')
           ? undefined 
-          : (formData.number_of_owners !== undefined && formData.number_of_owners !== null && formData.number_of_owners >= 1 
-              ? formData.number_of_owners 
+          : (sourceData.number_of_owners !== undefined && sourceData.number_of_owners !== null && sourceData.number_of_owners >= 1 
+              ? sourceData.number_of_owners 
               : 1),
         recurring_revenue_percentage: recurringRevenue,
         use_dcf: true,
         use_multiples: true,
         projection_years: 10,
-        comparables: formData.comparables || [],
+        comparables: sourceData.comparables || [],
         // NEW: Include PostgreSQL business type ID and context metadata
-        business_type_id: formData.business_type_id,
+        business_type_id: sourceData.business_type_id,
         // Include business_type (form uses this, backend expects it)
-        business_type: formData.business_type,
+        business_type: sourceData.business_type,
         // Include shares_for_sale for ownership adjustment (Step 8)
-        shares_for_sale: formData.shares_for_sale !== undefined && formData.shares_for_sale !== null
-          ? Math.max(0, Math.min(100, Number(formData.shares_for_sale))) // Clamp to 0-100
+        shares_for_sale: sourceData.shares_for_sale !== undefined && sourceData.shares_for_sale !== null
+          ? Math.max(0, Math.min(100, Number(sourceData.shares_for_sale))) // Clamp to 0-100
           : 100, // Default to 100% if not provided
-        business_context: formData.business_type_id ? {
+        business_context: sourceData.business_type_id ? {
           // Values already converted to numbers in ValuationForm.tsx, but validate range as defensive check
-          dcfPreference: validatePreference(formData._internal_dcf_preference),
-          multiplesPreference: validatePreference(formData._internal_multiples_preference),
-          ownerDependencyImpact: validatePreference(formData._internal_owner_dependency_impact),
-          keyMetrics: formData._internal_key_metrics,
-          typicalEmployeeRange: formData._internal_typical_employee_range,
-          typicalRevenueRange: formData._internal_typical_revenue_range,
+          dcfPreference: validatePreference((sourceData as any)._internal_dcf_preference),
+          multiplesPreference: validatePreference((sourceData as any)._internal_multiples_preference),
+          ownerDependencyImpact: validatePreference((sourceData as any)._internal_owner_dependency_impact),
+          keyMetrics: (sourceData as any)._internal_key_metrics,
+          typicalEmployeeRange: (sourceData as any)._internal_typical_employee_range,
+          typicalRevenueRange: (sourceData as any)._internal_typical_revenue_range,
         } : undefined,
       };
       
@@ -308,7 +325,8 @@ export const useValuationStore = create<ValuationStore>((set, get) => ({
       });
       // Owner concentration data already logged above
       
-      storeLogger.info('Sending manual valuation request (FREE)', { 
+      storeLogger.info('Sending unified valuation request', { 
+        dataSource,
         companyName: request.company_name,
         revenue: request.current_year_data.revenue,
         ebitda: request.current_year_data.ebitda,
@@ -316,7 +334,9 @@ export const useValuationStore = create<ValuationStore>((set, get) => ({
         business_context: request.business_context,
         requestData: request
       });
-      const response = await backendAPI.calculateManualValuation(request);
+      
+      // Use unified calculation endpoint with dataSource
+      const response = await backendAPI.calculateValuationUnified(request, dataSource as 'manual' | 'ai-guided' | 'mixed');
       
       // Extract and store correlation ID from response
       // Note: backendAPI should extract from headers, but we also check response body
@@ -473,6 +493,18 @@ export const useValuationStore = create<ValuationStore>((set, get) => ({
           ...inputData,
           metrics: response.financial_metrics as any // Type assertion: backend metrics may have different fields than input metrics
         });
+      }
+      
+      // Mark session as completed
+      if (session) {
+        try {
+          await backendAPI.updateValuationSession(session.reportId, {
+            completedAt: new Date().toISOString(),
+          });
+          storeLogger.info('Session marked as completed', { reportId: session.reportId });
+        } catch (error) {
+          storeLogger.warn('Failed to mark session as completed', { error });
+        }
       }
       
       // ✅ AUTO-SAVE TO DATABASE (primary storage)

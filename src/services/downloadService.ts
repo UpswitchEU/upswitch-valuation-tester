@@ -1,6 +1,7 @@
 // Download service for exporting valuation reports
 import type { ValuationRequest } from '../types/valuation';
 import { backendAPI } from './backendApi';
+import { HTMLProcessor } from '../utils/htmlProcessor';
 
 export interface DownloadOptions {
   format: 'html' | 'pdf';
@@ -58,7 +59,7 @@ export class DownloadService {
       
       // Create temporary element
       const tempDiv = document.createElement('div');
-      tempDiv.innerHTML = htmlContent;
+      tempDiv.innerHTML = HTMLProcessor.sanitize(htmlContent);
       tempDiv.style.position = 'absolute';
       tempDiv.style.left = '-9999px';
       document.body.appendChild(tempDiv);
@@ -324,7 +325,7 @@ export class DownloadService {
         <div class="content-section">
             <h2>Detailed Analysis</h2>
             <div style="margin-top: 1rem;">
-                ${data.htmlContent}
+                ${HTMLProcessor.sanitize(data.htmlContent)}
             </div>
         </div>
         ` : ''}

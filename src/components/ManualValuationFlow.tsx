@@ -15,6 +15,7 @@ import { ProgressiveValuationReport } from './ProgressiveValuationReport';
 import { ResizableDivider } from './ResizableDivider';
 import { ValuationForm } from './ValuationForm';
 import { ValuationToolbar } from './ValuationToolbar';
+import { ValuationViewToggle } from './ValuationViewToggle';
 
 // Lazy load heavy components for code splitting
 const Results = lazy(() => import('./Results').then(m => ({ default: m.Results })));
@@ -558,6 +559,9 @@ export const ManualValuationFlow: React.FC<ManualValuationFlowProps> = memo(({ o
         >
           <div className="flex-1 overflow-y-auto p-4 sm:p-6">
             <div className="max-w-4xl mx-auto">
+              {/* View Toggle - Always visible */}
+              <ValuationViewToggle className="mb-6" />
+              
               {/* Success Banner removed - report preview shows completion status */}
               
               {/* Form - Always visible */}

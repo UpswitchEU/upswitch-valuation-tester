@@ -53,6 +53,7 @@ export interface StreamingChatProps {
   disabled?: boolean;
   initialMessage?: string | null;
   autoSend?: boolean;
+  initialData?: Partial<any>; // Pre-filled data from session (for resuming conversations)
 }
 
 /**
@@ -84,7 +85,8 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
   className = '',
   disabled = false,
   initialMessage = null,
-  autoSend = false
+  autoSend = false,
+  initialData
 }) => {
   // Get user data from AuthContext
   const { user } = useAuth();
@@ -108,6 +110,7 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
     },
     setMessages: state.setMessages,
     user: user as UserProfile | undefined,
+    initialData: initialData, // Pass pre-filled session data for resuming
     onSessionIdUpdate: (newSessionId) => {
       chatLogger.info('Updating to Python session ID', {
         clientSessionId: sessionId,
@@ -116,6 +119,44 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
       setPythonSessionId(newSessionId);
     }
   });
+
+  // Handle "Resume" context message
+  // If we have initial data, we want to inject a welcoming message about what we know
+  useEffect(() => {
+    if (initialData && Object.keys(initialData).length > 0) {
+      // Build summary of what data we have
+      const fields = [];
+      if (initialData.company_name) fields.push('company name');
+      if (initialData.industry) fields.push('industry');
+      // Access revenue/ebitda from nested object or top-level (fallback)
+      if ((initialData.current_year_data as any)?.revenue || initialData.revenue) fields.push('revenue');
+      if ((initialData.current_year_data as any)?.ebitda !== undefined || initialData.ebitda !== undefined) fields.push('EBITDA');
+      
+      if (fields.length > 0) {
+        const summary = `Welcome back! I see you've already entered your ${fields.join(', ')}. I've loaded that context so we can continue where you left off.`;
+        
+        // Add as a system message (or AI message if preferred)
+        // Using timeout to ensure it appears after initialization
+        setTimeout(() => {
+          // Only add if no messages exist yet (prevent duplicate on re-render)
+          if (state.messages.length === 0) {
+            const { updatedMessages } = messageManager.addMessage([], {
+              type: 'ai',
+              role: 'assistant',
+              content: summary,
+              timestamp: new Date(),
+              metadata: {
+                intent: 'greeting',
+                topic: 'resume',
+                is_resume_context: true
+              }
+            });
+            state.setMessages(updatedMessages);
+          }
+        }, 500);
+      }
+    }
+  }, [initialData, messageManager]);
   
   // Use extracted metrics tracking
   const { trackModelPerformance, trackConversationCompletion } = useConversationMetrics(sessionId, userId);

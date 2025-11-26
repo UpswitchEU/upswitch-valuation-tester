@@ -1139,3 +1139,35 @@ export interface ValuationAdjustmentDisplay {
   isApplicable: boolean;
 }
 
+// =============================================================================
+// UNIFIED VALUATION SESSION TYPES
+// =============================================================================
+
+/**
+ * Unified ValuationSession that both manual and AI-guided flows populate
+ * Extends ValuationRequest with session metadata for unified data management
+ */
+export interface ValuationSession {
+  // Session metadata
+  sessionId: string; // Unique session identifier
+  reportId: string; // Links to report URL (val_timestamp_random format)
+  currentView: 'manual' | 'ai-guided'; // Current UI view
+  dataSource: 'manual' | 'ai-guided' | 'mixed'; // Tracks which flow provided data
+  
+  // Timestamps
+  createdAt: Date;
+  updatedAt: Date;
+  completedAt?: Date;
+  lastSyncedAt?: Date; // Last time data was synced between flows
+  
+  // Data completeness tracking (0-100)
+  completeness?: number;
+  
+  // Partial data collection (incremental updates)
+  partialData: Partial<ValuationRequest>;
+  
+  // Complete session data (merged from partialData)
+  // This is the canonical ValuationRequest that will be sent for calculation
+  sessionData?: Partial<ValuationRequest>;
+}
+

@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { useValuationStore } from '../store/useValuationStore';
+import { useValuationSessionStore } from '../store/useValuationSessionStore';
 // import { useReportsStore } from '../store/useReportsStore'; // Deprecated: Now saving to database
 import toast from 'react-hot-toast';
 import { TARGET_COUNTRIES } from '../config/countries';
@@ -26,9 +27,166 @@ import { CustomBusinessTypeSearch, CustomDropdown, CustomInputField, CustomNumbe
  */
 export const ValuationForm: React.FC = () => {
   const { formData, updateFormData, calculateValuation, quickValuation, isCalculating, error, prefillFromBusinessCard } = useValuationStore();
+  const { session, updateSessionData, getSessionData } = useValuationSessionStore();
   const { businessTypes, loading: businessTypesLoading, error: businessTypesError } = useBusinessTypes();
   // const { addReport } = useReportsStore(); // Deprecated: Now saving to database
   const { businessCard, isAuthenticated, user } = useAuth();
+  
+  // Track if we've loaded session data to prevent sync loop
+  const [hasLoadedSessionData, setHasLoadedSessionData] = useState(false);
+  
+  // Highlight newly populated fields briefly
+  const [highlightedFields, setHighlightedFields] = useState<Record<string, boolean>>({});
+  
+  // Helper to trigger highlight animation for a field
+  const highlightField = useCallback((field: string) => {
+    setHighlightedFields(prev => ({ ...prev, [field]: true }));
+    setTimeout(() => {
+      setHighlightedFields(prev => ({ ...prev, [field]: false }));
+    }, 2000);
+  }, []);
+
+  // Helper to get input class with optional highlight
+  const getInputClass = useCallback((field: string) => {
+    return highlightedFields[field] 
+      ? 'transition-all duration-500 bg-blue-500/10 ring-2 ring-blue-500/20 rounded-md' 
+      : 'transition-all duration-500';
+  }, [highlightedFields]);
+
+  // Auto-focus logic for manual flow
+  useEffect(() => {
+    // Only run if we're in manual view and have loaded session data (or it's a fresh load)
+    if (session?.currentView === 'manual') {
+      // Small timeout to ensure DOM is ready
+      const timer = setTimeout(() => {
+        // Check for empty fields in priority order
+        if (!formData.company_name) {
+          document.querySelector<HTMLInputElement>('input[name="company_name"]')?.focus();
+        } else if (!formData.industry) {
+          // Industry is usually a custom component, might need specific selector
+          document.querySelector<HTMLInputElement>('input[placeholder*="industry"]')?.focus();
+        } else if (!formData.business_model) {
+          // Business model might be a select
+          document.querySelector<HTMLSelectElement>('select[name="business_model"]')?.focus();
+        } else if (!formData.revenue) {
+          document.querySelector<HTMLInputElement>('input[name="revenue"]')?.focus();
+        }
+      }, 100);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [session?.currentView, formData.company_name, formData.industry, formData.business_model, formData.revenue]);
+  
+  // Load session data into form when switching to manual view (one-time)
+  useEffect(() => {
+    if (session && session.currentView === 'manual' && !hasLoadedSessionData) {
+      const sessionData = getSessionData();
+      if (sessionData && Object.keys(sessionData).length > 0) {
+        // Convert ValuationRequest to ValuationFormData format
+        const formDataUpdate: Partial<any> = {
+          company_name: sessionData.company_name,
+          country_code: sessionData.country_code,
+          industry: sessionData.industry,
+          business_model: sessionData.business_model,
+          founding_year: sessionData.founding_year,
+          revenue: sessionData.current_year_data?.revenue || sessionData.revenue,
+          ebitda: sessionData.current_year_data?.ebitda || sessionData.ebitda,
+          current_year_data: sessionData.current_year_data,
+          historical_years_data: sessionData.historical_years_data,
+          number_of_employees: sessionData.number_of_employees,
+          number_of_owners: sessionData.number_of_owners,
+          recurring_revenue_percentage: sessionData.recurring_revenue_percentage,
+          comparables: sessionData.comparables,
+          business_type_id: sessionData.business_type_id,
+          business_type: sessionData.business_type,
+          shares_for_sale: sessionData.shares_for_sale,
+        };
+        
+        // Remove undefined values
+        Object.keys(formDataUpdate).forEach(key => {
+          if (formDataUpdate[key] === undefined) {
+            delete formDataUpdate[key];
+          }
+        });
+        
+        if (Object.keys(formDataUpdate).length > 0) {
+          updateFormData(formDataUpdate);
+          setHasLoadedSessionData(true);
+          
+          // Highlight fields that were populated
+          Object.keys(formDataUpdate).forEach(key => {
+            highlightField(key);
+          });
+          
+          generalLogger.info('Loaded session data into form', { 
+            hasCompanyName: !!formDataUpdate.company_name,
+            hasRevenue: !!formDataUpdate.revenue,
+            fieldsLoaded: Object.keys(formDataUpdate).length
+          });
+        }
+      }
+    }
+  }, [session?.currentView, session?.sessionId, getSessionData, updateFormData, hasLoadedSessionData, highlightField]);
+  
+  // Debounced sync form data to session store (500ms delay)
+  const debouncedSyncToSession = useCallback(
+    debounce(async (data: typeof formData) => {
+      if (!session || !data || Object.keys(data).length === 0) {
+        return;
+      }
+      
+      try {
+        // Convert ValuationFormData to Partial<ValuationRequest> for session
+        const sessionUpdate: Partial<any> = {
+          company_name: data.company_name,
+          country_code: data.country_code,
+          industry: data.industry,
+          business_model: data.business_model,
+          founding_year: data.founding_year,
+          current_year_data: {
+            year: data.current_year_data?.year || new Date().getFullYear(),
+            revenue: data.revenue || data.current_year_data?.revenue || 0,
+            ebitda: data.ebitda || data.current_year_data?.ebitda || 0,
+            ...(data.current_year_data?.total_assets && { total_assets: data.current_year_data.total_assets }),
+            ...(data.current_year_data?.total_debt && { total_debt: data.current_year_data.total_debt }),
+            ...(data.current_year_data?.cash && { cash: data.current_year_data.cash }),
+          },
+          historical_years_data: data.historical_years_data,
+          number_of_employees: data.number_of_employees,
+          number_of_owners: data.number_of_owners,
+          recurring_revenue_percentage: data.recurring_revenue_percentage,
+          comparables: data.comparables,
+          business_type_id: data.business_type_id,
+          business_type: data.business_type,
+          shares_for_sale: data.shares_for_sale,
+          business_context: data.business_context,
+        };
+        
+        // Remove undefined values
+        Object.keys(sessionUpdate).forEach(key => {
+          if (sessionUpdate[key] === undefined) {
+            delete sessionUpdate[key];
+          }
+        });
+        
+        await updateSessionData(sessionUpdate);
+        generalLogger.debug('Synced form data to session', {
+          reportId: session.reportId,
+          fieldsUpdated: Object.keys(sessionUpdate).length,
+        });
+      } catch (err) {
+        generalLogger.warn('Failed to sync form data to session', { error: err });
+      }
+    }, 500),
+    [session, updateSessionData]
+  );
+  
+  // Sync form data to session store whenever it changes (debounced)
+  useEffect(() => {
+    if (hasLoadedSessionData && formData && Object.keys(formData).length > 0) {
+      debouncedSyncToSession(formData);
+    }
+  }, [formData, debouncedSyncToSession, hasLoadedSessionData]);
   
   // Local state for historical data inputs
   const [historicalInputs, setHistoricalInputs] = useState<{[key: string]: string}>({});

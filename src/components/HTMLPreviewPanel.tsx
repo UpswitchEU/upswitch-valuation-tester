@@ -4,6 +4,7 @@ import { useProgressiveReport } from '../hooks/useProgressiveReport';
 import { ProgressBar } from './valuation/ProgressBar';
 import { ProgressiveReportSection } from './valuation/ProgressiveReportSection';
 import { ConfettiAnimation } from './valuation/ConfettiAnimation';
+import { HTMLProcessor } from '../utils/htmlProcessor';
 
 interface HTMLPreviewPanelProps {
   htmlContent: string;
@@ -119,7 +120,7 @@ export const HTMLPreviewPanel = forwardRef<HTMLPreviewPanelRef, HTMLPreviewPanel
         htmlContent && (
           <div 
             className="prose prose-sm max-w-none p-6"
-            dangerouslySetInnerHTML={{ __html: htmlContent }}
+            dangerouslySetInnerHTML={{ __html: HTMLProcessor.sanitize(htmlContent) }}
           />
         )
       )}
