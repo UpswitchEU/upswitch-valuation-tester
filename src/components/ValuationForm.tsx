@@ -92,23 +92,18 @@ export const ValuationForm: React.FC = () => {
         });
         
         if (Object.keys(formDataUpdate).length > 0) {
-        updateFormData(formDataUpdate);
+          updateFormData(formDataUpdate);
           setHasLoadedSessionData(true);
           
-          // Highlight fields that were populated
-          Object.keys(formDataUpdate).forEach(key => {
-            highlightField(key);
-          });
-          
-        generalLogger.info('Loaded session data into form', { 
-          hasCompanyName: !!formDataUpdate.company_name,
+          generalLogger.info('Loaded session data into form', { 
+            hasCompanyName: !!formDataUpdate.company_name,
             hasRevenue: !!formDataUpdate.revenue,
             fieldsLoaded: Object.keys(formDataUpdate).length
-        });
+          });
+        }
       }
     }
-    }
-  }, [session?.currentView, session?.sessionId, getSessionData, updateFormData, hasLoadedSessionData, highlightField]);
+  }, [session?.currentView, session?.sessionId, getSessionData, updateFormData, hasLoadedSessionData]);
   
   // Debounced sync form data to session store (500ms delay)
   const debouncedSyncToSession = useCallback(

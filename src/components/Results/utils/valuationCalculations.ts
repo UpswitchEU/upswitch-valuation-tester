@@ -171,33 +171,27 @@ export const calculateBaseEnterpriseValue = (result: ValuationResponse): Calcula
   // CRITICAL FIX: Enhanced primary method detection with multiple fallbacks
   // Priority: primary_multiple_method → primary_method → infer from available data
   let isPrimaryEBITDA = false;
-  let primaryMethodSource = 'unknown';
   
   // Priority 1: Check primary_multiple_method (most authoritative)
   if (multiples.primary_multiple_method) {
     isPrimaryEBITDA = multiples.primary_multiple_method === 'ebitda_multiple';
-    primaryMethodSource = `primary_multiple_method=${multiples.primary_multiple_method}`;
   }
   // Priority 2: Check primary_method field (string format)
   else if (multiples.primary_method) {
     isPrimaryEBITDA = multiples.primary_method === 'EV/EBITDA';
-    primaryMethodSource = `primary_method=${multiples.primary_method}`;
   }
   // Priority 3: Check top-level primary_method
   else if (result.primary_method) {
     isPrimaryEBITDA = result.primary_method === 'EV/EBITDA';
-    primaryMethodSource = `result.primary_method=${result.primary_method}`;
   }
   // Priority 4: Infer from available data
   // If we have positive EBITDA and an EBITDA multiple, assume EBITDA is primary
   else if (currentData.ebitda && currentData.ebitda > 0 && multiples.ebitda_multiple && multiples.ebitda_multiple > 0) {
     isPrimaryEBITDA = true;
-    primaryMethodSource = 'inferred_from_ebitda_available';
   }
   // Default to Revenue if cannot determine
   else {
     isPrimaryEBITDA = false;
-    primaryMethodSource = 'default_to_revenue';
   }
 
   // DIAGNOSTIC: Log primary method detection

@@ -11,7 +11,7 @@ import { reportApiService } from '../services/reportApi';
 import { useValuationSessionStore } from '../store/useValuationSessionStore';
 import type { ValuationResponse } from '../types/valuation';
 
-type Stage = 'loading' | 'data-entry' | 'processing';
+type Stage = 'loading' | 'data-entry' | 'processing' | 'flow-selection';
 
 export const ValuationReport: React.FC = () => {
   const { reportId } = useParams<{ reportId: string }>();

@@ -542,10 +542,6 @@ export const AIAssistedValuation: React.FC<AIAssistedValuationProps> = ({
       setStage('chat');
     }
   }, []);
-
-  // State to track if we have pre-existing session data
-  const [hasPreExistingData, setHasPreExistingData] = useState(false);
-  const [preExistingDataSummary, setPreExistingDataSummary] = useState<string>('');
   
   // Load session data into conversation context when switching to AI-guided view
   useEffect(() => {
@@ -556,22 +552,14 @@ export const AIAssistedValuation: React.FC<AIAssistedValuationProps> = ({
         const completeness = useValuationSessionStore.getState().getCompleteness();
         
         if (completeness > 0) {
-          setHasPreExistingData(true);
-          
           // Build summary of what data we have
           const fields = [];
           if (sessionData.company_name) fields.push('company name');
           if (sessionData.industry) fields.push('industry');
-          if (sessionData.current_year_data?.revenue || sessionData.revenue) fields.push('revenue');
-          if (sessionData.current_year_data?.ebitda !== undefined || sessionData.ebitda !== undefined) fields.push('EBITDA');
+          if (sessionData.current_year_data?.revenue || (sessionData as any).revenue) fields.push('revenue');
+          if (sessionData.current_year_data?.ebitda !== undefined || (sessionData as any).ebitda !== undefined) fields.push('EBITDA');
           if (sessionData.founding_year) fields.push('founding year');
           if (sessionData.number_of_employees) fields.push('employees');
-          
-          const summary = fields.length > 0 
-            ? `I see you've already entered ${fields.join(', ')}. Let me help you complete the valuation!`
-            : 'Let me help you with your valuation!';
-          
-          setPreExistingDataSummary(summary);
           
           chatLogger.info('Pre-existing session data detected', { 
             completeness,
@@ -582,20 +570,53 @@ export const AIAssistedValuation: React.FC<AIAssistedValuationProps> = ({
         
         // Pre-populate conversation context with session data
         const context: ConversationContext = {
+          // If conversationContext is null, we need to provide defaults for required fields
+          session_id: session.sessionId,
+          owner_profile: conversationContext?.owner_profile || { 
+            involvement_level: 'hands_on',
+            time_commitment: 40,
+            succession_plan: 'uncertain',
+            risk_tolerance: 'moderate',
+            growth_ambition: 'moderate_growth',
+            industry_experience: 0,
+            management_team_strength: 'adequate',
+            key_man_risk: false,
+            personal_guarantees: false
+          },
+          conversation_history: conversationContext?.conversation_history || [],
+          current_step: conversationContext?.current_step || 0,
+          total_steps: conversationContext?.total_steps || 0,
+          
           ...conversationContext,
-          extracted_company_name: sessionData.company_name,
-          extracted_industry: sessionData.industry,
-          extracted_business_model: sessionData.business_model,
+          
+          // Populate extracted data
+          extracted_business_model: (sessionData.business_model as any) || undefined,
           extracted_founding_year: sessionData.founding_year,
-          extracted_revenue: sessionData.current_year_data?.revenue || sessionData.revenue,
-          extracted_ebitda: sessionData.current_year_data?.ebitda || sessionData.ebitda,
-          extracted_country: sessionData.country_code,
-          extraction_confidence: 0.9, // High confidence since data came from manual entry
+          
+          // Populate business context
+          business_context: {
+            ...conversationContext?.business_context,
+            company_name: sessionData.company_name,
+            industry: sessionData.industry,
+            business_model: sessionData.business_model,
+            founding_year: sessionData.founding_year,
+            country_code: sessionData.country_code,
+            current_year_data: {
+              ...sessionData.current_year_data,
+              revenue: sessionData.current_year_data?.revenue || (sessionData as any).revenue,
+              ebitda: sessionData.current_year_data?.ebitda || (sessionData as any).ebitda,
+            }
+          },
+          
+          extraction_confidence: { 
+            business_model: 0.9,
+            founding_year: 0.9
+          }, 
         };
         setConversationContext(context);
         chatLogger.info('Loaded session data into conversation context', { 
-          hasCompanyName: !!context.extracted_company_name,
-          hasRevenue: !!context.extracted_revenue 
+          hasCompanyName: !!sessionData.company_name,
+          hasRevenue: !!(sessionData.current_year_data?.revenue || (sessionData as any).revenue)
         });
       }
     }
@@ -1165,7 +1186,7 @@ export const AIAssistedValuation: React.FC<AIAssistedValuationProps> = ({
                   placeholder="Ask about your business valuation..."
                   initialMessage={initialQuery}
                   autoSend={autoSend}
-                  initialData={getSessionData()} // Pass session data for resuming
+                  initialData={getSessionData() || undefined} // Pass session data for resuming
                 />
               </ErrorBoundary>
             </div>

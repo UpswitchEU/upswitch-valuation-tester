@@ -196,12 +196,12 @@ export const useValuationStore = create<ValuationStore>((set, get) => ({
       if (!sourceData.industry) {
         throw new Error('Industry is required');
       }
-      const revenue = sourceData.revenue || sourceData.current_year_data?.revenue;
+      const revenue = (sourceData as any).revenue || sourceData.current_year_data?.revenue;
       if (!revenue || revenue <= 0) {
         throw new Error('Revenue must be greater than 0');
       }
-      const ebitda = sourceData.ebitda !== undefined && sourceData.ebitda !== null 
-        ? sourceData.ebitda 
+      const ebitda = (sourceData as any).ebitda !== undefined && (sourceData as any).ebitda !== null 
+        ? (sourceData as any).ebitda 
         : sourceData.current_year_data?.ebitda;
       if (ebitda === undefined || ebitda === null) {
         throw new Error('EBITDA is required');
