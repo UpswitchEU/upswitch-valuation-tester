@@ -64,7 +64,7 @@ interface ValuationStore {
 const getSafeCurrentYear = () => Math.min(new Date().getFullYear(), 2100);
 
 const defaultFormData: ValuationFormData = {
-  company_name: 'My Company', // Default company name to avoid validation error
+  company_name: '', // Empty by default - user must enter company name
   country_code: 'BE',
   industry: 'services', // Default to valid industry code
   business_model: 'services', // Default business model (matches Python enum)

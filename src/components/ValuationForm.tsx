@@ -407,6 +407,7 @@ export const ValuationForm: React.FC = () => {
           <CustomInputField
             label="Company Name"
             type="text"
+            name="company_name"
             value={formData.company_name || ''}
             onChange={(e) => updateFormData({ company_name: e.target.value })}
             onBlur={() => {}}

@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useState } from 'react';
 // import { useNavigate } from 'react-router-dom';
-import { Building2, CheckCircle, Save } from 'lucide-react';
+import { Building2, CheckCircle, Save, TrendingUp } from 'lucide-react';
 import { MOBILE_BREAKPOINT, PANEL_CONSTRAINTS } from '../constants/panelConstants';
 import { LiveValuationReport } from './LiveValuationReport';
 import { StreamingChat } from './StreamingChat';
@@ -1213,12 +1213,26 @@ export const AIAssistedValuation: React.FC<AIAssistedValuationProps> = ({
             <div className="flex flex-col h-full">
               {/* During conversation: Show progressive streaming */}
               {stage === 'chat' && (
-                <ProgressiveValuationReport
-                  sections={reportSections}
-                  phase={reportPhase}
-                  finalHtml={finalReportHtml}
-                  isGenerating={true}
-                />
+                <>
+                  {reportSections.length === 0 && !finalReportHtml ? (
+                    <div className="flex flex-col items-center justify-center h-full p-6 sm:p-8 text-center">
+                      <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-zinc-100 flex items-center justify-center mb-3 sm:mb-4">
+                        <TrendingUp className="w-6 h-6 sm:w-8 sm:h-8 text-zinc-400" />
+                      </div>
+                      <h3 className="text-base sm:text-lg font-semibold text-zinc-900 mb-2">Valuation Preview</h3>
+                      <p className="text-xs sm:text-sm text-zinc-500 max-w-xs">
+                        Your valuation report will appear here once you submit the form.
+                      </p>
+                    </div>
+                  ) : (
+                    <ProgressiveValuationReport
+                      sections={reportSections}
+                      phase={reportPhase}
+                      finalHtml={finalReportHtml}
+                      isGenerating={true}
+                    />
+                  )}
+                </>
               )}
               
               {/* After conversation: Show Accountant View HTML from valuationResult */}
