@@ -53,7 +53,7 @@ export const ValuationViewToggle: React.FC<ValuationViewToggleProps> = ({ classN
       {/* Header with Status */}
       <div className="flex items-center justify-between h-5">
         <div className="text-xs font-medium text-zinc-400 uppercase tracking-wide">
-          Input Method
+        Input Method
         </div>
         
         {/* Status Indicator (Fixed width container to prevent layout shift) */}

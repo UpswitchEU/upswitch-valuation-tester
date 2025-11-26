@@ -202,15 +202,6 @@ export const calculateBaseEnterpriseValue = (result: ValuationResponse): Calcula
 
   // DIAGNOSTIC: Log primary method detection
   // Note: Primary method detection logging removed - details in server-generated HTML
-    primary_multiple_method: multiples.primary_multiple_method,
-    primary_method: multiples.primary_method || result.primary_method,
-    isPrimaryEBITDA,
-    primaryMethodSource,
-    hasEBITDA: !!(currentData.ebitda && currentData.ebitda > 0),
-    hasRevenue: !!(currentData.revenue && currentData.revenue > 0),
-    ebitdaMultiple: multiples.ebitda_multiple,
-    revenueMultiple: multiples.revenue_multiple
-  });
 
   const primaryMultiple = isPrimaryEBITDA ? multiples.unadjusted_ebitda_multiple || multiples.ebitda_multiple : multiples.unadjusted_revenue_multiple || multiples.revenue_multiple;
   const primaryMetric = isPrimaryEBITDA ? currentData.ebitda : currentData.revenue;

@@ -19,7 +19,7 @@ export const ValuationReport: React.FC = () => {
   const location = useLocation();
   const { isAuthenticated } = useAuth();
   
-  const { session, initializeSession, loadSession } = useValuationSessionStore();
+  const { session, initializeSession } = useValuationSessionStore();
   const [currentReportId, setCurrentReportId] = useState<string>('');
   const [stage, setStage] = useState<Stage>('loading');
   const [error, setError] = useState<string | null>(null);

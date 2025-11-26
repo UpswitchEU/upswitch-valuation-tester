@@ -5,6 +5,7 @@ import type { QuickValuationRequest, ValuationFormData, ValuationInputData, Valu
 // normalizeCalculationSteps removed - calculation steps now in server-generated info_tab_html
 import { correlationContext, storeLogger } from '../utils/logger';
 import { validatePreference } from '../utils/numberUtils';
+import { useValuationSessionStore } from './useValuationSessionStore';
 // import { useReportsStore } from './useReportsStore'; // Deprecated: Now saving to database
 
 interface ValuationStore {
@@ -268,8 +269,8 @@ export const useValuationStore = create<ValuationStore>((set, get) => ({
         },
         historical_years_data: sourceData.historical_years_data && sourceData.historical_years_data.length > 0 
           ? sourceData.historical_years_data
-              .filter(year => year.ebitda !== undefined && year.ebitda !== null) // Only include years with EBITDA values
-              .map(year => ({
+              .filter((year: any) => year.ebitda !== undefined && year.ebitda !== null) // Only include years with EBITDA values
+              .map((year: any) => ({
                 ...year,
                 year: Math.min(Math.max(Number(year.year), 2000), 2100),
                 revenue: Math.max(Number(year.revenue) || 0, 1), // Ensure positive revenue

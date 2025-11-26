@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import type { ValuationResponse } from '../../types/valuation';
 import { ConfidenceScoreModal } from './ConfidenceScoreModal';
 import { formatCurrency, formatCurrencyCompact } from './utils/formatters';

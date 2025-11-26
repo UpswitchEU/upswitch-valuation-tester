@@ -1,7 +1,8 @@
 import { create } from 'zustand';
 import { backendAPI } from '../services/backendApi';
-import type { ValuationRequest, ValuationSession } from '../types/valuation';
+import type { ValuationFormData, ValuationRequest, ValuationSession } from '../types/valuation';
 import { storeLogger } from '../utils/logger';
+import { useValuationStore } from './useValuationStore';
 
 interface ValuationSessionStore {
   // Session state

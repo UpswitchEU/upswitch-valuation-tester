@@ -35,24 +35,6 @@ export const ValuationForm: React.FC = () => {
   // Track if we've loaded session data to prevent sync loop
   const [hasLoadedSessionData, setHasLoadedSessionData] = useState(false);
   
-  // Highlight newly populated fields briefly
-  const [highlightedFields, setHighlightedFields] = useState<Record<string, boolean>>({});
-  
-  // Helper to trigger highlight animation for a field
-  const highlightField = useCallback((field: string) => {
-    setHighlightedFields(prev => ({ ...prev, [field]: true }));
-    setTimeout(() => {
-      setHighlightedFields(prev => ({ ...prev, [field]: false }));
-    }, 2000);
-  }, []);
-
-  // Helper to get input class with optional highlight
-  const getInputClass = useCallback((field: string) => {
-    return highlightedFields[field] 
-      ? 'transition-all duration-500 bg-blue-500/10 ring-2 ring-blue-500/20 rounded-md' 
-      : 'transition-all duration-500';
-  }, [highlightedFields]);
-
   // Auto-focus logic for manual flow
   useEffect(() => {
     // Only run if we're in manual view and have loaded session data (or it's a fresh load)
@@ -89,8 +71,8 @@ export const ValuationForm: React.FC = () => {
           industry: sessionData.industry,
           business_model: sessionData.business_model,
           founding_year: sessionData.founding_year,
-          revenue: sessionData.current_year_data?.revenue || sessionData.revenue,
-          ebitda: sessionData.current_year_data?.ebitda || sessionData.ebitda,
+          revenue: sessionData.current_year_data?.revenue || (sessionData as any).revenue,
+          ebitda: sessionData.current_year_data?.ebitda || (sessionData as any).ebitda,
           current_year_data: sessionData.current_year_data,
           historical_years_data: sessionData.historical_years_data,
           number_of_employees: sessionData.number_of_employees,
@@ -110,7 +92,7 @@ export const ValuationForm: React.FC = () => {
         });
         
         if (Object.keys(formDataUpdate).length > 0) {
-          updateFormData(formDataUpdate);
+        updateFormData(formDataUpdate);
           setHasLoadedSessionData(true);
           
           // Highlight fields that were populated
@@ -118,13 +100,13 @@ export const ValuationForm: React.FC = () => {
             highlightField(key);
           });
           
-          generalLogger.info('Loaded session data into form', { 
-            hasCompanyName: !!formDataUpdate.company_name,
+        generalLogger.info('Loaded session data into form', { 
+          hasCompanyName: !!formDataUpdate.company_name,
             hasRevenue: !!formDataUpdate.revenue,
             fieldsLoaded: Object.keys(formDataUpdate).length
-          });
-        }
+        });
       }
+    }
     }
   }, [session?.currentView, session?.sessionId, getSessionData, updateFormData, hasLoadedSessionData, highlightField]);
   
@@ -136,7 +118,7 @@ export const ValuationForm: React.FC = () => {
       }
       
       try {
-        // Convert ValuationFormData to Partial<ValuationRequest> for session
+      // Convert ValuationFormData to Partial<ValuationRequest> for session
         const sessionUpdate: Partial<any> = {
           company_name: data.company_name,
           country_code: data.country_code,

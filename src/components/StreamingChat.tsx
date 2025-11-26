@@ -144,7 +144,6 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
               type: 'ai',
               role: 'assistant',
               content: summary,
-              timestamp: new Date(),
               metadata: {
                 intent: 'greeting',
                 topic: 'resume',

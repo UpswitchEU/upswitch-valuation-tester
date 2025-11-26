@@ -6,7 +6,7 @@
  */
 
 import axios, { AxiosInstance, AxiosResponse } from 'axios';
-import type { ValuationRequest, ValuationResponse, ValuationSession } from '../types/valuation';
+import type { ValuationRequest, ValuationResponse } from '../types/valuation';
 // normalizeCalculationSteps removed - calculation steps now in server-generated info_tab_html
 import { apiLogger, createPerformanceLogger, extractCorrelationId, setCorrelationFromResponse } from '../utils/logger';
 
@@ -695,8 +695,6 @@ class BackendAPI {
     const timeout = options?.timeout || 90000; // Default 90 seconds
 
     try {
-      perfLogger.start();
-
       // Use unified endpoint - backend determines credit cost based on dataSource
       const response = await this.client.post(
         '/api/valuations/calculate',
@@ -710,7 +708,7 @@ class BackendAPI {
       perfLogger.end();
       return response.data.data || response.data; // Extract nested data if present
     } catch (error: any) {
-      perfLogger.error(error);
+      apiLogger.error('Valuation calculation failed', { error, operation: 'calculateValuationUnified' });
       
       if (error.response?.data?.error) {
         throw new Error(`Backend error: ${error.response.data.error}`);
