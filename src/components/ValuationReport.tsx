@@ -51,8 +51,8 @@ export const ValuationReport: React.FC = () => {
         }
       }
       
-      // Initialize or load session
-      await initializeSession(reportId, initialView);
+      // Initialize or load session with prefilled query from homepage
+      await initializeSession(reportId, initialView, prefilledQuery);
       setStage('data-entry');
     } catch (error) {
       console.error('Failed to initialize session:', error);

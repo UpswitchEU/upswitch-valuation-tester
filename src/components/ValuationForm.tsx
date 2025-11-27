@@ -62,51 +62,135 @@ export const ValuationForm: React.FC = () => {
     }
   }, [session?.currentView, formData.business_type_id, formData.company_name, formData.industry, formData.business_model, formData.revenue]);
   
+  // Match business type string to business_type_id
+  const matchBusinessType = useCallback((query: string, businessTypes: any[]): string | null => {
+    if (!query || !businessTypes || businessTypes.length === 0) return null;
+    
+    const queryLower = query.toLowerCase().trim();
+    
+    // 1. Exact match on title (case-insensitive)
+    const exactMatch = businessTypes.find(bt => 
+      bt.title.toLowerCase() === queryLower
+    );
+    if (exactMatch) {
+      generalLogger.info('Matched business type (exact)', { query, matched: exactMatch.title, id: exactMatch.id });
+      return exactMatch.id;
+    }
+    
+    // 2. Match on keywords
+    const keywordMatch = businessTypes.find(bt => 
+      bt.keywords && bt.keywords.some((keyword: string) => 
+        keyword.toLowerCase() === queryLower || 
+        queryLower.includes(keyword.toLowerCase()) ||
+        keyword.toLowerCase().includes(queryLower)
+      )
+    );
+    if (keywordMatch) {
+      generalLogger.info('Matched business type (keyword)', { query, matched: keywordMatch.title, id: keywordMatch.id });
+      return keywordMatch.id;
+    }
+    
+    // 3. Partial match on title (contains)
+    const partialMatch = businessTypes.find(bt => 
+      bt.title.toLowerCase().includes(queryLower) ||
+      queryLower.includes(bt.title.toLowerCase())
+    );
+    if (partialMatch) {
+      generalLogger.info('Matched business type (partial)', { query, matched: partialMatch.title, id: partialMatch.id });
+      return partialMatch.id;
+    }
+    
+    // 4. Common variations mapping
+    const variations: Record<string, string[]> = {
+      'saas': ['saas', 'software as a service', 'software service'],
+      'restaurant': ['restaurant', 'cafe', 'bistro', 'dining'],
+      'e-commerce': ['e-commerce', 'ecommerce', 'online store', 'online shop'],
+      'manufacturing': ['manufacturing', 'manufacturer', 'production'],
+      'consulting': ['consulting', 'consultant', 'advisory'],
+      'tech startup': ['tech startup', 'startup', 'tech company'],
+    };
+    
+    for (const [key, variants] of Object.entries(variations)) {
+      if (variants.some(v => queryLower.includes(v))) {
+        const variationMatch = businessTypes.find(bt => 
+          bt.title.toLowerCase().includes(key) ||
+          bt.keywords?.some((k: string) => k.toLowerCase().includes(key))
+        );
+        if (variationMatch) {
+          generalLogger.info('Matched business type (variation)', { query, matched: variationMatch.title, id: variationMatch.id });
+          return variationMatch.id;
+        }
+      }
+    }
+    
+    generalLogger.warn('No business type match found', { query });
+    return null;
+  }, []);
+
   // Load session data into form when switching to manual view (one-time)
   useEffect(() => {
     if (session && session.currentView === 'manual' && !hasLoadedSessionData) {
       const sessionData = getSessionData();
-      if (sessionData && Object.keys(sessionData).length > 0) {
-        // Convert ValuationRequest to ValuationFormData format
-        const formDataUpdate: Partial<any> = {
-          company_name: sessionData.company_name,
-          country_code: sessionData.country_code,
-          industry: sessionData.industry,
-          business_model: sessionData.business_model,
-          founding_year: sessionData.founding_year,
-          revenue: sessionData.current_year_data?.revenue || (sessionData as any).revenue,
-          ebitda: sessionData.current_year_data?.ebitda || (sessionData as any).ebitda,
-          current_year_data: sessionData.current_year_data,
-          historical_years_data: sessionData.historical_years_data,
-          number_of_employees: sessionData.number_of_employees,
-          number_of_owners: sessionData.number_of_owners,
-          recurring_revenue_percentage: sessionData.recurring_revenue_percentage,
-          comparables: sessionData.comparables,
-          business_type_id: sessionData.business_type_id,
-          business_type: sessionData.business_type,
-          shares_for_sale: sessionData.shares_for_sale,
-        };
-        
-        // Remove undefined values
-        Object.keys(formDataUpdate).forEach(key => {
-          if (formDataUpdate[key] === undefined) {
-            delete formDataUpdate[key];
+      const prefilledQuery = (session.partialData as any)?._prefilledQuery as string | undefined;
+      
+      // Convert ValuationRequest to ValuationFormData format
+      const formDataUpdate: Partial<any> = {
+        company_name: sessionData?.company_name,
+        country_code: sessionData?.country_code,
+        industry: sessionData?.industry,
+        business_model: sessionData?.business_model,
+        founding_year: sessionData?.founding_year,
+        revenue: sessionData?.current_year_data?.revenue || (sessionData as any)?.revenue,
+        ebitda: sessionData?.current_year_data?.ebitda || (sessionData as any)?.ebitda,
+        current_year_data: sessionData?.current_year_data,
+        historical_years_data: sessionData?.historical_years_data,
+        number_of_employees: sessionData?.number_of_employees,
+        number_of_owners: sessionData?.number_of_owners,
+        recurring_revenue_percentage: sessionData?.recurring_revenue_percentage,
+        comparables: sessionData?.comparables,
+        business_type_id: sessionData?.business_type_id,
+        business_type: sessionData?.business_type,
+        shares_for_sale: sessionData?.shares_for_sale,
+      };
+      
+      // If we have a prefilledQuery from homepage and no business_type_id yet, try to match it
+      if (prefilledQuery && !formDataUpdate.business_type_id && businessTypes.length > 0) {
+        const matchedBusinessTypeId = matchBusinessType(prefilledQuery, businessTypes);
+        if (matchedBusinessTypeId) {
+          const matchedBusinessType = businessTypes.find(bt => bt.id === matchedBusinessTypeId);
+          if (matchedBusinessType) {
+            formDataUpdate.business_type_id = matchedBusinessTypeId;
+            formDataUpdate.business_model = matchedBusinessTypeId;
+            formDataUpdate.industry = matchedBusinessType.industry || matchedBusinessType.industryMapping;
+            generalLogger.info('Prefilled business type from homepage query', {
+              query: prefilledQuery,
+              businessTypeId: matchedBusinessTypeId,
+              businessTypeTitle: matchedBusinessType.title
+            });
           }
-        });
-        
-        if (Object.keys(formDataUpdate).length > 0) {
-          updateFormData(formDataUpdate);
-          setHasLoadedSessionData(true);
-          
-          generalLogger.info('Loaded session data into form', { 
-            hasCompanyName: !!formDataUpdate.company_name,
-            hasRevenue: !!formDataUpdate.revenue,
-            fieldsLoaded: Object.keys(formDataUpdate).length
-          });
         }
       }
+      
+      // Remove undefined values
+      Object.keys(formDataUpdate).forEach(key => {
+        if (formDataUpdate[key] === undefined) {
+          delete formDataUpdate[key];
+        }
+      });
+      
+      if (Object.keys(formDataUpdate).length > 0) {
+        updateFormData(formDataUpdate);
+        setHasLoadedSessionData(true);
+        
+        generalLogger.info('Loaded session data into form', { 
+          hasCompanyName: !!formDataUpdate.company_name,
+          hasRevenue: !!formDataUpdate.revenue,
+          hasBusinessType: !!formDataUpdate.business_type_id,
+          fieldsLoaded: Object.keys(formDataUpdate).length
+        });
+      }
     }
-  }, [session?.currentView, session?.sessionId, getSessionData, updateFormData, hasLoadedSessionData]);
+  }, [session?.currentView, session?.sessionId, session?.partialData, getSessionData, updateFormData, hasLoadedSessionData, businessTypes, matchBusinessType]);
   
   // Debounced sync form data to session store (500ms delay)
   const debouncedSyncToSession = useCallback(

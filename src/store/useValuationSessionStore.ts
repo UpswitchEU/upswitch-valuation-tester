@@ -8,7 +8,7 @@ interface ValuationSessionStore {
   session: ValuationSession | null;
   
   // Actions
-  initializeSession: (reportId: string, currentView?: 'manual' | 'ai-guided') => Promise<void>;
+  initializeSession: (reportId: string, currentView?: 'manual' | 'ai-guided', prefilledQuery?: string | null) => Promise<void>;
   loadSession: (reportId: string) => Promise<void>;
   updateSessionData: (data: Partial<ValuationRequest>) => Promise<void>;
   switchView: (view: 'manual' | 'ai-guided') => Promise<void>;
@@ -34,18 +34,25 @@ export const useValuationSessionStore = create<ValuationSessionStore>((set, get)
   /**
    * Initialize a new session or load existing one
    */
-  initializeSession: async (reportId: string, currentView: 'manual' | 'ai-guided' = 'manual') => {
+  initializeSession: async (reportId: string, currentView: 'manual' | 'ai-guided' = 'manual', prefilledQuery?: string | null) => {
     try {
-      storeLogger.info('Initializing valuation session', { reportId, currentView });
+      storeLogger.info('Initializing valuation session', { reportId, currentView, hasPrefilledQuery: !!prefilledQuery });
       
       // Try to load existing session from backend
       const existingSession = await backendAPI.getValuationSession(reportId);
       
       if (existingSession) {
         // Load existing session
+        // If we have a prefilledQuery and session doesn't have it, update it
+        const updatedPartialData = { ...existingSession.partialData } as any;
+        if (prefilledQuery && !updatedPartialData._prefilledQuery) {
+          updatedPartialData._prefilledQuery = prefilledQuery;
+        }
+        
         set({
           session: {
             ...existingSession,
+            partialData: updatedPartialData,
             createdAt: new Date(existingSession.createdAt),
             updatedAt: new Date(existingSession.updatedAt),
             completedAt: existingSession.completedAt ? new Date(existingSession.completedAt) : undefined,
@@ -63,7 +70,7 @@ export const useValuationSessionStore = create<ValuationSessionStore>((set, get)
           dataSource: currentView,
           createdAt: new Date(),
           updatedAt: new Date(),
-          partialData: {},
+          partialData: prefilledQuery ? { _prefilledQuery: prefilledQuery } as any : {},
           sessionData: {},
         };
         
@@ -75,7 +82,7 @@ export const useValuationSessionStore = create<ValuationSessionStore>((set, get)
           syncError: null,
         });
         
-        storeLogger.info('Created new session', { reportId, sessionId, currentView });
+        storeLogger.info('Created new session', { reportId, sessionId, currentView, hasPrefilledQuery: !!prefilledQuery });
       }
     } catch (error: any) {
       storeLogger.error('Failed to initialize session', {
@@ -325,10 +332,14 @@ export const useValuationSessionStore = create<ValuationSessionStore>((set, get)
         syncError: error.message || 'Failed to sync with backend',
       });
       
-      // Still update URL even if backend fails
-      const currentUrl = new URL(window.location.href);
-      currentUrl.searchParams.set('flow', view);
-      window.history.replaceState({}, '', currentUrl.toString());
+      // Always update URL even if backend fails
+      try {
+        const currentUrl = new URL(window.location.href);
+        currentUrl.searchParams.set('flow', view);
+        window.history.replaceState({}, '', currentUrl.toString());
+      } catch (urlError) {
+        storeLogger.warn('Failed to update URL on view switch', { error: urlError });
+      }
     }
   },
   
