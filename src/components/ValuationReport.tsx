@@ -73,6 +73,20 @@ export const ValuationReport: React.FC = () => {
     initializeSessionForReport(reportId);
   }, [reportId, navigate, initializeSessionForReport]);
 
+  // Sync URL with current view
+  useEffect(() => {
+    if (session?.currentView) {
+      const searchParams = new URLSearchParams(window.location.search);
+      const currentFlow = searchParams.get('flow');
+      
+      if (currentFlow !== session.currentView) {
+        searchParams.set('flow', session.currentView);
+        const newUrl = `${window.location.pathname}?${searchParams.toString()}`;
+        window.history.replaceState(null, '', newUrl);
+      }
+    }
+  }, [session?.currentView]);
+
   // Handle valuation completion
   const handleValuationComplete = async (result: ValuationResponse) => {
     // Don't change stage - let child components handle their own results display

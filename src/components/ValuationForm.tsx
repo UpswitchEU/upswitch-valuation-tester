@@ -41,8 +41,11 @@ export const ValuationForm: React.FC = () => {
     if (session?.currentView === 'manual') {
       // Small timeout to ensure DOM is ready
       const timer = setTimeout(() => {
-        // Check for empty fields in priority order
-        if (!formData.company_name) {
+        // Check for empty fields in priority order (aligned with AI-guided flow)
+        if (!formData.business_type_id) {
+          // Business type selector (first field, aligns with AI-guided)
+          document.querySelector<HTMLInputElement>('input[placeholder*="business type"]')?.focus();
+        } else if (!formData.company_name) {
           document.querySelector<HTMLInputElement>('input[name="company_name"]')?.focus();
         } else if (!formData.industry) {
           // Industry is usually a custom component, might need specific selector
@@ -57,7 +60,7 @@ export const ValuationForm: React.FC = () => {
       
       return () => clearTimeout(timer);
     }
-  }, [session?.currentView, formData.company_name, formData.industry, formData.business_model, formData.revenue]);
+  }, [session?.currentView, formData.business_type_id, formData.company_name, formData.industry, formData.business_model, formData.revenue]);
   
   // Load session data into form when switching to manual view (one-time)
   useEffect(() => {
@@ -403,19 +406,8 @@ export const ValuationForm: React.FC = () => {
         </h3>
         
         <div className="grid grid-cols-1 @4xl:grid-cols-2 gap-6">
-          {/* Company Name */}
-          <CustomInputField
-            label="Company Name"
-            type="text"
-            name="company_name"
-            value={formData.company_name || ''}
-            onChange={(e) => updateFormData({ company_name: e.target.value })}
-            onBlur={() => {}}
-            placeholder="e.g., Acme GmbH"
-            required
-          />
-
           {/* Business Type Selector - replaces Industry, Sub-Industry, and Business Model */}
+          {/* MOVED TO TOP: Aligns with AI-guided flow & enables intelligent triage from question 1 */}
           <div className="@4xl:col-span-2">
             <CustomBusinessTypeSearch
               value={formData.business_type_id}
@@ -503,6 +495,19 @@ export const ValuationForm: React.FC = () => {
               </p>
             )}
           </div>
+
+          {/* Company Name */}
+          {/* MOVED AFTER BUSINESS TYPE: Enables context-aware KBO validation */}
+          <CustomInputField
+            label="Company Name"
+            type="text"
+            name="company_name"
+            value={formData.company_name || ''}
+            onChange={(e) => updateFormData({ company_name: e.target.value })}
+            onBlur={() => {}}
+            placeholder="e.g., Acme GmbH"
+            required
+          />
 
           {/* Founding Year */}
           <CustomNumberInputField

@@ -12,7 +12,13 @@ import { Message } from './useStreamingChatState';
 // Fallback questions for when backend is unavailable
 const FALLBACK_QUESTIONS = [
   {
-    question: "Welcome! Let me help you value your business. What type of business do you run?",
+    question: "Welcome! Let me help you value your business. What is the name of your company?",
+    field: "company_name",
+    inputType: "text",
+    helpText: "Enter your registered company name"
+  },
+  {
+    question: "What type of business do you run?",
     field: "business_type",
     inputType: "select",
     options: ["Technology", "Manufacturing", "Services", "Retail", "Other"]
@@ -86,7 +92,7 @@ export const useConversationInitializer = (
       timestamp: new Date(),
       metadata: {
         intent: 'question',
-        topic: 'business_type',
+        topic: 'company_name',
         collected_field: firstQuestion.field,
         help_text: firstQuestion.helpText,
         fallback_mode: true
@@ -296,9 +302,9 @@ export const useConversationInitializer = (
           if (!abortControllerRef.current?.signal.aborted) {
             const timeoutMessage: Omit<Message, 'id' | 'timestamp'> = {
               type: 'ai',
-              content: 'Sorry, the connection is taking too long. Let me start with a simple question: What type of business do you run?',
+              content: 'Sorry, the connection is taking too long. Let me start with a simple question: What is the name of your company?',
               isComplete: true,
-              metadata: { collected_field: 'business_type' }
+              metadata: { collected_field: 'company_name' }
             };
             callbacks.addMessage(timeoutMessage);
           }
@@ -352,9 +358,9 @@ export const useConversationInitializer = (
         if (!abortControllerRef.current?.signal.aborted) {
           const welcomeMessage: Omit<Message, 'id' | 'timestamp'> = {
             type: 'ai',
-            content: 'Welcome! Let me help you value your business. What type of business do you run?',
+            content: 'Welcome! Let me help you value your business. What is the name of your company?',
             isComplete: true,
-            metadata: { collected_field: 'business_type' }
+            metadata: { collected_field: 'company_name' }
           };
           callbacks.addMessage(welcomeMessage);
         }

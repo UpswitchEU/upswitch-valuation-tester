@@ -292,6 +292,11 @@ export const useValuationSessionStore = create<ValuationSessionStore>((set, get)
       // Update backend
       await backendAPI.switchValuationView(session.reportId, view);
       
+      // Update URL query parameter to reflect the new flow
+      const currentUrl = new URL(window.location.href);
+      currentUrl.searchParams.set('flow', view);
+      window.history.replaceState({}, '', currentUrl.toString());
+      
       set({
         session: updatedSession,
         isSyncing: false,
@@ -319,6 +324,11 @@ export const useValuationSessionStore = create<ValuationSessionStore>((set, get)
         isSyncing: false,
         syncError: error.message || 'Failed to sync with backend',
       });
+      
+      // Still update URL even if backend fails
+      const currentUrl = new URL(window.location.href);
+      currentUrl.searchParams.set('flow', view);
+      window.history.replaceState({}, '', currentUrl.toString());
     }
   },
   

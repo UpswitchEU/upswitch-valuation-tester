@@ -67,12 +67,14 @@ export const HomePage: React.FC = () => {
     }
   };
 
-  // Business-focused examples that guide users to provide name + type (triage entry point)
+  // Business type focused examples aligned with AI-guided Q1
   const quickQueries = [
-    'Acme Corp, a SaaS company',
-    'My restaurant in Brussels',
-    'E-commerce business, 5 years old',
-    'Tech startup, founded 2020',
+    'SaaS company',
+    'Restaurant',
+    'E-commerce store',
+    'Manufacturing business',
+    'Consulting firm',
+    'Tech startup',
   ];
 
   return (
@@ -108,8 +110,7 @@ export const HomePage: React.FC = () => {
                   </span>
                 </h1>
                 <p className="text-lg md:text-xl text-zinc-300 max-w-4xl mx-auto leading-relaxed">
-                  Professional-grade valuations powered by AI. Discover your business's true value
-                  — simply by chatting with AI.
+                  Professional-grade valuations powered by AI. Start with your business type, chat with our AI assistant, and discover your business's true value in minutes.
                 </p>
               </div>
 
@@ -127,7 +128,7 @@ export const HomePage: React.FC = () => {
                     <textarea
                       value={query}
                       onChange={e => setQuery(e.target.value)}
-                      placeholder="Tell me about your business (e.g., 'Acme Corp, a SaaS company')"
+                      placeholder="What type of business do you run? (e.g., 'SaaS company')"
                       className="textarea-seamless flex w-full rounded-md px-3 py-3 ring-offset-background placeholder:text-zinc-400 focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 disabled:cursor-not-allowed disabled:opacity-50 resize-none text-base leading-snug placeholder-shown:text-ellipsis placeholder-shown:whitespace-nowrap md:text-base max-h-[200px] bg-transparent focus:bg-transparent flex-1 text-white"
                       style={{ minHeight: '80px', height: '80px' }}
                       onKeyPress={e => {
