@@ -23,7 +23,6 @@ import { ResizableDivider } from './ResizableDivider';
 import { ValuationEmptyState } from './ValuationEmptyState';
 import { ValuationInfoPanel } from './ValuationInfoPanel';
 import { ValuationToolbar } from './ValuationToolbar';
-import { ValuationViewToggle } from './ValuationViewToggle';
 
 
 type FlowStage = 'chat' | 'results' | 'blocked';
@@ -1101,11 +1100,6 @@ export const AIAssistedValuation: React.FC<AIAssistedValuationProps> = ({
             width: isMobile ? '100%' : `${leftPanelWidth}%`
           }}
         >
-          {/* View Toggle - Always visible */}
-          <div className="p-4 border-b border-zinc-800">
-            <ValuationViewToggle />
-          </div>
-          
           {/* Success Banner when results are ready */}
           {stage === 'results' && valuationResult && (
             <div className="bg-gradient-to-r from-green-900/30 to-emerald-900/30 border border-green-700/50 rounded-lg sm:rounded-xl p-4 sm:p-6 m-3 sm:m-6 mb-0">

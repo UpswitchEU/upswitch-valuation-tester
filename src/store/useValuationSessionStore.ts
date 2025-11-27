@@ -11,7 +11,7 @@ interface ValuationSessionStore {
   initializeSession: (reportId: string, currentView?: 'manual' | 'ai-guided', prefilledQuery?: string | null) => Promise<void>;
   loadSession: (reportId: string) => Promise<void>;
   updateSessionData: (data: Partial<ValuationRequest>) => Promise<void>;
-  switchView: (view: 'manual' | 'ai-guided') => Promise<void>;
+  switchView: (view: 'manual' | 'ai-guided', resetData?: boolean) => Promise<void>;
   getSessionData: () => ValuationRequest | null;
   clearSession: () => void;
   
@@ -274,7 +274,7 @@ export const useValuationSessionStore = create<ValuationSessionStore>((set, get)
   /**
    * Switch between manual and AI-guided views
    */
-  switchView: async (view: 'manual' | 'ai-guided') => {
+  switchView: async (view: 'manual' | 'ai-guided', resetData: boolean = false) => {
     const { session } = get();
     
     if (!session) {
@@ -296,6 +296,18 @@ export const useValuationSessionStore = create<ValuationSessionStore>((set, get)
         updatedAt: new Date(),
       };
       
+      // If resetData is true, keep only _prefilledQuery, discard everything else
+      if (resetData) {
+        const prefilledQuery = (session.partialData as any)?._prefilledQuery;
+        updatedSession.partialData = prefilledQuery ? { _prefilledQuery: prefilledQuery } as any : {};
+        updatedSession.sessionData = {};
+        updatedSession.dataSource = view; // Reset to single source
+        storeLogger.info('Resetting session data on flow switch', {
+          reportId: session.reportId,
+          preservedPrefilledQuery: !!prefilledQuery,
+        });
+      }
+      
       // Update backend
       await backendAPI.switchValuationView(session.reportId, view);
       
@@ -314,6 +326,7 @@ export const useValuationSessionStore = create<ValuationSessionStore>((set, get)
         reportId: session.reportId,
         from: session.currentView,
         to: view,
+        resetData,
       });
     } catch (error: any) {
       storeLogger.error('Failed to switch view', {
