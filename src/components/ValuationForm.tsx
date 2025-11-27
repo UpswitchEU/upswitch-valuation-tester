@@ -14,7 +14,6 @@ import {
 import { useAuth } from '../hooks/useAuth';
 import { useBusinessTypes } from '../hooks/useBusinessTypes';
 import { suggestionService } from '../services/businessTypeSuggestionApi';
-import { industriesApi } from '../services/industriesApi';
 import { debounce } from '../utils/debounce';
 import { generalLogger } from '../utils/logger';
 import { safePreference } from '../utils/numberUtils';
@@ -256,10 +255,6 @@ export const ValuationForm: React.FC = () => {
   const [historicalInputs, setHistoricalInputs] = useState<{[key: string]: string}>({});
   const [hasPrefilledOnce, setHasPrefilledOnce] = useState(false);
   
-  // Industry validation state
-  const [industryValidationError, setIndustryValidationError] = useState<string | null>(null);
-  const [isValidatingIndustry, setIsValidatingIndustry] = useState(false);
-  
   // Employee count validation state
   const [employeeCountError, setEmployeeCountError] = useState<string | null>(null);
 
@@ -272,37 +267,6 @@ export const ValuationForm: React.FC = () => {
     }, 500),
     []
   );
-
-
-  // Validate industry field
-  const validateIndustry = useCallback(async (industry: string) => {
-    if (!industry) {
-      setIndustryValidationError(null);
-      return;
-    }
-
-    setIsValidatingIndustry(true);
-    setIndustryValidationError(null);
-
-    try {
-      const isValid = await industriesApi.isValidIndustry(industry);
-      if (!isValid) {
-        setIndustryValidationError(`"${industry}" is not a recognized industry classification. This may affect valuation accuracy.`);
-      }
-    } catch (error) {
-      console.error('Industry validation error:', error);
-      // Don't show error to user, just log it
-    } finally {
-      setIsValidatingIndustry(false);
-    }
-  }, []);
-
-  // Validate industry when it changes
-  useEffect(() => {
-    if (formData.industry) {
-      validateIndustry(formData.industry);
-    }
-  }, [formData.industry, validateIndustry]);
 
   // Trigger live preview on field changes
   useEffect(() => {
