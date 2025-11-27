@@ -115,14 +115,15 @@ const CustomInputField: React.FC<CustomInputFieldProps> = ({
         </label>
       </div>
 
-      {description && <p className="mt-1 text-sm text-gray-600">{description}</p>}
+      {description && <p className="mt-1.5 text-xs text-gray-500 font-medium">{description}</p>}
 
       {hasError && (
         <p 
           id={`${name}-error`} 
           role="alert" 
-          className="mt-1 text-sm text-red-600"
+          className="mt-1.5 text-xs text-red-500 font-medium flex items-center gap-1"
         >
+          <span className="w-1 h-1 rounded-full bg-red-500 inline-block" />
           {error}
         </p>
       )}

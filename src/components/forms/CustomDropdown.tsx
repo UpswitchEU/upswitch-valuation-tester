@@ -318,7 +318,10 @@ const CustomDropdown: React.FC<CustomDropdownProps> = ({
         {/* Error Message */}
       </div>
       {error && touched && (
-        <span className="block text-sm text-red-600 mt-2 font-medium">{error}</span>
+        <span className="mt-1.5 text-xs text-red-500 font-medium flex items-center gap-1">
+          <span className="w-1 h-1 rounded-full bg-red-500 inline-block" />
+          {error}
+        </span>
       )}
       
       {/* Help Text (McKinsey UX Standard) */}

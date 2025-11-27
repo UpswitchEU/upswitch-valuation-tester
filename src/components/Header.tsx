@@ -230,35 +230,37 @@ export const Header: React.FC = () => {
             {/* Flow Toggle Icons - Only show in report view */}
             {isInReportView && (
               <>
-                <li className="text-medium whitespace-nowrap box-border list-none hidden lg:flex items-center gap-2">
-                  <button
-                    onClick={() => handleFlowIconClick('manual')}
-                    disabled={session?.currentView === 'manual'}
-                    className={`p-2 rounded-lg transition-colors ${
-                      session?.currentView === 'manual'
-                        ? 'bg-blue-600 text-white cursor-default'
-                        : 'text-zinc-600 hover:text-zinc-900 hover:bg-zinc-100'
-                    }`}
-                    title="Manual Input"
-                  >
-                    <Edit3 className="w-5 h-5" />
-                  </button>
-                  <button
-                    onClick={() => handleFlowIconClick('ai-guided')}
-                    disabled={session?.currentView === 'ai-guided'}
-                    className={`p-2 rounded-lg transition-colors ${
-                      session?.currentView === 'ai-guided'
-                        ? 'bg-blue-600 text-white cursor-default'
-                        : 'text-zinc-600 hover:text-zinc-900 hover:bg-zinc-100'
-                    }`}
-                    title="AI-Guided Conversation"
-                  >
-                    <MessageSquare className="w-5 h-5" />
-                  </button>
+                <li className="text-medium whitespace-nowrap box-border list-none hidden lg:flex items-center">
+                  <div className="bg-gray-100 rounded-lg p-1 flex items-center gap-1">
+                    <button
+                      onClick={() => handleFlowIconClick('manual')}
+                      disabled={session?.currentView === 'manual'}
+                      className={`p-1.5 rounded-md transition-all duration-200 ease-in-out flex items-center justify-center ${
+                        session?.currentView === 'manual'
+                          ? 'bg-white text-primary-600 shadow-sm ring-1 ring-black/5 cursor-default'
+                          : 'text-gray-500 hover:text-gray-900 hover:bg-gray-200/50'
+                      }`}
+                      title="Manual Input"
+                    >
+                      <Edit3 className="w-4 h-4" />
+                    </button>
+                    <button
+                      onClick={() => handleFlowIconClick('ai-guided')}
+                      disabled={session?.currentView === 'ai-guided'}
+                      className={`p-1.5 rounded-md transition-all duration-200 ease-in-out flex items-center justify-center ${
+                        session?.currentView === 'ai-guided'
+                          ? 'bg-white text-primary-600 shadow-sm ring-1 ring-black/5 cursor-default'
+                          : 'text-gray-500 hover:text-gray-900 hover:bg-gray-200/50'
+                      }`}
+                      title="AI-Guided Conversation"
+                    >
+                      <MessageSquare className="w-4 h-4" />
+                    </button>
+                  </div>
                 </li>
                 {/* Separator */}
                 <li className="text-medium whitespace-nowrap box-border list-none hidden lg:flex">
-                  <div className="mx-2 h-6 w-px bg-gray-300"></div>
+                  <div className="mx-3 h-5 w-px bg-gray-200"></div>
                 </li>
               </>
             )}
