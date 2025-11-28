@@ -567,7 +567,7 @@ export const ValuationForm: React.FC = () => {
             min={1900}
             max={new Date().getFullYear()}
             showArrows={true}
-            helpText="Year the company first generated revenue from operations. For restructured businesses, use original trading start date, not incorporation date."
+            helpText="Start of commercial operations. Used to calculate track record length. Companies with <3 years of history typically attract a 'Startup Risk Premium' (higher discount rate) due to lack of proven stability."
             required
           />
 
@@ -581,7 +581,7 @@ export const ValuationForm: React.FC = () => {
             }))}
             value={formData.country_code || ''}
             onChange={(value) => updateFormData({ country_code: value })}
-            helpText="Country where majority of operations and revenue occur. For multi-country businesses, select headquarters location. Affects market multiples, risk-free rates, and tax assumptions."
+            helpText="Primary economic environment. Determines the Risk-Free Rate and Equity Risk Premium used in the discount rate. For multi-jurisdiction entities, select the country with >50% of EBITDA contribution."
             required
           />
         </div>
@@ -619,7 +619,7 @@ export const ValuationForm: React.FC = () => {
               max={100}
               step={0.1}
               suffix="%"
-              helpText="Percentage of company ownership being valued for transaction. Minority stakes (<50%) may include control discount of 15-30%. Full sale (100%) maximizes strategic premium."
+              helpText="Equity interest to be valued. Minority stakes (<50%) often incur a 'Discount for Lack of Control' (DLOC) of 15-30%. Majority stakes (>50%) may command a 'Control Premium' reflecting the value of strategic decision-making power."
             />
           )}
         </div>
@@ -655,7 +655,7 @@ export const ValuationForm: React.FC = () => {
               max={100}
               step={1}
               showArrows={true}
-              helpText="Shareholders who actively work in the business in executive or management roles. Include: C-suite shareholders, working directors, founder-operators. Exclude: passive investors, silent partners, external board members. Only applicable for companies with shareholders. High owner concentration (>25% of workforce) typically reduces valuation by 7-20%."
+              helpText="Number of equity holders with critical operational roles. Used to assess 'Key Person Risk'. High dependency on owner-operators (vs. professional management) increases the Specific Risk Premium, reducing the valuation multiple by 5-20%."
             />
             
             <CustomNumberInputField
@@ -684,7 +684,7 @@ export const ValuationForm: React.FC = () => {
               error={employeeCountError || undefined}
               touched={!!employeeCountError}
               required={formData.business_type === 'company' && !!(formData.number_of_owners && formData.number_of_owners > 0)}
-              helpText={`Total workforce converted to full-time equivalents. Part-time employees count proportionally (e.g., 2 half-time = 1 FTE). Excludes contractors and external consultants. Enter 0 if there are no employees besides the owner-managers. Used to assess operational scale and key person risk.${formData.business_type === 'company' && formData.number_of_owners && formData.number_of_owners > 0 ? ' Required when owner count is provided. Owner concentration risk (7-20% discount) cannot be calculated without this data. 0 is a valid value when there are only owner-managers.' : ''}`}
+              helpText={`Normalized workforce count (Full-Time Equivalents). Critical for calculating Revenue/Employee efficiency ratios and assessing 'Key Person Dependency'. A higher ratio of employees to owners indicates transferable organizational value.${formData.business_type === 'company' && formData.number_of_owners && formData.number_of_owners > 0 ? ' Required for Key Person Risk calculation. 0 is valid for owner-only entities.' : ''}`}
             />
             
             {/* Owner Concentration Risk Warning */}
@@ -838,7 +838,7 @@ export const ValuationForm: React.FC = () => {
         <div className="flex items-center justify-between mb-6 pb-2 border-b border-white/10">
           <h3 className="text-xl font-semibold text-white tracking-tight flex items-center">
             Historical Data (Optional)
-            <InfoIcon content="Adding 3 years of historical data enables growth rate calculation and improves valuation accuracy" position="top" size={20} className="ml-1.5" />
+            <InfoIcon content="Historical financials allow for CAGR (Compound Annual Growth Rate) calculation and trend analysis. Demonstrating consistent growth and margin stability reduces perceived risk, directly supporting a higher valuation tier." position="top" size={20} className="ml-1.5" />
           </h3>
         </div>
 
