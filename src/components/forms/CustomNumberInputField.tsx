@@ -250,7 +250,7 @@ const CustomNumberInputField: React.FC<CustomNumberInputFieldProps> = ({
 
         {/* Info Icon - Positioned centered right */}
         {helpText && helpTextPlacement === 'tooltip' && (
-          <div className={`absolute top-1/2 -translate-y-1/2 mt-1.5 z-20 ${(suffix || showArrows) ? 'right-12' : 'right-4'}`}>
+          <div className={`absolute top-1/2 -translate-y-1/2 mt-1 z-20 ${(suffix || showArrows) ? 'right-12' : 'right-4'}`}>
             <InfoIcon content={helpText} position="left" maxWidth={300} size={24} className="ml-0" />
           </div>
         )}
