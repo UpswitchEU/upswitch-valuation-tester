@@ -1097,7 +1097,7 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
       <div className="p-4 border-t border-zinc-800">
         <form
           onSubmit={handleSubmit}
-          className="focus-within:bg-zinc-900/30 group flex flex-col gap-3 p-4 duration-150 w-full rounded-3xl border border-zinc-700/50 bg-zinc-900/20 text-base shadow-xl transition-all ease-in-out focus-within:border-zinc-500/40 hover:border-zinc-600/30 focus-within:hover:border-zinc-500/40 backdrop-blur-sm"
+          className="focus-within:bg-zinc-900/60 group flex flex-col gap-3 p-4 duration-300 w-full rounded-3xl border border-white/10 bg-zinc-900/40 text-base shadow-xl transition-all ease-in-out focus-within:border-zinc-500/40 hover:border-zinc-600/30 backdrop-blur-md"
         >
           {/* Textarea container */}
           <div className="relative flex items-center">
@@ -1126,7 +1126,7 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
                 type="button"
                 onClick={() => state.setInput(suggestion)}
                 disabled={state.isStreaming}
-                className="px-3 py-1.5 bg-zinc-800/50 hover:bg-zinc-700/60 border border-zinc-700/50 hover:border-zinc-600/60 rounded-full text-xs text-zinc-300 hover:text-white transition-all duration-200 hover:shadow-md hover:shadow-black/20 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="px-3 py-1.5 bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 hover:border-zinc-600 rounded-full text-xs text-zinc-300 hover:text-white transition-all duration-200 hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {suggestion}
               </button>
@@ -1137,7 +1137,7 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
               <button
                 type="submit"
                 disabled={!state.input.trim() || state.isStreaming || disabled}
-                className="submit-button-white flex h-8 w-8 items-center justify-center rounded-full bg-white hover:bg-zinc-100 transition-all duration-150 ease-out disabled:cursor-not-allowed disabled:opacity-50 disabled:bg-zinc-600"
+                className="submit-button-white flex h-8 w-8 items-center justify-center rounded-full bg-white hover:bg-zinc-200 active:scale-95 transition-all duration-150 ease-out shadow-lg hover:shadow-white/20 disabled:cursor-not-allowed disabled:opacity-50 disabled:bg-zinc-600 disabled:shadow-none"
               >
                 {state.isStreaming ? (
                   <Loader2 className="w-4 h-4 text-zinc-900 animate-spin" />
@@ -1194,8 +1194,9 @@ const MessageItem = React.memo<MessageItemProps>(({
   const hasKBOSuggestionsInMessage = kboSuggestions !== null && kboSuggestions.length > 0;
   return (
     <motion.div
-      initial={{ opacity: 0, y: 10, scale: 0.95 }}
+      initial={{ opacity: 0, y: 10, scale: 0.98 }}
       animate={{ opacity: 1, y: 0, scale: 1 }}
+      transition={{ duration: 0.3, ease: "easeOut" }}
       className={`flex ${message.type === 'user' ? 'justify-end' : 'justify-start'}`}
     >
             <div className={`max-w-[85%] ${message.type === 'user' ? 'ml-auto' : 'mr-auto'}`}>
@@ -1213,13 +1214,13 @@ const MessageItem = React.memo<MessageItemProps>(({
                 </div>
               ) : (
                 // AI message - with bot avatar
-                <div className="flex items-start gap-3">
+                  <div className="flex items-start gap-3">
                   <div className="flex-shrink-0 w-8 h-8 bg-white/10 rounded-full flex items-center justify-center border border-white/10 shadow-sm mt-1">
                     <Bot className="w-4 h-4 text-primary-400" />
                   </div>
                   
                   <div className="flex flex-col gap-1">
-                    <div className="rounded-2xl rounded-tl-sm px-5 py-3.5 bg-white/5 text-white border border-white/10 shadow-sm">
+                    <div className="rounded-2xl rounded-tl-sm px-5 py-3.5 bg-white/5 text-white border border-white/10 shadow-sm backdrop-blur-sm">
                       <div className="whitespace-pre-wrap text-[15px] leading-relaxed text-zinc-100">
                         {message.content}
                         {message.isStreaming && (
@@ -1276,7 +1277,7 @@ const MessageItem = React.memo<MessageItemProps>(({
                     {/* Help text */}
                     {AI_CONFIG.showHelpText && message.metadata?.help_text && (
                       <div className="mt-3 pt-3 border-t border-white/10">
-                        <p className="text-xs text-primary-400 flex items-start gap-1.5">
+                        <p className="text-xs text-zinc-400 flex items-start gap-1.5">
                           <span className="mt-0.5">ℹ️</span>
                           <span className="leading-relaxed">{message.metadata.help_text}</span>
                         </p>
