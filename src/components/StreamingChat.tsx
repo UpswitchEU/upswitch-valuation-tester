@@ -7,6 +7,7 @@
 
 import { Bot, CheckCircle, Loader2 } from 'lucide-react';
 import React, { startTransition, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { AI_CONFIG } from '../config';
 import { useAuth } from '../hooks/useAuth';
 import { useTypingAnimation } from '../hooks/useTypingAnimation';
@@ -1038,6 +1039,7 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
         {/* Messages */}
         {/* PERFORMANCE FIX: Memoized message component to prevent unnecessary re-renders */}
+        <AnimatePresence initial={false} mode="popLayout">
         {state.messages.map((message) => (
           <MessageItem
             key={message.id}
@@ -1049,13 +1051,16 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
             onKBOSuggestionSelect={handleKBOSuggestionSelect}
           />
         ))}
+        </AnimatePresence>
         
         {/* Typing Indicator - Separate bubble */}
+        <AnimatePresence>
         {state.isTyping && (
-          <div className="flex justify-start">
+          <div className="flex justify-start" key="typing-indicator">
             <TypingIndicator />
           </div>
         )}
+        </AnimatePresence>
         
         {/* Calculate Now Button */}
         {state.calculateOption && (
@@ -1188,45 +1193,50 @@ const MessageItem = React.memo<MessageItemProps>(({
   
   const hasKBOSuggestionsInMessage = kboSuggestions !== null && kboSuggestions.length > 0;
   return (
-    <div
+    <motion.div
+      initial={{ opacity: 0, y: 10, scale: 0.95 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
       className={`flex ${message.type === 'user' ? 'justify-end' : 'justify-start'}`}
     >
-            <div className={`max-w-[80%] ${message.type === 'user' ? 'ml-auto' : 'mr-auto'}`}>
+            <div className={`max-w-[85%] ${message.type === 'user' ? 'ml-auto' : 'mr-auto'}`}>
               {message.type === 'user' ? (
                 // User message - simple structure without avatar
-                <div className="flex flex-col gap-1">
-                  <div className="rounded-lg px-4 py-3 bg-zinc-800 text-white">
-                    <div className="whitespace-pre-wrap text-sm">
+                <div className="flex flex-col gap-1 items-end">
+                  <div className="rounded-2xl rounded-tr-sm px-5 py-3.5 bg-primary-600 text-white shadow-md">
+                    <div className="whitespace-pre-wrap text-[15px] leading-relaxed font-medium">
                       {message.content}
                     </div>
                   </div>
-                  <div className="text-xs text-zinc-500 text-right">
-                    {message.timestamp.toLocaleTimeString()}
+                  <div className="text-xs text-zinc-500 text-right pr-1">
+                    {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                   </div>
                 </div>
               ) : (
                 // AI message - with bot avatar
                 <div className="flex items-start gap-3">
-                  <div className="flex-shrink-0 w-8 h-8 bg-primary-600/20 rounded-full flex items-center justify-center">
+                  <div className="flex-shrink-0 w-8 h-8 bg-white/10 rounded-full flex items-center justify-center border border-white/10 shadow-sm mt-1">
                     <Bot className="w-4 h-4 text-primary-400" />
                   </div>
                   
-                  <div className="rounded-lg px-4 py-3 bg-zinc-700/50 text-white">
-                    <div className="whitespace-pre-wrap text-sm">
-                      {message.content}
-                      {message.isStreaming && (
-                        <span className="inline-block w-2 h-4 bg-current animate-pulse ml-1" />
-                      )}
-                    </div>
+                  <div className="flex flex-col gap-1">
+                    <div className="rounded-2xl rounded-tl-sm px-5 py-3.5 bg-white/5 text-white border border-white/10 shadow-sm">
+                      <div className="whitespace-pre-wrap text-[15px] leading-relaxed text-zinc-100">
+                        {message.content}
+                        {message.isStreaming && (
+                          <span className="inline-block w-1.5 h-4 bg-primary-400 animate-pulse ml-1 align-middle rounded-full" />
+                        )}
+                      </div>
                     
                     {/* Suggestion chips */}
                     {message.type === 'suggestion' && message.metadata?.suggestions && (
-                      <SuggestionChips
-                        suggestions={message.metadata.suggestions}
-                        originalValue={message.metadata.originalValue || ''}
-                        onSelect={onSuggestionSelect}
-                        onDismiss={onSuggestionDismiss}
-                      />
+                      <div className="mt-4">
+                        <SuggestionChips
+                          suggestions={message.metadata.suggestions}
+                          originalValue={message.metadata.originalValue || ''}
+                          onSelect={onSuggestionSelect}
+                          onDismiss={onSuggestionDismiss}
+                        />
+                      </div>
                     )}
                     
                     {/* KBO Suggestions List */}
@@ -1235,26 +1245,28 @@ const MessageItem = React.memo<MessageItemProps>(({
                       const isAfterNoneResponse = message.content?.includes("No problem!") && 
                                                    message.content?.includes("What's your company name?");
                       return hasKBOSuggestionsInMessage && kboSuggestions && !isAfterNoneResponse && (
-                        <KBOSuggestionsList
-                          suggestions={kboSuggestions}
-                          onSelect={onKBOSuggestionSelect}
-                        />
+                        <div className="mt-3">
+                          <KBOSuggestionsList
+                            suggestions={kboSuggestions}
+                            onSelect={onKBOSuggestionSelect}
+                          />
+                        </div>
                       );
                     })()}
                     
                     {/* Generic Clarification confirmation buttons (only if not KBO suggestions) */}
                     {message.metadata?.needs_confirmation && !hasKBOSuggestionsInMessage && (
-                      <div className="flex space-x-2 mt-2">
+                      <div className="flex space-x-2 mt-3">
                         <button
                           onClick={() => onClarificationConfirm(message.id)}
-                          className="px-3 py-1 bg-green-500 text-white text-xs rounded hover:bg-green-600"
+                          className="px-4 py-2 bg-green-500/20 text-green-300 border border-green-500/30 text-sm font-medium rounded-xl hover:bg-green-500/30 transition-colors flex items-center gap-2"
                         >
-                          <CheckCircle className="h-3 w-3 inline mr-1" />
+                          <CheckCircle className="h-4 w-4" />
                           Confirm
                         </button>
                         <button
                           onClick={() => onClarificationReject(message.id)}
-                          className="px-3 py-1 bg-red-500 text-white text-xs rounded hover:bg-red-600"
+                          className="px-4 py-2 bg-red-500/20 text-red-300 border border-red-500/30 text-sm font-medium rounded-xl hover:bg-red-500/30 transition-colors"
                         >
                           Reject
                         </button>
@@ -1263,36 +1275,37 @@ const MessageItem = React.memo<MessageItemProps>(({
                     
                     {/* Help text */}
                     {AI_CONFIG.showHelpText && message.metadata?.help_text && (
-                      <div className="mt-1">
-                        <p className="text-xs text-primary-400">
-                          ℹ️ {message.metadata.help_text}
+                      <div className="mt-3 pt-3 border-t border-white/10">
+                        <p className="text-xs text-primary-400 flex items-start gap-1.5">
+                          <span className="mt-0.5">ℹ️</span>
+                          <span className="leading-relaxed">{message.metadata.help_text}</span>
                         </p>
                       </div>
                     )}
                     
                     {/* Valuation narrative */}
                     {AI_CONFIG.showNarratives && message.metadata?.valuation_narrative && (
-                      <div className="mt-3 p-3 bg-primary-600/10 rounded-lg">
-                        <h4 className="text-sm font-semibold text-primary-300 mb-2">
-                          Why this valuation?
+                      <div className="mt-3 p-3 bg-primary-600/10 rounded-xl border border-primary-600/20">
+                        <h4 className="text-xs font-semibold text-primary-300 mb-1 uppercase tracking-wider">
+                          Valuation Insight
                         </h4>
-                        <div className="text-sm text-primary-200 whitespace-pre-wrap">
+                        <div className="text-sm text-zinc-300 whitespace-pre-wrap leading-relaxed">
                           {message.metadata.valuation_narrative}
                         </div>
                       </div>
                     )}
                   </div>
-                </div>
-              )}
-              
-              {/* Timestamp for AI messages */}
-              {message.type !== 'user' && (
-                <div className="text-xs text-zinc-500 mt-1 text-left ml-11">
-                  {message.timestamp.toLocaleTimeString()}
+                  {/* Timestamp for AI messages */}
+                  {message.type !== 'user' && (
+                    <div className="text-xs text-zinc-500 ml-1">
+                      {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                    </div>
+                  )}
+                  </div>
                 </div>
               )}
             </div>
-          </div>
+          </motion.div>
   );
 });
 
