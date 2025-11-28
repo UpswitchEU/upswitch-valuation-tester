@@ -47,13 +47,13 @@ export interface IndustryGuidanceConfig {
 export const INDUSTRY_GUIDANCE: Record<string, IndustryGuidanceConfig> = {
   technology: {
     revenue: {
-      tip: "Include all recurring revenue (MRR × 12 for SaaS)",
-      why: "Technology valuations heavily weight recurring revenue streams",
+      tip: "Isolate Recurring Revenue (ARR/MRR) from one-time implementation fees",
+      why: "Recurring revenue commands a significantly higher multiple (often 4-8x) vs. one-time revenue (1-1.5x) due to predictability",
       warning: "Don't include one-time setup fees or professional services"
     },
     ebitda: {
-      tip: "Exclude customer acquisition costs (CAC) for normalized margin",
-      why: "High-growth tech companies often have elevated CAC that distorts EBITDA"
+      tip: "Exclude Customer Acquisition Costs (CAC) if capitalization is standard policy",
+      why: "High-growth tech often reinvests EBITDA into CAC; 'Normalized EBITDA' reflects true profitability"
     },
     benchmarks: {
       ebitdaMargin: { min: 0.15, max: 0.30 },
@@ -71,8 +71,8 @@ export const INDUSTRY_GUIDANCE: Record<string, IndustryGuidanceConfig> = {
         revenuePerEmployee: { min: 150000, max: 500000, typical: 300000 },
         ebitdaMargin: { min: 0.15, max: 0.30 },
         guidance: {
-          tip: "Focus on MRR and ARR - exclude one-time setup fees",
-          why: "SaaS valuations are based on recurring revenue, not project revenue"
+          tip: "Focus on Annual Recurring Revenue (ARR) and Net Dollar Retention (NDR)",
+          why: "Valuation is primarily driven by recurring revenue growth and retention metrics"
         }
       },
       {
@@ -86,8 +86,8 @@ export const INDUSTRY_GUIDANCE: Record<string, IndustryGuidanceConfig> = {
         revenuePerEmployee: { min: 80000, max: 200000, typical: 120000 },
         ebitdaMargin: { min: 0.20, max: 0.35 },
         guidance: {
-          tip: "Include all billable hours and project revenue",
-          why: "Software development revenue should reflect actual project delivery"
+          tip: "Distinguish between Project Revenue (one-off) and Managed Services (recurring)",
+          why: "Recurring managed services revenue reduces volatility discount"
         }
       },
       {
@@ -140,12 +140,12 @@ export const INDUSTRY_GUIDANCE: Record<string, IndustryGuidanceConfig> = {
   
   manufacturing: {
     revenue: {
-      tip: "Include all product sales, exclude raw material pass-throughs",
-      why: "Manufacturing valuations focus on value-added revenue, not total throughput"
+      tip: "Report Net Revenue (gross sales minus returns/allowances)",
+      why: "Valuation focuses on 'Quality of Revenue'; returns indicate product/market risk"
     },
     ebitda: {
-      tip: "Include depreciation of manufacturing equipment in calculations",
-      why: "Equipment depreciation is a real operating cost in manufacturing"
+      tip: "Ensure equipment depreciation is consistent with useful life estimates",
+      why: "For capital-intensive businesses, EBITDA must reflect sustainable capex requirements"
     },
     benchmarks: {
       ebitdaMargin: { min: 0.10, max: 0.20 },
@@ -163,8 +163,8 @@ export const INDUSTRY_GUIDANCE: Record<string, IndustryGuidanceConfig> = {
         revenuePerEmployee: { min: 80000, max: 150000, typical: 120000 },
         ebitdaMargin: { min: 0.08, max: 0.15 },
         guidance: {
-          tip: "Include all food product sales, exclude raw material costs",
-          why: "Food production focuses on finished goods revenue, not ingredient costs"
+          tip: "Separate Branded Product sales from White Label/Contract Manufacturing",
+          why: "Branded products command a premium due to intellectual property value"
         }
       },
       {
@@ -232,12 +232,12 @@ export const INDUSTRY_GUIDANCE: Record<string, IndustryGuidanceConfig> = {
   
   services: {
     revenue: {
-      tip: "Include all billable hours, retainer fees, and project revenue",
-      why: "Services revenue should reflect actual client billing and contracts"
+      tip: "Distinguish between Contracted Revenue (retainers) and Project Revenue",
+      why: "Contracted revenue reduces future cash flow uncertainty, lowering the discount rate"
     },
     ebitda: {
-      tip: "Normalize owner's salary to market rate (typically €80K-€150K)",
-      why: "Owner-dependent businesses need normalized EBITDA for accurate valuation"
+      tip: "Normalize Owner Compensation to market-rate replacement cost",
+      why: "Reported EBITDA is often distorted by owner drawings; valuation requires 'maintainable earnings' figure"
     },
     benchmarks: {
       ebitdaMargin: { min: 0.25, max: 0.40 },
@@ -255,8 +255,8 @@ export const INDUSTRY_GUIDANCE: Record<string, IndustryGuidanceConfig> = {
         revenuePerEmployee: { min: 120000, max: 200000, typical: 160000 },
         ebitdaMargin: { min: 0.30, max: 0.45 },
         guidance: {
-          tip: "Include all consulting fees, retainer agreements, and project revenue",
-          why: "Management consulting revenue should reflect actual client engagement value"
+          tip: "Highlight revenue from Repeat Clients vs. New Business",
+          why: "High client retention indicates franchise value beyond individual partners"
         }
       },
       {
@@ -324,12 +324,12 @@ export const INDUSTRY_GUIDANCE: Record<string, IndustryGuidanceConfig> = {
   
   retail: {
     revenue: {
-      tip: "Include all sales revenue, both in-store and online",
-      why: "Omnichannel revenue demonstrates market reach and customer base"
+      tip: "Separate Online (DTC) revenue from Wholesale/Distributor channels",
+      why: "DTC channels typically capture higher margins and customer data value"
     },
     ebitda: {
-      tip: "Include cost of goods sold (COGS) but exclude inventory write-downs",
-      why: "Retail margins are typically lower; focus on consistent operational profit"
+      tip: "Adjust for market-rate rent if owning premises (OpCo/PropCo separation)",
+      why: "Valuation must isolate operating business performance from real estate holding"
     },
     benchmarks: {
       ebitdaMargin: { min: 0.05, max: 0.15 },
@@ -416,12 +416,12 @@ export const INDUSTRY_GUIDANCE: Record<string, IndustryGuidanceConfig> = {
   
   healthcare: {
     revenue: {
-      tip: "Include all patient revenue, insurance reimbursements, and contracts",
-      why: "Healthcare valuations consider both direct patient revenue and institutional contracts"
+      tip: "Split revenue by Payer Mix (Private vs. Public/Insurance)",
+      why: "Diversified payer mix reduces regulatory concentration risk"
     },
     ebitda: {
-      tip: "Include all operating costs including compliance and regulatory expenses",
-      why: "Healthcare has higher regulatory costs that must be reflected in EBITDA"
+      tip: "Normalize for clinical owner's production vs. management role",
+      why: "Valuation must assess profitability assuming a non-producing manager replacement"
     },
     benchmarks: {
       ebitdaMargin: { min: 0.15, max: 0.25 },
@@ -509,12 +509,12 @@ export const INDUSTRY_GUIDANCE: Record<string, IndustryGuidanceConfig> = {
   // Default guidance for other industries
   other: {
     revenue: {
-      tip: "Use your most recent fiscal year's total revenue",
-      why: "Revenue is the foundation of valuation across all industries"
+      tip: "Exclude non-operating income (e.g., grants, one-off asset sales)",
+      why: "Valuation is based on 'Core Operating Revenue' sustainability"
     },
     ebitda: {
-      tip: "Earnings before interest, taxes, depreciation & amortization",
-      why: "EBITDA measures operational profitability independent of capital structure"
+      tip: "Add back non-recurring expenses and normalize owner salaries",
+      why: "Valuation requires 'Adjusted EBITDA' representing future maintainable cash flow"
     },
     benchmarks: {
       ebitdaMargin: { min: 0.10, max: 0.25 },
@@ -764,4 +764,3 @@ export const getRevenueRangeGuidance = (
 
   return { min: range.min, max: range.max, message };
 };
-
