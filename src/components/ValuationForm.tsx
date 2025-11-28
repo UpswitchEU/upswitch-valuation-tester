@@ -447,8 +447,8 @@ export const ValuationForm: React.FC = () => {
 
 
       {/* Basic Information */}
-      <div className="space-y-6">
-        <h3 className="text-sm font-semibold text-zinc-400 uppercase tracking-wide pb-2 border-b border-zinc-700">
+      <div className="space-y-10">
+        <h3 className="text-lg font-semibold text-gray-900 mb-4">
           Basic Information
         </h3>
         
@@ -588,8 +588,8 @@ export const ValuationForm: React.FC = () => {
       </div>
 
       {/* Ownership Structure */}
-      <div className="space-y-6">
-        <h3 className="text-sm font-semibold text-zinc-400 uppercase tracking-wide pb-2 border-b border-zinc-700">
+      <div className="space-y-10">
+        <h3 className="text-lg font-semibold text-gray-900 mb-4">
           Ownership Structure
         </h3>
         
@@ -740,8 +740,8 @@ export const ValuationForm: React.FC = () => {
       </div>
 
       {/* Financial Data */}
-      <div className="space-y-6">
-        <h3 className="text-sm font-semibold text-zinc-400 uppercase tracking-wide pb-2 border-b border-zinc-700">
+      <div className="space-y-10">
+        <h3 className="text-lg font-semibold text-gray-900 mb-4">
           Current Year Financials ({Math.min(new Date().getFullYear(), 2100)})
         </h3>
         
@@ -831,13 +831,12 @@ export const ValuationForm: React.FC = () => {
       </div>
 
       {/* Historical Data (3 Years) */}
-      <div className="space-y-6">
-        <div className="flex items-center justify-between pb-2 border-b border-zinc-700">
-          <h3 className="text-sm font-semibold text-zinc-400 uppercase tracking-wide flex items-center gap-2">
+      <div className="space-y-10">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
             Historical Data (Optional)
             <InfoIcon content="Adding 3 years of historical data enables growth rate calculation and improves valuation accuracy" position="top" />
           </h3>
-          <span className="text-xs text-green-400 bg-green-900/30 px-2 py-1 rounded border border-green-700/50">+20% Accuracy</span>
         </div>
 
         <HistoricalDataInputs
