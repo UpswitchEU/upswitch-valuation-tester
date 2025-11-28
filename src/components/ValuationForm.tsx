@@ -443,12 +443,12 @@ export const ValuationForm: React.FC = () => {
   // Historical data is now handled by HistoricalDataInputs component
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-16 @container">
+    <form onSubmit={handleSubmit} className="space-y-12 @container">
 
 
       {/* Basic Information */}
       <div className="space-y-6">
-        <h3 className="text-lg font-semibold text-white mb-4">
+        <h3 className="text-xl font-semibold text-white mb-6 pb-2 border-b border-white/10 tracking-tight">
           Basic Information
         </h3>
         
@@ -589,7 +589,7 @@ export const ValuationForm: React.FC = () => {
 
       {/* Ownership Structure */}
       <div className="space-y-6">
-        <h3 className="text-lg font-semibold text-white mb-4">
+        <h3 className="text-xl font-semibold text-white mb-6 pb-2 border-b border-white/10 tracking-tight">
           Ownership Structure
         </h3>
         
@@ -701,16 +701,18 @@ export const ValuationForm: React.FC = () => {
                 const isCritical = formData.number_of_employees === 0;
                 
                 return (
-                  <div className={`p-3 rounded-lg border-l-4 ${isCritical ? 'bg-red-50 border-red-500' : 'bg-yellow-50 border-yellow-500'}`}>
-                    <div className="flex items-start gap-2">
-                      <svg className={`w-5 h-5 flex-shrink-0 mt-0.5 ${isCritical ? 'text-red-600' : 'text-yellow-600'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                      </svg>
+                  <div className={`p-4 rounded-xl border ${isCritical ? 'bg-rose-50/90 border-rose-200 text-rose-900' : 'bg-amber-50/90 border-amber-200 text-amber-900'}`}>
+                    <div className="flex items-start gap-3">
+                      <div className={`flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center ${isCritical ? 'bg-rose-100 text-rose-600' : 'bg-amber-100 text-amber-600'}`}>
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                        </svg>
+                      </div>
                       <div className="flex-1">
-                        <h4 className={`font-semibold text-sm ${isCritical ? 'text-red-900' : 'text-yellow-900'}`}>
-                          ⚠️ {riskLevel} Key Person Risk - Valuation Impact: {discount}
+                        <h4 className="font-semibold text-sm mb-1">
+                          {riskLevel} Key Person Risk - Valuation Impact: {discount}
                         </h4>
-                        <p className={`text-xs mt-1 ${isCritical ? 'text-red-800' : 'text-yellow-800'}`}>
+                        <p className="text-sm opacity-90 leading-relaxed">
                           {isCritical ? (
                             <>
                               This business is <strong>100% owner-operated</strong> with no non-owner employees. 
@@ -724,9 +726,10 @@ export const ValuationForm: React.FC = () => {
                           )}
                         </p>
                         {isCritical && (
-                          <p className="text-xs mt-2 text-green-700 bg-green-50 border border-green-200 rounded p-2">
-                            💡 <strong>Tip:</strong> Hiring 2-3 employees could increase your business value by €150K-200K
-                          </p>
+                          <div className="mt-3 flex items-start gap-2 text-xs font-medium text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-lg p-2.5">
+                            <span>💡</span>
+                            <span><strong>Tip:</strong> Hiring 2-3 employees could increase your business value by €150K-200K</span>
+                          </div>
                         )}
                       </div>
                     </div>
@@ -741,7 +744,7 @@ export const ValuationForm: React.FC = () => {
 
       {/* Financial Data */}
       <div className="space-y-6">
-        <h3 className="text-lg font-semibold text-white mb-4">
+        <h3 className="text-xl font-semibold text-white mb-6 pb-2 border-b border-white/10 tracking-tight">
           Current Year Financials ({Math.min(new Date().getFullYear(), 2100)})
         </h3>
         
@@ -832,10 +835,10 @@ export const ValuationForm: React.FC = () => {
 
       {/* Historical Data (3 Years) */}
       <div className="space-y-6">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-semibold text-white flex items-center gap-2">
+        <div className="flex items-center justify-between mb-6 pb-2 border-b border-white/10">
+          <h3 className="text-xl font-semibold text-white tracking-tight flex items-center">
             Historical Data (Optional)
-            <InfoIcon content="Adding 3 years of historical data enables growth rate calculation and improves valuation accuracy" position="top" size={20} />
+            <InfoIcon content="Adding 3 years of historical data enables growth rate calculation and improves valuation accuracy" position="top" size={20} className="ml-1.5" />
           </h3>
         </div>
 
@@ -854,12 +857,12 @@ export const ValuationForm: React.FC = () => {
           type="submit"
           disabled={isCalculating || !formData.revenue || !formData.ebitda || !formData.industry || !formData.country_code}
           className={`
-            w-full justify-center px-8 py-4 rounded-xl font-semibold text-white text-lg shadow-lg
+            w-full justify-center px-8 py-4 rounded-xl font-semibold text-lg shadow-lg
             transition-all duration-200 transform hover:-translate-y-0.5
             flex items-center gap-3
             ${(isCalculating || !formData.revenue || !formData.ebitda || !formData.industry || !formData.country_code)
-              ? 'bg-zinc-700 cursor-not-allowed opacity-70' 
-              : 'bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 hover:shadow-blue-500/20'
+              ? 'bg-zinc-800/30 text-zinc-500 border border-zinc-700 cursor-not-allowed' 
+              : 'text-white bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 hover:shadow-blue-500/20'
             }
           `}
         >

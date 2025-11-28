@@ -1296,11 +1296,9 @@ const MessageItem = React.memo<MessageItemProps>(({
                     )}
                   </div>
                   {/* Timestamp for AI messages */}
-                  {message.type !== 'user' && (
-                    <div className="text-xs text-zinc-500 ml-1">
-                      {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                    </div>
-                  )}
+                  <div className="text-xs text-zinc-500 ml-1">
+                    {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                  </div>
                   </div>
                 </div>
               )}
