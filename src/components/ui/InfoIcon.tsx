@@ -5,6 +5,7 @@ interface InfoIconProps {
   position?: 'top' | 'bottom' | 'left' | 'right';
   maxWidth?: number;
   size?: number;
+  className?: string;
 }
 
 /**
@@ -21,6 +22,7 @@ export const InfoIcon: React.FC<InfoIconProps> = ({
   position = 'top',
   maxWidth = 300,
   size = 14,
+  className = 'ml-1',
 }) => {
   const [isVisible, setIsVisible] = useState(false);
   const [isTouchDevice, setIsTouchDevice] = useState(false);
@@ -105,7 +107,7 @@ export const InfoIcon: React.FC<InfoIconProps> = ({
   };
 
   return (
-    <div className="relative inline-flex items-center ml-1.5">
+    <div className={`relative inline-flex items-center ${className}`}>
       <button
         ref={triggerRef}
         type="button"
