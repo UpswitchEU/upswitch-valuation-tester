@@ -5,7 +5,7 @@
  * The main component is now ~300 lines instead of 1,817 lines.
  */
 
-import { Bot, CheckCircle, Loader2 } from 'lucide-react';
+import { Bot, CheckCircle } from 'lucide-react';
 import React, { startTransition, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { AI_CONFIG } from '../config';
@@ -1137,12 +1137,19 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
               <button
                 type="submit"
                 disabled={!state.input.trim() || state.isStreaming || disabled}
-                className="submit-button-white flex h-8 w-8 items-center justify-center rounded-full bg-white hover:bg-zinc-200 active:scale-95 transition-all duration-150 ease-out shadow-lg hover:shadow-white/20 disabled:cursor-not-allowed disabled:opacity-50 disabled:bg-zinc-600 disabled:shadow-none"
+                className={`submit-button-white flex h-8 w-8 items-center justify-center rounded-full transition-all duration-200 ease-out shadow-lg disabled:cursor-not-allowed disabled:opacity-50 disabled:shadow-none ${
+                  state.isStreaming 
+                    ? 'bg-zinc-800 scale-95 ring-2 ring-primary-500/20' 
+                    : 'bg-white hover:bg-zinc-200 hover:shadow-white/20 active:scale-90'
+                }`}
               >
                 {state.isStreaming ? (
-                  <Loader2 className="w-4 h-4 text-zinc-900 animate-spin" />
+                  <div className="relative w-4 h-4">
+                     <div className="absolute inset-0 border-2 border-zinc-600 rounded-full"></div>
+                     <div className="absolute inset-0 border-2 border-t-primary-500 rounded-full animate-spin"></div>
+                  </div>
                 ) : (
-                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-zinc-900">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-zinc-900 ml-0.5">
                     <line x1="22" y1="2" x2="11" y2="13"></line>
                     <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
                   </svg>
@@ -1257,21 +1264,29 @@ const MessageItem = React.memo<MessageItemProps>(({
                     
                     {/* Generic Clarification confirmation buttons (only if not KBO suggestions) */}
                     {message.metadata?.needs_confirmation && !hasKBOSuggestionsInMessage && (
-                      <div className="flex space-x-2 mt-3">
-                        <button
-                          onClick={() => onClarificationConfirm(message.id)}
-                          className="px-4 py-2 bg-green-500/20 text-green-300 border border-green-500/30 text-sm font-medium rounded-xl hover:bg-green-500/30 transition-colors flex items-center gap-2"
-                        >
-                          <CheckCircle className="h-4 w-4" />
-                          Confirm
-                        </button>
-                        <button
-                          onClick={() => onClarificationReject(message.id)}
-                          className="px-4 py-2 bg-red-500/20 text-red-300 border border-red-500/30 text-sm font-medium rounded-xl hover:bg-red-500/30 transition-colors"
-                        >
-                          Reject
-                        </button>
-                      </div>
+                      <motion.div 
+                        initial={{ opacity: 0, y: 5 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.2 }}
+                        className="flex flex-col gap-2 mt-4 p-3 bg-white/5 rounded-xl border border-white/10"
+                      >
+                        <p className="text-xs text-zinc-400 font-medium uppercase tracking-wider mb-1">Confirm Details</p>
+                        <div className="flex gap-3">
+                          <button
+                            onClick={() => onClarificationConfirm(message.id)}
+                            className="flex-1 py-2.5 px-4 bg-primary-600/20 hover:bg-primary-600/30 border border-primary-500/30 hover:border-primary-500/50 text-primary-300 rounded-lg text-sm font-medium transition-all flex items-center justify-center gap-2 active:scale-[0.98]"
+                          >
+                            <CheckCircle className="h-4 w-4" />
+                            Yes, that's correct
+                          </button>
+                          <button
+                            onClick={() => onClarificationReject(message.id)}
+                            className="px-4 py-2.5 bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 hover:border-zinc-600 text-zinc-400 hover:text-zinc-300 rounded-lg text-sm font-medium transition-all active:scale-[0.98]"
+                          >
+                            No, edit
+                          </button>
+                        </div>
+                      </motion.div>
                     )}
                     
                     {/* Help text */}

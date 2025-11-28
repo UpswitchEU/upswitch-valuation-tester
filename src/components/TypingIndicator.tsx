@@ -25,30 +25,31 @@ export const TypingIndicator: React.FC<TypingIndicatorProps> = () => {
         </div>
         
         {/* AI Thinking Bubble - Always show animated dots */}
-        <div className="rounded-2xl rounded-tl-sm px-5 py-3.5 bg-white/5 text-white border border-white/10 shadow-sm">
+        <div className="rounded-2xl rounded-tl-sm px-5 py-3.5 bg-white/5 text-white border border-white/10 shadow-sm backdrop-blur-sm">
           <div className="flex items-center gap-3">
             {/* Always show animated dots for both thinking and typing */}
-            <div className="flex gap-1 h-2 items-center">
+            <div className="flex gap-1.5 h-2 items-center">
               {[0, 1, 2].map((i) => (
                 <motion.span
                   key={i}
-                  className="w-1.5 h-1.5 bg-zinc-400 rounded-full"
+                  className="w-1.5 h-1.5 bg-primary-400/80 rounded-full"
                   animate={{
-                    y: ["0%", "-50%", "0%"],
-                    opacity: [0.4, 1, 0.4]
+                    y: ["0%", "-40%", "0%"],
+                    opacity: [0.4, 1, 0.4],
+                    scale: [0.9, 1.1, 0.9]
                   }}
                   transition={{
                     duration: 0.8,
                     repeat: Infinity,
                     ease: "easeInOut",
-                    delay: i * 0.15
+                    delay: i * 0.12
                   }}
                 />
               ))}
             </div>
             
             {/* Always show "AI is thinking..." */}
-            <span className="text-sm font-medium text-zinc-300">{message}</span>
+            <span className="text-[13px] font-medium text-zinc-400 tracking-wide">{message}</span>
           </div>
         </div>
       </div>
