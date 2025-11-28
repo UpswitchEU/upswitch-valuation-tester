@@ -443,11 +443,11 @@ export const ValuationForm: React.FC = () => {
   // Historical data is now handled by HistoricalDataInputs component
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-8 @container">
+    <form onSubmit={handleSubmit} className="space-y-16 @container">
 
 
       {/* Basic Information */}
-      <div className="space-y-16">
+      <div className="space-y-6">
         <h3 className="text-lg font-semibold text-white mb-4">
           Basic Information
         </h3>
@@ -588,7 +588,7 @@ export const ValuationForm: React.FC = () => {
       </div>
 
       {/* Ownership Structure */}
-      <div className="space-y-16">
+      <div className="space-y-6">
         <h3 className="text-lg font-semibold text-white mb-4">
           Ownership Structure
         </h3>
@@ -740,7 +740,7 @@ export const ValuationForm: React.FC = () => {
       </div>
 
       {/* Financial Data */}
-      <div className="space-y-16">
+      <div className="space-y-6">
         <h3 className="text-lg font-semibold text-white mb-4">
           Current Year Financials ({Math.min(new Date().getFullYear(), 2100)})
         </h3>
@@ -831,7 +831,7 @@ export const ValuationForm: React.FC = () => {
       </div>
 
       {/* Historical Data (3 Years) */}
-      <div className="space-y-16">
+      <div className="space-y-6">
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-lg font-semibold text-white flex items-center gap-2">
             Historical Data (Optional)
