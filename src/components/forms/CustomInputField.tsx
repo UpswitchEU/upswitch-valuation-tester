@@ -3,6 +3,7 @@
 // Purpose: Reusable input field with smooth animations and validation states
 
 import React from 'react';
+import { InfoIcon } from '../ui/InfoIcon';
 
 export interface CustomInputFieldProps {
   label?: string;
@@ -24,6 +25,8 @@ export interface CustomInputFieldProps {
   description?: string;
   autoComplete?: string;
   inputRef?: React.RefObject<HTMLInputElement>;
+  helpText?: string;
+  helpTextPlacement?: 'tooltip' | 'below';
 }
 
 const CustomInputField: React.FC<CustomInputFieldProps> = ({
