@@ -125,7 +125,7 @@ export const InfoIcon: React.FC<InfoIconProps> = ({
         tabIndex={0}
         aria-label={`Help: ${content}`}
         aria-describedby={isVisible ? 'info-tooltip' : undefined}
-        className="text-gray-400 hover:text-gray-600 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1 rounded-full"
+        className="text-gray-300 hover:text-gray-600 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1 rounded-full"
       >
         <svg
           width={size}
