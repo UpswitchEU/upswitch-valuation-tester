@@ -448,7 +448,7 @@ export const ValuationForm: React.FC = () => {
 
       {/* Basic Information */}
       <div className="space-y-10">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">
+        <h3 className="text-lg font-semibold text-white mb-4">
           Basic Information
         </h3>
         
@@ -589,7 +589,7 @@ export const ValuationForm: React.FC = () => {
 
       {/* Ownership Structure */}
       <div className="space-y-10">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">
+        <h3 className="text-lg font-semibold text-white mb-4">
           Ownership Structure
         </h3>
         
@@ -741,7 +741,7 @@ export const ValuationForm: React.FC = () => {
 
       {/* Financial Data */}
       <div className="space-y-10">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">
+        <h3 className="text-lg font-semibold text-white mb-4">
           Current Year Financials ({Math.min(new Date().getFullYear(), 2100)})
         </h3>
         
@@ -833,7 +833,7 @@ export const ValuationForm: React.FC = () => {
       {/* Historical Data (3 Years) */}
       <div className="space-y-10">
         <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+          <h3 className="text-lg font-semibold text-white flex items-center gap-2">
             Historical Data (Optional)
             <InfoIcon content="Adding 3 years of historical data enables growth rate calculation and improves valuation accuracy" position="top" />
           </h3>
