@@ -1,15 +1,13 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 // import { FileText } from 'lucide-react'; // Removed with reports link
-import { ChevronDown, Edit3, MessageSquare } from 'lucide-react';
+import { ChevronDown } from 'lucide-react';
 // import { urls } from '../router'; // Removed with reports link
 // import { useReportsStore } from '../store/useReportsStore'; // Deprecated: Reports now on upswitch.biz
 import { UserDropdown } from './UserDropdown';
 import { CreditBadge } from './credits/CreditBadge';
 import { useAuth } from '../hooks/useAuth';
 import { generalLogger } from '../utils/logger';
-import { useValuationSessionStore } from '../store/useValuationSessionStore';
-import { FlowSwitchWarningModal } from './FlowSwitchWarningModal';
 
 /**
  * Header Component
@@ -26,11 +24,6 @@ export const Header: React.FC = () => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLLIElement>(null);
   
-  // Flow switch modal state
-  const { session, switchView } = useValuationSessionStore();
-  const [showSwitchWarning, setShowSwitchWarning] = useState(false);
-  const [targetFlow, setTargetFlow] = useState<'manual' | 'ai-guided'>('manual');
-
   // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -90,44 +83,8 @@ export const Header: React.FC = () => {
     }
   };
   
-  // Handler for flow toggle icon clicks
-  const handleFlowIconClick = (flow: 'manual' | 'ai-guided') => {
-    if (!session || session.currentView === flow) return; // Already in this flow or no session
-    
-    // Check if there's any data entered (excluding _prefilledQuery)
-    const hasData = session && (
-      Object.keys(session.partialData || {}).filter(k => k !== '_prefilledQuery').length > 0 ||
-      Object.keys(session.sessionData || {}).length > 0
-    );
-    
-    if (hasData) {
-      // Show warning modal
-      setTargetFlow(flow);
-      setShowSwitchWarning(true);
-    } else {
-      // No data, switch immediately
-      switchView(flow, false);
-    }
-  };
-
-  const handleConfirmSwitch = async () => {
-    await switchView(targetFlow, true); // true = reset data
-    setShowSwitchWarning(false);
-  };
-
-  const valuationMethods = [
-    { id: 'reports', label: '📊 Valuation Reports', badge: 'New', path: '/reports/new' },
-    { id: 'manual', label: '📝 Manual Input', badge: null, path: '/manual' },
-    { id: 'ai-guided', label: '🤖 AI-Guided Valuation', badge: 'Recommended', path: '/ai-guided' },
-    { id: 'document', label: '📄 File Upload', badge: 'Beta', path: '/upload' },
-  ];
-  
-  // Check if we're in a report page with session
-  const isInReportView = location.pathname.startsWith('/reports/') && session;
-
   return (
     <>
-      {/* Skip Link for Keyboard Navigation */}
       <a 
         href="#main-content" 
         className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-50 focus:px-4 focus:py-2 focus:bg-primary-600 focus:text-white focus:rounded focus:shadow-lg"
@@ -228,42 +185,9 @@ export const Header: React.FC = () => {
         <div className="flex basis-0 flex-row flex-grow flex-nowrap justify-end bg-transparent items-center min-w-0">
           <ul className="h-full flex-row flex-nowrap flex items-center gap-2 sm:gap-3 lg:gap-4" data-justify="end">
             {/* Flow Toggle Icons - Only show in report view */}
-            {isInReportView && (
-              <>
-                <li className="text-medium whitespace-nowrap box-border list-none hidden lg:flex items-center">
-                  <div className="bg-gray-100 rounded-lg p-1 flex items-center gap-1">
-                    <button
-                      onClick={() => handleFlowIconClick('manual')}
-                      disabled={session?.currentView === 'manual'}
-                      className={`p-1.5 rounded-md transition-all duration-200 ease-in-out flex items-center justify-center ${
-                        session?.currentView === 'manual'
-                          ? 'bg-white text-primary-600 shadow-sm ring-1 ring-black/5 cursor-default'
-                          : 'text-gray-500 hover:text-gray-900 hover:bg-gray-200/50'
-                      }`}
-                      title="Manual Input"
-                    >
-                      <Edit3 className="w-4 h-4" />
-                    </button>
-                    <button
-                      onClick={() => handleFlowIconClick('ai-guided')}
-                      disabled={session?.currentView === 'ai-guided'}
-                      className={`p-1.5 rounded-md transition-all duration-200 ease-in-out flex items-center justify-center ${
-                        session?.currentView === 'ai-guided'
-                          ? 'bg-white text-primary-600 shadow-sm ring-1 ring-black/5 cursor-default'
-                          : 'text-gray-500 hover:text-gray-900 hover:bg-gray-200/50'
-                      }`}
-                      title="AI-Guided Conversation"
-                    >
-                      <MessageSquare className="w-4 h-4" />
-                    </button>
-                  </div>
-                </li>
-                {/* Separator */}
-                <li className="text-medium whitespace-nowrap box-border list-none hidden lg:flex">
-                  <div className="mx-3 h-5 w-px bg-gray-200"></div>
-                </li>
-              </>
-            )}
+            {/* MOVED TO VALUATION TOOLBAR */}
+            
+            {/* Engine Status - Desktop */}
             
             {/* Engine Status - Desktop */}
             <li className="text-medium whitespace-nowrap box-border list-none hidden lg:flex items-center gap-3">
@@ -305,13 +229,7 @@ export const Header: React.FC = () => {
         </div>
       </header>
       
-      {/* Flow Switch Warning Modal */}
-      <FlowSwitchWarningModal
-        isOpen={showSwitchWarning}
-        onClose={() => setShowSwitchWarning(false)}
-        onConfirm={handleConfirmSwitch}
-        targetFlow={targetFlow}
-      />
+      {/* Flow Switch Warning Modal moved to ValuationToolbar */}
     </>
   );
 };

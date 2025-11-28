@@ -1,6 +1,8 @@
-import { Code, Download, Eye, Info, Maximize, RefreshCw } from 'lucide-react';
+import { Code, Download, Eye, Info, Maximize, RefreshCw, Edit3, MessageSquare } from 'lucide-react';
 import React, { useEffect, useRef, useState } from 'react';
 import { useAuth } from '../hooks/useAuth';
+import { useValuationSessionStore } from '../store/useValuationSessionStore';
+import { FlowSwitchWarningModal } from './FlowSwitchWarningModal';
 import { ValuationToolbarProps } from '../types/valuation';
 import { generalLogger } from '../utils/logger';
 import { NameGenerator } from '../utils/nameGenerator';
@@ -19,6 +21,37 @@ export const ValuationToolbar: React.FC<ValuationToolbarProps> = ({
   companyName
 }) => {
   const { refreshAuth } = useAuth();
+  
+  // Flow switch modal state
+  const { session, switchView } = useValuationSessionStore();
+  const [showSwitchWarning, setShowSwitchWarning] = useState(false);
+  const [targetFlow, setTargetFlow] = useState<'manual' | 'ai-guided'>('manual');
+
+  // Handler for flow toggle icon clicks
+  const handleFlowIconClick = (flow: 'manual' | 'ai-guided') => {
+    if (!session || session.currentView === flow) return; // Already in this flow or no session
+    
+    // Check if there's any data entered (excluding _prefilledQuery)
+    const hasData = session && (
+      Object.keys(session.partialData || {}).filter(k => k !== '_prefilledQuery').length > 0 ||
+      Object.keys(session.sessionData || {}).length > 0
+    );
+    
+    if (hasData) {
+      // Show warning modal
+      setTargetFlow(flow);
+      setShowSwitchWarning(true);
+    } else {
+      // No data, switch immediately
+      switchView(flow, false);
+    }
+  };
+
+  const handleConfirmSwitch = async () => {
+    await switchView(targetFlow, true); // true = reset data
+    setShowSwitchWarning(false);
+  };
+
   const [isEditingName, setIsEditingName] = useState(false);
   const [editedName, setEditedName] = useState(valuationName);
   
@@ -177,6 +210,35 @@ export const ValuationToolbar: React.FC<ValuationToolbarProps> = ({
 
             {/* Center Section - Action Buttons */}
             <div className="absolute left-1/2 transform -translate-x-1/2 flex items-center gap-1">
+              {/* Flow Toggles */}
+              <div className="bg-zinc-800/50 rounded-lg p-1 flex items-center gap-1 mr-2">
+                <button
+                  onClick={() => handleFlowIconClick('manual')}
+                  disabled={session?.currentView === 'manual'}
+                  className={`p-1.5 rounded-md transition-all duration-200 ease-in-out flex items-center justify-center ${
+                    session?.currentView === 'manual'
+                      ? 'bg-zinc-600 text-white shadow-sm ring-1 ring-black/5 cursor-default'
+                      : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-700/50'
+                  }`}
+                  title="Manual Input"
+                >
+                  <Edit3 className="w-4 h-4" />
+                </button>
+                <button
+                  onClick={() => handleFlowIconClick('ai-guided')}
+                  disabled={session?.currentView === 'ai-guided'}
+                  className={`p-1.5 rounded-md transition-all duration-200 ease-in-out flex items-center justify-center ${
+                    session?.currentView === 'ai-guided'
+                      ? 'bg-zinc-600 text-white shadow-sm ring-1 ring-black/5 cursor-default'
+                      : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-700/50'
+                  }`}
+                  title="AI-Guided Conversation"
+                >
+                  <MessageSquare className="w-4 h-4" />
+                </button>
+              </div>
+              <div className="mr-2 h-6 w-px bg-zinc-700"></div>
+
               <button
                 onClick={() => handleTabClick('preview')}
                 className={`p-2 rounded-lg transition-all duration-200 ${
@@ -245,5 +307,12 @@ export const ValuationToolbar: React.FC<ValuationToolbarProps> = ({
         </div>
       </div>
     </nav>
+    <FlowSwitchWarningModal
+      isOpen={showSwitchWarning}
+      onClose={() => setShowSwitchWarning(false)}
+      onConfirm={handleConfirmSwitch}
+      targetFlow={targetFlow}
+    />
+    </>
   );
 };
