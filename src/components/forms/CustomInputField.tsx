@@ -49,6 +49,8 @@ const CustomInputField: React.FC<CustomInputFieldProps> = ({
   description,
   autoComplete,
   inputRef,
+  helpText,
+  helpTextPlacement = 'tooltip',
 }) => {
   const handleFocus = (e: React.FocusEvent<HTMLInputElement>) => {
     onFocus?.(e);
@@ -116,9 +118,23 @@ const CustomInputField: React.FC<CustomInputFieldProps> = ({
           {label}
           {required && <span className="text-red-500 ml-1">*</span>}
         </label>
+
+        {/* Info Icon - Positioned top-right */}
+        {helpText && helpTextPlacement === 'tooltip' && (
+          <div className={`absolute top-2 z-20 ${rightIcon ? 'right-12' : 'right-4'}`}>
+            <InfoIcon content={helpText} position="left" maxWidth={300} size={18} />
+          </div>
+        )}
       </div>
 
       {description && <p className="mt-1.5 text-xs text-gray-500 font-medium">{description}</p>}
+      
+      {/* Help Text (McKinsey UX Standard) */}
+      {helpText && helpTextPlacement === 'below' && !hasError && (
+        <p className="text-xs text-gray-500 mt-2 leading-relaxed">
+          {helpText}
+        </p>
+      )}
 
       {hasError && (
         <p 
