@@ -25,10 +25,10 @@ export const ValuationToolbar: React.FC<ValuationToolbarProps> = ({
   // Flow switch modal state
   const { session, switchView } = useValuationSessionStore();
   const [showSwitchWarning, setShowSwitchWarning] = useState(false);
-  const [targetFlow, setTargetFlow] = useState<'manual' | 'ai-guided'>('manual');
+  const [targetFlow, setTargetFlow] = useState<'manual' | 'conversational'>('manual');
 
   // Handler for flow toggle icon clicks
-  const handleFlowIconClick = (flow: 'manual' | 'ai-guided') => {
+  const handleFlowIconClick = (flow: 'manual' | 'conversational') => {
     if (!session || session.currentView === flow) return; // Already in this flow or no session
     
     // Check if there's any data entered (excluding _prefilledQuery)
@@ -212,33 +212,31 @@ export const ValuationToolbar: React.FC<ValuationToolbarProps> = ({
             {/* Center Section - Action Buttons */}
             <div className="absolute left-1/2 transform -translate-x-1/2 flex items-center gap-1">
               {/* Flow Toggles */}
-              <div className="bg-zinc-800/50 rounded-lg p-1 flex items-center gap-1 mr-2">
-                <button
-                  onClick={() => handleFlowIconClick('manual')}
-                  disabled={session?.currentView === 'manual'}
-                  className={`p-1.5 rounded-md transition-all duration-200 ease-in-out flex items-center justify-center ${
-                    session?.currentView === 'manual'
-                      ? 'bg-zinc-600 text-white shadow-sm ring-1 ring-black/5 cursor-default'
-                      : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-700/50'
-                  }`}
-                  title="Manual Input"
-                >
-                  <Edit3 className="w-4 h-4" />
-                </button>
-                <button
-                  onClick={() => handleFlowIconClick('ai-guided')}
-                  disabled={session?.currentView === 'ai-guided'}
-                  className={`p-1.5 rounded-md transition-all duration-200 ease-in-out flex items-center justify-center ${
-                    session?.currentView === 'ai-guided'
-                      ? 'bg-zinc-600 text-white shadow-sm ring-1 ring-black/5 cursor-default'
-                      : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-700/50'
-                  }`}
-                  title="AI-Guided Conversation"
-                >
-                  <MessageSquare className="w-4 h-4" />
-                </button>
-              </div>
-              <div className="mr-2 h-6 w-px bg-zinc-700"></div>
+              <button
+                onClick={() => handleFlowIconClick('manual')}
+                disabled={session?.currentView === 'manual'}
+                className={`p-2 rounded-lg transition-all duration-200 ${
+                  session?.currentView === 'manual'
+                    ? 'bg-zinc-700 text-white'
+                    : 'text-gray-400 hover:text-gray-300 hover:bg-zinc-800'
+                }`}
+                title="Manual Input"
+              >
+                <Edit3 className="w-4 h-4" />
+              </button>
+              <button
+                onClick={() => handleFlowIconClick('conversational')}
+                disabled={session?.currentView === 'conversational'}
+                className={`p-2 rounded-lg transition-all duration-200 ${
+                  session?.currentView === 'conversational'
+                    ? 'bg-zinc-700 text-white'
+                    : 'text-gray-400 hover:text-gray-300 hover:bg-zinc-800'
+                }`}
+                title="Conversational Mode"
+              >
+                <MessageSquare className="w-4 h-4" />
+              </button>
+              <div className="mx-2 h-6 w-px bg-zinc-700"></div>
 
               <button
                 onClick={() => handleTabClick('preview')}

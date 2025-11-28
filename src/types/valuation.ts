@@ -1151,8 +1151,8 @@ export interface ValuationSession {
   // Session metadata
   sessionId: string; // Unique session identifier
   reportId: string; // Links to report URL (val_timestamp_random format)
-  currentView: 'manual' | 'ai-guided'; // Current UI view
-  dataSource: 'manual' | 'ai-guided' | 'mixed'; // Tracks which flow provided data
+  currentView: 'manual' | 'conversational'; // Current UI view
+  dataSource: 'manual' | 'conversational' | 'mixed'; // Tracks which flow provided data
   
   // Timestamps
   createdAt: Date;

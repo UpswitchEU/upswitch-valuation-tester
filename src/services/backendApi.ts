@@ -616,7 +616,15 @@ class BackendAPI {
   async getValuationSession(reportId: string): Promise<any> {
     try {
       const response = await this.client.get(`/api/valuation-sessions/${reportId}`);
-      return response.data.success ? response.data.data : null;
+      const data = response.data.success ? response.data.data : null;
+      
+      // Map backend 'ai-guided' to frontend 'conversational'
+      if (data) {
+        if (data.currentView === 'ai-guided') data.currentView = 'conversational';
+        if (data.dataSource === 'ai-guided') data.dataSource = 'conversational';
+      }
+      
+      return data;
     } catch (error: any) {
       if (error.response?.status === 404) {
         return null; // Session doesn't exist yet
@@ -634,8 +642,20 @@ class BackendAPI {
    */
   async createValuationSession(session: any): Promise<any> {
     try {
-      const response = await this.client.post('/api/valuation-sessions', session);
-      return response.data.success ? response.data.data : null;
+      // Map frontend 'conversational' to backend 'ai-guided'
+      const backendSession = { ...session };
+      if (backendSession.currentView === 'conversational') backendSession.currentView = 'ai-guided';
+      if (backendSession.dataSource === 'conversational') backendSession.dataSource = 'ai-guided';
+
+      const response = await this.client.post('/api/valuation-sessions', backendSession);
+      const data = response.data.success ? response.data.data : null;
+      
+      // Map response back
+      if (data) {
+        if (data.currentView === 'ai-guided') data.currentView = 'conversational';
+        if (data.dataSource === 'ai-guided') data.dataSource = 'conversational';
+      }
+      return data;
     } catch (error: any) {
       apiLogger.error('Failed to create valuation session', {
         error: error instanceof Error ? error.message : 'Unknown error',
@@ -650,8 +670,20 @@ class BackendAPI {
    */
   async updateValuationSession(reportId: string, updates: any): Promise<any> {
     try {
-      const response = await this.client.patch(`/api/valuation-sessions/${reportId}`, updates);
-      return response.data.success ? response.data.data : null;
+      // Map frontend 'conversational' to backend 'ai-guided'
+      const backendUpdates = { ...updates };
+      if (backendUpdates.currentView === 'conversational') backendUpdates.currentView = 'ai-guided';
+      if (backendUpdates.dataSource === 'conversational') backendUpdates.dataSource = 'ai-guided';
+
+      const response = await this.client.patch(`/api/valuation-sessions/${reportId}`, backendUpdates);
+      const data = response.data.success ? response.data.data : null;
+      
+      // Map response back
+      if (data) {
+        if (data.currentView === 'ai-guided') data.currentView = 'conversational';
+        if (data.dataSource === 'ai-guided') data.dataSource = 'conversational';
+      }
+      return data;
     } catch (error: any) {
       apiLogger.error('Failed to update valuation session', {
         error: error instanceof Error ? error.message : 'Unknown error',
@@ -665,10 +697,20 @@ class BackendAPI {
   /**
    * Switch valuation session view (manual <-> AI-guided)
    */
-  async switchValuationView(reportId: string, view: 'manual' | 'ai-guided'): Promise<any> {
+  async switchValuationView(reportId: string, view: 'manual' | 'conversational'): Promise<any> {
     try {
-      const response = await this.client.post(`/api/valuation-sessions/${reportId}/switch-view`, { view });
-      return response.data.success ? response.data.data : null;
+      // Map frontend 'conversational' to backend 'ai-guided'
+      const backendView = view === 'conversational' ? 'ai-guided' : view;
+      
+      const response = await this.client.post(`/api/valuation-sessions/${reportId}/switch-view`, { view: backendView });
+      const data = response.data.success ? response.data.data : null;
+      
+      // Map response back
+      if (data) {
+        if (data.currentView === 'ai-guided') data.currentView = 'conversational';
+        if (data.dataSource === 'ai-guided') data.dataSource = 'conversational';
+      }
+      return data;
     } catch (error: any) {
       apiLogger.error('Failed to switch valuation view', {
         error: error instanceof Error ? error.message : 'Unknown error',
@@ -685,7 +727,7 @@ class BackendAPI {
    */
   async calculateValuationUnified(
     data: ValuationRequest,
-    dataSource: 'manual' | 'ai-guided' | 'mixed' = 'manual',
+    dataSource: 'manual' | 'conversational' | 'mixed' = 'manual',
     options?: {
       signal?: AbortSignal;
       timeout?: number;
@@ -695,10 +737,13 @@ class BackendAPI {
     const timeout = options?.timeout || 90000; // Default 90 seconds
 
     try {
+      // Map frontend 'conversational' to backend 'ai-guided'
+      const backendDataSource = dataSource === 'conversational' ? 'ai-guided' : dataSource;
+
       // Use unified endpoint - backend determines credit cost based on dataSource
       const response = await this.client.post(
         '/api/valuations/calculate',
-        { ...data, dataSource },
+        { ...data, dataSource: backendDataSource },
         {
           signal: options?.signal,
           timeout,

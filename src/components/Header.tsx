@@ -36,6 +36,13 @@ export const Header: React.FC = () => {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
+  const valuationMethods = [
+    { id: 'manual', label: 'Manual Input', path: '/manual', badge: 'Recommended' },
+    { id: 'ai-guided', label: 'Conversational AI', path: '/ai-guided', badge: 'Premium' },
+    { id: 'instant', label: 'Instant Valuation', path: '/instant' },
+    { id: 'document', label: 'From Documents', path: '/upload' }
+  ];
+
   // Determine current valuation method from URL
   const getCurrentMethod = () => {
     if (location.pathname.startsWith('/reports/')) return 'reports';

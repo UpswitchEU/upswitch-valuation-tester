@@ -542,9 +542,9 @@ export const AIAssistedValuation: React.FC<AIAssistedValuationProps> = ({
     }
   }, []);
   
-  // Load session data into conversation context when switching to AI-guided view
+  // Load session data into conversation context when switching to conversational view
   useEffect(() => {
-    if (session && session.currentView === 'ai-guided') {
+    if (session && session.currentView === 'conversational') {
       const sessionData = getSessionData();
       if (sessionData && Object.keys(sessionData).length > 0) {
         // Check completeness to determine if we have meaningful data
@@ -789,10 +789,10 @@ export const AIAssistedValuation: React.FC<AIAssistedValuationProps> = ({
 
       // Get session dataSource for unified calculation
       const { session } = useValuationSessionStore.getState();
-      const dataSource = session?.dataSource || 'ai-guided';
+      const dataSource = session?.dataSource || 'conversational';
       
       // Use unified calculation endpoint with dataSource
-      const backendResult = await backendAPI.calculateValuationUnified(request, dataSource as 'manual' | 'ai-guided' | 'mixed');
+      const backendResult = await backendAPI.calculateValuationUnified(request, dataSource as 'manual' | 'conversational' | 'mixed');
       
       chatLogger.info('Unified valuation completed through backend', {
         valuationId: backendResult.valuation_id,

@@ -337,7 +337,7 @@ export const useValuationStore = create<ValuationStore>((set, get) => ({
       });
       
       // Use unified calculation endpoint with dataSource
-      const response = await backendAPI.calculateValuationUnified(request, dataSource as 'manual' | 'ai-guided' | 'mixed');
+      const response = await backendAPI.calculateValuationUnified(request, dataSource as 'manual' | 'conversational' | 'mixed');
       
       // Extract and store correlation ID from response
       // Note: backendAPI should extract from headers, but we also check response body

@@ -5,7 +5,7 @@ interface FlowSwitchWarningModalProps {
   isOpen: boolean;
   onClose: () => void;
   onConfirm: () => void;
-  targetFlow: 'manual' | 'ai-guided';
+  targetFlow: 'manual' | 'conversational';
 }
 
 /**
@@ -22,7 +22,7 @@ export const FlowSwitchWarningModal: React.FC<FlowSwitchWarningModalProps> = ({
 }) => {
   if (!isOpen) return null;
 
-  const flowName = targetFlow === 'ai-guided' ? 'AI-Guided' : 'Manual';
+  const flowName = targetFlow === 'conversational' ? 'Conversational' : 'Manual';
 
   return (
     <>

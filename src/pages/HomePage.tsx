@@ -53,8 +53,8 @@ export const HomePage: React.FC = () => {
       // Generate new report ID
       const newReportId = generateReportId();
       
-      // Navigate to AI-guided flow with query context
-      const url = `${UrlGeneratorService.reportById(newReportId)}?flow=ai-guided`;
+      // Navigate to Conversational flow with query context
+      const url = `${UrlGeneratorService.reportById(newReportId)}?flow=conversational`;
       
       navigate(url, {
         state: {

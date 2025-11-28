@@ -35,12 +35,12 @@ export const ValuationReport: React.FC = () => {
       // Check for flow parameter in URL to set initial view
       const searchParams = new URLSearchParams(window.location.search);
       const flowParam = searchParams.get('flow');
-      const initialView = (flowParam === 'manual' || flowParam === 'ai-guided') 
+      const initialView = (flowParam === 'manual' || flowParam === 'conversational') 
         ? flowParam 
         : 'manual'; // Default to manual
       
-      // Validate credits for AI-guided (guests only)
-      if (initialView === 'ai-guided' && !isAuthenticated) {
+      // Validate credits for Conversational (guests only)
+      if (initialView === 'conversational' && !isAuthenticated) {
         const hasCredits = guestCreditService.hasCredits();
         if (!hasCredits) {
           setShowOutOfCreditsModal(true);
@@ -156,7 +156,7 @@ export const ValuationReport: React.FC = () => {
             {/* AI-Guided Flow Container */}
             <div 
               className={`absolute inset-0 w-full h-full transition-opacity duration-300 ease-in-out ${
-                session.currentView === 'ai-guided' 
+                session.currentView === 'conversational' 
                   ? 'opacity-100 z-10 pointer-events-auto' 
                   : 'opacity-0 z-0 pointer-events-none'
               }`}

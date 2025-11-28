@@ -8,10 +8,10 @@ interface ValuationSessionStore {
   session: ValuationSession | null;
   
   // Actions
-  initializeSession: (reportId: string, currentView?: 'manual' | 'ai-guided', prefilledQuery?: string | null) => Promise<void>;
+  initializeSession: (reportId: string, currentView?: 'manual' | 'conversational', prefilledQuery?: string | null) => Promise<void>;
   loadSession: (reportId: string) => Promise<void>;
   updateSessionData: (data: Partial<ValuationRequest>) => Promise<void>;
-  switchView: (view: 'manual' | 'ai-guided', resetData?: boolean) => Promise<void>;
+  switchView: (view: 'manual' | 'conversational', resetData?: boolean) => Promise<void>;
   getSessionData: () => ValuationRequest | null;
   clearSession: () => void;
   
@@ -34,7 +34,7 @@ export const useValuationSessionStore = create<ValuationSessionStore>((set, get)
   /**
    * Initialize a new session or load existing one
    */
-  initializeSession: async (reportId: string, currentView: 'manual' | 'ai-guided' = 'manual', prefilledQuery?: string | null) => {
+  initializeSession: async (reportId: string, currentView: 'manual' | 'conversational' = 'manual', prefilledQuery?: string | null) => {
     try {
       storeLogger.info('Initializing valuation session', { reportId, currentView, hasPrefilledQuery: !!prefilledQuery });
       
@@ -184,7 +184,7 @@ export const useValuationSessionStore = create<ValuationSessionStore>((set, get)
       const updatedSessionData = deepMerge(session.sessionData || {}, data);
       
       // Determine data source
-      let dataSource: 'manual' | 'ai-guided' | 'mixed' = session.dataSource;
+      let dataSource: 'manual' | 'conversational' | 'mixed' = session.dataSource;
       if (session.dataSource !== session.currentView) {
         dataSource = 'mixed';
       }
@@ -246,7 +246,7 @@ export const useValuationSessionStore = create<ValuationSessionStore>((set, get)
       // Update local state even if backend fails
       const updatedPartialData = deepMerge(session.partialData, data);
       const updatedSessionData = deepMerge(session.sessionData || {}, data);
-      let dataSource: 'manual' | 'ai-guided' | 'mixed' = session.dataSource;
+      let dataSource: 'manual' | 'conversational' | 'mixed' = session.dataSource;
       if (session.dataSource !== session.currentView) {
         dataSource = 'mixed';
       }
@@ -274,7 +274,7 @@ export const useValuationSessionStore = create<ValuationSessionStore>((set, get)
   /**
    * Switch between manual and AI-guided views
    */
-  switchView: async (view: 'manual' | 'ai-guided', resetData: boolean = false) => {
+  switchView: async (view: 'manual' | 'conversational', resetData: boolean = false) => {
     const { session } = get();
     
     if (!session) {
