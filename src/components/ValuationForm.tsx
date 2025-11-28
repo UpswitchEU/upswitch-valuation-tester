@@ -6,8 +6,6 @@ import toast from 'react-hot-toast';
 import { TARGET_COUNTRIES } from '../config/countries';
 import {
   getIndustryGuidance,
-  getRevenuePerEmployeeAnalysis,
-  getRevenueRangeGuidance,
   validateEbitdaMargin,
   validateRevenue
 } from '../config/industryGuidance';
@@ -17,6 +15,7 @@ import { suggestionService } from '../services/businessTypeSuggestionApi';
 import { debounce } from '../utils/debounce';
 import { generalLogger } from '../utils/logger';
 import { safePreference } from '../utils/numberUtils';
+import { InfoIcon } from './ui/InfoIcon';
 import { CustomBusinessTypeSearch, CustomDropdown, CustomInputField, CustomNumberInputField, HistoricalDataInputs } from './forms';
 
 /**
@@ -749,19 +748,6 @@ export const ValuationForm: React.FC = () => {
         <div className="grid grid-cols-1 @4xl:grid-cols-2 gap-6">
           {/* Revenue */}
           <div>
-            <CustomNumberInputField
-              label="Revenue (Required)"
-              placeholder="e.g., 2,500,000"
-              value={formData.revenue || ''}
-              onChange={(e) => updateFormData({ revenue: parseFloat(e.target.value.replace(/,/g, '')) || undefined })}
-              onBlur={() => {}}
-              name="revenue"
-              min={0}
-              step={1000}
-              prefix="€"
-              formatAsCurrency
-              required
-            />
             {(() => {
               const revenueGuidance = getIndustryGuidance(formData.industry || 'other', 'revenue');
               const validation = formData.revenue && formData.industry
@@ -775,104 +761,69 @@ export const ValuationForm: React.FC = () => {
                   )
                 : null;
               
-              const rangeGuidance = formData.subIndustry && formData.industry
-                ? getRevenueRangeGuidance(formData.industry, formData.subIndustry, formData.number_of_employees)
-                : null;
-              
+              // Construct unified help text for tooltip
+              const helpText = [
+                revenueGuidance.tip ? `Tip: ${revenueGuidance.tip}` : '',
+                revenueGuidance.why ? `Why: ${revenueGuidance.why}` : '',
+                validation?.message ? `Note: ${validation.message}` : '',
+                (formData.number_of_employees && formData.revenue) 
+                  ? `Revenue per employee: €${Math.round(formData.revenue / formData.number_of_employees).toLocaleString()}` 
+                  : ''
+              ].filter(Boolean).join(' ');
+
               return (
-                <div className="mt-2 text-xs text-zinc-400 space-y-1">
-                  <div>💡 <strong>Tip:</strong> {revenueGuidance.tip}</div>
-                  <div>ℹ️ <strong>Why:</strong> {revenueGuidance.why}</div>
-                  {revenueGuidance.warning && (
-                    <div className="text-yellow-400">⚠️ {revenueGuidance.warning}</div>
-                  )}
-                  
-                  {/* Sub-industry range guidance */}
-                  {rangeGuidance && (
-                    <div className="text-blue-400">
-                      📊 <strong>{rangeGuidance.message}</strong>
-                    </div>
-                  )}
-                  
-                  {/* Revenue validation */}
-                  {validation && (
-                    <div className={
-                      validation.severity === 'success' ? 'text-green-400' :
-                      validation.severity === 'warning' ? 'text-yellow-400' :
-                      validation.severity === 'error' ? 'text-red-400' :
-                      'text-blue-400'
-                    }>
-                      {validation.severity === 'success' ? '✓' :
-                       validation.severity === 'warning' ? '⚠️' :
-                       validation.severity === 'error' ? '❌' : 'ℹ️'} 
-                      {validation.message}
-                    </div>
-                  )}
-                  
-                  {/* Revenue per employee analysis */}
-                  {formData.number_of_employees && formData.revenue && (
-                    <div className="text-zinc-400">
-                      👥 <strong>Revenue per employee:</strong> 
-                      €{Math.round(formData.revenue / formData.number_of_employees).toLocaleString()}
-                      {getRevenuePerEmployeeAnalysis(
-                        formData.revenue / formData.number_of_employees,
-                        formData.industry || 'other',
-                        formData.subIndustry
-                      )}
-                    </div>
-                  )}
-                  
-                  {/* Suggestion if validation fails */}
-                  {validation?.suggestion && (
-                    <div className="text-blue-400">
-                      💡 {validation.suggestion}
-                    </div>
-                  )}
-                </div>
+                <CustomNumberInputField
+                  label="Revenue (Required)"
+                  placeholder="e.g., 2,500,000"
+                  value={formData.revenue || ''}
+                  onChange={(e) => updateFormData({ revenue: parseFloat(e.target.value.replace(/,/g, '')) || undefined })}
+                  onBlur={() => {}}
+                  name="revenue"
+                  min={0}
+                  step={1000}
+                  prefix="€"
+                  formatAsCurrency
+                  required
+                  helpText={helpText}
+                />
               );
             })()}
           </div>
 
           {/* EBITDA */}
           <div>
-            <CustomNumberInputField
-              label="EBITDA (Required)"
-              placeholder="e.g., 500,000"
-              value={formData.ebitda !== undefined && formData.ebitda !== null ? formData.ebitda : ''}
-              onChange={(e) => {
-                const cleanedValue = e.target.value.replace(/,/g, '');
-                const numValue = parseFloat(cleanedValue);
-                // Preserve negative values: only set undefined if NaN, not if value is 0 or negative
-                updateFormData({ ebitda: isNaN(numValue) ? undefined : numValue });
-              }}
-              onBlur={() => {}}
-              name="ebitda"
-              step={1000}
-              prefix="€"
-              formatAsCurrency
-              required
-            />
             {(() => {
               const ebitdaGuidance = getIndustryGuidance(formData.industry || 'other', 'ebitda');
               const validation = formData.revenue && formData.ebitda
                 ? validateEbitdaMargin(formData.revenue, formData.ebitda, formData.industry || 'other')
                 : null;
               
+              const helpText = [
+                ebitdaGuidance.tip ? `Tip: ${ebitdaGuidance.tip}` : '',
+                ebitdaGuidance.why ? `Why: ${ebitdaGuidance.why}` : '',
+                validation?.message ? `Note: ${validation.message}` : ''
+              ].filter(Boolean).join(' ');
+
               return (
-                <div className="mt-2 text-xs text-zinc-400 space-y-1">
-                  <div>💡 <strong>Tip:</strong> {ebitdaGuidance.tip}</div>
-                  <div>ℹ️ <strong>Why:</strong> {ebitdaGuidance.why}</div>
-                  {validation && (
-                    <div className={
-                      validation.severity === 'success' ? 'text-green-400' :
-                      validation.severity === 'warning' ? 'text-yellow-400' :
-                      'text-blue-400'
-                    }>
-                      {validation.severity === 'success' ? '✓' :
-                       validation.severity === 'warning' ? '⚠️' : 'ℹ️'} {validation.message}
-                    </div>
-                  )}
-                </div>
+                <CustomNumberInputField
+                  label="EBITDA (Required)"
+                  placeholder="e.g., 500,000"
+                  value={formData.ebitda !== undefined && formData.ebitda !== null ? formData.ebitda : ''}
+                  onChange={(e) => {
+                    const cleanedValue = e.target.value.replace(/,/g, '');
+                    const numValue = parseFloat(cleanedValue);
+                    // Preserve negative values: only set undefined if NaN, not if value is 0 or negative
+                    updateFormData({ ebitda: isNaN(numValue) ? undefined : numValue });
+                  }}
+                  onBlur={() => {}}
+                  name="ebitda"
+                  min={-1000000000} // Allow negative EBITDA
+                  step={1000}
+                  prefix="€"
+                  formatAsCurrency
+                  required
+                  helpText={helpText}
+                />
               );
             })()}
           </div>
@@ -882,15 +833,12 @@ export const ValuationForm: React.FC = () => {
       {/* Historical Data (3 Years) */}
       <div className="space-y-6">
         <div className="flex items-center justify-between pb-2 border-b border-zinc-700">
-          <h3 className="text-sm font-semibold text-zinc-400 uppercase tracking-wide">
+          <h3 className="text-sm font-semibold text-zinc-400 uppercase tracking-wide flex items-center gap-2">
             Historical Data (Optional)
+            <InfoIcon content="Adding 3 years of historical data enables growth rate calculation and improves valuation accuracy" position="top" />
           </h3>
           <span className="text-xs text-green-400 bg-green-900/30 px-2 py-1 rounded border border-green-700/50">+20% Accuracy</span>
         </div>
-        
-        <p className="text-sm text-zinc-300">
-          Adding 3 years of historical data enables growth rate calculation and improves valuation accuracy
-        </p>
 
         <HistoricalDataInputs
           historicalInputs={historicalInputs}

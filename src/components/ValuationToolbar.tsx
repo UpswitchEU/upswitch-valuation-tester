@@ -31,20 +31,9 @@ export const ValuationToolbar: React.FC<ValuationToolbarProps> = ({
   const handleFlowIconClick = (flow: 'manual' | 'conversational') => {
     if (!session || session.currentView === flow) return; // Already in this flow or no session
     
-    // Check if there's any data entered (excluding _prefilledQuery)
-    const hasData = session && (
-      Object.keys(session.partialData || {}).filter(k => k !== '_prefilledQuery').length > 0 ||
-      Object.keys(session.sessionData || {}).length > 0
-    );
-    
-    if (hasData) {
-      // Show warning modal
-      setTargetFlow(flow);
-      setShowSwitchWarning(true);
-    } else {
-      // No data, switch immediately
-      switchView(flow, false);
-    }
+    // Always show warning modal when switching flows
+    setTargetFlow(flow);
+    setShowSwitchWarning(true);
   };
 
   const handleConfirmSwitch = async () => {
