@@ -253,7 +253,7 @@ const CustomDropdown: React.FC<CustomDropdownProps> = ({
 
           {/* Info Icon - Positioned centered right (left of chevron) */}
           {helpText && helpTextPlacement === 'tooltip' && (
-            <div className="absolute top-1/2 -translate-y-1/2 z-20 right-12">
+            <div className="absolute top-1/2 -translate-y-1/2 mt-1 z-20 right-12">
               <InfoIcon content={helpText} position="left" maxWidth={300} size={24} className="ml-0" />
             </div>
           )}
