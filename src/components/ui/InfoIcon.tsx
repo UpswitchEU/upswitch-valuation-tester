@@ -4,6 +4,7 @@ interface InfoIconProps {
   content: string;
   position?: 'top' | 'bottom' | 'left' | 'right';
   maxWidth?: number;
+  size?: number;
 }
 
 /**
@@ -19,6 +20,7 @@ export const InfoIcon: React.FC<InfoIconProps> = ({
   content,
   position = 'top',
   maxWidth = 300,
+  size = 14,
 }) => {
   const [isVisible, setIsVisible] = useState(false);
   const [isTouchDevice, setIsTouchDevice] = useState(false);
@@ -124,8 +126,8 @@ export const InfoIcon: React.FC<InfoIconProps> = ({
         className="text-gray-400 hover:text-gray-600 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1 rounded-full"
       >
         <svg
-          width="14"
-          height="14"
+          width={size}
+          height={size}
           viewBox="0 0 24 24"
           fill="none"
           stroke="currentColor"

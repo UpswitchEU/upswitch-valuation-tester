@@ -8,6 +8,7 @@ import { generalLogger } from '../utils/logger';
 import { NameGenerator } from '../utils/nameGenerator';
 import { BrandedLoading } from './BrandedLoading';
 import { UserDropdown } from './UserDropdown';
+import { Tooltip } from './ui/Tooltip';
 
 export const ValuationToolbar: React.FC<ValuationToolbarProps> = ({
   onRefresh,
@@ -201,88 +202,96 @@ export const ValuationToolbar: React.FC<ValuationToolbarProps> = ({
             {/* Center Section - Action Buttons */}
             <div className="absolute left-1/2 transform -translate-x-1/2 flex items-center gap-1">
               {/* Flow Toggles */}
-              <button
-                onClick={() => handleFlowIconClick('manual')}
-                disabled={session?.currentView === 'manual'}
-                className={`p-2 rounded-lg transition-all duration-200 ${
-                  session?.currentView === 'manual'
-                    ? 'bg-zinc-700 text-white'
-                    : 'text-gray-400 hover:text-gray-300 hover:bg-zinc-800'
-                }`}
-                title="Manual Input"
-              >
-                <Edit3 className="w-4 h-4" />
-              </button>
-              <button
-                onClick={() => handleFlowIconClick('conversational')}
-                disabled={session?.currentView === 'conversational'}
-                className={`p-2 rounded-lg transition-all duration-200 ${
-                  session?.currentView === 'conversational'
-                    ? 'bg-zinc-700 text-white'
-                    : 'text-gray-400 hover:text-gray-300 hover:bg-zinc-800'
-                }`}
-                title="Conversational Mode"
-              >
-                <MessageSquare className="w-4 h-4" />
-              </button>
+              <Tooltip content="Manual Input" position="bottom" className="">
+                <button
+                  onClick={() => handleFlowIconClick('manual')}
+                  disabled={session?.currentView === 'manual'}
+                  className={`p-2 rounded-lg transition-all duration-200 ${
+                    session?.currentView === 'manual'
+                      ? 'bg-zinc-700 text-white'
+                      : 'text-gray-400 hover:text-gray-300 hover:bg-zinc-800'
+                  }`}
+                >
+                  <Edit3 className="w-4 h-4" />
+                </button>
+              </Tooltip>
+              <Tooltip content="Conversational Mode" position="bottom" className="">
+                <button
+                  onClick={() => handleFlowIconClick('conversational')}
+                  disabled={session?.currentView === 'conversational'}
+                  className={`p-2 rounded-lg transition-all duration-200 ${
+                    session?.currentView === 'conversational'
+                      ? 'bg-zinc-700 text-white'
+                      : 'text-gray-400 hover:text-gray-300 hover:bg-zinc-800'
+                  }`}
+                >
+                  <MessageSquare className="w-4 h-4" />
+                </button>
+              </Tooltip>
               <div className="mx-2 h-6 w-px bg-zinc-700"></div>
 
-              <button
-                onClick={() => handleTabClick('preview')}
-                className={`p-2 rounded-lg transition-all duration-200 ${
-                  activeTab === 'preview' 
-                    ? 'bg-zinc-700 text-white' 
-                    : 'text-gray-400 hover:text-gray-300 hover:bg-zinc-800'
-                }`}
-                title="Preview"
-              >
-                <Eye className="w-4 h-4" />
-              </button>
-              <button
-                onClick={() => handleTabClick('source')}
-                className={`p-2 rounded-lg transition-all duration-200 ${
-                  activeTab === 'source' 
-                    ? 'bg-zinc-700 text-white' 
-                    : 'text-gray-400 hover:text-gray-300 hover:bg-zinc-800'
-                }`}
-                title="Source Code"
-              >
-                <Code className="w-4 h-4" />
-              </button>
-              <button
-                onClick={() => handleTabClick('info')}
-                className={`p-2 rounded-lg transition-all duration-200 ${
-                  activeTab === 'info' 
-                    ? 'bg-zinc-700 text-white' 
-                    : 'text-gray-400 hover:text-gray-300 hover:bg-zinc-800'
-                }`}
-                title="Valuation Info"
-              >
-                <Info className="w-4 h-4" />
-              </button>
+              <Tooltip content="Preview" position="bottom" className="">
+                <button
+                  onClick={() => handleTabClick('preview')}
+                  className={`p-2 rounded-lg transition-all duration-200 ${
+                    activeTab === 'preview' 
+                      ? 'bg-zinc-700 text-white' 
+                      : 'text-gray-400 hover:text-gray-300 hover:bg-zinc-800'
+                  }`}
+                >
+                  <Eye className="w-4 h-4" />
+                </button>
+              </Tooltip>
+              <Tooltip content="Source Code" position="bottom" className="">
+                <button
+                  onClick={() => handleTabClick('source')}
+                  className={`p-2 rounded-lg transition-all duration-200 ${
+                    activeTab === 'source' 
+                      ? 'bg-zinc-700 text-white' 
+                      : 'text-gray-400 hover:text-gray-300 hover:bg-zinc-800'
+                  }`}
+                >
+                  <Code className="w-4 h-4" />
+                </button>
+              </Tooltip>
+              <Tooltip content="Valuation Info" position="bottom" className="">
+                <button
+                  onClick={() => handleTabClick('info')}
+                  className={`p-2 rounded-lg transition-all duration-200 ${
+                    activeTab === 'info' 
+                      ? 'bg-zinc-700 text-white' 
+                      : 'text-gray-400 hover:text-gray-300 hover:bg-zinc-800'
+                  }`}
+                >
+                  <Info className="w-4 h-4" />
+                </button>
+              </Tooltip>
               <div className="mx-2 h-6 w-px bg-zinc-700"></div>
-              <button
-                onClick={onRefresh}
-                className="p-2 rounded-lg transition-all duration-200 text-gray-400 hover:text-gray-300 hover:bg-zinc-800"
-                title="Refresh"
-                disabled={isGenerating}
-              >
-                <RefreshCw className="w-4 h-4" />
-              </button>
-              <button
-                onClick={onDownload}
-                className="p-2 rounded-lg transition-all duration-200 text-gray-400 hover:text-gray-300 hover:bg-zinc-800"
-                title="Download PDF"
-              >
-                <Download className="w-4 h-4" />
-              </button>
-              <button
-                onClick={onFullScreen}
-                className="p-2 rounded-lg transition-all duration-200 text-gray-400 hover:text-gray-300 hover:bg-zinc-800"
-                title="Open Full Screen"
-              >
-                <Maximize className="w-4 h-4" />
-              </button>
+              <Tooltip content="Refresh" position="bottom" className="">
+                <button
+                  onClick={onRefresh}
+                  className="p-2 rounded-lg transition-all duration-200 text-gray-400 hover:text-gray-300 hover:bg-zinc-800"
+                  disabled={isGenerating}
+                >
+                  <RefreshCw className="w-4 h-4" />
+                </button>
+              </Tooltip>
+              <Tooltip content="Download PDF" position="bottom" className="">
+                <button
+                  onClick={onDownload}
+                  className="p-2 rounded-lg transition-all duration-200 text-gray-400 hover:text-gray-300 hover:bg-zinc-800"
+                >
+                  <Download className="w-4 h-4" />
+                </button>
+              </Tooltip>
+              <Tooltip content="Open Full Screen" position="bottom" className="">
+                <button
+                  onClick={onFullScreen}
+                  className="p-2 rounded-lg transition-all duration-200 text-gray-400 hover:text-gray-300 hover:bg-zinc-800"
+                >
+                  <Maximize className="w-4 h-4" />
+                </button>
+              </Tooltip>
             </div>
 
             {/* Right Section - User Info */}

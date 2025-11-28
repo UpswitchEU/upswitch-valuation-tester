@@ -5,13 +5,15 @@ interface TooltipProps {
   children: React.ReactNode;
   position?: 'top' | 'bottom' | 'left' | 'right';
   delay?: number;
+  className?: string;
 }
 
 export const Tooltip: React.FC<TooltipProps> = ({ 
   content, 
   children, 
   position = 'top',
-  delay = 300
+  delay = 300,
+  className = "cursor-help border-b border-dotted border-gray-400"
 }) => {
   const [isVisible, setIsVisible] = useState(false);
   const [isTouchDevice, setIsTouchDevice] = useState(false);
@@ -79,7 +81,7 @@ export const Tooltip: React.FC<TooltipProps> = ({
         onFocus={() => setIsVisible(true)}
         onBlur={() => setIsVisible(false)}
         tabIndex={0}
-        className="cursor-help border-b border-dotted border-gray-400"
+        className={className}
       >
         {children}
       </div>

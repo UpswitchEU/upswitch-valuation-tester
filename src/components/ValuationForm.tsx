@@ -447,7 +447,7 @@ export const ValuationForm: React.FC = () => {
 
 
       {/* Basic Information */}
-      <div className="space-y-10">
+      <div className="space-y-16">
         <h3 className="text-lg font-semibold text-white mb-4">
           Basic Information
         </h3>
@@ -588,7 +588,7 @@ export const ValuationForm: React.FC = () => {
       </div>
 
       {/* Ownership Structure */}
-      <div className="space-y-10">
+      <div className="space-y-16">
         <h3 className="text-lg font-semibold text-white mb-4">
           Ownership Structure
         </h3>
@@ -740,7 +740,7 @@ export const ValuationForm: React.FC = () => {
       </div>
 
       {/* Financial Data */}
-      <div className="space-y-10">
+      <div className="space-y-16">
         <h3 className="text-lg font-semibold text-white mb-4">
           Current Year Financials ({Math.min(new Date().getFullYear(), 2100)})
         </h3>
@@ -831,11 +831,11 @@ export const ValuationForm: React.FC = () => {
       </div>
 
       {/* Historical Data (3 Years) */}
-      <div className="space-y-10">
+      <div className="space-y-16">
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-lg font-semibold text-white flex items-center gap-2">
             Historical Data (Optional)
-            <InfoIcon content="Adding 3 years of historical data enables growth rate calculation and improves valuation accuracy" position="top" />
+            <InfoIcon content="Adding 3 years of historical data enables growth rate calculation and improves valuation accuracy" position="top" size={20} />
           </h3>
         </div>
 
@@ -849,12 +849,12 @@ export const ValuationForm: React.FC = () => {
       </div>
 
       {/* Submit Button */}
-      <div className="pt-6 border-t border-zinc-700 flex justify-end">
+      <div className="pt-6 border-t border-zinc-700">
         <button
           type="submit"
           disabled={isCalculating || !formData.revenue || !formData.ebitda || !formData.industry || !formData.country_code}
           className={`
-            px-8 py-4 rounded-xl font-semibold text-white text-lg shadow-lg
+            w-full justify-center px-8 py-4 rounded-xl font-semibold text-white text-lg shadow-lg
             transition-all duration-200 transform hover:-translate-y-0.5
             flex items-center gap-3
             ${(isCalculating || !formData.revenue || !formData.ebitda || !formData.industry || !formData.country_code)

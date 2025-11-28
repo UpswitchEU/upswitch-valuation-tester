@@ -242,14 +242,18 @@ const CustomNumberInputField: React.FC<CustomNumberInputFieldProps> = ({
             absolute left-4 top-2 text-xs text-gray-700 font-medium flex items-center gap-1
             ${hasError ? 'text-red-600' : ''}
             ${prefix ? 'left-8' : ''}
-            ${helpText && helpTextPlacement === 'tooltip' ? 'pointer-events-auto' : 'pointer-events-none'}
+            pointer-events-none
           `}
         >
           <span className="pointer-events-none">{label}</span>
-          {helpText && helpTextPlacement === 'tooltip' && (
-            <InfoIcon content={helpText} position="top" maxWidth={300} />
-          )}
         </label>
+
+        {/* Info Icon - Positioned top-right */}
+        {helpText && helpTextPlacement === 'tooltip' && (
+          <div className={`absolute top-2 z-20 ${(suffix || showArrows) ? 'right-12' : 'right-4'}`}>
+            <InfoIcon content={helpText} position="left" maxWidth={300} size={18} />
+          </div>
+        )}
       </div>
 
       {hasError && (

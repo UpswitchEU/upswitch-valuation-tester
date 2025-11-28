@@ -244,15 +244,19 @@ const CustomDropdown: React.FC<CustomDropdownProps> = ({
             ${error && touched ? 'text-red-600' : ''}
             ${disabled ? 'text-gray-400' : ''}
             ${required ? "after:content-['*'] after:text-red-500 after:ml-1" : ''}
-            ${helpText && helpTextPlacement === 'tooltip' ? 'pointer-events-auto' : 'pointer-events-none'}
+            pointer-events-none
           `}
             id={`${label}-label`}
           >
             <span className="pointer-events-none">{label}</span>
-            {helpText && helpTextPlacement === 'tooltip' && (
-              <InfoIcon content={helpText} position="top" maxWidth={300} />
-            )}
           </label>
+
+          {/* Info Icon - Positioned top-right (left of chevron) */}
+          {helpText && helpTextPlacement === 'tooltip' && (
+            <div className="absolute top-2 right-12 z-20">
+              <InfoIcon content={helpText} position="left" maxWidth={300} size={18} />
+            </div>
+          )}
 
           {/* Inner Content */}
           <div className="flex items-center w-full h-full">
