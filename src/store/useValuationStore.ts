@@ -186,8 +186,17 @@ export const useValuationStore = create<ValuationStore>((set, get) => ({
       // Use session data (unified source) or fall back to formData
       const dataSource = session?.dataSource || 'manual';
       
-      // Use session data if available, otherwise use formData
-      const sourceData = sessionData || formData;
+      // Merge sessionData and formData, with formData taking precedence for required fields
+      // This ensures formData values are used when sessionData is empty or missing fields
+      const sourceData = {
+        ...formData,
+        ...(sessionData || {}),
+        // Ensure formData values take precedence for critical fields if they exist
+        company_name: formData.company_name || sessionData?.company_name,
+        revenue: formData.revenue || sessionData?.revenue,
+        ebitda: formData.ebitda !== undefined ? formData.ebitda : sessionData?.ebitda,
+        current_year_data: formData.current_year_data || sessionData?.current_year_data,
+      };
       
       // Validate and construct proper request
       if (!sourceData.company_name || (sourceData.company_name as string).trim() === '') {
