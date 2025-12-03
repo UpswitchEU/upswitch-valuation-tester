@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { useValuationStore } from '../store/useValuationStore';
 import { useValuationSessionStore } from '../store/useValuationSessionStore';
+import { useValuationStore } from '../store/useValuationStore';
 // import { useReportsStore } from '../store/useReportsStore'; // Deprecated: Now saving to database
 import toast from 'react-hot-toast';
 import { TARGET_COUNTRIES } from '../config/countries';
@@ -15,8 +15,8 @@ import { suggestionService } from '../services/businessTypeSuggestionApi';
 import { debounce } from '../utils/debounce';
 import { generalLogger } from '../utils/logger';
 import { safePreference } from '../utils/numberUtils';
-import { InfoIcon } from './ui/InfoIcon';
 import { CustomBusinessTypeSearch, CustomDropdown, CustomInputField, CustomNumberInputField, HistoricalDataInputs } from './forms';
+import { InfoIcon } from './ui/InfoIcon';
 
 /**
  * ValuationForm Component
@@ -33,32 +33,7 @@ export const ValuationForm: React.FC = () => {
   // Track if we've loaded session data to prevent sync loop
   const [hasLoadedSessionData, setHasLoadedSessionData] = useState(false);
   
-  // Auto-focus logic for manual flow
-  useEffect(() => {
-    // Only run if we're in manual view and have loaded session data (or it's a fresh load)
-    if (session?.currentView === 'manual') {
-      // Small timeout to ensure DOM is ready
-      const timer = setTimeout(() => {
-        // Check for empty fields in priority order (aligned with AI-guided flow)
-        if (!formData.business_type_id) {
-          // Business type selector (first field, aligns with AI-guided)
-          document.querySelector<HTMLInputElement>('input[placeholder*="business type"]')?.focus();
-        } else if (!formData.company_name) {
-          document.querySelector<HTMLInputElement>('input[name="company_name"]')?.focus();
-        } else if (!formData.industry) {
-          // Industry is usually a custom component, might need specific selector
-          document.querySelector<HTMLInputElement>('input[placeholder*="industry"]')?.focus();
-        } else if (!formData.business_model) {
-          // Business model might be a select
-          document.querySelector<HTMLSelectElement>('select[name="business_model"]')?.focus();
-        } else if (!formData.revenue) {
-          document.querySelector<HTMLInputElement>('input[name="revenue"]')?.focus();
-        }
-      }, 100);
-      
-      return () => clearTimeout(timer);
-    }
-  }, [session?.currentView, formData.business_type_id, formData.company_name, formData.industry, formData.business_model, formData.revenue]);
+  // Auto-focus logic removed - no automatic field jumping
   
   // Match business type string to business_type_id
   const matchBusinessType = useCallback((query: string, businessTypes: any[]): string | null => {
