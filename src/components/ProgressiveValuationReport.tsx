@@ -110,23 +110,17 @@ export const ProgressiveValuationReport: React.FC<ProgressiveValuationReportProp
     </motion.div>
   );
 
-  // Render fallback section
-  const renderFallbackSection = (section: ReportSection) => {
-    return (
-      <div className="section-fallback border-l-4 border-yellow-500 bg-yellow-50 rounded-lg p-4 mb-4">
-        <div className="flex items-center mb-2">
-          <AlertTriangle className="h-5 w-5 text-yellow-600 mr-2" />
-          <span className="text-sm text-yellow-800 font-medium">
-            Using industry averages - full calculation unavailable
-          </span>
-        </div>
-        <div className="text-sm text-yellow-700 mb-3">
-          This section uses simplified industry benchmarks due to limited data availability.
-        </div>
-        <div dangerouslySetInnerHTML={{ __html: HTMLProcessor.sanitize(section.html) }} />
-      </div>
-    );
-  };
+  // BANK-GRADE REFACTORING: Removed renderFallbackSection()
+  // 
+  // Rationale (Bank-Grade Excellence Audit):
+  // 1. Single Responsibility: Frontend should only render, not generate fallback HTML
+  // 2. No Duplication: Server-generated html_report is the single source of truth
+  // 3. Fail Fast: Better to show error than silently render inferior fallback content
+  // 4. Transparency: If HTML generation fails, we should know about it, not hide it
+  // 5. Consistency: Aligned with backend removal of fallback HTML generation
+  //
+  // If sections come with is_fallback flag, they are now treated as errors
+  // and rendered using renderErrorSection() instead.
 
   // Render error section
   const renderErrorSection = (section: ReportSection) => {
@@ -173,13 +167,18 @@ export const ProgressiveValuationReport: React.FC<ProgressiveValuationReportProp
     return sectionNames[sectionId as keyof typeof sectionNames] || sectionId.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase());
   };
 
-  // Main section renderer with fallback/error handling
+  // BANK-GRADE: Main section renderer - no fallback HTML generation
+  // If sections come with is_fallback flag, treat them as errors (fail fast)
   const renderSection = (section: ReportSection) => {
-    if (section.is_fallback) {
-      return renderFallbackSection(section);
-    }
-    if (section.is_error) {
-      return renderErrorSection(section);
+    // BANK-GRADE: Treat fallback sections as errors - no inferior fallback HTML rendering
+    if (section.is_fallback || section.is_error) {
+      return renderErrorSection({
+        ...section,
+        is_error: true,
+        error_message: section.is_fallback 
+          ? 'This section was marked as fallback. Fallback HTML generation has been removed per bank-grade standards. Please ensure the main report generation succeeds.'
+          : section.error_message
+      });
     }
     // Render section HTML directly without wrapper
     // Safety check: only render if HTML content exists
@@ -189,10 +188,12 @@ export const ProgressiveValuationReport: React.FC<ProgressiveValuationReportProp
     return <div dangerouslySetInnerHTML={{ __html: HTMLProcessor.sanitize(section.html) }} />;
   };
 
-  // Filter out sections with no content to avoid empty divs
+  // BANK-GRADE: Filter out sections with no content to avoid empty divs
+  // Fallback sections are now treated as errors, so they're always shown
   const hasContent = (section: ReportSection): boolean => {
-    if (section.is_fallback || section.is_error) {
-      return true; // Always show fallback/error sections
+    // BANK-GRADE: is_fallback sections are treated as errors - always show them
+    if (section.is_error || section.is_fallback) {
+      return true; // Always show error/fallback sections
     }
     return !!(section.html && section.html.trim() !== '');
   };
