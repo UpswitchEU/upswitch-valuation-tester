@@ -199,7 +199,7 @@ export const ProgressiveValuationReport: React.FC<ProgressiveValuationReportProp
   };
 
   return (
-    <div className={`progressive-report ${className}`}>
+    <div className={`progressive-report px-4 sm:px-6 lg:px-8 ${className}`}>
       {/* Render sections in order */}
       <div className="report-sections space-y-6">
         {sections

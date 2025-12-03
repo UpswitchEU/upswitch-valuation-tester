@@ -50,7 +50,7 @@ export const ValuationInfoPanel: React.FC<ValuationInfoPanelProps> = ({
   if (result.info_tab_html && result.info_tab_html.length > 0) {
     return (
       <div 
-        className="h-full overflow-y-auto info-tab-html"
+        className="h-full overflow-y-auto info-tab-html px-4 sm:px-6 lg:px-8"
         dangerouslySetInnerHTML={{ __html: HTMLProcessor.sanitize(result.info_tab_html) }}
       />
     );

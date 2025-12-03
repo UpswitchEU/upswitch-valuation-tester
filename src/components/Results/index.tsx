@@ -64,7 +64,7 @@ export const Results: React.FC = memo(() => {
   }
 
   return (
-    <div className="h-full overflow-y-auto bg-white">
+    <div className="h-full overflow-y-auto bg-white px-4 sm:px-6 lg:px-8">
       <style>{`
         .accountant-view-report {
           font-family: 'Times New Roman', Times, serif;

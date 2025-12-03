@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
 import { Bot } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
 import { HTMLProcessor } from '../utils/htmlProcessor';
 import { BrandedLoading } from './BrandedLoading';
 
@@ -83,7 +83,7 @@ export const LiveValuationReport: React.FC<LiveValuationReportProps> = ({
       )}
       
       {/* Report content */}
-      <div className="flex-1 overflow-y-auto p-6">
+      <div className="flex-1 overflow-y-auto px-4 sm:px-6 lg:px-8 py-6">
         {processedHtml ? (
           <div 
             className="prose prose-sm max-w-none"
