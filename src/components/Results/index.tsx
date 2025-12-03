@@ -71,7 +71,7 @@ export const Results: React.FC = memo(() => {
           line-height: 1.6;
           color: #000;
           background: #fff;
-          padding: 2rem;
+          padding: 2rem 3rem;
           max-width: 8.5in;
           margin: 0 auto;
         }

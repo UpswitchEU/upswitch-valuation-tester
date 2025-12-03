@@ -225,7 +225,7 @@ export const ProgressiveValuationReport: React.FC<ProgressiveValuationReportProp
 
       {/* Final complete report */}
       {finalReport && (
-        <div className="final-report mt-8 bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+        <div className="final-report mt-8 bg-white rounded-lg shadow-sm border border-gray-200 py-6 px-8 md:px-12">
           <style>{`
             /* Ensure lists show bullet points */
             .final-report ul,
@@ -261,8 +261,8 @@ export const ProgressiveValuationReport: React.FC<ProgressiveValuationReportProp
         </div>
       )}
 
-      {/* Empty state */}
-      {sections.length === 0 && !isGenerating && (
+      {/* Empty state - only show if no sections, not generating, AND no final report */}
+      {sections.length === 0 && !isGenerating && !finalReport && (
         <div className="empty-state text-center py-12">
           <div className="text-gray-400 mb-4">
             <svg className="mx-auto h-12 w-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
