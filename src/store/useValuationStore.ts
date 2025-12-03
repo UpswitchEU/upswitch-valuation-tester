@@ -194,7 +194,6 @@ export const useValuationStore = create<ValuationStore>((set, get) => ({
         // Ensure formData values take precedence for critical fields if they exist
         company_name: formData.company_name || sessionData?.company_name,
         revenue: formData.revenue || sessionData?.revenue,
-        ebitda: formData.ebitda !== undefined ? formData.ebitda : sessionData?.ebitda,
         current_year_data: formData.current_year_data || sessionData?.current_year_data,
       };
       
