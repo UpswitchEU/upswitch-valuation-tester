@@ -634,9 +634,9 @@ export const ManualValuationFlow: React.FC<ManualValuationFlowProps> = memo(({ o
             {activeTab === 'info' && (
               <div className="h-full">
                 {result ? (
-                  <Suspense fallback={<ComponentLoader message="Loading calculation details..." />}>
-                    <ValuationInfoPanel result={result} />
-                  </Suspense>
+                    <Suspense fallback={<ComponentLoader message="Loading calculation details..." />}>
+                      <ValuationInfoPanel result={result} />
+                    </Suspense>
                 ) : (
                   <div className="flex flex-col items-center justify-center h-full p-6 sm:p-8 text-center">
                     <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-zinc-100 flex items-center justify-center mb-3 sm:mb-4">
