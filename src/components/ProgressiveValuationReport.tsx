@@ -181,7 +181,7 @@ export const ProgressiveValuationReport: React.FC<ProgressiveValuationReportProp
 
           {/* Final Report */}
           {finalReport && (
-            <div className="final-report mt-8 bg-white rounded-lg shadow-sm border border-gray-200 py-6 px-8 md:px-12">
+            <div className="final-report mt-8 bg-white shadow-none border-0">
               <style>{`
                 /* Ensure lists show bullet points */
                 .final-report ul,

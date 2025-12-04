@@ -227,6 +227,10 @@ export const ManualValuationFlow: React.FC<ManualValuationFlowProps> = memo(({ o
     setIsStreaming(false);
     setStreamError(null);
     
+    // BANK-GRADE: Clear isCalculating only when report is actually ready
+    // This ensures loading state persists until report is displayed
+    setIsCalculating(false);
+    
     // Clear progressive sections when full report is available
     setReportSections([]);
     
