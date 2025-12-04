@@ -339,6 +339,12 @@ export const AIAssistedValuation: React.FC<AIAssistedValuationProps> = ({
   ) => {
     chatLogger.info('Report section update received', { section, phase, progress, htmlLength: html.length, is_fallback, is_error });
     
+    // If this is an error section, set the main error state
+    if (is_error && error_message) {
+      setError(error_message);
+      setIsGenerating(false);
+    }
+    
     setReportSections(prevSections => {
       // Check if section already exists
       const existingIndex = prevSections.findIndex(
@@ -675,6 +681,9 @@ export const AIAssistedValuation: React.FC<AIAssistedValuationProps> = ({
       reportId: reportId
     });
     
+    // Clear any previous errors
+    setError(null);
+    
     try {
       // Credit validation and deduction now handled by backend
       // Frontend only needs to check localStorage for UI display
@@ -683,6 +692,7 @@ export const AIAssistedValuation: React.FC<AIAssistedValuationProps> = ({
         if (!hasCredits) {
           chatLogger.error('No credits available for guest user');
           setError('No credits available. Please sign up to get more credits.');
+          setIsGenerating(false);
           return;
         }
         chatLogger.info('Guest user has credits, proceeding with backend validation', { 
@@ -840,9 +850,14 @@ export const AIAssistedValuation: React.FC<AIAssistedValuationProps> = ({
       // Handle credit-related errors
       if (error instanceof Error && error.message.includes('Insufficient credits')) {
         setError('You need 1 credit to run this valuation. Please sign up to get more credits.');
+        setIsGenerating(false);
         setShowOutOfCreditsModal(true);
         return;
       }
+      
+      // Set error state for other errors
+      setError(error instanceof Error ? error.message : 'An unexpected error occurred while generating the valuation.');
+      setIsGenerating(false);
       
       // Fallback to original result if backend fails
       setValuationResult(valuationResult);
@@ -867,17 +882,33 @@ export const AIAssistedValuation: React.FC<AIAssistedValuationProps> = ({
     setReportSaved(false);
   };
 
-  // NEW: Toolbar handlers
-  const handleRefresh = () => {
+  // NEW: Toolbar handlers - Retry calculation
+  const handleRefresh = useCallback(() => {
+    // Clear error state
+    setError(null);
+    // Clear partial sections and final HTML
+    setReportSections([]);
+    setFinalReportHtml('');
+    setFinalValuationId('');
+    
+    // If we have a valuation result, regenerate it by calling handleValuationComplete again
     if (valuationResult) {
       setIsGenerating(true);
-      // Regenerate valuation with same inputs
-      // This would typically call the API again
-      setTimeout(() => {
+      // Regenerate with the same result
+      handleValuationComplete(valuationResult).catch((error) => {
+        chatLogger.error('Retry failed', { error });
+        setError('Failed to regenerate valuation. Please try again.');
         setIsGenerating(false);
-      }, 2000);
+      });
+    } else {
+      // If no result, restart the conversation/calculation
+      // This will trigger the chat to regenerate
+      setIsGenerating(true);
+      setStage('chat');
+      // The streaming chat will handle regeneration when user sends a message
+      // For now, we just clear the error and let the user continue the conversation
     }
-  };
+  }, [valuationResult, handleValuationComplete]);
 
   const handleDownload = async () => {
     if (valuationResult && liveHtmlReport) {
@@ -1208,7 +1239,7 @@ export const AIAssistedValuation: React.FC<AIAssistedValuationProps> = ({
               {/* During conversation: Show progressive streaming */}
               {stage === 'chat' && (
                 <>
-                  {reportSections.length === 0 && !finalReportHtml && !error ? (
+                  {(reportSections.length === 0 && !finalReportHtml && !error && !isGenerating) ? (
                     <div className="flex flex-col items-center justify-center h-full p-6 sm:p-8 text-center">
                       <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-zinc-100 flex items-center justify-center mb-3 sm:mb-4">
                         <TrendingUp className="w-6 h-6 sm:w-8 sm:h-8 text-zinc-400" />

@@ -153,8 +153,8 @@ export const ProgressiveValuationReport: React.FC<ProgressiveValuationReportProp
       {/* 3. CONTENT - Sections or Final Report */}
       {!showFullLoadingState && !showFullErrorState && (
         <>
-          {/* Progressive Sections */}
-          {!finalReport && sections.length > 0 && (
+          {/* Progressive Sections - Only show if no error */}
+          {!finalReport && sections.length > 0 && !error && (
             <div className="report-sections space-y-6">
               {sections
                 .filter(section => section.id && typeof section.id === 'string' && hasContent(section))
@@ -164,25 +164,18 @@ export const ProgressiveValuationReport: React.FC<ProgressiveValuationReportProp
                     {renderSection(section)}
                   </div>
                 ))}
-                
-              {/* If we have sections AND an error, show error at the bottom */}
-              {error && (
-                 <div className="mt-8 p-4 bg-red-50 border border-red-200 rounded-lg text-center">
-                    <div className="flex items-center justify-center gap-2 text-red-700 font-medium mb-2">
-                       <AlertTriangle className="w-5 h-5" />
-                       <span>Generation Interrupted</span>
-                    </div>
-                    <p className="text-red-600 text-sm mb-4">{error}</p>
-                    {onRetry && (
-                      <button 
-                        onClick={onRetry}
-                        className="text-sm text-red-700 hover:text-red-800 font-medium underline"
-                      >
-                        Try Again
-                      </button>
-                    )}
-                 </div>
-              )}
+            </div>
+          )}
+
+          {/* Error State - Show centered if error exists (even if sections were partially generated) */}
+          {error && sections.length > 0 && !finalReport && (
+            <div className="flex items-center justify-center w-full flex-grow min-h-[400px]">
+              <ErrorState
+                title="Generation Interrupted"
+                message={error || "The report generation was interrupted. Please try again."}
+                onRetry={onRetry}
+                variant="light"
+              />
             </div>
           )}
 

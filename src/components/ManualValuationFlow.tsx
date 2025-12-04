@@ -593,8 +593,19 @@ export const ManualValuationFlow: React.FC<ManualValuationFlowProps> = memo(({ o
                     isGenerating={isStreaming || isCalculating || retryState.isRetrying}
                     error={streamError ? (streamError.message || "An unexpected error occurred") : null}
                     onRetry={() => {
+                      // Clear error state
                       setStreamError(null);
-                      retryStream();
+                      // Clear partial sections
+                      setReportSections([]);
+                      setFinalReportHtml('');
+                      // Restart calculation by triggering streaming
+                      setIsCalculating(true);
+                      // The useEffect will detect isCalculating change and call retryStream()
+                      setTimeout(() => {
+                        retryStream().catch((error) => {
+                          console.error('[ManualValuationFlow] Retry failed:', error);
+                        });
+                      }, 100);
                     }}
                   />
                 ) : result?.html_report ? (
