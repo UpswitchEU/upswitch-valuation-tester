@@ -4,8 +4,7 @@
  * Similar to Lovable.dev's real-time code generation
  */
 
-import { motion } from 'framer-motion';
-import { AlertCircle, AlertTriangle, Loader2 } from 'lucide-react';
+import { AlertCircle } from 'lucide-react';
 import React from 'react';
 import { HTMLProcessor } from '../utils/htmlProcessor';
 import { LoadingState } from './LoadingState';
@@ -33,12 +32,11 @@ interface ProgressiveValuationReportProps {
 export const ProgressiveValuationReport: React.FC<ProgressiveValuationReportProps> = ({
   className = '',
   sections = [],
-  phase = 0,
+  phase: _phase = 0,
   finalHtml = '',
   isGenerating = false
 }) => {
   // Use props directly instead of useState to prevent stale data
-  const currentPhase = phase;
   const finalReport = finalHtml;
 
   // Remove "Complete Valuation Report" header if present
@@ -65,51 +63,7 @@ export const ProgressiveValuationReport: React.FC<ProgressiveValuationReportProp
   }, [finalReport]);
 
 
-  // Get pending sections for current phase
-  const getPendingSections = (phase: number): string[] => {
-    const phaseSections = {
-      1: ['preview'],
-      2: ['dcf_basic', 'multiples'],
-      3: ['dcf_complete', 'adjustments'],
-      4: ['owner_analysis']
-    };
-    
-    // Filter out sections with invalid IDs before mapping
-    const completedSections = sections
-      .filter(s => s.id && typeof s.id === 'string')
-      .map(s => s.id as string);
-    return phaseSections[phase as keyof typeof phaseSections]?.filter(
-      section => !completedSections.includes(section)
-    ) || [];
-  };
 
-  // Render shimmer loading effect for pending sections - inspired by Ilara-mercury
-  const renderShimmerPlaceholder = (sectionId: string) => (
-    <motion.div
-      key={`shimmer-${sectionId}`}
-      className="bg-white rounded-lg p-6 mb-4 border border-gray-200 relative overflow-hidden"
-      initial={{ opacity: 0, height: 0 }}
-      animate={{ opacity: 1, height: 'auto' }}
-      transition={{ duration: 0.3 }}
-    >
-      <div className="h-24 bg-gray-50 rounded overflow-hidden relative">
-        <motion.div
-          animate={{ opacity: [0.5, 1, 0.5] }}
-          transition={{ duration: 1.5, repeat: Infinity, ease: 'easeInOut' }}
-          className="absolute inset-0"
-          style={{
-            background: 'linear-gradient(90deg, #f7fafc 0%, #edf2f7 50%, #f7fafc 100%)',
-          }}
-        />
-      </div>
-      <div className="text-center mt-4">
-        <span className="inline-flex items-center px-3 py-1 rounded-full text-sm bg-blue-50 text-blue-700">
-          <Loader2 className="w-3 h-3 mr-2 animate-spin text-blue-600" />
-          Preparing {getSectionDisplayName(sectionId)}...
-        </span>
-      </div>
-    </motion.div>
-  );
 
   // BANK-GRADE REFACTORING: Removed renderFallbackSection()
   // 
@@ -146,27 +100,6 @@ export const ProgressiveValuationReport: React.FC<ProgressiveValuationReportProp
     );
   };
 
-  // Get section display name
-  const getSectionDisplayName = (sectionId: string | undefined | null): string => {
-    // Handle undefined/null sectionId
-    if (!sectionId || typeof sectionId !== 'string') {
-      return 'Unknown Section';
-    }
-    
-    const sectionNames = {
-      'instant': 'Instant Preview',
-      'preview': 'Quick Preview',
-      'dcf_basic': 'DCF Analysis',
-      'multiples': 'Market Multiples',
-      'dcf_full': 'Complete DCF',
-      'adjustments': 'Risk Adjustments',
-      'owner_factor': 'Owner Analysis',
-      'complete': 'Final Valuation',
-      'intermediate': 'Intermediate Analysis',
-      'advanced': 'Advanced Analysis'
-    };
-    return sectionNames[sectionId as keyof typeof sectionNames] || sectionId.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase());
-  };
 
   // BANK-GRADE: Main section renderer - no fallback HTML generation
   // If sections come with is_fallback flag, treat them as errors (fail fast)
@@ -199,26 +132,29 @@ export const ProgressiveValuationReport: React.FC<ProgressiveValuationReportProp
     return !!(section.html && section.html.trim() !== '');
   };
 
+  // Determine if we should show the loading state
+  const shouldShowLoading = isGenerating && !finalReport && sections.length === 0;
+
   return (
     <div className={`progressive-report px-4 sm:px-6 lg:px-8 min-h-full flex flex-col ${className}`}>
-      {/* Render sections in order */}
-      <div className="report-sections space-y-6">
-        {sections
-          .filter(section => section.id && typeof section.id === 'string' && hasContent(section))
-          .sort((a, b) => a.phase - b.phase || a.timestamp.getTime() - b.timestamp.getTime())
-          .map(section => (
-            <div key={section.id} className="report-section fade-in">
-              {renderSection(section)}
-            </div>
-          ))}
-      </div>
-
-      {/* Loading placeholders for pending phases - only show when no content exists */}
-      {isGenerating && currentPhase < 4 && sections.length === 0 && (
-        <div className="flex items-center justify-center w-full flex-grow py-12">
+      {/* Show loading state when generating and no content yet */}
+      {shouldShowLoading ? (
+        <div className="flex items-center justify-center w-full flex-grow min-h-[400px]">
           <LoadingState />
         </div>
-      )}
+      ) : (
+        <>
+          {/* Render sections in order */}
+          <div className="report-sections space-y-6">
+            {sections
+              .filter(section => section.id && typeof section.id === 'string' && hasContent(section))
+              .sort((a, b) => a.phase - b.phase || a.timestamp.getTime() - b.timestamp.getTime())
+              .map(section => (
+                <div key={section.id} className="report-section fade-in">
+                  {renderSection(section)}
+                </div>
+              ))}
+          </div>
 
       {/* Final complete report */}
       {finalReport && (
@@ -258,52 +194,22 @@ export const ProgressiveValuationReport: React.FC<ProgressiveValuationReportProp
         </div>
       )}
 
-      {/* Empty state - only show if no sections, not generating, AND no final report */}
-      {sections.length === 0 && !isGenerating && !finalReport && (
-        <div className="empty-state text-center py-12">
-          <div className="text-gray-400 mb-4">
-            <svg className="mx-auto h-12 w-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-            </svg>
-          </div>
-          <h3 className="text-lg font-medium text-gray-900 mb-2">No Report Generated Yet</h3>
-          <p className="text-gray-500">
-            Start a conversation to begin generating your valuation report.
-          </p>
-        </div>
+          {/* Empty state - only show if no sections, not generating, AND no final report */}
+          {sections.length === 0 && !isGenerating && !finalReport && (
+            <div className="empty-state text-center py-12">
+              <div className="text-gray-400 mb-4">
+                <svg className="mx-auto h-12 w-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+              </div>
+              <h3 className="text-lg font-medium text-gray-900 mb-2">No Report Generated Yet</h3>
+              <p className="text-gray-500">
+                Start a conversation to begin generating your valuation report.
+              </p>
+            </div>
+          )}
+        </>
       )}
-
-      <style>{`
-        .section-shimmer {
-          position: relative;
-          overflow: hidden;
-        }
-        
-        .section-shimmer::before {
-          content: '';
-          position: absolute;
-          top: 0;
-          left: -100%;
-          width: 100%;
-          height: 100%;
-          background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
-          animation: shimmer 2s infinite;
-        }
-        
-        @keyframes shimmer {
-          0% { left: -100%; }
-          100% { left: 100%; }
-        }
-        
-        .section-placeholder {
-          animation: fadeIn 0.5s ease-in-out;
-        }
-        
-        @keyframes fadeIn {
-          from { opacity: 0; transform: translateY(10px); }
-          to { opacity: 1; transform: translateY(0); }
-        }
-      `}</style>
     </div>
   );
 };
