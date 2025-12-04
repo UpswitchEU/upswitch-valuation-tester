@@ -37,7 +37,7 @@ interface ManualValuationFlowProps {
 }
 
 export const ManualValuationFlow: React.FC<ManualValuationFlowProps> = memo(({ onComplete }) => {
-  const { result, clearResult, isCalculating, setIsCalculating, setResult, formData } = useValuationStore();
+  const { result, clearResult, isCalculating, setIsCalculating, setResult, formData, calculateValuation } = useValuationStore();
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState<'preview' | 'source' | 'info'>('preview');
   const [valuationName, setValuationName] = useState('');
@@ -592,20 +592,23 @@ export const ManualValuationFlow: React.FC<ManualValuationFlowProps> = memo(({ o
                     finalHtml={finalReportHtml || result?.html_report || ''}
                     isGenerating={isStreaming || isCalculating || retryState.isRetrying}
                     error={streamError ? (streamError.message || "An unexpected error occurred") : null}
-                    onRetry={() => {
+                    onRetry={async () => {
                       // Clear error state
                       setStreamError(null);
                       // Clear partial sections
                       setReportSections([]);
                       setFinalReportHtml('');
-                      // Restart calculation by triggering streaming
-                      setIsCalculating(true);
-                      // The useEffect will detect isCalculating change and call retryStream()
-                      setTimeout(() => {
-                        retryStream().catch((error) => {
-                          console.error('[ManualValuationFlow] Retry failed:', error);
-                        });
-                      }, 100);
+                      // Call calculateValuation() - same as clicking "Calculate Valuation" button
+                      // This will validate form data, set isCalculating to true, and trigger streaming via useEffect
+                      try {
+                        await calculateValuation();
+                      } catch (error) {
+                        console.error('[ManualValuationFlow] Retry failed:', error);
+                        handleStreamError(
+                          error instanceof Error ? error.message : 'Failed to retry calculation',
+                          error instanceof Error ? error.constructor.name : 'UnknownError'
+                        );
+                      }
                     }}
                   />
                 ) : result?.html_report ? (
