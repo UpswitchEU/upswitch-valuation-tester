@@ -9,7 +9,6 @@ import { useValuationStore } from '../store/useValuationStore';
 import type { ValuationResponse } from '../types/valuation';
 import { NameGenerator } from '../utils/nameGenerator';
 import { measureWebVitals, performanceTracker } from '../utils/performance';
-import { ErrorRecovery } from './ErrorRecovery';
 import { HTMLView } from './HTMLView';
 import { ProgressiveValuationReport } from './ProgressiveValuationReport';
 import { ResizableDivider } from './ResizableDivider';

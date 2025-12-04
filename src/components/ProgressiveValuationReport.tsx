@@ -1,7 +1,8 @@
-import { AlertTriangle, RefreshCw } from 'lucide-react';
+import { AlertTriangle } from 'lucide-react';
 import React from 'react';
 import { HTMLProcessor } from '../utils/htmlProcessor';
 import { LoadingState } from './LoadingState';
+import { ErrorState } from './ErrorState';
 
 interface ReportSection {
   id: string;
@@ -109,13 +110,17 @@ export const ProgressiveValuationReport: React.FC<ProgressiveValuationReportProp
     return !!(section.html && section.html.trim() !== '');
   };
 
-  // Determine state
+  // Determine state - Priority: Error > Loading > Content
   // Loading: Generating AND No Final Report AND No Error
+  // Keep loading visible until we have definitive outcome (error OR finalReport)
   const isLoading = isGenerating && !finalReport && !error;
   
   // Show Loading State if loading AND no sections yet
   // If sections exist, we show them progressively
-  const showFullLoadingState = isLoading && sections.length === 0;
+  // Loading persists until error appears (smooth transition)
+  // Error state takes priority - show even if isGenerating becomes false
+  const showFullLoadingState = isLoading && sections.length === 0 && !error;
+  const showFullErrorState = error && sections.length === 0 && !finalReport;
 
   // Only show sections if we are not showing full loading state AND not showing full error state
   // If we have an error but no sections, we show full error state
@@ -127,40 +132,24 @@ export const ProgressiveValuationReport: React.FC<ProgressiveValuationReportProp
     <div className={`progressive-report px-4 sm:px-6 lg:px-8 min-h-full flex flex-col ${className}`}>
       
       {/* 1. LOADING STATE - Centered & Persistent until content or error */}
-      {showFullLoadingState && (
+      {showFullLoadingState && !showFullErrorState && (
         <div className="flex items-center justify-center w-full flex-grow min-h-[400px]">
           <LoadingState />
         </div>
       )}
 
-      {/* 2. ERROR STATE - Centered if no content, otherwise handled by sections */}
-      {!showFullLoadingState && error && sections.length === 0 && (
-        <div className="flex flex-col items-center justify-center w-full flex-grow min-h-[400px] animate-in fade-in duration-300">
-          <div className="bg-white p-8 rounded-2xl shadow-sm border border-red-100 max-w-md w-full text-center">
-            <div className="w-16 h-16 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-6">
-              <AlertTriangle className="w-8 h-8 text-red-500" />
-            </div>
-            <h3 className="text-xl font-semibold text-gray-900 mb-2">
-              Generation Failed
-            </h3>
-            <p className="text-gray-500 mb-6 leading-relaxed">
-              {error}
-            </p>
-            {onRetry && (
-              <button 
-                onClick={onRetry}
-                className="inline-flex items-center px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg font-medium transition-colors shadow-sm hover:shadow"
-              >
-                <RefreshCw className="w-4 h-4 mr-2" />
-                Try Again
-              </button>
-            )}
-          </div>
-        </div>
+      {/* 2. ERROR STATE - Centered if no content, takes priority over loading */}
+      {showFullErrorState && (
+        <ErrorState
+          title="Valuation Generation Failed"
+          message={error}
+          onRetry={onRetry}
+          variant="light"
+        />
       )}
 
       {/* 3. CONTENT - Sections or Final Report */}
-      {!showFullLoadingState && (
+      {!showFullLoadingState && !showFullErrorState && (
         <>
           {/* Progressive Sections */}
           {!finalReport && sections.length > 0 && (
