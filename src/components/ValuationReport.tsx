@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { generateReportId, isValidReportId } from '../utils/reportIdGenerator';
 import UrlGeneratorService from '../services/urlGenerator';
+import { LoadingState, INITIALIZATION_STEPS } from './LoadingState';
 import { AIAssistedValuation } from './AIAssistedValuation';
 import { ManualValuationFlow } from './ManualValuationFlow';
 import { useAuth } from '../hooks/useAuth';
@@ -109,12 +110,10 @@ export const ValuationReport: React.FC = () => {
       {/* Main content area */}
       <div className="flex-1 overflow-hidden">
         {stage === 'loading' && (
-          <div className="flex items-center justify-center h-full">
-            <div className="flex flex-col items-center space-y-4">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-500"></div>
-              <p className="text-zinc-400">Loading report...</p>
-            </div>
-          </div>
+          <LoadingState 
+            steps={INITIALIZATION_STEPS} 
+            variant="dark" 
+          />
         )}
         
         {error && (
