@@ -133,6 +133,9 @@ export const ProgressiveValuationReport: React.FC<ProgressiveValuationReportProp
   };
 
   // Determine if we should show the loading state
+  // Show loading during initial generation phase (before any sections arrive)
+  // Once sections start streaming in, show them progressively instead
+  // Final HTML report will replace everything once ready
   const shouldShowLoading = isGenerating && !finalReport && sections.length === 0;
 
   return (
