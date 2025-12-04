@@ -8,6 +8,7 @@ import { motion } from 'framer-motion';
 import { AlertCircle, AlertTriangle, Loader2 } from 'lucide-react';
 import React from 'react';
 import { HTMLProcessor } from '../utils/htmlProcessor';
+import { CoolLoadingState } from './CoolLoadingState';
 
 interface ReportSection {
   id: string;
@@ -199,7 +200,7 @@ export const ProgressiveValuationReport: React.FC<ProgressiveValuationReportProp
   };
 
   return (
-    <div className={`progressive-report px-4 sm:px-6 lg:px-8 ${className}`}>
+    <div className={`progressive-report px-4 sm:px-6 lg:px-8 min-h-full flex flex-col ${className}`}>
       {/* Render sections in order */}
       <div className="report-sections space-y-6">
         {sections
@@ -214,12 +215,8 @@ export const ProgressiveValuationReport: React.FC<ProgressiveValuationReportProp
 
       {/* Loading placeholders for pending phases - only show when no content exists */}
       {isGenerating && currentPhase < 4 && sections.length === 0 && (
-        <div className="pending-sections mt-6">
-          <div className="space-y-4">
-            {getPendingSections(currentPhase + 1).map(section => 
-              renderShimmerPlaceholder(section)
-            )}
-          </div>
+        <div className="flex items-center justify-center w-full flex-grow py-12">
+          <CoolLoadingState />
         </div>
       )}
 
