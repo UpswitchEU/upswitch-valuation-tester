@@ -1,7 +1,7 @@
 import React from 'react';
-import { LoadingSkeleton } from './LoadingSkeleton';
 import { SectionError } from './SectionError';
 import { HTMLProcessor } from '../../utils/htmlProcessor';
+import { Loader2 } from 'lucide-react';
 
 export interface Section {
   id: string;
@@ -40,7 +40,21 @@ export const ProgressiveReportSection: React.FC<ProgressiveReportSectionProps> =
 }) => {
   // Loading state
   if (section.status === 'loading' || section.status === 'calculating') {
-    return <LoadingSkeleton name={section.name} />;
+    return (
+      <div className="animate-pulse bg-gray-50 rounded-lg p-6 mb-4 border border-gray-100">
+        <div className="flex items-center gap-3 mb-4">
+          <Loader2 className="w-5 h-5 text-blue-500 animate-spin" />
+          <div>
+            <h3 className="text-sm font-medium text-gray-700">{section.name}</h3>
+            <p className="text-xs text-gray-500">Calculating...</p>
+          </div>
+        </div>
+        <div className="space-y-2 opacity-50">
+          <div className="h-2 bg-gray-200 rounded w-3/4"></div>
+          <div className="h-2 bg-gray-200 rounded w-1/2"></div>
+        </div>
+      </div>
+    );
   }
 
   // Error state

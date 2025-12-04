@@ -1,7 +1,7 @@
 import { Bot } from 'lucide-react';
 import React, { useEffect, useState } from 'react';
 import { HTMLProcessor } from '../utils/htmlProcessor';
-import { BrandedLoading } from './BrandedLoading';
+import { LoadingState } from './LoadingState';
 
 
 interface LiveValuationReportProps {
@@ -94,13 +94,7 @@ export const LiveValuationReport: React.FC<LiveValuationReportProps> = ({
             <div className="w-full max-w-md">
               {isGenerating ? (
                 <div className="text-center mb-8">
-                  <BrandedLoading 
-                    size="lg" 
-                    color="gray" 
-                    showText={true}
-                    text="Generating insights..."
-                    className="animate-pulse"
-                  />
+                  <LoadingState />
                 </div>
               ) : (
                 <div className="text-center mb-8">

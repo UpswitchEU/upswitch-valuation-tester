@@ -1,4 +1,4 @@
-import { Code, Download, Eye, Info, Maximize, RefreshCw, Edit3, MessageSquare } from 'lucide-react';
+import { Code, Download, Eye, Info, Maximize, RefreshCw, Edit3, MessageSquare, Loader2 } from 'lucide-react';
 import React, { useEffect, useRef, useState } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import { useValuationSessionStore } from '../store/useValuationSessionStore';
@@ -6,7 +6,6 @@ import { FlowSwitchWarningModal } from './FlowSwitchWarningModal';
 import { ValuationToolbarProps } from '../types/valuation';
 import { generalLogger } from '../utils/logger';
 import { NameGenerator } from '../utils/nameGenerator';
-import { BrandedLoading } from './BrandedLoading';
 import { UserDropdown } from './UserDropdown';
 import { Tooltip } from './ui/Tooltip';
 
@@ -161,7 +160,7 @@ export const ValuationToolbar: React.FC<ValuationToolbarProps> = ({
               <div className="relative flex items-center gap-2 group">
                 <div className="flex items-center gap-2 text-sm font-medium text-white">
                   {isGenerating ? (
-                    <BrandedLoading size="sm" color="white" />
+                    <Loader2 className="w-4 h-4 animate-spin text-white" />
                   ) : (
                     <div className="w-4 h-4 rounded bg-gradient-to-br from-blue-500 to-purple-600 animate-pulse"></div>
                   )}
