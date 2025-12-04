@@ -1208,7 +1208,7 @@ export const AIAssistedValuation: React.FC<AIAssistedValuationProps> = ({
               {/* During conversation: Show progressive streaming */}
               {stage === 'chat' && (
                 <>
-                  {reportSections.length === 0 && !finalReportHtml ? (
+                  {reportSections.length === 0 && !finalReportHtml && !error ? (
                     <div className="flex flex-col items-center justify-center h-full p-6 sm:p-8 text-center">
                       <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-zinc-100 flex items-center justify-center mb-3 sm:mb-4">
                         <TrendingUp className="w-6 h-6 sm:w-8 sm:h-8 text-zinc-400" />
@@ -1223,7 +1223,9 @@ export const AIAssistedValuation: React.FC<AIAssistedValuationProps> = ({
                       sections={reportSections}
                       phase={reportPhase}
                       finalHtml={finalReportHtml}
-                      isGenerating={true}
+                      isGenerating={isGenerating || stage === 'chat'}
+                      error={error}
+                      onRetry={handleRefresh}
                     />
                   )}
                 </>

@@ -586,7 +586,7 @@ export const ManualValuationFlow: React.FC<ManualValuationFlowProps> = memo(({ o
               <div className="h-full">
                 {/* Match AI-guided flow: Show ProgressiveValuationReport during streaming with finalHtml */}
                 {/* ProgressiveValuationReport displays final HTML report when finalHtml prop is provided */}
-                {(isStreaming || reportSections.length > 0 || finalReportHtml || streamError) ? (
+                {(isStreaming || reportSections.length > 0 || finalReportHtml || streamError || isCalculating) ? (
                   <ProgressiveValuationReport
                     sections={reportSections}
                     phase={reportPhase}
