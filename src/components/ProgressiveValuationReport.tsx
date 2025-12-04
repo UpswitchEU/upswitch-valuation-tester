@@ -140,12 +140,14 @@ export const ProgressiveValuationReport: React.FC<ProgressiveValuationReportProp
 
       {/* 2. ERROR STATE - Centered if no content, takes priority over loading */}
       {showFullErrorState && (
-        <ErrorState
-          title="Valuation Generation Failed"
-          message={error}
-          onRetry={onRetry}
-          variant="light"
-        />
+        <div className="flex items-center justify-center w-full flex-grow min-h-[400px]">
+          <ErrorState
+            title="Valuation Generation Failed"
+            message={error}
+            onRetry={onRetry}
+            variant="light"
+          />
+        </div>
       )}
 
       {/* 3. CONTENT - Sections or Final Report */}
