@@ -80,8 +80,8 @@ export const LoadingState: React.FC<LoadingStateProps> = ({
     <div className="flex flex-col items-center justify-center h-full min-h-[400px] p-8 text-center">
       <div className="relative mb-6 group">
         {/* Outer pulsing rings */}
-        <div className={`absolute inset-0 rounded-full animate-ping opacity-75 ${isDark ? 'bg-blue-400/30' : 'bg-blue-500/20'}`} style={{ animationDuration: '2s' }} />
-        <div className={`absolute inset-0 rounded-full animate-ping opacity-50 ${isDark ? 'bg-purple-400/20' : 'bg-purple-500/10'}`} style={{ animationDuration: '3s', animationDelay: '0.5s' }} />
+        <div className={`absolute inset-0 rounded-full animate-ping opacity-75 ${isDark ? 'bg-primary-400/30' : 'bg-primary-500/20'}`} style={{ animationDuration: '2s' }} />
+        <div className={`absolute inset-0 rounded-full animate-ping opacity-50 ${isDark ? 'bg-primary-300/20' : 'bg-primary-400/10'}`} style={{ animationDuration: '3s', animationDelay: '0.5s' }} />
         
         {/* Inner container */}
         <div className={`relative p-5 rounded-full shadow-lg border z-10 flex items-center justify-center transform transition-transform group-hover:scale-105 duration-300 ${
@@ -89,7 +89,7 @@ export const LoadingState: React.FC<LoadingStateProps> = ({
             ? 'bg-zinc-900 border-zinc-800' 
             : 'bg-white border-zinc-100'
         }`}>
-          <Loader2 className={`w-8 h-8 animate-spin ${isDark ? 'text-blue-400' : 'text-blue-600'}`} />
+          <Loader2 className={`w-8 h-8 animate-spin ${isDark ? 'text-primary-400' : 'text-primary-600'}`} />
         </div>
       </div>
       
@@ -97,8 +97,8 @@ export const LoadingState: React.FC<LoadingStateProps> = ({
       <div className="mb-2">
         <span className={`text-xs font-medium px-3 py-1 rounded-full ${
           isDark 
-            ? 'text-blue-300 bg-blue-900/30' 
-            : 'text-blue-600 bg-blue-50'
+            ? 'text-primary-300 bg-primary-900/30' 
+            : 'text-primary-600 bg-primary-50'
         }`}>
           Step {currentStepIndex + 1} of {steps.length}
         </span>
