@@ -584,30 +584,19 @@ export const ManualValuationFlow: React.FC<ManualValuationFlowProps> = memo(({ o
           <div className="flex-1 overflow-y-auto">
             {activeTab === 'preview' && (
               <div className="h-full">
-                {/* Show error recovery if error occurred */}
-                {streamError && (
-                  <div className="p-4">
-                    <ErrorRecovery
-                      error={streamError}
-                      onRetry={() => {
-                        setStreamError(null);
-                        retryStream();
-                      }}
-                      onDismiss={() => setStreamError(null)}
-                      showPartialResults={reportSections.length > 0}
-                      partialResults={reportSections}
-                    />
-                  </div>
-                )}
-
                 {/* Match AI-guided flow: Show ProgressiveValuationReport during streaming with finalHtml */}
                 {/* ProgressiveValuationReport displays final HTML report when finalHtml prop is provided */}
-                {(isStreaming || reportSections.length > 0 || finalReportHtml) ? (
+                {(isStreaming || reportSections.length > 0 || finalReportHtml || streamError) ? (
                   <ProgressiveValuationReport
                     sections={reportSections}
                     phase={reportPhase}
                     finalHtml={finalReportHtml || result?.html_report || ''}
                     isGenerating={isStreaming || isCalculating || retryState.isRetrying}
+                    error={streamError ? (streamError.message || "An unexpected error occurred") : null}
+                    onRetry={() => {
+                      setStreamError(null);
+                      retryStream();
+                    }}
                   />
                 ) : result?.html_report ? (
                   <Suspense fallback={<ComponentLoader message="Loading report..." />}>
