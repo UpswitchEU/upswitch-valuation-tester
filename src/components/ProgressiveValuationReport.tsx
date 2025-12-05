@@ -1,8 +1,8 @@
 import { AlertTriangle } from 'lucide-react';
 import React from 'react';
 import { HTMLProcessor } from '../utils/htmlProcessor';
-import { LoadingState } from './LoadingState';
 import { ErrorState } from './ErrorState';
+import { LoadingState } from './LoadingState';
 
 interface ReportSection {
   id: string;
@@ -115,12 +115,13 @@ export const ProgressiveValuationReport: React.FC<ProgressiveValuationReportProp
   // Keep loading visible until we have definitive outcome (error OR finalReport)
   const isLoading = isGenerating && !finalReport && !error;
   
-  // Show Loading State if loading AND no sections yet
-  // If sections exist, we show them progressively
-  // Loading persists until error appears (smooth transition)
-  // Error state takes priority - show even if isGenerating becomes false
-  const showFullLoadingState = isLoading && sections.length === 0 && !error;
-  const showFullErrorState = error && sections.length === 0 && !finalReport;
+  // BANK-GRADE: Show loading state whenever isGenerating is true AND no final report AND no error
+  // This ensures loading persists until report is actually ready or error occurs
+  // Previously: Only showed when sections.length === 0, which caused loading to disappear
+  // when initial loading section was added. Now shows loading whenever generating,
+  // regardless of sections, until final report is available or error occurs.
+  const showFullLoadingState = isLoading;
+  const showFullErrorState = error && !finalReport;
 
   // Only show sections if we are not showing full loading state AND not showing full error state
   // If we have an error but no sections, we show full error state
