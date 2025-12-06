@@ -165,7 +165,7 @@ export const ValuationForm: React.FC = () => {
     }
   }, [session?.currentView, session?.sessionId, session?.partialData, getSessionData, updateFormData, hasLoadedSessionData, businessTypes, matchBusinessType]);
   
-  // Debounced sync form data to session store (2000ms delay to reduce API calls)
+  // Debounced sync form data to session store (500ms delay)
   const debouncedSyncToSession = useCallback(
     debounce(async (data: typeof formData) => {
       if (!session || !data || Object.keys(data).length === 0) {
@@ -214,7 +214,7 @@ export const ValuationForm: React.FC = () => {
       } catch (err) {
         generalLogger.warn('Failed to sync form data to session', { error: err });
       }
-    }, 2000), // Increased from 500ms to 2000ms to reduce API calls
+    }, 500),
     [session, updateSessionData]
   );
   

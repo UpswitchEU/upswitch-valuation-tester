@@ -28,8 +28,9 @@ export class RegistryService {
   private pendingRequests: Map<string, Promise<any>>;
 
   constructor(config?: Partial<RegistryServiceConfig>) {
-    // Use Node.js backend instead of direct Python engine calls
-    this.baseURL = config?.baseURL || import.meta.env.VITE_BACKEND_URL || import.meta.env.VITE_API_BASE_URL || 'https://api.upswitch.biz';
+    // Use Node.js backend - same baseURL as backendApi for consistency
+    // This ensures we use the same route structure as conversational flow
+    this.baseURL = config?.baseURL || import.meta.env.VITE_BACKEND_URL || import.meta.env.VITE_API_BASE_URL || 'https://web-production-8d00b.up.railway.app';
     this.timeout = config?.timeout || 10000;
     this.cache = new RegistryCache(config?.maxCacheSize, config?.cacheTTL);
     this.pendingRequests = new Map();
