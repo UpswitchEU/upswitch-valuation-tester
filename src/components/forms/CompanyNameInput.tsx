@@ -31,7 +31,6 @@ export const CompanyNameInput: React.FC<CompanyNameInputProps> = ({
   const [isLoading, setIsLoading] = useState(false);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [exactMatch, setExactMatch] = useState<CompanySearchResult | null>(null);
-  const [hoveredCompany, setHoveredCompany] = useState<CompanySearchResult | null>(null);
   const [highlightedIndex, setHighlightedIndex] = useState(-1);
   const containerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -277,10 +276,8 @@ export const CompanyNameInput: React.FC<CompanyNameInputProps> = ({
                 }`}
                 onClick={() => handleSelectCompany(company)}
                 onMouseEnter={() => {
-                  setHoveredCompany(company);
                   setHighlightedIndex(index);
                 }}
-                onMouseLeave={() => setHoveredCompany(null)}
               >
                 {isExactMatch && (
                   <div className="absolute left-0 top-0 bottom-0 w-1 bg-emerald-500 rounded-r" />

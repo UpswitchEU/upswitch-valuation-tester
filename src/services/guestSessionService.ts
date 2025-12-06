@@ -8,12 +8,6 @@
 const GUEST_SESSION_KEY = 'upswitch_guest_session_id';
 const GUEST_SESSION_EXPIRES_KEY = 'upswitch_guest_session_expires_at';
 
-interface GuestSession {
-  session_id: string;
-  expires_at: string;
-  days_remaining: number;
-}
-
 class GuestSessionService {
   private apiUrl: string;
 
