@@ -15,6 +15,8 @@ class BackendAPI {
   private client: AxiosInstance;
   private activeRequests: Map<string, AbortController> = new Map();
   private requestTimeouts: Map<string, NodeJS.Timeout> = new Map();
+  private lastActivityUpdate: number = 0;
+  private activityUpdateThrottle: number = 5000; // 5 seconds minimum between activity updates
 
   constructor() {
     this.client = axios.create({
@@ -42,10 +44,14 @@ class BackendAPI {
                 guest_session_id: sessionId
               };
             }
-            // Update session activity (fire and forget)
-            guestSessionService.updateActivity().catch(() => {
-              // Ignore errors - not critical
-            });
+            // Update session activity (throttled - max once per 5 seconds)
+            const now = Date.now();
+            if (now - this.lastActivityUpdate >= this.activityUpdateThrottle) {
+              this.lastActivityUpdate = now;
+              guestSessionService.updateActivity().catch(() => {
+                // Ignore errors - not critical
+              });
+            }
           } catch (error) {
             apiLogger.warn('Failed to add guest session to request', { error });
             // Don't block request if session tracking fails
