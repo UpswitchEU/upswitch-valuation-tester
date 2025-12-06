@@ -1,16 +1,16 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { useParams, useNavigate, useLocation } from 'react-router-dom';
-import { generateReportId, isValidReportId } from '../utils/reportIdGenerator';
-import UrlGeneratorService from '../services/urlGenerator';
-import { LoadingState, INITIALIZATION_STEPS } from './LoadingState';
-import { AIAssistedValuation } from './AIAssistedValuation';
-import { ManualValuationFlow } from './ManualValuationFlow';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { guestCreditService } from '../services/guestCreditService';
-import { OutOfCreditsModal } from './OutOfCreditsModal';
 import { reportApiService } from '../services/reportApi';
+import UrlGeneratorService from '../services/urlGenerator';
 import { useValuationSessionStore } from '../store/useValuationSessionStore';
 import type { ValuationResponse } from '../types/valuation';
+import { generateReportId, isValidReportId } from '../utils/reportIdGenerator';
+import { AIAssistedValuation } from './AIAssistedValuation';
+import { INITIALIZATION_STEPS, LoadingState } from './LoadingState';
+import { ManualValuationFlow } from './ManualValuationFlow';
+import { OutOfCreditsModal } from './OutOfCreditsModal';
 
 type Stage = 'loading' | 'data-entry' | 'processing' | 'flow-selection';
 
@@ -30,8 +30,38 @@ export const ValuationReport: React.FC = () => {
   const prefilledQuery = (location.state as any)?.prefilledQuery || null;
   const autoSend = (location.state as any)?.autoSend || false;
 
-  // Initialize session on mount
+  // Track initialization state per reportId using ref to avoid dependency loops
+  // Structure: Map<reportId, { initialized: boolean, isInitializing: boolean }>
+  const initializationState = useRef<Map<string, { initialized: boolean; isInitializing: boolean }>>(new Map());
+  
+  // Initialize session on mount - only once per reportId
   const initializeSessionForReport = useCallback(async (reportId: string) => {
+    const state = initializationState.current.get(reportId);
+    
+    // Prevent concurrent initialization attempts
+    if (state?.isInitializing) {
+      return; // Already initializing, wait for completion
+    }
+    
+    // Prevent re-initialization if already initialized
+    if (state?.initialized) {
+      return; // Already initialized, don't re-initialize
+    }
+    
+    // Check if we already have a session for this reportId
+    const { session: currentSession } = useValuationSessionStore.getState();
+    if (currentSession?.reportId === reportId && currentSession.currentView) {
+      // Session exists, mark as initialized without calling initializeSession
+      initializationState.current.set(reportId, { initialized: true, isInitializing: false });
+      if (stage === 'loading') {
+        setStage('data-entry');
+      }
+      return;
+    }
+    
+    // Mark as initializing to prevent concurrent calls
+    initializationState.current.set(reportId, { initialized: false, isInitializing: true });
+    
     try {
       // Check for flow parameter in URL to set initial view
       const searchParams = new URLSearchParams(window.location.search);
@@ -48,6 +78,7 @@ export const ValuationReport: React.FC = () => {
           // Still initialize session but with manual view
           await initializeSession(reportId, 'manual');
           setStage('data-entry');
+          initializationState.current.set(reportId, { initialized: true, isInitializing: false });
           return;
         }
       }
@@ -55,11 +86,14 @@ export const ValuationReport: React.FC = () => {
       // Initialize or load session with prefilled query from homepage
       await initializeSession(reportId, initialView, prefilledQuery);
       setStage('data-entry');
+      initializationState.current.set(reportId, { initialized: true, isInitializing: false });
     } catch (error) {
+      // On error, allow retry by not marking as initialized
+      initializationState.current.set(reportId, { initialized: false, isInitializing: false });
       console.error('Failed to initialize session:', error);
       setError('Failed to initialize valuation session');
     }
-  }, [isAuthenticated, initializeSession]);
+  }, [isAuthenticated, initializeSession, stage]);
 
   // Validate and set report ID, then initialize session
   useEffect(() => {
@@ -70,23 +104,39 @@ export const ValuationReport: React.FC = () => {
       return;
     }
     
+    // Clean up initialization state for previous reportId if changed
+    if (currentReportId && currentReportId !== reportId) {
+      initializationState.current.delete(currentReportId);
+    }
+    
     setCurrentReportId(reportId);
     initializeSessionForReport(reportId);
-  }, [reportId, navigate, initializeSessionForReport]);
+  }, [reportId, navigate, initializeSessionForReport, currentReportId]);
 
-  // Sync URL with current view
+  // Sync URL with current view - prevent loops by only updating when needed
+  // Only sync after initialization is complete to avoid race conditions
   useEffect(() => {
-    if (session?.currentView) {
-      const searchParams = new URLSearchParams(window.location.search);
-      const currentFlow = searchParams.get('flow');
-      
-      if (currentFlow !== session.currentView) {
-        searchParams.set('flow', session.currentView);
-        const newUrl = `${window.location.pathname}?${searchParams.toString()}`;
-        window.history.replaceState(null, '', newUrl);
-      }
+    if (!session?.currentView || !session?.reportId) {
+      return;
     }
-  }, [session?.currentView]);
+    
+    const state = initializationState.current.get(session.reportId);
+    
+    // Only sync URL if initialization is complete
+    if (!state?.initialized) {
+      return; // Wait for initialization to complete
+    }
+    
+    const searchParams = new URLSearchParams(window.location.search);
+    const currentFlow = searchParams.get('flow');
+    
+    // Only update URL if it's different - this prevents infinite loops
+    if (currentFlow !== session.currentView) {
+      searchParams.set('flow', session.currentView);
+      const newUrl = `${window.location.pathname}?${searchParams.toString()}`;
+      window.history.replaceState(null, '', newUrl);
+    }
+  }, [session?.currentView, session?.reportId]);
 
   // Handle valuation completion
   const handleValuationComplete = async (result: ValuationResponse) => {

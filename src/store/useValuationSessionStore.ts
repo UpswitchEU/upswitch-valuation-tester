@@ -44,12 +44,36 @@ export const useValuationSessionStore = create<ValuationSessionStore>((set, get)
     try {
       storeLogger.info('Initializing valuation session', { reportId, currentView, hasPrefilledQuery: !!prefilledQuery });
       
+      // Check if we already have a session for this reportId - if so, don't override it
+      const { session: existingLocalSession } = get();
+      if (existingLocalSession?.reportId === reportId && existingLocalSession.currentView) {
+        storeLogger.info('Session already exists locally, skipping initialization', { 
+          reportId, 
+          existingView: existingLocalSession.currentView,
+          requestedView: currentView 
+        });
+        // Only update prefilledQuery if provided and not already set
+        if (prefilledQuery && existingLocalSession.partialData) {
+          const updatedPartialData = { ...existingLocalSession.partialData } as any;
+          if (!updatedPartialData._prefilledQuery) {
+            updatedPartialData._prefilledQuery = prefilledQuery;
+            set({
+              session: {
+                ...existingLocalSession,
+                partialData: updatedPartialData,
+              },
+            });
+          }
+        }
+        return; // Don't re-initialize if session already exists
+      }
+      
       // Try to load existing session from backend
       const existingSession = await backendAPI.getValuationSession(reportId);
       
       if (existingSession) {
-        // Load existing session
-        // If we have a prefilledQuery and session doesn't have it, update it
+        // Load existing session - use backend's currentView, not the parameter
+        // This prevents overriding a view that was just switched
         const updatedPartialData = { ...existingSession.partialData } as any;
         if (prefilledQuery && !updatedPartialData._prefilledQuery) {
           updatedPartialData._prefilledQuery = prefilledQuery;
@@ -304,6 +328,9 @@ export const useValuationSessionStore = create<ValuationSessionStore>((set, get)
   
   /**
    * Switch between manual and AI-guided views
+   * 
+   * This function is idempotent and safe to call multiple times.
+   * It prevents race conditions by checking current state before updating.
    */
   switchView: async (view: 'manual' | 'conversational', resetData: boolean = false) => {
     const { session } = get();
@@ -313,49 +340,78 @@ export const useValuationSessionStore = create<ValuationSessionStore>((set, get)
       return;
     }
     
+    // Idempotency check: if already in target view, no-op
     if (session.currentView === view) {
-      // Already in this view
+      storeLogger.debug('Already in target view', { reportId: session.reportId, view });
+      return;
+    }
+    
+    // Prevent concurrent switches by checking if already syncing
+    const { isSyncing } = get();
+    if (isSyncing) {
+      storeLogger.warn('Switch already in progress, ignoring concurrent request', {
+        reportId: session.reportId,
+        requestedView: view,
+      });
       return;
     }
     
     try {
       set({ isSyncing: true, syncError: null });
       
+      // Re-check session state after setting syncing flag to prevent race conditions
+      const { session: currentSession } = get();
+      if (!currentSession || currentSession.reportId !== session.reportId) {
+        storeLogger.warn('Session changed during switch, aborting', {
+          originalReportId: session.reportId,
+        });
+        set({ isSyncing: false });
+        return;
+      }
+      
+      // Double-check we're not already in the target view (race condition protection)
+      if (currentSession.currentView === view) {
+        storeLogger.debug('Already in target view (race condition check)', {
+          reportId: currentSession.reportId,
+          view,
+        });
+        set({ isSyncing: false });
+        return;
+      }
+      
       const updatedSession: ValuationSession = {
-        ...session,
+        ...currentSession,
         currentView: view,
         updatedAt: new Date(),
       };
       
       // If resetData is true, keep only _prefilledQuery, discard everything else
       if (resetData) {
-        const prefilledQuery = (session.partialData as any)?._prefilledQuery;
+        const prefilledQuery = (currentSession.partialData as any)?._prefilledQuery;
         updatedSession.partialData = prefilledQuery ? { _prefilledQuery: prefilledQuery } as any : {};
         updatedSession.sessionData = {};
         updatedSession.dataSource = view; // Reset to single source
         storeLogger.info('Resetting session data on flow switch', {
-          reportId: session.reportId,
+          reportId: currentSession.reportId,
           preservedPrefilledQuery: !!prefilledQuery,
         });
       }
       
-      // Update backend
-      await backendAPI.switchValuationView(session.reportId, view);
+      // Update backend first (fail-fast approach)
+      await backendAPI.switchValuationView(currentSession.reportId, view);
       
-      // Update URL query parameter to reflect the new flow
-      const currentUrl = new URL(window.location.href);
-      currentUrl.searchParams.set('flow', view);
-      window.history.replaceState({}, '', currentUrl.toString());
-      
+      // Update local state only after successful backend update
+      // URL will be synced by useEffect in ValuationReport.tsx
+      // This prevents circular updates and infinite loops
       set({
         session: updatedSession,
         isSyncing: false,
         syncError: null,
       });
       
-      storeLogger.info('View switched', {
-        reportId: session.reportId,
-        from: session.currentView,
+      storeLogger.info('View switched successfully', {
+        reportId: currentSession.reportId,
+        from: currentSession.currentView,
         to: view,
         resetData,
       });
@@ -363,26 +419,26 @@ export const useValuationSessionStore = create<ValuationSessionStore>((set, get)
       storeLogger.error('Failed to switch view', {
         error: error instanceof Error ? error.message : 'Unknown error',
         reportId: session.reportId,
+        requestedView: view,
       });
       
-      // Update local state even if backend fails
-      set({
-        session: {
-          ...session,
-          currentView: view,
-          updatedAt: new Date(),
-        },
-        isSyncing: false,
-        syncError: error.message || 'Failed to sync with backend',
-      });
-      
-      // Always update URL even if backend fails
-      try {
-        const currentUrl = new URL(window.location.href);
-        currentUrl.searchParams.set('flow', view);
-        window.history.replaceState({}, '', currentUrl.toString());
-      } catch (urlError) {
-        storeLogger.warn('Failed to update URL on view switch', { error: urlError });
+      // Update local state even if backend fails (optimistic update)
+      // This allows UI to update immediately, backend will sync later
+      // URL will be synced by useEffect in ValuationReport.tsx
+      const { session: currentSession } = get();
+      if (currentSession?.reportId === session.reportId) {
+        set({
+          session: {
+            ...currentSession,
+            currentView: view,
+            updatedAt: new Date(),
+          },
+          isSyncing: false,
+          syncError: error.message || 'Failed to sync with backend',
+        });
+      } else {
+        // Session changed, just clear syncing flag
+        set({ isSyncing: false, syncError: error.message || 'Failed to sync with backend' });
       }
     }
   },
