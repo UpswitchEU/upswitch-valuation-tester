@@ -10,6 +10,7 @@ import { VideoBackground } from '../components/VideoBackground';
 export const HomePage: React.FC = () => {
   const navigate = useNavigate();
   const [query, setQuery] = useState('');
+  const [mode, setMode] = useState<'manual' | 'conversational'>('manual');
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   // Auto-redirect to instant valuation if token is present
@@ -53,8 +54,8 @@ export const HomePage: React.FC = () => {
       // Generate new report ID
       const newReportId = generateReportId();
       
-      // Navigate to Conversational flow with query context
-      const url = `${UrlGeneratorService.reportById(newReportId)}?flow=conversational`;
+      // Navigate to selected flow with query context
+      const url = `${UrlGeneratorService.reportById(newReportId)}?flow=${mode}`;
       
       navigate(url, {
         state: {
@@ -129,7 +130,7 @@ export const HomePage: React.FC = () => {
                       value={query}
                       onChange={e => setQuery(e.target.value)}
                       placeholder="What type of business do you run? (e.g., 'SaaS company')"
-                      className="textarea-seamless flex w-full rounded-md px-3 py-3 ring-offset-background placeholder:text-zinc-400 focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 disabled:cursor-not-allowed disabled:opacity-50 resize-none text-base leading-snug placeholder-shown:text-ellipsis placeholder-shown:whitespace-nowrap md:text-base max-h-[200px] bg-transparent focus:bg-transparent flex-1 text-white"
+                      className="textarea-seamless flex w-full rounded-md px-3 py-3 pr-24 ring-offset-background placeholder:text-zinc-400 focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 disabled:cursor-not-allowed disabled:opacity-50 resize-none text-base leading-snug placeholder-shown:text-ellipsis placeholder-shown:whitespace-nowrap md:text-base max-h-[200px] bg-transparent focus:bg-transparent flex-1 text-white"
                       style={{ minHeight: '80px', height: '80px' }}
                       onKeyPress={e => {
                         if (e.key === 'Enter' && !e.shiftKey) {
@@ -141,6 +142,74 @@ export const HomePage: React.FC = () => {
                       autoFocus
                       spellCheck="false"
                     />
+
+                    {/* Mode Toggle - Grand Persona Style */}
+                    <div className="absolute right-2 top-2 flex items-center gap-1 bg-zinc-900/60 backdrop-blur-md p-1 rounded-xl border border-zinc-700/30 shadow-lg z-10">
+                      <div className="relative group">
+                        <button
+                          type="button"
+                          onClick={() => setMode('manual')}
+                          className={`p-2 rounded-lg transition-all duration-200 ${
+                            mode === 'manual'
+                              ? 'bg-zinc-700 text-white shadow-sm'
+                              : 'text-zinc-400 hover:text-zinc-300 hover:bg-zinc-800/50'
+                          }`}
+                          aria-label="Manual Input"
+                        >
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            width="24"
+                            height="24"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            className="w-4 h-4"
+                          >
+                            <path d="M12 20h9"></path>
+                            <path d="M16.376 3.622a1 1 0 0 1 3.002 3.002L7.368 18.635a2 2 0 0 1-.855.506l-2.872.838a.5.5 0 0 1-.62-.62l.838-2.872a2 2 0 0 1 .506-.854z"></path>
+                          </svg>
+                        </button>
+                        {/* Tooltip */}
+                        <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-zinc-900 text-xs text-zinc-200 rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap border border-zinc-700 shadow-xl">
+                          Manual Flow
+                        </div>
+                      </div>
+
+                      <div className="relative group">
+                        <button
+                          type="button"
+                          onClick={() => setMode('conversational')}
+                          className={`p-2 rounded-lg transition-all duration-200 ${
+                            mode === 'conversational'
+                              ? 'bg-zinc-700 text-white shadow-sm'
+                              : 'text-zinc-400 hover:text-zinc-300 hover:bg-zinc-800/50'
+                          }`}
+                          aria-label="Conversational Mode"
+                        >
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            width="24"
+                            height="24"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            className="w-4 h-4"
+                          >
+                            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+                          </svg>
+                        </button>
+                        {/* Tooltip */}
+                        <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-zinc-900 text-xs text-zinc-200 rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap border border-zinc-700 shadow-xl">
+                          Conversational AI
+                        </div>
+                      </div>
+                    </div>
                   </div>
 
                   {/* Action buttons row - quick query suggestions */}
