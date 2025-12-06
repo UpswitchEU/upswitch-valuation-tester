@@ -22,6 +22,9 @@ class GuestSessionService {
   private consecutiveFailures: number = 0;
   private circuitBreakerOpen: boolean = false;
   private circuitBreakerOpenUntil: number = 0;
+  private getOrCreateSessionPromise: Promise<string> | null = null; // Request deduplication
+  private lastSessionVerification: number = 0;
+  private readonly SESSION_VERIFICATION_CACHE_MS = 60000; // Cache verification for 60 seconds
 
   constructor() {
     this.apiUrl = import.meta.env.VITE_BACKEND_URL || 
@@ -148,8 +151,27 @@ class GuestSessionService {
   /**
    * Get or create guest session
    * Ensures session is tracked on backend
+   * Uses request deduplication to prevent concurrent calls
    */
   async getOrCreateSession(): Promise<string> {
+    // Request deduplication: if a request is already in progress, return the same promise
+    if (this.getOrCreateSessionPromise) {
+      return this.getOrCreateSessionPromise;
+    }
+
+    // Create the promise and store it
+    this.getOrCreateSessionPromise = this._getOrCreateSessionInternal().finally(() => {
+      // Clear the promise after completion (success or failure)
+      this.getOrCreateSessionPromise = null;
+    });
+
+    return this.getOrCreateSessionPromise;
+  }
+
+  /**
+   * Internal implementation of getOrCreateSession
+   */
+  private async _getOrCreateSessionInternal(): Promise<string> {
     try {
       // Check if we have a stored session ID
       const storedSessionId = localStorage.getItem(GUEST_SESSION_KEY);
@@ -158,8 +180,19 @@ class GuestSessionService {
       // Check if stored session is still valid
       if (storedSessionId && storedExpiresAt) {
         const expiresAt = new Date(storedExpiresAt);
-        if (expiresAt > new Date()) {
-          // Session is still valid, verify it exists on backend
+        const now = new Date();
+        
+        if (expiresAt > now) {
+          // Session is still valid according to expiration date
+          // Only verify on backend if we haven't verified recently (cache verification)
+          const timeSinceLastVerification = Date.now() - this.lastSessionVerification;
+          
+          if (timeSinceLastVerification < this.SESSION_VERIFICATION_CACHE_MS) {
+            // Use cached session without verification (reduces API calls)
+            return storedSessionId;
+          }
+
+          // Verify it exists on backend (but only if cache expired)
           try {
             const response = await fetch(`${this.apiUrl}/api/guest/session/${storedSessionId}`, {
               method: 'GET',
@@ -173,11 +206,20 @@ class GuestSessionService {
               if (data.success) {
                 // Update expires_at if needed
                 localStorage.setItem(GUEST_SESSION_EXPIRES_KEY, data.data.expires_at);
+                this.lastSessionVerification = Date.now(); // Cache verification
                 return storedSessionId;
               }
+            } else if (response.status === 429) {
+              // Rate limited - use cached session and skip verification
+              console.warn('Rate limited during session verification, using cached session');
+              this.lastSessionVerification = Date.now();
+              return storedSessionId;
             }
           } catch (error) {
-            console.warn('Failed to verify existing session, creating new one', error);
+            // Network error - use cached session
+            console.warn('Failed to verify existing session, using cached session', error);
+            this.lastSessionVerification = Date.now();
+            return storedSessionId;
           }
         }
       }
@@ -195,6 +237,16 @@ class GuestSessionService {
       });
 
       if (!response.ok) {
+        if (response.status === 429) {
+          // Rate limited - use fallback session ID
+          console.warn('Rate limited during session creation, using fallback session');
+          const fallbackSessionId = this.generateSessionId();
+          localStorage.setItem(GUEST_SESSION_KEY, fallbackSessionId);
+          const expiresAt = new Date();
+          expiresAt.setDate(expiresAt.getDate() + 7);
+          localStorage.setItem(GUEST_SESSION_EXPIRES_KEY, expiresAt.toISOString());
+          return fallbackSessionId;
+        }
         throw new Error(`Failed to create guest session: ${response.statusText}`);
       }
 
@@ -206,6 +258,7 @@ class GuestSessionService {
       // Store session ID and expiration
       localStorage.setItem(GUEST_SESSION_KEY, data.data.session_id);
       localStorage.setItem(GUEST_SESSION_EXPIRES_KEY, data.data.expires_at);
+      this.lastSessionVerification = Date.now();
 
       console.log('Guest session created', {
         session_id: data.data.session_id,

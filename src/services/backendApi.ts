@@ -15,6 +15,9 @@ class BackendAPI {
   private client: AxiosInstance;
   private activeRequests: Map<string, AbortController> = new Map();
   private requestTimeouts: Map<string, NodeJS.Timeout> = new Map();
+  private rateLimitRetryCount: Map<string, number> = new Map();
+  private readonly MAX_RETRIES = 3;
+  private readonly BASE_RETRY_DELAY = 1000; // 1 second base delay
 
   constructor() {
     this.client = axios.create({
@@ -34,7 +37,15 @@ class BackendAPI {
         // Add guest session ID to requests if user is a guest
         if (guestSessionService.isGuest()) {
           try {
-            const sessionId = await guestSessionService.getOrCreateSession();
+            // Only call getOrCreateSession if we don't have a cached session ID
+            // This prevents excessive API calls
+            let sessionId = guestSessionService.getCurrentSessionId();
+            
+            if (!sessionId || guestSessionService.isSessionExpired()) {
+              // Only create/verify session if we don't have one or it's expired
+              sessionId = await guestSessionService.getOrCreateSession();
+            }
+            
             if (sessionId && config.data) {
               // Add guest_session_id to request body
               config.data = {
@@ -42,8 +53,10 @@ class BackendAPI {
                 guest_session_id: sessionId
               };
             }
+            
             // Update session activity (safe, throttled, and circuit-breaker protected)
             // The updateActivity method handles all throttling and circuit breaker logic internally
+            // Only call if not rate limited (429 errors handled in response interceptor)
             guestSessionService.updateActivity().catch(() => {
               // Errors are handled internally by updateActivity - this is just a safety net
             });
@@ -57,9 +70,13 @@ class BackendAPI {
       error => Promise.reject(error)
     );
 
-    // Response interceptor for correlation ID extraction and logging
+    // Response interceptor for correlation ID extraction, logging, and rate limit handling
     this.client.interceptors.response.use(
       (response: AxiosResponse) => {
+        // Reset retry count on success
+        const url = response.config.url || '';
+        this.rateLimitRetryCount.delete(url);
+        
         // Extract correlation ID from response headers
         const correlationId = extractCorrelationId(response);
         if (correlationId) {
@@ -89,8 +106,50 @@ class BackendAPI {
         
         return response;
       },
-      error => {
+      async error => {
         const correlationId = error.response ? extractCorrelationId(error.response) : null;
+        const url = error.config?.url || '';
+        const status = error.response?.status;
+        
+        // Handle rate limiting (429) with exponential backoff
+        if (status === 429) {
+          const retryCount = this.rateLimitRetryCount.get(url) || 0;
+          
+          if (retryCount < this.MAX_RETRIES) {
+            // Calculate exponential backoff delay
+            const delay = this.BASE_RETRY_DELAY * Math.pow(2, retryCount);
+            this.rateLimitRetryCount.set(url, retryCount + 1);
+            
+            apiLogger.warn('Rate limited, retrying with exponential backoff', {
+              url,
+              retryCount: retryCount + 1,
+              maxRetries: this.MAX_RETRIES,
+              delayMs: delay,
+              correlationId
+            });
+            
+            // Wait before retrying
+            await new Promise(resolve => setTimeout(resolve, delay));
+            
+            // Retry the request
+            try {
+              return await this.client.request(error.config);
+            } catch (retryError) {
+              // If retry also fails, continue to error handling
+              this.rateLimitRetryCount.delete(url);
+              throw retryError;
+            }
+          } else {
+            // Max retries exceeded
+            this.rateLimitRetryCount.delete(url);
+            apiLogger.error('Rate limit exceeded, max retries reached', {
+              url,
+              maxRetries: this.MAX_RETRIES,
+              correlationId
+            });
+          }
+        }
+        
         apiLogger.error('Backend API Error', {
           error: error.response?.data || error.message,
           status: error.response?.status,

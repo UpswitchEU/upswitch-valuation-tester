@@ -25,7 +25,13 @@ interface ValuationSessionStore {
   syncError: string | null;
 }
 
-export const useValuationSessionStore = create<ValuationSessionStore>((set, get) => ({
+export const useValuationSessionStore = create<ValuationSessionStore>((set, get) => {
+  // Throttling for session updates
+  let lastUpdateTime = 0;
+  let pendingUpdate: NodeJS.Timeout | null = null;
+  const UPDATE_THROTTLE_MS = 2000; // Minimum 2 seconds between updates
+  
+  return {
   // Initial state
   session: null,
   isSyncing: false,
@@ -150,6 +156,7 @@ export const useValuationSessionStore = create<ValuationSessionStore>((set, get)
   
   /**
    * Update session data (merge partial data with deep merging for nested objects)
+   * Throttled to prevent excessive API calls
    */
   updateSessionData: async (data: Partial<ValuationRequest>) => {
     const { session } = get();
@@ -158,6 +165,30 @@ export const useValuationSessionStore = create<ValuationSessionStore>((set, get)
       storeLogger.warn('Cannot update session data: no active session');
       return;
     }
+    
+    // Throttle updates - if called too soon, queue the update
+    const now = Date.now();
+    const timeSinceLastUpdate = now - lastUpdateTime;
+    
+    if (timeSinceLastUpdate < UPDATE_THROTTLE_MS) {
+      // Clear any pending update
+      if (pendingUpdate) {
+        clearTimeout(pendingUpdate);
+      }
+      
+      // Queue this update
+      return new Promise<void>((resolve) => {
+        pendingUpdate = setTimeout(async () => {
+          lastUpdateTime = Date.now();
+          pendingUpdate = null;
+          await get().updateSessionData(data);
+          resolve();
+        }, UPDATE_THROTTLE_MS - timeSinceLastUpdate);
+      });
+    }
+    
+    // Update immediately
+    lastUpdateTime = now;
     
     try {
       set({ isSyncing: true, syncError: null });
@@ -566,7 +597,8 @@ export const useValuationSessionStore = create<ValuationSessionStore>((set, get)
     
     return completeness;
   },
-}));
+  };
+});
 
 
 
