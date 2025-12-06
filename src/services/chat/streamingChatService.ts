@@ -1,4 +1,5 @@
 import { chatLogger } from '../../utils/logger';
+import { guestSessionService } from '../guestSessionService';
 
 interface StreamEvent {
   type: 'message_start' | 'message_chunk' | 'message_complete' | 'report_update' | 'error';
@@ -30,10 +31,22 @@ export class StreamingChatService {
         userId
       });
       
+      // Get guest session ID if user is a guest
+      let guestSessionId: string | null = null;
+      if (!userId) {
+        try {
+          guestSessionId = await guestSessionService.getOrCreateSession();
+        } catch (error) {
+          chatLogger.warn('Failed to get guest session ID', { error });
+          // Continue without guest session ID - not critical
+        }
+      }
+      
       const requestBody = {
         session_id: sessionId,
         user_input: userInput,
-        user_id: userId
+        user_id: userId,
+        guest_session_id: guestSessionId // Add guest session ID for guest users
       };
       
       const url = `${this.baseURL}/api/v1/intelligent-conversation/stream`;

@@ -5,9 +5,9 @@ import { useValuationStore } from '../store/useValuationStore';
 import toast from 'react-hot-toast';
 import { TARGET_COUNTRIES } from '../config/countries';
 import {
-  getIndustryGuidance,
-  validateEbitdaMargin,
-  validateRevenue
+    getIndustryGuidance,
+    validateEbitdaMargin,
+    validateRevenue
 } from '../config/industryGuidance';
 import { useAuth } from '../hooks/useAuth';
 import { useBusinessTypes } from '../hooks/useBusinessTypes';
@@ -15,7 +15,7 @@ import { suggestionService } from '../services/businessTypeSuggestionApi';
 import { debounce } from '../utils/debounce';
 import { generalLogger } from '../utils/logger';
 import { safePreference } from '../utils/numberUtils';
-import { CustomBusinessTypeSearch, CustomDropdown, CustomInputField, CustomNumberInputField, HistoricalDataInputs } from './forms';
+import { CompanyNameInput, CustomBusinessTypeSearch, CustomDropdown, CustomNumberInputField, HistoricalDataInputs } from './forms';
 import { InfoIcon } from './ui/InfoIcon';
 
 /**
@@ -520,15 +520,49 @@ export const ValuationForm: React.FC = () => {
 
           {/* Company Name */}
           {/* MOVED AFTER BUSINESS TYPE: Enables context-aware KBO validation */}
-          <CustomInputField
+          <CompanyNameInput
             label="Company Name"
             type="text"
             name="company_name"
             value={formData.company_name || ''}
-            onChange={(e) => updateFormData({ company_name: e.target.value })}
-            onBlur={() => {}}
+            onChange={(value) => updateFormData({ company_name: value })}
+            countryCode={formData.country_code || 'BE'}
             placeholder="e.g., Acme GmbH"
             required
+            onCompanySelect={(company) => {
+              generalLogger.info('KBO Company Selected in Manual Flow', { 
+                name: company.company_name, 
+                id: company.company_id,
+                registration: company.registration_number 
+              });
+              
+              // Optional data enrichment (async/non-blocking)
+              const updates: any = {
+                company_name: company.company_name,
+                // Ensure country matches KBO result (usually BE)
+                country_code: company.country_code || formData.country_code || 'BE',
+              };
+
+              // Extract City from address if possible (Format: "Street 123, 1000 City")
+              if (company.address) {
+                const cityMatch = company.address.match(/\d{4}\s+([^,]+)/);
+                if (cityMatch && cityMatch[1]) {
+                  updates.city = cityMatch[1].trim();
+                }
+              }
+
+              // Store verified registration number in context for the report
+              // We append it to business_highlights to ensure it appears in the "Business Overview" section
+              const regInfo = `Verified Registration: ${company.registration_number}`;
+              const currentHighlights = formData.business_highlights || '';
+              if (!currentHighlights.includes(regInfo)) {
+                updates.business_highlights = currentHighlights 
+                  ? `${currentHighlights}\n${regInfo}`
+                  : regInfo;
+              }
+
+              updateFormData(updates);
+            }}
           />
 
           {/* Founding Year */}

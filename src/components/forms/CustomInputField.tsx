@@ -13,6 +13,7 @@ export interface CustomInputFieldProps {
   onChange?: (_e: React.ChangeEvent<HTMLInputElement>) => void;
   onBlur?: (_e: React.FocusEvent<HTMLInputElement>) => void;
   onFocus?: (_e: React.FocusEvent<HTMLInputElement>) => void;
+  onKeyDown?: (_e: React.KeyboardEvent<HTMLInputElement>) => void;
   name?: string;
   className?: string;
   error?: string;
@@ -37,6 +38,7 @@ const CustomInputField: React.FC<CustomInputFieldProps> = ({
   onChange = () => {},
   onBlur = () => {},
   onFocus,
+  onKeyDown,
   name = '',
   className = '',
   error,
@@ -58,6 +60,10 @@ const CustomInputField: React.FC<CustomInputFieldProps> = ({
 
   const handleBlur = (e: React.FocusEvent<HTMLInputElement>) => {
     onBlur(e);
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    onKeyDown?.(e);
   };
 
   const hasError = error && touched;
@@ -83,6 +89,7 @@ const CustomInputField: React.FC<CustomInputFieldProps> = ({
           onChange={onChange}
           onFocus={handleFocus}
           onBlur={handleBlur}
+          onKeyDown={handleKeyDown}
           placeholder={placeholder || " "}
           required={required}
           disabled={disabled}
