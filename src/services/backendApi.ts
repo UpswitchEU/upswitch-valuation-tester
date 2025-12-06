@@ -258,8 +258,12 @@ class BackendAPI {
         timeout: requestTimeout
       });
 
-      // Call Node.js backend which handles logging and proxies to Python engine
-      const response = await this.client.post('/api/valuations/calculate/manual', data, {
+      // Call unified endpoint with dataSource='manual' (same as conversational flow)
+      // This ensures consistent behavior and uses the non-deprecated route
+      const response = await this.client.post('/api/valuations/calculate', {
+        ...data,
+        dataSource: 'manual' // Explicitly set dataSource for manual flow
+      }, {
         signal
       });
       
