@@ -7,14 +7,133 @@
 
 const GUEST_SESSION_KEY = 'upswitch_guest_session_id';
 const GUEST_SESSION_EXPIRES_KEY = 'upswitch_guest_session_expires_at';
+const ACTIVITY_UPDATE_DISABLED_KEY = 'upswitch_activity_update_disabled';
+const ACTIVITY_FAILURE_COUNT_KEY = 'upswitch_activity_failure_count';
+const ACTIVITY_LAST_FAILURE_KEY = 'upswitch_activity_last_failure';
+
+// Circuit breaker configuration
+const MAX_CONSECUTIVE_FAILURES = 5; // Disable after 5 consecutive failures
+const CIRCUIT_BREAKER_COOLDOWN = 5 * 60 * 1000; // 5 minutes cooldown before retry
+const ACTIVITY_UPDATE_THROTTLE = 5000; // 5 seconds minimum between updates
 
 class GuestSessionService {
   private apiUrl: string;
+  private lastActivityUpdate: number = 0;
+  private consecutiveFailures: number = 0;
+  private circuitBreakerOpen: boolean = false;
+  private circuitBreakerOpenUntil: number = 0;
 
   constructor() {
     this.apiUrl = import.meta.env.VITE_BACKEND_URL || 
                   import.meta.env.VITE_API_BASE_URL || 
                   'https://web-production-8d00b.up.railway.app';
+    
+    // Restore circuit breaker state from localStorage
+    this.restoreCircuitBreakerState();
+  }
+
+  /**
+   * Restore circuit breaker state from localStorage
+   */
+  private restoreCircuitBreakerState(): void {
+    try {
+      const disabled = localStorage.getItem(ACTIVITY_UPDATE_DISABLED_KEY);
+      const failureCount = parseInt(localStorage.getItem(ACTIVITY_FAILURE_COUNT_KEY) || '0', 10);
+      const lastFailure = parseInt(localStorage.getItem(ACTIVITY_LAST_FAILURE_KEY) || '0', 10);
+      
+      if (disabled === 'true') {
+        const now = Date.now();
+        // Check if cooldown period has passed
+        if (now - lastFailure < CIRCUIT_BREAKER_COOLDOWN) {
+          this.circuitBreakerOpen = true;
+          this.circuitBreakerOpenUntil = lastFailure + CIRCUIT_BREAKER_COOLDOWN;
+          this.consecutiveFailures = failureCount;
+        } else {
+          // Cooldown passed, reset circuit breaker
+          this.resetCircuitBreaker();
+        }
+      } else {
+        this.consecutiveFailures = failureCount;
+      }
+    } catch (error) {
+      // If localStorage fails, start fresh
+      this.resetCircuitBreaker();
+    }
+  }
+
+  /**
+   * Reset circuit breaker (after successful update or cooldown)
+   */
+  private resetCircuitBreaker(): void {
+    this.circuitBreakerOpen = false;
+    this.circuitBreakerOpenUntil = 0;
+    this.consecutiveFailures = 0;
+    try {
+      localStorage.removeItem(ACTIVITY_UPDATE_DISABLED_KEY);
+      localStorage.removeItem(ACTIVITY_FAILURE_COUNT_KEY);
+      localStorage.removeItem(ACTIVITY_LAST_FAILURE_KEY);
+    } catch (error) {
+      // Ignore localStorage errors
+    }
+  }
+
+  /**
+   * Record a failure and check if circuit breaker should open
+   */
+  private recordFailure(): void {
+    this.consecutiveFailures++;
+    const now = Date.now();
+    
+    try {
+      localStorage.setItem(ACTIVITY_FAILURE_COUNT_KEY, this.consecutiveFailures.toString());
+      localStorage.setItem(ACTIVITY_LAST_FAILURE_KEY, now.toString());
+    } catch (error) {
+      // Ignore localStorage errors
+    }
+
+    if (this.consecutiveFailures >= MAX_CONSECUTIVE_FAILURES) {
+      this.circuitBreakerOpen = true;
+      this.circuitBreakerOpenUntil = now + CIRCUIT_BREAKER_COOLDOWN;
+      try {
+        localStorage.setItem(ACTIVITY_UPDATE_DISABLED_KEY, 'true');
+      } catch (error) {
+        // Ignore localStorage errors
+      }
+      console.warn('Guest session activity updates disabled due to repeated failures. Will retry after cooldown period.');
+    }
+  }
+
+  /**
+   * Record a success and reset failure count
+   */
+  private recordSuccess(): void {
+    if (this.consecutiveFailures > 0) {
+      this.consecutiveFailures = 0;
+      try {
+        localStorage.removeItem(ACTIVITY_FAILURE_COUNT_KEY);
+        localStorage.removeItem(ACTIVITY_LAST_FAILURE_KEY);
+      } catch (error) {
+        // Ignore localStorage errors
+      }
+    }
+  }
+
+  /**
+   * Check if circuit breaker is open
+   */
+  private isCircuitBreakerOpen(): boolean {
+    if (!this.circuitBreakerOpen) {
+      return false;
+    }
+
+    const now = Date.now();
+    if (now >= this.circuitBreakerOpenUntil) {
+      // Cooldown period passed, try again
+      this.resetCircuitBreaker();
+      return false;
+    }
+
+    return true;
   }
 
   /**
@@ -117,27 +236,66 @@ class GuestSessionService {
 
   /**
    * Update session activity (call on each guest action)
+   * Safe, throttled, and circuit-breaker protected
    */
   async updateActivity(): Promise<void> {
-    try {
-      const sessionId = this.getCurrentSessionId();
-      if (!sessionId) {
-        return; // No session to update
-      }
+    // Early exit checks
+    const sessionId = this.getCurrentSessionId();
+    if (!sessionId) {
+      return; // No session to update
+    }
 
-      // Fire and forget - don't block on this
-      fetch(`${this.apiUrl}/api/guest/session/${sessionId}/activity`, {
+    // Check throttling
+    const now = Date.now();
+    if (now - this.lastActivityUpdate < ACTIVITY_UPDATE_THROTTLE) {
+      return; // Too soon since last update
+    }
+
+    // Check circuit breaker
+    if (this.isCircuitBreakerOpen()) {
+      return; // Circuit breaker is open, skip update
+    }
+
+    // Update throttle timestamp
+    this.lastActivityUpdate = now;
+
+    // Perform update with timeout and error handling
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 3000); // 3 second timeout
+
+      const response = await fetch(`${this.apiUrl}/api/guest/session/${sessionId}/activity`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
-        }
-      }).catch(error => {
-        console.warn('Failed to update guest session activity', error);
-        // Don't throw - this is not critical
+        },
+        signal: controller.signal,
+        // Don't wait for response - fire and forget
       });
-    } catch (error) {
-      console.warn('Failed to update guest session activity', error);
-      // Don't throw - this is not critical
+
+      clearTimeout(timeoutId);
+
+      // Check if request was successful (but don't wait for response body)
+      if (response.ok || response.status === 0) {
+        // Success - reset failure count
+        this.recordSuccess();
+      } else {
+        // Non-OK response - record failure
+        this.recordFailure();
+      }
+    } catch (error: any) {
+      // Handle various error types
+      if (error.name === 'AbortError') {
+        // Timeout - record failure but don't log (expected)
+        this.recordFailure();
+      } else if (error.name === 'TypeError' && error.message.includes('Failed to fetch')) {
+        // Network error - record failure
+        this.recordFailure();
+      } else {
+        // Other errors - record failure
+        this.recordFailure();
+      }
+      // Silently fail - this is not critical functionality
     }
   }
 
@@ -183,6 +341,36 @@ class GuestSessionService {
     const authToken = localStorage.getItem('upswitch_auth_token');
     const userId = localStorage.getItem('upswitch_user_id');
     return !authToken && !userId;
+  }
+
+  /**
+   * Manually reset circuit breaker (for testing or recovery)
+   */
+  resetActivityUpdateCircuitBreaker(): void {
+    this.resetCircuitBreaker();
+    console.info('Guest session activity update circuit breaker manually reset');
+  }
+
+  /**
+   * Get circuit breaker status (for debugging)
+   */
+  getActivityUpdateStatus(): {
+    enabled: boolean;
+    consecutiveFailures: number;
+    circuitBreakerOpen: boolean;
+    cooldownRemaining?: number;
+  } {
+    const now = Date.now();
+    const cooldownRemaining = this.circuitBreakerOpen && this.circuitBreakerOpenUntil > now
+      ? Math.max(0, this.circuitBreakerOpenUntil - now)
+      : undefined;
+
+    return {
+      enabled: !this.isCircuitBreakerOpen(),
+      consecutiveFailures: this.consecutiveFailures,
+      circuitBreakerOpen: this.circuitBreakerOpen,
+      cooldownRemaining
+    };
   }
 }
 
