@@ -284,9 +284,9 @@ const CustomDropdown: React.FC<CustomDropdownProps> = ({
 
         {/* Dropdown Options */}
         {isOpen && (
-          <div className="relative z-[9999] mt-0 w-full">
+          <div className="relative z-[9999] mt-2 w-full">
             <div 
-              className="absolute w-full bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-auto"
+              className="absolute w-full bg-white border border-gray-100 rounded-xl shadow-xl max-h-60 overflow-auto transform transition-all duration-200 origin-top animate-in fade-in slide-in-from-top-2 ring-1 ring-black/5"
               role="listbox"
               aria-labelledby={`${label}-label`}
             >
@@ -299,13 +299,13 @@ const CustomDropdown: React.FC<CustomDropdownProps> = ({
                   onKeyDown={handleKeyDown}
                   disabled={option.disabled}
                   className={`
-                  w-full px-4 py-3 text-left text-gray-900 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500
+                  w-full px-4 py-3 text-left transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 font-medium
                   ${
                     option.disabled
                       ? 'text-gray-400 cursor-not-allowed'
-                      : 'hover:bg-gray-50 cursor-pointer'
+                      : 'hover:bg-gray-50 cursor-pointer text-gray-900'
                   }
-                  ${option.value === value ? 'bg-gray-100 text-gray-900' : ''}
+                  ${option.value === value ? 'bg-gray-50 text-gray-900' : ''}
                   ${index === focusedIndex ? 'bg-blue-50 ring-2 ring-blue-500' : ''}
                 `}
                   role="option"

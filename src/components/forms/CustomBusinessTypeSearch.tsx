@@ -261,13 +261,13 @@ export const CustomBusinessTypeSearch: React.FC<CustomBusinessTypeSearchProps> =
       {isOpen && !loading && (
         <div 
           ref={dropdownRef}
-          className="absolute z-50 w-full mt-2 bg-white border border-gray-300 rounded-lg shadow-xl max-h-96 overflow-y-auto"
+          className="absolute z-50 w-full mt-2 bg-white border border-gray-100 rounded-xl shadow-xl max-h-96 overflow-y-auto transform transition-all duration-200 origin-top animate-in fade-in slide-in-from-top-2 ring-1 ring-black/5"
         >
           {filteredTypes.length > 0 ? (
             <>
               {/* Popular types section (when no query) */}
               {!query && businessTypes.filter(bt => bt.popular).length > 0 && (
-                <div className="sticky top-0 bg-gray-50 px-4 py-2 text-xs font-semibold text-gray-600 uppercase tracking-wide border-b border-gray-200">
+                <div className="sticky top-0 bg-gray-50/95 backdrop-blur-sm px-4 py-2.5 text-xs font-semibold text-gray-500 uppercase tracking-wider border-b border-gray-100 z-10">
                   Popular Types
                 </div>
               )}
@@ -276,7 +276,7 @@ export const CustomBusinessTypeSearch: React.FC<CustomBusinessTypeSearchProps> =
               {Object.entries(groupedTypes).map(([category, types]) => (
                 <div key={category}>
                   {query && (
-                    <div className="sticky top-0 bg-gray-50 px-4 py-2 text-xs font-semibold text-gray-600 uppercase tracking-wide border-b border-gray-200">
+                    <div className="sticky top-0 bg-gray-50/95 backdrop-blur-sm px-4 py-2.5 text-xs font-semibold text-gray-500 uppercase tracking-wider border-b border-gray-100 z-10">
                       {category}
                     </div>
                   )}
@@ -291,23 +291,23 @@ export const CustomBusinessTypeSearch: React.FC<CustomBusinessTypeSearchProps> =
                         type="button"
                         onClick={() => handleSelect(type)}
                         onMouseEnter={() => setHighlightedIndex(globalIndex)}
-                        className={`w-full text-left px-4 py-3 transition-colors ${
+                        className={`w-full text-left px-4 py-3 transition-all duration-150 group ${
                           isHighlighted
-                            ? 'bg-blue-50 text-gray-900'
-                            : 'text-gray-900 hover:bg-gray-100'
+                            ? 'bg-gray-50'
+                            : 'hover:bg-gray-50'
                         }`}
                       >
                         <div className="flex items-start gap-3">
-                          <span className="text-2xl flex-shrink-0">{type.icon}</span>
+                          <span className="text-2xl flex-shrink-0 transform transition-transform duration-200 group-hover:scale-110">{type.icon}</span>
                           <div className="flex-1 min-w-0">
-                            <div className="font-semibold">{type.title}</div>
+                            <div className={`font-medium text-base ${isHighlighted ? 'text-gray-900' : 'text-gray-700'}`}>{type.title}</div>
                             <div className={`text-sm mt-0.5 line-clamp-2 ${
-                              isHighlighted ? 'text-gray-700' : 'text-gray-500'
+                              isHighlighted ? 'text-gray-600' : 'text-gray-400'
                             }`}>
                               {type.short_description || type.description}
                             </div>
                             {type.popular && (
-                              <span className="inline-block mt-1 px-2 py-0.5 text-xs bg-primary-100 text-primary-800 rounded font-medium">
+                              <span className="inline-block mt-1.5 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide bg-blue-50 text-blue-600 rounded-full">
                                 Popular
                               </span>
                             )}
