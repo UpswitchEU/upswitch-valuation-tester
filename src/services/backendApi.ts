@@ -5,10 +5,11 @@
  * for credit management and valuation processing
  */
 
-import axios, { AxiosInstance, AxiosResponse } from 'axios';
+import axios, { AxiosInstance, AxiosResponse, InternalAxiosRequestConfig } from 'axios';
 import type { ValuationRequest, ValuationResponse } from '../types/valuation';
 // normalizeCalculationSteps removed - calculation steps now in server-generated info_tab_html
 import { apiLogger, createPerformanceLogger, extractCorrelationId, setCorrelationFromResponse } from '../utils/logger';
+import { guestSessionService } from './guestSessionService';
 
 class BackendAPI {
   private client: AxiosInstance;
@@ -26,6 +27,34 @@ class BackendAPI {
       },
       withCredentials: true, // Send authentication cookies
     });
+
+    // Request interceptor for guest session tracking
+    this.client.interceptors.request.use(
+      async (config: InternalAxiosRequestConfig) => {
+        // Add guest session ID to requests if user is a guest
+        if (guestSessionService.isGuest()) {
+          try {
+            const sessionId = await guestSessionService.getOrCreateSession();
+            if (sessionId && config.data) {
+              // Add guest_session_id to request body
+              config.data = {
+                ...config.data,
+                guest_session_id: sessionId
+              };
+            }
+            // Update session activity (fire and forget)
+            guestSessionService.updateActivity().catch(() => {
+              // Ignore errors - not critical
+            });
+          } catch (error) {
+            apiLogger.warn('Failed to add guest session to request', { error });
+            // Don't block request if session tracking fails
+          }
+        }
+        return config;
+      },
+      error => Promise.reject(error)
+    );
 
     // Response interceptor for correlation ID extraction and logging
     this.client.interceptors.response.use(

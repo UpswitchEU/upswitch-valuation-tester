@@ -5,9 +5,10 @@
  * Integrates with main platform (upswitch.biz) authentication
  */
 
-import React, { useEffect, useState, useCallback } from 'react';
-import { AuthContext, AuthContextType, User } from './AuthContextTypes';
+import React, { useCallback, useEffect, useState } from 'react';
+import { guestSessionService } from '../services/guestSessionService';
 import { authLogger } from '../utils/logger';
+import { AuthContext, AuthContextType, User } from './AuthContextTypes';
 
 // =============================================================================
 // TYPES
@@ -231,6 +232,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       } else {
         // No token and no session - continue as guest
         authLogger.info('No token or session - continuing as guest user');
+        
+        // Initialize guest session tracking
+        try {
+          const sessionId = await guestSessionService.getOrCreateSession();
+          authLogger.info('Guest session initialized', { session_id: sessionId });
+        } catch (guestError) {
+          authLogger.warn('Failed to initialize guest session', {
+            error: guestError instanceof Error ? guestError.message : 'Unknown error'
+          });
+          // Continue anyway - guest session is not critical
+        }
       }
     } catch (err) {
       authLogger.error('Auth initialization error', {
