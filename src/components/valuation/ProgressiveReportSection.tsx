@@ -1,7 +1,7 @@
-import React from 'react';
-import { SectionError } from './SectionError';
-import { HTMLProcessor } from '../../utils/htmlProcessor';
 import { Loader2 } from 'lucide-react';
+import React from 'react';
+import { HTMLProcessor } from '../../utils/htmlProcessor';
+import { SectionError } from './SectionError';
 
 export interface Section {
   id: string;
@@ -41,17 +41,22 @@ export const ProgressiveReportSection: React.FC<ProgressiveReportSectionProps> =
   // Loading state
   if (section.status === 'loading' || section.status === 'calculating') {
     return (
-      <div className="animate-pulse bg-gray-50 rounded-lg p-6 mb-4 border border-gray-100">
-        <div className="flex items-center gap-3 mb-4">
+      <div className="page animate-pulse mb-0"> {/* Use page style for loading skeleton */}
+        <div className="flex items-center gap-3 mb-8">
           <Loader2 className="w-5 h-5 text-blue-500 animate-spin" />
           <div>
             <h3 className="text-sm font-medium text-gray-700">{section.name}</h3>
             <p className="text-xs text-gray-500">Calculating...</p>
           </div>
         </div>
-        <div className="space-y-2 opacity-50">
-          <div className="h-2 bg-gray-200 rounded w-3/4"></div>
-          <div className="h-2 bg-gray-200 rounded w-1/2"></div>
+        <div className="space-y-6 opacity-50">
+          <div className="h-8 bg-gray-200 rounded w-1/3 mb-8"></div>
+          <div className="space-y-3">
+            <div className="h-4 bg-gray-200 rounded w-full"></div>
+            <div className="h-4 bg-gray-200 rounded w-full"></div>
+            <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+          </div>
+          <div className="h-64 bg-gray-100 rounded w-full mt-8"></div>
         </div>
       </div>
     );
@@ -60,25 +65,29 @@ export const ProgressiveReportSection: React.FC<ProgressiveReportSectionProps> =
   // Error state
   if (section.status === 'error') {
     return (
-      <SectionError
-        sectionName={section.name}
-        errorMessage={section.error || 'Unknown error occurred'}
-        onRetry={onRetry ? () => onRetry(section.id) : undefined}
-      />
+      <div className="page mb-0">
+        <SectionError
+          sectionName={section.name}
+          errorMessage={section.error || 'Unknown error occurred'}
+          onRetry={onRetry ? () => onRetry(section.id) : undefined}
+        />
+      </div>
     );
   }
 
   // Complete state with fade-in animation
   return (
     <div
-      className="section-complete animate-fadeInUp mb-4"
+      className="section-complete animate-fadeInUp"
       data-section-id={section.id}
       data-section-phase={section.phase}
     >
-      <div
-        className="prose prose-sm max-w-none"
-        dangerouslySetInnerHTML={{ __html: HTMLProcessor.sanitize(section.html) }}
-      />
+      <div className="page">
+        <div
+          className="prose prose-sm max-w-none"
+          dangerouslySetInnerHTML={{ __html: HTMLProcessor.sanitize(section.html) }}
+        />
+      </div>
     </div>
   );
 };

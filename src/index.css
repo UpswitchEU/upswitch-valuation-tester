@@ -183,3 +183,363 @@
     transform: translateY(0);
   }
 }
+
+/* Valuation Report Preview Styles (Google Docs / Print Preview Style) */
+.valuation-report-preview {
+  background-color: #F3F4F6; /* Gray-100 background for the preview area */
+  padding: 40px;
+  min-height: 100%;
+}
+
+.valuation-report-preview .page {
+  width: 210mm;
+  min-height: 297mm;
+  padding: 2cm 1.5cm;
+  margin: 0 auto 40px auto;
+  background: white;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  position: relative;
+  box-sizing: border-box;
+}
+
+/* Ensure content inside pages behaves correctly */
+.valuation-report-preview .page * {
+  max-width: 100%;
+}
+
+@media print {
+  .valuation-report-preview {
+    background: white;
+    padding: 0;
+  }
+  
+  .valuation-report-preview .page {
+    box-shadow: none;
+    margin: 0;
+    width: 100%;
+    page-break-after: always;
+  }
+}
+
+/* ==========================================================================
+   Bank-Grade Typography & Report Styling (Ported from Backend base.html)
+   ========================================================================== */
+
+/* Cover Sheet Style for Preview */
+.valuation-report-preview .cover-sheet {
+  width: 210mm;
+  min-height: 297mm;
+  margin: 24px auto;
+  background: white;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  position: relative;
+  page-break-after: always;
+  /* No padding on container, to allow full bleed design */
+}
+
+/* CSS Variables for Colors */
+.valuation-report-preview {
+  --upswitch-navy: #0F172A; /* Deep Navy - Primary Brand */
+  --upswitch-blue: #2563EB; /* Bright Blue - Digital Accent */
+  --text-dark: #0F172A;     /* Nearly Black - Headings */
+  --text-body: #334155;     /* Slate-700 - Readable Body */
+  --text-muted: #4B5563;    /* Slate-500 - Metadata */
+  --bg-subtle: #F8FAFC;     /* Very light grey/blue background */
+  --border-light: #E2E8F0;  /* Slate-200 */
+  
+  /* Base Font settings */
+  font-family: 'Inter', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  font-size: 11pt;
+  line-height: 1.5;
+  color: #1E293B;
+}
+
+/* Reset internal elements */
+.valuation-report-preview .page * {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+/* Headers */
+.valuation-report-preview h1 {
+  font-family: 'Inter', sans-serif;
+  font-size: 28pt;
+  font-weight: 800;
+  color: var(--text-dark);
+  margin-top: 48pt;
+  margin-bottom: 24pt;
+  padding: 0 2cm;
+  page-break-after: avoid;
+  border-bottom: none;
+  letter-spacing: -0.5pt;
+  line-height: 1.1;
+}
+
+.valuation-report-preview .hero-header {
+  font-size: 64pt;
+  font-weight: 800;
+  line-height: 0.9;
+  letter-spacing: -2pt;
+  color: var(--upswitch-navy);
+  margin-bottom: 24pt;
+}
+
+.valuation-report-preview h2 {
+  font-family: 'Inter', sans-serif;
+  font-size: 18pt;
+  font-weight: 700;
+  color: var(--text-dark);
+  margin-top: 32pt;
+  margin-bottom: 16pt;
+  page-break-after: avoid;
+  text-transform: none;
+  letter-spacing: -0.25pt;
+}
+
+.valuation-report-preview h3 {
+  font-family: 'Inter', sans-serif;
+  font-size: 14pt;
+  font-weight: 600;
+  color: var(--text-dark);
+  margin-top: 24pt;
+  margin-bottom: 12pt;
+  page-break-after: avoid;
+}
+
+.valuation-report-preview p {
+  margin-bottom: 12pt;
+  text-align: left;
+  color: var(--text-body);
+}
+
+/* Modern Cards & Grids */
+.valuation-report-preview .grid-layout {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 32pt;
+  margin-top: 24pt;
+  margin-bottom: 24pt;
+  padding: 0 2cm;
+}
+
+.valuation-report-preview .report-section .grid-layout {
+  padding: 0;
+}
+
+.valuation-report-preview .stat-card {
+  background-color: var(--bg-subtle);
+  border-radius: 0;
+  padding: 24pt;
+  border: none;
+}
+
+.valuation-report-preview .stat-card .label {
+  font-size: 10pt;
+  text-transform: uppercase;
+  letter-spacing: 1pt;
+  color: var(--text-muted);
+  font-weight: 600;
+  margin-bottom: 8pt;
+}
+
+.valuation-report-preview .stat-card .value {
+  font-size: 32pt;
+  font-weight: 700;
+  color: var(--upswitch-navy);
+  line-height: 1.1;
+}
+
+/* Utility Classes */
+.valuation-report-preview .font-bold {
+  font-weight: 700 !important;
+}
+
+.valuation-report-preview .report-callout {
+  background-color: var(--bg-subtle);
+  border-left: 4pt solid var(--upswitch-navy);
+  padding: 16pt;
+  margin: 24pt 0;
+  border-radius: 0 4pt 4pt 0;
+}
+
+.valuation-report-preview .report-callout.warning {
+  background-color: #FFF7ED;
+  border-left-color: #EA580C;
+}
+
+.valuation-report-preview .report-callout p {
+  margin-bottom: 8pt;
+  color: var(--text-body);
+}
+
+/* Tables */
+.valuation-report-preview table {
+  width: calc(100% - 4cm);
+  margin-left: 2cm;
+  margin-right: 2cm;
+  border-collapse: collapse;
+  margin-top: 24pt;
+  margin-bottom: 24pt;
+  font-size: 10pt;
+  border: none;
+}
+
+.valuation-report-preview .report-section table {
+  width: 100%;
+  margin-left: 0;
+  margin-right: 0;
+}
+
+.valuation-report-preview table caption {
+  font-weight: 700;
+  font-size: 10pt;
+  text-transform: uppercase;
+  letter-spacing: 0.5pt;
+  margin-bottom: 12pt;
+  text-align: left;
+  color: var(--text-muted);
+}
+
+.valuation-report-preview th {
+  background-color: #FFFFFF;
+  border-bottom: 2pt solid var(--upswitch-navy);
+  font-weight: 700;
+  color: var(--upswitch-navy);
+  padding: 12pt 8pt;
+  text-align: left;
+  font-family: 'Inter', sans-serif;
+  border-top: none;
+  border-left: none;
+  border-right: none;
+}
+
+.valuation-report-preview td {
+  padding: 12pt 8pt;
+  color: var(--text-body);
+  border-bottom: 1px solid var(--border-light);
+  border-top: none;
+  border-left: none;
+  border-right: none;
+  vertical-align: top;
+}
+
+.valuation-report-preview tr:last-child td {
+  border-bottom: 1px solid var(--upswitch-navy);
+}
+
+.valuation-report-preview td.number,
+.valuation-report-preview td.currency,
+.valuation-report-preview td.percentage,
+.valuation-report-preview th.text-right,
+.valuation-report-preview td.text-right {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.valuation-report-preview tr:nth-child(even) {
+  background-color: #FFFFFF;
+}
+
+/* Valuation Box */
+.valuation-report-preview .valuation-box {
+  border: 1pt solid var(--border-light);
+  padding: 24pt;
+  margin: 24pt 0;
+  text-align: center;
+  background-color: var(--bg-subtle);
+  border-radius: 4pt;
+}
+
+.valuation-report-preview .valuation-box .value {
+  font-size: 28pt;
+  font-weight: 800;
+  margin: 12pt 0 16pt 0;
+  color: var(--upswitch-navy);
+  font-family: 'Inter', sans-serif;
+  letter-spacing: -1pt;
+}
+
+.valuation-report-preview .valuation-box .label {
+  font-size: 12pt;
+  margin-bottom: 12pt;
+  text-transform: uppercase;
+  letter-spacing: 1pt;
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+/* Footer & Spacing */
+.valuation-report-preview .footer {
+  margin-top: 32pt;
+  padding-top: 12pt;
+  border-top: 1pt solid var(--border-light);
+  font-size: 9pt;
+  color: var(--text-muted);
+}
+
+.valuation-report-preview .text-center {
+  text-align: center;
+}
+
+.valuation-report-preview .text-right {
+  text-align: right;
+}
+
+.valuation-report-preview .spacing-small {
+  margin-bottom: 6pt;
+}
+
+.valuation-report-preview .spacing-medium {
+  margin-bottom: 12pt;
+}
+
+.valuation-report-preview .spacing-large {
+  margin-bottom: 24pt;
+}
+
+/* Classification Banner */
+.valuation-report-preview .classification-banner {
+  background-color: #FFFFFF;
+  border: 1pt solid var(--upswitch-navy);
+  padding: 12pt;
+  margin: 24pt 0;
+  text-align: center;
+  page-break-inside: avoid;
+}
+
+.valuation-report-preview .classification-banner h3 {
+  margin: 0 0 6pt 0;
+  color: var(--upswitch-navy);
+  font-size: 12pt;
+  text-transform: uppercase;
+  letter-spacing: 0.5pt;
+  font-weight: 700;
+}
+
+/* Table of Contents */
+.valuation-report-preview ul.toc-list,
+.valuation-report-preview ul.toc-sublist {
+  list-style-type: none !important;
+  padding: 0 !important;
+  margin: 0 !important;
+}
+
+.valuation-report-preview .toc-entry {
+  list-style-type: none !important;
+  margin-bottom: 8pt;
+  display: block !important;
+}
+
+.valuation-report-preview .toc-entry > a {
+  text-decoration: none;
+  color: var(--upswitch-navy);
+  display: block;
+  font-weight: 700;
+}
+
+/* Section Numbering */
+.valuation-report-preview .section-number {
+  font-weight: bold;
+  margin-right: 6pt;
+}

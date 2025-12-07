@@ -41,7 +41,7 @@ export const LiveValuationReport: React.FC<LiveValuationReportProps> = ({
   }, [htmlContent]);
 
   return (
-    <div className="h-full flex flex-col bg-white">
+    <div className="h-full flex flex-col bg-gray-50">
       {/* Screen reader announcements */}
       <div 
         role="status" 
@@ -64,7 +64,7 @@ export const LiveValuationReport: React.FC<LiveValuationReportProps> = ({
       
       {/* Table of Contents */}
       {sections.length > 0 && (
-        <div className="sticky top-0 bg-white border-b border-zinc-200 p-4">
+        <div className="sticky top-0 bg-white border-b border-zinc-200 p-4 z-10">
           <h3 className="text-sm font-semibold text-zinc-700 mb-2">Report Sections</h3>
           <nav className="space-y-1">
             {sections.map(section => (
@@ -83,7 +83,7 @@ export const LiveValuationReport: React.FC<LiveValuationReportProps> = ({
       )}
       
       {/* Report content */}
-      <div className="flex-1 overflow-y-auto px-4 sm:px-6 lg:px-8 py-6">
+      <div className="flex-1 overflow-y-auto valuation-report-preview">
         {processedHtml ? (
           <div 
             className="prose prose-sm max-w-none"

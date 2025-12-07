@@ -64,43 +64,8 @@ export const Results: React.FC = memo(() => {
   }
 
   return (
-    <div className="h-full overflow-y-auto bg-white px-4 sm:px-6 lg:px-8">
+    <div className="h-full overflow-y-auto valuation-report-preview">
       <style>{`
-        .accountant-view-report {
-          font-family: 'Times New Roman', Times, serif;
-          line-height: 1.6;
-          color: #000;
-          background: #fff;
-          padding: 2rem 3rem;
-          max-width: 8.5in;
-          margin: 0 auto;
-        }
-
-        .accountant-view-report h1,
-        .accountant-view-report h2,
-        .accountant-view-report h3 {
-          page-break-after: avoid;
-        }
-
-        .accountant-view-report table {
-          page-break-inside: avoid;
-          width: 100%;
-          border-collapse: collapse;
-          margin: 1rem 0;
-        }
-
-        .accountant-view-report th,
-        .accountant-view-report td {
-          border: 1px solid #ddd;
-          padding: 8px;
-          text-align: left;
-        }
-
-        .accountant-view-report th {
-          background-color: #f5f5f5;
-          font-weight: bold;
-        }
-
         /* Ensure lists show bullet points */
         .accountant-view-report ul,
         .accountant-view-report ol {
@@ -126,13 +91,6 @@ export const Results: React.FC = memo(() => {
         .accountant-view-report div:has(> svg.lucide-circle-check-big):has(> h2),
         .accountant-view-report div:has(svg[class*="circle-check"]):has(h2) {
           display: none !important;
-        }
-
-        @media print {
-          .accountant-view-report {
-            padding: 0;
-            max-width: 100%;
-          }
         }
       `}</style>
       <div

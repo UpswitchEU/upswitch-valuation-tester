@@ -42,14 +42,15 @@ export class HTMLProcessor {
     // First sanitize the content
     let processed = this.sanitize(htmlContent);
     
-    // Add custom styling classes
-    processed = this.addReportStyling(processed);
+    // DISABLED: We now use global CSS (.valuation-report-preview) to match backend styles exactly.
+    // This prevents the injection of generic Tailwind classes that conflict with our Bank-Grade design.
+    // processed = this.addReportStyling(processed);
     
     // Process links to open in new tabs
     processed = this.processLinks(processed);
     
-    // Add responsive table classes
-    processed = this.addResponsiveTables(processed);
+    // DISABLED: Backend handles table responsiveness/layout.
+    // processed = this.addResponsiveTables(processed);
     
     return processed;
   }

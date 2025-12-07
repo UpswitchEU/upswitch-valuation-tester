@@ -1,10 +1,10 @@
-import { useImperativeHandle, forwardRef } from 'react';
 import { Loader2 } from 'lucide-react';
+import { forwardRef, useImperativeHandle } from 'react';
 import { useProgressiveReport } from '../hooks/useProgressiveReport';
+import { HTMLProcessor } from '../utils/htmlProcessor';
+import { ConfettiAnimation } from './valuation/ConfettiAnimation';
 import { ProgressBar } from './valuation/ProgressBar';
 import { ProgressiveReportSection } from './valuation/ProgressiveReportSection';
-import { ConfettiAnimation } from './valuation/ConfettiAnimation';
-import { HTMLProcessor } from '../utils/htmlProcessor';
 
 interface HTMLPreviewPanelProps {
   htmlContent: string;
@@ -86,7 +86,7 @@ export const HTMLPreviewPanel = forwardRef<HTMLPreviewPanelRef, HTMLPreviewPanel
   const displayProgress = hasProgressiveSections ? overallProgress : progress;
 
   return (
-    <div className="h-full overflow-y-auto bg-white relative">
+    <div className="h-full overflow-y-auto bg-gray-100 relative">
       {/* Progress indicator - sticky at top */}
       {(isGenerating || hasProgressiveSections) && displayProgress < 100 && (
         <ProgressBar progress={displayProgress} showPercentage={true} />
@@ -105,25 +105,27 @@ export const HTMLPreviewPanel = forwardRef<HTMLPreviewPanelRef, HTMLPreviewPanel
       )}
 
       {/* Progressive sections */}
-      {hasProgressiveSections ? (
-        <div className="p-6 space-y-4">
-          {sections.map(section => (
-            <ProgressiveReportSection
-              key={section.id}
-              section={section}
-              onRetry={retrySection}
+      <div className="valuation-report-preview">
+        {hasProgressiveSections ? (
+          <div className="space-y-4">
+            {sections.map(section => (
+              <ProgressiveReportSection
+                key={section.id}
+                section={section}
+                onRetry={retrySection}
+              />
+            ))}
+          </div>
+        ) : (
+          /* Legacy HTML content (fallback) */
+          htmlContent && (
+            <div 
+              className="prose prose-sm max-w-none"
+              dangerouslySetInnerHTML={{ __html: HTMLProcessor.sanitize(htmlContent) }}
             />
-          ))}
-        </div>
-      ) : (
-        /* Legacy HTML content (fallback) */
-        htmlContent && (
-          <div 
-            className="prose prose-sm max-w-none p-6"
-            dangerouslySetInnerHTML={{ __html: HTMLProcessor.sanitize(htmlContent) }}
-          />
-        )
-      )}
+          )
+        )}
+      </div>
 
       {/* Empty state */}
       {!hasProgressiveSections && !htmlContent && !isGenerating && (

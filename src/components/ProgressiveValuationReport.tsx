@@ -130,7 +130,7 @@ export const ProgressiveValuationReport: React.FC<ProgressiveValuationReportProp
   // This implies we should show whatever we have.
   
   return (
-    <div className={`progressive-report px-4 sm:px-6 lg:px-8 min-h-full flex flex-col ${className}`}>
+    <div className={`progressive-report valuation-report-preview flex flex-col ${className}`}>
       
       {/* 1. LOADING STATE - Centered & Persistent until content or error */}
       {showFullLoadingState && !showFullErrorState && (
@@ -161,7 +161,7 @@ export const ProgressiveValuationReport: React.FC<ProgressiveValuationReportProp
                 .filter(section => section.id && typeof section.id === 'string' && hasContent(section))
                 .sort((a, b) => a.phase - b.phase || a.timestamp.getTime() - b.timestamp.getTime())
                 .map(section => (
-                  <div key={section.id} className="report-section fade-in">
+                  <div key={section.id} className="report-section fade-in page">
                     {renderSection(section)}
                   </div>
                 ))}
@@ -182,7 +182,7 @@ export const ProgressiveValuationReport: React.FC<ProgressiveValuationReportProp
 
           {/* Final Report */}
           {finalReport && (
-            <div className="final-report mt-8 bg-white shadow-none border-0">
+            <div className="final-report mt-8">
               <style>{`
                 /* Ensure lists show bullet points */
                 .final-report ul,

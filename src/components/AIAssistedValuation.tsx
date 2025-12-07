@@ -10,10 +10,10 @@ import { ProgressiveValuationReport } from './ProgressiveValuationReport';
 import { useAuth } from '../hooks/useAuth';
 import { api } from '../services/api';
 import { backendAPI } from '../services/backendApi';
-import { useValuationSessionStore } from '../store/useValuationSessionStore';
 import { businessDataService, type BusinessProfileData } from '../services/businessDataService';
 import { DownloadService } from '../services/downloadService';
 import { guestCreditService } from '../services/guestCreditService';
+import { useValuationSessionStore } from '../store/useValuationSessionStore';
 import type { ConversationContext, ValuationRequest, ValuationResponse } from '../types/valuation';
 import { chatLogger } from '../utils/logger';
 import { ErrorBoundary } from './ErrorBoundary';
@@ -1264,52 +1264,9 @@ export const AIAssistedValuation: React.FC<AIAssistedValuationProps> = ({
               
               {/* After conversation: Show Accountant View HTML from valuationResult */}
               {stage === 'results' && valuationResult?.html_report && (
-                <div className="h-full overflow-y-auto bg-white px-4 sm:px-6 lg:px-8">
-                  <style>{`
-                    .accountant-view-report {
-                      font-family: 'Times New Roman', Times, serif;
-                      line-height: 1.6;
-                      color: #000;
-                      background: #fff;
-                      padding: 2rem;
-                      max-width: 8.5in;
-                      margin: 0 auto;
-                    }
-
-                    .accountant-view-report h1,
-                    .accountant-view-report h2,
-                    .accountant-view-report h3 {
-                      page-break-after: avoid;
-                    }
-
-                    .accountant-view-report table {
-                      page-break-inside: avoid;
-                      width: 100%;
-                      border-collapse: collapse;
-                      margin: 1rem 0;
-                    }
-
-                    .accountant-view-report th,
-                    .accountant-view-report td {
-                      border: 1px solid #ddd;
-                      padding: 8px;
-                      text-align: left;
-                    }
-
-                    .accountant-view-report th {
-                      background-color: #f5f5f5;
-                      font-weight: bold;
-                    }
-
-                    @media print {
-                      .accountant-view-report {
-                        padding: 0;
-                        max-width: 100%;
-                      }
-                    }
-                  `}</style>
+                <div className="h-full overflow-y-auto valuation-report-preview">
                   <div
-                    className="accountant-view-report"
+                    className="prose max-w-none"
                     dangerouslySetInnerHTML={{ __html: valuationResult.html_report }}
                   />
                 </div>
