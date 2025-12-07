@@ -44,33 +44,15 @@ export class HTMLProcessor {
     
     // DISABLED: We now use global CSS (.valuation-report-preview) to match backend styles exactly.
     // This prevents the injection of generic Tailwind classes that conflict with our Bank-Grade design.
-    // processed = this.addReportStyling(processed);
+    // Previously used: addReportStyling() - removed to avoid TypeScript errors
     
     // Process links to open in new tabs
     processed = this.processLinks(processed);
     
     // DISABLED: Backend handles table responsiveness/layout.
-    // processed = this.addResponsiveTables(processed);
+    // Previously used: addResponsiveTables() - removed to avoid TypeScript errors
     
     return processed;
-  }
-
-  /**
-   * Add report-specific styling classes
-   */
-  private static addReportStyling(html: string): string {
-    // Add prose classes for better typography
-    return html
-      .replace(/<h1/g, '<h1 class="text-2xl font-bold text-gray-900 mb-4"')
-      .replace(/<h2/g, '<h2 class="text-xl font-semibold text-gray-800 mb-3"')
-      .replace(/<h3/g, '<h3 class="text-lg font-medium text-gray-700 mb-2"')
-      .replace(/<p/g, '<p class="text-gray-600 mb-3 leading-relaxed"')
-      .replace(/<ul/g, '<ul class="list-disc list-inside mb-4 space-y-1"')
-      .replace(/<ol/g, '<ol class="list-decimal list-inside mb-4 space-y-1"')
-      .replace(/<li/g, '<li class="text-gray-600"')
-      .replace(/<table/g, '<table class="w-full border-collapse border border-gray-300 mb-4"')
-      .replace(/<th/g, '<th class="border border-gray-300 px-4 py-2 bg-gray-50 font-semibold text-left"')
-      .replace(/<td/g, '<td class="border border-gray-300 px-4 py-2"');
   }
 
   /**
@@ -78,13 +60,6 @@ export class HTMLProcessor {
    */
   private static processLinks(html: string): string {
     return html.replace(/<a\s+href=/g, '<a target="_blank" rel="noopener noreferrer" href=');
-  }
-
-  /**
-   * Add responsive table classes
-   */
-  private static addResponsiveTables(html: string): string {
-    return html.replace(/<table/g, '<div class="overflow-x-auto"><table class="w-full border-collapse border border-gray-300 mb-4"');
   }
 
   /**

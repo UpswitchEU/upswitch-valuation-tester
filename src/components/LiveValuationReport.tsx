@@ -86,7 +86,6 @@ export const LiveValuationReport: React.FC<LiveValuationReportProps> = ({
       <div className="flex-1 overflow-y-auto valuation-report-preview">
         {processedHtml ? (
           <div 
-            className="prose prose-sm max-w-none"
             dangerouslySetInnerHTML={{ __html: processedHtml }}
           />
         ) : (

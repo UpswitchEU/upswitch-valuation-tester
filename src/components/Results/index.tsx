@@ -65,34 +65,6 @@ export const Results: React.FC = memo(() => {
 
   return (
     <div className="h-full overflow-y-auto valuation-report-preview">
-      <style>{`
-        /* Ensure lists show bullet points */
-        .accountant-view-report ul,
-        .accountant-view-report ol {
-          margin-left: 36pt !important;
-          padding-left: 18pt !important;
-          list-style-type: disc !important;
-          list-style-position: outside !important;
-          display: block !important;
-        }
-
-        .accountant-view-report ol {
-          list-style-type: decimal !important;
-        }
-
-        .accountant-view-report li {
-          display: list-item !important;
-          list-style-position: outside !important;
-          margin-bottom: 6pt;
-        }
-
-        /* Hide "Complete Valuation Report" header */
-        .accountant-view-report div.flex.items-center.mb-4:has(svg.lucide-circle-check-big),
-        .accountant-view-report div:has(> svg.lucide-circle-check-big):has(> h2),
-        .accountant-view-report div:has(svg[class*="circle-check"]):has(h2) {
-          display: none !important;
-        }
-      `}</style>
       <div
         className="accountant-view-report"
         dangerouslySetInnerHTML={{ __html: result.html_report }}

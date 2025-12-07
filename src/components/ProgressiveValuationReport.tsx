@@ -183,36 +183,7 @@ export const ProgressiveValuationReport: React.FC<ProgressiveValuationReportProp
           {/* Final Report */}
           {finalReport && (
             <div className="final-report mt-8">
-              <style>{`
-                /* Ensure lists show bullet points */
-                .final-report ul,
-                .final-report ol {
-                  margin-left: 36pt !important;
-                  padding-left: 18pt !important;
-                  list-style-type: disc !important;
-                  list-style-position: outside !important;
-                  display: block !important;
-                }
-
-                .final-report ol {
-                  list-style-type: decimal !important;
-                }
-
-                .final-report li {
-                  display: list-item !important;
-                  list-style-position: outside !important;
-                  margin-bottom: 6pt;
-                }
-
-                /* Hide "Complete Valuation Report" header */
-                .final-report div.flex.items-center.mb-4:has(svg.lucide-circle-check-big),
-                .final-report div:has(> svg.lucide-circle-check-big):has(> h2),
-                .final-report div:has(svg[class*="circle-check"]):has(h2) {
-                  display: none !important;
-                }
-              `}</style>
               <div 
-                className="prose max-w-none"
                 dangerouslySetInnerHTML={{ __html: finalReport }}
               />
             </div>

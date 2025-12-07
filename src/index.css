@@ -223,6 +223,13 @@
 
 /* ==========================================================================
    Bank-Grade Typography & Report Styling (Ported from Backend base.html)
+   
+   SYNC WARNING:
+   These styles are a port of the Jinja2 template styles found in:
+   apps/upswitch-valuation-engine/src/templates/accountant_view/base.html
+   
+   Any changes to the PDF report styling must be manually reflected here
+   to keep the Preview consistent.
    ========================================================================== */
 
 /* Cover Sheet Style for Preview */
@@ -542,4 +549,36 @@
 .valuation-report-preview .section-number {
   font-weight: bold;
   margin-right: 6pt;
+}
+
+/* List Styling (Fix for Global Reset) */
+.valuation-report-preview ul,
+.valuation-report-preview ol {
+  margin-left: 36pt !important;
+  padding-left: 18pt !important;
+  list-style-position: outside !important;
+  display: block !important;
+  margin-bottom: 12pt;
+}
+
+.valuation-report-preview ul {
+  list-style-type: disc !important;
+}
+
+.valuation-report-preview ol {
+  list-style-type: decimal !important;
+}
+
+.valuation-report-preview li {
+  display: list-item !important;
+  list-style-position: outside !important;
+  margin-bottom: 6pt;
+  color: var(--text-body);
+}
+
+/* Hide "Complete Valuation Report" header from backend HTML */
+.valuation-report-preview div.flex.items-center.mb-4:has(svg.lucide-circle-check-big),
+.valuation-report-preview div:has(> svg.lucide-circle-check-big):has(> h2),
+.valuation-report-preview div:has(svg[class*="circle-check"]):has(h2) {
+  display: none !important;
 }
