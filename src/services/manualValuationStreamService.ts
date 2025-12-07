@@ -3,8 +3,8 @@
  * Handles SSE streaming for manual valuation calculations
  */
 
-import { apiLogger } from '../utils/logger';
 import type { ValuationRequest } from '../types/valuation';
+import { apiLogger } from '../utils/logger';
 
 interface StreamEvent {
   type: 'progress' | 'section_loading' | 'report_section' | 'report_complete' | 'error';
@@ -429,5 +429,5 @@ class ManualValuationStreamService {
 
 // Export singleton instance
 export const manualValuationStreamService = new ManualValuationStreamService();
-export type { StreamEvent, StreamCallbacks };
+export type { StreamCallbacks, StreamEvent };
 

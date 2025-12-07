@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
 import { Loader2 } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
 import { GENERATION_STEPS, type LoadingStep } from './LoadingState.constants';
 
 interface LoadingStateProps {
