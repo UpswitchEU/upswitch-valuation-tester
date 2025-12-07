@@ -385,19 +385,52 @@
   color: var(--text-body);
 }
 
-/* Tables */
-.valuation-report-preview table {
+/* The "Box" Container for Tables */
+.valuation-report-preview .table-card {
+  background: #FFFFFF;
+  border: 1px solid #E2E8F0; /* Slate-200 */
+  border-radius: 8px;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.05); /* Subtle depth */
+  overflow: hidden; /* Keeps rounded corners clean */
+  margin-bottom: 24pt;
+  page-break-inside: avoid;
+}
+
+/* Remove default table margins if inside a card to fit perfectly */
+.valuation-report-preview .table-card .step-table,
+.valuation-report-preview .table-card table {
+  margin: 0;
+  border-top: none; /* The card has the border */
+  border-radius: 0;
+}
+
+/* Header background within card */
+.valuation-report-preview .table-card .step-table th,
+.valuation-report-preview .table-card table th {
+  background-color: #F8FAFC;
+  border-top: none;
+}
+
+/* Tables - Digital Authority & Academic Style */
+.valuation-report-preview table,
+.valuation-report-preview .step-table {
   width: 100%;
   margin-left: 0;
   margin-right: 0;
-  border-collapse: collapse;
+  border-collapse: separate;
+  border-spacing: 0;
   margin-top: 24pt;
   margin-bottom: 24pt;
+  font-family: 'Inter', sans-serif;
   font-size: 10pt;
+  line-height: 1.6;
   border: none;
+  border-top: 2px solid var(--upswitch-navy);
 }
 
-.valuation-report-preview .report-section table {
+/* Remove side margins when table is inside report-section */
+.valuation-report-preview .report-section table,
+.valuation-report-preview .report-section .step-table {
   width: 100%;
   margin-left: 0;
   margin-right: 0;
@@ -413,33 +446,42 @@
   color: var(--text-muted);
 }
 
-.valuation-report-preview th {
-  background-color: #FFFFFF;
-  border-bottom: 1px solid #CBD5E1; /* Slate-300: Subtle separation */
-  font-weight: 600;
+.valuation-report-preview th,
+.valuation-report-preview .step-table th {
+  background-color: #F8FAFC; /* Academic/Formal header background */
+  border-bottom: 1px solid #CBD5E1;
+  font-weight: 700;
   color: var(--upswitch-navy);
-  padding: 16pt 12pt; /* Increased spacing */
+  padding: 12pt 12pt;
   text-align: left;
   font-family: 'Inter', sans-serif;
   text-transform: uppercase;
   font-size: 9pt;
-  letter-spacing: 0.5pt;
+  letter-spacing: 0.05em;
   border-top: none;
   border-left: none;
   border-right: none;
 }
 
-.valuation-report-preview td {
-  padding: 16pt 12pt; /* Increased spacing */
+.valuation-report-preview td,
+.valuation-report-preview .step-table td {
+  padding: 12pt 12pt;
   color: var(--text-body);
-  border-bottom: 1px solid var(--border-light);
+  border-bottom: 1px solid #E2E8F0;
   border-top: none;
   border-left: none;
   border-right: none;
   vertical-align: top;
 }
 
-.valuation-report-preview tr:last-child td {
+/* Primary column emphasis for step-table */
+.valuation-report-preview .step-table td:first-child {
+  font-weight: 500;
+  color: var(--upswitch-navy);
+}
+
+.valuation-report-preview tr:last-child td,
+.valuation-report-preview .step-table tr:last-child td {
   border-bottom: 1px solid #CBD5E1; /* Matches header for framing */
 }
 
@@ -450,10 +492,11 @@
 .valuation-report-preview td.text-right {
   text-align: right;
   font-variant-numeric: tabular-nums;
+  white-space: nowrap; /* Prevent breaking numbers */
 }
 
 .valuation-report-preview tr:nth-child(even) {
-  background-color: #FFFFFF;
+  background-color: #FFFFFF; /* No stripes, just clean lines */
 }
 
 /* Valuation Box */
@@ -602,7 +645,36 @@
   color: var(--text-body);
 }
 
-/* Hide "Complete Valuation Report" header from backend HTML */
+/* Status Badges */
+.valuation-report-preview .status-badge {
+  display: inline-block;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-weight: 600;
+  font-size: 9pt;
+  white-space: nowrap;
+}
+
+.valuation-report-preview .status-badge.completed {
+  background-color: #F0FDF4; /* Green-50 */
+  color: #16A34A; /* Green-600 */
+}
+
+.valuation-report-preview .status-badge.skipped {
+  background-color: #FEFCE8; /* Yellow-50 */
+  color: #CA8A04; /* Yellow-600 */
+}
+
+.valuation-report-preview .status-badge.failed {
+  background-color: #FEF2F2; /* Red-50 */
+  color: #DC2626; /* Red-600 */
+}
+
+.valuation-report-preview .status-badge.pending,
+.valuation-report-preview .status-badge.not_executed {
+  background-color: #F3F4F6; /* Gray-100 */
+  color: #4B5563; /* Gray-600 */
+}
 .valuation-report-preview div.flex.items-center.mb-4:has(svg.lucide-circle-check-big),
 .valuation-report-preview div:has(> svg.lucide-circle-check-big):has(> h2),
 .valuation-report-preview div:has(svg[class*="circle-check"]):has(h2) {
