@@ -276,7 +276,7 @@
   color: var(--text-dark);
   margin-top: 48pt;
   margin-bottom: 24pt;
-  padding: 0 2cm;
+  padding: 0;
   page-break-after: avoid;
   border-bottom: none;
   letter-spacing: -0.5pt;
@@ -327,7 +327,7 @@
   gap: 32pt;
   margin-top: 24pt;
   margin-bottom: 24pt;
-  padding: 0 2cm;
+  padding: 0;
 }
 
 .valuation-report-preview .report-section .grid-layout {
@@ -375,6 +375,11 @@
   border-left-color: #EA580C;
 }
 
+.valuation-report-preview .report-callout.danger {
+  background-color: #FEF2F2;
+  border-left-color: #EF4444;
+}
+
 .valuation-report-preview .report-callout p {
   margin-bottom: 8pt;
   color: var(--text-body);
@@ -382,9 +387,9 @@
 
 /* Tables */
 .valuation-report-preview table {
-  width: calc(100% - 4cm);
-  margin-left: 2cm;
-  margin-right: 2cm;
+  width: 100%;
+  margin-left: 0;
+  margin-right: 0;
   border-collapse: collapse;
   margin-top: 24pt;
   margin-bottom: 24pt;
@@ -410,19 +415,22 @@
 
 .valuation-report-preview th {
   background-color: #FFFFFF;
-  border-bottom: 2pt solid var(--upswitch-navy);
-  font-weight: 700;
+  border-bottom: 1px solid #CBD5E1; /* Slate-300: Subtle separation */
+  font-weight: 600;
   color: var(--upswitch-navy);
-  padding: 12pt 8pt;
+  padding: 16pt 12pt; /* Increased spacing */
   text-align: left;
   font-family: 'Inter', sans-serif;
+  text-transform: uppercase;
+  font-size: 9pt;
+  letter-spacing: 0.5pt;
   border-top: none;
   border-left: none;
   border-right: none;
 }
 
 .valuation-report-preview td {
-  padding: 12pt 8pt;
+  padding: 16pt 12pt; /* Increased spacing */
   color: var(--text-body);
   border-bottom: 1px solid var(--border-light);
   border-top: none;
@@ -432,7 +440,7 @@
 }
 
 .valuation-report-preview tr:last-child td {
-  border-bottom: 1px solid var(--upswitch-navy);
+  border-bottom: 1px solid #CBD5E1; /* Matches header for framing */
 }
 
 .valuation-report-preview td.number,
@@ -513,6 +521,24 @@
   margin: 24pt 0;
   text-align: center;
   page-break-inside: avoid;
+}
+
+.valuation-report-preview .classification-banner.preliminary {
+  background-color: #FEF2F2;
+  border: 1px solid #FECACA;
+  border-left: 4pt solid #EF4444;
+  border-radius: 6px;
+  padding: 1.5rem;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+}
+
+.valuation-report-preview .classification-banner.limited {
+  background-color: #FFF7ED;
+  border: 1px solid #FED7AA;
+  border-left: 4pt solid #F97316;
+  border-radius: 6px;
+  padding: 1.5rem;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
 }
 
 .valuation-report-preview .classification-banner h3 {
