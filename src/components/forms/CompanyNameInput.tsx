@@ -70,6 +70,17 @@ export const CompanyNameInput: React.FC<CompanyNameInputProps> = ({
               (r) => r.company_name.toLowerCase() === query.trim().toLowerCase()
             );
             setExactMatch(match || null);
+            
+            // Show suggestions dropdown if we have results
+            // Keep it visible if user is still typing/focused, or was just typing
+            if (results.length > 0) {
+              setShowSuggestions(true);
+              generalLogger.debug('KBO suggestions ready', {
+                count: results.length,
+                query,
+                hasExactMatch: !!match
+              });
+            }
           } else {
             setSearchResults([]);
             setExactMatch(null);
