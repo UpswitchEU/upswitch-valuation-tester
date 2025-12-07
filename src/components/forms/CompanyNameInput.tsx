@@ -31,6 +31,7 @@ export const CompanyNameInput: React.FC<CompanyNameInputProps> = ({
   const [isLoading, setIsLoading] = useState(false);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [exactMatch, setExactMatch] = useState<CompanySearchResult | null>(null);
+  const [selectedCompany, setSelectedCompany] = useState<CompanySearchResult | null>(null);
   const [highlightedIndex, setHighlightedIndex] = useState(-1);
   const containerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -112,6 +113,7 @@ export const CompanyNameInput: React.FC<CompanyNameInputProps> = ({
     } else {
       setSearchResults([]);
       setExactMatch(null);
+      setSelectedCompany(null);
       setShowSuggestions(false);
       setHighlightedIndex(-1);
     }
@@ -130,6 +132,7 @@ export const CompanyNameInput: React.FC<CompanyNameInputProps> = ({
     onChange(newValue);
     setShowSuggestions(true);
     setExactMatch(null); // Clear exact match until search completes
+    setSelectedCompany(null); // Clear selected company when typing
     setHighlightedIndex(-1); // Reset highlight when typing
   };
 
@@ -137,6 +140,7 @@ export const CompanyNameInput: React.FC<CompanyNameInputProps> = ({
   const handleSelectCompany = useCallback((company: CompanySearchResult) => {
     onChange(company.company_name);
     setExactMatch(company);
+    setSelectedCompany(company);
     setShowSuggestions(false);
     setHighlightedIndex(-1);
     onCompanySelect?.(company);
@@ -260,13 +264,117 @@ export const CompanyNameInput: React.FC<CompanyNameInputProps> = ({
     );
   };
 
+  // Render company summary card (shown after selection)
+  const renderCompanySummary = () => {
+    if (!selectedCompany || showSuggestions) return null;
+
+    return (
+      <div className="mt-3 p-4 bg-gradient-to-br from-emerald-50 to-teal-50 border border-emerald-200 rounded-xl shadow-sm animate-in fade-in slide-in-from-top-2 duration-300">
+        {/* Header with verified badge */}
+        <div className="flex items-start justify-between mb-3">
+          <div className="flex items-center gap-2">
+            <div className="flex-shrink-0 w-8 h-8 bg-emerald-500 rounded-full flex items-center justify-center">
+              <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+              </svg>
+            </div>
+            <div>
+              <p className="text-xs font-semibold text-emerald-700 uppercase tracking-wider">Verified Company</p>
+              <p className="text-sm font-medium text-gray-600">KBO/BCE Belgium</p>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={() => {
+              setSelectedCompany(null);
+              setExactMatch(null);
+              onChange('');
+              inputRef.current?.focus();
+            }}
+            className="flex-shrink-0 p-1.5 text-gray-400 hover:text-emerald-600 hover:bg-emerald-100/50 rounded-lg transition-all duration-200 ease-in-out"
+            aria-label="Clear selection"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+
+        {/* Company details */}
+        <div className="space-y-2">
+          <div>
+            <h4 className="text-lg font-semibold text-gray-900 mb-1">{selectedCompany.company_name}</h4>
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm">
+              {selectedCompany.registration_number && (
+                <span className="inline-flex items-center gap-1.5 text-gray-700">
+                  <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 20l4-16m2 16l4-16M6 9h14M4 15h14" />
+                  </svg>
+                  <span className="font-mono font-medium">{selectedCompany.registration_number}</span>
+                </span>
+              )}
+              {selectedCompany.legal_form && (
+                <>
+                  <span className="text-gray-300">•</span>
+                  <span className="text-gray-600">{selectedCompany.legal_form}</span>
+                </>
+              )}
+              {selectedCompany.status && (
+                <>
+                  <span className="text-gray-300">•</span>
+                  <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
+                    selectedCompany.status.toLowerCase() === 'active' 
+                      ? 'bg-emerald-100 text-emerald-800' 
+                      : 'bg-gray-100 text-gray-800'
+                  }`}>
+                    {selectedCompany.status}
+                  </span>
+                </>
+              )}
+            </div>
+          </div>
+
+          {selectedCompany.address && (
+            <div className="pt-2 border-t border-emerald-200/50">
+              <div className="flex items-start gap-2 text-sm text-gray-600">
+                <svg className="w-4 h-4 text-gray-400 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                </svg>
+                <span className="leading-relaxed">{selectedCompany.address}</span>
+              </div>
+            </div>
+          )}
+
+          {selectedCompany.confidence_score && (
+            <div className="pt-2 flex items-center gap-2">
+              <div className="flex-1 bg-white/50 rounded-full h-1.5 overflow-hidden">
+                <div 
+                  className="h-full bg-gradient-to-r from-emerald-500 to-teal-500 transition-all duration-500 ease-out"
+                  style={{ width: `${Math.round(selectedCompany.confidence_score * 100)}%` }}
+                />
+              </div>
+              <span className="text-xs font-medium text-emerald-700 whitespace-nowrap">
+                {Math.round(selectedCompany.confidence_score * 100)}% match
+              </span>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  };
+
   // Render suggestions dropdown
   const renderSuggestions = () => {
     if (!showSuggestions || searchResults.length === 0 || isLoading) return null;
 
     return (
-      <div className="absolute top-full left-0 right-0 mt-2 bg-white border border-gray-100 rounded-xl shadow-xl z-50 max-h-72 overflow-y-auto transform transition-all duration-200 origin-top animate-in fade-in slide-in-from-top-2 ring-1 ring-black/5">
-        <div className="px-4 py-2.5 text-xs font-semibold text-gray-400 uppercase tracking-wider bg-gray-50 border-b border-gray-100 sticky top-0 backdrop-blur-sm">
+      <div 
+        id="company-suggestions-list"
+        role="listbox"
+        className="absolute top-full left-0 right-0 mt-2 bg-white border border-gray-200/75 rounded-xl shadow-[0_8px_30px_rgb(0,0,0,0.12)] z-[9999] max-h-72 overflow-y-auto transform transition-all duration-200 origin-top animate-in fade-in slide-in-from-top-2 ring-1 ring-black/5"
+      >
+        <div className="px-4 py-2.5 text-xs font-semibold text-gray-500 uppercase tracking-wider bg-white/95 border-b border-gray-100 sticky top-0 backdrop-blur-md z-10 shadow-sm">
           Did you mean this company?
         </div>
         <div className="py-1">
@@ -278,21 +386,20 @@ export const CompanyNameInput: React.FC<CompanyNameInputProps> = ({
               <button
                 key={company.company_id || index}
                 type="button"
-                className={`w-full text-left px-4 py-3 transition-all duration-150 group relative ${
+                role="option"
+                aria-selected={isExactMatch}
+                className={`w-full text-left px-4 py-3 transition-all duration-150 group relative border-l-2 ${
                   isHighlighted 
-                    ? 'bg-gray-50' 
-                    : 'hover:bg-gray-50'
+                    ? 'bg-gray-50 border-primary-500' 
+                    : 'border-transparent hover:bg-gray-50 hover:border-gray-200'
                 } ${
-                  isExactMatch ? 'bg-emerald-50/50 hover:bg-emerald-50' : ''
+                  isExactMatch ? 'bg-emerald-50/60 hover:bg-emerald-50 border-emerald-500' : ''
                 }`}
                 onClick={() => handleSelectCompany(company)}
                 onMouseEnter={() => {
                   setHighlightedIndex(index);
                 }}
               >
-                {isExactMatch && (
-                  <div className="absolute left-0 top-0 bottom-0 w-1 bg-emerald-500 rounded-r" />
-                )}
                 <div className={`font-medium text-base transition-colors ${isExactMatch ? 'text-emerald-900' : 'text-gray-900'}`}>
                   {company.company_name}
                 </div>
@@ -333,6 +440,10 @@ export const CompanyNameInput: React.FC<CompanyNameInputProps> = ({
         {...inputProps}
         value={value}
         onChange={handleChange}
+        aria-expanded={showSuggestions}
+        aria-haspopup="listbox"
+        aria-controls="company-suggestions-list"
+        aria-activedescendant={highlightedIndex >= 0 ? `suggestion-${highlightedIndex}` : undefined}
         onKeyDown={(e) => {
           handleKeyDown(e);
           inputProps.onKeyDown?.(e);
@@ -357,6 +468,7 @@ export const CompanyNameInput: React.FC<CompanyNameInputProps> = ({
         inputRef={inputRef}
       />
       {renderSuggestions()}
+      {renderCompanySummary()}
     </div>
   );
 };
