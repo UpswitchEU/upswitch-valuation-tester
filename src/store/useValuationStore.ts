@@ -182,9 +182,6 @@ export const useValuationStore = create<ValuationStore>((set, get) => ({
     
     setIsCalculating(true);
     
-    // Track if we encountered an error (for finally block)
-    let hadError = false;
-    
     try {
       // Use session data (unified source) or fall back to formData
       const dataSource = session?.dataSource || 'manual';
@@ -595,23 +592,14 @@ export const useValuationStore = create<ValuationStore>((set, get) => ({
       }
       
       setError(errorMessage);
-      hadError = true;
       // BANK-GRADE: Clear isCalculating on error so error state can be displayed
       setIsCalculating(false);
-    } finally {
-      // BANK-GRADE: Don't clear isCalculating in finally block for successful responses
-      // The loading state should persist until:
-      // 1. Stream completes successfully (handleStreamComplete sets it to false)
-      // 2. Stream error occurs (handleStreamError sets it to false)
-      // 3. Error occurs in catch block (already set to false above)
-      // This ensures loading state persists until report is actually displayed or error is shown
-      // Only clear if we encountered an error - for successful API responses, let streaming handle clearing isCalculating
-      if (hadError) {
-        // Error already handled above, isCalculating already set to false
-        return;
-      }
-      // For successful responses, isCalculating stays true until streaming completes
     }
+    // Note: No finally block needed - isCalculating is managed by:
+    // 1. Stream completes successfully (handleStreamComplete sets it to false)
+    // 2. Stream error occurs (handleStreamError sets it to false)
+    // 3. Error occurs in catch block (already set to false above)
+    // For successful responses, isCalculating stays true until streaming completes
   },
   
   calculateValuationStreaming: async (onProgress?: (progress: number) => void) => {

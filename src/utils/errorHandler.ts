@@ -92,12 +92,13 @@ export function getUserFriendlyMessage(error: unknown): string {
     case ErrorType.TIMEOUT:
       return 'Request timed out. The calculation is taking longer than expected. Please try again.';
     
-    case ErrorType.VALIDATION:
+    case ErrorType.VALIDATION: {
       const validationMessage = anyError.response?.data?.error || anyError.response?.data?.message;
       if (validationMessage) {
         return `Validation error: ${validationMessage}`;
       }
       return 'Invalid data provided. Please check your inputs and try again.';
+    }
     
     case ErrorType.SERVER:
       return 'Server error occurred. Our team has been notified. Please try again in a moment.';

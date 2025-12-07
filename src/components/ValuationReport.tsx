@@ -8,7 +8,8 @@ import { useValuationSessionStore } from '../store/useValuationSessionStore';
 import type { ValuationResponse } from '../types/valuation';
 import { generateReportId, isValidReportId } from '../utils/reportIdGenerator';
 import { AIAssistedValuation } from './AIAssistedValuation';
-import { INITIALIZATION_STEPS, LoadingState } from './LoadingState';
+import { LoadingState } from './LoadingState';
+import { INITIALIZATION_STEPS } from './LoadingState.constants';
 import { ManualValuationFlow } from './ManualValuationFlow';
 import { OutOfCreditsModal } from './OutOfCreditsModal';
 

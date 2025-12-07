@@ -197,6 +197,7 @@ class ManualValuationStreamService {
     let buffer = '';
 
     try {
+      // eslint-disable-next-line no-constant-condition
       while (true) {
         const { done, value } = await reader.read();
 
@@ -316,7 +317,7 @@ class ManualValuationStreamService {
         }
         break;
 
-      case 'report_complete':
+      case 'report_complete': {
         // DIAGNOSTIC: Log when report_complete event is received
         const hasHtmlReport = !!event.html_report;
         const htmlReportLength = event.html_report?.length || 0;
@@ -361,6 +362,7 @@ class ManualValuationStreamService {
           });
         }
         break;
+      }
 
       case 'error':
         callbacks.onError?.(
