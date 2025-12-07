@@ -266,7 +266,7 @@ export const CompanyNameInput: React.FC<CompanyNameInputProps> = ({
 
   // Render company summary card (shown after selection)
   const renderCompanySummary = () => {
-    if (!selectedCompany || showSuggestions) return null;
+    if (!selectedCompany) return null;
 
     return (
       <div className="mt-3 p-4 bg-gradient-to-br from-emerald-50 to-teal-50 border border-emerald-200 rounded-xl shadow-sm animate-in fade-in slide-in-from-top-2 duration-300">
@@ -345,20 +345,6 @@ export const CompanyNameInput: React.FC<CompanyNameInputProps> = ({
               </div>
             </div>
           )}
-
-          {selectedCompany.confidence_score && (
-            <div className="pt-2 flex items-center gap-2">
-              <div className="flex-1 bg-white/50 rounded-full h-1.5 overflow-hidden">
-                <div 
-                  className="h-full bg-gradient-to-r from-emerald-500 to-teal-500 transition-all duration-500 ease-out"
-                  style={{ width: `${Math.round(selectedCompany.confidence_score * 100)}%` }}
-                />
-              </div>
-              <span className="text-xs font-medium text-emerald-700 whitespace-nowrap">
-                {Math.round(selectedCompany.confidence_score * 100)}% match
-              </span>
-            </div>
-          )}
         </div>
       </div>
     );
@@ -366,7 +352,7 @@ export const CompanyNameInput: React.FC<CompanyNameInputProps> = ({
 
   // Render suggestions dropdown
   const renderSuggestions = () => {
-    if (!showSuggestions || searchResults.length === 0 || isLoading) return null;
+    if (!showSuggestions || searchResults.length === 0 || isLoading || selectedCompany) return null;
 
     return (
       <div 
@@ -449,7 +435,7 @@ export const CompanyNameInput: React.FC<CompanyNameInputProps> = ({
           inputProps.onKeyDown?.(e);
         }}
         onFocus={() => {
-          if (searchResults.length > 0) {
+          if (searchResults.length > 0 && !selectedCompany) {
             setShowSuggestions(true);
           }
           inputProps.onFocus?.({} as React.FocusEvent<HTMLInputElement>);

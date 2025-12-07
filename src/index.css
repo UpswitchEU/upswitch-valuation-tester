@@ -442,6 +442,7 @@
   text-transform: uppercase;
   letter-spacing: 0.5pt;
   margin-bottom: 12pt;
+  padding: 12pt 16pt; /* Added padding for spacing */
   text-align: left;
   color: var(--text-muted);
 }
