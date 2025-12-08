@@ -5,9 +5,9 @@
  * Styled distinctly from regular questions to clearly indicate it's AI assistance.
  */
 
-import React from 'react';
-import { Bot, Lightbulb, TrendingUp, ArrowRight } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { ArrowRight, Bot, Lightbulb, TrendingUp } from 'lucide-react';
+import React from 'react';
 
 export interface AIHelpCardProps {
   answer: string;

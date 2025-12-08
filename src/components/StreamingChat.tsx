@@ -5,19 +5,20 @@
  * The main component is now ~300 lines instead of 1,817 lines.
  */
 
+import { AnimatePresence, motion } from 'framer-motion';
 import { Bot, CheckCircle } from 'lucide-react';
 import React, { startTransition, useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
 import { AI_CONFIG } from '../config';
 import { useAuth } from '../hooks/useAuth';
 import { useTypingAnimation } from '../hooks/useTypingAnimation';
 import { debugLogger } from '../utils/debugLogger';
 import { chatLogger } from '../utils/logger';
+import { AIHelpCard } from './AIHelpCard';
 import { KBOSuggestionsList } from './KBOSuggestionsList';
-import { hasKBOSuggestions, parseKBOSuggestions } from './utils/kboParsing';
 import { SuggestionChips } from './SuggestionChips';
 import { TypingIndicator } from './TypingIndicator';
-import { AIHelpCard } from './AIHelpCard';
+import { ValuationReadyCTA } from './ValuationReadyCTA';
+import { hasKBOSuggestions, parseKBOSuggestions } from './utils/kboParsing';
 // Note: Business extraction utilities available if needed
 // import { 
 //   extractBusinessModelFromInput, 
@@ -1186,6 +1187,10 @@ const MessageItem = React.memo<MessageItemProps>(({
   const isAIHelp = message.metadata?.is_ai_help === true;
   const aiResponse = message.metadata?.ai_response;
   
+  // Check if this is a Valuation Ready CTA
+  const isValuationReadyCTA = message.metadata?.input_type === 'cta_button';
+  const buttonText = message.metadata?.button_text || 'Create Valuation Report';
+  
   // Detect KBO suggestions in the message
   // Check both message content and metadata clarification_message
   const kboSuggestions = React.useMemo(() => {
@@ -1213,6 +1218,21 @@ const MessageItem = React.memo<MessageItemProps>(({
         reasoning={aiResponse.reasoning}
         example={aiResponse.example}
         nudge={aiResponse.nudge || ''}
+        timestamp={message.timestamp}
+      />
+    );
+  }
+  
+  // Render Valuation Ready CTA if this is a CTA button
+  if (isValuationReadyCTA) {
+    return (
+      <ValuationReadyCTA
+        question={message.content}
+        buttonText={buttonText}
+        onConfirm={() => {
+          // Send "yes" to confirm the valuation
+          onClarificationConfirm(message.id);
+        }}
         timestamp={message.timestamp}
       />
     );
