@@ -45,7 +45,6 @@ export const AIAssistedValuation: React.FC<AIAssistedValuationProps> = ({
   const { session, updateSessionData, getSessionData } = useValuationSessionStore();
   const [stage, setStage] = useState<FlowStage>('chat');
   const [valuationResult, setValuationResult] = useState<ValuationResponse | null>(null);
-  const [reportSaved, setReportSaved] = useState(false);
   const [showOutOfCreditsModal, setShowOutOfCreditsModal] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [conversationContext, setConversationContext] = useState<ConversationContext | null>(null);
@@ -921,11 +920,6 @@ export const AIAssistedValuation: React.FC<AIAssistedValuationProps> = ({
   };
 
 
-  const handleStartOver = () => {
-    setStage('chat');
-    setValuationResult(null);
-    setReportSaved(false);
-  };
 
   // NEW: Toolbar handlers - Retry calculation
   const handleRefresh = useCallback(() => {
