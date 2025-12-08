@@ -19,6 +19,7 @@ import { chatLogger } from '../utils/logger';
 import { ErrorBoundary } from './ErrorBoundary';
 import { FullScreenModal } from './FullScreenModal';
 import { OutOfCreditsModal } from './OutOfCreditsModal';
+import { RegenerationWarningModal } from './RegenerationWarningModal';
 import { ResizableDivider } from './ResizableDivider';
 import { ValuationEmptyState } from './ValuationEmptyState';
 import { ValuationInfoPanel } from './ValuationInfoPanel';
@@ -48,6 +49,11 @@ export const AIAssistedValuation: React.FC<AIAssistedValuationProps> = ({
   const [showOutOfCreditsModal, setShowOutOfCreditsModal] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [conversationContext, setConversationContext] = useState<ConversationContext | null>(null);
+  
+  // Regeneration warning modal state
+  const [showRegenerationWarning, setShowRegenerationWarning] = useState(false);
+  const [pendingValuationResult, setPendingValuationResult] = useState<ValuationResponse | null>(null);
+  const [regenerateConfirmed, setRegenerateConfirmed] = useState(false);
   // Update context when conversation progresses
   const handleConversationUpdate = useCallback((context: ConversationContext) => {
     setConversationContext(context);
@@ -680,6 +686,19 @@ export const AIAssistedValuation: React.FC<AIAssistedValuationProps> = ({
       equityValue: valuationResult?.equity_value_mid,
       reportId: reportId
     });
+    
+    // Check if there's an existing completed report
+    const hasExistingReport = valuationResult || session?.completedAt;
+    
+    if (hasExistingReport && !regenerateConfirmed) {
+      chatLogger.info('Existing report detected, showing regeneration warning');
+      setPendingValuationResult(valuationResult);
+      setShowRegenerationWarning(true);
+      return;
+    }
+    
+    // Reset confirmation flag for next time
+    setRegenerateConfirmed(false);
     
     // Clear any previous errors
     setError(null);
@@ -1463,6 +1482,26 @@ export const AIAssistedValuation: React.FC<AIAssistedValuationProps> = ({
           animation: slide-up 0.5s ease-out;
         }
       `}</style>
+      
+      {/* Regeneration Warning Modal */}
+      <RegenerationWarningModal
+        isOpen={showRegenerationWarning}
+        completedAt={session?.completedAt}
+        onConfirm={async () => {
+          setRegenerateConfirmed(true);
+          setShowRegenerationWarning(false);
+          if (pendingValuationResult) {
+            // Re-trigger the valuation completion with confirmation
+            await handleValuationComplete(pendingValuationResult);
+            setPendingValuationResult(null);
+          }
+        }}
+        onCancel={() => {
+          setShowRegenerationWarning(false);
+          setPendingValuationResult(null);
+          setRegenerateConfirmed(false);
+        }}
+      />
     </div>
   );
 };

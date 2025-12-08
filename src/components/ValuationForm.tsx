@@ -16,6 +16,7 @@ import { debounce } from '../utils/debounce';
 import { generalLogger } from '../utils/logger';
 import { safePreference } from '../utils/numberUtils';
 import { CompanyNameInput, CustomBusinessTypeSearch, CustomDropdown, CustomNumberInputField, HistoricalDataInputs } from './forms';
+import { RegenerationWarningModal } from './RegenerationWarningModal';
 import { InfoIcon } from './ui/InfoIcon';
 
 /**
@@ -24,7 +25,7 @@ import { InfoIcon } from './ui/InfoIcon';
  * Main form for entering business valuation data.
  */
 export const ValuationForm: React.FC = () => {
-  const { formData, updateFormData, calculateValuation, quickValuation, isCalculating, error, prefillFromBusinessCard } = useValuationStore();
+  const { formData, updateFormData, calculateValuation, quickValuation, isCalculating, error, prefillFromBusinessCard, result } = useValuationStore();
   const { session, updateSessionData, getSessionData } = useValuationSessionStore();
   const { businessTypes, loading: businessTypesLoading, error: businessTypesError } = useBusinessTypes();
   // const { addReport } = useReportsStore(); // Deprecated: Now saving to database
@@ -32,6 +33,10 @@ export const ValuationForm: React.FC = () => {
   
   // Track if we've loaded session data to prevent sync loop
   const [hasLoadedSessionData, setHasLoadedSessionData] = useState(false);
+  
+  // Regeneration warning modal state
+  const [showRegenerationWarning, setShowRegenerationWarning] = useState(false);
+  const [regenerateConfirmed, setRegenerateConfirmed] = useState(false);
   
   // Auto-focus logic removed - no automatic field jumping
   
@@ -394,11 +399,22 @@ export const ValuationForm: React.FC = () => {
     // Clear validation error if validation passes
     setEmployeeCountError(null);
     
+    // Check if there's an existing completed report
+    const hasExistingReport = result?.valuation_id || session?.completedAt;
+    
+    if (hasExistingReport && !regenerateConfirmed) {
+      setShowRegenerationWarning(true);
+      return;
+    }
+    
+    // Reset confirmation flag for next time
+    setRegenerateConfirmed(false);
+    
     await calculateValuation();
     
     // Auto-save report to localStorage (will show inline below the form)
     // Results component will appear automatically in App.tsx when result is set
-  }, [calculateValuation, formData.business_type, formData.number_of_owners, formData.number_of_employees]);
+  }, [calculateValuation, formData.business_type, formData.number_of_owners, formData.number_of_employees, result, session, regenerateConfirmed]);
 
   // 📝 DEPRECATED: Auto-save to localStorage
   // Now handled by calculateValuation() → saveToBackend()
@@ -918,6 +934,25 @@ export const ValuationForm: React.FC = () => {
           </div>
         </div>
       )}
+      
+      {/* Regeneration Warning Modal */}
+      <RegenerationWarningModal
+        isOpen={showRegenerationWarning}
+        completedAt={session?.completedAt}
+        onConfirm={() => {
+          setRegenerateConfirmed(true);
+          setShowRegenerationWarning(false);
+          // Re-trigger form submission
+          const form = document.querySelector('form');
+          if (form) {
+            form.requestSubmit();
+          }
+        }}
+        onCancel={() => {
+          setShowRegenerationWarning(false);
+          setRegenerateConfirmed(false);
+        }}
+      />
     </form>
   );
 };

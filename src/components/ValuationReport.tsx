@@ -235,7 +235,8 @@ export const ValuationReport: React.FC = () => {
         onTryManual={async () => {
           setShowOutOfCreditsModal(false);
           if (session) {
-            await useValuationSessionStore.getState().switchView('manual');
+            // Skip confirmation for out-of-credits flow (user explicitly chose manual)
+            await useValuationSessionStore.getState().switchView('manual', true, true);
           }
         }}
       />

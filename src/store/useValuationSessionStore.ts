@@ -11,7 +11,7 @@ interface ValuationSessionStore {
   initializeSession: (reportId: string, currentView?: 'manual' | 'conversational', prefilledQuery?: string | null) => Promise<void>;
   loadSession: (reportId: string) => Promise<void>;
   updateSessionData: (data: Partial<ValuationRequest>) => Promise<void>;
-  switchView: (view: 'manual' | 'conversational', resetData?: boolean) => Promise<void>;
+  switchView: (view: 'manual' | 'conversational', resetData?: boolean, skipConfirmation?: boolean) => Promise<{ needsConfirmation?: boolean } | void>;
   getSessionData: () => ValuationRequest | null;
   clearSession: () => void;
   
@@ -23,6 +23,10 @@ interface ValuationSessionStore {
   // Sync state
   isSyncing: boolean;
   syncError: string | null;
+  
+  // Flow switch confirmation
+  pendingFlowSwitch: 'manual' | 'conversational' | null;
+  setPendingFlowSwitch: (view: 'manual' | 'conversational' | null) => void;
 }
 
 export const useValuationSessionStore = create<ValuationSessionStore>((set, get) => {
@@ -36,6 +40,7 @@ export const useValuationSessionStore = create<ValuationSessionStore>((set, get)
   session: null,
   isSyncing: false,
   syncError: null,
+  pendingFlowSwitch: null,
   
   /**
    * Initialize a new session or load existing one
@@ -331,8 +336,13 @@ export const useValuationSessionStore = create<ValuationSessionStore>((set, get)
    * 
    * This function is idempotent and safe to call multiple times.
    * It prevents race conditions by checking current state before updating.
+   * 
+   * @param view - Target view to switch to
+   * @param resetData - Whether to reset session data (default: true for user-initiated switches)
+   * @param skipConfirmation - Skip confirmation dialog (for programmatic switches)
+   * @returns Object with needsConfirmation flag if confirmation is required
    */
-  switchView: async (view: 'manual' | 'conversational', resetData: boolean = false) => {
+  switchView: async (view: 'manual' | 'conversational', resetData: boolean = true, skipConfirmation: boolean = false) => {
     const { session } = get();
     
     if (!session) {
@@ -345,6 +355,30 @@ export const useValuationSessionStore = create<ValuationSessionStore>((set, get)
       storeLogger.debug('Already in target view', { reportId: session.reportId, view });
       return;
     }
+    
+    // Check if confirmation is needed (only for user-initiated switches with data)
+    if (!skipConfirmation && resetData) {
+      const completeness = get().getCompleteness();
+      const needsConfirmation = completeness > 5; // Only require confirmation if >5% complete
+      
+      if (needsConfirmation) {
+        storeLogger.info('Flow switch requires confirmation', {
+          reportId: session.reportId,
+          currentView: session.currentView,
+          targetView: view,
+          completeness,
+        });
+        
+        // Set pending switch for modal to access
+        set({ pendingFlowSwitch: view });
+        
+        // Return early - caller should show confirmation modal
+        return { needsConfirmation: true };
+      }
+    }
+    
+    // Clear pending switch since we're proceeding
+    set({ pendingFlowSwitch: null });
     
     // Prevent concurrent switches by checking if already syncing
     const { isSyncing } = get();
@@ -652,6 +686,13 @@ export const useValuationSessionStore = create<ValuationSessionStore>((set, get)
     const completeness = totalWeight > 0 ? Math.round((completedWeight / totalWeight) * 100) : 0;
     
     return completeness;
+  },
+  
+  /**
+   * Set pending flow switch (for confirmation modal)
+   */
+  setPendingFlowSwitch: (view: 'manual' | 'conversational' | null) => {
+    set({ pendingFlowSwitch: view });
   },
   };
 });

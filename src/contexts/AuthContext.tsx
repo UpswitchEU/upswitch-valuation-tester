@@ -6,6 +6,7 @@
  */
 
 import React, { useCallback, useEffect, useState } from 'react';
+import { backendAPI } from '../services/backendApi';
 import { guestSessionService } from '../services/guestSessionService';
 import { authLogger } from '../utils/logger';
 import { AuthContext, AuthContextType, User } from './AuthContextTypes';
@@ -326,6 +327,34 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           business_type: userData.business_type,
           industry: userData.industry
         });
+
+        // Migrate guest session data to authenticated user
+        try {
+          const guestSessionId = await guestSessionService.getSessionId();
+          if (guestSessionId) {
+            authLogger.info('Attempting to migrate guest data', { guestSessionId });
+            
+            const migrationResult = await backendAPI.migrateGuestData(guestSessionId);
+            
+            authLogger.info('Guest data migration completed', {
+              migratedReports: migrationResult.migratedReports,
+              migratedSessions: migrationResult.migratedSessions,
+              hasErrors: migrationResult.errors && migrationResult.errors.length > 0,
+            });
+
+            // Clear guest session after successful migration
+            guestSessionService.clearSession();
+            authLogger.info('Guest session cleared after migration');
+          } else {
+            authLogger.info('No guest session to migrate');
+          }
+        } catch (migrationError) {
+          // Don't fail authentication if migration fails
+          authLogger.warn('Guest data migration failed, but authentication succeeded', {
+            error: migrationError instanceof Error ? migrationError.message : 'Unknown error',
+          });
+          // Continue with authentication - user can still use the app
+        }
       } else {
         throw new Error('Invalid response from token exchange');
       }

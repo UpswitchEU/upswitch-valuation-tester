@@ -6,6 +6,8 @@ interface FlowSwitchWarningModalProps {
   onClose: () => void;
   onConfirm: () => void;
   targetFlow: 'manual' | 'conversational';
+  currentFlow?: 'manual' | 'conversational';
+  completeness?: number;
 }
 
 /**
@@ -13,16 +15,25 @@ interface FlowSwitchWarningModalProps {
  * 
  * Warns users when switching flows that their current progress will be reset.
  * Only business type (from homepage) is preserved.
+ * Shows data completeness percentage if available.
  */
 export const FlowSwitchWarningModal: React.FC<FlowSwitchWarningModalProps> = ({
   isOpen,
   onClose,
   onConfirm,
   targetFlow,
+  currentFlow,
+  completeness = 0,
 }) => {
   if (!isOpen) return null;
 
+  const flowNames = {
+    manual: 'Manual Entry',
+    conversational: 'AI-Guided',
+  };
+  
   const flowName = targetFlow === 'conversational' ? 'Conversational' : 'Manual';
+  const currentFlowName = currentFlow ? flowNames[currentFlow] : null;
 
   return (
     <>
@@ -53,11 +64,40 @@ export const FlowSwitchWarningModal: React.FC<FlowSwitchWarningModalProps> = ({
           {/* Content */}
           <div className="px-6 py-5 space-y-3">
             <p className="text-zinc-300 leading-relaxed">
-              This will reset your current progress. Only your business type will be preserved.
+              {currentFlowName ? (
+                <>
+                  Switching from <span className="font-semibold text-white">{currentFlowName}</span> to{' '}
+                  <span className="font-semibold text-white">{flowNames[targetFlow]}</span> will{' '}
+                  <span className="font-semibold text-amber-400">reset all your entered data</span>.
+                </>
+              ) : (
+                <>
+                  This will reset your current progress. Only your business type will be preserved.
+                </>
+              )}
             </p>
             <p className="text-zinc-400 text-sm leading-relaxed">
               You'll start fresh in the {flowName.toLowerCase()} flow. All other entered data will be cleared.
             </p>
+            
+            {/* Data Completeness Indicator */}
+            {completeness > 0 && (
+              <div className="p-4 bg-zinc-800/50 rounded-lg border border-zinc-700 mt-4">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-sm text-zinc-400">Current progress</span>
+                  <span className="text-sm font-semibold text-white">{completeness}%</span>
+                </div>
+                <div className="w-full h-2 bg-zinc-700 rounded-full overflow-hidden">
+                  <div 
+                    className="h-full bg-gradient-to-r from-teal-500 to-teal-400 transition-all duration-300"
+                    style={{ width: `${completeness}%` }}
+                  />
+                </div>
+                <p className="text-xs text-zinc-500 mt-2">
+                  This progress will be lost when you switch flows
+                </p>
+              </div>
+            )}
           </div>
 
           {/* Actions */}

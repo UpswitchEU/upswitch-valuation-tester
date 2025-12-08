@@ -75,7 +75,7 @@ export const LoadingState: React.FC<LoadingStateProps> = ({
         </h3>
         <p 
           key={`subtext-${currentStepIndex}`}
-          className={`mt-3 text-base leading-relaxed animate-in fade-in slide-in-from-bottom-4 duration-500 delay-75 ${
+          className={`mt-1.5 text-base leading-relaxed animate-in fade-in slide-in-from-bottom-4 duration-500 delay-75 ${
             isDark ? 'text-zinc-400' : 'text-zinc-500'
           }`}
         >

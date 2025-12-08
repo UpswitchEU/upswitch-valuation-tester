@@ -802,6 +802,42 @@ class BackendAPI {
     const response = await this.client.get('/api/credits/health');
     return response.data;
   }
+
+  /**
+   * Migrate guest session data to authenticated user
+   * Only migrates completed valuations/reports
+   * Should be called after successful signup/login
+   */
+  async migrateGuestData(guestSessionId: string): Promise<{
+    migratedReports: number;
+    migratedSessions: number;
+    errors?: string[];
+  }> {
+    try {
+      apiLogger.info('Migrating guest data', { guestSessionId });
+      
+      const response = await this.client.post('/api/auth/migrate-guest-data', {
+        guestSessionId,
+      });
+
+      const result = response.data.data || response.data;
+      
+      apiLogger.info('Guest data migration completed', {
+        guestSessionId,
+        migratedReports: result.migratedReports,
+        migratedSessions: result.migratedSessions,
+        hasErrors: result.errors && result.errors.length > 0,
+      });
+
+      return result;
+    } catch (error: any) {
+      apiLogger.error('Guest data migration failed', {
+        error: error instanceof Error ? error.message : 'Unknown error',
+        guestSessionId,
+      });
+      throw error;
+    }
+  }
 }
 
 export const backendAPI = new BackendAPI();

@@ -1,11 +1,11 @@
-import { Code, Download, Eye, Info, Maximize, RefreshCw, Edit3, MessageSquare, Loader2 } from 'lucide-react';
+import { Code, Download, Edit3, Eye, Info, Loader2, Maximize, MessageSquare, RefreshCw } from 'lucide-react';
 import React, { useEffect, useRef, useState } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import { useValuationSessionStore } from '../store/useValuationSessionStore';
-import { FlowSwitchWarningModal } from './FlowSwitchWarningModal';
 import { ValuationToolbarProps } from '../types/valuation';
 import { generalLogger } from '../utils/logger';
 import { NameGenerator } from '../utils/nameGenerator';
+import { FlowSwitchWarningModal } from './FlowSwitchWarningModal';
 import { UserDropdown } from './UserDropdown';
 import { Tooltip } from './ui/Tooltip';
 
@@ -23,22 +23,34 @@ export const ValuationToolbar: React.FC<ValuationToolbarProps> = ({
   const { refreshAuth } = useAuth();
   
   // Flow switch modal state
-  const { session, switchView } = useValuationSessionStore();
-  const [showSwitchWarning, setShowSwitchWarning] = useState(false);
-  const [targetFlow, setTargetFlow] = useState<'manual' | 'conversational'>('manual');
+  const { session, switchView, getCompleteness, pendingFlowSwitch, setPendingFlowSwitch } = useValuationSessionStore();
+  const [showSwitchConfirmation, setShowSwitchConfirmation] = useState(false);
 
   // Handler for flow toggle icon clicks
-  const handleFlowIconClick = (flow: 'manual' | 'conversational') => {
+  const handleFlowIconClick = async (flow: 'manual' | 'conversational') => {
     if (!session || session.currentView === flow) return; // Already in this flow or no session
     
-    // Always show warning modal when switching flows
-    setTargetFlow(flow);
-    setShowSwitchWarning(true);
+    // Attempt to switch - this will set pendingFlowSwitch if confirmation is needed
+    const result = await switchView(flow, true, false); // resetData=true, skipConfirmation=false
+    
+    // If confirmation is needed, show modal
+    if (result?.needsConfirmation) {
+      setShowSwitchConfirmation(true);
+    }
   };
 
   const handleConfirmSwitch = async () => {
-    await switchView(targetFlow, true); // true = reset data
-    setShowSwitchWarning(false);
+    if (!pendingFlowSwitch) return;
+    
+    // Execute the switch with confirmation skipped
+    await switchView(pendingFlowSwitch, true, true); // resetData=true, skipConfirmation=true
+    setShowSwitchConfirmation(false);
+    setPendingFlowSwitch(null);
+  };
+
+  const handleCancelSwitch = () => {
+    setShowSwitchConfirmation(false);
+    setPendingFlowSwitch(null);
   };
 
   const [isEditingName, setIsEditingName] = useState(false);
@@ -304,10 +316,12 @@ export const ValuationToolbar: React.FC<ValuationToolbarProps> = ({
       </div>
     </nav>
     <FlowSwitchWarningModal
-      isOpen={showSwitchWarning}
-      onClose={() => setShowSwitchWarning(false)}
+      isOpen={showSwitchConfirmation}
+      currentFlow={session?.currentView || 'manual'}
+      targetFlow={pendingFlowSwitch || 'manual'}
+      completeness={getCompleteness()}
       onConfirm={handleConfirmSwitch}
-      targetFlow={targetFlow}
+      onClose={handleCancelSwitch}
     />
     </>
   );
