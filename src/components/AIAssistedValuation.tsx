@@ -349,6 +349,12 @@ export const AIAssistedValuation: React.FC<AIAssistedValuationProps> = ({
     if (is_error && error_message) {
       setError(error_message);
       setIsGenerating(false);
+      // CRITICAL FIX: Don't reset stage on error - keep conversation active
+      // This allows user to continue/retry without losing conversation history
+      // Only reset if we're not already in chat stage
+      if (stage !== 'chat') {
+        setStage('chat');
+      }
     }
     
     setReportSections(prevSections => {
@@ -386,7 +392,7 @@ export const AIAssistedValuation: React.FC<AIAssistedValuationProps> = ({
       }
     });
     setReportPhase(phase);
-  }, []);
+  }, [stage]);
 
   // Handle section loading event type
   const handleSectionLoading = useCallback((
@@ -502,6 +508,15 @@ export const AIAssistedValuation: React.FC<AIAssistedValuationProps> = ({
     chatLogger.info('Report complete received', { valuationId, htmlLength: html.length });
     setFinalReportHtml(html);
     setFinalValuationId(valuationId);
+    
+    // CRITICAL FIX: Create or update valuationResult with the HTML report
+    // This ensures the HTML is displayed in the preview panel when stage changes to 'results'
+    setValuationResult(prev => ({
+      ...(prev || {} as ValuationResponse),
+      html_report: html,
+      valuation_id: valuationId
+    }));
+    
     setStage('results');
     console.log('Final valuation ID set:', valuationId);
   }, []);
@@ -878,13 +893,24 @@ export const AIAssistedValuation: React.FC<AIAssistedValuationProps> = ({
       setError(error instanceof Error ? error.message : 'An unexpected error occurred while generating the valuation.');
       setIsGenerating(false);
       
-      // Fallback to original result if backend fails
-      setValuationResult(valuationResult);
-      setStage('results');
-      
-      // Call onComplete callback if provided
-      if (onComplete) {
-        onComplete(valuationResult);
+      // CRITICAL FIX: Don't reset stage to 'results' on error - keep conversation active
+      // This allows user to continue the conversation without losing progress
+      // Only set stage to 'results' if we have a valid valuation result
+      if (valuationResult && valuationResult.valuation_id) {
+        setValuationResult(valuationResult);
+        setStage('results');
+        
+        // Call onComplete callback if provided
+        if (onComplete) {
+          onComplete(valuationResult);
+        }
+      } else {
+        // No valid result - stay in chat stage so user can retry
+        // The error message will be displayed, but conversation history is preserved
+        setStage('chat');
+        chatLogger.info('Valuation error occurred, staying in chat stage to allow retry', {
+          hasValuationResult: !!valuationResult
+        });
       }
     }
     
