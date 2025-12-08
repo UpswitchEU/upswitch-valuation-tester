@@ -30,8 +30,9 @@ export const ValuationToolbar: React.FC<ValuationToolbarProps> = ({
   const handleFlowIconClick = async (flow: 'manual' | 'conversational') => {
     if (!session || session.currentView === flow) return; // Already in this flow or no session
     
-    // Attempt to switch - this will set pendingFlowSwitch if confirmation is needed
-    const result = await switchView(flow, true, false); // resetData=true, skipConfirmation=false
+    // Attempt to switch - preserve data when switching flows (resetData=false)
+    // Both flows share the same session data
+    const result = await switchView(flow, false, false); // resetData=false, skipConfirmation=false
     
     // If confirmation is needed, show modal
     if (result?.needsConfirmation) {
@@ -42,8 +43,8 @@ export const ValuationToolbar: React.FC<ValuationToolbarProps> = ({
   const handleConfirmSwitch = async () => {
     if (!pendingFlowSwitch) return;
     
-    // Execute the switch with confirmation skipped
-    await switchView(pendingFlowSwitch, true, true); // resetData=true, skipConfirmation=true
+    // Execute the switch with confirmation skipped - preserve data
+    await switchView(pendingFlowSwitch, false, true); // resetData=false, skipConfirmation=true
     setShowSwitchConfirmation(false);
     setPendingFlowSwitch(null);
   };

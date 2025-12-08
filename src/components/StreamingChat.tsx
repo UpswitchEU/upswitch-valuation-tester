@@ -1102,6 +1102,8 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
             onClarificationReject={handleClarificationReject}
             onKBOSuggestionSelect={handleKBOSuggestionSelect}
             onValuationStart={onValuationStart}
+            isTyping={state.isTyping}
+            isThinking={state.isThinking}
           />
         ))}
         </AnimatePresence>
@@ -1225,6 +1227,8 @@ interface MessageItemProps {
   onClarificationReject: (messageId: string) => void;
   onKBOSuggestionSelect: (selection: string) => void;
   onValuationStart?: () => void;
+  isTyping?: boolean;
+  isThinking?: boolean;
 }
 
 const MessageItem = React.memo<MessageItemProps>(({
@@ -1234,7 +1238,9 @@ const MessageItem = React.memo<MessageItemProps>(({
   onClarificationConfirm,
   onClarificationReject,
   onKBOSuggestionSelect,
-  onValuationStart
+  onValuationStart,
+  isTyping = false,
+  isThinking = false
 }) => {
   // Check if this is an AI help message
   const isAIHelp = message.metadata?.is_ai_help === true;
@@ -1338,7 +1344,7 @@ const MessageItem = React.memo<MessageItemProps>(({
                   <div className="flex items-start gap-3">
                   <div className="flex-shrink-0 w-8 h-8 bg-white/10 rounded-full flex items-center justify-center border border-white/10 shadow-sm mt-1">
                     {/* Show loader when streaming, typing, or thinking, otherwise show bot icon */}
-                    {(state.isStreaming || state.isTyping || state.isThinking || message.isStreaming) ? (
+                    {(message.isStreaming || isTyping || isThinking) ? (
                       <Loader2 className="w-4 h-4 text-primary-400 animate-spin" />
                     ) : (
                       <Bot className="w-4 h-4 text-primary-400" />
