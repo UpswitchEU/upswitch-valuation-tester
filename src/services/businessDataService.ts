@@ -364,9 +364,10 @@ class BusinessDataService {
   async getBusinessTypeAnalysis(businessType: string): Promise<BusinessTypeAnalysis | null> {
     try {
       // Use Node.js backend instead of direct Python engine calls
+      // FIX: Fallback should be Node.js backend (proxy), not Python engine directly
       const backendUrl = import.meta.env.VITE_BACKEND_URL || 
                         import.meta.env.VITE_API_BASE_URL || 
-                        'https://api.upswitch.biz';
+                        'https://web-production-8d00b.up.railway.app';
 
       const response = await fetch(`${backendUrl}/api/v1/analyze`, {
         method: 'POST',

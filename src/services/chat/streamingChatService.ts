@@ -14,8 +14,10 @@ export class StreamingChatService {
   private baseURL: string;
 
   constructor() {
+    // FIX: Use Node.js backend (proxy), not Python engine directly
     this.baseURL = import.meta.env.VITE_BACKEND_URL || 
-                   'https://api.upswitch.biz';
+                   import.meta.env.VITE_API_URL ||
+                   'https://web-production-8d00b.up.railway.app';
   }
 
   async *streamConversation(

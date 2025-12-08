@@ -125,6 +125,7 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
 
   // Handle "Resume" context message
   // If we have initial data, we want to inject a welcoming message about what we know
+  // FIX: Only show for users who actually have previous data (not new users)
   useEffect(() => {
     if (initialData && Object.keys(initialData).length > 0) {
       // Build summary of what data we have
@@ -135,13 +136,15 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
       if ((initialData.current_year_data as any)?.revenue || initialData.revenue) fields.push('revenue');
       if ((initialData.current_year_data as any)?.ebitda !== undefined || initialData.ebitda !== undefined) fields.push('EBITDA');
       
-      if (fields.length > 0) {
+      // FIX: Only show "Welcome back" message if there's ACTUAL user data
+      // Don't show for new users or sessions with only metadata
+      if (fields.length > 0 && state.messages.length === 0) {
         const summary = `Welcome back! I see you've already entered your ${fields.join(', ')}. I've loaded that context so we can continue where you left off.`;
         
         // Add as a system message (or AI message if preferred)
         // Using timeout to ensure it appears after initialization
         setTimeout(() => {
-          // Only add if no messages exist yet (prevent duplicate on re-render)
+          // Double-check no messages added in the meantime
           if (state.messages.length === 0) {
             const { updatedMessages } = messageManager.addMessage([], {
               type: 'ai',
@@ -158,7 +161,7 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
         }, 500);
       }
     }
-  }, [initialData, messageManager]);
+  }, [initialData, messageManager, state.messages.length]);
   
   // Use extracted metrics tracking
   const { trackModelPerformance, trackConversationCompletion } = useConversationMetrics(sessionId, userId);

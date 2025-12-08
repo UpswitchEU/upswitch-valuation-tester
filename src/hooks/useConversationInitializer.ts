@@ -121,8 +121,10 @@ export const useConversationInitializer = (
       setIsInitializing(true);
       
       // Get API base URL from config
+      // FIX: Fallback should be Node.js backend (proxy), not Python engine directly
       const API_BASE_URL = import.meta.env.VITE_BACKEND_URL || 
-                          'https://api.upswitch.biz';
+                          import.meta.env.VITE_API_URL ||
+                          'https://web-production-8d00b.up.railway.app';
       
       // Add timeout handling
       const timeoutId = setTimeout(() => {
