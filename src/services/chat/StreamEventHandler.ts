@@ -591,21 +591,24 @@ export class StreamEventHandler {
       ? 'I\'m having trouble processing your request. Please try again.'
       : errorMessage;
     
-    // If no AI message was started yet, add a compact system message
-    // This preserves the user's message bubble
-    if (!this.hasStartedMessage) {
-      this.callbacks.addMessage({
-        type: 'system',
-        content: `Error: ${userFriendlyError}`,
-        isComplete: true
-      });
-    } else {
-      // If we were already streaming, append the error to the current message
-      this.callbacks.updateStreamingMessage(
-        `\n\nI apologize, but ${userFriendlyError}`,
-        true
-      );
+    // CRITICAL FIX: Always show error as a separate message to avoid duplication
+    // Complete any active streaming message first, then show error
+    if (this.hasStartedMessage) {
+      // Complete the current message if it exists
+      this.callbacks.updateStreamingMessage('', true);
+      this.callbacks.setIsStreaming(false);
+      // Reset state to prevent duplication
+      this.hasStartedMessage = false;
+      this.chunkBuffer = [];
     }
+    
+    // Always add error as a separate system message
+    // This ensures the error is shown only once and doesn't get appended to existing messages
+    this.callbacks.addMessage({
+      type: 'system',
+      content: userFriendlyError,
+      isComplete: true
+    });
   }
 
   /**
