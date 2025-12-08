@@ -40,6 +40,7 @@ export interface StreamingChatProps {
   userId?: string;
   onMessageComplete?: (message: Message) => void;
   onValuationComplete?: (result: any) => void;
+  onValuationStart?: () => void;
   onReportUpdate?: (htmlContent: string, progress: number) => void;
   onDataCollected?: (data: any) => void;
   onValuationPreview?: (data: any) => void;
@@ -1091,6 +1092,7 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
             onClarificationConfirm={handleClarificationConfirm}
             onClarificationReject={handleClarificationReject}
             onKBOSuggestionSelect={handleKBOSuggestionSelect}
+            onValuationStart={onValuationStart}
           />
         ))}
         </AnimatePresence>
@@ -1213,6 +1215,7 @@ interface MessageItemProps {
   onClarificationConfirm: (messageId: string) => void;
   onClarificationReject: (messageId: string) => void;
   onKBOSuggestionSelect: (selection: string) => void;
+  onValuationStart?: () => void;
 }
 
 const MessageItem = React.memo<MessageItemProps>(({
@@ -1221,7 +1224,8 @@ const MessageItem = React.memo<MessageItemProps>(({
   onSuggestionDismiss,
   onClarificationConfirm,
   onClarificationReject,
-  onKBOSuggestionSelect
+  onKBOSuggestionSelect,
+  onValuationStart
 }) => {
   // Check if this is an AI help message
   const isAIHelp = message.metadata?.is_ai_help === true;
@@ -1270,6 +1274,11 @@ const MessageItem = React.memo<MessageItemProps>(({
         question={message.content}
         buttonText={buttonText}
         onConfirm={() => {
+          // Check if this is valuation confirmation - if so, trigger loading state immediately
+          const isValuationConfirmation = message.metadata?.clarification_field === 'valuation_confirmed';
+          if (isValuationConfirmation && onValuationStart) {
+            onValuationStart();
+          }
           // Send "yes" to confirm the valuation
           onClarificationConfirm(message.id);
         }}

@@ -1241,6 +1241,11 @@ export const AIAssistedValuation: React.FC<AIAssistedValuationProps> = ({
                   sessionId={sessionId}
                   userId={user?.id}
                   onValuationComplete={handleValuationComplete}
+                  onValuationStart={() => {
+                    // Set loading state immediately when user clicks "Create Valuation Report"
+                    setIsGenerating(true);
+                    chatLogger.info('Valuation started - setting loading state');
+                  }}
                   onReportUpdate={handleReportUpdate}
                   onDataCollected={handleDataCollected}
                   onValuationPreview={handleValuationPreview}
