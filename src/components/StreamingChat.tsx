@@ -17,6 +17,7 @@ import { KBOSuggestionsList } from './KBOSuggestionsList';
 import { hasKBOSuggestions, parseKBOSuggestions } from './utils/kboParsing';
 import { SuggestionChips } from './SuggestionChips';
 import { TypingIndicator } from './TypingIndicator';
+import { AIHelpCard } from './AIHelpCard';
 // Note: Business extraction utilities available if needed
 // import { 
 //   extractBusinessModelFromInput, 
@@ -1181,6 +1182,10 @@ const MessageItem = React.memo<MessageItemProps>(({
   onClarificationReject,
   onKBOSuggestionSelect
 }) => {
+  // Check if this is an AI help message
+  const isAIHelp = message.metadata?.is_ai_help === true;
+  const aiResponse = message.metadata?.ai_response;
+  
   // Detect KBO suggestions in the message
   // Check both message content and metadata clarification_message
   const kboSuggestions = React.useMemo(() => {
@@ -1199,6 +1204,19 @@ const MessageItem = React.memo<MessageItemProps>(({
   }, [message.content, message.metadata?.clarification_message]);
   
   const hasKBOSuggestionsInMessage = kboSuggestions !== null && kboSuggestions.length > 0;
+  
+  // Render AI Help Card if this is an AI help response
+  if (isAIHelp && aiResponse) {
+    return (
+      <AIHelpCard
+        answer={aiResponse.answer || message.content}
+        reasoning={aiResponse.reasoning}
+        example={aiResponse.example}
+        nudge={aiResponse.nudge || ''}
+        timestamp={message.timestamp}
+      />
+    );
+  }
   return (
     <motion.div
       initial={{ opacity: 0, y: 10, scale: 0.98 }}

@@ -14,10 +14,10 @@ export const LoadingState: React.FC<LoadingStateProps> = ({
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
 
   useEffect(() => {
-    // Cycle through steps every 2.5 seconds
+    // Cycle through steps every 3 seconds for better readability
     const interval = setInterval(() => {
       setCurrentStepIndex((prev) => (prev + 1) % steps.length);
-    }, 2500);
+    }, 3000);
 
     return () => clearInterval(interval);
   }, [steps.length]);
@@ -26,38 +26,48 @@ export const LoadingState: React.FC<LoadingStateProps> = ({
   const isDark = variant === 'dark';
 
   return (
-    <div className="flex flex-col items-center justify-center h-full min-h-[400px] p-8 text-center">
-      <div className="relative mb-6 group">
-        {/* Outer pulsing rings */}
-        <div className={`absolute inset-0 rounded-full animate-ping opacity-75 ${isDark ? 'bg-primary-400/30' : 'bg-primary-500/20'}`} style={{ animationDuration: '2s' }} />
-        <div className={`absolute inset-0 rounded-full animate-ping opacity-50 ${isDark ? 'bg-primary-300/20' : 'bg-primary-400/10'}`} style={{ animationDuration: '3s', animationDelay: '0.5s' }} />
+    <div className="flex flex-col items-center justify-center w-full h-full min-h-[400px] px-4 py-12 text-center max-w-lg mx-auto">
+      <div className="relative mb-10 group">
+        {/* Outer pulsing rings - refined for subtlety */}
+        <div 
+          className={`absolute inset-0 rounded-full animate-ping ${
+            isDark ? 'bg-primary-400/20' : 'bg-primary-500/10'
+          }`} 
+          style={{ animationDuration: '3s' }} 
+        />
+        <div 
+          className={`absolute inset-0 rounded-full animate-ping ${
+            isDark ? 'bg-primary-300/10' : 'bg-primary-400/5'
+          }`} 
+          style={{ animationDuration: '4s', animationDelay: '1s' }} 
+        />
         
         {/* Inner container */}
-        <div className={`relative p-5 rounded-full shadow-lg border z-10 flex items-center justify-center transform transition-transform group-hover:scale-105 duration-300 ${
+        <div className={`relative p-6 rounded-2xl shadow-sm border z-10 flex items-center justify-center transform transition-all duration-500 ${
           isDark 
-            ? 'bg-zinc-900 border-zinc-800' 
-            : 'bg-white border-zinc-100'
+            ? 'bg-zinc-900 border-zinc-800 shadow-primary-900/10' 
+            : 'bg-white border-zinc-100 shadow-zinc-100'
         }`}>
-          <Loader2 className={`w-8 h-8 animate-spin ${isDark ? 'text-primary-400' : 'text-primary-600'}`} />
+          <Loader2 className={`w-10 h-10 animate-spin ${isDark ? 'text-primary-400' : 'text-primary-600'}`} strokeWidth={1.5} />
         </div>
       </div>
       
       {/* Dynamic step indicator */}
-      <div className="mb-2">
-        <span className={`text-xs font-medium px-3 py-1 rounded-full ${
+      <div className="mb-6 animate-in fade-in slide-in-from-bottom-2 duration-700 delay-100 fill-mode-backwards">
+        <span className={`text-xs font-semibold tracking-wide uppercase px-3 py-1.5 rounded-full ${
           isDark 
-            ? 'text-primary-300 bg-primary-900/30' 
-            : 'text-primary-600 bg-primary-50'
+            ? 'text-primary-300 bg-primary-900/30 border border-primary-800/50' 
+            : 'text-primary-700 bg-primary-50 border border-primary-100'
         }`}>
           Step {currentStepIndex + 1} of {steps.length}
         </span>
       </div>
 
       {/* Animated text transition */}
-      <div className="min-h-[80px] flex flex-col justify-center">
+      <div className="min-h-[100px] flex flex-col items-center max-w-md mx-auto">
         <h3 
-          key={currentStepIndex}
-          className={`text-xl font-semibold animate-in fade-in duration-500 ${
+          key={`title-${currentStepIndex}`}
+          className={`text-xl md:text-2xl font-semibold tracking-tight animate-in fade-in slide-in-from-bottom-3 duration-500 ${
             isDark ? 'text-white' : 'text-zinc-900'
           }`}
         >
@@ -65,7 +75,7 @@ export const LoadingState: React.FC<LoadingStateProps> = ({
         </h3>
         <p 
           key={`subtext-${currentStepIndex}`}
-          className={`mt-3 text-sm max-w-xs leading-relaxed animate-in fade-in duration-500 ${
+          className={`mt-3 text-base leading-relaxed animate-in fade-in slide-in-from-bottom-4 duration-500 delay-75 ${
             isDark ? 'text-zinc-400' : 'text-zinc-500'
           }`}
         >
@@ -75,4 +85,3 @@ export const LoadingState: React.FC<LoadingStateProps> = ({
     </div>
   );
 };
-
