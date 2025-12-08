@@ -425,7 +425,17 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
   
   // Update streaming message helper
   // SIMPLIFIED: Trust the backend - update message with chunks, find it if ref is missing
-  const updateStreamingMessage = useCallback((content: string, isComplete: boolean = false) => {
+  const updateStreamingMessage = useCallback((content: string, isComplete: boolean = false, metadata?: any) => {
+    // CRITICAL DEBUG: Log metadata parameter
+    if (metadata) {
+      chatLogger.info('🔍 updateStreamingMessage called with metadata', {
+        hasMetadata: true,
+        metadataKeys: Object.keys(metadata),
+        inputType: metadata.input_type,
+        metadata: metadata
+      });
+    }
+    
     // Check ref first, but fallback to finding message in state if ref is out of sync
     let currentMessageId: string | null = null;
     
@@ -485,7 +495,8 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
         prevMessages,  // Always latest state
         currentMessageId!,
       content,
-      isComplete
+      isComplete,
+      metadata  // ← CRITICAL FIX: Pass metadata to message manager
     );
       // Update ref immediately for eventHandler access
       messagesRef.current = updatedMessages;

@@ -52,18 +52,22 @@ export class MessageManager {
    * @param messageId - ID of message to update
    * @param content - New content to append
    * @param isComplete - Whether the message is complete
+   * @param metadata - Optional metadata to attach to message
    * @returns Updated messages array
    */
   updateStreamingMessage(
     messages: Message[],
     messageId: string,
     content: string,
-    isComplete: boolean
+    isComplete: boolean,
+    metadata?: any
   ): Message[] {
     chatLogger.debug('Updating streaming message', {
       messageId,
       contentLength: content.length,
-      isComplete
+      isComplete,
+      hasMetadata: !!metadata,
+      metadataKeys: metadata ? Object.keys(metadata) : []
     });
 
     return messages.map(msg =>
@@ -72,7 +76,9 @@ export class MessageManager {
             ...msg, 
             content: msg.content + content, 
             isComplete, 
-            isStreaming: !isComplete 
+            isStreaming: !isComplete,
+            // CRITICAL FIX: Merge metadata when provided
+            ...(metadata ? { metadata: { ...msg.metadata, ...metadata } } : {})
           }
         : msg
     );

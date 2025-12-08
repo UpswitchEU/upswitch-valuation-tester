@@ -27,7 +27,7 @@ export interface ModelPerformanceMetrics {
 }
 
 export interface StreamEventHandlerCallbacks {
-  updateStreamingMessage: (content: string, isComplete?: boolean) => void;
+  updateStreamingMessage: (content: string, isComplete?: boolean, metadata?: any) => void;
   setIsStreaming: (streaming: boolean) => void;
   setIsTyping?: (typing: boolean) => void;
   setIsThinking?: (thinking: boolean) => void;
@@ -419,9 +419,11 @@ export class StreamEventHandler {
    * Handle message complete events
    */
   private handleMessageComplete(data: any): void {
+    // CRITICAL DEBUG: Log metadata contents
     chatLogger.info('Message complete', { 
       hasMetadata: !!data.metadata, 
-      hasValuationResult: !!data.metadata?.valuation_result 
+      hasValuationResult: !!data.metadata?.valuation_result,
+      metadata: data.metadata // ← LOG FULL METADATA
     });
     
     // CRITICAL FIX: Ensure message exists before completing
@@ -430,10 +432,13 @@ export class StreamEventHandler {
       this.callbacks.addMessage({
         type: 'ai',  // FIX: Use correct type from Message type definition
         content: data.content || data.message || '',
+        metadata: data.metadata, // ← CRITICAL FIX: Include metadata!
         isComplete: true
       });
     } else {
-      this.callbacks.updateStreamingMessage('', true);
+      // Update existing streaming message and mark complete
+      // Need to set metadata on the last message
+      this.callbacks.updateStreamingMessage('', true, data.metadata); // ← Pass metadata
     }
     
     this.callbacks.setIsStreaming(false);
