@@ -554,8 +554,8 @@ export class StreamEventHandler {
     this.callbacks.setIsTyping?.(false);
     this.callbacks.setIsThinking?.(false);
     this.callbacks.setTypingContext?.(undefined);
-    // CRITICAL FIX: Reset state and release lock on error
-    this.hasStartedMessage = false;
+    // CRITICAL FIX: Don't reset hasStartedMessage on error - preserve conversation state
+    // Only reset the lock to allow retry, but keep message state so conversation can continue
     this.messageCreationLock = false;
     
     // Show user-friendly error message

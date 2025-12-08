@@ -695,6 +695,14 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
         state.setIsStreaming(false);
         state.setIsTyping(false); // Hide typing indicator on error
         state.setIsThinking(false);
+        
+        // CRITICAL FIX: Add error message to chat so user knows what happened
+        // This preserves conversation context and allows user to continue
+        addMessage({
+          type: 'system',
+          content: `Error: ${error.message || 'Failed to complete valuation. Please try again.'}`,
+          isComplete: true
+        });
       }
     );
     
@@ -708,6 +716,14 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
       state.setIsStreaming(false);
       state.setIsTyping(false);
       state.setIsThinking(false);
+      
+      // CRITICAL FIX: Add error message to chat so user knows what happened
+      // This preserves conversation context and allows user to continue
+      addMessage({
+        type: 'system',
+        content: `Error: ${error instanceof Error ? error.message : 'Failed to complete valuation. Please try again.'}`,
+        isComplete: true
+      });
     } finally {
       // CRITICAL FIX: ALWAYS release lock when done (success or error)
       // This ensures subsequent requests can proceed
