@@ -286,7 +286,8 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
         messagesRef.current,
         currentMessageId!,
         content,
-        isComplete
+        isComplete,
+        metadata  // ← CRITICAL FIX: Pass metadata to message manager
       );
       messagesRef.current = updatedMessages;
       // Use startTransition for batched updates
