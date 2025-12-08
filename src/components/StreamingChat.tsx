@@ -14,10 +14,12 @@ import { useTypingAnimation } from '../hooks/useTypingAnimation';
 import { debugLogger } from '../utils/debugLogger';
 import { chatLogger } from '../utils/logger';
 import { AIHelpCard } from './AIHelpCard';
+import { BusinessTypeSuggestionsList } from './BusinessTypeSuggestionsList';
 import { KBOSuggestionsList } from './KBOSuggestionsList';
 import { SuggestionChips } from './SuggestionChips';
 import { TypingIndicator } from './TypingIndicator';
 import { ValuationReadyCTA } from './ValuationReadyCTA';
+import { hasBusinessTypeSuggestions, parseBusinessTypeSuggestions } from './utils/businessTypeParsing';
 import { hasKBOSuggestions, parseKBOSuggestions } from './utils/kboParsing';
 // Note: Business extraction utilities available if needed
 // import { 
@@ -1235,6 +1237,24 @@ const MessageItem = React.memo<MessageItemProps>(({
   const isValuationReadyCTA = message.metadata?.input_type === 'cta_button';
   const buttonText = message.metadata?.button_text || 'Create Valuation Report';
   
+  // Detect business type suggestions in the message
+  const businessTypeSuggestions = React.useMemo(() => {
+    // First check metadata clarification_message (if available)
+    if (message.metadata?.clarification_message) {
+      const clarificationMsg = message.metadata.clarification_message;
+      if (hasBusinessTypeSuggestions(clarificationMsg)) {
+        return parseBusinessTypeSuggestions(clarificationMsg);
+      }
+    }
+    // Check message content directly (primary source)
+    if (hasBusinessTypeSuggestions(message.content)) {
+      return parseBusinessTypeSuggestions(message.content);
+    }
+    return null;
+  }, [message.content, message.metadata?.clarification_message]);
+  
+  const hasBusinessTypeSuggestionsInMessage = businessTypeSuggestions !== null && businessTypeSuggestions.length > 0;
+  
   // Detect KBO suggestions in the message
   // Check both message content and metadata clarification_message
   const kboSuggestions = React.useMemo(() => {
@@ -1334,6 +1354,16 @@ const MessageItem = React.memo<MessageItemProps>(({
                       </div>
                     )}
                     
+                    {/* Business Type Suggestions List */}
+                    {hasBusinessTypeSuggestionsInMessage && businessTypeSuggestions && (
+                      <div className="mt-3">
+                        <BusinessTypeSuggestionsList
+                          suggestions={businessTypeSuggestions}
+                          onSelect={onKBOSuggestionSelect} // Reuse same handler
+                        />
+                      </div>
+                    )}
+                    
                     {/* KBO Suggestions List */}
                     {/* Check if this message comes after "none" was clicked - hide suggestions if so */}
                     {(() => {
@@ -1349,8 +1379,8 @@ const MessageItem = React.memo<MessageItemProps>(({
                       );
                     })()}
                     
-                    {/* Generic Clarification confirmation buttons (only if not KBO suggestions) */}
-                    {message.metadata?.needs_confirmation && !hasKBOSuggestionsInMessage && (
+                    {/* Generic Clarification confirmation buttons (only if not KBO/BusinessType suggestions) */}
+                    {message.metadata?.needs_confirmation && !hasKBOSuggestionsInMessage && !hasBusinessTypeSuggestionsInMessage && (
                       <motion.div 
                         initial={{ opacity: 0, y: 5 }}
                         animate={{ opacity: 1, y: 0 }}
