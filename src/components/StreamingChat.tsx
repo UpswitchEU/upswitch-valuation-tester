@@ -6,7 +6,7 @@
  */
 
 import { AnimatePresence, motion } from 'framer-motion';
-import { Bot, CheckCircle } from 'lucide-react';
+import { Bot, CheckCircle, Loader2 } from 'lucide-react';
 import React, { startTransition, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { AI_CONFIG } from '../config';
 import { useAuth } from '../hooks/useAuth';
@@ -1086,7 +1086,13 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
         {/* Messages */}
         {/* PERFORMANCE FIX: Memoized message component to prevent unnecessary re-renders */}
         <AnimatePresence initial={false} mode="popLayout">
-        {state.messages.map((message) => (
+        {state.messages
+          .filter(message => {
+            // CRITICAL FIX: Filter out empty messages to prevent empty bubbles
+            // Only show messages that have actual content (not just whitespace)
+            return message.content && message.content.trim().length > 0;
+          })
+          .map((message) => (
           <MessageItem
             key={message.id}
             message={message}
@@ -1331,7 +1337,12 @@ const MessageItem = React.memo<MessageItemProps>(({
                 // AI message - with bot avatar
                   <div className="flex items-start gap-3">
                   <div className="flex-shrink-0 w-8 h-8 bg-white/10 rounded-full flex items-center justify-center border border-white/10 shadow-sm mt-1">
-                    <Bot className="w-4 h-4 text-primary-400" />
+                    {/* Show loader when streaming, typing, or thinking, otherwise show bot icon */}
+                    {(state.isStreaming || state.isTyping || state.isThinking || message.isStreaming) ? (
+                      <Loader2 className="w-4 h-4 text-primary-400 animate-spin" />
+                    ) : (
+                      <Bot className="w-4 h-4 text-primary-400" />
+                    )}
                   </div>
                   
                   <div className="flex flex-col gap-1">
