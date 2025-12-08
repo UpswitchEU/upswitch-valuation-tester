@@ -8,19 +8,19 @@
  * Date: October 2025
  */
 
-import type { 
-  ValuationRequest, 
-  ConversationStartRequest,
-  BusinessTypeAnalysis,
-  BusinessModel
+import type {
+    BusinessModel,
+    BusinessTypeAnalysis,
+    ConversationStartRequest,
+    ValuationRequest
 } from '../types/valuation';
-import { serviceLogger } from '../utils/logger';
-import { 
-  mapToBusinessModel, 
-  inferBusinessModelFromIndustry, 
-  inferBusinessModelFromType, 
-  isValidYear 
+import {
+    inferBusinessModelFromIndustry,
+    inferBusinessModelFromType,
+    isValidYear,
+    mapToBusinessModel
 } from '../utils/businessExtractionUtils';
+import { serviceLogger } from '../utils/logger';
 
 export interface BusinessProfileData {
   user_id: string;
