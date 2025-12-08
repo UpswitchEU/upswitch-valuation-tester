@@ -229,7 +229,26 @@ export class StreamEventHandler {
    * Handle message start events
    */
   private handleMessageStart(_data: any): void {
-    // Mark that we've started a message
+    // CRITICAL FIX: message_start always indicates a NEW message is starting
+    // Must reset state and create new message, even if previous message is still active
+    // This prevents confirmation messages from appending to previous messages
+    
+    // If a previous message is still active, complete it first
+    if (this.hasStartedMessage) {
+      chatLogger.debug('message_start received while previous message active - completing previous message', {
+        bufferedChunks: this.chunkBuffer.length
+      });
+      // Complete the previous message if it exists
+      this.callbacks.updateStreamingMessage('', true);
+      this.callbacks.setIsStreaming(false);
+    }
+    
+    // Reset state for new message
+    this.hasStartedMessage = false;
+    this.messageCreationLock = false;
+    this.chunkBuffer = [];
+    
+    // Mark that we've started a new message
     this.hasStartedMessage = true;
     // Hide thinking state and typing indicator when message starts streaming
     this.callbacks.setIsThinking?.(false);

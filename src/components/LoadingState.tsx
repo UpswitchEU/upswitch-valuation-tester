@@ -27,7 +27,7 @@ export const LoadingState: React.FC<LoadingStateProps> = ({
 
   return (
     <div className="flex flex-col items-center justify-center w-full h-full min-h-[400px] px-4 py-12 text-center max-w-lg mx-auto">
-      <div className="relative mb-10 group">
+      <div className="relative mb-4 group">
         {/* Outer pulsing rings - refined for subtlety */}
         <div 
           className={`absolute inset-0 rounded-full animate-ping ${
@@ -53,7 +53,7 @@ export const LoadingState: React.FC<LoadingStateProps> = ({
       </div>
       
       {/* Dynamic step indicator */}
-      <div className="mb-6 animate-in fade-in slide-in-from-bottom-2 duration-700 delay-100 fill-mode-backwards">
+      <div className="mb-4 animate-in fade-in slide-in-from-bottom-2 duration-700 delay-100 fill-mode-backwards">
         <span className={`text-xs font-semibold tracking-wide uppercase px-3 py-1.5 rounded-full ${
           isDark 
             ? 'text-primary-300 bg-primary-900/30 border border-primary-800/50' 
@@ -64,10 +64,10 @@ export const LoadingState: React.FC<LoadingStateProps> = ({
       </div>
 
       {/* Animated text transition */}
-      <div className="min-h-[100px] flex flex-col items-center max-w-md mx-auto">
+      <div className="flex flex-col items-center max-w-md mx-auto text-center">
         <h3 
           key={`title-${currentStepIndex}`}
-          className={`text-xl md:text-2xl font-semibold tracking-tight animate-in fade-in slide-in-from-bottom-3 duration-500 ${
+          className={`text-xl md:text-2xl font-semibold tracking-tight animate-in fade-in slide-in-from-bottom-3 duration-500 text-center ${
             isDark ? 'text-white' : 'text-zinc-900'
           }`}
         >
@@ -75,7 +75,7 @@ export const LoadingState: React.FC<LoadingStateProps> = ({
         </h3>
         <p 
           key={`subtext-${currentStepIndex}`}
-          className={`mt-1.5 text-base leading-relaxed animate-in fade-in slide-in-from-bottom-4 duration-500 delay-75 ${
+          className={`mt-1.5 text-base leading-relaxed animate-in fade-in slide-in-from-bottom-4 duration-500 delay-75 text-center ${
             isDark ? 'text-zinc-400' : 'text-zinc-500'
           }`}
         >

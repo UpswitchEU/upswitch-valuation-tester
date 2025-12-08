@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useState } from 'react';
 // import { useNavigate } from 'react-router-dom';
-import { Building2, CheckCircle, Save, TrendingUp } from 'lucide-react';
+import { Building2, TrendingUp } from 'lucide-react';
 import { MOBILE_BREAKPOINT, PANEL_CONSTRAINTS } from '../constants/panelConstants';
 import { LiveValuationReport } from './LiveValuationReport';
 import { StreamingChat } from './StreamingChat';
@@ -1176,41 +1176,6 @@ export const AIAssistedValuation: React.FC<AIAssistedValuationProps> = ({
             width: isMobile ? '100%' : `${leftPanelWidth}%`
           }}
         >
-          {/* Success Banner when results are ready */}
-          {stage === 'results' && valuationResult && (
-            <div className="bg-gradient-to-r from-green-900/30 to-emerald-900/30 border border-green-700/50 rounded-lg sm:rounded-xl p-4 sm:p-6 m-3 sm:m-6 mb-0">
-              <div className="flex flex-col sm:flex-row items-start justify-between gap-3 sm:gap-4">
-                <div className="flex items-start gap-3 sm:gap-4 flex-1">
-                  <div className="w-10 h-10 sm:w-12 sm:h-12 bg-green-500/20 rounded-full flex items-center justify-center flex-shrink-0">
-                    <CheckCircle className="w-5 h-5 sm:w-6 sm:h-6 text-green-400" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <h3 className="text-base sm:text-lg font-bold text-white mb-1">
-                      Valuation Complete!
-                    </h3>
-                    <p className="text-xs sm:text-sm text-zinc-300 mb-2 sm:mb-3">
-                      <span className="hidden lg:inline">Your report is displayed on the right. Scroll below to see the conversation history.</span>
-                      <span className="lg:hidden">Your report is displayed below. Scroll down to see the conversation history.</span>
-                    </p>
-                    {reportSaved && (
-                      <div className="flex items-center gap-2 text-xs sm:text-sm text-green-400">
-                        <Save className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                        <span className="font-medium">Auto-saved to Reports</span>
-                      </div>
-                    )}
-                  </div>
-                </div>
-                <div className="flex flex-col gap-2 w-full sm:w-auto flex-shrink-0">
-                  <button
-                    onClick={handleStartOver}
-                    className="px-4 py-2 text-xs sm:text-sm bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors font-medium whitespace-nowrap"
-                  >
-                    Value Another Company
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
 
           {/* Resume Conversation Banner REMOVED - replaced by in-chat context message */}
           {/* {hasPreExistingData && !reportSaved && stage === 'chat' && (
