@@ -12,8 +12,8 @@ interface FlowSwitchWarningModalProps {
 /**
  * FlowSwitchWarningModal Component
  * 
- * Warns users when switching flows that their current progress will be reset.
- * Only business type (from homepage) is preserved.
+ * Confirms switching between manual and conversational flows.
+ * Data is preserved between flows - both flows share the same session data.
  */
 export const FlowSwitchWarningModal: React.FC<FlowSwitchWarningModalProps> = ({
   isOpen,
@@ -22,8 +22,6 @@ export const FlowSwitchWarningModal: React.FC<FlowSwitchWarningModalProps> = ({
   targetFlow,
   currentFlow,
 }) => {
-  if (!isOpen) return null;
-
   const flowNames = {
     manual: 'Manual Entry',
     conversational: 'AI-Guided',
@@ -34,16 +32,28 @@ export const FlowSwitchWarningModal: React.FC<FlowSwitchWarningModalProps> = ({
 
   return (
     <>
-      {/* Backdrop */}
+      {/* Backdrop - use opacity/pointer-events instead of conditional rendering to prevent flicker */}
       <div 
-        className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 transition-opacity"
+        className={`fixed inset-0 bg-black/60 backdrop-blur-sm z-50 transition-opacity duration-200 ${
+          isOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
+        }`}
         onClick={onClose}
+        aria-hidden={!isOpen}
       />
       
-      {/* Modal */}
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      {/* Modal - use opacity/pointer-events instead of conditional rendering to prevent flicker */}
+      <div 
+        className={`fixed inset-0 z-50 flex items-center justify-center p-4 transition-opacity duration-200 ${
+          isOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
+        }`}
+        aria-hidden={!isOpen}
+        aria-modal="true"
+        role="dialog"
+      >
         <div 
-          className="bg-zinc-800 rounded-2xl shadow-2xl border border-zinc-700 max-w-md w-full"
+          className={`bg-zinc-800 rounded-2xl shadow-2xl border border-zinc-700 max-w-md w-full transition-transform duration-200 ${
+            isOpen ? 'scale-100' : 'scale-95'
+          }`}
           onClick={(e) => e.stopPropagation()}
         >
           {/* Header */}
@@ -63,18 +73,17 @@ export const FlowSwitchWarningModal: React.FC<FlowSwitchWarningModalProps> = ({
             <p className="text-zinc-300 leading-relaxed">
               {currentFlowName ? (
                 <>
-                  Switching from <span className="font-semibold text-white">{currentFlowName}</span> to{' '}
-                  <span className="font-semibold text-white">{flowNames[targetFlow]}</span> will{' '}
-                  <span className="font-semibold text-amber-400">reset all your entered data</span>.
+                  Switch from <span className="font-semibold text-white">{currentFlowName}</span> to{' '}
+                  <span className="font-semibold text-white">{flowNames[targetFlow]}</span>?
                 </>
               ) : (
                 <>
-                  This will reset your current progress. Only your business type will be preserved.
+                  Switch to the {flowName.toLowerCase()} flow?
                 </>
               )}
             </p>
             <p className="text-zinc-400 text-sm leading-relaxed">
-              You'll start fresh in the {flowName.toLowerCase()} flow. All other entered data will be cleared.
+              Your entered data will be preserved. You can switch between flows at any time without losing your progress.
             </p>
           </div>
 
@@ -90,7 +99,7 @@ export const FlowSwitchWarningModal: React.FC<FlowSwitchWarningModalProps> = ({
               onClick={onConfirm}
               className="px-4 py-2 text-sm font-medium bg-teal-600 hover:bg-teal-500 text-white rounded-lg transition-colors"
             >
-              Switch & Reset
+              Switch Flow
             </button>
           </div>
         </div>
