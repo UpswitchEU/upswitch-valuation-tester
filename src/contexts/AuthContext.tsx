@@ -330,7 +330,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
         // Migrate guest session data to authenticated user
         try {
-          const guestSessionId = await guestSessionService.getSessionId();
+          const guestSessionId = guestSessionService.getCurrentSessionId();
           if (guestSessionId) {
             authLogger.info('Attempting to migrate guest data', { guestSessionId });
             
