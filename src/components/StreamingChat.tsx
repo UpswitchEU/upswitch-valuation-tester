@@ -756,6 +756,19 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
       }, 100);
     }
   }, [initialMessage, autoSend, state.isStreaming, state.setInput, state.messages.length, handleSubmit]);
+
+  // CRITICAL FIX: Clear typing/thinking indicators when no active streaming
+  // This prevents spinners from showing indefinitely when messages complete
+  useEffect(() => {
+    const hasStreamingMessages = state.messages.some(msg => msg.isStreaming && !msg.isComplete);
+    const shouldShowIndicators = state.isStreaming || hasStreamingMessages;
+    
+    if (!shouldShowIndicators && (state.isTyping || state.isThinking)) {
+      // Clear indicators when there's no active streaming
+      state.setIsTyping(false);
+      state.setIsThinking(false);
+    }
+  }, [state.messages, state.isStreaming, state.isTyping, state.isThinking, state.setIsTyping, state.setIsThinking]);
   
   // Handle suggestion selection
   const handleSuggestionSelect = useCallback((suggestion: string) => {

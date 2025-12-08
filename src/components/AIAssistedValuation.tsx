@@ -517,6 +517,7 @@ export const AIAssistedValuation: React.FC<AIAssistedValuationProps> = ({
     }));
     
     setStage('results');
+    setIsGenerating(false); // Clear loading state when report completes
     console.log('Final valuation ID set:', valuationId);
   }, []);
 
@@ -870,6 +871,7 @@ export const AIAssistedValuation: React.FC<AIAssistedValuationProps> = ({
       // Input data no longer needed - Info tab uses server-generated HTML (info_tab_html)
       
       setStage('results');
+      setIsGenerating(false); // Clear loading state when valuation completes successfully
       
       // Call onComplete callback if provided
       if (onComplete) {
@@ -999,7 +1001,7 @@ export const AIAssistedValuation: React.FC<AIAssistedValuationProps> = ({
         onRefresh={handleRefresh}
         onDownload={handleDownload}
         onFullScreen={handleFullScreen}
-        isGenerating={isGenerating || stage === 'chat'}
+        isGenerating={isGenerating}
         user={user}
         valuationName={valuationName}
         valuationId={valuationResult?.valuation_id}
@@ -1264,7 +1266,7 @@ export const AIAssistedValuation: React.FC<AIAssistedValuationProps> = ({
                       sections={reportSections}
                       phase={reportPhase}
                       finalHtml={finalReportHtml}
-                      isGenerating={isGenerating || stage === 'chat'}
+                      isGenerating={isGenerating}
                       error={error}
                       onRetry={handleRefresh}
                     />
@@ -1368,7 +1370,7 @@ export const AIAssistedValuation: React.FC<AIAssistedValuationProps> = ({
         {activeTab === 'preview' && (
           <LiveValuationReport
             htmlContent={liveHtmlReport}
-            isGenerating={stage === 'chat'}
+            isGenerating={isGenerating}
             progress={reportProgress}
           />
         )}
