@@ -357,6 +357,7 @@ export const useValuationSessionStore = create<ValuationSessionStore>((set, get)
     }
     
     // Check if confirmation is needed (only for user-initiated switches with data)
+    // This check happens BEFORE the atomic lock to avoid setting isSyncing unnecessarily
     if (!skipConfirmation && resetData) {
       const completeness = get().getCompleteness();
       const needsConfirmation = completeness > 5; // Only require confirmation if >5% complete
@@ -377,6 +378,29 @@ export const useValuationSessionStore = create<ValuationSessionStore>((set, get)
       }
     }
     
+    // CRITICAL FIX: Atomic check-and-set to prevent concurrent switches
+    // Use Zustand's set callback to atomically check and set isSyncing flag
+    // This prevents race conditions where multiple requests pass the check simultaneously
+    let lockAcquired = false;
+    set((state) => {
+      if (state.isSyncing) {
+        // Another switch is already in progress
+        storeLogger.warn('Switch already in progress, ignoring concurrent request', {
+          reportId: session.reportId,
+          requestedView: view,
+        });
+        return state; // Return unchanged state
+      }
+      // Atomically acquire the lock
+      lockAcquired = true;
+      return { ...state, isSyncing: true, syncError: null };
+    });
+    
+    // If we didn't acquire the lock, another request is handling the switch
+    if (!lockAcquired) {
+      return;
+    }
+    
     // CRITICAL FIX: Clear valuation results when switching flows
     // This prevents the regeneration modal from appearing incorrectly
     // Results are flow-specific and should not carry over between flows
@@ -394,18 +418,7 @@ export const useValuationSessionStore = create<ValuationSessionStore>((set, get)
     // Clear pending switch since we're proceeding
     set({ pendingFlowSwitch: null });
     
-    // Prevent concurrent switches by checking if already syncing
-    const { isSyncing } = get();
-    if (isSyncing) {
-      storeLogger.warn('Switch already in progress, ignoring concurrent request', {
-        reportId: session.reportId,
-        requestedView: view,
-      });
-      return;
-    }
-    
     try {
-      set({ isSyncing: true, syncError: null });
       
       // Re-check session state after setting syncing flag to prevent race conditions
       const { session: currentSession } = get();
