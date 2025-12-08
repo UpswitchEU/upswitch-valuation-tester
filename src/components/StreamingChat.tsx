@@ -78,6 +78,7 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
   userId,
   onMessageComplete,
   onValuationComplete,
+  onValuationStart,
   onReportUpdate,
   onDataCollected,
   onValuationPreview,

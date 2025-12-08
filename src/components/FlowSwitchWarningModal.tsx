@@ -7,7 +7,6 @@ interface FlowSwitchWarningModalProps {
   onConfirm: () => void;
   targetFlow: 'manual' | 'conversational';
   currentFlow?: 'manual' | 'conversational';
-  completeness?: number;
 }
 
 /**
@@ -15,7 +14,6 @@ interface FlowSwitchWarningModalProps {
  * 
  * Warns users when switching flows that their current progress will be reset.
  * Only business type (from homepage) is preserved.
- * Shows data completeness percentage if available.
  */
 export const FlowSwitchWarningModal: React.FC<FlowSwitchWarningModalProps> = ({
   isOpen,
@@ -23,7 +21,6 @@ export const FlowSwitchWarningModal: React.FC<FlowSwitchWarningModalProps> = ({
   onConfirm,
   targetFlow,
   currentFlow,
-  completeness = 0,
 }) => {
   if (!isOpen) return null;
 
@@ -79,25 +76,6 @@ export const FlowSwitchWarningModal: React.FC<FlowSwitchWarningModalProps> = ({
             <p className="text-zinc-400 text-sm leading-relaxed">
               You'll start fresh in the {flowName.toLowerCase()} flow. All other entered data will be cleared.
             </p>
-            
-            {/* Data Completeness Indicator */}
-            {completeness > 0 && (
-              <div className="p-4 bg-zinc-800/50 rounded-lg border border-zinc-700 mt-4">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm text-zinc-400">Current progress</span>
-                  <span className="text-sm font-semibold text-white">{completeness}%</span>
-                </div>
-                <div className="w-full h-2 bg-zinc-700 rounded-full overflow-hidden">
-                  <div 
-                    className="h-full bg-gradient-to-r from-teal-500 to-teal-400 transition-all duration-300"
-                    style={{ width: `${completeness}%` }}
-                  />
-                </div>
-                <p className="text-xs text-zinc-500 mt-2">
-                  This progress will be lost when you switch flows
-                </p>
-              </div>
-            )}
           </div>
 
           {/* Actions */}

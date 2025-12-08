@@ -23,7 +23,7 @@ export const ValuationToolbar: React.FC<ValuationToolbarProps> = ({
   const { refreshAuth } = useAuth();
   
   // Flow switch modal state
-  const { session, switchView, getCompleteness, pendingFlowSwitch, setPendingFlowSwitch } = useValuationSessionStore();
+  const { session, switchView, pendingFlowSwitch, setPendingFlowSwitch } = useValuationSessionStore();
   const [showSwitchConfirmation, setShowSwitchConfirmation] = useState(false);
 
   // Handler for flow toggle icon clicks
@@ -319,7 +319,6 @@ export const ValuationToolbar: React.FC<ValuationToolbarProps> = ({
       isOpen={showSwitchConfirmation}
       currentFlow={session?.currentView || 'manual'}
       targetFlow={pendingFlowSwitch || 'manual'}
-      completeness={getCompleteness()}
       onConfirm={handleConfirmSwitch}
       onClose={handleCancelSwitch}
     />

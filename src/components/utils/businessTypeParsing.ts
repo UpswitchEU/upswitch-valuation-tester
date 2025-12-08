@@ -5,7 +5,7 @@
 
 export interface BusinessTypeSuggestion {
   number: number;
-  id?: string;
+  id: string;
   title: string;
   description?: string;
   industry?: string;
@@ -39,6 +39,7 @@ export function parseBusinessTypeSuggestions(message: string): BusinessTypeSugge
       
       suggestions.push({
         number: parseInt(match[1], 10),
+        id: match[1], // Use number as id
         title: title,
         icon: icon
       });
