@@ -399,8 +399,9 @@ export const ValuationForm: React.FC = () => {
     // Clear validation error if validation passes
     setEmployeeCountError(null);
     
-    // Check if there's an existing completed report
-    const hasExistingReport = result?.valuation_id || session?.completedAt;
+    // Check if there's an existing completed report with actual results
+    // Only show warning if we have a real result, not just a stale session timestamp
+    const hasExistingReport = result?.valuation_id && result?.html_report;
     
     if (hasExistingReport && !regenerateConfirmed) {
       setShowRegenerationWarning(true);
@@ -940,13 +941,16 @@ export const ValuationForm: React.FC = () => {
         isOpen={showRegenerationWarning}
         completedAt={session?.completedAt}
         onConfirm={() => {
-          setRegenerateConfirmed(true);
+          // Close modal first
           setShowRegenerationWarning(false);
-          // Re-trigger form submission
-          const form = document.querySelector('form');
-          if (form) {
-            form.requestSubmit();
-          }
+          setRegenerateConfirmed(true);
+          // Use setTimeout to ensure state is updated before re-triggering
+          setTimeout(() => {
+            const form = document.querySelector('form');
+            if (form) {
+              form.requestSubmit();
+            }
+          }, 0);
         }}
         onCancel={() => {
           setShowRegenerationWarning(false);

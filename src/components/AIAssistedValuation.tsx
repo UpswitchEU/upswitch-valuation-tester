@@ -701,8 +701,9 @@ export const AIAssistedValuation: React.FC<AIAssistedValuationProps> = ({
       reportId: reportId
     });
     
-    // Check if there's an existing completed report
-    const hasExistingReport = valuationResult || session?.completedAt;
+    // Check if there's an existing completed report with actual results
+    // Only show warning if we have a real result (valuation_id and html_report), not just a stale session
+    const hasExistingReport = valuationResult?.valuation_id && valuationResult?.html_report;
     
     if (hasExistingReport && !regenerateConfirmed) {
       chatLogger.info('Existing report detected, showing regeneration warning');
@@ -1478,12 +1479,15 @@ export const AIAssistedValuation: React.FC<AIAssistedValuationProps> = ({
         isOpen={showRegenerationWarning}
         completedAt={session?.completedAt}
         onConfirm={async () => {
-          setRegenerateConfirmed(true);
+          // Close modal first
           setShowRegenerationWarning(false);
+          setRegenerateConfirmed(true);
           if (pendingValuationResult) {
-            // Re-trigger the valuation completion with confirmation
-            await handleValuationComplete(pendingValuationResult);
-            setPendingValuationResult(null);
+            // Use setTimeout to ensure state is updated before re-triggering
+            setTimeout(async () => {
+              await handleValuationComplete(pendingValuationResult);
+              setPendingValuationResult(null);
+            }, 0);
           }
         }}
         onCancel={() => {
