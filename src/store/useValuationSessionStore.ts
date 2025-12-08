@@ -356,26 +356,23 @@ export const useValuationSessionStore = create<ValuationSessionStore>((set, get)
       return;
     }
     
-    // Check if confirmation is needed (only for user-initiated switches with data)
+    // Check if confirmation is needed (for all user-initiated switches)
     // This check happens BEFORE the atomic lock to avoid setting isSyncing unnecessarily
-    if (!skipConfirmation && resetData) {
-      const completeness = get().getCompleteness();
-      const needsConfirmation = completeness > 5; // Only require confirmation if >5% complete
+    if (!skipConfirmation) {
+      // Always show confirmation for user-initiated switches
+      // This gives users a chance to confirm before switching flows
+      storeLogger.info('Flow switch requires confirmation', {
+        reportId: session.reportId,
+        currentView: session.currentView,
+        targetView: view,
+        resetData,
+      });
       
-      if (needsConfirmation) {
-        storeLogger.info('Flow switch requires confirmation', {
-          reportId: session.reportId,
-          currentView: session.currentView,
-          targetView: view,
-          completeness,
-        });
-        
-        // Set pending switch for modal to access
-        set({ pendingFlowSwitch: view });
-        
-        // Return early - caller should show confirmation modal
-        return { needsConfirmation: true };
-      }
+      // Set pending switch for modal to access
+      set({ pendingFlowSwitch: view });
+      
+      // Return early - caller should show confirmation modal
+      return { needsConfirmation: true };
     }
     
     // CRITICAL FIX: Atomic check-and-set to prevent concurrent switches

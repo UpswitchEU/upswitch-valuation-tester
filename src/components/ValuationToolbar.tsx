@@ -26,6 +26,15 @@ export const ValuationToolbar: React.FC<ValuationToolbarProps> = ({
   const { session, switchView, pendingFlowSwitch, setPendingFlowSwitch } = useValuationSessionStore();
   const [showSwitchConfirmation, setShowSwitchConfirmation] = useState(false);
 
+  // Sync modal visibility with pendingFlowSwitch state
+  useEffect(() => {
+    if (pendingFlowSwitch) {
+      setShowSwitchConfirmation(true);
+    } else {
+      setShowSwitchConfirmation(false);
+    }
+  }, [pendingFlowSwitch]);
+
   // Handler for flow toggle icon clicks
   const handleFlowIconClick = async (flow: 'manual' | 'conversational') => {
     if (!session || session.currentView === flow) return; // Already in this flow or no session
@@ -35,6 +44,7 @@ export const ValuationToolbar: React.FC<ValuationToolbarProps> = ({
     const result = await switchView(flow, false, false); // resetData=false, skipConfirmation=false
     
     // If confirmation is needed, show modal
+    // Note: With the updated logic, this should always return needsConfirmation=true for user-initiated switches
     if (result?.needsConfirmation) {
       setShowSwitchConfirmation(true);
     }
@@ -51,7 +61,7 @@ export const ValuationToolbar: React.FC<ValuationToolbarProps> = ({
 
   const handleCancelSwitch = () => {
     setShowSwitchConfirmation(false);
-    setPendingFlowSwitch(null);
+    setPendingFlowSwitch(null); // Clear pending switch when user cancels
   };
 
   const [isEditingName, setIsEditingName] = useState(false);
