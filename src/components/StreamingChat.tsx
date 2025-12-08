@@ -198,7 +198,16 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
   // CRITICAL FIX: Removed state.messages from dependencies to prevent recreation on every update
   const eventHandler = useMemo(() => {
     const handler = new StreamEventHandler(sessionId, {
-    updateStreamingMessage: (content: string, isComplete: boolean = false) => {
+    updateStreamingMessage: (content: string, isComplete: boolean = false, metadata?: any) => {
+      // CRITICAL DEBUG: Log metadata if provided
+      if (metadata) {
+        chatLogger.info('🔍 EventHandler callback received metadata', {
+          hasMetadata: true,
+          metadataKeys: Object.keys(metadata),
+          inputType: metadata.input_type
+        });
+      }
+      
       // SIMPLIFIED: Trust the backend - update streaming message, find it if ref is missing
       const currentMessages = messagesRef.current;
       
