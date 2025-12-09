@@ -63,9 +63,9 @@ export const MinimalHeader: React.FC = () => {
       {/* Logo and Title */}
       <div className="flex basis-0 flex-row flex-grow flex-nowrap justify-start bg-transparent items-center no-underline text-medium whitespace-nowrap box-border">
         <Link className="flex items-center gap-1 sm:gap-1.5 flex-shrink-0" to="/">
-          {/* Upswitch Logo - Using var1 logo */}
+          {/* Upswitch Logo - Using dark logo */}
           <img 
-            src="/UpSwitch_logo_var1.svg" 
+            src="/logo_upswitch_dark.svg" 
             alt="Upswitch Logo" 
             className="w-7 h-7 sm:w-8 sm:h-8 flex-shrink-0 transition-opacity hover:opacity-80" 
             style={{ height: '32px', objectFit: 'contain', opacity: 1, visibility: 'visible', display: 'block' }}
