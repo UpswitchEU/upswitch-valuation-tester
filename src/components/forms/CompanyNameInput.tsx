@@ -260,7 +260,7 @@ export const CompanyNameInput: React.FC<CompanyNameInputProps> = ({
     if (!isLoading) return null;
 
     return (
-      <div className="w-4 h-4 border-2 border-gray-200 border-t-teal-600 rounded-full animate-spin" />
+      <div className="w-4 h-4 border-2 border-gray-200 border-t-primary-600 rounded-full animate-spin" />
     );
   };
 
@@ -269,7 +269,7 @@ export const CompanyNameInput: React.FC<CompanyNameInputProps> = ({
     if (!selectedCompany) return null;
 
     return (
-      <div className="mt-3 p-4 bg-gradient-to-br from-emerald-50 to-teal-50 border border-emerald-200 rounded-xl shadow-sm animate-in fade-in slide-in-from-top-2 duration-300">
+      <div className="mt-3 p-4 bg-gradient-to-br from-primary-50 to-canvas border border-primary-200 rounded-xl shadow-sm animate-in fade-in slide-in-from-top-2 duration-300">
         {/* Header with verified badge */}
         <div className="flex items-start justify-between mb-3">
           <div className="flex items-center gap-2">

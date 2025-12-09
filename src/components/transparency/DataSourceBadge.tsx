@@ -55,8 +55,8 @@ const SOURCE_CONFIG = {
   world_bank: {
     label: 'World Bank',
     icon: '🌍',
-    color: 'bg-teal-100 text-teal-700 border-teal-300',
-    hoverColor: 'hover:bg-teal-200',
+    color: 'bg-primary-100 text-primary-700 border-primary-300',
+    hoverColor: 'hover:bg-primary-200',
     description: 'World Bank Data',
     defaultUrl: 'https://data.worldbank.org',
   },

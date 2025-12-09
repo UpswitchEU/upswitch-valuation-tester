@@ -164,20 +164,20 @@ export const RegistryDataPreview: React.FC<RegistryDataPreviewProps> = ({
       </div>
 
       {/* Data Source Info */}
-      <div className="bg-blue-50 border-b border-blue-100 p-4">
+      <div className="bg-primary-50 border-b border-primary-100 p-4">
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2 text-sm text-blue-900">
+          <div className="flex items-center gap-2 text-sm text-primary-900">
             <TrendingUp className="w-4 h-4" />
             <span className="font-medium">Data Source:</span>
             <span>{companyData.data_source}</span>
-            <span className="text-blue-600">•</span>
+            <span className="text-primary-600">•</span>
             <span>{companyData.filing_history.length} years of history</span>
-            <span className="text-blue-600">•</span>
+            <span className="text-primary-600">•</span>
             <span className="font-semibold">{Math.round(companyData.completeness_score * 100)}% complete</span>
           </div>
           <button
             onClick={() => setIsEditing(!isEditing)}
-            className="flex items-center gap-2 px-3 py-1.5 text-sm bg-white hover:bg-gray-50 rounded-lg border border-blue-200 transition-colors"
+            className="flex items-center gap-2 px-3 py-1.5 text-sm bg-white hover:bg-gray-50 rounded-lg border border-primary-200 transition-colors"
           >
             {isEditing ? (
               <>
@@ -296,7 +296,7 @@ export const RegistryDataPreview: React.FC<RegistryDataPreviewProps> = ({
             </div>
 
             {/* Cash */}
-            <div className="bg-gradient-to-br from-teal-50 to-cyan-50 rounded-xl p-4 border border-teal-100">
+            <div className="bg-gradient-to-br from-primary-50 to-canvas rounded-xl p-4 border border-primary-100">
               <div className="text-sm font-medium text-gray-600 mb-1">Cash</div>
               {isEditing ? (
                 <input
@@ -367,7 +367,7 @@ export const RegistryDataPreview: React.FC<RegistryDataPreviewProps> = ({
           <button
             onClick={handleCalculate}
             disabled={isEditing}
-            className="w-full flex items-center justify-center gap-3 px-8 py-4 bg-gradient-to-r from-primary-600 to-blue-600 text-white rounded-xl hover:from-primary-700 hover:to-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg hover:shadow-xl text-lg font-semibold"
+            className="w-full flex items-center justify-center gap-3 px-8 py-4 bg-gradient-to-r from-accent-600 to-accent-500 text-white rounded-xl hover:from-accent-500 hover:to-accent-400 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg hover:shadow-xl text-lg font-semibold"
           >
             <Calculator className="w-6 h-6" />
             Calculate Business Valuation
@@ -392,7 +392,7 @@ export const RegistryDataPreview: React.FC<RegistryDataPreviewProps> = ({
             </p>
             <button
               onClick={onCalculateValuation}
-              className="w-full flex items-center justify-center gap-3 px-8 py-4 bg-gradient-to-r from-primary-600 to-blue-600 text-white rounded-xl hover:from-primary-700 hover:to-blue-700 transition-all shadow-lg hover:shadow-xl text-lg font-semibold"
+              className="w-full flex items-center justify-center gap-3 px-8 py-4 bg-gradient-to-r from-accent-600 to-accent-500 text-white rounded-xl hover:from-accent-500 hover:to-accent-400 transition-all shadow-lg hover:shadow-xl text-lg font-semibold"
             >
               <Calculator className="w-6 h-6" />
               Enter Financial Data Manually
