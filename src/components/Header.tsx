@@ -1,13 +1,13 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { Link, useNavigate, useLocation } from 'react-router-dom';
+import React, { useEffect, useRef, useState } from 'react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 // import { FileText } from 'lucide-react'; // Removed with reports link
 import { ChevronDown } from 'lucide-react';
 // import { urls } from '../router'; // Removed with reports link
 // import { useReportsStore } from '../store/useReportsStore'; // Deprecated: Reports now on upswitch.biz
-import { UserDropdown } from './UserDropdown';
-import { CreditBadge } from './credits/CreditBadge';
 import { useAuth } from '../hooks/useAuth';
 import { generalLogger } from '../utils/logger';
+import { UserDropdown } from './UserDropdown';
+import { CreditBadge } from './credits/CreditBadge';
 
 /**
  * Header Component

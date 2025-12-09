@@ -1,8 +1,8 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { UserDropdown } from './UserDropdown';
 import { useAuth } from '../hooks/useAuth';
 import { generalLogger } from '../utils/logger';
+import { UserDropdown } from './UserDropdown';
 
 /**
  * Minimal Header Component for Home Page
