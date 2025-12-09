@@ -107,7 +107,7 @@ export const Header: React.FC = () => {
             <img 
               src="/logo_upswitch_dark.svg" 
               alt="Upswitch Logo" 
-              className="h-8 sm:h-10 flex-shrink-0 transition-opacity hover:opacity-80" 
+              className="h-6 sm:h-6 flex-shrink-0 transition-opacity hover:opacity-80" 
               style={{ width: 'auto', objectFit: 'contain', opacity: 1, visibility: 'visible', display: 'block' }}
             />
             
@@ -115,7 +115,7 @@ export const Header: React.FC = () => {
             <div className="w-4 h-4 rounded bg-gradient-to-br from-primary-500 to-primary-700 animate-pulse ml-2"></div>
             
             {/* BETA Badge */}
-            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-primary-100 text-primary-800 border border-primary-300 ml-2">
+            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-zinc-800/50 text-zinc-200 border border-zinc-700/50 ml-1">
               BETA
             </span>
           </Link>

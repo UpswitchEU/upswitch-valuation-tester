@@ -67,12 +67,12 @@ export const MinimalHeader: React.FC = () => {
           <img 
             src="/logo_upswitch_dark.svg" 
             alt="Upswitch Logo" 
-            className="h-8 sm:h-10 flex-shrink-0 transition-opacity hover:opacity-80" 
+            className="h-6 sm:h-6 flex-shrink-0 transition-opacity hover:opacity-80" 
             style={{ width: 'auto', objectFit: 'contain', opacity: 1, visibility: 'visible', display: 'block' }}
           />
           
           {/* BETA Badge */}
-          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-zinc-800/50 text-zinc-200 border border-zinc-700/50 ml-2">
+          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-zinc-800/50 text-zinc-200 border border-zinc-700/50 ml-1">
             BETA
           </span>
         </Link>
