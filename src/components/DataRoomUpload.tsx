@@ -74,7 +74,7 @@ export const DataRoomUpload: React.FC<DataRoomUploadProps> = ({ onComplete }) =>
           <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-primary-100 mb-4">
             <Upload className="w-8 h-8 text-primary-600" />
           </div>
-          <h2 className="text-3xl font-bold text-gray-900 mb-2">
+          <h2 className="text-3xl font-bold text-slate-ink mb-2">
             Upload Your Financial Documents
           </h2>
           <p className="text-gray-600 max-w-2xl mx-auto">
@@ -109,7 +109,7 @@ export const DataRoomUpload: React.FC<DataRoomUploadProps> = ({ onComplete }) =>
               <div className="flex items-start gap-3">
                 <AlertCircle className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
                 <div>
-                  <h4 className="font-semibold text-gray-900 text-sm mb-1">💡 Also Works</h4>
+                  <h4 className="font-semibold text-slate-ink text-sm mb-1">💡 Also Works</h4>
                   <ul className="text-sm text-gray-600 space-y-1">
                     <li>• <strong>Management Accounts</strong></li>
                     <li>• <strong>Bookkeeping Reports</strong></li>
@@ -120,7 +120,7 @@ export const DataRoomUpload: React.FC<DataRoomUploadProps> = ({ onComplete }) =>
             </div>
           </div>
 
-          <div className="bg-gradient-to-r from-green-50 to-blue-50 rounded-lg p-4 border border-green-200">
+          <div className="bg-gradient-to-r from-primary-50 to-canvas rounded-lg p-4 border border-primary-200">
             <h4 className="font-semibold text-gray-900 text-sm mb-2">📊 What we need to extract:</h4>
             <div className="grid sm:grid-cols-3 gap-3 text-xs">
               <div>
@@ -170,7 +170,7 @@ export const DataRoomUpload: React.FC<DataRoomUploadProps> = ({ onComplete }) =>
               <div className="w-20 h-20 rounded-full bg-white border-2 border-gray-200 flex items-center justify-center mb-6">
                 <Upload className="w-10 h-10 text-gray-400" />
               </div>
-              <h3 className="text-xl font-semibold text-gray-900 mb-2">
+              <h3 className="text-xl font-semibold text-slate-ink mb-2">
                 Drop your files here
               </h3>
               <p className="text-gray-500 mb-6 text-center max-w-md">
@@ -205,7 +205,7 @@ export const DataRoomUpload: React.FC<DataRoomUploadProps> = ({ onComplete }) =>
                   {/* File Info */}
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between mb-1">
-                      <p className="text-sm font-medium text-gray-900 truncate">
+                      <p className="text-sm font-medium text-slate-ink truncate">
                         {file.file.name}
                       </p>
                       <button
@@ -250,19 +250,19 @@ export const DataRoomUpload: React.FC<DataRoomUploadProps> = ({ onComplete }) =>
                             {file.extractedData.company_name && (
                               <div>
                                 <span className="text-gray-500">Company:</span>{' '}
-                                <span className="font-medium text-gray-900">{file.extractedData.company_name}</span>
+                                <span className="font-medium text-slate-ink">{file.extractedData.company_name}</span>
                               </div>
                             )}
                             {file.extractedData.revenue && (
                               <div>
                                 <span className="text-gray-500">Revenue:</span>{' '}
-                                <span className="font-medium text-gray-900">€{file.extractedData.revenue.toLocaleString()}</span>
+                                <span className="font-medium text-slate-ink">€{file.extractedData.revenue.toLocaleString()}</span>
                               </div>
                             )}
                             {file.extractedData.ebitda && (
                               <div>
                                 <span className="text-gray-500">EBITDA:</span>{' '}
-                                <span className="font-medium text-gray-900">€{file.extractedData.ebitda.toLocaleString()}</span>
+                                <span className="font-medium text-slate-ink">€{file.extractedData.ebitda.toLocaleString()}</span>
                               </div>
                             )}
                           </div>

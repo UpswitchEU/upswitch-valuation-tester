@@ -209,7 +209,7 @@ export const CompanyNameInput: React.FC<CompanyNameInputProps> = ({
     return (
       <div className="relative group">
         <svg
-          className="w-5 h-5 text-emerald-500"
+          className="w-5 h-5 text-primary-500"
           fill="none"
           stroke="currentColor"
           viewBox="0 0 24 24"

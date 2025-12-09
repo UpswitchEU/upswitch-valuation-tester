@@ -245,7 +245,7 @@ export const RegistryDataPreview: React.FC<RegistryDataPreviewProps> = ({
             </div>
 
             {/* Net Income */}
-            <div className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-xl p-4 border border-purple-100">
+            <div className="bg-gradient-to-br from-primary-50 to-canvas rounded-xl p-4 border border-primary-100">
               <div className="text-sm font-medium text-gray-600 mb-1">Net Income</div>
               {isEditing ? (
                 <input
@@ -262,7 +262,7 @@ export const RegistryDataPreview: React.FC<RegistryDataPreviewProps> = ({
             </div>
 
             {/* Assets */}
-            <div className="bg-gradient-to-br from-yellow-50 to-orange-50 rounded-xl p-4 border border-yellow-100">
+            <div className="bg-gradient-to-br from-accent-50 to-canvas rounded-xl p-4 border border-accent-100">
               <div className="text-sm font-medium text-gray-600 mb-1">Total Assets</div>
               {isEditing ? (
                 <input
@@ -279,7 +279,7 @@ export const RegistryDataPreview: React.FC<RegistryDataPreviewProps> = ({
             </div>
 
             {/* Debt */}
-            <div className="bg-gradient-to-br from-red-50 to-pink-50 rounded-xl p-4 border border-red-100">
+            <div className="bg-gradient-to-br from-accent-50 to-canvas rounded-xl p-4 border border-accent-100">
               <div className="text-sm font-medium text-gray-600 mb-1">Total Debt</div>
               {isEditing ? (
                 <input

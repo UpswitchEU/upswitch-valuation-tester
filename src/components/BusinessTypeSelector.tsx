@@ -103,7 +103,7 @@ export const BusinessTypeSelector: React.FC<BusinessTypeSelectorProps> = ({
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600" />
             </div>
           ) : selectedMetadata ? (
-            <div className="bg-gradient-to-br from-indigo-50 to-blue-50 rounded-lg p-6 space-y-4">
+            <div className="bg-gradient-to-br from-primary-50 to-canvas rounded-lg p-6 space-y-4">
               {/* Header */}
               <div className="flex items-center space-x-3">
                 <span className="text-4xl">{selectedMetadata.icon}</span>
@@ -191,7 +191,7 @@ export const BusinessTypeSelector: React.FC<BusinessTypeSelectorProps> = ({
                       {selectedMetadata.key_metrics.slice(0, 4).map((metric: any, index: number) => (
                         <span
                           key={index}
-                          className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800"
+                          className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-primary-100 text-primary-800"
                         >
                           {metric.label || metric.name}
                         </span>

@@ -42,14 +42,14 @@ export const GrowthMetrics: React.FC<GrowthMetricsProps> = ({ result }) => {
       <h3 className="text-lg font-semibold text-gray-900 mb-4">Growth Metrics</h3>
       
       {calculationErrors && calculationErrors.length > 0 && (
-        <div className="mb-4 p-4 bg-yellow-50 border-2 border-yellow-300 rounded-lg">
+        <div className="mb-4 p-4 bg-accent-50 border-2 border-accent-300 rounded-lg">
           <div className="flex items-start gap-3">
-            <svg className="w-5 h-5 text-yellow-600 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-5 h-5 text-accent-600 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
             </svg>
             <div>
-              <h4 className="font-semibold text-yellow-900 mb-1">Calculation Warnings</h4>
-              <ul className="text-sm text-yellow-800 list-disc list-inside space-y-1">
+              <h4 className="font-semibold text-accent-900 mb-1">Calculation Warnings</h4>
+              <ul className="text-sm text-accent-800 list-disc list-inside space-y-1">
                 {calculationErrors.map((error: string, index: number) => (
                   <li key={index}>{error}</li>
                 ))}
@@ -80,8 +80,8 @@ export const GrowthMetrics: React.FC<GrowthMetricsProps> = ({ result }) => {
       <div className="space-y-4">
         <div className={`flex justify-between items-center p-4 rounded border ${
           isUnrealistic 
-            ? 'bg-red-50 border-red-200' 
-            : 'bg-gradient-to-r from-green-50 to-blue-50 border-green-200'
+            ? 'bg-accent-50 border-accent-200' 
+            : 'bg-gradient-to-r from-primary-50 to-canvas border-primary-200'
         }`}>
           <div>
             <span className="text-sm font-medium text-gray-700">Compound Annual Growth Rate (CAGR)</span>
@@ -108,7 +108,7 @@ export const GrowthMetrics: React.FC<GrowthMetricsProps> = ({ result }) => {
         </div>
         
         {!isUnrealistic && (
-          <div className="text-xs text-gray-500 bg-blue-50 p-3 rounded">
+          <div className="text-xs text-gray-500 bg-primary-50 p-3 rounded">
             <strong>Analysis:</strong> CAGR of {formatPercent(finalCagrPercentage)} over {growth.years || 0} year{(growth.years || 0) > 1 ? 's' : ''} indicates{' '}
             {finalCagrPercentage > 25 ? 'exceptional growth' :
              finalCagrPercentage > 15 ? 'strong growth potential' : 

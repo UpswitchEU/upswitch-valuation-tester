@@ -100,13 +100,13 @@ export const AdjustmentsSummary: React.FC<AdjustmentsSummaryProps> = ({
         className="w-full flex items-center justify-between p-4 hover:bg-gray-50 transition-colors"
       >
         <div className="flex items-center gap-3">
-          <h3 className="text-lg font-semibold text-gray-900">Valuation Adjustments</h3>
+          <h3 className="text-lg font-semibold text-slate-ink">Valuation Adjustments</h3>
           <div className="flex items-center gap-2">
             <span className="text-sm text-gray-500">
               {allAdjustments.length} adjustment{allAdjustments.length !== 1 ? 's' : ''} applied
             </span>
             {totalAdjustmentPct < 0 && (
-              <span className="px-2 py-1 bg-red-100 text-red-700 rounded-full text-xs font-medium">
+              <span className="px-2 py-1 bg-accent-100 text-accent-700 rounded-full text-xs font-medium">
                 Total: {formatPercentage(totalAdjustmentPct)}
               </span>
             )}
@@ -176,9 +176,9 @@ export const AdjustmentsSummary: React.FC<AdjustmentsSummaryProps> = ({
               <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                 <div className="flex items-center gap-2">
                   <TrendingDown className="w-5 h-5 text-gray-600" />
-                  <span className="font-semibold text-gray-900">Total Adjustment Impact</span>
+                  <span className="font-semibold text-slate-ink">Total Adjustment Impact</span>
                 </div>
-                <span className="text-2xl font-bold text-gray-900">
+                <span className="text-2xl font-bold text-slate-ink">
                   {formatPercentage(totalAdjustmentPct)}
                 </span>
               </div>

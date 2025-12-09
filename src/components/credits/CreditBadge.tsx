@@ -84,9 +84,9 @@ export const CreditBadge: React.FC<CreditBadgeProps> = ({
     const isOut = remaining === 0;
     
     const getGuestColorClasses = () => {
-      if (isOut) return 'bg-red-100 text-red-700 hover:bg-red-200 border-red-200';
-      if (isLow) return 'bg-yellow-100 text-yellow-700 hover:bg-yellow-200 border-yellow-200';
-      return 'bg-green-100 text-green-700 hover:bg-green-200 border-green-200';
+      if (isOut) return 'bg-accent-100 text-accent-700 hover:bg-accent-200 border-accent-200';
+      if (isLow) return 'bg-amber-100 text-amber-700 hover:bg-amber-200 border-amber-200';
+      return 'bg-primary-100 text-primary-700 hover:bg-primary-200 border-primary-200';
     };
     
     const getGuestIcon = () => {
@@ -137,7 +137,7 @@ export const CreditBadge: React.FC<CreditBadgeProps> = ({
   // Premium user badge
   if (isPremium) {
     return (
-      <div className={`flex items-center gap-2 px-3 py-1 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-full text-sm font-medium ${className}`}>
+      <div className={`flex items-center gap-2 px-3 py-1 bg-gradient-to-r from-accent-500 to-accent-600 text-white rounded-full text-sm font-medium ${className}`}>
         <span>✨ Premium</span>
       </div>
     );

@@ -270,7 +270,7 @@ export const SearchableBusinessTypeCombobox: React.FC<SearchableBusinessTypeComb
                         onMouseEnter={() => setHighlightedIndex(globalIndex)}
                         className={`w-full text-left px-4 py-3 transition-colors ${
                           isHighlighted
-                            ? 'bg-blue-50 text-gray-900'
+                            ? 'bg-primary-50 text-slate-ink'
                             : 'text-gray-900 hover:bg-gray-100'
                         }`}
                       >
@@ -319,11 +319,11 @@ export const SearchableBusinessTypeCombobox: React.FC<SearchableBusinessTypeComb
 
       {/* Selected type info */}
       {selectedType && !isOpen && (
-        <div className="mt-2 relative overflow-hidden rounded-xl bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 border border-blue-200/60 shadow-sm">
+        <div className="mt-2 relative overflow-hidden rounded-xl bg-gradient-to-br from-primary-50 via-canvas to-primary-50/50 border border-primary-200/60 shadow-sm">
           <div className="p-4">
             <div className="flex items-start gap-3">
               {/* Icon badge */}
-              <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-sm">
+              <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-gradient-to-br from-primary-500 to-primary-600 flex items-center justify-center shadow-sm">
                 <span className="text-xl">{selectedType.icon}</span>
               </div>
               
@@ -339,8 +339,8 @@ export const SearchableBusinessTypeCombobox: React.FC<SearchableBusinessTypeComb
                     <span className="font-medium text-gray-900">{selectedType.industry || selectedType.industryMapping}</span>
                   </span>
                   {selectedType.category && (
-                    <span className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-white/70 backdrop-blur-sm border border-indigo-200/50 text-gray-700">
-                      <svg className="w-3 h-3 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <span className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-white/70 backdrop-blur-sm border border-primary-200/50 text-gray-700">
+                      <svg className="w-3 h-3 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
                       </svg>
                       <span className="font-medium text-gray-900">{selectedType.category}</span>

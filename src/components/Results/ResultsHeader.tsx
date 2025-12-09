@@ -87,7 +87,7 @@ export const ResultsHeader: React.FC<ResultsHeaderProps> = ({ result }) => {
         <div className="bg-white rounded-lg border-2 border-gray-200 p-4 sm:p-6 shadow-lg transition-shadow hover:shadow-xl">
           <div className="flex items-center justify-between mb-4">
             <div>
-              <h2 className="text-xl sm:text-2xl font-bold text-gray-900">Valuation Report</h2>
+              <h2 className="text-xl sm:text-2xl font-bold text-slate-ink">Valuation Report</h2>
               <p className="text-sm text-gray-600">{getMethodologyDescription()}</p>
               {/* CRITICAL FIX: Display methodology downgrade warning */}
               {result.methodology_downgrade_reason && (
@@ -161,19 +161,19 @@ export const ResultsHeader: React.FC<ResultsHeaderProps> = ({ result }) => {
                   relative inline-flex items-center gap-3 px-4 py-2.5 rounded-xl border-2 shadow-sm cursor-pointer
                   ${result.confidence_score !== undefined && result.confidence_score !== null
                     ? result.confidence_score >= 80 
-                      ? 'bg-gradient-to-br from-green-50 to-emerald-50 border-green-300 hover:from-green-100 hover:to-emerald-100'
+                      ? 'bg-gradient-to-br from-primary-50 to-primary-50/50 border-primary-300 hover:from-primary-100 hover:to-primary-100/50'
                       : result.confidence_score >= 60
-                      ? 'bg-gradient-to-br from-yellow-50 to-amber-50 border-yellow-300 hover:from-yellow-100 hover:to-amber-100'
-                      : 'bg-gradient-to-br from-red-50 to-rose-50 border-red-300 hover:from-red-100 hover:to-rose-100'
+                      ? 'bg-gradient-to-br from-accent-50 to-accent-50/50 border-accent-300 hover:from-accent-100 hover:to-accent-100/50'
+                      : 'bg-gradient-to-br from-accent-50/70 to-accent-50/40 border-accent-300 hover:from-accent-100/70 hover:to-accent-100/40'
                     : 'bg-gray-50 border-gray-300 hover:bg-gray-100'
                   }
                   transition-all duration-200 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-offset-2
                   ${result.confidence_score !== undefined && result.confidence_score !== null
                     ? result.confidence_score >= 80 
-                      ? 'focus:ring-green-500'
+                      ? 'focus:ring-primary-500'
                       : result.confidence_score >= 60
-                      ? 'focus:ring-yellow-500'
-                      : 'focus:ring-red-500'
+                      ? 'focus:ring-accent-500'
+                      : 'focus:ring-accent-500'
                     : 'focus:ring-gray-500'
                   }
                 `}
@@ -183,10 +183,10 @@ export const ResultsHeader: React.FC<ResultsHeaderProps> = ({ result }) => {
                   flex items-center justify-center w-12 h-12 rounded-full border-2
                   ${result.confidence_score !== undefined && result.confidence_score !== null
                     ? result.confidence_score >= 80 
-                      ? 'bg-green-100 border-green-400'
+                      ? 'bg-primary-100 border-primary-400'
                       : result.confidence_score >= 60
-                      ? 'bg-yellow-100 border-yellow-400'
-                      : 'bg-red-100 border-red-400'
+                      ? 'bg-accent-100 border-accent-400'
+                      : 'bg-accent-100 border-accent-400'
                     : 'bg-gray-100 border-gray-400'
                   }
                 `}>
@@ -194,10 +194,10 @@ export const ResultsHeader: React.FC<ResultsHeaderProps> = ({ result }) => {
                     text-xl font-bold
                     ${result.confidence_score !== undefined && result.confidence_score !== null
                       ? result.confidence_score >= 80 
-                        ? 'text-green-700'
+                        ? 'text-primary-700'
                         : result.confidence_score >= 60
-                        ? 'text-yellow-700'
-                        : 'text-red-700'
+                        ? 'text-accent-700'
+                        : 'text-accent-700'
                       : 'text-gray-600'
                     }
                   `}>
@@ -213,10 +213,10 @@ export const ResultsHeader: React.FC<ResultsHeaderProps> = ({ result }) => {
                     text-2xl font-bold leading-none
                     ${result.confidence_score !== undefined && result.confidence_score !== null
                       ? result.confidence_score >= 80 
-                        ? 'text-green-700'
+                        ? 'text-primary-700'
                         : result.confidence_score >= 60
-                        ? 'text-yellow-700'
-                        : 'text-red-700'
+                        ? 'text-accent-700'
+                        : 'text-accent-700'
                       : 'text-gray-600'
                     }
                   `}>
@@ -233,7 +233,7 @@ export const ResultsHeader: React.FC<ResultsHeaderProps> = ({ result }) => {
           </div>
         
         <div className="mb-4">
-          <h3 className="text-lg font-semibold text-gray-900">Valuation Range</h3>
+          <h3 className="text-lg font-semibold text-slate-ink">Valuation Range</h3>
           <p className="text-xs text-gray-500 mt-1">
             Equity value after all adjustments (size, liquidity, owner concentration)
           </p>
@@ -350,14 +350,14 @@ export const ResultsHeader: React.FC<ResultsHeaderProps> = ({ result }) => {
                         </span>
                       </div>
                       <div className="mt-2 pt-2 border-t border-gray-200">
-                        <p className="text-xs text-green-700 font-semibold">✓ Market-based range from {result.multiples_valuation.comparables_count} comparables</p>
+                        <p className="text-xs text-primary-700 font-semibold">✓ Market-based range from {result.multiples_valuation.comparables_count} comparables</p>
                       </div>
                     </>
                   ) : (
                     <>
                       <div className="flex justify-between items-center">
                         <span className="text-gray-600">Base Multiple:</span>
-                        <span className="font-bold text-purple-700">
+                        <span className="font-bold text-primary-700">
                           {isPrimaryEBITDA()
                             ? `${result.multiples_valuation.ebitda_multiple?.toFixed(2) ?? 'N/A'}x`
                             : `${result.multiples_valuation.revenue_multiple?.toFixed(2) ?? 'N/A'}x`
@@ -396,8 +396,8 @@ export const ResultsHeader: React.FC<ResultsHeaderProps> = ({ result }) => {
               </div>
             )}
             {isPrimaryEBITDA() && result.multiples_valuation.revenue_multiple && result.multiples_valuation.revenue_multiple > 0 && (
-              <div className="mt-3 pt-3 border-t border-purple-200">
-                <p className="text-xs text-purple-800">
+              <div className="mt-3 pt-3 border-t border-primary-200">
+                <p className="text-xs text-primary-800">
                   <span className="font-semibold">Primary Method Selection:</span> EBITDA multiple was selected as primary following McKinsey/Bain best practices. Profitability (EBITDA) is the most reliable value driver for established businesses with positive, stable margins. Revenue multiple ({result.multiples_valuation.revenue_multiple.toFixed(2)}x) is shown as an alternative reference. Company size and data quality concerns are reflected in confidence scoring, not methodology selection.
                 </p>
               </div>
@@ -435,9 +435,9 @@ export const ResultsHeader: React.FC<ResultsHeaderProps> = ({ result }) => {
         )}
 
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 mb-6">
-          <div className="text-center p-3 sm:p-4 bg-gray-50 rounded">
+          <div className="text-center p-3 sm:p-4 bg-canvas rounded">
             <p className="text-xs sm:text-sm text-gray-600 mb-1">Low Estimate</p>
-            <p className="text-lg sm:text-xl lg:text-2xl font-bold text-gray-900 break-words">
+            <p className="text-lg sm:text-xl lg:text-2xl font-bold text-slate-ink break-words">
               {formatCurrencyCompact(result.equity_value_low)}
             </p>
             <p className="text-xs text-gray-500 mt-1 hidden sm:block">
@@ -453,9 +453,9 @@ export const ResultsHeader: React.FC<ResultsHeaderProps> = ({ result }) => {
               {formatCurrency(result.equity_value_mid)}
             </p>
           </div>
-          <div className="text-center p-3 sm:p-4 bg-gray-50 rounded">
+          <div className="text-center p-3 sm:p-4 bg-canvas rounded">
             <p className="text-xs sm:text-sm text-gray-600 mb-1">High Estimate</p>
-            <p className="text-lg sm:text-xl lg:text-2xl font-bold text-gray-900 break-words">
+            <p className="text-lg sm:text-xl lg:text-2xl font-bold text-slate-ink break-words">
               {formatCurrencyCompact(result.equity_value_high)}
             </p>
             <p className="text-xs text-gray-500 mt-1 hidden sm:block">
@@ -482,7 +482,7 @@ export const ResultsHeader: React.FC<ResultsHeaderProps> = ({ result }) => {
                     <span className="text-xs font-semibold text-primary-900">Range Methodology:</span>
                     <span className={`text-xs px-2 py-1 rounded font-medium ${
                       result.range_methodology === 'multiple_dispersion' 
-                        ? 'bg-green-100 text-green-800' 
+                        ? 'bg-primary-100 text-primary-800' 
                         : 'bg-amber-100 text-amber-800'
                     }`}>
                       {result.range_methodology === 'multiple_dispersion' 

@@ -61,16 +61,16 @@ const InputsTable: React.FC<{
                           <td className="py-2 px-3 text-gray-900 font-mono">{row.ratioRange}</td>
                           <td className="py-2 px-3">
                             <span className={`px-2 py-1 rounded text-xs font-semibold ${
-                              row.riskLevel === 'SOLE_TRADER' ? 'bg-red-100 text-red-800' :
-                              row.riskLevel === 'CRITICAL' ? 'bg-orange-100 text-orange-800' :
-                              row.riskLevel === 'HIGH' ? 'bg-yellow-100 text-yellow-800' :
-                              row.riskLevel === 'MEDIUM' ? 'bg-blue-100 text-blue-800' :
-                              'bg-green-100 text-green-800'
+                              row.riskLevel === 'SOLE_TRADER' ? 'bg-accent-100 text-accent-800' :
+                              row.riskLevel === 'CRITICAL' ? 'bg-accent-100 text-accent-800' :
+                              row.riskLevel === 'HIGH' ? 'bg-amber-100 text-amber-800' :
+                              row.riskLevel === 'MEDIUM' ? 'bg-primary-100 text-primary-800' :
+                              'bg-primary-100 text-primary-800'
                             }`}>
                               {row.riskLevel}
                             </span>
                           </td>
-                          <td className="py-2 px-3 text-red-600 font-semibold">{row.discount}</td>
+                          <td className="py-2 px-3 text-accent-600 font-semibold">{row.discount}</td>
                           <td className="py-2 px-3 text-gray-600 text-xs italic">{row.note || '-'}</td>
                         </tr>
                       ))}
@@ -104,9 +104,9 @@ const InputsTable: React.FC<{
                 </div>
               </div>
               {input.explanation && expandedInputs.has(idx) && (
-                <div className="px-4 pb-3 bg-blue-50 border-l-4 border-blue-400">
+                <div className="px-4 pb-3 bg-primary-50 border-l-4 border-primary-400">
                   <div className="pt-2 space-y-1">
-                    <p className="text-xs font-semibold text-blue-900">Why {input.value}?</p>
+                    <p className="text-xs font-semibold text-primary-900">Why {input.value}?</p>
                     <p className="text-xs text-gray-700 leading-relaxed">{input.explanation}</p>
                     {input.academicSource && (
                       <p className="text-xs text-gray-600 italic mt-1">
@@ -136,18 +136,18 @@ const StepCard: React.FC<{ step: CalculationStep; isLast?: boolean }> = ({ step,
       icon: 'text-blue-600'
     },
     red: {
-      bg: 'bg-red-50',
-      border: 'border-red-500',
-      text: 'text-red-900',
-      badge: 'bg-red-500',
-      icon: 'text-red-600'
+      bg: 'bg-accent-50',
+      border: 'border-accent-500',
+      text: 'text-accent-900',
+      badge: 'bg-accent-500',
+      icon: 'text-accent-600'
     },
     green: {
-      bg: 'bg-green-50',
-      border: 'border-green-500',
-      text: 'text-green-900',
-      badge: 'bg-green-500',
-      icon: 'text-green-600'
+      bg: 'bg-primary-50',
+      border: 'border-primary-500',
+      text: 'text-primary-900',
+      badge: 'bg-primary-500',
+      icon: 'text-primary-600'
     },
     yellow: {
       bg: 'bg-yellow-50',
@@ -226,9 +226,9 @@ const StepCard: React.FC<{ step: CalculationStep; isLast?: boolean }> = ({ step,
             )}
 
             {/* Calculation */}
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
-              <p className="text-xs text-blue-600 font-semibold uppercase mb-1">Calculation</p>
-              <p className="font-mono text-sm text-blue-900 font-medium">{step.calculation}</p>
+            <div className="bg-primary-50 border border-primary-200 rounded-lg p-3">
+              <p className="text-xs text-primary-600 font-semibold uppercase mb-1">Calculation</p>
+              <p className="font-mono text-sm text-primary-900 font-medium">{step.calculation}</p>
             </div>
 
             {/* Explanation */}
@@ -240,7 +240,7 @@ const StepCard: React.FC<{ step: CalculationStep; isLast?: boolean }> = ({ step,
 
             {/* Detailed Explanation with Academic Sources */}
             {step.detailedExplanation && (
-              <div className="bg-gradient-to-br from-blue-50 to-indigo-50 border-2 border-blue-300 rounded-lg p-4 space-y-4">
+              <div className="bg-gradient-to-br from-primary-50 to-canvas border-2 border-primary-300 rounded-lg p-4 space-y-4">
                 <div className="flex items-center gap-2 mb-2">
                   <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
@@ -254,8 +254,8 @@ const StepCard: React.FC<{ step: CalculationStep; isLast?: boolean }> = ({ step,
 
                 {/* Academic Sources */}
                 {step.detailedExplanation.academicSources.length > 0 && (
-                  <div className="bg-white rounded-lg p-3 border border-blue-200">
-                    <p className="text-xs font-semibold text-blue-800 uppercase mb-2">Academic Sources</p>
+                  <div className="bg-white rounded-lg p-3 border border-primary-200">
+                    <p className="text-xs font-semibold text-primary-800 uppercase mb-2">Academic Sources</p>
                     <div className="space-y-2">
                       {step.detailedExplanation.academicSources.map((source, idx) => (
                         <div key={idx} className="text-xs text-gray-700">
@@ -280,8 +280,8 @@ const StepCard: React.FC<{ step: CalculationStep; isLast?: boolean }> = ({ step,
 
                 {/* Component Breakdown */}
                 {step.detailedExplanation.componentBreakdown && step.detailedExplanation.componentBreakdown.length > 0 && (
-                  <div className="bg-white rounded-lg p-3 border border-blue-200">
-                    <p className="text-xs font-semibold text-blue-800 uppercase mb-2">Component Breakdown</p>
+                  <div className="bg-white rounded-lg p-3 border border-primary-200">
+                    <p className="text-xs font-semibold text-primary-800 uppercase mb-2">Component Breakdown</p>
                     <div className="space-y-2">
                       {step.detailedExplanation.componentBreakdown.map((component, idx) => (
                         <div key={idx} className="flex items-start justify-between gap-3 py-2 border-b border-gray-100 last:border-b-0">
@@ -290,7 +290,7 @@ const StepCard: React.FC<{ step: CalculationStep; isLast?: boolean }> = ({ step,
                             <p className="text-xs text-gray-600 mt-0.5">{component.explanation}</p>
                           </div>
                           <div className="text-right">
-                            <p className={`text-sm font-bold ${component.value < 0 ? 'text-red-600' : component.value > 0 ? 'text-green-600' : 'text-gray-600'}`}>
+                            <p className={`text-sm font-bold ${component.value < 0 ? 'text-accent-600' : component.value > 0 ? 'text-primary-600' : 'text-gray-600'}`}>
                               {component.displayType === 'multiple' 
                                 ? `${component.value.toFixed(2)}x`
                                 : `${component.value > 0 ? '+' : ''}${component.value.toFixed(0)}%`}
@@ -304,14 +304,14 @@ const StepCard: React.FC<{ step: CalculationStep; isLast?: boolean }> = ({ step,
 
                 {/* Risk Level & Tier */}
                 {(step.detailedExplanation.riskLevel || step.detailedExplanation.tier) && (
-                  <div className="flex items-center gap-2 text-xs text-blue-700">
+                  <div className="flex items-center gap-2 text-xs text-primary-700">
                     {step.detailedExplanation.riskLevel && (
-                      <span className="px-2 py-1 bg-blue-100 rounded border border-blue-300 font-semibold">
+                      <span className="px-2 py-1 bg-primary-100 rounded border border-primary-300 font-semibold">
                         Risk Level: {step.detailedExplanation.riskLevel}
                       </span>
                     )}
                     {step.detailedExplanation.tier && (
-                      <span className="px-2 py-1 bg-blue-100 rounded border border-blue-300 font-semibold">
+                      <span className="px-2 py-1 bg-primary-100 rounded border border-primary-300 font-semibold">
                         Tier: {step.detailedExplanation.tier}
                       </span>
                     )}
@@ -324,14 +324,14 @@ const StepCard: React.FC<{ step: CalculationStep; isLast?: boolean }> = ({ step,
             <div>
               <p className="text-xs text-gray-500 font-semibold uppercase mb-2">Results</p>
               {step.dataRequired ? (
-                <div className="bg-yellow-50 border-2 border-yellow-400 rounded-lg p-4">
+                <div className="bg-accent-50 border-2 border-accent-400 rounded-lg p-4">
                   <div className="flex items-start gap-3">
-                    <svg className="w-5 h-5 text-yellow-600 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-5 h-5 text-accent-600 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
                     </svg>
                     <div className="flex-1">
-                      <h4 className="text-sm font-semibold text-yellow-900 mb-1">Data Required</h4>
-                      <p className="text-sm text-yellow-800">{step.dataRequiredMessage || 'Required financial data is missing. Please enter the necessary information to calculate valuation.'}</p>
+                      <h4 className="text-sm font-semibold text-accent-900 mb-1">Data Required</h4>
+                      <p className="text-sm text-accent-800">{step.dataRequiredMessage || 'Required financial data is missing. Please enter the necessary information to calculate valuation.'}</p>
                     </div>
                   </div>
                 </div>
@@ -400,7 +400,7 @@ export const ValuationWaterfall: React.FC<ValuationWaterfallProps> = ({ result }
       {/* Header */}
       <div className="mb-6">
         <div className="flex items-center gap-3 mb-2">
-          <div className="bg-gradient-to-r from-blue-500 to-purple-500 text-white w-10 h-10 rounded-lg flex items-center justify-center font-bold text-lg">
+          <div className="bg-gradient-to-r from-primary-500 to-primary-600 text-white w-10 h-10 rounded-lg flex items-center justify-center font-bold text-lg">
             📊
           </div>
           <h2 className="text-2xl font-bold text-gray-900">Valuation Calculation Breakdown</h2>
@@ -425,37 +425,37 @@ export const ValuationWaterfall: React.FC<ValuationWaterfallProps> = ({ result }
           </div>
         </div>
         
-        <div className="bg-gradient-to-br from-green-50 to-blue-50 border-2 border-green-500 rounded-xl p-6 shadow-lg">
+        <div className="bg-gradient-to-br from-primary-50 to-canvas border-2 border-primary-500 rounded-xl p-6 shadow-lg">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="bg-white rounded-lg p-4 text-center border border-gray-200 shadow-sm">
               <p className="text-sm text-gray-500 mb-2">Low Estimate</p>
-              <p className="text-2xl font-bold text-gray-900">{formatCurrency(finalResult.low)}</p>
+              <p className="text-2xl font-bold text-slate-ink">{formatCurrency(finalResult.low)}</p>
               <p className="text-xs text-gray-500 mt-1">{result.range_methodology === 'multiple_dispersion' ? 'P25 Multiple' : 'Conservative'}</p>
             </div>
-            <div className="bg-gradient-to-br from-green-500 to-blue-500 rounded-lg p-4 text-center border-2 border-green-600 shadow-md">
+            <div className="bg-gradient-to-br from-primary-500 to-primary-600 rounded-lg p-4 text-center border-2 border-primary-600 shadow-md">
               <p className="text-sm text-white opacity-90 mb-2 font-semibold">Mid-Point (Most Likely)</p>
               <p className="text-3xl font-bold text-white">{formatCurrency(finalResult.mid)}</p>
               <p className="text-xs text-white opacity-75 mt-1">Median Multiple</p>
             </div>
             <div className="bg-white rounded-lg p-4 text-center border border-gray-200 shadow-sm">
               <p className="text-sm text-gray-500 mb-2">High Estimate</p>
-              <p className="text-2xl font-bold text-gray-900">{formatCurrency(finalResult.high)}</p>
+              <p className="text-2xl font-bold text-slate-ink">{formatCurrency(finalResult.high)}</p>
               <p className="text-xs text-gray-500 mt-1">{result.range_methodology === 'multiple_dispersion' ? 'P75 Multiple' : 'Optimistic'}</p>
             </div>
           </div>
 
           {/* Confidence Score */}
-          <div className="mt-4 pt-4 border-t border-green-200">
+          <div className="mt-4 pt-4 border-t border-primary-200">
             <div className="flex items-center justify-between">
               <span className="text-sm text-gray-700 font-medium">Confidence Score</span>
               <div className="flex items-center gap-2">
                 <div className="w-32 bg-gray-200 rounded-full h-2">
                   <div 
-                    className="bg-gradient-to-r from-green-500 to-blue-500 h-2 rounded-full transition-all duration-500"
+                    className="bg-gradient-to-r from-primary-500 to-primary-600 h-2 rounded-full transition-all duration-500"
                     style={{ width: `${result.confidence_score || 0}%` }}
                   />
                 </div>
-                <span className="text-sm font-bold text-gray-900">{(result.confidence_score || 0).toFixed(0)}%</span>
+                <span className="text-sm font-bold text-slate-ink">{(result.confidence_score || 0).toFixed(0)}%</span>
               </div>
             </div>
           </div>
@@ -463,8 +463,8 @@ export const ValuationWaterfall: React.FC<ValuationWaterfallProps> = ({ result }
       </div>
 
       {/* Methodology Note */}
-      <div className="mt-4 bg-blue-50 border-l-4 border-blue-500 p-4 rounded">
-        <p className="text-sm text-blue-900">
+      <div className="mt-4 bg-primary-50 border-l-4 border-primary-500 p-4 rounded">
+        <p className="text-sm text-primary-900">
           <strong>📚 Methodology:</strong> This valuation uses the {isPrimaryEBITDA() ? 'EBITDA Multiple' : 'Revenue Multiple'} approach as the primary method, 
           with industry-standard adjustments for owner concentration, company size, and illiquidity. 
           All calculations follow European market standards and academic research.

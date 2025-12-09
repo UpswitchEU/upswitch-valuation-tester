@@ -96,9 +96,9 @@ export const LivePreview: React.FC<LivePreviewProps> = ({
   };
 
   const getConfidenceColor = (confidence: number) => {
-    if (confidence >= 0.8) return 'text-green-600 bg-green-100';
-    if (confidence >= 0.6) return 'text-yellow-600 bg-yellow-100';
-    return 'text-orange-600 bg-orange-100';
+    if (confidence >= 0.8) return 'text-primary-600 bg-primary-100';
+    if (confidence >= 0.6) return 'text-accent-600 bg-accent-100';
+    return 'text-accent-600 bg-accent-100';
   };
 
   // Don't show if no data

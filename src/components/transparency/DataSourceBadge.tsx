@@ -39,8 +39,8 @@ const SOURCE_CONFIG = {
   ecb_data: {
     label: 'ECB',
     icon: '💶',
-    color: 'bg-green-100 text-green-700 border-green-300',
-    hoverColor: 'hover:bg-green-200',
+    color: 'bg-primary-100 text-primary-700 border-primary-300',
+    hoverColor: 'hover:bg-primary-200',
     description: 'European Central Bank',
     defaultUrl: 'https://www.ecb.europa.eu/stats/',
   },
@@ -79,8 +79,8 @@ const SOURCE_CONFIG = {
   estimated: {
     label: 'Est',
     icon: '📐',
-    color: 'bg-orange-100 text-orange-700 border-orange-300',
-    hoverColor: 'hover:bg-orange-200',
+    color: 'bg-accent-100 text-accent-700 border-accent-300',
+    hoverColor: 'hover:bg-accent-200',
     description: 'Estimated by system',
     defaultUrl: null,
   },
