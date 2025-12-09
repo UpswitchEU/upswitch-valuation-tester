@@ -150,7 +150,7 @@ export const CreditBadge: React.FC<CreditBadgeProps> = ({
   // Color classes based on credit status
   const getColorClasses = () => {
     if (isOut) {
-      return 'bg-red-100 text-red-700 hover:bg-red-200 border-red-200';
+      return 'bg-accent-100 text-accent-700 hover:bg-accent-200 border-accent-200';
     }
     if (isLow) {
       return 'bg-yellow-100 text-yellow-700 hover:bg-yellow-200 border-yellow-200';

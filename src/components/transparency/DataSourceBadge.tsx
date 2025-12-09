@@ -31,8 +31,8 @@ const SOURCE_CONFIG = {
   oecd_database: {
     label: 'OECD',
     icon: '📊',
-    color: 'bg-purple-100 text-purple-700 border-purple-300',
-    hoverColor: 'hover:bg-purple-200',
+    color: 'bg-primary-100 text-primary-700 border-primary-300',
+    hoverColor: 'hover:bg-primary-200',
     description: 'OECD Industry Database',
     defaultUrl: 'https://data.oecd.org',
   },

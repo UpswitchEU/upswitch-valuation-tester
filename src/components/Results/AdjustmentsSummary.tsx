@@ -124,17 +124,17 @@ export const AdjustmentsSummary: React.FC<AdjustmentsSummaryProps> = ({
         <div className="border-t border-gray-200 p-4 space-y-3">
           {/* Info Message */}
           {hasInfoTabHtml && (
-            <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+            <div className="mb-4 p-3 bg-primary-50 border border-primary-200 rounded-lg">
               <div className="flex items-start gap-2">
-                <Info className="w-4 h-4 text-blue-600 mt-0.5 flex-shrink-0" />
+                <Info className="w-4 h-4 text-primary-600 mt-0.5 flex-shrink-0" />
                 <div className="flex-1">
-                  <p className="text-sm text-blue-800 mb-2">
+                  <p className="text-sm text-primary-800 mb-2">
                     Detailed adjustment breakdowns with formulas, academic sources, and component analysis are available in the Info Tab.
                   </p>
                   {onViewDetails && (
                     <button
                       onClick={onViewDetails}
-                      className="inline-flex items-center gap-2 px-3 py-1.5 text-xs font-medium text-blue-700 bg-blue-100 hover:bg-blue-200 rounded transition-colors"
+                      className="inline-flex items-center gap-2 px-3 py-1.5 text-xs font-medium text-primary-700 bg-primary-100 hover:bg-primary-200 rounded transition-colors"
                     >
                       <ExternalLink className="w-3 h-3" />
                       View Detailed Adjustments in Info Tab

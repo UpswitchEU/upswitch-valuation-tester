@@ -198,7 +198,7 @@ export const ConfidenceScoreModal: React.FC<ConfidenceScoreModalProps> = ({
             </div>
             <div className="w-full bg-gray-200 rounded-full h-2">
               <div 
-                className={`bg-purple-500 h-2 rounded-full ${
+                className={`bg-primary-500 h-2 rounded-full ${
                   prefersReducedMotion ? '' : 'transition-progress'
                 }`}
                 style={{ width: `${confidenceFactors.company_profile}%` }}

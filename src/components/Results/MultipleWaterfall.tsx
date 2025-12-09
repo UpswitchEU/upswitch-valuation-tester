@@ -17,19 +17,19 @@ export const MultipleWaterfall: React.FC<MultipleWaterfallProps> = ({ pipeline }
       </h3>
       
       {/* Summary */}
-      <div className="mb-6 p-4 bg-purple-50 rounded-lg border border-purple-200">
+      <div className="mb-6 p-4 bg-primary-50 rounded-lg border border-primary-200">
         <div className="grid grid-cols-3 gap-4">
           <div>
             <p className="text-sm text-gray-600">Initial Multiple</p>
-            <p className="text-xl font-bold text-gray-900">{formatMultiple(pipeline.initial_multiple)}</p>
+            <p className="text-xl font-bold text-slate-ink">{formatMultiple(pipeline.initial_multiple)}</p>
           </div>
           <div>
             <p className="text-sm text-gray-600">Final Multiple</p>
-            <p className="text-xl font-bold text-purple-700">{formatMultiple(pipeline.final_multiple)}</p>
+            <p className="text-xl font-bold text-primary-700">{formatMultiple(pipeline.final_multiple)}</p>
           </div>
           <div>
             <p className="text-sm text-gray-600">Total Reduction</p>
-            <p className="text-xl font-bold text-red-600">{formatPercentage(pipeline.total_reduction_percentage)}</p>
+            <p className="text-xl font-bold text-accent-600">{formatPercentage(pipeline.total_reduction_percentage)}</p>
           </div>
         </div>
       </div>

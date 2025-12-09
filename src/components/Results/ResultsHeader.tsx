@@ -369,7 +369,7 @@ export const ResultsHeader: React.FC<ResultsHeaderProps> = ({ result }) => {
                         <span className="font-bold text-gray-900">±{spreadPercentage}%</span>
                       </div>
                       <div className="mt-2 pt-2 border-t border-gray-200">
-                        <p className="text-xs text-blue-700">Based on {confidenceScore}% confidence & company size</p>
+                        <p className="text-xs text-primary-700">Based on {confidenceScore}% confidence & company size</p>
                       </div>
                     </>
                   )}
@@ -407,8 +407,8 @@ export const ResultsHeader: React.FC<ResultsHeaderProps> = ({ result }) => {
             {(result.multiples_valuation.owner_concentration != null || 
               result.multiples_valuation.size_discount != null || 
               result.multiples_valuation.liquidity_discount != null) && (
-              <div className="mt-3 pt-3 border-t border-purple-200">
-                <p className="text-xs text-purple-800">
+              <div className="mt-3 pt-3 border-t border-primary-200">
+                <p className="text-xs text-primary-800">
                   <span className="font-semibold">Note:</span> Multiples shown above reflect <strong>industry benchmarks</strong>. Valuation adjustments for
                   {result.multiples_valuation.owner_concentration && (
                     <span className="ml-1">

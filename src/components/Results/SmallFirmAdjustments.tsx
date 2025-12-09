@@ -70,10 +70,10 @@ export const SmallFirmAdjustments: React.FC<SmallFirmAdjustmentsProps> = ({ resu
         </div>
 
         {/* Liquidity Discount */}
-        <div className="border-l-4 border-purple-500 pl-4 py-2">
+        <div className="border-l-4 border-primary-500 pl-4 py-2">
           <div className="flex justify-between items-baseline mb-1">
-            <h4 className="font-semibold text-gray-900">2. Liquidity Discount</h4>
-            <span className="text-lg font-bold text-purple-600">
+            <h4 className="font-semibold text-slate-ink">2. Liquidity Discount</h4>
+            <span className="text-lg font-bold text-primary-600">
               {formatAdjustment(liquidityDiscount)}
             </span>
           </div>

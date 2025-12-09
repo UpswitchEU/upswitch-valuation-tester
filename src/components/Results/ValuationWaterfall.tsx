@@ -420,7 +420,7 @@ export const ValuationWaterfall: React.FC<ValuationWaterfallProps> = ({ result }
       {/* Final Result */}
       <div className="mt-6">
         <div className="flex justify-center mb-4">
-          <div className="bg-green-500 text-white px-4 py-2 rounded-full font-bold text-sm flex items-center gap-2">
+          <div className="bg-primary-500 text-white px-4 py-2 rounded-full font-bold text-sm flex items-center gap-2">
             🎯 FINAL VALUATION RANGE
           </div>
         </div>

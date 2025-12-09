@@ -317,7 +317,7 @@ export const RegistryDataPreview: React.FC<RegistryDataPreviewProps> = ({
             <div className="mt-4 flex gap-3">
               <button
                 onClick={handleSaveEdit}
-                className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+                className="flex items-center gap-2 px-4 py-2 bg-accent-600 text-white rounded-lg hover:bg-accent-500 transition-colors"
               >
                 <Check className="w-4 h-4" /> Save Changes
               </button>
