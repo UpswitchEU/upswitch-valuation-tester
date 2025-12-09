@@ -73,7 +73,9 @@ const CustomInputField: React.FC<CustomInputFieldProps> = ({
       <div className={`relative custom-input-group border rounded-xl shadow-sm transition-all duration-200 ${
         disabled 
           ? 'border-gray-200 bg-gray-50' 
-          : 'border-gray-300 bg-white hover:border-gray-400 focus-within:border-primary-600 focus-within:ring-2 focus-within:ring-primary-500/20'
+          : hasError
+            ? 'border-red-300 bg-white hover:border-red-400 focus-within:border-red-500 focus-within:ring-2 focus-within:ring-red-500/20'
+            : 'border-gray-200 bg-white hover:border-primary-300 focus-within:border-primary-600 focus-within:ring-2 focus-within:ring-primary-500/20'
       }`}>
         {leftIcon && (
           <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 z-10">
@@ -105,7 +107,7 @@ const CustomInputField: React.FC<CustomInputFieldProps> = ({
             ${leftIcon ? 'pl-10' : ''}
             ${rightIcon ? 'pr-10' : ''}
             ${hasError ? 'text-red-600' : ''}
-            ${disabled ? 'bg-transparent cursor-not-allowed text-gray-400' : 'bg-transparent text-gray-900'}
+            ${disabled ? 'bg-transparent cursor-not-allowed text-gray-400' : 'bg-transparent text-slate-ink'}
           `}
         />
 
@@ -147,10 +149,10 @@ const CustomInputField: React.FC<CustomInputFieldProps> = ({
         <p 
           id={`${name}-error`} 
           role="alert" 
-          className="mt-1.5 text-xs text-red-500 font-medium flex items-center gap-1"
+          className="mt-1.5 text-xs text-red-600 font-medium flex items-start gap-1.5 animate-in fade-in slide-in-from-top-1"
         >
-          <span className="w-1 h-1 rounded-full bg-red-500 inline-block" />
-          {error}
+          <span className="w-1 h-1 rounded-full bg-red-500 inline-block mt-1.5 flex-shrink-0" />
+          <span>{error}</span>
         </p>
       )}
     </div>

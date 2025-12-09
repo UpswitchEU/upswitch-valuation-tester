@@ -225,11 +225,13 @@ const CustomDropdown: React.FC<CustomDropdownProps> = ({
           name={name}
           className={`
             w-full h-14 px-4 pt-6 pb-2 text-base text-gray-900 bg-white 
-            border border-gray-300 rounded-xl transition-all duration-200 
-            focus:outline-none focus:border-gray-900 focus:ring-0
-            hover:border-gray-500
+            border rounded-xl transition-all duration-200 
+            ${error && touched 
+              ? 'border-red-300 focus:border-red-500 focus:ring-2 focus:ring-red-500/20' 
+              : 'border-gray-200 hover:border-primary-300 focus:border-primary-600 focus:ring-2 focus:ring-primary-500/20'
+            }
+            focus:outline-none
             ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}
-            ${error && touched ? 'border-red-400 focus:border-red-500' : ''}
             flex-col items-start justify-center gap-0
             text-gray-900
           `}
@@ -286,7 +288,7 @@ const CustomDropdown: React.FC<CustomDropdownProps> = ({
         {isOpen && (
           <div className="relative z-[9999] mt-2 w-full">
             <div 
-              className="absolute w-full bg-white border border-gray-100 rounded-xl shadow-xl max-h-60 overflow-auto transform transition-all duration-200 origin-top animate-in fade-in slide-in-from-top-2 ring-1 ring-black/5"
+              className="absolute w-full bg-white border border-gray-200 rounded-xl shadow-xl max-h-60 overflow-auto transform transition-all duration-200 origin-top animate-in fade-in slide-in-from-top-2 ring-1 ring-primary-500/10"
               role="listbox"
               aria-labelledby={`${label}-label`}
             >

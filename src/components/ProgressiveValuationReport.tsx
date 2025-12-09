@@ -64,21 +64,25 @@ export const ProgressiveValuationReport: React.FC<ProgressiveValuationReportProp
   // Render error section (inline section error)
   const renderSectionError = (section: ReportSection) => {
     return (
-      <div className="section-error bg-red-50 border border-red-200 rounded-lg p-4 mb-4">
-        <div className="flex items-center mb-2">
-          <AlertTriangle className="h-5 w-5 text-red-500 mr-2" />
-          <span className="text-red-700 font-medium">Unable to generate this section</span>
-        </div>
-        {section.error_message && (
-          <p className="text-sm text-red-600 mb-3">{section.error_message}</p>
-        )}
-        <div className="text-sm text-red-600">
-          <p>This section could not be calculated. Please try:</p>
-          <ul className="list-disc list-inside mt-2 space-y-1">
-            <li>Providing additional financial information</li>
-            <li>Checking that your data is complete and accurate</li>
-            <li>Refreshing the page</li>
-          </ul>
+      <div className="section-error bg-red-50/50 border-l-4 border-red-400 rounded-lg p-4 mb-4 animate-in fade-in slide-in-from-top-1">
+        <div className="flex items-start gap-3 mb-3">
+          <div className="flex-shrink-0 mt-0.5">
+            <AlertTriangle className="h-5 w-5 text-red-500" />
+          </div>
+          <div className="flex-1">
+            <h4 className="text-sm font-semibold text-red-900 mb-1">Unable to generate this section</h4>
+            {section.error_message && (
+              <p className="text-sm text-red-700 mb-3 leading-relaxed">{section.error_message}</p>
+            )}
+            <div className="text-sm text-red-700">
+              <p className="mb-2">Don't worry—this is common. Here's what you can try:</p>
+              <ul className="list-disc list-inside space-y-1.5 ml-1">
+                <li>Review your financial data for completeness</li>
+                <li>Ensure all required fields are filled accurately</li>
+                <li>Try refreshing the page or recalculating</li>
+              </ul>
+            </div>
+          </div>
         </div>
       </div>
     );

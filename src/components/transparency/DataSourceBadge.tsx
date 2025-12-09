@@ -47,8 +47,8 @@ const SOURCE_CONFIG = {
   fmp_api: {
     label: 'FMP',
     icon: '📈',
-    color: 'bg-indigo-100 text-indigo-700 border-indigo-300',
-    hoverColor: 'hover:bg-indigo-200',
+    color: 'bg-primary-100 text-primary-700 border-primary-300',
+    hoverColor: 'hover:bg-primary-200',
     description: 'Financial Modeling Prep',
     defaultUrl: 'https://financialmodelingprep.com',
   },

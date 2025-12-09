@@ -1,5 +1,5 @@
+import { AlertTriangle, ArrowLeft, RefreshCw } from 'lucide-react';
 import React from 'react';
-import { AlertTriangle, RefreshCw, ArrowLeft } from 'lucide-react';
 
 interface ErrorStateProps {
   title?: string;
@@ -22,26 +22,28 @@ export const ErrorState: React.FC<ErrorStateProps> = ({
 
   return (
     <div className={`flex flex-col items-center justify-center p-6 sm:p-8 text-center animate-in fade-in duration-500 ${className}`}>
-      <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-zinc-100 flex items-center justify-center mb-3 sm:mb-4">
+      <div className={`w-12 h-12 sm:w-16 sm:h-16 rounded-full flex items-center justify-center mb-3 sm:mb-4 transition-colors ${
+        isDark ? 'bg-red-500/10' : 'bg-red-50'
+      }`}>
         <AlertTriangle className={`w-6 h-6 sm:w-8 sm:h-8 ${isDark ? 'text-red-400' : 'text-red-500'}`} />
       </div>
       
-      <h3 className={`text-base sm:text-lg font-semibold mb-2 ${isDark ? 'text-white' : 'text-zinc-900'}`}>
+      <h3 className={`text-base sm:text-lg font-semibold mb-2 ${isDark ? 'text-white' : 'text-slate-ink'}`}>
         {title}
       </h3>
       
-      <p className={`text-xs sm:text-sm max-w-xs leading-relaxed mb-6 ${isDark ? 'text-zinc-400' : 'text-zinc-500'}`}>
+      <p className={`text-xs sm:text-sm max-w-md leading-relaxed mb-6 ${isDark ? 'text-zinc-400' : 'text-gray-600'}`}>
         {message}
       </p>
 
-      <div className="flex gap-3">
+      <div className="flex flex-col sm:flex-row gap-3 justify-center">
         {onBack && (
           <button
             onClick={onBack}
-            className={`flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
+            className={`flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium rounded-lg transition-all ${
               isDark
-                ? 'text-zinc-300 bg-zinc-800 border border-zinc-700 hover:bg-zinc-700 hover:text-white'
-                : 'text-zinc-600 bg-white border border-zinc-200 hover:bg-zinc-50 hover:text-zinc-900'
+                ? 'text-zinc-300 bg-zinc-800 border border-zinc-700 hover:bg-zinc-700 hover:text-white hover:border-zinc-600'
+                : 'text-gray-700 bg-white border border-gray-200 hover:bg-gray-50 hover:text-slate-ink hover:border-primary-300'
             }`}
           >
             <ArrowLeft className="w-4 h-4" />
@@ -52,10 +54,10 @@ export const ErrorState: React.FC<ErrorStateProps> = ({
         {onRetry && (
           <button
             onClick={onRetry}
-            className={`flex items-center gap-2 px-4 py-2 text-sm font-medium text-white rounded-lg shadow-sm hover:shadow transition-all ${
+            className={`flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium text-white rounded-lg shadow-sm hover:shadow-md transition-all ${
               isDark
-                ? 'bg-red-600 hover:bg-red-700'
-                : 'bg-red-600 hover:bg-red-700'
+                ? 'bg-accent-600 hover:bg-accent-500'
+                : 'bg-accent-600 hover:bg-accent-500'
             }`}
           >
             <RefreshCw className="w-4 h-4" />

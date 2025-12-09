@@ -84,7 +84,7 @@ export const ResultsHeader: React.FC<ResultsHeaderProps> = ({ result }) => {
     <>
       <div className="space-y-4 sm:space-y-6">
         {/* Main Valuation */}
-        <div className="bg-white rounded-lg border-2 border-gray-200 p-4 sm:p-6 shadow-lg">
+        <div className="bg-white rounded-lg border-2 border-gray-200 p-4 sm:p-6 shadow-lg transition-shadow hover:shadow-xl">
           <div className="flex items-center justify-between mb-4">
             <div>
               <h2 className="text-xl sm:text-2xl font-bold text-gray-900">Valuation Report</h2>
@@ -333,7 +333,7 @@ export const ResultsHeader: React.FC<ResultsHeaderProps> = ({ result }) => {
                       </div>
                       <div className="flex justify-between items-center">
                         <span className="text-gray-600">Mid (P50):</span>
-                        <span className="font-bold text-purple-700">
+                        <span className="font-bold text-primary-700">
                           {isPrimaryEBITDA()
                             ? `${result.multiples_valuation.p50_ebitda_multiple?.toFixed(2) ?? 'N/A'}x`
                             : `${result.multiples_valuation.p50_revenue_multiple?.toFixed(2) ?? 'N/A'}x`
@@ -379,8 +379,8 @@ export const ResultsHeader: React.FC<ResultsHeaderProps> = ({ result }) => {
 
             {/* DCF Exclusion Note (if applicable) */}
             {dcfWeight === 0 && result.dcf_exclusion_reason && (
-              <div className="mt-3 pt-3 border-t border-purple-200">
-                <p className="text-xs text-purple-800">
+              <div className="mt-3 pt-3 border-t border-primary-200">
+                <p className="text-xs text-primary-800">
                   <span className="font-semibold">Note:</span> DCF methodology was excluded for this valuation. {result.dcf_exclusion_reason} Market Multiples methodology is more reliable for businesses of this size.
                 </p>
               </div>
@@ -389,8 +389,8 @@ export const ResultsHeader: React.FC<ResultsHeaderProps> = ({ result }) => {
             {/* Primary Method Selection Note (EBITDA-First Logic - 2025) */}
             {!isPrimaryEBITDA() && result.multiples_valuation.ebitda_multiple && result.multiples_valuation.ebitda_multiple > 0 && 
              result.current_year_data?.ebitda && result.current_year_data.ebitda > 0 && (
-              <div className="mt-3 pt-3 border-t border-purple-200">
-                <p className="text-xs text-purple-800">
+              <div className="mt-3 pt-3 border-t border-primary-200">
+                <p className="text-xs text-primary-800">
                   <span className="font-semibold">Primary Method Selection:</span> Revenue multiple was selected as primary because: (1) Company is loss-making (EBITDA ≤ €0), (2) EBITDA margin is critically low (&lt;3%, unreliable for valuation), or (3) Revenue-driven industry (SaaS, marketplaces, early-stage tech) where revenue scale is the primary value driver. EBITDA multiple ({result.multiples_valuation.ebitda_multiple.toFixed(2)}x) is shown above as an alternative reference point.
                 </p>
               </div>
@@ -465,10 +465,10 @@ export const ResultsHeader: React.FC<ResultsHeaderProps> = ({ result }) => {
         </div>
 
         {/* Range Explanation */}
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 sm:p-5">
+        <div className="bg-primary-50 border border-primary-200 rounded-lg p-4 sm:p-5">
           <div className="flex items-start gap-3">
             <div className="flex-shrink-0 mt-0.5">
-              <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-5 h-5 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
             </div>
@@ -499,10 +499,10 @@ export const ResultsHeader: React.FC<ResultsHeaderProps> = ({ result }) => {
                 </div>
               )}
               
-              <p className="text-sm text-blue-800 mb-2">
+              <p className="text-sm text-primary-800 mb-2">
                 The <strong>Mid-Point (€{formatCurrency(result.equity_value_mid)})</strong> is our best estimate of your company's value, calculated as a weighted average of the valuation methodologies used.
               </p>
-              <p className="text-sm text-blue-800 mb-2">
+              <p className="text-sm text-primary-800 mb-2">
                 {result.range_methodology === 'multiple_dispersion' ? (
                   <>
                     The <strong>Low</strong> and <strong>High</strong> estimates are calculated from the <strong>25th and 75th percentile multiples</strong> of comparable companies. This reflects actual market dispersion, making it more accurate than confidence-based spreads (McKinsey best practice).
@@ -513,7 +513,7 @@ export const ResultsHeader: React.FC<ResultsHeaderProps> = ({ result }) => {
                   </>
                 )}
               </p>
-              <p className="text-xs text-blue-700 mt-2 italic">
+              <p className="text-xs text-primary-700 mt-2 italic">
                 {result.range_methodology === 'multiple_dispersion' 
                   ? 'Multiple dispersion ranges use actual comparable company data (P25/P50/P75 percentiles), providing more accurate valuation ranges than confidence-based spreads.'
                   : 'Higher confidence scores and larger companies result in tighter ranges (±12%), while lower scores and smaller companies result in wider ranges (±25%) to account for greater uncertainty.'

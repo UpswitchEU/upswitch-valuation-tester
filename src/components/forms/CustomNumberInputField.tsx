@@ -182,11 +182,13 @@ const CustomNumberInputField: React.FC<CustomNumberInputFieldProps> = ({
           pattern="-?[0-9]*"
           placeholder={placeholder}
           className={`
-            w-full h-14 px-4 pt-6 pb-2 text-base text-black bg-white 
-            border border-gray-300 rounded-xl transition-all duration-200 
-            focus:outline-none focus:border-gray-900 focus:ring-0
-            hover:border-gray-500
-            ${hasError ? 'border-red-400 focus:border-red-500' : ''}
+            w-full h-14 px-4 pt-6 pb-2 text-base text-slate-ink bg-white 
+            border rounded-xl transition-all duration-200 
+            ${hasError 
+              ? 'border-red-300 focus:border-red-500 focus:ring-2 focus:ring-red-500/20' 
+              : 'border-gray-200 hover:border-primary-300 focus:border-primary-600 focus:ring-2 focus:ring-primary-500/20'
+            }
+            focus:outline-none
             ${disabled ? 'opacity-50 cursor-not-allowed' : ''}
             ${prefix ? 'pl-8' : ''}
             ${suffix || showArrows ? 'pr-8' : ''}

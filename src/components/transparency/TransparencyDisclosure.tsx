@@ -33,7 +33,7 @@ export const TransparencyDisclosure: React.FC<TransparencyDisclosureProps> = ({
   return (
     <div className={`
       border rounded-lg overflow-hidden
-      ${isExpanded ? 'border-blue-300 bg-blue-50/30' : 'border-gray-200 bg-white'}
+      ${isExpanded ? 'border-primary-300 bg-primary-50/30' : 'border-gray-200 bg-white'}
       transition-colors
     `}>
       {/* Header (Always Visible) */}
@@ -49,14 +49,14 @@ export const TransparencyDisclosure: React.FC<TransparencyDisclosureProps> = ({
       >
         <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
           {icon && (
-            <div className="flex-shrink-0 text-blue-600">
+            <div className="flex-shrink-0 text-primary-600">
               {icon}
             </div>
           )}
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
               <h4 className={`
-                font-semibold text-gray-900
+                font-semibold text-slate-ink
                 ${variant === 'compact' ? 'text-sm' : 'text-base'}
               `}>
                 {title}

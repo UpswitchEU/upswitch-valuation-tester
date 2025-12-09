@@ -200,7 +200,7 @@ export const CustomBusinessTypeSearch: React.FC<CustomBusinessTypeSearchProps> =
       <div className={`relative border rounded-xl shadow-sm transition-all duration-200 ${
         disabled 
           ? 'border-gray-200 bg-gray-50' 
-          : 'border-gray-300 bg-white hover:border-gray-400 focus-within:border-primary-600 focus-within:ring-2 focus-within:ring-primary-500/20'
+          : 'border-gray-200 bg-white hover:border-primary-300 focus-within:border-primary-600 focus-within:ring-2 focus-within:ring-primary-500/20'
       }`}>
         {/* Input Field */}
         <input
@@ -220,7 +220,7 @@ export const CustomBusinessTypeSearch: React.FC<CustomBusinessTypeSearchProps> =
             focus:outline-none focus:ring-0
             transition-all duration-200 ease-in-out
             disabled:cursor-not-allowed disabled:text-gray-400
-            bg-transparent text-gray-900
+            bg-transparent text-slate-ink
           "
         />
 
