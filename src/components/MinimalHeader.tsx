@@ -71,12 +71,6 @@ export const MinimalHeader: React.FC = () => {
             style={{ height: '32px', objectFit: 'contain', opacity: 1, visibility: 'visible', display: 'block' }}
           />
           
-          {/* App Name - Dark theme typography */}
-          <span className="font-display text-lg sm:text-xl font-light text-white leading-none mt-0.5 flex-shrink-0">
-            Upswitch
-            <span className="text-zinc-300 font-light"> Valuation</span>
-          </span>
-          
           {/* BETA Badge */}
           <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-zinc-800/50 text-zinc-200 border border-zinc-700/50 ml-2">
             BETA

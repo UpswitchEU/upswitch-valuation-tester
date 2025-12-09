@@ -114,12 +114,6 @@ export const Header: React.FC = () => {
             {/* Animated Gradient Circle - Ilara Style */}
             <div className="w-4 h-4 rounded bg-gradient-to-br from-primary-500 to-primary-700 animate-pulse ml-2"></div>
             
-            {/* App Name - Matching main site typography */}
-            <span className="font-display text-lg sm:text-xl font-light text-primary-700 leading-none mt-0.5 flex-shrink-0">
-              Upswitch
-              <span className="text-primary-600 font-medium"> Valuation</span>
-            </span>
-            
             {/* BETA Badge */}
             <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-primary-100 text-primary-800 border border-primary-300 ml-2">
               BETA
