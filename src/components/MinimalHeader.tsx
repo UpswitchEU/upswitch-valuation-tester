@@ -72,7 +72,7 @@ export const MinimalHeader: React.FC = () => {
           />
           
           {/* BETA Badge */}
-          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-zinc-800/50 text-zinc-200 border border-zinc-700/50 ml-1">
+          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-zinc-800/50 text-zinc-200 border border-zinc-700/50 ml-0">
             BETA
           </span>
         </Link>
