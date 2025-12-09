@@ -888,7 +888,7 @@ export const ValuationForm: React.FC = () => {
             flex items-center gap-3
             ${(isCalculating || !formData.revenue || !formData.ebitda || !formData.industry || !formData.country_code)
               ? 'bg-zinc-800/30 text-zinc-500 border border-zinc-700 cursor-not-allowed' 
-              : 'text-white bg-gradient-to-r from-teal-600 to-teal-500 hover:from-teal-500 hover:to-teal-400 hover:shadow-teal-500/20'
+              : 'text-white bg-gradient-to-r from-accent-600 to-accent-500 hover:from-accent-500 hover:to-accent-400 hover:shadow-accent-500/20'
             }
           `}
         >

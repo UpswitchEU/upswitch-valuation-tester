@@ -66,21 +66,21 @@
   }
   
   body {
-    @apply bg-gray-50 text-gray-900;
+    @apply bg-canvas text-slate-ink;
   }
 }
 
 @layer components {
   .gradient-primary {
-    @apply bg-gradient-to-r from-primary-500 to-primary-600;
+    @apply bg-gradient-to-r from-primary-600 to-primary-500;
   }
   
   .gradient-hero {
-    @apply bg-gradient-to-br from-primary-50 via-white to-primary-50;
+    @apply bg-gradient-to-br from-canvas via-white to-canvas;
   }
   
   .glass-effect {
-    @apply bg-white/80 backdrop-blur-sm border border-white/20;
+    @apply bg-canvas/80 backdrop-blur-sm border border-white/20;
   }
   
   /* Seamless textarea - completely remove borders like Ilara */
@@ -246,19 +246,19 @@
 
 /* CSS Variables for Colors */
 .valuation-report-preview {
-  --upswitch-navy: #0F172A; /* Deep Navy - Primary Brand */
-  --upswitch-blue: #2563EB; /* Bright Blue - Digital Accent */
-  --text-dark: #0F172A;     /* Nearly Black - Headings */
-  --text-body: #334155;     /* Slate-700 - Readable Body */
-  --text-muted: #4B5563;    /* Slate-500 - Metadata */
-  --bg-subtle: #F8FAFC;     /* Very light grey/blue background */
+  --upswitch-navy: #2B303A; /* Slate Ink - Primary Text */
+  --upswitch-blue: #4A5D4F; /* Sage Foundation - Primary Brand */
+  --text-dark: #2B303A;     /* Slate Ink */
+  --text-body: #4B5563;     /* Slate-600 */
+  --text-muted: #6B7280;    /* Slate-500 */
+  --bg-subtle: #F4F1EA;     /* Canvas */
   --border-light: #E2E8F0;  /* Slate-200 */
   
   /* Base Font settings */
   font-family: 'Inter', 'Helvetica Neue', Helvetica, Arial, sans-serif;
   font-size: 11pt;
   line-height: 1.5;
-  color: #1E293B;
+  color: #2B303A;
 }
 
 /* Reset internal elements */

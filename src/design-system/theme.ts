@@ -2,19 +2,48 @@
 // Adapted from main frontend for valuation tester
 
 export const BrandColors = {
-  // Primary Brand (Trust Teal) 
+  // Primary Brand (Sage Foundation)
   primary: {
-    50: '#F0FDFC',
-    100: '#CCFBF6',
-    200: '#99F6EB',
-    300: '#5EEAD4',
-    400: '#2DD4BF',
-    500: '#14B8A6', // main action
-    600: '#0D9488',
-    700: '#0F766E',
-    800: '#115E59',
-    900: '#134E4A',
-    DEFAULT: '#14B8A6',
+    50: '#F2F5F3',
+    100: '#E1E8E3',
+    200: '#C4D1C9',
+    300: '#A2B6A9',
+    400: '#7E9888',
+    500: '#607C6B',
+    600: '#4A5D4F', // Sage Foundation - Primary
+    700: '#3D4D41',
+    800: '#323E35',
+    900: '#28312B',
+    DEFAULT: '#4A5D4F',
+  },
+
+  // Accent (Burnt Clay)
+  accent: {
+    50: '#FBF6F4',
+    100: '#F6EBE7',
+    200: '#EBD6CE',
+    300: '#DEBDB0',
+    400: '#D09F8E',
+    500: '#C87F63', // Burnt Clay - Accent
+    600: '#B3684D',
+    700: '#96533C',
+    800: '#7A4433',
+    900: '#63392D',
+    DEFAULT: '#C87F63',
+  },
+
+  // Background (Canvas)
+  canvas: {
+    50: '#FCFBF9',
+    100: '#F4F1EA', // Canvas - Default
+    200: '#EAE5DB',
+    DEFAULT: '#F4F1EA',
+  },
+
+  // Text (Slate Ink)
+  slate: {
+    ink: '#2B303A', // Slate Ink - Primary Text
+    DEFAULT: '#2B303A',
   },
 
   // Neutral — warmed slightly for comfort
@@ -28,7 +57,7 @@ export const BrandColors = {
     600: '#4b5563',
     700: '#374151',
     800: '#1f2937',
-    900: '#111827',
+    900: '#111827', // Keep standard dark for deep contrast if needed
     950: '#000000',
     DEFAULT: '#111827',
   },
@@ -78,10 +107,10 @@ export const BrandColors = {
 
   // Business/Finance specific
   business: {
-    trust: '#0F766E',
+    trust: '#4A5D4F', // Sage
     growth: '#059669',
-    premium: '#7c3aed',
-    secure: '#1f2937',
+    premium: '#C87F63', // Burnt Clay
+    secure: '#2B303A', // Slate Ink
   },
 } as const;
 
@@ -128,4 +157,3 @@ export default {
   typography: Typography,
   borderRadius: BorderRadius,
 } as const;
-
