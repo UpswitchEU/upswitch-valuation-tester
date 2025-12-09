@@ -46,7 +46,7 @@ export const LoadingState: React.FC<LoadingStateProps> = ({
         <div className={`relative p-6 rounded-2xl shadow-sm border z-10 flex items-center justify-center transform transition-all duration-500 ${
           isDark 
             ? 'bg-zinc-900 border-zinc-800 shadow-primary-900/10' 
-            : 'bg-white border-zinc-100 shadow-zinc-100'
+            : 'bg-white border-gray-200 shadow-lg'
         }`}>
           <Loader2 className={`w-10 h-10 animate-spin ${isDark ? 'text-primary-400' : 'text-primary-600'}`} strokeWidth={1.5} />
         </div>
@@ -68,7 +68,7 @@ export const LoadingState: React.FC<LoadingStateProps> = ({
         <h3 
           key={`title-${currentStepIndex}`}
           className={`text-xl md:text-2xl font-semibold tracking-tight animate-in fade-in slide-in-from-bottom-3 duration-500 text-center ${
-            isDark ? 'text-white' : 'text-zinc-900'
+            isDark ? 'text-white' : 'text-slate-ink'
           }`}
         >
           {currentStep.text}

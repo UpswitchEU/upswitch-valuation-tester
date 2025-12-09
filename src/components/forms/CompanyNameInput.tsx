@@ -226,9 +226,9 @@ export const CompanyNameInput: React.FC<CompanyNameInputProps> = ({
         {/* Tooltip on hover - Kept dark for high contrast overlay */}
         <div className="absolute right-0 bottom-full mb-2 w-72 p-4 bg-gray-900 border border-gray-800 text-white text-xs rounded-xl shadow-2xl opacity-0 group-hover:opacity-100 transition-all duration-200 pointer-events-none z-50 transform translate-y-2 group-hover:translate-y-0">
           <div className="flex items-center justify-between mb-2">
-            <span className="font-bold text-emerald-400 text-xs uppercase tracking-wider">Verified Company</span>
+            <span className="font-bold text-primary-400 text-xs uppercase tracking-wider">Verified Company</span>
             {exactMatch.status === 'Active' && (
-              <span className="px-1.5 py-0.5 bg-emerald-500/20 text-emerald-400 rounded text-[10px] font-semibold">ACTIVE</span>
+              <span className="px-1.5 py-0.5 bg-primary-500/20 text-primary-400 rounded text-[10px] font-semibold">ACTIVE</span>
             )}
           </div>
           <div className="font-serif text-base mb-3 text-white">{exactMatch.company_name}</div>
@@ -273,13 +273,13 @@ export const CompanyNameInput: React.FC<CompanyNameInputProps> = ({
         {/* Header with verified badge */}
         <div className="flex items-start justify-between mb-3">
           <div className="flex items-center gap-2">
-            <div className="flex-shrink-0 w-8 h-8 bg-emerald-500 rounded-full flex items-center justify-center">
+            <div className="flex-shrink-0 w-8 h-8 bg-primary-500 rounded-full flex items-center justify-center">
               <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
               </svg>
             </div>
             <div>
-              <p className="text-xs font-semibold text-emerald-700 uppercase tracking-wider">Verified Company</p>
+              <p className="text-xs font-semibold text-primary-700 uppercase tracking-wider">Verified Company</p>
               <p className="text-sm font-medium text-gray-600">KBO/BCE Belgium</p>
             </div>
           </div>
@@ -291,7 +291,7 @@ export const CompanyNameInput: React.FC<CompanyNameInputProps> = ({
               onChange('');
               inputRef.current?.focus();
             }}
-            className="flex-shrink-0 p-1.5 text-gray-400 hover:text-emerald-600 hover:bg-emerald-100/50 rounded-lg transition-all duration-200 ease-in-out"
+            className="flex-shrink-0 p-1.5 text-gray-400 hover:text-primary-600 hover:bg-primary-100/50 rounded-lg transition-all duration-200 ease-in-out"
             aria-label="Clear selection"
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -324,7 +324,7 @@ export const CompanyNameInput: React.FC<CompanyNameInputProps> = ({
                   <span className="text-gray-300">•</span>
                   <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
                     selectedCompany.status.toLowerCase() === 'active' 
-                      ? 'bg-emerald-100 text-emerald-800' 
+                      ? 'bg-primary-100 text-primary-800' 
                       : 'bg-gray-100 text-gray-800'
                   }`}>
                     {selectedCompany.status}
@@ -379,33 +379,33 @@ export const CompanyNameInput: React.FC<CompanyNameInputProps> = ({
                     ? 'bg-gray-50 border-primary-500' 
                     : 'border-transparent hover:bg-gray-50 hover:border-gray-200'
                 } ${
-                  isExactMatch ? 'bg-emerald-50/60 hover:bg-emerald-50 border-emerald-500' : ''
+                  isExactMatch ? 'bg-primary-50/60 hover:bg-primary-50 border-primary-500' : ''
                 }`}
                 onClick={() => handleSelectCompany(company)}
                 onMouseEnter={() => {
                   setHighlightedIndex(index);
                 }}
               >
-                <div className={`font-medium text-base transition-colors ${isExactMatch ? 'text-emerald-900' : 'text-gray-900'}`}>
+                <div className={`font-medium text-base transition-colors ${isExactMatch ? 'text-primary-900' : 'text-gray-900'}`}>
                   {company.company_name}
                 </div>
                 <div className="flex items-center gap-2 mt-1 text-xs">
                   {company.registration_number && (
-                    <span className={`font-mono ${isExactMatch ? 'text-emerald-700/70' : 'text-gray-400'}`}>
+                    <span className={`font-mono ${isExactMatch ? 'text-primary-700/70' : 'text-gray-400'}`}>
                       {company.registration_number}
                     </span>
                   )}
                   {company.legal_form && (
                     <>
                       <span className="text-gray-300">•</span>
-                      <span className={`${isExactMatch ? 'text-emerald-700/70' : 'text-gray-500'}`}>
+                      <span className={`${isExactMatch ? 'text-primary-700/70' : 'text-gray-500'}`}>
                         {company.legal_form}
                       </span>
                     </>
                   )}
                 </div>
                 {company.address && (
-                  <div className={`text-xs mt-1 truncate ${isExactMatch ? 'text-emerald-700/60' : 'text-gray-400'}`}>
+                  <div className={`text-xs mt-1 truncate ${isExactMatch ? 'text-primary-700/60' : 'text-gray-400'}`}>
                     {company.address}
                   </div>
                 )}

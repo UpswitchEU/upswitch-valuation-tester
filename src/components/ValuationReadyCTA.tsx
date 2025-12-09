@@ -55,7 +55,7 @@ export const ValuationReadyCTA: React.FC<ValuationReadyCTAProps> = ({
               {/* CTA Button */}
               <button
                 onClick={onConfirm}
-                className="w-full py-4 px-6 bg-gradient-to-r from-accent-600 to-accent-500 hover:from-accent-500 hover:to-accent-400 text-white rounded-xl font-semibold text-base shadow-lg hover:shadow-xl hover:shadow-accent-500/30 transition-all duration-200 flex items-center justify-center gap-3 active:scale-[0.98] group"
+                className="w-full py-4 px-6 bg-gradient-to-r from-accent-600 to-accent-500 hover:from-accent-500 hover:to-accent-400 text-white rounded-xl font-semibold text-base shadow-lg hover:shadow-xl hover:shadow-accent-500/30 transition-all duration-200 flex items-center justify-center gap-3 active:scale-[0.98] focus:outline-none focus:ring-2 focus:ring-accent-500 focus:ring-offset-2 group"
               >
                 <TrendingUp className="w-5 h-5 group-hover:scale-110 transition-transform" />
                 <span>{buttonText}</span>

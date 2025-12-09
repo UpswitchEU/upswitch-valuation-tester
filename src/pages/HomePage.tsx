@@ -106,7 +106,7 @@ export const HomePage: React.FC = () => {
                 <h1 className="text-5xl md:text-6xl lg:text-7xl xl:text-8xl font-bold leading-tight tracking-tight text-white">
                   Know What Your Business
                   <br />
-                  <span className="bg-gradient-to-r from-primary-400 via-primary-500 to-accent-600 bg-clip-text text-transparent">
+                  <span className="bg-gradient-to-r from-primary-300 via-primary-400 to-primary-500 bg-clip-text text-transparent">
                     Is Really Worth
                   </span>
                 </h1>

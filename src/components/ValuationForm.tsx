@@ -727,9 +727,9 @@ export const ValuationForm: React.FC = () => {
                 const isCritical = formData.number_of_employees === 0;
                 
                 return (
-                  <div className={`p-4 rounded-xl border ${isCritical ? 'bg-rose-50/90 border-rose-200 text-rose-900' : 'bg-amber-50/90 border-amber-200 text-amber-900'}`}>
+                  <div className={`p-4 rounded-xl border ${isCritical ? 'bg-accent-50/90 border-accent-200 text-accent-900' : 'bg-amber-50/90 border-amber-200 text-amber-900'}`}>
                     <div className="flex items-start gap-3">
-                      <div className={`flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center ${isCritical ? 'bg-rose-100 text-rose-600' : 'bg-amber-100 text-amber-600'}`}>
+                      <div className={`flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center ${isCritical ? 'bg-accent-100 text-accent-600' : 'bg-amber-100 text-amber-600'}`}>
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
                         </svg>
@@ -752,7 +752,7 @@ export const ValuationForm: React.FC = () => {
                           )}
                         </p>
                         {isCritical && (
-                          <div className="mt-3 flex items-start gap-2 text-xs font-medium text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-lg p-2.5">
+                          <div className="mt-3 flex items-start gap-2 text-xs font-medium text-primary-700 bg-primary-50 border border-primary-200 rounded-lg p-2.5">
                             <span>💡</span>
                             <span><strong>Tip:</strong> Hiring 2-3 employees could increase your business value by €150K-200K</span>
                           </div>
@@ -884,8 +884,9 @@ export const ValuationForm: React.FC = () => {
           disabled={isCalculating || !formData.revenue || !formData.ebitda || !formData.industry || !formData.country_code}
           className={`
             w-full justify-center px-8 py-4 rounded-xl font-semibold text-lg shadow-lg
-            transition-all duration-200 transform hover:-translate-y-0.5
+            transition-all duration-200 ease-out
             flex items-center gap-3
+            active:scale-[0.98]
             ${(isCalculating || !formData.revenue || !formData.ebitda || !formData.industry || !formData.country_code)
               ? 'bg-zinc-800/30 text-zinc-500 border border-zinc-700 cursor-not-allowed' 
               : 'text-white bg-gradient-to-r from-accent-600 to-accent-500 hover:from-accent-500 hover:to-accent-400 hover:shadow-accent-500/20'
