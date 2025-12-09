@@ -23,9 +23,9 @@ export const ErrorState: React.FC<ErrorStateProps> = ({
   return (
     <div className={`flex flex-col items-center justify-center p-6 sm:p-8 text-center animate-in fade-in duration-500 ${className}`}>
       <div className={`w-12 h-12 sm:w-16 sm:h-16 rounded-full flex items-center justify-center mb-3 sm:mb-4 transition-colors ${
-        isDark ? 'bg-red-500/10' : 'bg-red-50'
+        isDark ? 'bg-accent-500/10' : 'bg-accent-50'
       }`}>
-        <AlertTriangle className={`w-6 h-6 sm:w-8 sm:h-8 ${isDark ? 'text-red-400' : 'text-red-500'}`} />
+        <AlertTriangle className={`w-6 h-6 sm:w-8 sm:h-8 ${isDark ? 'text-accent-400' : 'text-accent-500'}`} />
       </div>
       
       <h3 className={`text-base sm:text-lg font-semibold mb-2 ${isDark ? 'text-white' : 'text-slate-ink'}`}>

@@ -246,7 +246,7 @@ export const CustomBusinessTypeSearch: React.FC<CustomBusinessTypeSearchProps> =
           ${disabled ? 'text-gray-400' : ''}
         `}>
           {label}
-          {required && <span className="text-red-500 ml-1">*</span>}
+          {required && <span className="text-accent-500 ml-1">*</span>}
         </label>
       </div>
 

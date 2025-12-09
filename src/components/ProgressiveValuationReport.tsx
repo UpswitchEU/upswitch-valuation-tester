@@ -64,17 +64,17 @@ export const ProgressiveValuationReport: React.FC<ProgressiveValuationReportProp
   // Render error section (inline section error)
   const renderSectionError = (section: ReportSection) => {
     return (
-      <div className="section-error bg-red-50/50 border-l-4 border-red-400 rounded-lg p-4 mb-4 animate-in fade-in slide-in-from-top-1">
+      <div className="section-error bg-accent-50/50 border-l-4 border-accent-400 rounded-lg p-4 mb-4 animate-in fade-in slide-in-from-top-1">
         <div className="flex items-start gap-3 mb-3">
           <div className="flex-shrink-0 mt-0.5">
-            <AlertTriangle className="h-5 w-5 text-red-500" />
+            <AlertTriangle className="h-5 w-5 text-accent-500" />
           </div>
           <div className="flex-1">
-            <h4 className="text-sm font-semibold text-red-900 mb-1">Unable to generate this section</h4>
+            <h4 className="text-sm font-semibold text-accent-900 mb-1">Unable to generate this section</h4>
             {section.error_message && (
-              <p className="text-sm text-red-700 mb-3 leading-relaxed">{section.error_message}</p>
+              <p className="text-sm text-accent-700 mb-3 leading-relaxed">{section.error_message}</p>
             )}
-            <div className="text-sm text-red-700">
+            <div className="text-sm text-accent-700">
               <p className="mb-2">Don't worry—this is common. Here's what you can try:</p>
               <ul className="list-disc list-inside space-y-1.5 ml-1">
                 <li>Review your financial data for completeness</li>
