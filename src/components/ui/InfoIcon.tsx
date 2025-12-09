@@ -125,7 +125,7 @@ export const InfoIcon: React.FC<InfoIconProps> = ({
         tabIndex={0}
         aria-label={`Help: ${content}`}
         aria-describedby={isVisible ? 'info-tooltip' : undefined}
-        className="text-gray-300 hover:text-gray-600 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1 rounded-full"
+        className="text-gray-300 hover:text-gray-600 transition-colors focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-1 rounded-full"
       >
         <svg
           width={size}
@@ -149,12 +149,12 @@ export const InfoIcon: React.FC<InfoIconProps> = ({
           id="info-tooltip"
           ref={tooltipRef}
           role="tooltip"
-          className={`absolute z-50 px-3 py-2 text-sm text-white bg-gray-900 rounded-lg shadow-lg transition-opacity duration-200 ${positionClasses[position]}`}
+          className={`absolute z-50 px-3 py-2 text-sm text-white bg-slate-ink rounded-lg shadow-lg transition-opacity duration-200 ${positionClasses[position]}`}
           style={{ maxWidth: `${maxWidth}px`, width: 'max-content', minWidth: '200px', wordWrap: 'break-word' }}
         >
           <p className="whitespace-normal leading-relaxed">{content}</p>
           <div
-            className={`absolute w-2 h-2 bg-gray-900 rotate-45 ${arrowPositionClasses[position]}`}
+            className={`absolute w-2 h-2 bg-slate-ink rotate-45 ${arrowPositionClasses[position]}`}
             aria-hidden="true"
           />
         </div>

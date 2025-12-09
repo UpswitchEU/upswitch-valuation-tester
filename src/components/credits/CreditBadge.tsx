@@ -4,11 +4,11 @@
  * Displays user's current credit status with upgrade prompts
  */
 
-import React from 'react';
-import { Tooltip } from '@heroui/react';
-import { useCredits } from '@/hooks/useCredits';
 import { useAuth } from '@/hooks/useAuth';
+import { useCredits } from '@/hooks/useCredits';
 import { guestCreditService } from '@/services/guestCreditService';
+import { Tooltip } from '@heroui/react';
+import React from 'react';
 
 interface CreditBadgeProps {
   className?: string;
@@ -55,7 +55,7 @@ export const CreditBadge: React.FC<CreditBadgeProps> = ({
 
     const badgeContent = (
       <div 
-        className={`flex items-center gap-2 px-3 py-1 bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-full text-sm font-medium transition-all duration-200 hover:shadow-md ${onClick ? 'cursor-pointer hover:scale-105' : ''} ${className}`}
+        className={`flex items-center gap-2 px-3 py-1 bg-gradient-to-r from-accent-500 to-accent-600 text-white rounded-full text-sm font-medium transition-all duration-200 hover:shadow-md ${onClick ? 'cursor-pointer hover:scale-105' : ''} ${className}`}
         onClick={onClick}
         role={onClick ? 'button' : undefined}
         tabIndex={onClick ? 0 : undefined}
@@ -155,7 +155,7 @@ export const CreditBadge: React.FC<CreditBadgeProps> = ({
     if (isLow) {
       return 'bg-yellow-100 text-yellow-700 hover:bg-yellow-200 border-yellow-200';
     }
-    return 'bg-blue-100 text-blue-700 hover:bg-blue-200 border-blue-200';
+    return 'bg-primary-100 text-primary-700 hover:bg-primary-200 border-primary-200';
   };
   
   // Icon based on status

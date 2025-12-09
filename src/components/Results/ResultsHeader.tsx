@@ -124,14 +124,14 @@ export const ResultsHeader: React.FC<ResultsHeaderProps> = ({ result }) => {
               {/* SME Calibration Notice (NEW: McKinsey standard for SME multiples) */}
               {/* Note: Detailed SME calibration information is available in info_tab_html */}
               {false && (
-                <div className="bg-blue-50 border-l-4 border-blue-500 p-4 rounded mt-2">
+                <div className="bg-primary-50 border-l-4 border-primary-500 p-4 rounded mt-2">
                   <div className="flex items-start gap-3">
-                    <svg className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-5 h-5 text-primary-600 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
                     <div className="flex-1">
-                      <h4 className="text-sm font-semibold text-blue-900 mb-1">SME Multiple Calibration Applied</h4>
-                      <p className="text-sm text-blue-800">
+                      <h4 className="text-sm font-semibold text-primary-900 mb-1">SME Multiple Calibration Applied</h4>
+                      <p className="text-sm text-primary-800">
                         Database multiples have been calibrated for SME size. Raw multiples (from large company databases) were scaled down{' '}
                         {/* SME calibration percentage now available in info_tab_html */}
                         <span className="font-semibold">10-12%</span>
@@ -241,23 +241,23 @@ export const ResultsHeader: React.FC<ResultsHeaderProps> = ({ result }) => {
         
         {/* Final Multiples Used (if applicable) */}
         {result.multiples_valuation && (
-          <div className="bg-gradient-to-r from-purple-50 to-blue-50 border-2 border-purple-300 rounded-lg p-4 mb-4">
+          <div className="bg-gradient-to-r from-primary-50 to-canvas border-2 border-primary-300 rounded-lg p-4 mb-4">
             <div className="flex items-center gap-2 mb-3">
               <span className="text-lg">📐</span>
-              <h4 className="text-sm font-bold text-purple-900">Final Multiples Used</h4>
+              <h4 className="text-sm font-bold text-primary-900">Final Multiples Used</h4>
             </div>
             
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               {/* Primary Multiple */}
-              <div className="bg-white rounded-lg p-3 border-2 border-purple-500">
+              <div className="bg-white rounded-lg p-3 border-2 border-accent-500">
                 <div className="flex items-center gap-2 mb-2">
-                  <span className="text-xs font-semibold text-purple-700 uppercase">Primary Method ⭐</span>
+                  <span className="text-xs font-semibold text-accent-700 uppercase">Primary Method ⭐</span>
                 </div>
                 <div className="space-y-1">
                   <p className="text-sm font-bold text-gray-900">
                     {isPrimaryEBITDA() ? 'EBITDA Multiple' : 'Revenue Multiple'}
                   </p>
-                  <p className="text-2xl font-bold text-purple-700">
+                  <p className="text-2xl font-bold text-accent-700">
                     {isPrimaryEBITDA()
                       ? `${result.multiples_valuation.ebitda_multiple?.toFixed(2) ?? 'N/A'}x`
                       : `${result.multiples_valuation.revenue_multiple?.toFixed(2) ?? 'N/A'}x`
@@ -473,13 +473,13 @@ export const ResultsHeader: React.FC<ResultsHeaderProps> = ({ result }) => {
               </svg>
             </div>
             <div className="flex-1">
-              <h4 className="text-sm font-semibold text-blue-900 mb-2">Understanding the Valuation Range</h4>
+              <h4 className="text-sm font-semibold text-primary-900 mb-2">Understanding the Valuation Range</h4>
               
               {/* Methodology Indicator */}
               {result.range_methodology && (
-                <div className="mb-3 p-2 bg-white rounded border border-blue-300">
+                <div className="mb-3 p-2 bg-white rounded border border-primary-300">
                   <div className="flex items-center gap-2">
-                    <span className="text-xs font-semibold text-blue-900">Range Methodology:</span>
+                    <span className="text-xs font-semibold text-primary-900">Range Methodology:</span>
                     <span className={`text-xs px-2 py-1 rounded font-medium ${
                       result.range_methodology === 'multiple_dispersion' 
                         ? 'bg-green-100 text-green-800' 

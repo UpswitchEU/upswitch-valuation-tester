@@ -1,11 +1,11 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { MinimalHeader } from '../components/MinimalHeader';
+import { VideoBackground } from '../components/VideoBackground';
+import UrlGeneratorService from '../services/urlGenerator';
 import { ScrollToTop } from '../utils';
 import { generalLogger } from '../utils/logger';
 import { generateReportId } from '../utils/reportIdGenerator';
-import UrlGeneratorService from '../services/urlGenerator';
-import { VideoBackground } from '../components/VideoBackground';
 
 export const HomePage: React.FC = () => {
   const navigate = useNavigate();
@@ -106,7 +106,7 @@ export const HomePage: React.FC = () => {
                 <h1 className="text-5xl md:text-6xl lg:text-7xl xl:text-8xl font-bold leading-tight tracking-tight text-white">
                   Know What Your Business
                   <br />
-                  <span className="bg-gradient-to-r from-success-300 to-primary-300 bg-clip-text text-transparent">
+                  <span className="bg-gradient-to-r from-accent-400 via-accent-500 to-primary-500 bg-clip-text text-transparent">
                     Is Really Worth
                   </span>
                 </h1>

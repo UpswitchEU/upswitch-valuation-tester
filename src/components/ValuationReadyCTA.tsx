@@ -32,17 +32,17 @@ export const ValuationReadyCTA: React.FC<ValuationReadyCTAProps> = ({
       <div className="max-w-[85%] mr-auto">
         <div className="flex items-start gap-3">
           {/* Bot Avatar */}
-          <div className="flex-shrink-0 w-8 h-8 bg-gradient-to-br from-green-500/20 to-blue-500/20 rounded-full flex items-center justify-center border border-green-400/30 shadow-lg shadow-green-500/20 mt-1">
-            <Sparkles className="w-4 h-4 text-green-300" />
+          <div className="flex-shrink-0 w-8 h-8 bg-gradient-to-br from-accent-500/20 to-primary-500/20 rounded-full flex items-center justify-center border border-accent-400/30 shadow-lg shadow-accent-500/20 mt-1">
+            <Sparkles className="w-4 h-4 text-accent-300" />
           </div>
           
           <div className="flex flex-col gap-1 flex-1">
             {/* Main CTA Card */}
-            <div className="rounded-2xl rounded-tl-sm px-6 py-5 bg-gradient-to-br from-green-900/20 via-blue-900/10 to-green-900/20 border border-green-400/20 shadow-xl backdrop-blur-sm">
+            <div className="rounded-2xl rounded-tl-sm px-6 py-5 bg-gradient-to-br from-primary-900/20 via-accent-900/10 to-primary-900/20 border border-primary-400/20 shadow-xl backdrop-blur-sm">
               {/* Header Badge */}
-              <div className="flex items-center gap-2 mb-4 pb-3 border-b border-green-400/20">
-                <CheckCircle className="w-5 h-5 text-green-300" />
-                <span className="text-sm font-semibold text-green-300 uppercase tracking-wider">
+              <div className="flex items-center gap-2 mb-4 pb-3 border-b border-primary-400/20">
+                <CheckCircle className="w-5 h-5 text-accent-300" />
+                <span className="text-sm font-semibold text-accent-300 uppercase tracking-wider">
                   Ready for Valuation
                 </span>
               </div>
@@ -55,7 +55,7 @@ export const ValuationReadyCTA: React.FC<ValuationReadyCTAProps> = ({
               {/* CTA Button */}
               <button
                 onClick={onConfirm}
-                className="w-full py-4 px-6 bg-gradient-to-r from-primary-600 to-primary-500 hover:from-primary-500 hover:to-primary-400 text-white rounded-xl font-semibold text-base shadow-lg hover:shadow-xl hover:shadow-primary-500/30 transition-all duration-200 flex items-center justify-center gap-3 active:scale-[0.98] group"
+                className="w-full py-4 px-6 bg-gradient-to-r from-accent-600 to-accent-500 hover:from-accent-500 hover:to-accent-400 text-white rounded-xl font-semibold text-base shadow-lg hover:shadow-xl hover:shadow-accent-500/30 transition-all duration-200 flex items-center justify-center gap-3 active:scale-[0.98] group"
               >
                 <TrendingUp className="w-5 h-5 group-hover:scale-110 transition-transform" />
                 <span>{buttonText}</span>
@@ -66,10 +66,10 @@ export const ValuationReadyCTA: React.FC<ValuationReadyCTAProps> = ({
               </button>
               
               {/* Optional: Progress indicators */}
-              <div className="mt-4 pt-4 border-t border-green-400/10">
+              <div className="mt-4 pt-4 border-t border-primary-400/10">
                 <div className="flex items-center justify-between text-xs text-zinc-400">
                   <span>Estimated completion time: 2-3 minutes</span>
-                  <span className="text-green-300">●  All data collected</span>
+                  <span className="text-accent-300">●  All data collected</span>
                 </div>
               </div>
             </div>
@@ -77,7 +77,7 @@ export const ValuationReadyCTA: React.FC<ValuationReadyCTAProps> = ({
             {/* Timestamp */}
             {timestamp && (
               <div className="text-xs text-zinc-500 ml-1 flex items-center gap-1">
-                <span className="text-green-400">●</span>
+                <span className="text-accent-400">●</span>
                 {timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
               </div>
             )}

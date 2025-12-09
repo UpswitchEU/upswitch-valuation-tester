@@ -124,10 +124,10 @@ export const LivePreview: React.FC<LivePreviewProps> = ({
           </p>
         </div>
 
-        <div className="mt-4 p-3 bg-blue-50 rounded-lg border border-blue-100">
+        <div className="mt-4 p-3 bg-primary-50 rounded-lg border border-primary-100">
           <div className="flex items-start gap-2">
-            <Info className="w-4 h-4 text-blue-600 mt-0.5 flex-shrink-0" />
-            <div className="text-xs text-blue-700">
+            <Info className="w-4 h-4 text-primary-600 mt-0.5 flex-shrink-0" />
+            <div className="text-xs text-primary-700">
               <p className="font-medium mb-1">Real-time Estimates</p>
               <p>This preview uses quick multiples-only calculations. Submit the form for a full DCF + Multiples valuation.</p>
             </div>
@@ -138,7 +138,7 @@ export const LivePreview: React.FC<LivePreviewProps> = ({
   }
 
   return (
-    <div className="bg-gradient-to-br from-primary-50 to-blue-50 rounded-2xl shadow-lg border border-primary-200 p-6 sticky top-6">
+    <div className="bg-gradient-to-br from-primary-50 to-canvas rounded-2xl shadow-lg border border-primary-200 p-6 sticky top-6">
       {/* Header */}
       <div className="flex items-center gap-3 mb-6">
         <div className="w-10 h-10 rounded-full bg-primary-100 flex items-center justify-center animate-pulse">

@@ -131,7 +131,7 @@ export const RegistryDataPreview: React.FC<RegistryDataPreviewProps> = ({
   return (
     <div className="bg-white rounded-2xl shadow-xl border border-gray-200 overflow-hidden">
       {/* Company Header */}
-      <div className="bg-gradient-to-r from-green-600 to-emerald-600 text-white p-6">
+      <div className="bg-gradient-to-r from-primary-600 to-primary-500 text-white p-6">
         <div className="flex items-start justify-between">
           <div className="flex items-start gap-4">
             <div className="w-14 h-14 rounded-xl bg-white/20 flex items-center justify-center">
@@ -211,7 +211,7 @@ export const RegistryDataPreview: React.FC<RegistryDataPreviewProps> = ({
 
           <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
             {/* Revenue */}
-            <div className="bg-gradient-to-br from-blue-50 to-primary-50 rounded-xl p-4 border border-blue-100">
+            <div className="bg-gradient-to-br from-primary-50 to-canvas rounded-xl p-4 border border-primary-100">
               <div className="text-sm font-medium text-gray-600 mb-1">Revenue</div>
               {isEditing ? (
                 <input
@@ -228,7 +228,7 @@ export const RegistryDataPreview: React.FC<RegistryDataPreviewProps> = ({
             </div>
 
             {/* EBITDA */}
-            <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl p-4 border border-green-100">
+            <div className="bg-gradient-to-br from-primary-50 to-canvas rounded-xl p-4 border border-primary-100">
               <div className="text-sm font-medium text-gray-600 mb-1">EBITDA</div>
               {isEditing ? (
                 <input

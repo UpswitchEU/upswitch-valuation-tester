@@ -23,8 +23,8 @@ const SOURCE_CONFIG = {
   kbo_registry: {
     label: 'KBO',
     icon: '🏛️',
-    color: 'bg-blue-100 text-blue-700 border-blue-300',
-    hoverColor: 'hover:bg-blue-200',
+    color: 'bg-primary-100 text-primary-700 border-primary-300',
+    hoverColor: 'hover:bg-primary-200',
     description: 'Belgian Company Registry (Official)',
     defaultUrl: 'https://kbopub.economie.fgov.be',
   },
@@ -125,7 +125,7 @@ export const DataSourceBadge: React.FC<DataSourceBadgeProps> = React.memo(({
           ${config.color} ${config.hoverColor}
           ${sizeClasses}
           transition-colors cursor-pointer
-          focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-blue-400
+          focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-primary-400
         `}
         title={tooltip || config.description}
       >
@@ -139,7 +139,7 @@ export const DataSourceBadge: React.FC<DataSourceBadgeProps> = React.memo(({
       {/* Tooltip (Desktop only) */}
       {showTooltip && (tooltip || reference) && (
         <div className="absolute left-0 bottom-full mb-1 z-50 hidden sm:block">
-          <div className="bg-gray-900 text-white text-xs rounded py-1.5 px-2.5 max-w-xs whitespace-normal shadow-lg">
+          <div className="bg-slate-ink text-white text-xs rounded py-1.5 px-2.5 max-w-xs whitespace-normal shadow-lg">
             <p className="font-semibold mb-0.5">{config.description}</p>
             {tooltip && <p className="text-gray-300 mb-0.5">{tooltip}</p>}
             {reference && <p className="text-gray-400 text-[10px]">{reference}</p>}

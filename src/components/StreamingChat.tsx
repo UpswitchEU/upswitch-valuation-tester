@@ -1158,7 +1158,7 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
                 // Handle calculate now
                 chatLogger.info('Calculate now clicked', { sessionId });
               }}
-              className="px-6 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
+              className="px-6 py-2 bg-accent-600 text-white rounded-lg hover:bg-accent-500 transition-colors"
             >
               Calculate Now
             </button>

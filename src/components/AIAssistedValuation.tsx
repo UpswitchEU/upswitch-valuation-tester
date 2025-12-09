@@ -1056,14 +1056,14 @@ export const AIAssistedValuation: React.FC<AIAssistedValuationProps> = ({
       {/* Pre-Conversation Summary */}
       {showPreConversationSummary && businessProfile && (
         <div className="mx-4 mb-4">
-          <div className="bg-blue-900/20 border border-blue-700/30 rounded-lg p-4">
+          <div className="bg-primary-900/20 border border-primary-700/30 rounded-lg p-4">
             <div className="flex items-start gap-3">
-              <div className="w-8 h-8 bg-blue-500/20 rounded-full flex items-center justify-center flex-shrink-0">
-                <span className="text-blue-400 text-sm">🧠</span>
+              <div className="w-8 h-8 bg-primary-500/20 rounded-full flex items-center justify-center flex-shrink-0">
+                <span className="text-primary-400 text-sm">🧠</span>
               </div>
               <div className="flex-1">
-                <h3 className="text-lg font-semibold text-blue-300 mb-2">Intelligent Triage Active</h3>
-                <p className="text-sm text-blue-200 mb-3">
+                <h3 className="text-lg font-semibold text-primary-300 mb-2">Intelligent Triage Active</h3>
+                <p className="text-sm text-primary-200 mb-3">
                   We found your business profile! We'll skip the questions we already know and only ask for missing information.
                 </p>
                 
@@ -1073,26 +1073,26 @@ export const AIAssistedValuation: React.FC<AIAssistedValuationProps> = ({
                   return (
                     <div className="space-y-3">
                       <div className="flex items-center gap-2 text-sm">
-                        <span className="text-blue-300">Data completeness:</span>
-                        <span className="font-semibold text-blue-200">{analysis.completeness}%</span>
+                        <span className="text-primary-300">Data completeness:</span>
+                        <span className="font-semibold text-primary-200">{analysis.completeness}%</span>
                         <div className="flex-1 bg-zinc-700 rounded-full h-2">
                           <div 
-                            className="bg-blue-500 h-2 rounded-full transition-all duration-300"
+                            className="bg-primary-500 h-2 rounded-full transition-all duration-300"
                             style={{ width: `${analysis.completeness}%` }}
                           />
                         </div>
                       </div>
                       
-                      <div className="text-sm text-blue-200">
-                        <span className="text-blue-300">Estimated time:</span> {analysis.estimatedTime} minutes
+                      <div className="text-sm text-primary-200">
+                        <span className="text-primary-300">Estimated time:</span> {analysis.estimatedTime} minutes
                       </div>
                       
                       {analysis.complete.length > 0 && (
                         <div className="text-sm">
-                          <span className="text-blue-300">We already know:</span>
+                          <span className="text-primary-300">We already know:</span>
                           <div className="flex flex-wrap gap-1 mt-1">
                             {analysis.complete.map(field => (
-                              <span key={field} className="bg-blue-800/50 px-2 py-1 rounded text-xs">
+                              <span key={field} className="bg-primary-800/50 px-2 py-1 rounded text-xs">
                                 {field.replace('_', ' ')}
                               </span>
                             ))}
@@ -1102,10 +1102,10 @@ export const AIAssistedValuation: React.FC<AIAssistedValuationProps> = ({
                       
                       {analysis.priority.length > 0 && (
                         <div className="text-sm">
-                          <span className="text-blue-300">We need to ask about:</span>
+                          <span className="text-primary-300">We need to ask about:</span>
                           <div className="flex flex-wrap gap-1 mt-1">
                             {analysis.priority.map(field => (
-                              <span key={field} className="bg-orange-800/50 px-2 py-1 rounded text-xs">
+                              <span key={field} className="bg-accent-800/50 px-2 py-1 rounded text-xs">
                                 {field.replace('_', ' ')}
                               </span>
                             ))}
@@ -1119,7 +1119,7 @@ export const AIAssistedValuation: React.FC<AIAssistedValuationProps> = ({
                             setShowPreConversationSummary(false);
                             startIntelligentConversation(businessProfile);
                           }}
-                          className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors"
+                          className="px-4 py-2 bg-accent-600 hover:bg-accent-500 text-white rounded-lg text-sm font-medium transition-colors"
                         >
                           Start Smart Conversation
                         </button>
@@ -1342,7 +1342,7 @@ export const AIAssistedValuation: React.FC<AIAssistedValuationProps> = ({
             onClick={() => switchMobilePanel('chat')}
             className={`px-4 py-2 rounded-full transition-colors ${
               mobileActivePanel === 'chat'
-                ? 'bg-blue-600 text-white'
+                ? 'bg-accent-600 text-white'
                 : 'text-zinc-400 hover:text-white'
             }`}
           >
@@ -1352,7 +1352,7 @@ export const AIAssistedValuation: React.FC<AIAssistedValuationProps> = ({
             onClick={() => switchMobilePanel('preview')}
             className={`px-4 py-2 rounded-full transition-colors ${
               mobileActivePanel === 'preview'
-                ? 'bg-blue-600 text-white'
+                ? 'bg-accent-600 text-white'
                 : 'text-zinc-400 hover:text-white'
             }`}
           >

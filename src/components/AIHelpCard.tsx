@@ -34,17 +34,17 @@ export const AIHelpCard: React.FC<AIHelpCardProps> = ({
       <div className="max-w-[85%] mr-auto">
         <div className="flex items-start gap-3">
           {/* AI Avatar - Distinct from regular bot */}
-          <div className="flex-shrink-0 w-8 h-8 bg-gradient-to-br from-purple-500/20 to-blue-500/20 rounded-full flex items-center justify-center border border-purple-400/30 shadow-lg shadow-purple-500/20 mt-1">
-            <Bot className="w-4 h-4 text-purple-300" />
+          <div className="flex-shrink-0 w-8 h-8 bg-gradient-to-br from-accent-500/20 to-primary-500/20 rounded-full flex items-center justify-center border border-accent-400/30 shadow-lg shadow-accent-500/20 mt-1">
+            <Bot className="w-4 h-4 text-accent-300" />
           </div>
           
           <div className="flex flex-col gap-1">
             {/* Main AI Help Card */}
-            <div className="rounded-2xl rounded-tl-sm px-5 py-4 bg-gradient-to-br from-purple-900/20 via-blue-900/10 to-purple-900/20 border border-purple-400/20 shadow-lg backdrop-blur-sm">
+            <div className="rounded-2xl rounded-tl-sm px-5 py-4 bg-gradient-to-br from-primary-900/20 via-accent-900/10 to-primary-900/20 border border-primary-400/20 shadow-lg backdrop-blur-sm">
               {/* Header Badge */}
-              <div className="flex items-center gap-2 mb-3 pb-2 border-b border-purple-400/20">
-                <Lightbulb className="w-4 h-4 text-purple-300" />
-                <span className="text-xs font-semibold text-purple-300 uppercase tracking-wider">
+              <div className="flex items-center gap-2 mb-3 pb-2 border-b border-primary-400/20">
+                <Lightbulb className="w-4 h-4 text-accent-300" />
+                <span className="text-xs font-semibold text-accent-300 uppercase tracking-wider">
                   AI Assistant
                 </span>
               </div>
@@ -57,10 +57,10 @@ export const AIHelpCard: React.FC<AIHelpCardProps> = ({
                 
                 {/* Reasoning */}
                 {reasoning && (
-                  <div className="flex items-start gap-2 p-3 bg-blue-500/10 rounded-lg border border-blue-400/20">
-                    <TrendingUp className="w-4 h-4 text-blue-300 flex-shrink-0 mt-0.5" />
-                    <div className="text-sm text-blue-200 leading-relaxed">
-                      <span className="font-medium text-blue-300">Why it matters: </span>
+                  <div className="flex items-start gap-2 p-3 bg-primary-500/10 rounded-lg border border-primary-400/20">
+                    <TrendingUp className="w-4 h-4 text-primary-300 flex-shrink-0 mt-0.5" />
+                    <div className="text-sm text-primary-200 leading-relaxed">
+                      <span className="font-medium text-primary-300">Why it matters: </span>
                       {reasoning}
                     </div>
                   </div>
@@ -68,20 +68,20 @@ export const AIHelpCard: React.FC<AIHelpCardProps> = ({
                 
                 {/* Example */}
                 {example && (
-                  <div className="p-3 bg-purple-500/10 rounded-lg border border-purple-400/20">
-                    <div className="text-xs font-medium text-purple-300 mb-1.5 uppercase tracking-wider">
+                  <div className="p-3 bg-accent-500/10 rounded-lg border border-accent-400/20">
+                    <div className="text-xs font-medium text-accent-300 mb-1.5 uppercase tracking-wider">
                       Example:
                     </div>
-                    <div className="text-sm text-purple-100 leading-relaxed">
+                    <div className="text-sm text-accent-100 leading-relaxed">
                       {example}
                     </div>
                   </div>
                 )}
                 
                 {/* Nudge */}
-                <div className="flex items-start gap-2 pt-3 mt-3 border-t border-purple-400/20">
-                  <ArrowRight className="w-4 h-4 text-purple-300 flex-shrink-0 mt-0.5" />
-                  <div className="text-sm text-purple-200 leading-relaxed">
+                <div className="flex items-start gap-2 pt-3 mt-3 border-t border-primary-400/20">
+                  <ArrowRight className="w-4 h-4 text-accent-300 flex-shrink-0 mt-0.5" />
+                  <div className="text-sm text-accent-200 leading-relaxed">
                     {nudge}
                   </div>
                 </div>
@@ -91,7 +91,7 @@ export const AIHelpCard: React.FC<AIHelpCardProps> = ({
             {/* Timestamp */}
             {timestamp && (
               <div className="text-xs text-zinc-500 ml-1 flex items-center gap-1">
-                <span className="text-purple-400">●</span>
+                <span className="text-accent-400">●</span>
                 {timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
               </div>
             )}

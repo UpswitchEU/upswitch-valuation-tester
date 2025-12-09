@@ -133,7 +133,7 @@ export const DocumentationModal: React.FC<DocumentationModalProps> = ({
           </h2>
           <button 
             onClick={onClose} 
-            className="text-gray-400 hover:text-gray-600 transition-colors duration-200 p-2 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 flex-shrink-0"
+            className="text-gray-400 hover:text-gray-600 transition-colors duration-200 p-2 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 flex-shrink-0"
             aria-label="Close modal"
             type="button"
           >
