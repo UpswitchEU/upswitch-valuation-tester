@@ -51,7 +51,7 @@ const config: Config = {
         slate: {
           ink: '#2B303A', // Slate Ink
         },
-        // Functional Status Colors - Earthen Functional Tones
+        // Functional Status Colors - Earthen Functional Tones (Verified)
         rust: {
           DEFAULT: '#B85C56', // Rust - Error/Critical
           tint: '#F5EBEA', // Rust Tint - Error backgrounds

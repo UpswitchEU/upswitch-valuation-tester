@@ -26,8 +26,8 @@ export const LoadingState: React.FC<LoadingStateProps> = ({
   const isDark = variant === 'dark';
 
   return (
-    <div className="flex flex-col items-center justify-center w-full h-full min-h-[400px] px-4 py-12 text-center max-w-lg mx-auto">
-      <div className="relative mb-4 group">
+    <div className="flex flex-col items-center justify-center w-full h-full min-h-[300px] px-4 py-4 text-center max-w-lg mx-auto">
+      <div className="relative mb-2 group">
         {/* Outer pulsing rings - refined for subtlety */}
         <div 
           className={`absolute inset-0 rounded-full animate-ping ${
@@ -53,7 +53,7 @@ export const LoadingState: React.FC<LoadingStateProps> = ({
       </div>
       
       {/* Dynamic step indicator */}
-      <div className="mb-4 animate-in fade-in slide-in-from-bottom-2 duration-700 delay-100 fill-mode-backwards">
+      <div className="mb-2 animate-in fade-in slide-in-from-bottom-2 duration-700 delay-100 fill-mode-backwards">
         <span className={`text-xs font-semibold tracking-wide uppercase px-3 py-1.5 rounded-full ${
           isDark 
             ? 'text-primary-300 bg-primary-900/30 border border-primary-800/50' 
