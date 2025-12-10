@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { lazy, Suspense, useCallback, useEffect, useState } from 'react';
 // import { useNavigate } from 'react-router-dom';
 import { Building2, TrendingUp } from 'lucide-react';
 import { MOBILE_BREAKPOINT, PANEL_CONSTRAINTS } from '../constants/panelConstants';
@@ -22,8 +22,10 @@ import { OutOfCreditsModal } from './OutOfCreditsModal';
 import { RegenerationWarningModal } from './RegenerationWarningModal';
 import { ResizableDivider } from './ResizableDivider';
 import { ValuationEmptyState } from './ValuationEmptyState';
-import { ValuationInfoPanel } from './ValuationInfoPanel';
 import { ValuationToolbar } from './ValuationToolbar';
+
+// Lazy load ValuationInfoPanel for code splitting
+const ValuationInfoPanel = lazy(() => import('./ValuationInfoPanel').then(m => ({ default: m.ValuationInfoPanel })));
 
 
 type FlowStage = 'chat' | 'results' | 'blocked';
@@ -1330,7 +1332,9 @@ export const AIAssistedValuation: React.FC<AIAssistedValuationProps> = ({
           )}
 
           {activeTab === 'info' && valuationResult && (
-            <ValuationInfoPanel result={valuationResult} />
+            <Suspense fallback={<div className="flex items-center justify-center p-8"><div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary-600"></div></div>}>
+              <ValuationInfoPanel result={valuationResult} />
+            </Suspense>
           )}
         </div>
       </div>
