@@ -154,6 +154,17 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
     // Build summary of what ACTUAL data we have (only meaningful values)
     const fields: string[] = [];
     
+    // Check business_type (must be non-empty string)
+    // CRITICAL FIX: Check business_type to prevent showing welcome message if it's missing
+    // Bank-Grade Principle: Reliability - Only show welcome message if data is actually complete
+    // WHAT: Validates business_type exists before including it in welcome message
+    // WHY: Prevents showing "I see you've entered business type" when it's not actually collected
+    // HOW: Checks for meaningful business_type value before adding to fields array
+    // WHEN: When building welcome message fields list
+    if (hasMeaningfulValue(initialData.business_type)) {
+      fields.push('business type');
+    }
+    
     // Check company_name (must be non-empty string)
     if (hasMeaningfulValue(initialData.company_name)) {
       fields.push('company name');
