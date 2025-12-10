@@ -10,6 +10,8 @@ import type { ValuationResponse } from '../types/valuation';
 import { NameGenerator } from '../utils/nameGenerator';
 import { measureWebVitals, performanceTracker } from '../utils/performance';
 import { HTMLView } from './HTMLView';
+import { LoadingState } from './LoadingState';
+import { GENERATION_STEPS } from './LoadingState.constants';
 import { ProgressiveValuationReport } from './ProgressiveValuationReport';
 import { ResizableDivider } from './ResizableDivider';
 import { ValuationForm } from './ValuationForm';
@@ -639,7 +641,14 @@ export const ManualValuationFlow: React.FC<ManualValuationFlowProps> = memo(({ o
             
             {activeTab === 'info' && (
               <div className="h-full">
-                {result ? (
+                {/* Show loading state during recalculation */}
+                {(isCalculating || isStreaming) ? (
+                  <LoadingState 
+                    steps={GENERATION_STEPS}
+                    variant="light"
+                    centered={true}
+                  />
+                ) : result ? (
                     <Suspense fallback={<ComponentLoader message="Loading calculation details..." />}>
                       <ValuationInfoPanel result={result} />
                     </Suspense>

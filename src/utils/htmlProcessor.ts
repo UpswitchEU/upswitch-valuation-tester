@@ -256,14 +256,13 @@ export class HTMLProcessor {
 
   /**
    * Extract sections from HTML for table of contents
-   */
-  /**
-   * Extract sections from HTML for table of contents
    * 
    * WHAT: Parses HTML to extract heading elements (h2, h3, h4) for TOC generation
    * WHY: Provides navigation structure for long-form reports
    * HOW: Uses DOMParser to parse HTML and extract headings
    * WHEN: Called when generating table of contents for reports
+   * 
+   * BANK-GRADE: Type validation and error handling for robust parsing
    * 
    * @param htmlContent - HTML string to parse
    * @returns Array of section objects with id, title, and level
@@ -282,15 +281,15 @@ export class HTMLProcessor {
     }
     
     try {
-      const parser = new DOMParser();
-      const doc = parser.parseFromString(htmlContent, 'text/html');
-      const headings = doc.querySelectorAll('h2, h3, h4');
-      
-      return Array.from(headings).map((h, idx) => ({
-        id: `section-${idx}`,
-        title: h.textContent || '',
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(htmlContent, 'text/html');
+    const headings = doc.querySelectorAll('h2, h3, h4');
+    
+    return Array.from(headings).map((h, idx) => ({
+      id: `section-${idx}`,
+      title: h.textContent || '',
         level: parseInt(h.tagName.charAt(1), 10) || 2 // Default to h2 if parsing fails
-      }));
+    }));
     } catch (error) {
       // BANK-GRADE: Specific error handling - DOMParser failure
       // This is non-critical - return empty array if parsing fails
