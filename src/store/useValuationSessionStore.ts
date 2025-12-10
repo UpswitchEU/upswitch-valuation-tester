@@ -512,9 +512,70 @@ export const useValuationSessionStore = create<ValuationSessionStore>((set, get)
       return null;
     }
     
-    // Return sessionData as ValuationRequest
+    // CRITICAL FIX: Filter out empty/null/zero values before returning
+    // Bank-Grade Principle: Reliability - Don't return misleading data
+    // WHAT: Removes keys with null/undefined/empty/zero values from sessionData
+    // WHY: Prevents frontend from showing welcome messages for non-existent data
+    // HOW: Filters out keys where values are null, undefined, empty string, or zero
+    // WHEN: When retrieving session data for initialData prop
+    const sessionData = session.sessionData as ValuationRequest;
+    
+    // Helper to check if value is meaningful
+    // CRITICAL FIX: EBITDA can be zero or negative, so don't exclude zero for financial fields
+    // Bank-Grade Principle: Reliability - Don't filter out valid zero/negative financial values
+    // WHAT: Checks if value is meaningful, with special handling for financial fields
+    // WHY: EBITDA and other financial metrics can legitimately be zero or negative
+    // HOW: Validates value exists and is appropriate type, allows zero for numbers
+    // WHEN: When filtering sessionData before returning
+    const hasMeaningfulValue = (value: any, fieldName?: string): boolean => {
+      if (value === null || value === undefined) return false;
+      if (typeof value === 'string' && value.trim() === '') return false;
+      // CRITICAL: Don't exclude zero for financial fields where zero is valid (ebitda can be zero/negative)
+      // But exclude zero for revenue (business must have revenue) and counts (employee_count, etc.)
+      if (typeof value === 'number') {
+        // Financial fields where zero IS valid: ebitda (can be zero or negative)
+        // Financial fields where zero is NOT meaningful: revenue (business must have revenue)
+        // Non-financial fields: employee_count, etc. (zero is not meaningful)
+        const fieldsAllowZero = ['ebitda'];  // Only EBITDA can legitimately be zero or negative
+        if (value === 0 && !fieldsAllowZero.includes(fieldName || '')) {
+          return false;  // Zero revenue/employees/etc. is not meaningful
+        }
+        // Non-zero numbers or zero for allowed fields are meaningful
+        return true;
+      }
+      if (Array.isArray(value) && value.length === 0) return false;
+      if (typeof value === 'object' && value !== null && Object.keys(value).length === 0) return false;
+      return true;
+    };
+    
+    // Filter out keys with non-meaningful values
+    const filteredData: any = {};
+    for (const [key, value] of Object.entries(sessionData)) {
+      // Special handling for nested objects like current_year_data
+      if (key === 'current_year_data' && typeof value === 'object' && value !== null) {
+        const nestedFiltered: any = {};
+        for (const [nestedKey, nestedValue] of Object.entries(value as any)) {
+          if (hasMeaningfulValue(nestedValue)) {
+            nestedFiltered[nestedKey] = nestedValue;
+          }
+        }
+        if (Object.keys(nestedFiltered).length > 0) {
+          filteredData[key] = nestedFiltered;
+        }
+      } else if (hasMeaningfulValue(value, key)) {
+        filteredData[key] = value;
+      }
+    }
+    
+    // Only return filtered data if it has at least one meaningful field
+    // Return null if all values were filtered out (empty object)
+    if (Object.keys(filteredData).length === 0) {
+      return null;
+    }
+    
+    // Return sessionData as ValuationRequest (now filtered)
     // Note: This may be partial data, components should validate required fields
-    return session.sessionData as ValuationRequest;
+    return filteredData as ValuationRequest;
   },
   
   /**

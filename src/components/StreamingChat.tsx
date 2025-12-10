@@ -128,42 +128,93 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
   });
 
   // Handle "Resume" context message
-  // If we have initial data, we want to inject a welcoming message about what we know
-  // FIX: Only show for users who actually have previous data (not new users)
+  // CRITICAL FIX: Only show welcome message if there's ACTUAL meaningful user data
+  // Bank-Grade Principle: Reliability - Don't mislead users with incorrect information
+  // WHAT: Validates that initialData contains meaningful values before showing welcome message
+  // WHY: Prevents showing misleading "Welcome back" message when no actual data exists
+  // HOW: Checks for non-empty, non-null, meaningful values (not just object keys existence)
+  // WHEN: On component mount when initialData is provided
   useEffect(() => {
-    if (initialData && Object.keys(initialData).length > 0) {
-      // Build summary of what data we have
-      const fields = [];
-      if (initialData.company_name) fields.push('company name');
-      if (initialData.industry) fields.push('industry');
-      // Access revenue/ebitda from nested object or top-level (fallback)
-      if ((initialData.current_year_data as any)?.revenue || initialData.revenue) fields.push('revenue');
-      if ((initialData.current_year_data as any)?.ebitda !== undefined || initialData.ebitda !== undefined) fields.push('EBITDA');
+    // CRITICAL FIX: Validate that initialData has meaningful values, not just keys
+    // Root cause: Object.keys(initialData).length > 0 is true even if all values are null/undefined/empty
+    if (!initialData || typeof initialData !== 'object') {
+      return;
+    }
+    
+    // Helper function to check if a value is meaningful (not null, undefined, empty string, or zero)
+    const hasMeaningfulValue = (value: any): boolean => {
+      if (value === null || value === undefined) return false;
+      if (typeof value === 'string' && value.trim() === '') return false;
+      if (typeof value === 'number' && value === 0) return false;
+      if (Array.isArray(value) && value.length === 0) return false;
+      if (typeof value === 'object' && Object.keys(value).length === 0) return false;
+      return true;
+    };
+    
+    // Build summary of what ACTUAL data we have (only meaningful values)
+    const fields: string[] = [];
+    
+    // Check company_name (must be non-empty string)
+    if (hasMeaningfulValue(initialData.company_name)) {
+      fields.push('company name');
+    }
+    
+    // Check industry (must be non-empty string)
+    if (hasMeaningfulValue(initialData.industry)) {
+      fields.push('industry');
+    }
+    
+    // Check revenue (must be > 0, check nested and top-level)
+    const revenue = (initialData.current_year_data as any)?.revenue ?? initialData.revenue;
+    if (hasMeaningfulValue(revenue) && typeof revenue === 'number' && revenue > 0) {
+      fields.push('revenue');
+    }
+    
+    // Check EBITDA (must be defined, can be zero or negative - those are valid values)
+    // CRITICAL FIX: EBITDA can legitimately be 0 or negative, so only check it's defined
+    // Bank-Grade Principle: Reliability - Don't exclude valid zero/negative EBITDA values
+    // WHAT: Validates EBITDA is a number (including 0 and negative values)
+    // WHY: EBITDA can be zero or negative for some businesses, which is valid data
+    // HOW: Checks that ebitda is defined and is a number (not null/undefined)
+    // WHEN: When checking if user has entered EBITDA data
+    const ebitda = (initialData.current_year_data as any)?.ebitda ?? initialData.ebitda;
+    if (ebitda !== undefined && ebitda !== null && typeof ebitda === 'number') {
+      fields.push('EBITDA');
+    }
+    
+    // CRITICAL FIX: Only show welcome message if we have ACTUAL meaningful data
+    // Root cause: Previous check allowed empty/null/zero values to trigger message
+    // Bank-Grade: Reliability - Never show misleading information to users
+    if (fields.length > 0 && state.messages.length === 0) {
+      const summary = `Welcome back! I see you've already entered your ${fields.join(', ')}. I've loaded that context so we can continue where you left off.`;
       
-      // FIX: Only show "Welcome back" message if there's ACTUAL user data
-      // Don't show for new users or sessions with only metadata
-      if (fields.length > 0 && state.messages.length === 0) {
-        const summary = `Welcome back! I see you've already entered your ${fields.join(', ')}. I've loaded that context so we can continue where you left off.`;
-        
-        // Add as a system message (or AI message if preferred)
-        // Using timeout to ensure it appears after initialization
-        setTimeout(() => {
-          // Double-check no messages added in the meantime
-          if (state.messages.length === 0) {
-            const { updatedMessages } = messageManager.addMessage([], {
-              type: 'ai',
-              role: 'assistant',
-              content: summary,
-              metadata: {
-                intent: 'greeting',
-                topic: 'resume',
-                is_resume_context: true
-              }
-            });
-            state.setMessages(updatedMessages);
-          }
-        }, 500);
-      }
+      // Add as a system message (or AI message if preferred)
+      // Using timeout to ensure it appears after initialization
+      setTimeout(() => {
+        // Double-check no messages added in the meantime
+        if (state.messages.length === 0) {
+          const { updatedMessages } = messageManager.addMessage([], {
+            type: 'ai',
+            role: 'assistant',
+            content: summary,
+            metadata: {
+              intent: 'greeting',
+              topic: 'resume',
+              is_resume_context: true
+            }
+          });
+          state.setMessages(updatedMessages);
+        }
+      }, 500);
+    } else if (initialData && Object.keys(initialData).length > 0 && fields.length === 0) {
+      // Log when initialData exists but has no meaningful values (for debugging)
+      chatLogger.debug('initialData provided but contains no meaningful values', {
+        initialDataKeys: Object.keys(initialData),
+        initialDataValues: Object.keys(initialData).reduce((acc, key) => {
+          acc[key] = initialData[key];
+          return acc;
+        }, {} as Record<string, any>)
+      });
     }
   }, [initialData, messageManager, state.messages.length]);
   
