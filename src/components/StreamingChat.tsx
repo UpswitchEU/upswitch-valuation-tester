@@ -107,9 +107,8 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
   // Initialize services (must be before hooks that use them)
   const inputValidator = useMemo(() => new InputValidator(), []);
   const messageManager = useMemo(() => new MessageManager(), []);
-  
-  // Use extracted conversation initializer
-  useConversationInitializer(sessionId, userId, {
+  // Use extracted conversation initializer - store return value to access isInitializing
+  const { isInitializing } = useConversationInitializer(sessionId, userId, {
     addMessage: (message) => {
       const { updatedMessages, newMessage } = messageManager.addMessage(state.messages, message);
       state.setMessages(updatedMessages);
@@ -117,7 +116,7 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
     },
     setMessages: state.setMessages,
     user: user as UserProfile | undefined,
-    initialData: initialData, // Pass pre-filled session data for resuming
+    initialData: initialData,
     onSessionIdUpdate: (newSessionId) => {
       chatLogger.info('Updating to Python session ID', {
         clientSessionId: sessionId,
@@ -127,180 +126,6 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
     }
   });
 
-  // Handle "Resume" context message
-  // CRITICAL FIX: Only show welcome message if there's ACTUAL meaningful user data
-  // Bank-Grade Principle: Reliability - Don't mislead users with incorrect information
-  // WHAT: Validates that initialData contains meaningful values before showing welcome message
-  // WHY: Prevents showing misleading "Welcome back" message when no actual data exists
-  // HOW: Checks for non-empty, non-null, meaningful values (not just object keys existence)
-  // WHEN: On component mount when initialData is provided
-  useEffect(() => {
-    // CRITICAL FIX: Don't show welcome message if initialData is empty or invalid
-    // Root cause: Empty objects or objects with only null/undefined/empty values were triggering message
-    if (!initialData || typeof initialData !== 'object' || Object.keys(initialData).length === 0) {
-      return;
-    }
-    
-    // CRITICAL FIX: Debug logging to understand what's in initialData
-    // Bank-Grade Principle: Reliability - Log for debugging when validation fails
-    chatLogger.debug('Welcome message check - initialData received', {
-      hasInitialData: !!initialData,
-      initialDataKeys: Object.keys(initialData),
-      businessType: initialData.business_type,
-      industry: initialData.industry,
-      companyName: initialData.company_name,
-      businessTypeType: typeof initialData.business_type,
-      industryType: typeof initialData.industry
-    });
-    
-    // Helper function to check if a value is meaningful (not null, undefined, empty string, or zero)
-    // CRITICAL FIX: Enhanced validation to catch edge cases like whitespace-only strings and placeholders
-    const hasMeaningfulValue = (value: any): boolean => {
-      if (value === null || value === undefined) return false;
-      if (typeof value === 'string') {
-        const trimmed = value.trim();
-        // Reject empty strings, whitespace-only strings, and common placeholder values
-        if (trimmed === '' || trimmed === 'null' || trimmed === 'undefined' || trimmed === 'N/A' || trimmed === 'n/a' || trimmed.toLowerCase() === 'none') {
-          return false;
-        }
-      }
-      if (typeof value === 'number' && value === 0) return false;
-      if (Array.isArray(value) && value.length === 0) return false;
-      if (typeof value === 'object' && Object.keys(value).length === 0) return false;
-      return true;
-    };
-    
-    // Build summary of what ACTUAL data we have (only meaningful values)
-    const fields: string[] = [];
-    
-    // Check business_type (must be non-empty string)
-    // CRITICAL FIX: Strict validation for business_type - must be a real value, not placeholder
-    // Bank-Grade Principle: Reliability - Only show welcome message if data is actually complete
-    // WHAT: Validates business_type exists and is meaningful before including it in welcome message
-    // WHY: Prevents showing "I see you've entered business type" when it's not actually collected
-    // HOW: Checks for meaningful business_type value (non-empty, non-placeholder) before adding to fields array
-    // WHEN: When building welcome message fields list
-    const businessType = initialData.business_type;
-    // CRITICAL FIX: Additional check - ensure businessType is not just whitespace or common placeholders
-    const businessTypeValid = businessType && 
-      typeof businessType === 'string' && 
-      businessType.trim().length > 0 &&
-      businessType.trim().toLowerCase() !== 'null' &&
-      businessType.trim().toLowerCase() !== 'undefined' &&
-      businessType.trim().toLowerCase() !== 'none' &&
-      businessType.trim().toLowerCase() !== 'n/a' &&
-      businessType.trim() !== '';
-    if (businessTypeValid && hasMeaningfulValue(businessType)) {
-      fields.push('business type');
-    }
-    
-    // Check company_name (must be non-empty string)
-    const companyName = initialData.company_name;
-    const companyNameValid = companyName && 
-      typeof companyName === 'string' && 
-      companyName.trim().length > 0 &&
-      companyName.trim().toLowerCase() !== 'null' &&
-      companyName.trim().toLowerCase() !== 'undefined' &&
-      companyName.trim().toLowerCase() !== 'none' &&
-      companyName.trim().toLowerCase() !== 'n/a' &&
-      companyName.trim() !== '';
-    if (companyNameValid && hasMeaningfulValue(companyName)) {
-      fields.push('company name');
-    }
-    
-    // Check industry (must be non-empty string)
-    // CRITICAL FIX: Strict validation - industry must be a real value, not empty or placeholder
-    const industry = initialData.industry;
-    // CRITICAL FIX: Additional check - ensure industry is not just whitespace or common placeholders
-    const industryValid = industry && 
-      typeof industry === 'string' && 
-      industry.trim().length > 0 &&
-      industry.trim().toLowerCase() !== 'null' &&
-      industry.trim().toLowerCase() !== 'undefined' &&
-      industry.trim().toLowerCase() !== 'none' &&
-      industry.trim().toLowerCase() !== 'n/a' &&
-      industry.trim() !== '';
-    if (industryValid && hasMeaningfulValue(industry)) {
-      fields.push('industry');
-    }
-    
-    // Check revenue (must be > 0, check nested and top-level)
-    const revenue = (initialData.current_year_data as any)?.revenue ?? initialData.revenue;
-    if (hasMeaningfulValue(revenue) && typeof revenue === 'number' && revenue > 0) {
-      fields.push('revenue');
-    }
-    
-    // Check EBITDA (must be defined, can be zero or negative - those are valid values)
-    // CRITICAL FIX: EBITDA can legitimately be 0 or negative, so only check it's defined
-    // Bank-Grade Principle: Reliability - Don't exclude valid zero/negative EBITDA values
-    // WHAT: Validates EBITDA is a number (including 0 and negative values)
-    // WHY: EBITDA can be zero or negative for some businesses, which is valid data
-    // HOW: Checks that ebitda is defined and is a number (not null/undefined)
-    // WHEN: When checking if user has entered EBITDA data
-    const ebitda = (initialData.current_year_data as any)?.ebitda ?? initialData.ebitda;
-    if (ebitda !== undefined && ebitda !== null && typeof ebitda === 'number') {
-      fields.push('EBITDA');
-    }
-    
-    // CRITICAL FIX: Only show welcome message if we have ACTUAL meaningful data
-    // Root cause: Previous check allowed empty/null/zero values to trigger message
-    // Bank-Grade: Reliability - Never show misleading information to users
-    // Additional validation: Double-check that values are actually meaningful before showing message
-    if (fields.length > 0 && state.messages.length === 0) {
-      // CRITICAL FIX: Verify that we actually have real data, not just empty strings that passed initial check
-      // This prevents showing message when initialData has keys but values are empty/null/undefined
-      // CRITICAL FIX: Use the same validation logic as above to ensure consistency
-      const hasRealData = 
-        (businessTypeValid && hasMeaningfulValue(businessType)) ||
-        (companyNameValid && hasMeaningfulValue(companyName)) ||
-        (industryValid && hasMeaningfulValue(industry)) ||
-        (revenue && typeof revenue === 'number' && revenue > 0) ||
-        (ebitda !== undefined && ebitda !== null && typeof ebitda === 'number');
-      
-      // Only show message if we have verified real data
-      if (hasRealData) {
-        const summary = `Welcome back! I see you've already entered your ${fields.join(', ')}. I've loaded that context so we can continue where you left off.`;
-        
-        // Add as a system message (or AI message if preferred)
-        // Using timeout to ensure it appears after initialization
-        setTimeout(() => {
-          // Double-check no messages added in the meantime
-          if (state.messages.length === 0) {
-            const { updatedMessages } = messageManager.addMessage([], {
-              type: 'ai',
-              role: 'assistant',
-              content: summary,
-              metadata: {
-                intent: 'greeting',
-                topic: 'resume',
-                is_resume_context: true
-              }
-            });
-            state.setMessages(updatedMessages);
-          }
-        }, 500);
-      } else {
-        // Log when fields array has items but validation failed (for debugging)
-        chatLogger.debug('Welcome message validation failed - no real data found', {
-          fieldsCount: fields.length,
-          businessType: businessType,
-          companyName: companyName,
-          industry: industry,
-          revenue: revenue,
-          ebitda: ebitda
-        });
-      }
-    } else if (initialData && Object.keys(initialData).length > 0 && fields.length === 0) {
-      // Log when initialData exists but has no meaningful values (for debugging)
-      chatLogger.debug('initialData provided but contains no meaningful values', {
-        initialDataKeys: Object.keys(initialData),
-        initialDataValues: Object.keys(initialData).reduce((acc, key) => {
-          acc[key] = initialData[key];
-          return acc;
-        }, {} as Record<string, any>)
-      });
-    }
-  }, [initialData, messageManager, state.messages.length]);
   
   // Use extracted metrics tracking
   const { trackModelPerformance, trackConversationCompletion } = useConversationMetrics(sessionId, userId);
@@ -1276,9 +1101,9 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
         ))}
         </AnimatePresence>
         
-        {/* Typing Indicator - Separate bubble */}
+        {/* Typing Indicator - Show during initialization or when typing */}
         <AnimatePresence>
-        {state.isTyping && (
+        {(state.isTyping || (isInitializing && state.messages.length === 0)) && (
           <div className="flex justify-start" key="typing-indicator">
             <TypingIndicator />
           </div>
