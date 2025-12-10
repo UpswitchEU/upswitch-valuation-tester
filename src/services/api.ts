@@ -21,9 +21,16 @@ class ValuationAPI {
   private client: AxiosInstance;
 
   constructor() {
+    // CRITICAL FIX: Use backend URL (Node.js backend) not Python engine directly
+    // Bank-Grade Principle: Reliability - All requests go through backend for proper CORS and auth handling
+    // WHAT: Uses backend URL which proxies to Python engine
+    // WHY: Backend handles CORS, authentication, rate limiting, and error handling
+    // HOW: Uses VITE_BACKEND_URL or VITE_API_BASE_URL environment variables, falls back to Railway backend URL
+    // WHEN: When creating API client for all valuation and conversation endpoints
     this.client = axios.create({
       baseURL: import.meta.env.VITE_BACKEND_URL || 
-               'https://api.upswitch.biz',
+               import.meta.env.VITE_API_BASE_URL ||
+               'https://web-production-8d00b.up.railway.app',
       timeout: 90000, // 90 seconds - allows for Python processing (60-70s) + buffer
       headers: {
         'Content-Type': 'application/json',
