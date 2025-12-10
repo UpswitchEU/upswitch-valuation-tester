@@ -92,16 +92,49 @@ export class HTMLProcessor {
   static sanitize(htmlContent: string): string {
     if (!htmlContent) return '';
     
+    // BANK-GRADE: Type validation - ensure input is string
+    if (typeof htmlContent !== 'string') {
+      if (process.env.NODE_ENV === 'development') {
+        console.warn('[HTMLProcessor] Invalid input type for sanitize', {
+          type: typeof htmlContent,
+          expected: 'string'
+        });
+      }
+      return ''; // Fail-safe: return empty string for invalid input
+    }
+    
     // BANK-GRADE: Extract CSS before sanitization to preserve it
     // DOMPurify has a known issue removing style tags when they're the first element
     // Reference: https://github.com/cure53/DOMPurify/issues/804
-    const { css: extractedCSS, html: htmlWithoutStyle } = this.extractCSS(htmlContent);
-    const hadStyleTag = extractedCSS.length > 0;
+    let extractedCSS = '';
+    let htmlWithoutStyle = htmlContent;
+    let hadStyleTag = false;
+    
+    try {
+      const extractionResult = this.extractCSS(htmlContent);
+      extractedCSS = extractionResult.css;
+      htmlWithoutStyle = extractionResult.html;
+      hadStyleTag = extractedCSS.length > 0;
+    } catch (error) {
+      // BANK-GRADE: Specific error handling - CSS extraction failure
+      // This is non-critical - continue with sanitization without CSS extraction
+      if (process.env.NODE_ENV === 'development') {
+        console.warn('[HTMLProcessor] CSS extraction failed, continuing without CSS fallback', {
+          error: error instanceof Error ? error.message : String(error)
+        });
+      }
+      // Continue with original HTML for sanitization
+      htmlWithoutStyle = htmlContent;
+      hadStyleTag = false;
+    }
     
     // Sanitize HTML without style tags first
     // BANK-GRADE: Strict DOMPurify configuration for XSS prevention
     // Reference: Frontend Refactoring Guide - Security & Compliance section
-    const sanitized = DOMPurify.sanitize(htmlWithoutStyle, {
+    let sanitized: string;
+    
+    try {
+      sanitized = DOMPurify.sanitize(htmlWithoutStyle, {
       // Allow common HTML tags for reports
       ALLOWED_TAGS: [
         'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
@@ -127,7 +160,31 @@ export class HTMLProcessor {
       KEEP_CONTENT: true, // Preserve content of allowed elements (including CSS in style tags)
       // Note: DOMPurify preserves CSS content within style tags when style is in ALLOWED_TAGS
       // Since our CSS is server-generated from templates (not user input), this is safe
-    });
+      });
+    } catch (error) {
+      // BANK-GRADE: Specific error handling - DOMPurify sanitization failure
+      // DOMPurify typically doesn't throw, but handle edge cases (SSR, invalid config)
+      if (process.env.NODE_ENV === 'development') {
+        console.error('[HTMLProcessor] DOMPurify sanitization failed', {
+          error: error instanceof Error ? error.message : String(error),
+          htmlLength: htmlWithoutStyle.length,
+          fallback: 'returning empty string'
+        });
+      }
+      // Fail-safe: Return empty string if sanitization fails
+      // This prevents XSS but loses content - better than rendering unsafe HTML
+      return '';
+    }
+    
+    // BANK-GRADE: Validate sanitized output
+    if (typeof sanitized !== 'string') {
+      if (process.env.NODE_ENV === 'development') {
+        console.warn('[HTMLProcessor] DOMPurify returned non-string, using fallback', {
+          type: typeof sanitized
+        });
+      }
+      return ''; // Fail-safe: return empty string
+    }
     
     // BANK-GRADE: Re-inject CSS if it was extracted (fallback mechanism)
     // This ensures CSS is always applied even if DOMPurify strips style tags
@@ -200,18 +257,50 @@ export class HTMLProcessor {
   /**
    * Extract sections from HTML for table of contents
    */
+  /**
+   * Extract sections from HTML for table of contents
+   * 
+   * WHAT: Parses HTML to extract heading elements (h2, h3, h4) for TOC generation
+   * WHY: Provides navigation structure for long-form reports
+   * HOW: Uses DOMParser to parse HTML and extract headings
+   * WHEN: Called when generating table of contents for reports
+   * 
+   * @param htmlContent - HTML string to parse
+   * @returns Array of section objects with id, title, and level
+   */
   static extractSections(htmlContent: string): Array<{id: string, title: string, level: number}> {
     if (!htmlContent) return [];
     
-    const parser = new DOMParser();
-    const doc = parser.parseFromString(htmlContent, 'text/html');
-    const headings = doc.querySelectorAll('h2, h3, h4');
+    // BANK-GRADE: Type validation
+    if (typeof htmlContent !== 'string') {
+      if (process.env.NODE_ENV === 'development') {
+        console.warn('[HTMLProcessor] Invalid input type for extractSections', {
+          type: typeof htmlContent
+        });
+      }
+      return [];
+    }
     
-    return Array.from(headings).map((h, idx) => ({
-      id: `section-${idx}`,
-      title: h.textContent || '',
-      level: parseInt(h.tagName.charAt(1))
-    }));
+    try {
+      const parser = new DOMParser();
+      const doc = parser.parseFromString(htmlContent, 'text/html');
+      const headings = doc.querySelectorAll('h2, h3, h4');
+      
+      return Array.from(headings).map((h, idx) => ({
+        id: `section-${idx}`,
+        title: h.textContent || '',
+        level: parseInt(h.tagName.charAt(1), 10) || 2 // Default to h2 if parsing fails
+      }));
+    } catch (error) {
+      // BANK-GRADE: Specific error handling - DOMParser failure
+      // This is non-critical - return empty array if parsing fails
+      if (process.env.NODE_ENV === 'development') {
+        console.warn('[HTMLProcessor] Failed to extract sections from HTML', {
+          error: error instanceof Error ? error.message : String(error)
+        });
+      }
+      return [];
+    }
   }
 
   /**
