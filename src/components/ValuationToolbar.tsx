@@ -185,7 +185,7 @@ export const ValuationToolbar: React.FC<ValuationToolbarProps> = ({
                   {isGenerating ? (
                     <Loader2 className="w-4 h-4 animate-spin text-white" />
                   ) : (
-                    <div className="w-4 h-4 rounded bg-gradient-to-br from-accent-500 to-accent-700 animate-pulse"></div>
+                    <div className="w-4 h-4 rounded bg-gradient-to-br from-accent-500 to-accent-600 animate-pulse shadow-[0_0_8px_rgba(200,127,99,0.4)]"></div>
                   )}
                   {isEditingName ? (
                     <input
