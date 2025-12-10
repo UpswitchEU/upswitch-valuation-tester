@@ -346,11 +346,8 @@ export const CustomBusinessTypeSearch: React.FC<CustomBusinessTypeSearchProps> =
           <div className="p-4">
             <div className="flex items-start gap-3">
               {/* Icon badge */}
-              <div 
-                className="flex-shrink-0 w-10 h-10 rounded-lg flex items-center justify-center shadow-sm"
-                style={{ background: 'linear-gradient(135deg, #6B8594 0%, #5A717D 100%)', boxShadow: '0 1px 2px 0 rgba(107, 133, 148, 0.3)' }}
-              >
-                <span className="text-xl">{selectedType.icon}</span>
+              <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-gradient-to-br from-river-600 to-river-800 flex items-center justify-center shadow-sm shadow-river-900/20 text-white">
+                <span className="text-xl drop-shadow-sm">{selectedType.icon}</span>
               </div>
               
               <div className="flex-1 min-w-0">

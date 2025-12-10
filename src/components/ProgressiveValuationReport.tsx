@@ -136,9 +136,9 @@ export const ProgressiveValuationReport: React.FC<ProgressiveValuationReportProp
   return (
     <div className={`progressive-report valuation-report-preview flex flex-col ${className}`}>
       
-      {/* 1. LOADING STATE - Centered & Persistent until content or error */}
+      {/* 1. LOADING STATE - Top aligned with padding */}
       {showFullLoadingState && !showFullErrorState && (
-        <div className="flex items-center justify-center w-full flex-grow min-h-[400px]">
+        <div className="flex flex-col items-center justify-start w-full flex-grow min-h-[400px] pt-8">
           <LoadingState />
         </div>
       )}

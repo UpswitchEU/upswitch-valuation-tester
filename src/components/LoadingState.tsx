@@ -26,7 +26,7 @@ export const LoadingState: React.FC<LoadingStateProps> = ({
   const isDark = variant === 'dark';
 
   return (
-    <div className="flex flex-col items-center justify-center w-full h-full min-h-[300px] px-4 py-4 text-center max-w-lg mx-auto">
+    <div className="flex flex-col items-center justify-start w-full h-full min-h-[200px] px-4 py-2 text-center max-w-lg mx-auto">
       <div className="relative mb-2 group">
         {/* Outer pulsing rings - refined for subtlety */}
         <div 
