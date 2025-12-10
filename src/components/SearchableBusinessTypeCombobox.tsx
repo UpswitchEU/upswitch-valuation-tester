@@ -323,7 +323,7 @@ export const SearchableBusinessTypeCombobox: React.FC<SearchableBusinessTypeComb
           <div className="p-4">
             <div className="flex items-start gap-3">
               {/* Icon badge */}
-              <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-gradient-to-br from-accent-500 to-accent-600 flex items-center justify-center shadow-sm shadow-accent-500/30">
+              <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-gradient-to-br from-harvest-500 to-harvest-600 flex items-center justify-center shadow-sm shadow-harvest-500/40">
                 <span className="text-xl">{selectedType.icon}</span>
               </div>
               

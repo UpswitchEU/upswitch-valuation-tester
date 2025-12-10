@@ -185,7 +185,7 @@ export const ValuationToolbar: React.FC<ValuationToolbarProps> = ({
                   {isGenerating ? (
                     <Loader2 className="w-4 h-4 animate-spin text-white" />
                   ) : (
-                    <div className="w-4 h-4 rounded bg-gradient-to-br from-accent-500 to-accent-600 animate-pulse shadow-[0_0_8px_rgba(200,127,99,0.4)]"></div>
+                    <div className="w-4 h-4 rounded bg-gradient-to-br from-harvest-500 to-harvest-600 animate-pulse shadow-[0_0_8px_rgba(217,165,88,0.5)]"></div>
                   )}
                   {isEditingName ? (
                     <input
@@ -195,13 +195,13 @@ export const ValuationToolbar: React.FC<ValuationToolbarProps> = ({
                       onChange={(e) => setEditedName(e.target.value)}
                       onBlur={handleNameSave}
                       onKeyDown={handleKeyDown}
-                      className="bg-transparent border-none outline-none focus:outline-none focus:ring-0 focus:border-none text-transparent bg-clip-text bg-gradient-to-r from-accent-400 to-accent-300 font-semibold text-sm"
+                      className="bg-transparent border-none outline-none focus:outline-none focus:ring-0 focus:border-none text-transparent bg-clip-text bg-gradient-to-r from-harvest-400 to-harvest-500 font-semibold text-sm"
                       style={{ minWidth: '120px' }}
                     />
                   ) : (
                     <button
                       onClick={handleNameEdit}
-                      className="hidden md:block font-semibold text-transparent bg-clip-text bg-gradient-to-r from-accent-400 to-accent-500 hover:from-accent-300 hover:to-accent-400 transition-all duration-200 cursor-pointer hover:scale-105 drop-shadow-[0_1px_2px_rgba(200,127,99,0.3)]"
+                      className="hidden md:block font-semibold text-transparent bg-clip-text bg-gradient-to-r from-harvest-400 to-harvest-500 hover:from-harvest-300 hover:to-harvest-400 transition-all duration-200 cursor-pointer hover:scale-105 drop-shadow-[0_1px_3px_rgba(217,165,88,0.4)]"
                       title="Click to edit valuation name"
                     >
                       {generatedName}
@@ -209,7 +209,7 @@ export const ValuationToolbar: React.FC<ValuationToolbarProps> = ({
                   )}
                   <button
                     onClick={handleNameEdit}
-                    className="md:hidden text-xs text-accent-400 font-bold hover:text-accent-300 transition-colors cursor-pointer"
+                    className="md:hidden text-xs text-harvest-400 font-bold hover:text-harvest-300 transition-colors cursor-pointer"
                     title="Click to edit valuation name"
                   >
                     Valuation
