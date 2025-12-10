@@ -103,17 +103,20 @@ export const HomePage: React.FC = () => {
             <div className="text-center space-y-6">
               {/* Hero Content */}
               <div className="space-y-6">
-                <h1 className="text-5xl md:text-6xl lg:text-7xl xl:text-8xl font-bold leading-tight tracking-tight text-white">
-                  Know What Your Business
+                <h1 className="text-5xl md:text-6xl lg:text-7xl xl:text-8xl font-bold leading-tight tracking-tight text-[#F4F1EA]">
+                  Know the true value of
                   <br />
-                  <span className="bg-gradient-to-r from-primary-300 via-primary-400 to-primary-500 bg-clip-text text-transparent">
-                    Is Really Worth
-                  </span>
+                  your life’s work.
                 </h1>
-                <p className="text-lg md:text-xl text-zinc-300 max-w-4xl mx-auto leading-relaxed">
-                  Professional-grade valuations powered by AI. Start with your business type, chat with our AI assistant, and discover your business's true value in minutes.
+                <p className="text-lg md:text-xl text-[#F4F1EA] max-w-4xl mx-auto leading-relaxed opacity-90">
+                  Understanding business value shouldn’t cost a fortune. Get professional-grade accuracy without the friction.
                 </p>
               </div>
+
+              {/* Action Bridge */}
+              <p className="text-[#F4F1EA] text-opacity-80 text-sm md:text-base mb-2 font-medium">
+                Start by entering the business type, and discover the true value in minutes.
+              </p>
 
               {/* Enhanced Query Interface - Ilara Style */}
               <div className="max-w-4xl mx-auto">
@@ -249,6 +252,13 @@ export const HomePage: React.FC = () => {
                     </div>
                   </div>
                 </form>
+                
+                {/* Trust Signal */}
+                <div className="mt-4 text-center">
+                  <p className="text-xs text-[#F4F1EA] text-opacity-60">
+                    Join 500+ owners and advisors · No account required to start
+                  </p>
+                </div>
               </div>
             </div>
           </div>
