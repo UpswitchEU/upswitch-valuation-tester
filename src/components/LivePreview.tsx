@@ -158,10 +158,10 @@ export const LivePreview: React.FC<LivePreviewProps> = ({
         </div>
       ) : error ? (
         <div className="text-center py-8">
-          <div className="w-16 h-16 rounded-full bg-red-100 flex items-center justify-center mx-auto mb-3">
-            <Info className="w-8 h-8 text-red-600" />
+          <div className="w-16 h-16 rounded-full bg-rust-tint flex items-center justify-center mx-auto mb-3">
+            <Info className="w-8 h-8 text-rust-600" />
           </div>
-          <p className="text-sm text-red-600">{error}</p>
+          <p className="text-sm text-rust-600">{error}</p>
         </div>
       ) : displayEstimate ? (
         <div>

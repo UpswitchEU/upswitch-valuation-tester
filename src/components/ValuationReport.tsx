@@ -170,15 +170,15 @@ export const ValuationReport: React.FC = () => {
         {error && (
           <div className="flex items-center justify-center h-full">
             <div className="max-w-md mx-auto text-center">
-              <div className="bg-red-900/20 border border-red-500/30 rounded-lg p-6">
-                <h3 className="text-lg font-semibold text-red-400 mb-2">Error</h3>
-                <p className="text-red-300 mb-4">{error}</p>
+              <div className="bg-rust-500/20 border border-rust-500/30 rounded-lg p-6">
+                <h3 className="text-lg font-semibold text-rust-400 mb-2">Error</h3>
+                <p className="text-rust-300 mb-4">{error}</p>
                 <button
                   onClick={() => {
                     setError(null);
                     setStage('flow-selection');
                   }}
-                  className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors"
+                  className="px-4 py-2 bg-rust-600 hover:bg-rust-700 text-white rounded-lg transition-colors"
                 >
                   Try Again
                 </button>

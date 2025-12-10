@@ -93,7 +93,7 @@ const InputsTable: React.FC<{
                   {input.explanation && (
                     <button
                       onClick={() => toggleInput(idx)}
-                      className="text-blue-600 hover:text-blue-800 transition-colors"
+                      className="text-river-600 hover:text-river-800 transition-colors"
                       aria-label="Show explanation"
                     >
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -129,11 +129,11 @@ const StepCard: React.FC<{ step: CalculationStep; isLast?: boolean }> = ({ step,
 
   const colorClasses = {
     blue: {
-      bg: 'bg-blue-50',
-      border: 'border-blue-500',
-      text: 'text-blue-900',
-      badge: 'bg-blue-500',
-      icon: 'text-blue-600'
+      bg: 'bg-river-50',
+      border: 'border-river-500',
+      text: 'text-river-900',
+      badge: 'bg-river-500',
+      icon: 'text-river-600'
     },
     red: {
       bg: 'bg-accent-50',
@@ -150,11 +150,11 @@ const StepCard: React.FC<{ step: CalculationStep; isLast?: boolean }> = ({ step,
       icon: 'text-primary-600'
     },
     yellow: {
-      bg: 'bg-yellow-50',
-      border: 'border-yellow-500',
-      text: 'text-yellow-900',
-      badge: 'bg-yellow-500',
-      icon: 'text-yellow-600'
+      bg: 'bg-harvest-tint',
+      border: 'border-harvest-500',
+      text: 'text-harvest-900',
+      badge: 'bg-harvest-500',
+      icon: 'text-harvest-600'
     },
     gray: {
       bg: 'bg-gray-50',
@@ -242,10 +242,10 @@ const StepCard: React.FC<{ step: CalculationStep; isLast?: boolean }> = ({ step,
             {step.detailedExplanation && (
               <div className="bg-gradient-to-br from-primary-50 to-canvas border-2 border-primary-300 rounded-lg p-4 space-y-4">
                 <div className="flex items-center gap-2 mb-2">
-                  <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-5 h-5 text-river-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                   </svg>
-                  <h4 className="text-sm font-bold text-blue-900">
+                  <h4 className="text-sm font-bold text-river-900">
                     {step.detailedExplanation.percentage === 0 && (step.stepNumber === 1 || step.title.includes('Base')) 
                       ? 'How the Multiple Was Calculated'
                       : `Detailed Explanation: Why ${step.detailedExplanation.percentage.toFixed(0)}%?`}
@@ -273,8 +273,8 @@ const StepCard: React.FC<{ step: CalculationStep; isLast?: boolean }> = ({ step,
                 )}
 
                 {/* Logic */}
-                <div className="bg-white rounded-lg p-3 border border-blue-200">
-                  <p className="text-xs font-semibold text-blue-800 uppercase mb-2">Logic & Rationale</p>
+                <div className="bg-white rounded-lg p-3 border border-river-200">
+                  <p className="text-xs font-semibold text-river-800 uppercase mb-2">Logic & Rationale</p>
                   <p className="text-sm text-gray-700 leading-relaxed">{step.detailedExplanation.logic}</p>
                 </div>
 

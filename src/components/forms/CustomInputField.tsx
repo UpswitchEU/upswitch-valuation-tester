@@ -106,7 +106,7 @@ const CustomInputField: React.FC<CustomInputFieldProps> = ({
             transition-all duration-200 ease-in-out
             ${leftIcon ? 'pl-10' : ''}
             ${rightIcon ? 'pr-10' : ''}
-            ${hasError ? 'text-accent-600' : ''}
+            ${hasError ? 'text-rust-600' : ''}
             ${disabled ? 'bg-transparent cursor-not-allowed text-gray-400' : 'bg-transparent text-slate-ink'}
           `}
         />
@@ -119,13 +119,13 @@ const CustomInputField: React.FC<CustomInputFieldProps> = ({
 
         <label
           className={`
-            absolute left-4 top-2 text-xs text-gray-600 font-medium pointer-events-none
-            ${hasError ? 'text-red-500' : ''}
-            ${disabled ? 'text-gray-400' : ''}
+            absolute left-4 top-2 text-xs text-stone-500 font-medium pointer-events-none
+            ${hasError ? 'text-rust-500' : ''}
+            ${disabled ? 'text-stone-300' : ''}
           `}
         >
           {label}
-          {required && <span className="text-red-500 ml-1">*</span>}
+          {required && <span className="text-rust-500 ml-1">*</span>}
         </label>
 
         {/* Info Icon - Positioned centered right */}
@@ -136,11 +136,11 @@ const CustomInputField: React.FC<CustomInputFieldProps> = ({
         )}
       </div>
 
-      {description && <p className="mt-1.5 text-xs text-gray-500 font-medium">{description}</p>}
+      {description && <p className="mt-1.5 text-xs text-stone-500 font-medium">{description}</p>}
       
       {/* Help Text (McKinsey UX Standard) */}
       {helpText && helpTextPlacement === 'below' && !hasError && (
-        <p className="text-xs text-gray-500 mt-2 leading-relaxed">
+        <p className="text-xs text-stone-500 mt-2 leading-relaxed">
           {helpText}
         </p>
       )}
@@ -149,9 +149,9 @@ const CustomInputField: React.FC<CustomInputFieldProps> = ({
         <p 
           id={`${name}-error`} 
           role="alert" 
-          className="mt-1.5 text-xs text-accent-600 font-medium flex items-start gap-1.5 animate-in fade-in slide-in-from-top-1"
+          className="mt-1.5 text-xs text-rust-600 font-medium flex items-start gap-1.5 animate-in fade-in slide-in-from-top-1"
         >
-          <span className="w-1 h-1 rounded-full bg-accent-500 inline-block mt-1.5 flex-shrink-0" />
+          <span className="w-1 h-1 rounded-full bg-rust-500 inline-block mt-1.5 flex-shrink-0" />
           <span>{error}</span>
         </p>
       )}

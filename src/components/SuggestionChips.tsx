@@ -1,6 +1,6 @@
+import { AnimatePresence, motion } from 'framer-motion';
+import { ArrowRight, CheckCircle, Sparkles, XCircle } from 'lucide-react';
 import React from 'react';
-import { CheckCircle, XCircle, Sparkles, ArrowRight } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
 
 interface Suggestion {
   text: string;
@@ -55,8 +55,8 @@ export const SuggestionChips: React.FC<SuggestionChipsProps> = ({
 
               {/* Confidence Indicator */}
               {suggestion.confidence > 0.9 && (
-                <span className="flex items-center justify-center w-4 h-4 rounded-full bg-green-500/10">
-                  <CheckCircle className="w-3 h-3 text-green-400" />
+                <span className="flex items-center justify-center w-4 h-4 rounded-full bg-moss-500/10">
+                  <CheckCircle className="w-3 h-3 text-moss-400" />
                 </span>
               )}
               

@@ -64,7 +64,7 @@ export const MultipleWaterfall: React.FC<MultipleWaterfallProps> = ({ pipeline }
                 <td className="px-4 py-3 text-sm font-medium text-gray-900">Step {stage.step_number}</td>
                 <td className="px-4 py-3 text-sm text-gray-600">{stage.explanation}</td>
                 <td className="px-4 py-3 text-sm text-right">
-                  <span className={`font-semibold ${stage.discount_percentage < 0 ? 'text-red-600' : 'text-green-600'}`}>
+                  <span className={`font-semibold ${stage.discount_percentage < 0 ? 'text-rust-600' : 'text-moss-600'}`}>
                     {formatPercentage(stage.discount_percentage)}
                   </span>
                 </td>
@@ -94,8 +94,8 @@ export const MultipleWaterfall: React.FC<MultipleWaterfallProps> = ({ pipeline }
       </div>
       
       {/* Formula */}
-      <div className="mt-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
-        <p className="text-sm text-blue-900">
+      <div className="mt-4 p-4 bg-river-50 rounded-lg border border-river-200">
+        <p className="text-sm text-river-900">
           <span className="font-semibold">Final Valuation:</span> {formatCurrency(pipeline.metric_value)} ({pipeline.metric_type}) × {formatMultiple(pipeline.final_multiple)} = {formatCurrency(pipeline.final_multiple * pipeline.metric_value)}
         </p>
       </div>

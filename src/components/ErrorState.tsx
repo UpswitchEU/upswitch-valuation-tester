@@ -23,9 +23,9 @@ export const ErrorState: React.FC<ErrorStateProps> = ({
   return (
     <div className={`flex flex-col items-center justify-center p-6 sm:p-8 text-center animate-in fade-in duration-500 ${className}`}>
       <div className={`w-12 h-12 sm:w-16 sm:h-16 rounded-full flex items-center justify-center mb-3 sm:mb-4 transition-colors ${
-        isDark ? 'bg-accent-500/10' : 'bg-accent-50'
+        isDark ? 'bg-rust-500/10' : 'bg-rust-tint'
       }`}>
-        <AlertTriangle className={`w-6 h-6 sm:w-8 sm:h-8 ${isDark ? 'text-accent-400' : 'text-accent-500'}`} />
+        <AlertTriangle className={`w-6 h-6 sm:w-8 sm:h-8 ${isDark ? 'text-rust-400' : 'text-rust-500'}`} />
       </div>
       
       <h3 className={`text-base sm:text-lg font-semibold mb-2 ${isDark ? 'text-white' : 'text-slate-ink'}`}>
@@ -56,8 +56,8 @@ export const ErrorState: React.FC<ErrorStateProps> = ({
             onClick={onRetry}
             className={`flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium text-white rounded-lg shadow-sm hover:shadow-md transition-all ${
               isDark
-                ? 'bg-accent-600 hover:bg-accent-500'
-                : 'bg-accent-600 hover:bg-accent-500'
+                ? 'bg-rust-600 hover:bg-rust-500'
+                : 'bg-rust-600 hover:bg-rust-500'
             }`}
           >
             <RefreshCw className="w-4 h-4" />

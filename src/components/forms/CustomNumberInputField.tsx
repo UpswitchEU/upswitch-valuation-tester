@@ -171,7 +171,7 @@ const CustomNumberInputField: React.FC<CustomNumberInputFieldProps> = ({
     <div className={className}>
       <div className="relative">
         {prefix && (
-          <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 text-sm font-medium">
+          <span className="absolute left-4 top-1/2 -translate-y-1/2 text-stone-500 text-sm font-medium">
             {prefix}
           </span>
         )}
@@ -192,7 +192,7 @@ const CustomNumberInputField: React.FC<CustomNumberInputFieldProps> = ({
             ${disabled ? 'opacity-50 cursor-not-allowed' : ''}
             ${prefix ? 'pl-8' : ''}
             ${suffix || showArrows ? 'pr-8' : ''}
-            placeholder:text-gray-400
+            placeholder:text-stone-300
           `}
           aria-label={label}
           value={value}
@@ -209,7 +209,7 @@ const CustomNumberInputField: React.FC<CustomNumberInputFieldProps> = ({
           step={step}
         />
         {suffix && (
-          <span className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 text-sm font-medium">
+          <span className="absolute right-4 top-1/2 -translate-y-1/2 text-stone-500 text-sm font-medium">
             {suffix}
           </span>
         )}
@@ -219,7 +219,7 @@ const CustomNumberInputField: React.FC<CustomNumberInputFieldProps> = ({
               type="button"
               onClick={() => handleArrowClick('up')}
               disabled={disabled || (max !== undefined && (typeof value === 'string' ? (parseInt(value) ?? 0) : (value ?? 0)) >= max)}
-              className="w-4 h-4 flex items-center justify-center text-gray-400 hover:text-gray-600 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+              className="w-4 h-4 flex items-center justify-center text-stone-400 hover:text-stone-600 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
               aria-label="Increase value"
             >
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -230,7 +230,7 @@ const CustomNumberInputField: React.FC<CustomNumberInputFieldProps> = ({
               type="button"
               onClick={() => handleArrowClick('down')}
               disabled={disabled || (min !== undefined && min > 0 && (typeof value === 'string' ? (parseInt(value) ?? 0) : (value ?? 0)) <= min)}
-              className="w-4 h-4 flex items-center justify-center text-gray-400 hover:text-gray-600 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+              className="w-4 h-4 flex items-center justify-center text-stone-400 hover:text-stone-600 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
               aria-label="Decrease value"
             >
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -241,8 +241,8 @@ const CustomNumberInputField: React.FC<CustomNumberInputFieldProps> = ({
         )}
         <label
           className={`
-            absolute left-4 top-2 text-xs text-gray-700 font-medium flex items-center gap-1
-            ${hasError ? 'text-red-600' : ''}
+            absolute left-4 top-2 text-xs text-stone-500 font-medium flex items-center gap-1
+            ${hasError ? 'text-rust-600' : ''}
             ${prefix ? 'left-8' : ''}
             pointer-events-none
           `}
@@ -259,15 +259,15 @@ const CustomNumberInputField: React.FC<CustomNumberInputFieldProps> = ({
       </div>
 
       {hasError && (
-        <span className="mt-1.5 text-xs text-red-500 font-medium flex items-center gap-1">
-          <span className="w-1 h-1 rounded-full bg-red-500 inline-block" />
+        <span className="mt-1.5 text-xs text-rust-500 font-medium flex items-center gap-1">
+          <span className="w-1 h-1 rounded-full bg-rust-500 inline-block" />
           {error}
         </span>
       )}
       
       {/* Help Text (McKinsey UX Standard) */}
       {helpText && helpTextPlacement === 'below' && !hasError && (
-        <p className="text-xs text-gray-500 mt-2 leading-relaxed">
+        <p className="text-xs text-stone-500 mt-2 leading-relaxed">
           {helpText}
         </p>
       )}

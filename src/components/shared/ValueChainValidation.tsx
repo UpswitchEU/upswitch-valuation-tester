@@ -57,9 +57,9 @@ export const ValueChainValidation: React.FC<ValueChainValidationProps> = ({
         {/* Header */}
         <div className="flex items-center gap-3 mb-4">
           {allValid ? (
-            <CheckCircle className="w-6 h-6 text-green-600" />
+            <CheckCircle className="w-6 h-6 text-moss-600" />
           ) : (
-            <AlertTriangle className="w-6 h-6 text-yellow-600" />
+            <AlertTriangle className="w-6 h-6 text-harvest-600" />
           )}
           <div>
             <h3 className="text-lg font-semibold text-gray-900">Value Chain Validation</h3>
@@ -105,7 +105,7 @@ export const ValueChainValidation: React.FC<ValueChainValidationProps> = ({
                 {formatCurrency(valuationMidStep10)}
               </div>
               <div className={`text-xs mt-1 flex items-center gap-1 ${
-                step8ToStep10Valid ? 'text-green-600' : 'text-yellow-600'
+                step8ToStep10Valid ? 'text-moss-600' : 'text-harvest-600'
               }`}>
                 {step8ToStep10Valid ? (
                   <CheckCircle className="w-3 h-3" />
@@ -134,7 +134,7 @@ export const ValueChainValidation: React.FC<ValueChainValidationProps> = ({
                 {formatCurrency(valuationMidStep11)}
               </div>
               <div className={`text-xs mt-1 flex items-center gap-1 ${
-                step10ToStep11Valid ? 'text-green-600' : 'text-yellow-600'
+                step10ToStep11Valid ? 'text-moss-600' : 'text-harvest-600'
               }`}>
                 {step10ToStep11Valid ? (
                   <CheckCircle className="w-3 h-3" />
@@ -156,13 +156,13 @@ export const ValueChainValidation: React.FC<ValueChainValidationProps> = ({
             <div className="flex items-center gap-2">
               {allValid ? (
                 <>
-                  <CheckCircle className="w-5 h-5 text-green-600" />
-                  <span className="text-sm font-semibold text-green-600">Validated</span>
+                  <CheckCircle className="w-5 h-5 text-moss-600" />
+                  <span className="text-sm font-semibold text-moss-600">Validated</span>
                 </>
               ) : (
                 <>
-                  <AlertTriangle className="w-5 h-5 text-yellow-600" />
-                  <span className="text-sm font-semibold text-yellow-600">Minor Differences</span>
+                  <AlertTriangle className="w-5 h-5 text-harvest-600" />
+                  <span className="text-sm font-semibold text-harvest-600">Minor Differences</span>
                 </>
               )}
             </div>

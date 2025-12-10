@@ -94,10 +94,10 @@ export const HTMLPreviewPanel = forwardRef<HTMLPreviewPanelRef, HTMLPreviewPanel
 
       {/* Legacy loading indicator (fallback) */}
       {isGenerating && !hasProgressiveSections && (
-        <div className="sticky top-0 bg-blue-50 border-b border-blue-200 p-3 z-10">
+        <div className="sticky top-0 bg-river-50 border-b border-river-200 p-3 z-10">
           <div className="flex items-center gap-2">
-            <Loader2 className="animate-spin h-4 w-4 text-blue-600" />
-            <span className="text-sm text-blue-700">
+            <Loader2 className="animate-spin h-4 w-4 text-river-600" />
+            <span className="text-sm text-river-700">
               Generating valuation... {displayProgress}%
             </span>
           </div>

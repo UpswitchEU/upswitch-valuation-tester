@@ -226,7 +226,7 @@ export const SearchableBusinessTypeCombobox: React.FC<SearchableBusinessTypeComb
           ${disabled ? 'text-gray-400' : ''}
         `}>
           Business Type
-          {required && <span className="text-red-500 ml-1">*</span>}
+          {required && <span className="text-rust-500 ml-1">*</span>}
         </label>
       </div>
 
@@ -323,7 +323,7 @@ export const SearchableBusinessTypeCombobox: React.FC<SearchableBusinessTypeComb
           <div className="p-4">
             <div className="flex items-start gap-3">
               {/* Icon badge */}
-              <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-gradient-to-br from-primary-500 to-primary-600 flex items-center justify-center shadow-sm">
+              <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-gradient-to-br from-accent-500 to-accent-600 flex items-center justify-center shadow-sm shadow-accent-500/30">
                 <span className="text-xl">{selectedType.icon}</span>
               </div>
               
@@ -332,8 +332,8 @@ export const SearchableBusinessTypeCombobox: React.FC<SearchableBusinessTypeComb
                   {selectedType.description}
                 </div>
                 <div className="flex flex-wrap items-center gap-2 text-xs">
-                  <span className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-white/70 backdrop-blur-sm border border-blue-200/50 text-gray-700">
-                    <svg className="w-3 h-3 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <span className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-white/70 backdrop-blur-sm border border-river-200/50 text-gray-700">
+                      <svg className="w-3 h-3 text-river-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
                     </svg>
                     <span className="font-medium text-gray-900">{selectedType.industry || selectedType.industryMapping}</span>

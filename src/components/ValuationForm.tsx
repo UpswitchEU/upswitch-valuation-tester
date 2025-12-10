@@ -529,7 +529,7 @@ export const ValuationForm: React.FC = () => {
               disabled={businessTypesLoading}
             />
             {businessTypesError && (
-              <p className="mt-2 text-sm text-yellow-400">
+              <p className="mt-2 text-sm text-harvest-500">
                 ⚠️ Using offline business types. Some options may be limited.
               </p>
             )}
@@ -727,9 +727,9 @@ export const ValuationForm: React.FC = () => {
                 const isCritical = formData.number_of_employees === 0;
                 
                 return (
-                  <div className={`p-4 rounded-xl border ${isCritical ? 'bg-accent-50/90 border-accent-200 text-accent-900' : 'bg-amber-50/90 border-amber-200 text-amber-900'}`}>
+                  <div className={`p-4 rounded-xl border ${isCritical ? 'bg-accent-50/90 border-accent-200 text-accent-900' : 'bg-harvest-tint/90 border-harvest-200 text-harvest-900'}`}>
                     <div className="flex items-start gap-3">
-                      <div className={`flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center ${isCritical ? 'bg-accent-100 text-accent-600' : 'bg-amber-100 text-amber-600'}`}>
+                      <div className={`flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center ${isCritical ? 'bg-accent-100 text-accent-600' : 'bg-harvest-100 text-harvest-600'}`}>
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
                         </svg>

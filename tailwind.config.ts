@@ -51,23 +51,87 @@ const config: Config = {
         slate: {
           ink: '#2B303A', // Slate Ink
         },
+        // Functional Status Colors - Earthen Functional Tones
+        rust: {
+          DEFAULT: '#B85C56', // Rust - Error/Critical
+          tint: '#F5EBEA', // Rust Tint - Error backgrounds
+          50: '#F5EBEA',
+          100: '#E8D5D3',
+          200: '#D4B0AD',
+          300: '#C08B87',
+          400: '#B85C56',
+          500: '#B85C56',
+          600: '#A04A44',
+          700: '#883D38',
+          800: '#70302C',
+          900: '#582320',
+        },
+        moss: {
+          DEFAULT: '#6B8E72', // Moss - Success/Valid
+          tint: '#E9F0EB', // Moss Tint - Success backgrounds
+          50: '#E9F0EB',
+          100: '#D3E1D7',
+          200: '#A7C3AF',
+          300: '#7BA587',
+          400: '#6B8E72',
+          500: '#6B8E72',
+          600: '#5A7A5F',
+          700: '#49664C',
+          800: '#385239',
+          900: '#273E26',
+        },
+        harvest: {
+          DEFAULT: '#D9A558', // Harvest - Warning/Pending
+          tint: '#FAF5EB', // Harvest Tint - Warning backgrounds
+          50: '#FAF5EB',
+          100: '#F5EBD7',
+          200: '#EBD7AF',
+          300: '#E1C387',
+          400: '#D9A558',
+          500: '#D9A558',
+          600: '#C89447',
+          700: '#B78336',
+          800: '#A67225',
+          900: '#956114',
+        },
+        river: {
+          DEFAULT: '#6B8594', // River - Information/Links
+          50: '#E8EDF0',
+          100: '#D1DBE1',
+          200: '#A3B7C3',
+          300: '#7593A5',
+          400: '#6B8594',
+          500: '#6B8594',
+          600: '#5A717D',
+          700: '#495D66',
+          800: '#38494F',
+          900: '#273538',
+        },
+        // Stone Neutral Scale - Warm Greys
+        stone: {
+          100: '#EBE7DE', // Dividers & Borders
+          200: '#DCD8CE', // Input Fields
+          300: '#C2BDB3', // Disabled States
+          500: '#85827A', // Secondary Text
+        },
+        // Legacy aliases for backward compatibility (using new colors)
         success: {
-          DEFAULT: '#22c55e',
-          50: '#f0fdf4',
-          500: '#22c55e',
-          600: '#16a34a',
+          DEFAULT: '#6B8E72', // Moss
+          50: '#E9F0EB', // Moss Tint
+          500: '#6B8E72',
+          600: '#5A7A5F',
         },
         warning: {
-          DEFAULT: '#f59e0b',
-          50: '#fffbeb',
-          500: '#f59e0b',
-          600: '#d97706',
+          DEFAULT: '#D9A558', // Harvest
+          50: '#FAF5EB', // Harvest Tint
+          500: '#D9A558',
+          600: '#C89447',
         },
         error: {
-          DEFAULT: '#ef4444',
-          50: '#fef2f2',
-          500: '#ef4444',
-          600: '#dc2626',
+          DEFAULT: '#B85C56', // Rust
+          50: '#F5EBEA', // Rust Tint
+          500: '#B85C56',
+          600: '#A04A44',
         },
       },
       fontFamily: {

@@ -43,7 +43,7 @@ export const ProgressiveReportSection: React.FC<ProgressiveReportSectionProps> =
     return (
       <div className="page animate-pulse mb-0"> {/* Use page style for loading skeleton */}
         <div className="flex items-center gap-3 mb-8">
-          <Loader2 className="w-5 h-5 text-blue-500 animate-spin" />
+          <Loader2 className="w-5 h-5 text-river-500 animate-spin" />
           <div>
             <h3 className="text-sm font-medium text-gray-700">{section.name}</h3>
             <p className="text-xs text-gray-500">Calculating...</p>

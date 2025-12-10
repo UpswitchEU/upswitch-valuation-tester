@@ -54,7 +54,7 @@ export const GrowthMetrics: React.FC<GrowthMetricsProps> = ({ result }) => {
                   <li key={index}>{error}</li>
                 ))}
               </ul>
-              <p className="text-xs text-yellow-700 mt-2 italic">Some metrics may be unavailable or use default values.</p>
+              <p className="text-xs text-harvest-700 mt-2 italic">Some metrics may be unavailable or use default values.</p>
             </div>
           </div>
         </div>

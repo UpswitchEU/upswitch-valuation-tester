@@ -94,10 +94,10 @@ export const StepMetadata: React.FC<StepMetadataProps> = ({
         <span
           className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${
             dataSource === 'real'
-              ? 'bg-green-100 text-green-700 border border-green-200'
+              ? 'bg-moss-tint text-moss-700 border border-moss-200'
               : dataSource === 'cache'
-              ? 'bg-blue-100 text-blue-700 border border-blue-200'
-              : 'bg-yellow-100 text-yellow-700 border border-yellow-200'
+              ? 'bg-river-50 text-river-700 border border-river-200'
+              : 'bg-harvest-tint text-harvest-700 border border-harvest-200'
           }`}
           title={
             dataSource === 'real'
@@ -133,7 +133,7 @@ export const StepMetadata: React.FC<StepMetadataProps> = ({
 
       {/* Warnings */}
       {showWarnings && hasWarnings && (
-        <span className="inline-flex items-center gap-1 text-yellow-600">
+        <span className="inline-flex items-center gap-1 text-harvest-600">
           <AlertTriangle className="w-3.5 h-3.5" />
           <span className="text-xs italic">{stepData.reason}</span>
         </span>
@@ -141,7 +141,7 @@ export const StepMetadata: React.FC<StepMetadataProps> = ({
 
       {/* Errors */}
       {showWarnings && hasErrors && (
-        <span className="inline-flex items-center gap-1 text-red-600">
+        <span className="inline-flex items-center gap-1 text-rust-600">
           <AlertTriangle className="w-3.5 h-3.5" />
           <span className="text-xs italic">{stepData.error}</span>
         </span>

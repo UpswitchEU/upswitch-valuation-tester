@@ -201,7 +201,7 @@ export const ValuationToolbar: React.FC<ValuationToolbarProps> = ({
                   ) : (
                     <button
                       onClick={handleNameEdit}
-                      className="hidden md:block font-semibold text-transparent bg-clip-text bg-gradient-to-r from-primary-400 to-primary-300 hover:from-primary-300 hover:to-primary-200 transition-all duration-200 cursor-pointer hover:scale-105"
+                      className="hidden md:block font-semibold text-transparent bg-clip-text bg-gradient-to-r from-accent-400 to-accent-500 hover:from-accent-300 hover:to-accent-400 transition-all duration-200 cursor-pointer hover:scale-105 drop-shadow-[0_1px_2px_rgba(200,127,99,0.3)]"
                       title="Click to edit valuation name"
                     >
                       {generatedName}

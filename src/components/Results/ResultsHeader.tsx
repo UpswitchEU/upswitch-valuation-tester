@@ -268,13 +268,13 @@ export const ResultsHeader: React.FC<ResultsHeaderProps> = ({ result }) => {
                       result.current_year_data?.ebitda != null && result.current_year_data.ebitda > 0 ? (
                         `${formatCurrencyCompact(result.current_year_data.ebitda)} × ${result.multiples_valuation.ebitda_multiple?.toFixed(2) ?? 'N/A'}x`
                       ) : (
-                        <span className="text-yellow-600 font-medium" title="Please enter EBITDA to calculate enterprise value">EBITDA: Required</span>
+                        <span className="text-harvest-600 font-medium" title="Please enter EBITDA to calculate enterprise value">EBITDA: Required</span>
                       )
                     ) : (
                       result.current_year_data?.revenue != null && result.current_year_data.revenue > 0 ? (
                         `${formatCurrencyCompact(result.current_year_data.revenue)} × ${result.multiples_valuation.revenue_multiple?.toFixed(2) ?? 'N/A'}x`
                       ) : (
-                        <span className="text-yellow-600 font-medium" title="Please enter revenue to calculate enterprise value">Revenue: Required</span>
+                        <span className="text-harvest-600 font-medium" title="Please enter revenue to calculate enterprise value">Revenue: Required</span>
                       )
                     )}
                   </p>

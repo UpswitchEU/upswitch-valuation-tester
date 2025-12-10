@@ -1,5 +1,5 @@
-import React from 'react';
 import { Code, Copy } from 'lucide-react';
+import React from 'react';
 import type { ValuationResponse } from '../types/valuation';
 
 interface HTMLViewProps {
@@ -41,7 +41,7 @@ export const HTMLView: React.FC<HTMLViewProps> = ({ result }) => {
           <h3 className="text-white font-medium">HTML Report</h3>
         </div>
         <div className="flex-1 flex flex-col items-center justify-center p-8">
-          <Code className="w-16 h-16 text-red-400 mb-4" />
+          <Code className="w-16 h-16 text-rust-400 mb-4" />
           <h3 className="text-lg font-semibold text-white mb-2">HTML Report Not Available</h3>
           <p className="text-sm text-zinc-400 mb-4 text-center max-w-md">
             The server-generated HTML report is not available. This indicates an issue with the valuation response.

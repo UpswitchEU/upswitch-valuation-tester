@@ -86,14 +86,14 @@ export const ConfidenceScoreModal: React.FC<ConfidenceScoreModalProps> = ({
       )}
       
       {isUsingBackendData && (
-        <div className="mb-4 p-3 bg-green-50 border border-green-300 rounded-lg">
+        <div className="mb-4 p-3 bg-moss-tint border border-moss-300 rounded-lg">
           <div className="flex items-start gap-2">
-            <svg className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-5 h-5 text-moss-600 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
             <div className="flex-1">
-              <p className="text-sm font-medium text-green-900 mb-1">Backend Confidence Analysis</p>
-              <p className="text-sm text-green-800">
+              <p className="text-sm font-medium text-moss-900 mb-1">Backend Confidence Analysis</p>
+              <p className="text-sm text-moss-800">
                 Confidence factors calculated using comprehensive backend analysis with market data, industry benchmarks, and business model assessment.
               </p>
             </div>
@@ -109,14 +109,14 @@ export const ConfidenceScoreModal: React.FC<ConfidenceScoreModalProps> = ({
             <p className="text-sm text-gray-600">Overall assessment of valuation reliability based on data quality and market conditions</p>
           </div>
           <div className="text-right">
-            <div className="text-3xl font-bold text-blue-600">
+            <div className="text-3xl font-bold text-river-600">
               {Math.max(0, Math.min(100, Math.round(overallConfidence)))}%
             </div>
             <p className="text-xs text-gray-500 mt-1">
               {overallConfidence >= 80 ? 'High' : overallConfidence >= 60 ? 'Moderate' : 'Low'} Confidence
             </p>
             {hasEstimatedFactors && (
-              <p className="text-xs text-yellow-600 mt-1 font-medium">(Estimated)</p>
+              <p className="text-xs text-harvest-600 mt-1 font-medium">(Estimated)</p>
             )}
           </div>
         </div>
@@ -132,13 +132,13 @@ export const ConfidenceScoreModal: React.FC<ConfidenceScoreModalProps> = ({
               <span className="text-sm font-semibold text-gray-900">
                 {confidenceFactors.data_quality}%
                 {estimatedFactors.has('data_quality') && (
-                  <span className="ml-1 text-xs text-yellow-600 font-normal">(Est.)</span>
+                  <span className="ml-1 text-xs text-harvest-600 font-normal">(Est.)</span>
                 )}
               </span>
             </div>
             <div className="w-full bg-gray-200 rounded-full h-2">
               <div 
-                className={`bg-blue-500 h-2 rounded-full ${
+                className={`bg-river-500 h-2 rounded-full ${
                   prefersReducedMotion ? '' : 'transition-progress'
                 }`}
                 style={{ width: `${confidenceFactors.data_quality}%` }}
@@ -152,13 +152,13 @@ export const ConfidenceScoreModal: React.FC<ConfidenceScoreModalProps> = ({
               <span className="text-sm font-semibold text-gray-900">
                 {confidenceFactors.methodology_agreement}%
                 {estimatedFactors.has('methodology_agreement') && (
-                  <span className="ml-1 text-xs text-yellow-600 font-normal">(Est.)</span>
+                  <span className="ml-1 text-xs text-harvest-600 font-normal">(Est.)</span>
                 )}
               </span>
             </div>
             <div className="w-full bg-gray-200 rounded-full h-2">
               <div 
-                className={`bg-green-500 h-2 rounded-full ${
+                className={`bg-moss-500 h-2 rounded-full ${
                   prefersReducedMotion ? '' : 'transition-progress'
                 }`}
                 style={{ width: `${confidenceFactors.methodology_agreement}%` }}
@@ -172,7 +172,7 @@ export const ConfidenceScoreModal: React.FC<ConfidenceScoreModalProps> = ({
               <span className="text-sm font-semibold text-gray-900">
                 {confidenceFactors.industry_benchmarks}%
                 {estimatedFactors.has('industry_benchmarks') && (
-                  <span className="ml-1 text-xs text-yellow-600 font-normal">(Est.)</span>
+                  <span className="ml-1 text-xs text-harvest-600 font-normal">(Est.)</span>
                 )}
               </span>
             </div>
@@ -192,7 +192,7 @@ export const ConfidenceScoreModal: React.FC<ConfidenceScoreModalProps> = ({
               <span className="text-sm font-semibold text-gray-900">
                 {confidenceFactors.company_profile}%
                 {estimatedFactors.has('company_profile') && (
-                  <span className="ml-1 text-xs text-yellow-600 font-normal">(Est.)</span>
+                  <span className="ml-1 text-xs text-harvest-600 font-normal">(Est.)</span>
                 )}
               </span>
             </div>
@@ -289,9 +289,9 @@ export const ConfidenceScoreModal: React.FC<ConfidenceScoreModalProps> = ({
       </div>
 
       {/* Improvement Recommendations */}
-      <div className="mt-6 p-4 bg-blue-50 rounded border border-blue-200">
-        <h5 className="font-medium text-blue-900 mb-2">💡 How to Improve Confidence Score</h5>
-        <ul className="text-sm text-blue-800 space-y-1">
+      <div className="mt-6 p-4 bg-river-50 rounded border border-river-200">
+        <h5 className="font-medium text-river-900 mb-2">💡 How to Improve Confidence Score</h5>
+        <ul className="text-sm text-river-800 space-y-1">
           {confidenceFactors.data_quality < 80 && <li>• Add complete financial statements (income statement, balance sheet, cash flow) for current year</li>}
           {confidenceFactors.historical_data < 80 && <li>• Provide 3+ years of historical financial data including revenue, EBITDA, and key metrics</li>}
           {confidenceFactors.industry_benchmarks < 80 && <li>• Industry has limited comparable data - this is normal for niche markets. Consider providing additional industry-specific benchmarks</li>}
@@ -309,8 +309,8 @@ export const ConfidenceScoreModal: React.FC<ConfidenceScoreModalProps> = ({
           </p>
           
           {isUsingBackendData ? (
-            <div className="bg-white rounded-lg p-3 border border-green-200">
-              <p className="font-medium text-green-900 mb-2">Backend Calculation (Weighted Average):</p>
+            <div className="bg-white rounded-lg p-3 border border-moss-200">
+              <p className="font-medium text-moss-900 mb-2">Backend Calculation (Weighted Average):</p>
               <ul className="space-y-1 text-xs text-gray-700 ml-4 list-disc">
                 <li>Data Quality: 20% weight</li>
                 <li>Historical Data: 15% weight</li>
@@ -326,8 +326,8 @@ export const ConfidenceScoreModal: React.FC<ConfidenceScoreModalProps> = ({
               </p>
             </div>
           ) : (
-            <div className="bg-white rounded-lg p-3 border border-yellow-200">
-              <p className="font-medium text-yellow-900 mb-2">Frontend Calculation (Approximation):</p>
+            <div className="bg-white rounded-lg p-3 border border-harvest-200">
+              <p className="font-medium text-harvest-900 mb-2">Frontend Calculation (Approximation):</p>
               <p className="text-xs text-gray-700 mb-2">
                 Using simple average of calculated factors. Some factors use default estimates where data is unavailable.
                 <strong className="block mt-1">For accurate weighted calculation, ensure complete financial data is provided.</strong>
@@ -379,13 +379,13 @@ export const ConfidenceScoreModal: React.FC<ConfidenceScoreModalProps> = ({
             <div>
               <h5 className="font-semibold text-gray-900 mb-2">What the Score Means</h5>
               <div className="space-y-2 mt-2">
-                <div className="flex items-start gap-3 p-2.5 bg-green-50 rounded border border-green-200">
+                <div className="flex items-start gap-3 p-2.5 bg-moss-tint rounded border border-moss-200">
                   <div className="flex-shrink-0 w-20 text-right">
-                    <span className="text-xs font-semibold text-green-700">90-100%</span>
+                    <span className="text-xs font-semibold text-moss-700">90-100%</span>
                   </div>
                   <div className="flex-1">
-                    <p className="text-xs text-green-800 font-semibold">Very High Confidence</p>
-                    <p className="text-xs text-green-700 mt-0.5">Valuation is highly reliable with comprehensive data</p>
+                    <p className="text-xs text-moss-800 font-semibold">Very High Confidence</p>
+                    <p className="text-xs text-moss-700 mt-0.5">Valuation is highly reliable with comprehensive data</p>
                   </div>
                 </div>
                 
@@ -409,13 +409,13 @@ export const ConfidenceScoreModal: React.FC<ConfidenceScoreModalProps> = ({
                   </div>
                 </div>
                 
-                <div className="flex items-start gap-3 p-2.5 bg-yellow-50 rounded border border-yellow-200">
+                <div className="flex items-start gap-3 p-2.5 bg-harvest-tint rounded border border-harvest-200">
                   <div className="flex-shrink-0 w-20 text-right">
-                    <span className="text-xs font-semibold text-yellow-700">60-69%</span>
+                    <span className="text-xs font-semibold text-harvest-700">60-69%</span>
                   </div>
                   <div className="flex-1">
-                    <p className="text-xs text-yellow-800 font-semibold">Moderate Confidence</p>
-                    <p className="text-xs text-yellow-700 mt-0.5">Valuation is reasonably reliable, consider additional data</p>
+                    <p className="text-xs text-harvest-800 font-semibold">Moderate Confidence</p>
+                    <p className="text-xs text-harvest-700 mt-0.5">Valuation is reasonably reliable, consider additional data</p>
                   </div>
                 </div>
                 

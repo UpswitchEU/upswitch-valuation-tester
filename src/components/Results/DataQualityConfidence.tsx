@@ -37,9 +37,9 @@ export const DataQualityConfidence: React.FC<DataQualityConfidenceProps> = ({
   const reviewReady = getProfessionalReviewReady(result);
 
   const getConfidenceColor = (score: number) => {
-    if (score >= 80) return 'text-green-600 bg-green-50 border-green-200';
-    if (score >= 60) return 'text-yellow-600 bg-yellow-50 border-yellow-200';
-    return 'text-red-600 bg-red-50 border-red-200';
+    if (score >= 80) return 'text-moss-600 bg-moss-tint border-moss-200';
+    if (score >= 60) return 'text-harvest-600 bg-harvest-tint border-harvest-200';
+    return 'text-rust-600 bg-rust-tint border-rust-200';
   };
 
   const hasInfoTabHtml = !!(result.info_tab_html && result.info_tab_html.length > 0);
@@ -58,7 +58,7 @@ export const DataQualityConfidence: React.FC<DataQualityConfidenceProps> = ({
               Confidence: {confidenceScore}% ({confidenceLevel})
             </span>
             {reviewReady && (
-              <span className="px-2 py-1 bg-green-100 text-green-700 rounded-full text-xs font-medium">
+              <span className="px-2 py-1 bg-moss-tint text-moss-700 rounded-full text-xs font-medium">
                 Review Ready
               </span>
             )}
@@ -139,12 +139,12 @@ export const DataQualityConfidence: React.FC<DataQualityConfidenceProps> = ({
 
             {/* Professional Review Status */}
             {reviewReady && (
-              <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
+              <div className="p-3 bg-moss-tint border border-moss-200 rounded-lg">
                 <div className="flex items-center gap-2">
-                  <CheckCircle className="w-5 h-5 text-green-600" />
+                  <CheckCircle className="w-5 h-5 text-moss-600" />
                   <div>
-                    <div className="font-semibold text-green-900 text-sm">Professional Review Ready</div>
-                    <div className="text-xs text-green-700 mt-0.5">
+                    <div className="font-semibold text-moss-900 text-sm">Professional Review Ready</div>
+                    <div className="text-xs text-moss-700 mt-0.5">
                       This valuation meets professional review standards
                     </div>
                   </div>

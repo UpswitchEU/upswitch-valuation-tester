@@ -371,13 +371,13 @@
 }
 
 .valuation-report-preview .report-callout.warning {
-  background-color: #FFF7ED;
-  border-left-color: #EA580C;
+  background-color: #FAF5EB; /* Harvest Tint */
+  border-left-color: #D9A558; /* Harvest */
 }
 
 .valuation-report-preview .report-callout.danger {
-  background-color: #FEF2F2;
-  border-left-color: #EF4444;
+  background-color: #F5EBEA; /* Rust Tint */
+  border-left-color: #B85C56; /* Rust */
 }
 
 .valuation-report-preview .report-callout p {
@@ -657,24 +657,24 @@
 }
 
 .valuation-report-preview .status-badge.completed {
-  background-color: #F0FDF4; /* Green-50 */
-  color: #16A34A; /* Green-600 */
+  background-color: #E9F0EB; /* Moss Tint */
+  color: #6B8E72; /* Moss */
 }
 
 .valuation-report-preview .status-badge.skipped {
-  background-color: #FEFCE8; /* Yellow-50 */
-  color: #CA8A04; /* Yellow-600 */
+  background-color: #FAF5EB; /* Harvest Tint */
+  color: #D9A558; /* Harvest */
 }
 
 .valuation-report-preview .status-badge.failed {
-  background-color: #FEF2F2; /* Red-50 */
-  color: #DC2626; /* Red-600 */
+  background-color: #F5EBEA; /* Rust Tint */
+  color: #B85C56; /* Rust */
 }
 
 .valuation-report-preview .status-badge.pending,
 .valuation-report-preview .status-badge.not_executed {
-  background-color: #F3F4F6; /* Gray-100 */
-  color: #4B5563; /* Gray-600 */
+  background-color: #EBE7DE; /* Stone 100 */
+  color: #85827A; /* Stone 500 */
 }
 .valuation-report-preview div.flex.items-center.mb-4:has(svg.lucide-circle-check-big),
 .valuation-report-preview div:has(> svg.lucide-circle-check-big):has(> h2),

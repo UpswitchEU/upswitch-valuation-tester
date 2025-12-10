@@ -76,7 +76,7 @@ export const BusinessTypeSelector: React.FC<BusinessTypeSelectorProps> = ({
       {/* Selector Dropdown */}
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-2">
-          Business Type <span className="text-red-500">*</span>
+          Business Type <span className="text-rust-500">*</span>
         </label>
         <select
           value={selectedId || ''}

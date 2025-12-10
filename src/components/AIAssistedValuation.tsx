@@ -1014,12 +1014,12 @@ export const AIAssistedValuation: React.FC<AIAssistedValuationProps> = ({
       {/* Error Display */}
       {error && (
         <div className="mx-4 mb-4">
-          <div className="bg-red-900/20 border border-red-700/30 rounded-lg p-4">
-            <div className="flex items-center gap-2 text-red-300">
-              <span className="text-red-400">⚠️</span>
+          <div className="bg-rust-500/20 border border-rust-600/30 rounded-lg p-4">
+            <div className="flex items-center gap-2 text-rust-300">
+              <span className="text-rust-400">⚠️</span>
               <span className="font-medium">Error</span>
             </div>
-            <p className="text-red-200 text-sm mt-1">{error}</p>
+            <p className="text-rust-200 text-sm mt-1">{error}</p>
           </div>
         </div>
       )}
@@ -1144,8 +1144,8 @@ export const AIAssistedValuation: React.FC<AIAssistedValuationProps> = ({
 
       {/* Error Message */}
       {profileError && (
-        <div className="border-b border-red-800 bg-red-900/20 px-3 sm:px-4 md:px-6 py-3 mx-4">
-          <div className="flex items-center gap-2 text-sm text-red-300">
+        <div className="border-b border-rust-700 bg-rust-500/20 px-3 sm:px-4 md:px-6 py-3 mx-4">
+          <div className="flex items-center gap-2 text-sm text-rust-300">
             <span>⚠️</span>
             <span>{profileError}</span>
           </div>
