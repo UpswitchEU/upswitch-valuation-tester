@@ -46,8 +46,8 @@ export const RegenerationWarningModal: React.FC<RegenerationWarningModalProps> =
         {/* Header */}
         <div className="p-6 border-b border-zinc-800">
           <div className="flex items-center gap-3 mb-2">
-            <div className="w-10 h-10 bg-orange-500/20 rounded-full flex items-center justify-center">
-              <span className="text-orange-400 text-xl">⚠️</span>
+            <div className="w-10 h-10 bg-harvest-500/20 rounded-full flex items-center justify-center">
+              <span className="text-harvest-400 text-xl">⚠️</span>
             </div>
             <h3 className="text-xl font-bold text-white">
               Overwrite Existing Report?
@@ -60,7 +60,7 @@ export const RegenerationWarningModal: React.FC<RegenerationWarningModalProps> =
           <div className="space-y-2">
             <p className="text-zinc-300">
               You have an <span className="font-semibold text-white">existing valuation report</span> that will be{' '}
-              <span className="font-semibold text-orange-400">permanently overwritten</span>.
+              <span className="font-semibold text-harvest-400">permanently overwritten</span>.
             </p>
             
             {completedAt && (
@@ -72,11 +72,11 @@ export const RegenerationWarningModal: React.FC<RegenerationWarningModalProps> =
           </div>
 
           {/* Warning Box */}
-          <div className="p-4 bg-orange-500/10 border border-orange-500/30 rounded-lg space-y-2">
-            <p className="text-sm font-medium text-orange-300">
+          <div className="p-4 bg-harvest-tint border border-harvest-500/30 rounded-lg space-y-2">
+            <p className="text-sm font-medium text-harvest-700">
               ⚠️ This action cannot be undone
             </p>
-            <p className="text-xs text-orange-200/70">
+            <p className="text-xs text-harvest-600/80">
               The previous valuation report will be replaced with a new one based on your current inputs.
             </p>
           </div>
@@ -99,7 +99,7 @@ export const RegenerationWarningModal: React.FC<RegenerationWarningModalProps> =
           </button>
           <button
             onClick={onConfirm}
-            className="flex-1 px-4 py-3 bg-orange-500 hover:bg-orange-600 text-white rounded-lg font-medium transition-colors"
+            className="flex-1 px-4 py-3 bg-rust-500 hover:bg-rust-600 text-white rounded-lg font-medium transition-colors"
           >
             Regenerate Report
           </button>
