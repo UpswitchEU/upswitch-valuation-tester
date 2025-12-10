@@ -5,11 +5,13 @@ import { GENERATION_STEPS, type LoadingStep } from './LoadingState.constants';
 interface LoadingStateProps {
   steps?: LoadingStep[];
   variant?: 'light' | 'dark';
+  centered?: boolean;
 }
 
 export const LoadingState: React.FC<LoadingStateProps> = ({ 
   steps = GENERATION_STEPS, 
-  variant = 'light' 
+  variant = 'light',
+  centered = true
 }) => {
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
 
@@ -26,8 +28,12 @@ export const LoadingState: React.FC<LoadingStateProps> = ({
   const isDark = variant === 'dark';
 
   return (
-    <div className="flex flex-col items-center justify-start w-full h-full min-h-[200px] px-4 py-2 text-center max-w-lg mx-auto">
-      <div className="relative mb-2 group">
+    <div className={`flex flex-col items-center w-full h-full max-w-lg mx-auto text-center ${
+      centered 
+        ? 'justify-center min-h-[300px] px-4 py-6' 
+        : 'justify-start min-h-[200px] px-4 py-2'
+    }`}>
+      <div className={`relative group ${centered ? 'mb-3' : 'mb-2'}`}>
         {/* Outer pulsing rings - refined for subtlety */}
         <div 
           className={`absolute inset-0 rounded-full animate-ping ${
