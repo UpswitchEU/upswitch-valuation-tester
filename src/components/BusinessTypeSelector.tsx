@@ -9,8 +9,8 @@
  */
 
 import React, { useState } from 'react';
-import { useBusinessTypes } from '../hooks/useBusinessTypes';
 import { useBusinessTypeFull } from '../hooks/useBusinessTypeFull';
+import { useBusinessTypes } from '../hooks/useBusinessTypes';
 
 // ============================================================================
 // TYPES

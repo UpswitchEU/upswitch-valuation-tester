@@ -25,15 +25,15 @@ interface IndustryBenchmarkBarProps {
 
 const ASSESSMENT_CONFIG = {
   excellent: {
-    color: 'text-green-700',
-    bgColor: 'bg-green-100',
-    borderColor: 'border-green-300',
+    color: 'text-primary-700',
+    bgColor: 'bg-primary-100',
+    borderColor: 'border-primary-300',
     icon: '🌟',
     label: 'Excellent',
   },
   good: {
-    color: 'text-blue-700',
-    bgColor: 'bg-blue-100',
+    color: 'text-primary-700',
+    bgColor: 'bg-primary-100',
     borderColor: 'border-blue-300',
     icon: '✓',
     label: 'Good',
@@ -46,16 +46,16 @@ const ASSESSMENT_CONFIG = {
     label: 'Average',
   },
   below_average: {
-    color: 'text-yellow-700',
-    bgColor: 'bg-yellow-100',
-    borderColor: 'border-yellow-300',
+    color: 'text-amber-700',
+    bgColor: 'bg-amber-100',
+    borderColor: 'border-amber-300',
     icon: '⚠',
     label: 'Below Average',
   },
   poor: {
-    color: 'text-red-700',
-    bgColor: 'bg-red-100',
-    borderColor: 'border-red-300',
+    color: 'text-accent-700',
+    bgColor: 'bg-accent-100',
+    borderColor: 'border-accent-300',
     icon: '❌',
     label: 'Poor',
   },
@@ -115,7 +115,7 @@ export const IndustryBenchmarkBar: React.FC<IndustryBenchmarkBarProps> = ({
           </span>
         </div>
         <div className="text-right">
-          <p className="text-sm font-bold text-gray-900">{format(companyValue)}</p>
+          <p className="text-sm font-bold text-slate-ink">{format(companyValue)}</p>
           <p className="text-xs text-gray-500">{companyPercentile}th percentile</p>
         </div>
       </div>
@@ -126,19 +126,19 @@ export const IndustryBenchmarkBar: React.FC<IndustryBenchmarkBarProps> = ({
         <div className="relative h-8 bg-gray-200 rounded-lg overflow-hidden">
           {/* Colored zones */}
           <div 
-            className="absolute left-0 top-0 bottom-0 bg-red-300/40"
+            className="absolute left-0 top-0 bottom-0 bg-accent-300/40"
             style={{ width: `${p25Pos}%` }}
           />
           <div 
-            className="absolute top-0 bottom-0 bg-yellow-300/40"
+            className="absolute top-0 bottom-0 bg-amber-300/40"
             style={{ left: `${p25Pos}%`, width: `${medianPos - p25Pos}%` }}
           />
           <div 
-            className="absolute top-0 bottom-0 bg-green-300/40"
+            className="absolute top-0 bottom-0 bg-primary-300/40"
             style={{ left: `${medianPos}%`, width: `${p75Pos - medianPos}%` }}
           />
           <div 
-            className="absolute top-0 bottom-0 bg-blue-300/40"
+            className="absolute top-0 bottom-0 bg-primary-400/40"
             style={{ left: `${p75Pos}%`, width: `${p90Pos - p75Pos}%` }}
           />
           
@@ -170,12 +170,12 @@ export const IndustryBenchmarkBar: React.FC<IndustryBenchmarkBarProps> = ({
             style={{ left: `${companyPos}%` }}
           >
             <div className="flex flex-col items-center">
-              <span className="text-xs font-bold text-blue-600 mb-1">You</span>
-              <div className="w-0 h-0 border-l-4 border-r-4 border-t-8 border-l-transparent border-r-transparent border-t-blue-600"></div>
+              <span className="text-xs font-bold text-primary-600 mb-1">You</span>
+              <div className="w-0 h-0 border-l-4 border-r-4 border-t-8 border-l-transparent border-r-transparent border-t-primary-600"></div>
             </div>
           </div>
           <div 
-            className="absolute top-0 bottom-0 w-1 bg-blue-600 shadow-lg"
+            className="absolute top-0 bottom-0 w-1 bg-primary-600 shadow-lg"
             style={{ left: `${companyPos}%` }}
           />
         </div>

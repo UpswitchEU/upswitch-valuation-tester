@@ -1,5 +1,5 @@
 import React from 'react';
-import { ValuationResponse, Step5SizeDiscountResult, Step6LiquidityDiscountResult } from '../../types/valuation';
+import { Step5SizeDiscountResult, Step6LiquidityDiscountResult, ValuationResponse } from '../../types/valuation';
 import { formatCurrency } from './utils/formatters';
 
 interface SmallFirmAdjustmentsProps {
@@ -45,7 +45,7 @@ export const SmallFirmAdjustments: React.FC<SmallFirmAdjustmentsProps> = ({ resu
 
   return (
     <div className="bg-white rounded-lg border border-gray-200 p-6 shadow-sm">
-      <h3 className="text-lg font-semibold text-gray-900 mb-4">
+      <h3 className="text-lg font-semibold text-slate-ink mb-4">
         Small Business Valuation Adjustments
       </h3>
       
@@ -56,10 +56,10 @@ export const SmallFirmAdjustments: React.FC<SmallFirmAdjustmentsProps> = ({ resu
       {/* Adjustments Breakdown */}
       <div className="space-y-4 mb-6">
         {/* Size Discount */}
-        <div className="border-l-4 border-blue-500 pl-4 py-2">
+        <div className="border-l-4 border-primary-500 pl-4 py-2">
           <div className="flex justify-between items-baseline mb-1">
-            <h4 className="font-semibold text-gray-900">1. Size Discount</h4>
-            <span className="text-lg font-bold text-blue-600">
+            <h4 className="font-semibold text-slate-ink">1. Size Discount</h4>
+            <span className="text-lg font-bold text-primary-600">
               {formatAdjustment(sizeDiscount)}
             </span>
           </div>
@@ -85,10 +85,10 @@ export const SmallFirmAdjustments: React.FC<SmallFirmAdjustmentsProps> = ({ resu
 
         {/* Country Adjustment */}
         {Math.abs(adjustments.country_adjustment) > 0.001 && (
-          <div className={`border-l-4 ${adjustments.country_adjustment > 0 ? 'border-green-500' : 'border-orange-500'} pl-4 py-2`}>
+          <div className={`border-l-4 ${adjustments.country_adjustment > 0 ? 'border-primary-500' : 'border-accent-500'} pl-4 py-2`}>
             <div className="flex justify-between items-baseline mb-1">
-              <h4 className="font-semibold text-gray-900">3. Country Risk</h4>
-              <span className={`text-lg font-bold ${adjustments.country_adjustment > 0 ? 'text-green-600' : 'text-orange-600'}`}>
+              <h4 className="font-semibold text-slate-ink">3. Country Risk</h4>
+              <span className={`text-lg font-bold ${adjustments.country_adjustment > 0 ? 'text-primary-600' : 'text-accent-600'}`}>
                 {formatAdjustment(adjustments.country_adjustment)}
               </span>
             </div>
@@ -98,10 +98,10 @@ export const SmallFirmAdjustments: React.FC<SmallFirmAdjustmentsProps> = ({ resu
 
         {/* Growth Premium */}
         {adjustments.growth_premium > 0.001 && (
-          <div className="border-l-4 border-green-500 pl-4 py-2">
+          <div className="border-l-4 border-primary-500 pl-4 py-2">
             <div className="flex justify-between items-baseline mb-1">
-              <h4 className="font-semibold text-gray-900">4. Growth Premium ✓</h4>
-              <span className="text-lg font-bold text-green-600">
+              <h4 className="font-semibold text-slate-ink">4. Growth Premium ✓</h4>
+              <span className="text-lg font-bold text-primary-600">
                 {formatAdjustment(adjustments.growth_premium)}
               </span>
             </div>
@@ -116,16 +116,16 @@ export const SmallFirmAdjustments: React.FC<SmallFirmAdjustmentsProps> = ({ resu
       {/* Combined Effect */}
       <div className="border-t-2 border-gray-300 pt-4">
         <div className="flex justify-between items-baseline mb-3">
-          <h4 className="font-semibold text-gray-900">Combined Effect:</h4>
-          <span className="text-xl font-bold text-gray-900">
+          <h4 className="font-semibold text-slate-ink">Combined Effect:</h4>
+          <span className="text-xl font-bold text-slate-ink">
             {formatAdjustment(adjustments.combined_effect)} net adjustment
           </span>
         </div>
 
         {/* Step-by-Step Calculation */}
-        <div className="bg-blue-50 rounded-lg p-4 mb-4 border border-blue-200">
-          <h5 className="font-semibold text-gray-900 mb-3 text-sm">Step-by-Step Calculation</h5>
-          <div className="bg-white rounded p-3 space-y-2 text-xs font-mono border border-blue-300">
+        <div className="bg-primary-50 rounded-lg p-4 mb-4 border border-primary-200">
+          <h5 className="font-semibold text-slate-ink mb-3 text-sm">Step-by-Step Calculation</h5>
+          <div className="bg-white rounded p-3 space-y-2 text-xs font-mono border border-primary-300">
             <div className="flex justify-between">
               <span className="text-gray-700">Base Value (before adjustments):</span>
               <span className="font-semibold">{formatCurrency(adjustments.base_value_before_adjustments)}</span>
@@ -147,7 +147,7 @@ export const SmallFirmAdjustments: React.FC<SmallFirmAdjustmentsProps> = ({ resu
             {adjustments.growth_premium > 0.001 && (
               <div className="flex justify-between text-gray-600">
                 <span>Growth Premium:</span>
-                <span className="text-green-600">{formatAdjustment(adjustments.growth_premium)}</span>
+                <span className="text-primary-600">{formatAdjustment(adjustments.growth_premium)}</span>
               </div>
             )}
             <div className="flex justify-between pt-2 border-t border-gray-300 text-gray-700">
@@ -160,9 +160,9 @@ export const SmallFirmAdjustments: React.FC<SmallFirmAdjustmentsProps> = ({ resu
                 {formatCurrency(adjustments.base_value_before_adjustments)} × {(1.0 + adjustments.combined_effect).toFixed(3)}
               </span>
             </div>
-            <div className="flex justify-between pt-2 border-t-2 border-green-500 font-semibold text-base">
-              <span className="text-gray-900">= Final Adjusted Value:</span>
-              <span className="text-green-600">{formatCurrency(adjustments.adjusted_value_after_adjustments)}</span>
+            <div className="flex justify-between pt-2 border-t-2 border-primary-500 font-semibold text-base">
+              <span className="text-slate-ink">= Final Adjusted Value:</span>
+              <span className="text-primary-600">{formatCurrency(adjustments.adjusted_value_after_adjustments)}</span>
             </div>
           </div>
           <p className="text-xs text-gray-600 mt-2 italic">
@@ -184,16 +184,16 @@ export const SmallFirmAdjustments: React.FC<SmallFirmAdjustmentsProps> = ({ resu
             <span className="font-semibold">{formatAdjustment(adjustments.combined_effect)}</span>
           </div>
           <div className="flex justify-between text-lg border-t border-gray-300 pt-2">
-            <span className="text-gray-900 font-semibold">Your valuation:</span>
+            <span className="text-slate-ink font-semibold">Your valuation:</span>
             <span className="font-bold text-primary-600">{formatCurrency(adjustments.adjusted_value_after_adjustments)}</span>
           </div>
         </div>
       </div>
 
       {/* How to Increase Valuation */}
-      <div className="mt-6 bg-blue-50 rounded border border-blue-200 p-4">
-        <h4 className="font-semibold text-blue-900 mb-2">💡 How to Increase Your Valuation</h4>
-        <p className="text-sm text-blue-800 mb-3">Based on these adjustments, you could increase your value by:</p>
+      <div className="mt-6 bg-primary-50 rounded border border-primary-200 p-4">
+        <h4 className="font-semibold text-primary-900 mb-2">💡 How to Increase Your Valuation</h4>
+        <p className="text-sm text-primary-800 mb-3">Based on these adjustments, you could increase your value by:</p>
         <ul className="text-sm text-blue-800 space-y-1">
           {sizeDiscount < -0.15 && (
             <li>• <strong>Growing revenue to next tier</strong> → Reduce size discount → Potential +10-15% value</li>

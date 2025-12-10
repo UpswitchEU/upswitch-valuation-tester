@@ -173,7 +173,7 @@ export const AdjustmentsSummary: React.FC<AdjustmentsSummaryProps> = ({
           {/* Total Impact Summary */}
           {allAdjustments.length > 1 && (
             <div className="mt-4 pt-4 border-t border-gray-200">
-              <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+              <div className="flex items-center justify-between p-3 bg-canvas rounded-lg">
                 <div className="flex items-center gap-2">
                   <TrendingDown className="w-5 h-5 text-gray-600" />
                   <span className="font-semibold text-slate-ink">Total Adjustment Impact</span>

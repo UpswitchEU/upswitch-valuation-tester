@@ -1,5 +1,5 @@
-import React, { useState, useCallback } from 'react';
-import { Upload, FileText, CheckCircle, X, AlertCircle } from 'lucide-react';
+import { AlertCircle, CheckCircle, FileText, Upload, X } from 'lucide-react';
+import React, { useCallback, useState } from 'react';
 import { fileProcessingService, type ProcessedFile } from '../services/fileProcessingService';
 import { serviceLogger } from '../utils/logger';
 

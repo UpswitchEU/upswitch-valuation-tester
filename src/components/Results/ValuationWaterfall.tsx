@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
 import type { ValuationResponse } from '../../types/valuation';
 import {
-  generateCalculationSteps,
-  getFinalValuationStep,
-  formatCurrency,
-  type CalculationStep
+    formatCurrency,
+    generateCalculationSteps,
+    getFinalValuationStep,
+    type CalculationStep
 } from './utils/valuationCalculations';
 
 interface ValuationWaterfallProps {

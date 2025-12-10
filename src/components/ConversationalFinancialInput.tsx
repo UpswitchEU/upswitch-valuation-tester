@@ -1,9 +1,9 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { Send, DollarSign } from 'lucide-react';
-import { serviceLogger } from '../utils/logger';
-import { LoadingDots } from './LoadingDots';
+import { DollarSign, Send } from 'lucide-react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useLoadingMessage } from '../hooks/useLoadingMessage';
 import { HTMLProcessor } from '../utils/htmlProcessor';
+import { serviceLogger } from '../utils/logger';
+import { LoadingDots } from './LoadingDots';
 
 interface ConversationalFinancialInputProps {
   companyId: string;

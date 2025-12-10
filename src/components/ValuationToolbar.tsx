@@ -185,7 +185,7 @@ export const ValuationToolbar: React.FC<ValuationToolbarProps> = ({
                   {isGenerating ? (
                     <Loader2 className="w-4 h-4 animate-spin text-white" />
                   ) : (
-                    <div className="w-4 h-4 rounded bg-gradient-to-br from-primary-500 to-primary-700 animate-pulse"></div>
+                    <div className="w-4 h-4 rounded bg-gradient-to-br from-accent-500 to-accent-700 animate-pulse"></div>
                   )}
                   {isEditingName ? (
                     <input
@@ -195,7 +195,7 @@ export const ValuationToolbar: React.FC<ValuationToolbarProps> = ({
                       onChange={(e) => setEditedName(e.target.value)}
                       onBlur={handleNameSave}
                       onKeyDown={handleKeyDown}
-                      className="bg-transparent border-none outline-none focus:outline-none focus:ring-0 focus:border-none text-transparent bg-clip-text bg-gradient-to-r from-primary-400 to-primary-300 font-semibold text-sm"
+                      className="bg-transparent border-none outline-none focus:outline-none focus:ring-0 focus:border-none text-transparent bg-clip-text bg-gradient-to-r from-accent-400 to-accent-300 font-semibold text-sm"
                       style={{ minWidth: '120px' }}
                     />
                   ) : (
@@ -209,7 +209,7 @@ export const ValuationToolbar: React.FC<ValuationToolbarProps> = ({
                   )}
                   <button
                     onClick={handleNameEdit}
-                    className="md:hidden text-xs text-primary-400 font-bold hover:text-primary-300 transition-colors cursor-pointer"
+                    className="md:hidden text-xs text-accent-400 font-bold hover:text-accent-300 transition-colors cursor-pointer"
                     title="Click to edit valuation name"
                   >
                     Valuation

@@ -243,9 +243,9 @@ const CustomDropdown: React.FC<CustomDropdownProps> = ({
           <label
             className={`
             absolute left-4 top-2 text-xs text-gray-700 font-medium flex items-center gap-1
-            ${error && touched ? 'text-red-600' : ''}
+            ${error && touched ? 'text-accent-600' : ''}
             ${disabled ? 'text-gray-400' : ''}
-            ${required ? "after:content-['*'] after:text-red-500 after:ml-1" : ''}
+            ${required ? "after:content-['*'] after:text-accent-500 after:ml-1" : ''}
             pointer-events-none
           `}
             id={`${label}-label`}
@@ -324,8 +324,8 @@ const CustomDropdown: React.FC<CustomDropdownProps> = ({
         {/* Error Message */}
       </div>
       {error && touched && (
-        <span className="mt-1.5 text-xs text-red-500 font-medium flex items-center gap-1">
-          <span className="w-1 h-1 rounded-full bg-red-500 inline-block" />
+        <span className="mt-1.5 text-xs text-accent-500 font-medium flex items-center gap-1">
+          <span className="w-1 h-1 rounded-full bg-accent-500 inline-block" />
           {error}
         </span>
       )}

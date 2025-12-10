@@ -12,7 +12,7 @@ export const MultipleWaterfall: React.FC<MultipleWaterfallProps> = ({ pipeline }
 
   return (
     <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-6">
-      <h3 className="text-lg font-semibold text-gray-900 mb-4">
+      <h3 className="text-lg font-semibold text-slate-ink mb-4">
         📊 Multiple Discount Waterfall
       </h3>
       
@@ -68,25 +68,25 @@ export const MultipleWaterfall: React.FC<MultipleWaterfallProps> = ({ pipeline }
                     {formatPercentage(stage.discount_percentage)}
                   </span>
                 </td>
-                <td className="px-4 py-3 text-sm text-right text-gray-900">{formatMultiple(stage.multiple_before)}</td>
+                <td className="px-4 py-3 text-sm text-right text-slate-ink">{formatMultiple(stage.multiple_before)}</td>
                 <td className="px-4 py-3 text-sm text-right">
-                  <span className="font-semibold text-purple-700">{formatMultiple(stage.multiple_after)}</span>
+                  <span className="font-semibold text-primary-700">{formatMultiple(stage.multiple_after)}</span>
                 </td>
                 <td className="px-4 py-3 text-sm text-right text-gray-600">{formatCurrency(stage.ev_after)}</td>
               </tr>
             ))}
             
             {/* Final stage */}
-            <tr className="bg-purple-50 font-semibold">
-              <td className="px-4 py-3 text-sm text-gray-900">Final</td>
-              <td className="px-4 py-3 text-sm text-gray-900">Applied Multiple</td>
-              <td className="px-4 py-3 text-sm text-right text-red-600">{formatPercentage(pipeline.total_reduction_percentage)}</td>
-              <td className="px-4 py-3 text-sm text-right text-gray-900">–</td>
+            <tr className="bg-primary-50 font-semibold">
+              <td className="px-4 py-3 text-sm text-slate-ink">Final</td>
+              <td className="px-4 py-3 text-sm text-slate-ink">Applied Multiple</td>
+              <td className="px-4 py-3 text-sm text-right text-accent-600">{formatPercentage(pipeline.total_reduction_percentage)}</td>
+              <td className="px-4 py-3 text-sm text-right text-slate-ink">–</td>
               <td className="px-4 py-3 text-sm text-right">
-                <span className="text-lg font-bold text-purple-700">{formatMultiple(pipeline.final_multiple)}</span>
+                <span className="text-lg font-bold text-primary-700">{formatMultiple(pipeline.final_multiple)}</span>
               </td>
               <td className="px-4 py-3 text-sm text-right">
-                <span className="text-lg font-bold text-gray-900">{formatCurrency(pipeline.final_multiple * pipeline.metric_value)}</span>
+                <span className="text-lg font-bold text-slate-ink">{formatCurrency(pipeline.final_multiple * pipeline.metric_value)}</span>
               </td>
             </tr>
           </tbody>

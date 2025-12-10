@@ -32,15 +32,15 @@ export const ValuationReadyCTA: React.FC<ValuationReadyCTAProps> = ({
       <div className="max-w-[85%] mr-auto">
         <div className="flex items-start gap-3">
           {/* Bot Avatar */}
-          <div className="flex-shrink-0 w-8 h-8 bg-gradient-to-br from-accent-500/20 to-primary-500/20 rounded-full flex items-center justify-center border border-accent-400/30 shadow-lg shadow-accent-500/20 mt-1">
+          <div className="flex-shrink-0 w-8 h-8 bg-gradient-to-br from-accent-500/20 to-accent-600/20 rounded-full flex items-center justify-center border border-accent-400/30 shadow-lg shadow-accent-500/20 mt-1">
             <Sparkles className="w-4 h-4 text-accent-300" />
           </div>
           
           <div className="flex flex-col gap-1 flex-1">
             {/* Main CTA Card */}
-            <div className="rounded-2xl rounded-tl-sm px-6 py-5 bg-gradient-to-br from-primary-900/20 via-accent-900/10 to-primary-900/20 border border-primary-400/20 shadow-xl backdrop-blur-sm">
+            <div className="rounded-2xl rounded-tl-sm px-6 py-5 bg-gradient-to-br from-accent-900/20 via-accent-800/10 to-accent-900/20 border border-accent-400/20 shadow-xl backdrop-blur-sm">
               {/* Header Badge */}
-              <div className="flex items-center gap-2 mb-4 pb-3 border-b border-primary-400/20">
+              <div className="flex items-center gap-2 mb-4 pb-3 border-b border-accent-400/20">
                 <CheckCircle className="w-5 h-5 text-accent-300" />
                 <span className="text-sm font-semibold text-accent-300 uppercase tracking-wider">
                   Ready for Valuation

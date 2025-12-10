@@ -389,13 +389,13 @@ export const ConfidenceScoreModal: React.FC<ConfidenceScoreModalProps> = ({
                   </div>
                 </div>
                 
-                <div className="flex items-start gap-3 p-2.5 bg-emerald-50 rounded border border-emerald-200">
+                <div className="flex items-start gap-3 p-2.5 bg-primary-50 rounded border border-primary-200">
                   <div className="flex-shrink-0 w-20 text-right">
-                    <span className="text-xs font-semibold text-emerald-700">80-89%</span>
+                    <span className="text-xs font-semibold text-primary-700">80-89%</span>
                   </div>
                   <div className="flex-1">
-                    <p className="text-xs text-emerald-800 font-semibold">High Confidence</p>
-                    <p className="text-xs text-emerald-700 mt-0.5">Valuation is very reliable</p>
+                    <p className="text-xs text-primary-800 font-semibold">High Confidence</p>
+                    <p className="text-xs text-primary-700 mt-0.5">Valuation is very reliable</p>
                   </div>
                 </div>
                 
