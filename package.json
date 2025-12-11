@@ -78,5 +78,8 @@
     "typescript"
   ],
   "author": "Upswitch Team",
-  "license": "UNLICENSED"
+  "license": "UNLICENSED",
+  "resolutions": {
+    "@types/react": "^18.2.67"
+  }
 }
