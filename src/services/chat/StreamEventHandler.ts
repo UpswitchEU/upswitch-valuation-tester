@@ -7,6 +7,7 @@
 
 import { Message } from '../../hooks/useStreamingChatState';
 import { chatLogger } from '../../utils/logger';
+import { businessTypesApiService } from '../businessTypesApi';
 
 // Re-export types for convenience
 export interface ModelPerformanceMetrics {
@@ -1048,12 +1049,31 @@ export class StreamEventHandler {
         validation_status: 'needs_clarification',
         clarification_value: data.value,
         clarification_field: data.field,
-        needs_confirmation: !isSimpleFollowUp, // Only set true if NOT a simple follow-up
+        // For business_type we rely on suggestions, not confirm buttons
+        needs_confirmation: data.field !== 'business_type' && !isSimpleFollowUp,
         // Merge any additional metadata from backend
         ...(data.metadata || {})
       }
     };
     this.callbacks.addMessage(clarificationMessage);
+
+    // If business_type is invalid, proactively fetch and surface suggestions
+    if (data.field === 'business_type' && typeof data.value === 'string' && data.value.trim().length >= 3) {
+      businessTypesApiService.searchBusinessTypes(data.value.trim(), 5)
+        .then((suggestions) => {
+          if (suggestions.length > 0) {
+            this.handleSuggestionOffered({
+              field: 'business_type',
+              original_value: data.value,
+              suggestions,
+              message: 'Did you mean one of these business types?'
+            });
+          }
+        })
+        .catch((error) => {
+          chatLogger.error('Business type suggestion lookup failed', { error: error instanceof Error ? error.message : String(error) });
+        });
+    }
   }
 
   /**

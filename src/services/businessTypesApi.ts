@@ -348,6 +348,36 @@ class BusinessTypesApiService {
       throw error;
     }
   }
+
+  /**
+   * Search business types (backend proxy: /api/business-types/types/search)
+   */
+  async searchBusinessTypes(query: string, limit: number = 5): Promise<Array<{ text: string; confidence: number; reason: string }>> {
+    if (!query || query.trim().length === 0) return [];
+    try {
+      const response = await this.api.get('/types/search', {
+        params: { q: query, limit }
+      });
+
+      const raw = response?.data;
+      // Flexible parsing: handle various possible shapes
+      const candidates =
+        raw?.data?.business_types ||
+        raw?.data?.results ||
+        raw?.data ||
+        [];
+
+      return (candidates as any[]).map((item, idx) => ({
+        text: item?.title || item?.name || item?.label || query,
+        confidence: typeof item?.confidence === 'number' ? item.confidence : 0.7,
+        reason: item?.category || item?.industry || item?.description || 'Similar business type',
+        _index: idx
+      })).filter(s => !!s.text);
+    } catch (error) {
+      console.error('[BusinessTypesAPI] Failed to search business types:', error);
+      return [];
+    }
+  }
 }
 
 // ============================================================================
