@@ -201,11 +201,14 @@ export const ValuationReport: React.FC = () => {
         {stage === 'data-entry' && session && (
           <div className="relative h-full w-full">
             {/* Conditionally render only the active flow component for better performance */}
-            {/* Smooth fade transition when switching flows */}
+            {/* Smooth fade-in animation when component mounts */}
             {session.currentView === 'manual' && (
-              <div className="absolute inset-0 transition-opacity duration-300 ease-in-out opacity-100">
+              <div 
+                key="manual-flow" 
+                className="absolute inset-0 animate-in fade-in duration-200 ease-out"
+              >
                 <Suspense fallback={
-                  <div className="flex items-center justify-center h-full">
+                  <div className="flex items-center justify-center h-full bg-zinc-950">
                     <div className="flex items-center gap-3 text-gray-400">
                       <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary-500"></div>
                       <span className="text-sm">Loading manual flow...</span>
@@ -221,9 +224,12 @@ export const ValuationReport: React.FC = () => {
             )}
 
             {session.currentView === 'conversational' && (
-              <div className="absolute inset-0 transition-opacity duration-300 ease-in-out opacity-100">
+              <div 
+                key="conversational-flow" 
+                className="absolute inset-0 animate-in fade-in duration-200 ease-out"
+              >
                 <Suspense fallback={
-                  <div className="flex items-center justify-center h-full">
+                  <div className="flex items-center justify-center h-full bg-zinc-950">
                     <div className="flex items-center gap-3 text-gray-400">
                       <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary-500"></div>
                       <span className="text-sm">Loading conversational flow...</span>
@@ -240,12 +246,12 @@ export const ValuationReport: React.FC = () => {
               </div>
             )}
             
-            {/* Subtle loading overlay during flow switch sync */}
+            {/* Subtle loading overlay during flow switch sync - only show if syncing takes longer than 100ms */}
             {isSyncing && (
-              <div className="absolute inset-0 bg-zinc-950/50 backdrop-blur-sm z-50 flex items-center justify-center pointer-events-none transition-opacity duration-200">
+              <div className="absolute inset-0 bg-zinc-950/30 backdrop-blur-[2px] z-50 flex items-center justify-center pointer-events-none animate-in fade-in duration-150">
                 <div className="flex flex-col items-center gap-2 text-gray-400">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-500"></div>
-                  <span className="text-xs">Syncing...</span>
+                  <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary-500"></div>
+                  <span className="text-xs opacity-75">Syncing...</span>
                 </div>
               </div>
             )}
