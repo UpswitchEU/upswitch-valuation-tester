@@ -207,14 +207,7 @@ export const ValuationReport: React.FC = () => {
                 key="manual-flow" 
                 className="absolute inset-0 animate-in fade-in duration-200 ease-out"
               >
-                <Suspense fallback={
-                  <div className="flex items-center justify-center h-full bg-zinc-950">
-                    <div className="flex items-center gap-3 text-gray-400">
-                      <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary-500"></div>
-                      <span className="text-sm">Loading manual flow...</span>
-                    </div>
-                  </div>
-                }>
+                <Suspense fallback={null}>
                   <ManualValuationFlow 
                     reportId={currentReportId}
                     onComplete={handleValuationComplete}
@@ -228,14 +221,7 @@ export const ValuationReport: React.FC = () => {
                 key="conversational-flow" 
                 className="absolute inset-0 animate-in fade-in duration-200 ease-out"
               >
-                <Suspense fallback={
-                  <div className="flex items-center justify-center h-full bg-zinc-950">
-                    <div className="flex items-center gap-3 text-gray-400">
-                      <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary-500"></div>
-                      <span className="text-sm">Loading conversational flow...</span>
-                    </div>
-                  </div>
-                }>
+                <Suspense fallback={null}>
                   <AIAssistedValuation 
                     reportId={currentReportId}
                     onComplete={handleValuationComplete}
