@@ -16,6 +16,7 @@ import { chatLogger } from '../utils/logger';
 import { AIHelpCard } from './AIHelpCard';
 import { BusinessTypeConfirmationCard } from './BusinessTypeConfirmationCard';
 import { BusinessTypeSuggestionsList } from './BusinessTypeSuggestionsList';
+import { CompanyNameConfirmationCard } from './CompanyNameConfirmationCard';
 import { KBOSuggestionsList } from './KBOSuggestionsList';
 import { SuggestionChips } from './SuggestionChips';
 import { TypingIndicator } from './TypingIndicator';
@@ -1083,10 +1084,13 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
         {state.messages
           .filter(message => {
             // CRITICAL FIX: Filter out empty messages to prevent empty bubbles
-            // BUT: Allow messages with special metadata (e.g., business type confirmation cards)
+            // BUT: Allow messages with special metadata (e.g., confirmation cards)
             // that intentionally have empty content but should still be displayed
             if (message.metadata?.is_business_type_confirmation === true) {
-              return true; // Always show confirmation cards even with empty content
+              return true; // Always show business type confirmation cards even with empty content
+            }
+            if (message.metadata?.is_company_name_confirmation === true) {
+              return true; // Always show company name confirmation cards even with empty content
             }
             // Only show messages that have actual content (not just whitespace)
             return message.content && message.content.trim().length > 0;
@@ -1333,6 +1337,26 @@ const MessageItem = React.memo<MessageItemProps>(({
         industry={industry}
         category={metadata.category}
         icon={metadata.icon}
+        confidence={metadata.confidence}
+        timestamp={message.timestamp}
+      />
+    );
+  }
+
+  // Check if this is a company name KBO confirmation
+  const isCompanyNameConfirmation = message.metadata?.is_company_name_confirmation === true;
+
+  if (isCompanyNameConfirmation) {
+    // Defensive: Extract metadata with fallbacks (in case metadata structure differs)
+    const metadata = message.metadata || {};
+    
+    return (
+      <CompanyNameConfirmationCard
+        companyName={metadata.company_name || message.content || ''}
+        registrationNumber={metadata.registration_number}
+        legalForm={metadata.legal_form}
+        foundingYear={metadata.founding_year}
+        industryDescription={metadata.industry_description}
         confidence={metadata.confidence}
         timestamp={message.timestamp}
       />

@@ -808,6 +808,55 @@ export class StreamEventHandler {
         });
       }
     }
+
+    // CRITICAL FIX: If company_name collected with KBO verification, show confirmation card
+    // This provides visual feedback similar to business type confirmation
+    if (data.field === 'company_name') {
+      const metadata = data.metadata || {};
+      
+      // Check if this is a KBO-verified company (has confirmation flag)
+      if (metadata.is_company_name_confirmation === true || metadata.kbo_verified === true) {
+        // Defensive: Extract metadata with fallbacks
+        const companyName = metadata.company_name || sanitizedValue || null;
+        const registrationNumber = metadata.registration_number || null;
+        const legalForm = metadata.legal_form || null;
+        const foundingYear = metadata.founding_year || null;
+        const industryDescription = metadata.industry_description || null;
+        const confidence = metadata.confidence || undefined;
+        
+        chatLogger.info('Injecting company name KBO confirmation card', {
+          company_name: companyName,
+          registration_number: registrationNumber,
+          legal_form: legalForm,
+          founding_year: foundingYear,
+          has_metadata: !!data.metadata,
+          metadata_keys: data.metadata ? Object.keys(data.metadata) : []
+        });
+
+        // Only inject confirmation card if we have valid company name and KBO data
+        if (companyName && companyName !== 'Not provided' && registrationNumber) {
+          this.callbacks.addMessage({
+            type: 'ai',
+            content: '', // Empty content, we'll render the card
+            isComplete: true,
+            metadata: {
+              is_company_name_confirmation: true,
+              company_name: companyName,
+              registration_number: registrationNumber,
+              legal_form: legalForm,
+              founding_year: foundingYear,
+              industry_description: industryDescription,
+              confidence: confidence
+            }
+          });
+        } else {
+          chatLogger.warn('Skipping company name confirmation card - missing required data', {
+            companyName: companyName,
+            hasRegistrationNumber: !!registrationNumber
+          });
+        }
+      }
+    }
   }
 
   /**

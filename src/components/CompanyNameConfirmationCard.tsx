@@ -1,28 +1,30 @@
 /**
- * Business Type Confirmation Card
+ * Company Name Confirmation Card
  * 
- * Displays a visual confirmation when a business type is successfully identified and validated.
- * Provides immediate feedback to the user that their input was understood and matched to our database.
+ * Displays a visual confirmation when a company name is successfully verified in the KBO registry.
+ * Provides immediate feedback to the user that their company was found and verified.
  */
 
 import { motion } from 'framer-motion';
-import { Building2, CheckCircle2, Tag } from 'lucide-react';
+import { Building2, Calendar, CheckCircle2, FileText } from 'lucide-react';
 import React from 'react';
 
-export interface BusinessTypeConfirmationCardProps {
-  businessType: string;
-  industry?: string;
-  category?: string;
-  icon?: string;
+export interface CompanyNameConfirmationCardProps {
+  companyName: string;
+  registrationNumber?: string;
+  legalForm?: string;
+  foundingYear?: number;
+  industryDescription?: string;
   confidence?: number;
   timestamp?: Date;
 }
 
-export const BusinessTypeConfirmationCard: React.FC<BusinessTypeConfirmationCardProps> = ({
-  businessType,
-  industry,
-  category,
-  icon = '🏢',
+export const CompanyNameConfirmationCard: React.FC<CompanyNameConfirmationCardProps> = ({
+  companyName,
+  registrationNumber,
+  legalForm,
+  foundingYear,
+  industryDescription,
   confidence,
   timestamp
 }) => {
@@ -48,7 +50,7 @@ export const BusinessTypeConfirmationCard: React.FC<BusinessTypeConfirmationCard
               <div className="px-5 py-3 bg-gradient-to-r from-primary-900/20 to-transparent border-b border-primary-500/10 flex items-center justify-between">
                 <span className="text-xs font-semibold text-primary-400 uppercase tracking-wider flex items-center gap-1.5">
                   <span className="w-1.5 h-1.5 rounded-full bg-primary-400 animate-pulse"></span>
-                  Verified Business Type
+                  Verified Company
                 </span>
               </div>
               
@@ -57,27 +59,41 @@ export const BusinessTypeConfirmationCard: React.FC<BusinessTypeConfirmationCard
                 <div className="flex items-start gap-4">
                   {/* Icon Box */}
                   <div className="flex-shrink-0 w-12 h-12 rounded-xl bg-gradient-to-br from-zinc-800 to-zinc-900 border border-zinc-700/50 flex items-center justify-center text-2xl shadow-inner">
-                    {icon}
+                    🏢
                   </div>
                   
                   <div className="flex-1 min-w-0">
                     <h3 className="text-lg font-semibold text-white leading-tight mb-1">
-                      {businessType}
+                      {companyName}
                     </h3>
                     
-                    {/* Industry Badge */}
+                    {/* KBO Details Badges */}
                     <div className="flex flex-wrap gap-2 mt-2">
-                      {industry && (
+                      {registrationNumber && (
                         <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-zinc-800/50 border border-zinc-700/50 text-xs font-medium text-zinc-300">
-                          <Building2 className="w-3 h-3 text-zinc-400" />
-                          {industry}
+                          <FileText className="w-3 h-3 text-zinc-400" />
+                          Registration: {registrationNumber}
                         </div>
                       )}
                       
-                      {category && (
+                      {legalForm && (
                         <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-zinc-800/50 border border-zinc-700/50 text-xs font-medium text-zinc-300">
-                          <Tag className="w-3 h-3 text-zinc-400" />
-                          {category}
+                          <Building2 className="w-3 h-3 text-zinc-400" />
+                          Type: {legalForm}
+                        </div>
+                      )}
+                      
+                      {foundingYear && (
+                        <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-zinc-800/50 border border-zinc-700/50 text-xs font-medium text-zinc-300">
+                          <Calendar className="w-3 h-3 text-zinc-400" />
+                          Founded: {foundingYear}
+                        </div>
+                      )}
+                      
+                      {industryDescription && (
+                        <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-zinc-800/50 border border-zinc-700/50 text-xs font-medium text-zinc-300">
+                          <Building2 className="w-3 h-3 text-zinc-400" />
+                          {industryDescription}
                         </div>
                       )}
                     </div>
@@ -86,7 +102,7 @@ export const BusinessTypeConfirmationCard: React.FC<BusinessTypeConfirmationCard
                 
                 {/* Confirmation Text */}
                 <div className="mt-4 pt-3 border-t border-white/5 text-sm text-zinc-400 leading-relaxed">
-                  We've successfully matched your business to our valuation database.
+                  We've successfully verified your company in the KBO registry.
                 </div>
               </div>
             </div>
