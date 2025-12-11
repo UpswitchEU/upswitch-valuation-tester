@@ -587,6 +587,7 @@ export class StreamEventHandler {
       data.metadata?.clarification_field === 'country_code';
 
     if (isCountryQuestion) {
+      // If backend didn't provide suggestions, add an explicit country prompt
       const countrySuggestions = [
         { text: 'Belgium (BE)', confidence: 1.0, reason: 'Default operating country' },
         { text: 'Specify another country', confidence: 0.5, reason: 'Enter a different country' }
@@ -606,6 +607,12 @@ export class StreamEventHandler {
       };
 
       this.callbacks.addMessage(suggestionMessage);
+      // Ensure we don't fall through to other handlers for this message
+      this.hasStartedMessage = false;
+      this.callbacks.setIsStreaming(false);
+      this.callbacks.setIsTyping?.(false);
+      this.callbacks.setIsThinking?.(false);
+      return;
     }
 
     // If this is a business_type clarification (message_complete path), proactively surface suggestions
