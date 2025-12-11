@@ -580,6 +580,34 @@ export class StreamEventHandler {
     this.lastCompleteMessageSignature = signature;
     this.lastCompleteMessageTimestamp = now;
 
+    // If this is the country question, inject quick options: use BE or specify another
+    const isCountryQuestion =
+      data.field === 'country_code' ||
+      data.metadata?.collected_field === 'country_code' ||
+      data.metadata?.clarification_field === 'country_code';
+
+    if (isCountryQuestion) {
+      const countrySuggestions = [
+        { text: 'Belgium (BE)', confidence: 1.0, reason: 'Default operating country' },
+        { text: 'Specify another country', confidence: 0.5, reason: 'Enter a different country' }
+      ];
+
+      const suggestionMessage: Message = {
+        id: `suggestion-country-${Date.now()}`,
+        role: 'assistant',
+        content: 'Select your operating country:',
+        timestamp: new Date(),
+        type: 'suggestion',
+        metadata: {
+          field: 'country_code',
+          originalValue: data.content || data.message || '',
+          suggestions: countrySuggestions
+        }
+      };
+
+      this.callbacks.addMessage(suggestionMessage);
+    }
+
     // If this is a business_type clarification (message_complete path), proactively surface suggestions
     const isBusinessTypeClarification =
       data.field === 'business_type' ||
