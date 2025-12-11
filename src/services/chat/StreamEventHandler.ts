@@ -116,7 +116,6 @@ export class StreamEventHandler {
   // Track last completed AI message to avoid duplicate renders (same content/field)
   private lastCompleteMessageSignature: string | null = null;
   private lastCompleteMessageTimestamp: number = 0;
-  private lastBusinessTypeQuestionTs: number = 0;
   private lastBusinessTypeSuggestionTs: number = 0;
 
   constructor(
@@ -590,7 +589,6 @@ export class StreamEventHandler {
       data.metadata?.input_type === 'business_type_selector';
 
     if (isBusinessTypeQuestion) {
-      this.lastBusinessTypeQuestionTs = now;
       if (now - this.lastBusinessTypeSuggestionTs < 7000) {
         chatLogger.info('Suppressing repeated business_type question after recent suggestions', {
           elapsed_ms: now - this.lastBusinessTypeSuggestionTs
