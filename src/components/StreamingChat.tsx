@@ -1450,7 +1450,11 @@ const MessageItem = React.memo<MessageItemProps>(({
                     })()}
                     
                     {/* Generic Clarification confirmation buttons (only if not KBO/BusinessType suggestions) */}
-                    {message.metadata?.needs_confirmation && !hasKBOSuggestionsInMessage && !hasBusinessTypeSuggestionsInMessage && message.metadata?.collected_field !== 'business_type' && (
+                    {message.metadata?.needs_confirmation &&
+                     !hasKBOSuggestionsInMessage &&
+                     !hasBusinessTypeSuggestionsInMessage &&
+                     message.metadata?.collected_field !== 'business_type' &&
+                     message.metadata?.collected_field !== 'company_name' && (
                       <motion.div 
                         initial={{ opacity: 0, y: 5 }}
                         animate={{ opacity: 1, y: 0 }}

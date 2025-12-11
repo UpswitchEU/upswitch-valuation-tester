@@ -26,6 +26,20 @@ export class StreamingChatService {
     userId?: string,
     abortSignal?: AbortSignal
   ): AsyncGenerator<StreamEvent> {
+    const normalizeNumericInput = (text: string): string => {
+      if (!text) return text;
+      // Remove currency symbols/words and spaces
+      let cleaned = text
+        .replace(/[€$£]/g, '')
+        .replace(/\b(eur|euro|euros|usd|dollars?|gbp|pounds?)\b/gi, '')
+        .replace(/[ ,]/g, '');
+      // If it now looks like a number, return it; otherwise fallback to original
+      const numericMatch = cleaned.match(/^[+-]?\d+(?:\.\d+)?$/);
+      return numericMatch ? cleaned : text;
+    };
+
+    const sanitizedInput = normalizeNumericInput(userInput);
+
     try {
       chatLogger.info('Stream started', { 
         sessionId, 
@@ -46,7 +60,7 @@ export class StreamingChatService {
       
       const requestBody = {
         session_id: sessionId,
-        user_input: userInput,
+        user_input: sanitizedInput,
         user_id: userId,
         guest_session_id: guestSessionId // Add guest session ID for guest users
       };

@@ -8,6 +8,7 @@
 import { Message } from '../../hooks/useStreamingChatState';
 import { chatLogger } from '../../utils/logger';
 import { businessTypesApiService } from '../businessTypesApi';
+import { registryService } from '../registry/registryService';
 
 // Re-export types for convenience
 export interface ModelPerformanceMetrics {
@@ -205,6 +206,10 @@ export class StreamEventHandler {
         return this.handleProgressUpdate(data);
       case 'clarification_needed':
         return this.handleClarificationNeeded(data);
+      case 'valuation_ready':
+        return this.handleValuationReady(data);
+      case 'valuation_confirmed':
+        return this.handleValuationConfirmed(data);
       case 'html_preview':
         return this.handleHtmlPreview(data);
       case 'unknown':
@@ -487,6 +492,23 @@ export class StreamEventHandler {
       hasValuationResult: !!data.metadata?.valuation_result,
       metadata: data.metadata // ← LOG FULL METADATA
     });
+    
+    // Ensure valuation CTA metadata is present when the valuation confirmation question arrives
+    const isValuationCTA =
+      data.field === 'valuation_confirmed' ||
+      data.metadata?.clarification_field === 'valuation_confirmed' ||
+      data.metadata?.section === 'valuation_ready';
+
+    if (isValuationCTA) {
+      const updatedMeta = {
+        ...data.metadata,
+        input_type: data.metadata?.input_type || 'cta_button',
+        button_text: data.metadata?.button_text || 'Create Valuation Report',
+        collected_field: 'valuation_confirmed',
+        clarification_field: 'valuation_confirmed'
+      };
+      data = { ...data, metadata: updatedMeta };
+    }
     
     // CRITICAL FIX: Ensure message exists before completing
     if (!this.hasStartedMessage) {
@@ -1049,8 +1071,8 @@ export class StreamEventHandler {
         validation_status: 'needs_clarification',
         clarification_value: data.value,
         clarification_field: data.field,
-        // For business_type we rely on suggestions, not confirm buttons
-        needs_confirmation: data.field !== 'business_type' && !isSimpleFollowUp,
+        // For business_type and company_name we rely on suggestions, not confirm buttons
+        needs_confirmation: data.field !== 'business_type' && data.field !== 'company_name' && !isSimpleFollowUp,
         // Merge any additional metadata from backend
         ...(data.metadata || {})
       }
@@ -1074,6 +1096,71 @@ export class StreamEventHandler {
           chatLogger.error('Business type suggestion lookup failed', { error: error instanceof Error ? error.message : String(error) });
         });
     }
+
+    // If company_name is unclear, fetch registry suggestions
+    if (data.field === 'company_name' && typeof data.value === 'string' && data.value.trim().length >= 2) {
+      registryService.searchCompanies(data.value.trim(), 'BE', 5)
+        .then((resp) => {
+          const suggestions = (resp?.results || []).map((item: any, idx: number) => ({
+            text: item?.company_name || item?.name || item?.title || data.value,
+            confidence: item?.score ?? 0.7,
+            reason: item?.address || item?.country || 'Similar company',
+            registration_number: item?.registration_number,
+            _index: idx,
+          })).filter((s: any) => !!s.text);
+          if (suggestions.length > 0) {
+            this.handleSuggestionOffered({
+              field: 'company_name',
+              original_value: data.value,
+              suggestions,
+              message: 'Did you mean one of these companies?'
+            });
+          }
+        })
+        .catch((error: any) => {
+          chatLogger.error('Company suggestion lookup failed', { error: error instanceof Error ? error.message : String(error) });
+        });
+    }
+  }
+
+  /**
+   * Handle valuation ready events (CTA)
+   */
+  private handleValuationReady(data: any): void {
+    const ctaMessage: Omit<Message, 'id' | 'timestamp'> = {
+      type: 'ai',
+      content: data.message || 'Ready to generate your valuation report.',
+      isComplete: true,
+      metadata: {
+        input_type: 'cta_button',
+        button_text: data.button_text || 'Create Valuation Report',
+        collected_field: 'valuation_confirmed',
+        valuation_summary: data.summary,
+        range_mid: data.range_mid,
+        valuation_id: data.valuation_id
+      }
+    };
+    this.callbacks.addMessage(ctaMessage);
+  }
+
+  /**
+   * Handle valuation confirmed events (treat similarly as ready, ensuring CTA)
+   */
+  private handleValuationConfirmed(data: any): void {
+    const ctaMessage: Omit<Message, 'id' | 'timestamp'> = {
+      type: 'ai',
+      content: data.message || 'Please confirm to generate your valuation report.',
+      isComplete: true,
+      metadata: {
+        input_type: 'cta_button',
+        button_text: data.button_text || 'Create Valuation Report',
+        collected_field: 'valuation_confirmed',
+        valuation_summary: data.summary,
+        range_mid: data.range_mid,
+        valuation_id: data.valuation_id
+      }
+    };
+    this.callbacks.addMessage(ctaMessage);
   }
 
   /**
