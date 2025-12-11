@@ -116,6 +116,8 @@ export class StreamEventHandler {
   // Track last completed AI message to avoid duplicate renders (same content/field)
   private lastCompleteMessageSignature: string | null = null;
   private lastCompleteMessageTimestamp: number = 0;
+  private lastBusinessTypeQuestionTs: number = 0;
+  private lastBusinessTypeSuggestionTs: number = 0;
 
   constructor(
     sessionId: string,
@@ -579,6 +581,28 @@ export class StreamEventHandler {
     }
     this.lastCompleteMessageSignature = signature;
     this.lastCompleteMessageTimestamp = now;
+
+    // Skip repeated business_type questions if we just offered suggestions
+    const isBusinessTypeQuestion =
+      data.field === 'business_type' ||
+      data.metadata?.collected_field === 'business_type' ||
+      data.metadata?.clarification_field === 'business_type' ||
+      data.metadata?.input_type === 'business_type_selector';
+
+    if (isBusinessTypeQuestion) {
+      this.lastBusinessTypeQuestionTs = now;
+      if (now - this.lastBusinessTypeSuggestionTs < 7000) {
+        chatLogger.info('Suppressing repeated business_type question after recent suggestions', {
+          elapsed_ms: now - this.lastBusinessTypeSuggestionTs
+        });
+        this.callbacks.setIsStreaming(false);
+        this.callbacks.setIsTyping?.(false);
+        this.callbacks.setIsThinking?.(false);
+        this.hasStartedMessage = false;
+        this.messageCreationLock = false;
+        return;
+      }
+    }
 
     // If this is the country question, inject quick options: use BE or specify another
     const isCountryQuestion =
@@ -1144,6 +1168,10 @@ export class StreamEventHandler {
         });
         return;
       }
+    }
+
+    if (data.field === 'business_type') {
+      this.lastBusinessTypeSuggestionTs = Date.now();
     }
     
     // Create suggestion message

@@ -1,5 +1,6 @@
 import { Maximize2, X } from 'lucide-react';
 import React, { useEffect } from 'react';
+import { createPortal } from 'react-dom';
 
 interface FullScreenModalProps {
   isOpen: boolean;
@@ -53,17 +54,12 @@ export const FullScreenModal: React.FC<FullScreenModalProps> = ({
 
   if (!isOpen) return null;
 
-  return (
+  const modal = (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
-      {/* Backdrop */}
+      {/* Backdrop without blur to avoid full-screen repaints */}
       <div 
         className="absolute inset-0 bg-black/80"
         onClick={onClose}
-        style={{
-          backdropFilter: 'blur(4px)',
-          WebkitBackdropFilter: 'blur(4px)',
-          willChange: 'opacity'
-        }}
       />
       
       {/* Modal Content */}
@@ -90,7 +86,6 @@ export const FullScreenModal: React.FC<FullScreenModalProps> = ({
           style={{
             WebkitOverflowScrolling: 'touch',
             overscrollBehavior: 'contain',
-            willChange: 'scroll-position'
           }}
         >
           {children}
@@ -98,5 +93,11 @@ export const FullScreenModal: React.FC<FullScreenModalProps> = ({
       </div>
     </div>
   );
+
+  if (typeof document !== 'undefined' && document.body) {
+    return createPortal(modal, document.body);
+  }
+
+  return modal;
 };
 

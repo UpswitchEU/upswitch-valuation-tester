@@ -1,5 +1,6 @@
 import { AlertTriangle } from 'lucide-react';
 import React from 'react';
+import { createPortal } from 'react-dom';
 
 interface FlowSwitchWarningModalProps {
   isOpen: boolean;
@@ -37,24 +38,24 @@ export const FlowSwitchWarningModal: React.FC<FlowSwitchWarningModalProps> = ({
   const flowName = targetFlow === 'conversational' ? 'Conversational' : 'Manual';
   const currentFlowName = currentFlow ? flowNames[currentFlow] : null;
 
-  return (
-    <>
-      {/* Backdrop */}
-      <div 
-        className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 transition-opacity duration-200 opacity-100 pointer-events-auto"
+  const modal = (
+    <div className="fixed inset-0 z-50">
+      {/* Backdrop without blur to avoid GPU repaints on every interaction */}
+      <div
+        className="absolute inset-0 bg-black/65"
         onClick={onClose}
         aria-hidden="false"
       />
-      
+
       {/* Modal */}
-      <div 
-        className="fixed inset-0 z-50 flex items-center justify-center p-4 transition-opacity duration-200 opacity-100 pointer-events-auto"
+      <div
+        className="absolute inset-0 flex items-center justify-center p-4"
         aria-hidden="false"
         aria-modal="true"
         role="dialog"
       >
-        <div 
-          className="bg-zinc-800 rounded-2xl shadow-2xl border border-zinc-700 max-w-md w-full transition-transform duration-200 scale-100"
+        <div
+          className="bg-zinc-800 rounded-2xl shadow-2xl border border-zinc-700 max-w-md w-full"
           onClick={(e) => e.stopPropagation()}
         >
           {/* Header */}
@@ -105,7 +106,14 @@ export const FlowSwitchWarningModal: React.FC<FlowSwitchWarningModalProps> = ({
           </div>
         </div>
       </div>
-    </>
+    </div>
   );
+
+  // Render via portal so the overlay never reflows the main layout.
+  if (typeof document !== 'undefined' && document.body) {
+    return createPortal(modal, document.body);
+  }
+
+  return modal;
 };
 
