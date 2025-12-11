@@ -415,90 +415,102 @@ export const useValuationSessionStore = create<ValuationSessionStore>((set, get)
     // Clear pending switch since we're proceeding
     set({ pendingFlowSwitch: null });
     
-    try {
-      
-      // Re-check session state after setting syncing flag to prevent race conditions
-      const { session: currentSession } = get();
-      if (!currentSession || currentSession.reportId !== session.reportId) {
-        storeLogger.warn('Session changed during switch, aborting', {
-          originalReportId: session.reportId,
-        });
-        set({ isSyncing: false });
-        return;
-      }
-      
-      // Double-check we're not already in the target view (race condition protection)
-      if (currentSession.currentView === view) {
-        storeLogger.debug('Already in target view (race condition check)', {
-          reportId: currentSession.reportId,
-          view,
-        });
-        set({ isSyncing: false });
-        return;
-      }
-      
-      const updatedSession: ValuationSession = {
-        ...currentSession,
-        currentView: view,
-        updatedAt: new Date(),
-      };
-      
-      // If resetData is true, keep only _prefilledQuery, discard everything else
-      if (resetData) {
-        const prefilledQuery = (currentSession.partialData as any)?._prefilledQuery;
-        updatedSession.partialData = prefilledQuery ? { _prefilledQuery: prefilledQuery } as any : {};
-        updatedSession.sessionData = {};
-        updatedSession.dataSource = view; // Reset to single source
-        storeLogger.info('Resetting session data on flow switch', {
-          reportId: currentSession.reportId,
-          preservedPrefilledQuery: !!prefilledQuery,
-        });
-      }
-      
-      // Update backend first (fail-fast approach)
-      await backendAPI.switchValuationView(currentSession.reportId, view);
-      
-      // Update local state only after successful backend update
-      // URL will be synced by useEffect in ValuationReport.tsx
-      // This prevents circular updates and infinite loops
-      set({
-        session: updatedSession,
-        isSyncing: false,
-        syncError: null,
+    // Re-check session state after setting syncing flag to prevent race conditions
+    const { session: currentSession } = get();
+    if (!currentSession || currentSession.reportId !== session.reportId) {
+      storeLogger.warn('Session changed during switch, aborting', {
+        originalReportId: session.reportId,
       });
-      
-      storeLogger.info('View switched successfully', {
-        reportId: currentSession.reportId,
-        from: currentSession.currentView,
-        to: view,
-        resetData,
-      });
-    } catch (error: any) {
-      storeLogger.error('Failed to switch view', {
-        error: error instanceof Error ? error.message : 'Unknown error',
-        reportId: session.reportId,
-        requestedView: view,
-      });
-      
-      // Update local state even if backend fails (optimistic update)
-      // This allows UI to update immediately, backend will sync later
-      // URL will be synced by useEffect in ValuationReport.tsx
-      const { session: currentSession } = get();
-      if (currentSession?.reportId === session.reportId) {
-        set({
-          session: {
-            ...currentSession,
-            currentView: view,
-            updatedAt: new Date(),
-          },
-          isSyncing: false,
-          syncError: error.message || 'Failed to sync with backend',
-        });
-      } else {
-        // Session changed, just clear syncing flag
-        set({ isSyncing: false, syncError: error.message || 'Failed to sync with backend' });
-      }
+      set({ isSyncing: false });
+      return;
     }
+    
+    // Double-check we're not already in the target view (race condition protection)
+    if (currentSession.currentView === view) {
+      storeLogger.debug('Already in target view (race condition check)', {
+        reportId: currentSession.reportId,
+        view,
+      });
+      set({ isSyncing: false });
+      return;
+    }
+    
+    // Store original session for potential rollback
+    const originalSession = { ...currentSession };
+    
+    const updatedSession: ValuationSession = {
+      ...currentSession,
+      currentView: view,
+      updatedAt: new Date(),
+    };
+    
+    // If resetData is true, keep only _prefilledQuery, discard everything else
+    if (resetData) {
+      const prefilledQuery = (currentSession.partialData as any)?._prefilledQuery;
+      updatedSession.partialData = prefilledQuery ? { _prefilledQuery: prefilledQuery } as any : {};
+      updatedSession.sessionData = {};
+      updatedSession.dataSource = view; // Reset to single source
+      storeLogger.info('Resetting session data on flow switch', {
+        reportId: currentSession.reportId,
+        preservedPrefilledQuery: !!prefilledQuery,
+      });
+    }
+    
+    // OPTIMISTIC UPDATE: Update UI immediately for instant feedback
+    set({
+      session: updatedSession,
+      isSyncing: true, // Keep syncing flag true during background sync
+      syncError: null,
+    });
+    
+    storeLogger.info('View switched optimistically (UI updated immediately)', {
+      reportId: currentSession.reportId,
+      from: currentSession.currentView,
+      to: view,
+      resetData,
+    });
+    
+    // Background sync: Update backend asynchronously (non-blocking)
+    // URL will be synced by useEffect in ValuationReport.tsx
+    backendAPI.switchValuationView(currentSession.reportId, view)
+      .then(() => {
+        // Backend sync successful - clear syncing flag
+        const { session: latestSession } = get();
+        if (latestSession?.reportId === currentSession.reportId) {
+          set({
+            isSyncing: false,
+            syncError: null,
+          });
+          storeLogger.info('Backend sync completed successfully', {
+            reportId: currentSession.reportId,
+            view,
+          });
+        }
+      })
+      .catch((error: any) => {
+        storeLogger.error('Failed to sync view switch with backend', {
+          error: error instanceof Error ? error.message : 'Unknown error',
+          reportId: currentSession.reportId,
+          requestedView: view,
+        });
+        
+        // Rollback: Restore original session state on error
+        const { session: latestSession } = get();
+        if (latestSession?.reportId === currentSession.reportId) {
+          set({
+            session: originalSession,
+            isSyncing: false,
+            syncError: error.message || 'Failed to sync with backend',
+          });
+          storeLogger.warn('Rolled back view switch due to backend error', {
+            reportId: currentSession.reportId,
+            originalView: originalSession.currentView,
+          });
+        } else {
+          // Session changed, just clear syncing flag
+          set({ isSyncing: false, syncError: error.message || 'Failed to sync with backend' });
+        }
+      });
   },
   
   /**

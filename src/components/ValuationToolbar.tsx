@@ -23,7 +23,7 @@ export const ValuationToolbar: React.FC<ValuationToolbarProps> = ({
   const { refreshAuth } = useAuth();
   
   // Flow switch modal state
-  const { session, switchView, pendingFlowSwitch, setPendingFlowSwitch } = useValuationSessionStore();
+  const { session, switchView, pendingFlowSwitch, setPendingFlowSwitch, isSyncing } = useValuationSessionStore();
   const [showSwitchConfirmation, setShowSwitchConfirmation] = useState(false);
 
   // Sync modal visibility with pendingFlowSwitch state
@@ -227,27 +227,35 @@ export const ValuationToolbar: React.FC<ValuationToolbarProps> = ({
               <Tooltip content="Manual Input" position="bottom" className="">
                 <button
                   onClick={() => handleFlowIconClick('manual')}
-                  disabled={session?.currentView === 'manual'}
+                  disabled={session?.currentView === 'manual' || isSyncing}
                   className={`p-2 rounded-lg transition-all duration-200 ${
                     session?.currentView === 'manual'
                       ? 'bg-zinc-700 text-white'
                       : 'text-gray-400 hover:text-gray-300 hover:bg-zinc-800'
-                  }`}
+                  } ${isSyncing ? 'opacity-50 cursor-not-allowed' : ''}`}
                 >
-                  <Edit3 className="w-4 h-4" />
+                  {isSyncing && session?.currentView !== 'manual' ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <Edit3 className="w-4 h-4" />
+                  )}
                 </button>
               </Tooltip>
               <Tooltip content="Conversational Mode" position="bottom" className="">
                 <button
                   onClick={() => handleFlowIconClick('conversational')}
-                  disabled={session?.currentView === 'conversational'}
+                  disabled={session?.currentView === 'conversational' || isSyncing}
                   className={`p-2 rounded-lg transition-all duration-200 ${
                     session?.currentView === 'conversational'
                       ? 'bg-zinc-700 text-white'
                       : 'text-gray-400 hover:text-gray-300 hover:bg-zinc-800'
-                  }`}
+                  } ${isSyncing ? 'opacity-50 cursor-not-allowed' : ''}`}
                 >
-                  <MessageSquare className="w-4 h-4" />
+                  {isSyncing && session?.currentView !== 'conversational' ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <MessageSquare className="w-4 h-4" />
+                  )}
                 </button>
               </Tooltip>
               <div className="mx-2 h-6 w-px bg-zinc-700"></div>

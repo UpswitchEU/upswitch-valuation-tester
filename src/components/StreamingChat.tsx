@@ -1083,6 +1083,11 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
         {state.messages
           .filter(message => {
             // CRITICAL FIX: Filter out empty messages to prevent empty bubbles
+            // BUT: Allow messages with special metadata (e.g., business type confirmation cards)
+            // that intentionally have empty content but should still be displayed
+            if (message.metadata?.is_business_type_confirmation === true) {
+              return true; // Always show confirmation cards even with empty content
+            }
             // Only show messages that have actual content (not just whitespace)
             return message.content && message.content.trim().length > 0;
           })
@@ -1318,13 +1323,17 @@ const MessageItem = React.memo<MessageItemProps>(({
   const isBusinessTypeConfirmation = message.metadata?.is_business_type_confirmation === true;
 
   if (isBusinessTypeConfirmation) {
+    // Defensive: Extract metadata with fallbacks (in case metadata structure differs)
+    const metadata = message.metadata || {};
+    const industry = metadata.industry_mapping || metadata.industry || undefined;
+    
     return (
       <BusinessTypeConfirmationCard
-        businessType={message.metadata?.business_type || ''}
-        industry={message.metadata?.industry}
-        category={message.metadata?.category}
-        icon={message.metadata?.icon}
-        confidence={message.metadata?.confidence}
+        businessType={metadata.business_type || ''}
+        industry={industry}
+        category={metadata.category}
+        icon={metadata.icon}
+        confidence={metadata.confidence}
         timestamp={message.timestamp}
       />
     );

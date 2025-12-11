@@ -770,25 +770,41 @@ export class StreamEventHandler {
     if (data.field === 'business_type') {
       const metadata = data.metadata || {};
       
+      // Defensive: Extract metadata with fallbacks
+      const industry = metadata.industry_mapping || metadata.industry || null;
+      const category = metadata.category || null;
+      const icon = metadata.icon || '🏢';
+      const confidence = metadata.confidence || undefined;
+      
       chatLogger.info('Injecting business type confirmation card', {
         business_type: sanitizedValue,
-        industry: metadata.industry_mapping || metadata.industry,
-        category: metadata.category
+        industry: industry,
+        category: category,
+        icon: icon,
+        has_metadata: !!data.metadata,
+        metadata_keys: data.metadata ? Object.keys(data.metadata) : []
       });
 
-      this.callbacks.addMessage({
-        type: 'ai',
-        content: '', // Empty content, we'll render the card
-        isComplete: true,
-        metadata: {
-          is_business_type_confirmation: true,
-          business_type: sanitizedValue,
-          industry: metadata.industry_mapping || metadata.industry,
-          category: metadata.category,
-          icon: metadata.icon || '🏢',
-          confidence: metadata.confidence
-        }
-      });
+      // Only inject confirmation card if we have valid business type
+      if (sanitizedValue && sanitizedValue !== 'Not provided') {
+        this.callbacks.addMessage({
+          type: 'ai',
+          content: '', // Empty content, we'll render the card
+          isComplete: true,
+          metadata: {
+            is_business_type_confirmation: true,
+            business_type: sanitizedValue,
+            industry: industry,
+            category: category,
+            icon: icon,
+            confidence: confidence
+          }
+        });
+      } else {
+        chatLogger.warn('Skipping business type confirmation card - invalid value', {
+          sanitizedValue: sanitizedValue
+        });
+      }
     }
   }
 

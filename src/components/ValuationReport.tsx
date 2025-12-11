@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { Suspense, lazy, useCallback, useEffect, useRef, useState } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { guestCreditService } from '../services/guestCreditService';
@@ -7,11 +7,13 @@ import UrlGeneratorService from '../services/urlGenerator';
 import { useValuationSessionStore } from '../store/useValuationSessionStore';
 import type { ValuationResponse } from '../types/valuation';
 import { generateReportId, isValidReportId } from '../utils/reportIdGenerator';
-import { AIAssistedValuation } from './AIAssistedValuation';
 import { LoadingState } from './LoadingState';
 import { INITIALIZATION_STEPS } from './LoadingState.constants';
-import { ManualValuationFlow } from './ManualValuationFlow';
 import { OutOfCreditsModal } from './OutOfCreditsModal';
+
+// Lazy load flow components for code splitting and performance
+const ManualValuationFlow = lazy(() => import('./ManualValuationFlow').then(module => ({ default: module.ManualValuationFlow })));
+const AIAssistedValuation = lazy(() => import('./AIAssistedValuation').then(module => ({ default: module.AIAssistedValuation })));
 
 type Stage = 'loading' | 'data-entry' | 'processing' | 'flow-selection';
 
@@ -189,35 +191,45 @@ export const ValuationReport: React.FC = () => {
         
         {stage === 'data-entry' && session && (
           <div className="relative h-full w-full">
-            {/* Manual Flow Container */}
-            <div 
-              className={`absolute inset-0 w-full h-full transition-opacity duration-300 ease-in-out ${
-                session.currentView === 'manual' 
-                  ? 'opacity-100 z-10 pointer-events-auto' 
-                  : 'opacity-0 z-0 pointer-events-none'
-              }`}
-            >
-              <ManualValuationFlow 
-                reportId={currentReportId}
-                onComplete={handleValuationComplete}
-              />
-            </div>
+            {/* Conditionally render only the active flow component for better performance */}
+            {/* Smooth fade transition when switching flows */}
+            {session.currentView === 'manual' && (
+              <div className="absolute inset-0 animate-in fade-in duration-300">
+                <Suspense fallback={
+                  <div className="flex items-center justify-center h-full">
+                    <div className="flex items-center gap-3 text-gray-400">
+                      <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary-500"></div>
+                      <span className="text-sm">Loading manual flow...</span>
+                    </div>
+                  </div>
+                }>
+                  <ManualValuationFlow 
+                    reportId={currentReportId}
+                    onComplete={handleValuationComplete}
+                  />
+                </Suspense>
+              </div>
+            )}
 
-            {/* AI-Guided Flow Container */}
-            <div 
-              className={`absolute inset-0 w-full h-full transition-opacity duration-300 ease-in-out ${
-                session.currentView === 'conversational' 
-                  ? 'opacity-100 z-10 pointer-events-auto' 
-                  : 'opacity-0 z-0 pointer-events-none'
-              }`}
-            >
-              <AIAssistedValuation 
-                reportId={currentReportId}
-                onComplete={handleValuationComplete}
-                initialQuery={prefilledQuery}
-                autoSend={autoSend}
-              />
-            </div>
+            {session.currentView === 'conversational' && (
+              <div className="absolute inset-0 animate-in fade-in duration-300">
+                <Suspense fallback={
+                  <div className="flex items-center justify-center h-full">
+                    <div className="flex items-center gap-3 text-gray-400">
+                      <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary-500"></div>
+                      <span className="text-sm">Loading conversational flow...</span>
+                    </div>
+                  </div>
+                }>
+                  <AIAssistedValuation 
+                    reportId={currentReportId}
+                    onComplete={handleValuationComplete}
+                    initialQuery={prefilledQuery}
+                    autoSend={autoSend}
+                  />
+                </Suspense>
+              </div>
+            )}
           </div>
         )}
         
