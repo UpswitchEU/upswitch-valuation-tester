@@ -279,6 +279,12 @@ export class StreamEventHandler {
       return;
     }
     
+    // CRITICAL DEBUG: Log chunk content to detect duplication
+    console.log(`[ROOT-CAUSE] StreamEventHandler.handleMessageChunk: Received chunk='${content}', bufferLength=${this.chunkBuffer.length}, hasStartedMessage=${this.hasStartedMessage}`);
+    
+    // CRITICAL FIX: Check if this chunk was already buffered to prevent duplicate processing
+    // If chunk is in buffer, it will be flushed by ensureMessageExists - don't process it again
+    const wasBuffered = this.chunkBuffer.includes(content);
     
     // CRITICAL FIX: Ensure message exists BEFORE processing chunk
     // This prevents first chunk loss when chunks arrive before message_start
@@ -295,11 +301,21 @@ export class StreamEventHandler {
       chatLogger.warn('⚠️ Message not created yet after ensureMessageExists - buffering chunk', {
         chunkContent: content.substring(0, 30)
       });
-      this.chunkBuffer.push(content);
+      // CRITICAL FIX: Only buffer if not already buffered to prevent duplicates
+      if (!wasBuffered) {
+        this.chunkBuffer.push(content);
+      }
+      return;
+    }
+    
+    // CRITICAL FIX: If chunk was buffered and flushed, don't process it again
+    if (wasBuffered) {
+      console.log(`[ROOT-CAUSE] StreamEventHandler.handleMessageChunk: SKIPPING duplicate chunk='${content}' (was already buffered and flushed)`);
       return;
     }
     
     // Message exists - update it with the chunk
+    console.log(`[ROOT-CAUSE] StreamEventHandler.handleMessageChunk: Processing chunk='${content}'`);
     this.callbacks.updateStreamingMessage(content);
   }
 
