@@ -681,7 +681,9 @@ export class StreamEventHandler {
     chatLogger.info('Data collected', {
       field: data.field,
       displayName: data.display_name,
-      completeness: data.completeness
+      completeness: data.completeness,
+      has_metadata: !!data.metadata,
+      metadata_keys: data.metadata ? Object.keys(data.metadata) : []
       // SECURITY: Don't log actual value - may contain PII/financial data
     });
     
