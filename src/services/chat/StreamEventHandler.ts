@@ -1095,12 +1095,20 @@ export class StreamEventHandler {
     // Ensure we have suggestions; if empty, build a local fallback from known types
     let suggestions = data.suggestions;
     if (!Array.isArray(suggestions) || suggestions.length === 0) {
-      suggestions = getFallbackBusinessTypeSuggestions(data.original_value || '', 5);
-      chatLogger.info('Using fallback suggestions', {
-        field: data.field,
-        original_value: data.original_value,
-        fallback_count: suggestions.length
-      });
+      if (data.field === 'business_type') {
+        suggestions = getFallbackBusinessTypeSuggestions(data.original_value || '', 5);
+        chatLogger.info('Using fallback business type suggestions', {
+          field: data.field,
+          original_value: data.original_value,
+          fallback_count: suggestions.length
+        });
+      } else {
+        chatLogger.info('No suggestions provided and no fallback for field', {
+          field: data.field,
+          original_value: data.original_value
+        });
+        return;
+      }
     }
     
     // Create suggestion message
