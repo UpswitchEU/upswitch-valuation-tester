@@ -5,10 +5,52 @@
  * Centralizes all event handling logic in a single, testable class.
  */
 
+import { BUSINESS_TYPES_FALLBACK, BusinessTypeOption } from '../../config/businessTypes';
 import { Message } from '../../hooks/useStreamingChatState';
 import { chatLogger } from '../../utils/logger';
 import { businessTypesApiService } from '../businessTypesApi';
 import { registryService } from '../registry/registryService';
+
+const normalizeText = (value: string) => value.trim().toLowerCase();
+
+const simpleSimilarity = (a: string, b: string): number => {
+  // Lightweight similarity: longest common substring ratio
+  const s1 = normalizeText(a);
+  const s2 = normalizeText(b);
+  if (!s1 || !s2) return 0;
+  let longest = 0;
+  for (let i = 0; i < s1.length; i++) {
+    for (let j = i + 1; j <= s1.length; j++) {
+      const substr = s1.slice(i, j);
+      if (s2.includes(substr) && substr.length > longest) {
+        longest = substr.length;
+      }
+    }
+  }
+  return longest / Math.max(s1.length, s2.length);
+};
+
+const getFallbackBusinessTypeSuggestions = (query: string, limit = 5) => {
+  const normalized = normalizeText(query);
+  const scored = BUSINESS_TYPES_FALLBACK.map((bt: BusinessTypeOption) => ({
+    text: bt.label?.replace(/^[^\s]+\s/, '') || bt.label || bt.value,
+    confidence: simpleSimilarity(normalized, bt.label || bt.value),
+    reason: bt.category || 'Similar business type'
+  }))
+    .filter(s => s.confidence > 0.2) // discard very weak matches
+    .sort((a, b) => (b.confidence || 0) - (a.confidence || 0));
+
+  // If still nothing, offer a single cleaned-up guess
+  if (scored.length === 0) {
+    return [{
+      text: query.length > 3 ? `${query}t` : query,
+      confidence: 0.3,
+      reason: 'Closest guess'
+    }];
+  }
+
+  return scored.slice(0, limit);
+};
 
 // Re-export types for convenience
 export interface ModelPerformanceMetrics {
@@ -508,6 +550,51 @@ export class StreamEventHandler {
         clarification_field: 'valuation_confirmed'
       };
       data = { ...data, metadata: updatedMeta };
+    }
+
+    // If this is a business_type clarification (message_complete path), proactively surface suggestions
+    const isBusinessTypeClarification =
+      data.metadata?.collected_field === 'business_type' ||
+      data.metadata?.clarification_field === 'business_type' ||
+      data.metadata?.input_type === 'business_type_selector';
+
+    if (isBusinessTypeClarification && typeof data.metadata?.clarification_value === 'string') {
+      const query = data.metadata.clarification_value.trim();
+      if (query.length >= 3) {
+        businessTypesApiService.searchBusinessTypes(query, 5)
+          .then((suggestions) => {
+            if (suggestions.length > 0) {
+              this.handleSuggestionOffered({
+                field: 'business_type',
+                original_value: query,
+                suggestions,
+                message: 'Did you mean one of these business types?'
+              });
+              return;
+            }
+            const fallback = getFallbackBusinessTypeSuggestions(query, 5);
+            if (fallback.length > 0) {
+              this.handleSuggestionOffered({
+                field: 'business_type',
+                original_value: query,
+                suggestions: fallback,
+                message: 'Did you mean one of these business types?'
+              });
+            }
+          })
+          .catch((error) => {
+            chatLogger.error('Business type suggestion lookup failed (message_complete)', { error: error instanceof Error ? error.message : String(error) });
+            const fallback = getFallbackBusinessTypeSuggestions(query, 5);
+            if (fallback.length > 0) {
+              this.handleSuggestionOffered({
+                field: 'business_type',
+                original_value: query,
+                suggestions: fallback,
+                message: 'Did you mean one of these business types?'
+              });
+            }
+          });
+      }
     }
     
     // CRITICAL FIX: Ensure message exists before completing
@@ -1081,7 +1168,8 @@ export class StreamEventHandler {
 
     // If business_type is invalid, proactively fetch and surface suggestions
     if (data.field === 'business_type' && typeof data.value === 'string' && data.value.trim().length >= 3) {
-      businessTypesApiService.searchBusinessTypes(data.value.trim(), 5)
+      const query = data.value.trim();
+      businessTypesApiService.searchBusinessTypes(query, 5)
         .then((suggestions) => {
           if (suggestions.length > 0) {
             this.handleSuggestionOffered({
@@ -1090,10 +1178,31 @@ export class StreamEventHandler {
               suggestions,
               message: 'Did you mean one of these business types?'
             });
+            return;
+          }
+
+          // Fallback to local fuzzy suggestions if API returned empty
+          const fallback = getFallbackBusinessTypeSuggestions(query, 5);
+          if (fallback.length > 0) {
+            this.handleSuggestionOffered({
+              field: 'business_type',
+              original_value: data.value,
+              suggestions: fallback,
+              message: 'Did you mean one of these business types?'
+            });
           }
         })
         .catch((error) => {
           chatLogger.error('Business type suggestion lookup failed', { error: error instanceof Error ? error.message : String(error) });
+          const fallback = getFallbackBusinessTypeSuggestions(query, 5);
+          if (fallback.length > 0) {
+            this.handleSuggestionOffered({
+              field: 'business_type',
+              original_value: data.value,
+              suggestions: fallback,
+              message: 'Did you mean one of these business types?'
+            });
+          }
         });
     }
 
