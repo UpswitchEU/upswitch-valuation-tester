@@ -26,19 +26,56 @@ export class StreamingChatService {
     userId?: string,
     abortSignal?: AbortSignal
   ): AsyncGenerator<StreamEvent> {
-    const normalizeNumericInput = (text: string): string => {
+    const normalizeCurrencyToEuro = (text: string): string => {
       if (!text) return text;
-      // Remove currency symbols/words and spaces
-      let cleaned = text
-        .replace(/[€$£]/g, '')
-        .replace(/\b(eur|euro|euros|usd|dollars?|gbp|pounds?)\b/gi, '')
-        .replace(/[ ,]/g, '');
-      // If it now looks like a number, return it; otherwise fallback to original
-      const numericMatch = cleaned.match(/^[+-]?\d+(?:\.\d+)?$/);
-      return numericMatch ? cleaned : text;
+
+      const nonEuroPattern = /\b(usd|gbp|pounds?|dollars?|cad|aud|chf|yen|jpy|cny|hkd|sek|nok|dkk|zar)\b|[$£¥]/i;
+      const euroPattern = /\b(eur|euro|euros)\b|€/i;
+
+      // Remove common currency symbols/words, keep digits/.,, and spaces
+      const stripCurrencyWords = (value: string) =>
+        value
+          .replace(/[€]/g, '')
+          .replace(/\b(eur|euro|euros)\b/gi, '')
+          .replace(/[^\d.,\s-]/g, '')
+          .trim();
+
+      const hasNonEuro = nonEuroPattern.test(text) && !euroPattern.test(text);
+
+      // Normalize thousand/decimal separators: support both EU and US
+      const normalizeNumberString = (value: string) => {
+        // Remove spaces
+        let cleaned = value.replace(/\s+/g, '');
+        // If looks like EU format (1.234,56), swap separators
+        const euLike = /^\d{1,3}(\.\d{3})*(,\d+)?$/;
+        if (euLike.test(cleaned)) {
+          cleaned = cleaned.replace(/\./g, '').replace(',', '.');
+        } else {
+          // Otherwise remove thousands commas
+          cleaned = cleaned.replace(/,/g, '');
+        }
+        return cleaned;
+      };
+
+      // Base cleaning
+      const base = stripCurrencyWords(text);
+      const normalized = normalizeNumberString(base);
+      const numericMatch = normalized.match(/^[+-]?\d+(?:\.\d+)?$/);
+
+      if (!numericMatch) {
+        return text; // fallback to raw input if we can't parse
+      }
+
+      // If non-euro currency detected, still accept but explicitly tag as euro for backend
+      if (hasNonEuro) {
+        return `${normalized} euro`;
+      }
+
+      // Otherwise treat as euros by default
+      return normalized;
     };
 
-    const sanitizedInput = normalizeNumericInput(userInput);
+    const sanitizedInput = normalizeCurrencyToEuro(userInput);
 
     try {
       chatLogger.info('Stream started', { 

@@ -1198,6 +1198,21 @@ export class StreamEventHandler {
         ...(data.metadata || {})
       }
     };
+
+    // UX hint: emphasize euro-only for financial fields and show conversion if provided
+    if (data.field === 'revenue' || data.field === 'ebitda') {
+      const meta = clarificationMessage.metadata || {};
+      const conversionNote = meta.converted_amount_eur && meta.original_currency && meta.original_amount
+        ? `Converted ${meta.original_currency} ${meta.original_amount} → €${meta.converted_amount_eur} (ECB rate)`
+        : undefined;
+      clarificationMessage.metadata = {
+        ...meta,
+        help_text: meta.help_text || 'Please provide the amount in euros (€). Plain numbers are treated as EUR.',
+        currency_hint: 'EUR_ONLY',
+        conversion_note: conversionNote
+      };
+    }
+
     this.callbacks.addMessage(clarificationMessage);
 
     // If business_type is invalid, proactively fetch and surface suggestions
