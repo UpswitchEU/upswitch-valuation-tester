@@ -161,7 +161,7 @@ export const useConversationInitializer = (
               company_name: callbacks.user?.company_name,
               industry: callbacks.user?.industry,
               business_type: callbacks.user?.business_type,
-              country_code: callbacks.user?.country || 'BE',
+              country_code: callbacks.user?.country,
               founding_year: callbacks.user?.founded_year
             } : undefined,
             pre_filled_data: userId ? {
@@ -198,7 +198,7 @@ export const useConversationInitializer = (
                 company_name: callbacks.user?.company_name,
                 industry: callbacks.user?.industry,
                 business_type: callbacks.user?.business_type,
-                country_code: callbacks.user?.country || 'BE',
+                country_code: callbacks.user?.country,
                 founding_year: callbacks.user?.founded_year
               } : undefined,
               pre_filled_data: userId ? {

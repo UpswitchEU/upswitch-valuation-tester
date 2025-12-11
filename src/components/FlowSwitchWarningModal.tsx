@@ -22,6 +22,13 @@ export const FlowSwitchWarningModal: React.FC<FlowSwitchWarningModalProps> = ({
   targetFlow,
   currentFlow,
 }) => {
+  if (!isOpen) {
+    // Avoid keeping the fullscreen overlay mounted when closed; this was
+    // causing a subtle page-wide flicker on some GPUs when combined with
+    // backdrop blur.
+    return null;
+  }
+
   const flowNames = {
     manual: 'Manual Entry',
     conversational: 'AI-Guided',
@@ -32,28 +39,22 @@ export const FlowSwitchWarningModal: React.FC<FlowSwitchWarningModalProps> = ({
 
   return (
     <>
-      {/* Backdrop - use opacity/pointer-events instead of conditional rendering to prevent flicker */}
+      {/* Backdrop */}
       <div 
-        className={`fixed inset-0 bg-black/60 backdrop-blur-sm z-50 transition-opacity duration-200 ${
-          isOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
-        }`}
+        className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 transition-opacity duration-200 opacity-100 pointer-events-auto"
         onClick={onClose}
-        aria-hidden={!isOpen}
+        aria-hidden="false"
       />
       
-      {/* Modal - use opacity/pointer-events instead of conditional rendering to prevent flicker */}
+      {/* Modal */}
       <div 
-        className={`fixed inset-0 z-50 flex items-center justify-center p-4 transition-opacity duration-200 ${
-          isOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
-        }`}
-        aria-hidden={!isOpen}
+        className="fixed inset-0 z-50 flex items-center justify-center p-4 transition-opacity duration-200 opacity-100 pointer-events-auto"
+        aria-hidden="false"
         aria-modal="true"
         role="dialog"
       >
         <div 
-          className={`bg-zinc-800 rounded-2xl shadow-2xl border border-zinc-700 max-w-md w-full transition-transform duration-200 ${
-            isOpen ? 'scale-100' : 'scale-95'
-          }`}
+          className="bg-zinc-800 rounded-2xl shadow-2xl border border-zinc-700 max-w-md w-full transition-transform duration-200 scale-100"
           onClick={(e) => e.stopPropagation()}
         >
           {/* Header */}
