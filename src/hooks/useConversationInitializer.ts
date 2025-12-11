@@ -145,6 +145,27 @@ export const useConversationInitializer = (
           }
         }
 
+        // #region agent log
+        fetch('http://127.0.0.1:7242/ingest/ac30b840-bdb0-4835-9371-38e62b4957e9', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            sessionId,
+            runId: 'run1',
+            hypothesisId: 'H1',
+            location: 'useConversationInitializer.ts:callStart',
+            message: 'About to call conversation start',
+            data: {
+              API_BASE_URL,
+              userId,
+              hasGuestSessionId: !!guestSessionId
+            },
+            timestamp: Date.now(),
+            sessionIdOverride: sessionId
+          })
+        }).catch(() => {});
+        // #endregion
+
         // Call backend to get intelligent first question
         const response = await fetch(`${API_BASE_URL}/api/v1/intelligent-conversation/start`, {
           method: 'POST',

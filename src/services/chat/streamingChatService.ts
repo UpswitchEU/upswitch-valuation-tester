@@ -53,6 +53,27 @@ export class StreamingChatService {
       
       const url = `${this.baseURL}/api/v1/intelligent-conversation/stream`;
       
+      // #region agent log
+      fetch('http://127.0.0.1:7242/ingest/ac30b840-bdb0-4835-9371-38e62b4957e9', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          sessionId,
+          runId: 'run1',
+          hypothesisId: 'H1',
+          location: 'streamingChatService.ts:streamConversation:beforeFetch',
+          message: 'Streaming request init',
+          data: {
+            baseURL: this.baseURL,
+            userInputLength: userInput?.length ?? 0,
+            hasGuestSessionId: !!guestSessionId,
+            userId
+          },
+          timestamp: Date.now()
+        })
+      }).catch(() => {});
+      // #endregion
+
       const response = await fetch(url, {
         method: 'POST',
         credentials: 'include', // Send cookies automatically for auth
