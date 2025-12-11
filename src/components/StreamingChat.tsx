@@ -1350,6 +1350,14 @@ const MessageItem = React.memo<MessageItemProps>(({
     // Defensive: Extract metadata with fallbacks (in case metadata structure differs)
     const metadata = message.metadata || {};
     
+    console.log('🎨 RENDERING CompanyNameConfirmationCard', {
+      companyName: metadata.company_name || message.content || '',
+      registrationNumber: metadata.registration_number,
+      legalForm: metadata.legal_form,
+      hasMetadata: !!message.metadata,
+      metadataKeys: message.metadata ? Object.keys(message.metadata) : []
+    });
+    
     return (
       <CompanyNameConfirmationCard
         companyName={metadata.company_name || message.content || ''}
