@@ -23,7 +23,7 @@ export const BusinessTypeConfirmationCard: React.FC<BusinessTypeConfirmationCard
   industry,
   category,
   icon = '🏢',
-  confidence,
+  confidence: _confidence,
   timestamp
 }) => {
   return (

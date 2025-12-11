@@ -25,7 +25,7 @@ export const CompanyNameConfirmationCard: React.FC<CompanyNameConfirmationCardPr
   legalForm,
   foundingYear,
   industryDescription,
-  confidence,
+  confidence: _confidence,
   timestamp
 }) => {
   return (
