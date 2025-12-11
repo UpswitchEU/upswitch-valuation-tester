@@ -12,8 +12,17 @@ import { INITIALIZATION_STEPS } from './LoadingState.constants';
 import { OutOfCreditsModal } from './OutOfCreditsModal';
 
 // Lazy load flow components for code splitting and performance
-const ManualValuationFlow = lazy(() => import('./ManualValuationFlow').then(module => ({ default: module.ManualValuationFlow })));
-const AIAssistedValuation = lazy(() => import('./AIAssistedValuation').then(module => ({ default: module.AIAssistedValuation })));
+// This reduces initial bundle size and improves load time
+const ManualValuationFlow = lazy(() => 
+  import('./ManualValuationFlow').then(module => ({ 
+    default: module.ManualValuationFlow 
+  }))
+);
+const AIAssistedValuation = lazy(() => 
+  import('./AIAssistedValuation').then(module => ({ 
+    default: module.AIAssistedValuation 
+  }))
+);
 
 type Stage = 'loading' | 'data-entry' | 'processing' | 'flow-selection';
 
@@ -23,7 +32,7 @@ export const ValuationReport: React.FC = () => {
   const location = useLocation();
   const { isAuthenticated } = useAuth();
   
-  const { session, initializeSession } = useValuationSessionStore();
+  const { session, initializeSession, isSyncing } = useValuationSessionStore();
   const [currentReportId, setCurrentReportId] = useState<string>('');
   const [stage, setStage] = useState<Stage>('loading');
   const [error, setError] = useState<string | null>(null);
@@ -194,7 +203,7 @@ export const ValuationReport: React.FC = () => {
             {/* Conditionally render only the active flow component for better performance */}
             {/* Smooth fade transition when switching flows */}
             {session.currentView === 'manual' && (
-              <div className="absolute inset-0 animate-in fade-in duration-300">
+              <div className="absolute inset-0 transition-opacity duration-300 ease-in-out opacity-100">
                 <Suspense fallback={
                   <div className="flex items-center justify-center h-full">
                     <div className="flex items-center gap-3 text-gray-400">
@@ -212,7 +221,7 @@ export const ValuationReport: React.FC = () => {
             )}
 
             {session.currentView === 'conversational' && (
-              <div className="absolute inset-0 animate-in fade-in duration-300">
+              <div className="absolute inset-0 transition-opacity duration-300 ease-in-out opacity-100">
                 <Suspense fallback={
                   <div className="flex items-center justify-center h-full">
                     <div className="flex items-center gap-3 text-gray-400">
@@ -228,6 +237,16 @@ export const ValuationReport: React.FC = () => {
                     autoSend={autoSend}
                   />
                 </Suspense>
+              </div>
+            )}
+            
+            {/* Subtle loading overlay during flow switch sync */}
+            {isSyncing && (
+              <div className="absolute inset-0 bg-zinc-950/50 backdrop-blur-sm z-50 flex items-center justify-center pointer-events-none transition-opacity duration-200">
+                <div className="flex flex-col items-center gap-2 text-gray-400">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-500"></div>
+                  <span className="text-xs">Syncing...</span>
+                </div>
               </div>
             )}
           </div>
