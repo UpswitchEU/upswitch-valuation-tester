@@ -545,7 +545,14 @@ export class StreamEventHandler {
       data.metadata?.clarification_field === 'valuation_confirmed' ||
       data.metadata?.section === 'valuation_ready';
 
-    if (isValuationCTA) {
+    // Fallback: if the content clearly looks like the valuation confirmation question,
+    // treat it as a CTA even if metadata is missing (some backends omit section/field).
+    const contentLower = (data.content || data.message || '').toLowerCase();
+    const looksLikeValuationCTA =
+      contentLower.includes('ready to generate your valuation report') ||
+      (contentLower.includes('valuation') && contentLower.includes('confirm'));
+
+    if (isValuationCTA || looksLikeValuationCTA) {
       const updatedMeta = {
         ...data.metadata,
         input_type: data.metadata?.input_type || 'cta_button',
