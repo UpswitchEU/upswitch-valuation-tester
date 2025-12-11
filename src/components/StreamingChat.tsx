@@ -14,6 +14,7 @@ import { useTypingAnimation } from '../hooks/useTypingAnimation';
 import { debugLogger } from '../utils/debugLogger';
 import { chatLogger } from '../utils/logger';
 import { AIHelpCard } from './AIHelpCard';
+import { BusinessTypeConfirmationCard } from './BusinessTypeConfirmationCard';
 import { BusinessTypeSuggestionsList } from './BusinessTypeSuggestionsList';
 import { KBOSuggestionsList } from './KBOSuggestionsList';
 import { SuggestionChips } from './SuggestionChips';
@@ -1312,6 +1313,23 @@ const MessageItem = React.memo<MessageItemProps>(({
       />
     );
   }
+
+  // Check if this is a business type confirmation
+  const isBusinessTypeConfirmation = message.metadata?.is_business_type_confirmation === true;
+
+  if (isBusinessTypeConfirmation) {
+    return (
+      <BusinessTypeConfirmationCard
+        businessType={message.metadata?.business_type || ''}
+        industry={message.metadata?.industry}
+        category={message.metadata?.category}
+        icon={message.metadata?.icon}
+        confidence={message.metadata?.confidence}
+        timestamp={message.timestamp}
+      />
+    );
+  }
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 10, scale: 0.98 }}

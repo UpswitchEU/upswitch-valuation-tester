@@ -764,6 +764,32 @@ export class StreamEventHandler {
       ...data,
       value: sanitizedValue
     });
+
+    // CRITICAL FIX: If business_type collected, show confirmation card
+    // This provides visual feedback similar to the manual flow
+    if (data.field === 'business_type') {
+      const metadata = data.metadata || {};
+      
+      chatLogger.info('Injecting business type confirmation card', {
+        business_type: sanitizedValue,
+        industry: metadata.industry_mapping || metadata.industry,
+        category: metadata.category
+      });
+
+      this.callbacks.addMessage({
+        type: 'ai',
+        content: '', // Empty content, we'll render the card
+        isComplete: true,
+        metadata: {
+          is_business_type_confirmation: true,
+          business_type: sanitizedValue,
+          industry: metadata.industry_mapping || metadata.industry,
+          category: metadata.category,
+          icon: metadata.icon || '🏢',
+          confidence: metadata.confidence
+        }
+      });
+    }
   }
 
   /**
