@@ -102,13 +102,10 @@ export class StreamEventHandler {
    * Also flushes buffered chunks once message is created
    */
   private async ensureMessageExists(): Promise<void> {
-    console.log(`[ROOT-CAUSE] StreamEventHandler.ensureMessageExists: Called, hasStartedMessage=${this.hasStartedMessage}, messageCreationLock=${this.messageCreationLock}`);
-    
     if (this.hasStartedMessage || this.messageCreationLock) {
       // Message exists or being created - flush any buffered chunks if message exists
       if (this.hasStartedMessage && this.chunkBuffer.length > 0) {
         const bufferedContent = this.chunkBuffer.join('');
-        console.log(`[ROOT-CAUSE] StreamEventHandler.ensureMessageExists: Flushing ${this.chunkBuffer.length} buffered chunks: '${bufferedContent}'`);
         // Mark all buffered chunks as processed before flushing
         this.lastProcessedChunks.push(...this.chunkBuffer);
         // Keep only last 10 chunks to prevent memory growth
@@ -118,13 +115,11 @@ export class StreamEventHandler {
         this.chunkBuffer = [];
         this.callbacks.updateStreamingMessage(bufferedContent);
       }
-      console.log(`[ROOT-CAUSE] StreamEventHandler.ensureMessageExists: Message already exists or locked, returning`);
       return; // Message already exists or creation in progress
     }
     
     // Acquire lock
     this.messageCreationLock = true;
-    console.log(`[ROOT-CAUSE] StreamEventHandler.ensureMessageExists: Acquired lock, creating message`);
     
     try {
       // Double-check after acquiring lock (race condition prevention)
@@ -132,19 +127,17 @@ export class StreamEventHandler {
         chatLogger.debug('Creating placeholder message (thread-safe)', {
           bufferedChunks: this.chunkBuffer.length
         });
-        const result = this.callbacks.addMessage({
+        this.callbacks.addMessage({
           type: 'ai',  // FIX: Use correct type from Message type definition
           content: '',
           isStreaming: true,
           isComplete: false
         });
-        console.log(`[ROOT-CAUSE] StreamEventHandler.ensureMessageExists: Created message with id='${result.newMessage.id}'`);
         this.hasStartedMessage = true;
         
         // CRITICAL FIX: Flush any buffered chunks now that message exists
         if (this.chunkBuffer.length > 0) {
           const bufferedContent = this.chunkBuffer.join('');
-          console.log(`[ROOT-CAUSE] StreamEventHandler.ensureMessageExists: Flushing ${this.chunkBuffer.length} buffered chunks after message creation: '${bufferedContent}'`);
           // Mark all buffered chunks as processed before flushing
           this.lastProcessedChunks.push(...this.chunkBuffer);
           // Keep only last 10 chunks to prevent memory growth
@@ -154,13 +147,10 @@ export class StreamEventHandler {
           this.chunkBuffer = [];
           this.callbacks.updateStreamingMessage(bufferedContent);
         }
-      } else {
-        console.log(`[ROOT-CAUSE] StreamEventHandler.ensureMessageExists: Message already exists after lock acquisition (race condition prevented)`);
       }
     } finally {
       // Always release lock, even on error
       this.messageCreationLock = false;
-      console.log(`[ROOT-CAUSE] StreamEventHandler.ensureMessageExists: Released lock`);
     }
   }
 
@@ -258,8 +248,6 @@ export class StreamEventHandler {
     // Must reset state and create new message, even if previous message is still active
     // This prevents confirmation messages from appending to previous messages
     
-    console.log(`[ROOT-CAUSE] StreamEventHandler.handleMessageStart: Starting new message, hasStartedMessage=${this.hasStartedMessage}, messageCreationLock=${this.messageCreationLock}`);
-    
     // If a previous message is still active, complete it first
     if (this.hasStartedMessage) {
       chatLogger.debug('message_start received while previous message active - completing previous message', {
@@ -293,7 +281,6 @@ export class StreamEventHandler {
     // 2. handleMessageStart() resets state and calls ensureMessageExists again
     // 3. handleMessageChunk() calls ensureMessageExists again
     // Instead, chunks will call ensureMessageExists which will create the message once
-    console.log(`[ROOT-CAUSE] StreamEventHandler.handleMessageStart: Reset complete, waiting for chunks to create message`);
   }
 
   /**
@@ -309,15 +296,13 @@ export class StreamEventHandler {
       return;
     }
     
-    // CRITICAL DEBUG: Log chunk content to detect duplication
+    // Check for duplicate chunks
     const wasBuffered = this.chunkBuffer.includes(content);
     const wasRecentlyProcessed = this.lastProcessedChunks.slice(-3).includes(content); // Check last 3 processed chunks
-    console.log(`[ROOT-CAUSE] StreamEventHandler.handleMessageChunk: Received chunk='${content}', bufferLength=${this.chunkBuffer.length}, hasStartedMessage=${this.hasStartedMessage}, wasBuffered=${wasBuffered}, wasRecentlyProcessed=${wasRecentlyProcessed}`);
     
     // CRITICAL FIX: If chunk was recently processed (within last 3 chunks), skip to prevent rapid duplicates
     // This handles cases where the same chunk arrives twice in quick succession
     if (wasRecentlyProcessed && !wasBuffered) {
-      console.log(`[ROOT-CAUSE] StreamEventHandler.handleMessageChunk: SKIPPING duplicate chunk='${content}' (was recently processed)`);
       return;
     }
     
@@ -346,7 +331,6 @@ export class StreamEventHandler {
     // CRITICAL FIX: If chunk is currently buffered, it will be flushed by ensureMessageExists
     // Don't process it again to prevent duplication
     if (wasBuffered) {
-      console.log(`[ROOT-CAUSE] StreamEventHandler.handleMessageChunk: SKIPPING chunk='${content}' (was buffered and will be flushed)`);
       return;
     }
     
@@ -358,7 +342,6 @@ export class StreamEventHandler {
     }
     
     // Message exists - update it with the chunk
-    console.log(`[ROOT-CAUSE] StreamEventHandler.handleMessageChunk: Processing chunk='${content}'`);
     this.callbacks.updateStreamingMessage(content);
   }
 

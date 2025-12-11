@@ -70,11 +70,6 @@ export class MessageManager {
       metadataKeys: metadata ? Object.keys(metadata) : []
     });
 
-    // CRITICAL DEBUG: Log before and after content to detect duplication
-    const currentMessage = messages.find(msg => msg.id === messageId);
-    const currentContent = currentMessage?.content || '';
-    console.log(`[ROOT-CAUSE] MessageManager.updateStreamingMessage: messageId='${messageId}', currentContent='${currentContent}', newChunk='${content}', willBecome='${currentContent + content}'`);
-
     return messages.map(msg =>
       msg.id === messageId
         ? { 
