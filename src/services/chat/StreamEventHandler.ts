@@ -43,7 +43,7 @@ const getFallbackBusinessTypeSuggestions = (query: string, limit = 5) => {
   // If still nothing, offer a single cleaned-up guess
   if (scored.length === 0) {
     return [{
-      text: query.length > 3 ? `${query}t` : query,
+      text: query,
       confidence: 0.3,
       reason: 'Closest guess'
     }];
@@ -113,6 +113,9 @@ export class StreamEventHandler {
   private messageCreationLock: boolean = false; // CRITICAL FIX: Prevent race conditions
   private chunkBuffer: string[] = []; // CRITICAL FIX: Buffer chunks until message exists
   private lastProcessedChunks: string[] = []; // CRITICAL FIX: Track last few processed chunks to detect rapid duplicates
+  // Track last completed AI message to avoid duplicate renders (same content/field)
+  private lastCompleteMessageSignature: string | null = null;
+  private lastCompleteMessageTimestamp: number = 0;
 
   constructor(
     sessionId: string,
@@ -313,6 +316,7 @@ export class StreamEventHandler {
     this.messageCreationLock = false;
     this.chunkBuffer = [];
     this.lastProcessedChunks = []; // CRITICAL FIX: Clear processed chunks on new message start
+    this.lastCompleteMessageSignature = null; // Reset duplicate guard for new message
     
     // Hide thinking state and typing indicator when message starts streaming
     this.callbacks.setIsThinking?.(false);
@@ -552,6 +556,23 @@ export class StreamEventHandler {
       data = { ...data, metadata: updatedMeta };
     }
 
+    // Deduplicate identical AI messages to avoid repeated bubbles for the same question
+    const signature = `${data.content || data.message || ''}|${data.metadata?.collected_field || ''}|${data.metadata?.clarification_field || ''}|${data.metadata?.input_type || ''}`;
+    const now = Date.now();
+    // Skip if identical signature arrives within 6 seconds
+    if (signature && this.lastCompleteMessageSignature === signature && (now - this.lastCompleteMessageTimestamp) < 6000) {
+      chatLogger.debug('Skipping duplicate message_complete', { signature, age_ms: now - this.lastCompleteMessageTimestamp });
+      // Still clear streaming/typing state even if skipping content
+      this.callbacks.setIsStreaming(false);
+      this.callbacks.setIsTyping?.(false);
+      this.callbacks.setIsThinking?.(false);
+      this.hasStartedMessage = false;
+      this.messageCreationLock = false;
+      return;
+    }
+    this.lastCompleteMessageSignature = signature;
+    this.lastCompleteMessageTimestamp = now;
+
     // If this is a business_type clarification (message_complete path), proactively surface suggestions
     const isBusinessTypeClarification =
       data.field === 'business_type' ||
@@ -574,21 +595,12 @@ export class StreamEventHandler {
       if (query.length >= 3) {
         businessTypesApiService.searchBusinessTypes(query, 5)
           .then((suggestions) => {
-            if (suggestions.length > 0) {
+            const list = (suggestions && suggestions.length > 0) ? suggestions : getFallbackBusinessTypeSuggestions(query, 5);
+            if (list.length > 0) {
               this.handleSuggestionOffered({
                 field: 'business_type',
                 original_value: query,
-                suggestions,
-                message: 'Did you mean one of these business types?'
-              });
-              return;
-            }
-            const fallback = getFallbackBusinessTypeSuggestions(query, 5);
-            if (fallback.length > 0) {
-              this.handleSuggestionOffered({
-                field: 'business_type',
-                original_value: query,
-                suggestions: fallback,
+                suggestions: list,
                 message: 'Did you mean one of these business types?'
               });
             }
@@ -1072,6 +1084,17 @@ export class StreamEventHandler {
       original_value: data.original_value,
       suggestions_count: data.suggestions?.length || 0
     });
+
+    // Ensure we have suggestions; if empty, build a local fallback from known types
+    let suggestions = data.suggestions;
+    if (!Array.isArray(suggestions) || suggestions.length === 0) {
+      suggestions = getFallbackBusinessTypeSuggestions(data.original_value || '', 5);
+      chatLogger.info('Using fallback suggestions', {
+        field: data.field,
+        original_value: data.original_value,
+        fallback_count: suggestions.length
+      });
+    }
     
     // Create suggestion message
     const suggestionMessage: Message = {
@@ -1083,7 +1106,7 @@ export class StreamEventHandler {
       metadata: {
         field: data.field,
         originalValue: data.original_value,
-        suggestions: data.suggestions
+        suggestions
       }
     };
     
@@ -1182,23 +1205,12 @@ export class StreamEventHandler {
       const query = data.value.trim();
       businessTypesApiService.searchBusinessTypes(query, 5)
         .then((suggestions) => {
-          if (suggestions.length > 0) {
+          const list = (suggestions && suggestions.length > 0) ? suggestions : getFallbackBusinessTypeSuggestions(query, 5);
+          if (list.length > 0) {
             this.handleSuggestionOffered({
               field: 'business_type',
               original_value: data.value,
-              suggestions,
-              message: 'Did you mean one of these business types?'
-            });
-            return;
-          }
-
-          // Fallback to local fuzzy suggestions if API returned empty
-          const fallback = getFallbackBusinessTypeSuggestions(query, 5);
-          if (fallback.length > 0) {
-            this.handleSuggestionOffered({
-              field: 'business_type',
-              original_value: data.value,
-              suggestions: fallback,
+              suggestions: list,
               message: 'Did you mean one of these business types?'
             });
           }
