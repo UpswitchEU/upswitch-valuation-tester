@@ -59,7 +59,7 @@ export const LoadingState: React.FC<LoadingStateProps> = ({
       </div>
       
       {/* Dynamic step indicator */}
-      <div className="mb-3 animate-in fade-in slide-in-from-bottom-2 duration-700 delay-100 fill-mode-backwards">
+      <div className="mt-6 mb-3 animate-in fade-in slide-in-from-bottom-2 duration-700 delay-100 fill-mode-backwards">
         <span className={`text-xs font-semibold tracking-wide uppercase px-3 py-1.5 rounded-full ${
           isDark 
             ? 'text-primary-300 bg-primary-900/30 border border-primary-800/50' 

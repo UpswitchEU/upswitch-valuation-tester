@@ -32,7 +32,7 @@ export const ValuationReport: React.FC = () => {
   const location = useLocation();
   const { isAuthenticated } = useAuth();
   
-  const { session, initializeSession, isSyncing } = useValuationSessionStore();
+  const { session, initializeSession } = useValuationSessionStore();
   const [currentReportId, setCurrentReportId] = useState<string>('');
   const [stage, setStage] = useState<Stage>('loading');
   const [error, setError] = useState<string | null>(null);
@@ -243,16 +243,6 @@ export const ValuationReport: React.FC = () => {
                     autoSend={autoSend}
                   />
                 </Suspense>
-              </div>
-            )}
-            
-            {/* Subtle loading overlay during flow switch sync - only show if syncing takes longer than 100ms */}
-            {isSyncing && (
-              <div className="absolute inset-0 bg-zinc-950/30 backdrop-blur-[2px] z-50 flex items-center justify-center pointer-events-none animate-in fade-in duration-150">
-                <div className="flex flex-col items-center gap-2 text-gray-400">
-                  <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary-500"></div>
-                  <span className="text-xs opacity-75">Syncing...</span>
-                </div>
               </div>
             )}
           </div>
