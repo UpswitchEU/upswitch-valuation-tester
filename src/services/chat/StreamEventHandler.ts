@@ -815,6 +815,16 @@ export class StreamEventHandler {
       const metadata = data.metadata || {};
       
       // CRITICAL DEBUG: Log all metadata for company_name to diagnose missing card
+      console.log('🔍 [ROOT-CAUSE] Company name data_collected event received', {
+        field: data.field,
+        has_metadata: !!data.metadata,
+        metadata: metadata,
+        metadata_keys: data.metadata ? Object.keys(data.metadata) : [],
+        is_company_name_confirmation: metadata.is_company_name_confirmation,
+        kbo_verified: metadata.kbo_verified,
+        registration_number: metadata.registration_number,
+        sanitizedValue: sanitizedValue
+      });
       chatLogger.error('🔍 [ROOT-CAUSE] Company name data_collected event received', {
         field: data.field,
         has_metadata: !!data.metadata,
@@ -827,7 +837,32 @@ export class StreamEventHandler {
       });
       
       // Check if this is a KBO-verified company (has confirmation flag)
-      if (metadata.is_company_name_confirmation === true || metadata.kbo_verified === true) {
+      // CRITICAL: Check both flags and also check if we have KBO data (registration_number)
+      const hasConfirmationFlag = metadata.is_company_name_confirmation === true || metadata.kbo_verified === true;
+      const hasKBOData = !!metadata.registration_number;
+      
+      console.log('🔍 [ROOT-CAUSE] Company name card injection check', {
+        field: data.field,
+        hasConfirmationFlag,
+        hasKBOData,
+        is_company_name_confirmation: metadata.is_company_name_confirmation,
+        kbo_verified: metadata.kbo_verified,
+        registration_number: metadata.registration_number,
+        all_metadata_keys: data.metadata ? Object.keys(data.metadata) : [],
+        willInjectCard: hasConfirmationFlag && hasKBOData
+      });
+      chatLogger.error('🔍 [ROOT-CAUSE] Company name card injection check', {
+        field: data.field,
+        hasConfirmationFlag,
+        hasKBOData,
+        is_company_name_confirmation: metadata.is_company_name_confirmation,
+        kbo_verified: metadata.kbo_verified,
+        registration_number: metadata.registration_number,
+        all_metadata_keys: data.metadata ? Object.keys(data.metadata) : [],
+        willInjectCard: hasConfirmationFlag && hasKBOData
+      });
+      
+      if (hasConfirmationFlag && hasKBOData) {
         // Defensive: Extract metadata with fallbacks
         const companyName = metadata.company_name || sanitizedValue || null;
         const registrationNumber = metadata.registration_number || null;
@@ -836,7 +871,7 @@ export class StreamEventHandler {
         const industryDescription = metadata.industry_description || null;
         const confidence = metadata.confidence || undefined;
         
-        chatLogger.info('Injecting company name KBO confirmation card', {
+        chatLogger.info('✅ Injecting company name KBO confirmation card', {
           company_name: companyName,
           registration_number: registrationNumber,
           legal_form: legalForm,
@@ -846,7 +881,7 @@ export class StreamEventHandler {
         });
 
         // CRITICAL DEBUG: Log condition check
-        chatLogger.error('🔍 [ROOT-CAUSE] Checking conditions for company name confirmation card', {
+        chatLogger.error('🔍 [ROOT-CAUSE] Final check before card injection', {
           companyName: companyName,
           companyNameIsValid: companyName && companyName !== 'Not provided',
           registrationNumber: registrationNumber,
@@ -856,6 +891,17 @@ export class StreamEventHandler {
 
         // Only inject confirmation card if we have valid company name and KBO data
         if (companyName && companyName !== 'Not provided' && registrationNumber) {
+          console.log('✅✅✅ INJECTING COMPANY NAME CONFIRMATION CARD', {
+            companyName,
+            registrationNumber,
+            legalForm
+          });
+          chatLogger.info('✅✅✅ INJECTING COMPANY NAME CONFIRMATION CARD', {
+            companyName,
+            registrationNumber,
+            legalForm
+          });
+          
           this.callbacks.addMessage({
             type: 'ai',
             content: '', // Empty content, we'll render the card
@@ -871,11 +917,27 @@ export class StreamEventHandler {
             }
           });
         } else {
-          chatLogger.warn('Skipping company name confirmation card - missing required data', {
+          chatLogger.warn('❌ Skipping company name confirmation card - missing required data', {
             companyName: companyName,
-            hasRegistrationNumber: !!registrationNumber
+            hasRegistrationNumber: !!registrationNumber,
+            reason: !companyName ? 'missing company name' : !registrationNumber ? 'missing registration number' : 'unknown'
           });
         }
+      } else {
+        console.warn('❌ Not injecting company name card - missing flags or data', {
+          hasConfirmationFlag,
+          hasKBOData,
+          is_company_name_confirmation: metadata.is_company_name_confirmation,
+          kbo_verified: metadata.kbo_verified,
+          registration_number: metadata.registration_number
+        });
+        chatLogger.warn('❌ Not injecting company name card - missing flags or data', {
+          hasConfirmationFlag,
+          hasKBOData,
+          is_company_name_confirmation: metadata.is_company_name_confirmation,
+          kbo_verified: metadata.kbo_verified,
+          registration_number: metadata.registration_number
+        });
       }
     }
   }
