@@ -1275,6 +1275,24 @@ export class StreamEventHandler {
           chatLogger.error('Company suggestion lookup failed', { error: error instanceof Error ? error.message : String(error) });
         });
     }
+
+    // If country_code is requested, present only Belgium as the selectable option.
+    if (data.field === 'country_code') {
+      const beSuggestions = [
+        {
+          text: 'Belgium',
+          code: 'BE',
+          confidence: 1,
+          reason: 'Currently supported country',
+        }
+      ];
+      this.handleSuggestionOffered({
+        field: 'country_code',
+        original_value: 'Belgium',
+        suggestions: beSuggestions,
+        message: 'Select your operating country'
+      });
+    }
   }
 
   /**
