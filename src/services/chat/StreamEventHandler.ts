@@ -67,7 +67,8 @@ export class StreamEventHandler {
   private sessionId: string;
   private hasStartedMessage: boolean = false;
   private messageCreationLock: boolean = false; // CRITICAL FIX: Prevent race conditions
-  private chunkBuffer: string[] = []; // CRITICAL FIX: Buffer chunks until message exists
+  private chunkBuffer: Array<{content: string, timestamp: number}> = []; // CRITICAL FIX: Buffer chunks with timestamp until message exists
+  private processedChunkTimestamps: Set<number> = new Set(); // CRITICAL FIX: Track processed chunks by timestamp to prevent duplicates
 
   constructor(
     sessionId: string,
@@ -86,11 +87,13 @@ export class StreamEventHandler {
       sessionId: this.sessionId,
       hadStartedMessage: this.hasStartedMessage,
       hadLock: this.messageCreationLock,
-      bufferedChunks: this.chunkBuffer.length
+      bufferedChunks: this.chunkBuffer.length,
+      processedChunks: this.processedChunkTimestamps.size
     });
     this.hasStartedMessage = false;
     this.messageCreationLock = false;
     this.chunkBuffer = []; // CRITICAL FIX: Clear chunk buffer on reset
+    this.processedChunkTimestamps.clear(); // CRITICAL FIX: Clear processed chunks tracking on reset
   }
   
   /**
@@ -102,7 +105,10 @@ export class StreamEventHandler {
     if (this.hasStartedMessage || this.messageCreationLock) {
       // Message exists or being created - flush any buffered chunks if message exists
       if (this.hasStartedMessage && this.chunkBuffer.length > 0) {
-        const bufferedContent = this.chunkBuffer.join('');
+        const bufferedContent = this.chunkBuffer.map(c => c.content).join('');
+        console.log(`[ROOT-CAUSE] StreamEventHandler.ensureMessageExists: Flushing ${this.chunkBuffer.length} buffered chunks: '${bufferedContent}'`);
+        // Mark all buffered chunks as processed before flushing
+        this.chunkBuffer.forEach(chunk => this.processedChunkTimestamps.add(chunk.timestamp));
         this.chunkBuffer = [];
         this.callbacks.updateStreamingMessage(bufferedContent);
       }
@@ -128,7 +134,10 @@ export class StreamEventHandler {
         
         // CRITICAL FIX: Flush any buffered chunks now that message exists
         if (this.chunkBuffer.length > 0) {
-          const bufferedContent = this.chunkBuffer.join('');
+          const bufferedContent = this.chunkBuffer.map(c => c.content).join('');
+          console.log(`[ROOT-CAUSE] StreamEventHandler.ensureMessageExists: Flushing ${this.chunkBuffer.length} buffered chunks after message creation: '${bufferedContent}'`);
+          // Mark all buffered chunks as processed before flushing
+          this.chunkBuffer.forEach(chunk => this.processedChunkTimestamps.add(chunk.timestamp));
           this.chunkBuffer = [];
           this.callbacks.updateStreamingMessage(bufferedContent);
         }
@@ -247,6 +256,7 @@ export class StreamEventHandler {
     this.hasStartedMessage = false;
     this.messageCreationLock = false;
     this.chunkBuffer = [];
+    this.processedChunkTimestamps.clear(); // CRITICAL FIX: Clear processed chunks on new message start
     
     // Mark that we've started a new message
     this.hasStartedMessage = true;
@@ -279,12 +289,12 @@ export class StreamEventHandler {
       return;
     }
     
-    // CRITICAL DEBUG: Log chunk content to detect duplication
-    console.log(`[ROOT-CAUSE] StreamEventHandler.handleMessageChunk: Received chunk='${content}', bufferLength=${this.chunkBuffer.length}, hasStartedMessage=${this.hasStartedMessage}`);
+    // CRITICAL FIX: Use timestamp to uniquely identify chunks (allows same content to appear multiple times)
+    const chunkTimestamp = Date.now() + Math.random(); // Unique timestamp per chunk
+    const wasBuffered = this.chunkBuffer.some(c => c.content === content && Math.abs(c.timestamp - chunkTimestamp) < 100); // Check if similar chunk was buffered recently
     
-    // CRITICAL FIX: Check if this chunk was already buffered to prevent duplicate processing
-    // If chunk is in buffer, it will be flushed by ensureMessageExists - don't process it again
-    const wasBuffered = this.chunkBuffer.includes(content);
+    // CRITICAL DEBUG: Log chunk content to detect duplication
+    console.log(`[ROOT-CAUSE] StreamEventHandler.handleMessageChunk: Received chunk='${content}', bufferLength=${this.chunkBuffer.length}, hasStartedMessage=${this.hasStartedMessage}, wasBuffered=${wasBuffered}`);
     
     // CRITICAL FIX: Ensure message exists BEFORE processing chunk
     // This prevents first chunk loss when chunks arrive before message_start
@@ -303,16 +313,27 @@ export class StreamEventHandler {
       });
       // CRITICAL FIX: Only buffer if not already buffered to prevent duplicates
       if (!wasBuffered) {
-        this.chunkBuffer.push(content);
+        this.chunkBuffer.push({content, timestamp: chunkTimestamp});
+        this.processedChunkTimestamps.add(chunkTimestamp); // Mark as processed when buffered
       }
       return;
     }
     
-    // CRITICAL FIX: If chunk was buffered and flushed, don't process it again
-    if (wasBuffered) {
-      console.log(`[ROOT-CAUSE] StreamEventHandler.handleMessageChunk: SKIPPING duplicate chunk='${content}' (was already buffered and flushed)`);
+    // CRITICAL FIX: Check if this exact chunk timestamp was already processed
+    if (this.processedChunkTimestamps.has(chunkTimestamp)) {
+      console.log(`[ROOT-CAUSE] StreamEventHandler.handleMessageChunk: SKIPPING duplicate chunk='${content}' (timestamp already processed)`);
       return;
     }
+    
+    // CRITICAL FIX: If chunk was buffered, it will be flushed by ensureMessageExists
+    // Don't process it again to prevent duplication
+    if (wasBuffered) {
+      console.log(`[ROOT-CAUSE] StreamEventHandler.handleMessageChunk: SKIPPING chunk='${content}' (was buffered and will be flushed)`);
+      return;
+    }
+    
+    // Mark chunk as processed before updating message
+    this.processedChunkTimestamps.add(chunkTimestamp);
     
     // Message exists - update it with the chunk
     console.log(`[ROOT-CAUSE] StreamEventHandler.handleMessageChunk: Processing chunk='${content}'`);
