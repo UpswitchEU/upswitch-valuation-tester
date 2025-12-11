@@ -814,6 +814,18 @@ export class StreamEventHandler {
     if (data.field === 'company_name') {
       const metadata = data.metadata || {};
       
+      // CRITICAL DEBUG: Log all metadata for company_name to diagnose missing card
+      chatLogger.error('🔍 [ROOT-CAUSE] Company name data_collected event received', {
+        field: data.field,
+        has_metadata: !!data.metadata,
+        metadata: metadata,
+        metadata_keys: data.metadata ? Object.keys(data.metadata) : [],
+        is_company_name_confirmation: metadata.is_company_name_confirmation,
+        kbo_verified: metadata.kbo_verified,
+        registration_number: metadata.registration_number,
+        sanitizedValue: sanitizedValue
+      });
+      
       // Check if this is a KBO-verified company (has confirmation flag)
       if (metadata.is_company_name_confirmation === true || metadata.kbo_verified === true) {
         // Defensive: Extract metadata with fallbacks
@@ -831,6 +843,15 @@ export class StreamEventHandler {
           founding_year: foundingYear,
           has_metadata: !!data.metadata,
           metadata_keys: data.metadata ? Object.keys(data.metadata) : []
+        });
+
+        // CRITICAL DEBUG: Log condition check
+        chatLogger.error('🔍 [ROOT-CAUSE] Checking conditions for company name confirmation card', {
+          companyName: companyName,
+          companyNameIsValid: companyName && companyName !== 'Not provided',
+          registrationNumber: registrationNumber,
+          registrationNumberIsValid: !!registrationNumber,
+          willShowCard: !!(companyName && companyName !== 'Not provided' && registrationNumber)
         });
 
         // Only inject confirmation card if we have valid company name and KBO data
