@@ -554,12 +554,23 @@ export class StreamEventHandler {
 
     // If this is a business_type clarification (message_complete path), proactively surface suggestions
     const isBusinessTypeClarification =
+      data.field === 'business_type' ||
       data.metadata?.collected_field === 'business_type' ||
       data.metadata?.clarification_field === 'business_type' ||
       data.metadata?.input_type === 'business_type_selector';
 
     if (isBusinessTypeClarification && typeof data.metadata?.clarification_value === 'string') {
-      const query = data.metadata.clarification_value.trim();
+      const meta = data.metadata || {};
+      const candidateValue =
+        meta.clarification_value ||
+        meta.value ||
+        meta.original_value ||
+        meta.collected_value ||
+        meta.last_value ||
+        meta.user_value ||
+        meta.input_value;
+
+      const query = typeof candidateValue === 'string' ? candidateValue.trim() : '';
       if (query.length >= 3) {
         businessTypesApiService.searchBusinessTypes(query, 5)
           .then((suggestions) => {
