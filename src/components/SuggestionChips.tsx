@@ -71,20 +71,22 @@ export const SuggestionChips: React.FC<SuggestionChipsProps> = ({
             </motion.button>
           ))}
 
-          {/* Keep Original Button */}
-          <motion.button
-            key="keep-original"
-            initial={{ opacity: 0, scale: 0.9, y: 10 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            transition={{ delay: suggestions.length * 0.05, duration: 0.2 }}
-            onClick={onDismiss}
-            className="flex items-center gap-2 px-4 py-2.5 bg-transparent border border-white/5 rounded-xl hover:bg-white/5 hover:border-white/10 active:scale-[0.98] transition-all duration-200 group"
-          >
-            <span className="text-[13px] font-medium text-zinc-500 group-hover:text-zinc-300 transition-colors">
-              Keep "{originalValue}"
-            </span>
-            <XCircle className="w-3.5 h-3.5 text-zinc-600 group-hover:text-zinc-400 transition-colors" />
-          </motion.button>
+          {/* Keep Original Button (hide if empty) */}
+          {originalValue && originalValue.trim().length > 0 && (
+            <motion.button
+              key="keep-original"
+              initial={{ opacity: 0, scale: 0.9, y: 10 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              transition={{ delay: suggestions.length * 0.05, duration: 0.2 }}
+              onClick={onDismiss}
+              className="flex items-center gap-2 px-4 py-2.5 bg-transparent border border-white/5 rounded-xl hover:bg-white/5 hover:border-white/10 active:scale-[0.98] transition-all duration-200 group"
+            >
+              <span className="text-[13px] font-medium text-zinc-500 group-hover:text-zinc-300 transition-colors">
+                Keep "{originalValue}"
+              </span>
+              <XCircle className="w-3.5 h-3.5 text-zinc-600 group-hover:text-zinc-400 transition-colors" />
+            </motion.button>
+          )}
         </AnimatePresence>
       </div>
     </div>

@@ -157,6 +157,36 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
   // CRITICAL FIX: Store event handler in ref so onStreamStart callback can access it
   const eventHandlerRef = useRef<StreamEventHandler | null>(null);
   
+  /**
+   * Prevent duplicate valuation confirmation CTAs from stacking.
+   * Sometimes the backend emits the same valuation_confirmed CTA multiple times;
+   * we keep only the latest one to avoid loops in the transcript.
+   */
+  const isValuationReadyCTA = useCallback((msg: { metadata?: any }) => {
+    const meta = msg?.metadata;
+    if (!meta) return false;
+    const field =
+      meta.collected_field ||
+      meta.clarification_field ||
+      meta.field;
+    return meta.input_type === 'cta_button' && field === 'valuation_confirmed';
+  }, []);
+
+  const dedupeValuationCTA = useCallback(
+    (messages: Message[], incoming: Omit<Message, 'id' | 'timestamp'>) => {
+      if (!isValuationReadyCTA(incoming)) return messages;
+
+      const filtered = messages.filter(msg => !isValuationReadyCTA(msg));
+      if (filtered.length !== messages.length) {
+        chatLogger.info('Deduped duplicate valuation CTA message', {
+          removed: messages.length - filtered.length
+        });
+      }
+      return filtered;
+    },
+    [isValuationReadyCTA]
+  );
+
   // Track if initial message has been sent
   const initialMessageSentRef = useRef(false);
   
@@ -293,7 +323,8 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
       
       // Use functional update to ensure latest state
       state.setMessages(prevMessages => {
-        const addResult = messageManager.addMessage(prevMessages, message);
+        const baseMessages = dedupeValuationCTA(prevMessages, message);
+        const addResult = messageManager.addMessage(baseMessages, message);
         // Update ref immediately for eventHandler access
         messagesRef.current = addResult.updatedMessages;
         result = addResult;
@@ -302,7 +333,8 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
       
       // Fallback for cases where setMessages defers execution
       if (!result) {
-        const fallbackResult = messageManager.addMessage(messagesRef.current, message);
+        const fallbackBase = dedupeValuationCTA(messagesRef.current, message);
+        const fallbackResult = messageManager.addMessage(fallbackBase, message);
         messagesRef.current = fallbackResult.updatedMessages;
         state.setMessages(fallbackResult.updatedMessages);
         result = fallbackResult;
@@ -366,7 +398,8 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
     onCalculateOptionAvailable,
     onProgressUpdate,
     onHtmlPreviewUpdate,
-    onMessageComplete
+    onMessageComplete,
+    dedupeValuationCTA
   ]);
   
   // Add message helper - Trust the backend completely
@@ -376,7 +409,8 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
     
     // Use functional update to ensure we always work with latest messages
     state.setMessages(prevMessages => {
-      const addResult = messageManager.addMessage(prevMessages, message);
+      const baseMessages = dedupeValuationCTA(prevMessages, message);
+      const addResult = messageManager.addMessage(baseMessages, message);
       // Update ref immediately for eventHandler access
       messagesRef.current = addResult.updatedMessages;
       result = addResult;
@@ -385,7 +419,8 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
     
     // Fallback for cases where setMessages defers execution (React 18 concurrent rendering)
     if (!result) {
-      const fallbackResult = messageManager.addMessage(messagesRef.current, message);
+      const fallbackBase = dedupeValuationCTA(messagesRef.current, message);
+      const fallbackResult = messageManager.addMessage(fallbackBase, message);
       messagesRef.current = fallbackResult.updatedMessages;
       state.setMessages(fallbackResult.updatedMessages);
       result = fallbackResult;
@@ -397,7 +432,7 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
     }
     
     return result;
-  }, [state.setMessages, messageManager]);
+  }, [state.setMessages, messageManager, dedupeValuationCTA]);
   
   // Update streaming message helper
   // SIMPLIFIED: Trust the backend - update message with chunks, find it if ref is missing
