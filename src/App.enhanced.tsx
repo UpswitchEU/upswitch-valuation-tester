@@ -21,7 +21,8 @@ const NotFound = lazy(() => import('./pages/NotFound').then(module => ({ default
 
 // Component-level code splitting - Heavy components (lazy loaded on demand)
 // These will be imported dynamically when needed
-export const lazyComponents = {
+// Note: Currently unused, kept for potential future use
+const lazyComponents = {
   // Results view (heavy - charts, calculations)
   Results: lazy(() => import('./components/Results').then(m => ({ default: m.Results }))),
   
@@ -46,7 +47,8 @@ const LoadingFallback = () => (
 );
 
 // Lightweight loading skeleton for inline components
-export const InlineLoadingFallback = () => (
+// Note: Currently unused, kept for potential future use
+const InlineLoadingFallback = () => (
   <div className="flex items-center justify-center p-8">
     <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary-600"></div>
   </div>
