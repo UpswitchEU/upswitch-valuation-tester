@@ -428,6 +428,7 @@ export const useConversationInitializer = (
       messageCount: currentMessages.length,
       hasMessages,
       isRestoring: callbacks.isRestoring,
+      isSessionInitialized: callbacks.isSessionInitialized,
       hasInitialized: hasInitializedRef.current,
     });
     
@@ -446,18 +447,24 @@ export const useConversationInitializer = (
       return;
     }
     
-    // RULE 2: If restoration in progress → wait
+    // RULE 2: If session not initialized yet → wait (prevents starting before session loads)
+    if (!callbacks.isSessionInitialized) {
+      chatLogger.debug('Session not initialized yet - waiting', { sessionId });
+      return;
+    }
+    
+    // RULE 3: If restoration in progress → wait
     if (callbacks.isRestoring) {
       chatLogger.debug('Restoration in progress - waiting', { sessionId });
       return;
     }
     
-    // RULE 3: Already initialized → skip
+    // RULE 4: Already initialized → skip
     if (hasInitializedRef.current) {
       return;
     }
     
-    // RULE 4: No messages + restoration complete → start new conversation
+    // RULE 5: No messages + session initialized + restoration complete → start new conversation
     chatLogger.info('No messages found - starting new conversation', { sessionId });
     hasInitializedRef.current = true;
     initializeWithRetry();
@@ -471,7 +478,8 @@ export const useConversationInitializer = (
     sessionId, 
     initializeWithRetry, 
     callbacks, 
-    callbacks?.isRestoring, 
+    callbacks?.isRestoring,
+    callbacks?.isSessionInitialized,
     callbacks?.getCurrentMessages
   ]);
 

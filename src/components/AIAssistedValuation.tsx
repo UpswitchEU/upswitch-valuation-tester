@@ -639,6 +639,8 @@ export const AIAssistedValuation: React.FC<AIAssistedValuationProps> = ({
   const [restorationAttempted, setRestorationAttempted] = useState<Set<string>>(new Set());
   // Track restoration state to prevent race conditions
   const [isRestorationComplete, setIsRestorationComplete] = useState(false);
+  // Track if session initialization is complete (prevents premature conversation start)
+  const [isSessionInitialized, setIsSessionInitialized] = useState(false);
   const restorationStateRef = useRef<{
     currentSessionId: string | null;
     abortController: AbortController | null;
@@ -983,6 +985,7 @@ export const AIAssistedValuation: React.FC<AIAssistedValuationProps> = ({
           setRestoredMessages(messages);
           restorationStateRef.current.restorationComplete = true;
           setIsRestorationComplete(true);
+          setIsSessionInitialized(true); // Mark session as initialized after successful restoration
           
           chatLogger.info('✅ Restored messages set in AIAssistedValuation state', { 
             count: messages.length,
@@ -1014,6 +1017,7 @@ export const AIAssistedValuation: React.FC<AIAssistedValuationProps> = ({
           // SIMPLE: Mark restoration complete (no messages to set)
           restorationStateRef.current.restorationComplete = true;
           setIsRestorationComplete(true);
+          setIsSessionInitialized(true); // Mark session as initialized (empty but valid session)
           // Don't clear pythonSessionId - it's a valid new session, just empty
           // The conversation will start fresh
         } else {
@@ -1040,6 +1044,7 @@ export const AIAssistedValuation: React.FC<AIAssistedValuationProps> = ({
             setIsRestoredSessionId(false);
             restorationStateRef.current.restorationComplete = true;
           setIsRestorationComplete(true);
+          setIsSessionInitialized(true); // Mark as initialized so new conversation can start
             
             // Clear from Supabase by updating sessionData without pythonSessionId
             updateSessionData({
@@ -1060,6 +1065,7 @@ export const AIAssistedValuation: React.FC<AIAssistedValuationProps> = ({
             });
             restorationStateRef.current.restorationComplete = true;
           setIsRestorationComplete(true);
+          setIsSessionInitialized(true); // Mark as initialized (valid new session)
             // Don't clear - this is a valid new session
           }
         }
@@ -1082,6 +1088,7 @@ export const AIAssistedValuation: React.FC<AIAssistedValuationProps> = ({
         // Always mark restoration as complete on error
         restorationStateRef.current.restorationComplete = true;
         setIsRestorationComplete(true);
+        setIsSessionInitialized(true); // Mark as initialized even on error
         
         if (is404) {
           // Only clear pythonSessionId if it was restored from Supabase (not newly created)
@@ -1596,6 +1603,7 @@ export const AIAssistedValuation: React.FC<AIAssistedValuationProps> = ({
                   userId={user?.id}
                   initialMessages={restoredMessages}
                   isRestoring={!isRestorationComplete && isRestoredSessionId && pythonSessionId !== null}
+                  isSessionInitialized={isSessionInitialized}
                   onPythonSessionIdReceived={handlePythonSessionIdReceived}
                   onValuationComplete={handleValuationComplete}
                   onValuationStart={() => {

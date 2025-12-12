@@ -809,12 +809,23 @@ export class StreamEventHandler {
    * preserving the user's message bubble and displaying a system error.
    */
   private handleError(data: any): void {
-    chatLogger.error('Stream error received', { 
-      error: data.content,
-      sessionId: this.sessionId,
+    // CRITICAL: Log full error details for debugging
+    const errorDetails = {
+      error: data.content || data.message || data.error,
+      errorType: data.error_type || data.type,
+      errorMessage: data.message,
+      errorContent: data.content,
+      errorData: data.error || data,
+      sessionId: this.sessionId || data.session_id,
       hasStartedMessage: this.hasStartedMessage,
-      timestamp: new Date().toISOString()
-    });
+      timestamp: new Date().toISOString(),
+      fullData: data // Include full data for debugging
+    };
+    
+    chatLogger.error('Stream error received', errorDetails);
+    
+    // Also log to console for immediate visibility
+    console.error('[StreamEventHandler] Error received:', errorDetails);
     
     // Stop all streaming/thinking/typing states
     this.callbacks.setIsStreaming(false);
@@ -826,17 +837,19 @@ export class StreamEventHandler {
     this.messageCreationLock = false;
     
     // Show user-friendly error message
-    const errorMessage = data.message || data.content || 'Unknown error';
+    const errorMessage = data.message || data.content || data.error || 'Unknown error';
     const userFriendlyError = errorMessage.includes('rate limit') 
       ? 'I\'m receiving too many requests right now. Please wait a moment and try again.'
       : errorMessage.includes('timeout')
       ? 'The request took too long. Please try again with a shorter message.'
       : errorMessage.includes('Context retrieval failed')
       ? 'I\'m having trouble accessing your conversation history. Please try again.'
-      : errorMessage.includes('Valuation failed')
+      : errorMessage.includes('Valuation failed') || errorMessage.includes('generating your valuation')
       ? 'I encountered an issue calculating your valuation. Please try again.'
       : errorMessage.includes('Processing failed')
       ? 'I\'m having trouble processing your request. Please try again.'
+      : errorMessage.includes('country_code') || errorMessage.includes('country')
+      ? `I'm having trouble processing the country selection. ${errorMessage}`
       : errorMessage;
     
     // CRITICAL FIX: Always show error as a separate message to avoid duplication

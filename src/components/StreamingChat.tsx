@@ -198,6 +198,7 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
     initialData: initialData,
     initialMessages: initialMessages, // CRITICAL: Pass restored messages to skip initialization
     isRestoring: isRestoring, // CRITICAL: Pass restoration state to delay initialization
+    isSessionInitialized: isSessionInitialized, // NEW: Pass session initialization state
     onSessionIdUpdate: (newSessionId: string) => {
       chatLogger.info('Updating to Python session ID', {
         clientSessionId: sessionId,
@@ -217,6 +218,7 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
     initialData,
     initialMessages, // CRITICAL: Re-create callbacks when initialMessages changes
     isRestoring, // CRITICAL: Re-create callbacks when isRestoring changes
+    isSessionInitialized, // NEW: Re-create callbacks when session initialization state changes
     sessionId,
     onPythonSessionIdReceived
   ]);
@@ -882,8 +884,9 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
   
   // Handle suggestion selection
   const handleSuggestionSelect = useCallback((suggestion: string) => {
+    chatLogger.info('Suggestion selected', { suggestion, sessionId });
     state.setInput(suggestion);
-  }, [state.setInput]);
+  }, [state.setInput, sessionId]);
   
   // Handle suggestion dismiss
   const handleSuggestionDismiss = useCallback(() => {
