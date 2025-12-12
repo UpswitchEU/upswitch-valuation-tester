@@ -1,4 +1,4 @@
-import React, { lazy, Suspense, useCallback, useEffect, useState } from 'react';
+import React, { lazy, Suspense, useCallback, useEffect, useRef, useState } from 'react';
 // import { useNavigate } from 'react-router-dom';
 import { Building2, TrendingUp } from 'lucide-react';
 import { MOBILE_BREAKPOINT, PANEL_CONSTRAINTS } from '../constants/panelConstants';
@@ -637,6 +637,18 @@ export const AIAssistedValuation: React.FC<AIAssistedValuationProps> = ({
   const [isRestoredSessionId, setIsRestoredSessionId] = useState(false);
   // Track if we've attempted restoration for this sessionId (to prevent retries)
   const [restorationAttempted, setRestorationAttempted] = useState<Set<string>>(new Set());
+  // Track restoration status (state variable for UI reactivity)
+  const [isRestoring, setIsRestoring] = useState(false);
+  // Track restoration state to prevent race conditions
+  const restorationStateRef = useRef<{
+    isRestoring: boolean;
+    currentSessionId: string | null;
+    abortController: AbortController | null;
+  }>({
+    isRestoring: false,
+    currentSessionId: null,
+    abortController: null,
+  });
   
   // CRITICAL: Extract pythonSessionId from session when session loads
   useEffect(() => {
@@ -700,6 +712,18 @@ export const AIAssistedValuation: React.FC<AIAssistedValuationProps> = ({
     });
   }, [reportId, updateSessionData]);
   
+  // CRITICAL: Cleanup function to abort any ongoing restoration when pythonSessionId changes or component unmounts
+  useEffect(() => {
+    return () => {
+      if (restorationStateRef.current.abortController) {
+        restorationStateRef.current.abortController.abort();
+        restorationStateRef.current.abortController = null;
+      }
+      restorationStateRef.current.isRestoring = false;
+      setIsRestoring(false);
+    };
+  }, [pythonSessionId]); // Cleanup when pythonSessionId changes
+
   // CRITICAL: Restore conversation history ONLY after we have the Python sessionId
   useEffect(() => {
     const restoreConversation = async () => {
@@ -755,6 +779,31 @@ export const AIAssistedValuation: React.FC<AIAssistedValuationProps> = ({
         return;
       }
       
+      // Prevent concurrent restoration attempts
+      if (restorationStateRef.current.isRestoring) {
+        chatLogger.debug('Restoration already in progress, skipping', {
+          pythonSessionId: targetSessionId,
+          currentRestoring: restorationStateRef.current.currentSessionId,
+        });
+        return;
+      }
+      
+      // Abort any previous restoration attempt
+      if (restorationStateRef.current.abortController) {
+        restorationStateRef.current.abortController.abort();
+      }
+      
+      // Create new abort controller for this restoration attempt
+      const abortController = new AbortController();
+      restorationStateRef.current = {
+        isRestoring: true,
+        currentSessionId: targetSessionId,
+        abortController,
+      };
+      
+      // Update state to indicate restoration is in progress (for UI reactivity)
+      setIsRestoring(true);
+      
       // Mark that we're attempting restoration for this sessionId
       setRestorationAttempted(prev => new Set(prev).add(targetSessionId));
       
@@ -765,7 +814,28 @@ export const AIAssistedValuation: React.FC<AIAssistedValuationProps> = ({
           currentView: session?.currentView,
         });
         
+        // Check if aborted before making API call
+        if (abortController.signal.aborted) {
+          chatLogger.debug('Restoration aborted before API call', { pythonSessionId: targetSessionId });
+          return;
+        }
+        
         const history = await backendAPI.getConversationHistory(targetSessionId);
+        
+        // Check if aborted after API call
+        if (abortController.signal.aborted) {
+          chatLogger.debug('Restoration aborted after API call', { pythonSessionId: targetSessionId });
+          return;
+        }
+        
+        // Verify we're still restoring the same sessionId (prevent race conditions)
+        if (restorationStateRef.current.currentSessionId !== targetSessionId) {
+          chatLogger.warn('SessionId changed during restoration, aborting', {
+            originalSessionId: targetSessionId,
+            currentSessionId: restorationStateRef.current.currentSessionId,
+          });
+          return;
+        }
         
         if (history.exists && history.messages && history.messages.length > 0) {
           chatLogger.info('✅ Conversation restored successfully', {
@@ -790,7 +860,11 @@ export const AIAssistedValuation: React.FC<AIAssistedValuationProps> = ({
             metadata: msg.metadata,
           }));
           
+          // Atomic state update: set messages and mark restoration complete
           setRestoredMessages(messages);
+          restorationStateRef.current.isRestoring = false;
+          setIsRestoring(false);
+          
           chatLogger.info('✅ Restored messages set in UI', { 
             count: messages.length,
             pythonSessionId: targetSessionId,
@@ -804,6 +878,8 @@ export const AIAssistedValuation: React.FC<AIAssistedValuationProps> = ({
             fieldsCollected: history.fields_collected || 0,
             reportId,
           });
+          restorationStateRef.current.isRestoring = false;
+          setIsRestoring(false);
           // Don't clear pythonSessionId - it's a valid new session, just empty
           // The conversation will start fresh
         } else {
@@ -825,9 +901,11 @@ export const AIAssistedValuation: React.FC<AIAssistedValuationProps> = ({
               reportId,
             });
             
-            // Clear from state
+            // Atomic state updates: clear sessionId and mark restoration complete
             setPythonSessionId(null);
             setIsRestoredSessionId(false);
+            restorationStateRef.current.isRestoring = false;
+            setIsRestoring(false);
             
             // Clear from Supabase by updating sessionData without pythonSessionId
             updateSessionData({
@@ -846,16 +924,28 @@ export const AIAssistedValuation: React.FC<AIAssistedValuationProps> = ({
               reportId,
               wasRestored: false,
             });
+            restorationStateRef.current.isRestoring = false;
+            setIsRestoring(false);
             // Don't clear - this is a valid new session
           }
         }
       } catch (error) {
+        // Check if aborted
+        if (abortController.signal.aborted) {
+          chatLogger.debug('Restoration aborted during error handling', { pythonSessionId: targetSessionId });
+          return;
+        }
+        
         // Check error type
         const errorStatus = (error as any).response?.status;
         const errorMessage = error instanceof Error ? error.message : 'Unknown error';
         const is404 = errorStatus === 404 || errorMessage.includes('404') || errorMessage.includes('Not Found');
         const is500 = errorStatus === 500 || errorMessage.includes('500') || errorMessage.includes('Internal Server Error');
         const isNetworkError = errorMessage.includes('Network Error') || errorMessage.includes('Failed to fetch');
+        
+        // Always mark restoration as complete on error
+        restorationStateRef.current.isRestoring = false;
+        setIsRestoring(false);
         
         if (is404) {
           // Only clear pythonSessionId if it was restored from Supabase (not newly created)
