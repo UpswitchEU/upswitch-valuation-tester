@@ -6,12 +6,14 @@ interface LoadingStateProps {
   steps?: LoadingStep[];
   variant?: 'light' | 'dark';
   centered?: boolean;
+  compact?: boolean; // tighter vertical spacing (for preview panels)
 }
 
 export const LoadingState: React.FC<LoadingStateProps> = ({ 
   steps = GENERATION_STEPS, 
   variant = 'light',
-  centered = true
+  centered = true,
+  compact = false
 }) => {
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
 
@@ -59,7 +61,7 @@ export const LoadingState: React.FC<LoadingStateProps> = ({
       </div>
       
       {/* Dynamic step indicator */}
-      <div className="mt-2 mb-1 animate-in fade-in slide-in-from-bottom-2 duration-700 delay-100 fill-mode-backwards">
+      <div className={`${compact ? 'mt-0.5 mb-0.5' : 'mt-6 mb-3'} animate-in fade-in slide-in-from-bottom-2 duration-700 delay-100 fill-mode-backwards`}>
         <span className={`text-xs font-semibold tracking-wide uppercase px-3 py-1.5 rounded-full ${
           isDark 
             ? 'text-primary-300 bg-primary-900/30 border border-primary-800/50' 

@@ -139,7 +139,7 @@ export const ProgressiveValuationReport: React.FC<ProgressiveValuationReportProp
       {/* 1. LOADING STATE - Centered & Persistent until content or error */}
       {showFullLoadingState && !showFullErrorState && (
         <div className="flex flex-col items-center justify-center w-full flex-grow min-h-[400px]">
-          <LoadingState />
+          <LoadingState compact />
         </div>
       )}
 
