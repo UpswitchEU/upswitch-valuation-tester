@@ -670,14 +670,20 @@ export const AIAssistedValuation: React.FC<AIAssistedValuationProps> = ({
       return;
     }
 
-    if (session?.sessionData) {
+    // CRITICAL: Check if sessionData exists and is not empty
+    // sessionData might be {} (empty object) which is truthy but has no keys
+    const hasSessionData = session?.sessionData && 
+      typeof session.sessionData === 'object' && 
+      Object.keys(session.sessionData).length > 0;
+    
+    if (hasSessionData) {
       // Type assertion needed because pythonSessionId is stored in sessionData but not part of ValuationRequest type
       const stored = (session.sessionData as any)?.pythonSessionId as string | undefined;
       
       chatLogger.debug('Checking for pythonSessionId in session', {
         reportId,
         hasSession: !!session,
-        hasSessionData: !!session.sessionData,
+        hasSessionData: hasSessionData,
         sessionDataKeys: session.sessionData ? Object.keys(session.sessionData) : [],
         storedPythonSessionId: stored,
         currentPythonSessionId: pythonSessionId,
@@ -717,12 +723,21 @@ export const AIAssistedValuation: React.FC<AIAssistedValuationProps> = ({
         setIsRestorationComplete(true);
         restorationStateRef.current.restorationComplete = true;
       }
-    } else if (session && !session.sessionData) {
-      chatLogger.debug('Session loaded but sessionData is empty', {
+    } else if (session && (!session.sessionData || Object.keys(session.sessionData || {}).length === 0)) {
+      chatLogger.debug('Session loaded but sessionData is empty or missing', {
         reportId,
         hasSession: !!session,
+        hasSessionData: !!session.sessionData,
+        sessionDataType: typeof session.sessionData,
+        sessionDataKeys: session.sessionData ? Object.keys(session.sessionData) : [],
         currentView: session.currentView,
       });
+      // CRITICAL: If session exists but has no sessionData, mark restoration as complete
+      // This prevents waiting indefinitely for sessionData that will never come
+      if (!pythonSessionId) {
+        setIsRestorationComplete(true);
+        restorationStateRef.current.restorationComplete = true;
+      }
     } else if (!session) {
       chatLogger.debug('Session not loaded yet, waiting...', {
         reportId,
@@ -788,14 +803,31 @@ export const AIAssistedValuation: React.FC<AIAssistedValuationProps> = ({
       const targetSessionId = pythonSessionId;
       
       if (!targetSessionId) {
+        // CRITICAL: Check if we're still waiting for sessionData to load
+        // If sessionData exists but is empty, we won't get pythonSessionId, so mark as complete
+        const hasSessionData = session?.sessionData && 
+          typeof session.sessionData === 'object' && 
+          Object.keys(session.sessionData).length > 0;
+        
         chatLogger.debug('No Python backend sessionId yet, skipping conversation restore', {
           hasPythonSessionId: !!pythonSessionId,
           hasSession: !!session,
-          hasSessionData: !!session?.sessionData,
+          hasSessionData: hasSessionData,
           sessionDataKeys: session?.sessionData ? Object.keys(session.sessionData) : [],
+          isRestoredSessionId,
           reportId,
           currentView: session.currentView,
         });
+        
+        // CRITICAL: If sessionData is loaded but empty, and we're not waiting for restoration,
+        // mark restoration as complete to allow new conversation to start
+        if (session.sessionData && Object.keys(session.sessionData).length === 0 && !isRestoredSessionId) {
+          chatLogger.debug('SessionData is empty and no pythonSessionId - marking restoration complete for new conversation', {
+            reportId,
+          });
+          setIsRestorationComplete(true);
+          restorationStateRef.current.restorationComplete = true;
+        }
         return;
       }
       
@@ -951,9 +983,23 @@ export const AIAssistedValuation: React.FC<AIAssistedValuationProps> = ({
           restorationStateRef.current.restorationComplete = true;
           setIsRestorationComplete(true);
           
-          chatLogger.info('✅ Restored messages set in UI', { 
+          chatLogger.info('✅ Restored messages set in AIAssistedValuation state', { 
             count: messages.length,
             pythonSessionId: targetSessionId,
+            firstMessageId: messages[0]?.id,
+            firstMessageContent: messages[0]?.content?.substring(0, 50),
+            lastMessageId: messages[messages.length - 1]?.id,
+            lastMessageContent: messages[messages.length - 1]?.content?.substring(0, 50),
+          });
+          
+          // CRITICAL: Verify messages are in correct format for StreamingChat
+          const messageIds = messages.map(m => m.id).join(',');
+          chatLogger.debug('Restored messages details', {
+            pythonSessionId: targetSessionId,
+            messageIds,
+            allMessagesHaveId: messages.every(m => m.id),
+            allMessagesHaveContent: messages.every(m => m.content),
+            allMessagesHaveType: messages.every(m => m.type),
           });
         } else if (history.exists && (!history.messages || history.messages.length === 0)) {
           // Session exists but is empty (newly created, no conversation yet)
