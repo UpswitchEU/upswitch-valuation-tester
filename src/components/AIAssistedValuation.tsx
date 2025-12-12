@@ -638,13 +638,12 @@ export const AIAssistedValuation: React.FC<AIAssistedValuationProps> = ({
   // Track if we've attempted restoration for this sessionId (to prevent retries)
   const [restorationAttempted, setRestorationAttempted] = useState<Set<string>>(new Set());
   // Track restoration state to prevent race conditions
+  const [isRestoring, setIsRestoring] = useState(false);
   const restorationStateRef = useRef<{
-    isRestoring: boolean;
     currentSessionId: string | null;
     abortController: AbortController | null;
     restorationComplete: boolean; // Track if restoration has completed (success or failure)
   }>({
-    isRestoring: false,
     currentSessionId: null,
     abortController: null,
     restorationComplete: false,
@@ -742,7 +741,7 @@ export const AIAssistedValuation: React.FC<AIAssistedValuationProps> = ({
         restorationStateRef.current.abortController.abort();
         restorationStateRef.current.abortController = null;
       }
-      restorationStateRef.current.isRestoring = false;
+      setIsRestoring(false);
     };
   }, [pythonSessionId]); // Cleanup when pythonSessionId changes
 
@@ -812,7 +811,7 @@ export const AIAssistedValuation: React.FC<AIAssistedValuationProps> = ({
       }
       
       // Prevent concurrent restoration attempts
-      if (restorationStateRef.current.isRestoring) {
+      if (isRestoring) {
         chatLogger.debug('Restoration already in progress, skipping', {
           pythonSessionId: targetSessionId,
           currentRestoring: restorationStateRef.current.currentSessionId,
@@ -827,8 +826,8 @@ export const AIAssistedValuation: React.FC<AIAssistedValuationProps> = ({
       
       // Create new abort controller for this restoration attempt
       const abortController = new AbortController();
+      setIsRestoring(true);
       restorationStateRef.current = {
-        isRestoring: true,
         currentSessionId: targetSessionId,
         abortController,
         restorationComplete: false, // Reset completion flag for new restoration attempt
@@ -905,7 +904,7 @@ export const AIAssistedValuation: React.FC<AIAssistedValuationProps> = ({
           
           // Atomic state update: set messages and mark restoration complete
           setRestoredMessages(messages);
-          restorationStateRef.current.isRestoring = false;
+          setIsRestoring(false);
           restorationStateRef.current.restorationComplete = true;
           
           chatLogger.info('✅ Restored messages set in UI', { 
@@ -921,7 +920,7 @@ export const AIAssistedValuation: React.FC<AIAssistedValuationProps> = ({
             fieldsCollected: history.fields_collected || 0,
             reportId,
           });
-          restorationStateRef.current.isRestoring = false;
+          setIsRestoring(false);
           restorationStateRef.current.restorationComplete = true;
           // Don't clear pythonSessionId - it's a valid new session, just empty
           // The conversation will start fresh
@@ -1502,7 +1501,7 @@ export const AIAssistedValuation: React.FC<AIAssistedValuationProps> = ({
                   sessionId={sessionId}
                   userId={user?.id}
                   initialMessages={restoredMessages}
-                  isRestoring={restorationStateRef.current.isRestoring}
+                  isRestoring={isRestoring}
                   onPythonSessionIdReceived={handlePythonSessionIdReceived}
                   onValuationComplete={handleValuationComplete}
                   onValuationStart={() => {
