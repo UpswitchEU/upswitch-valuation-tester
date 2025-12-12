@@ -795,6 +795,17 @@ export const AIAssistedValuation: React.FC<AIAssistedValuationProps> = ({
             count: messages.length,
             pythonSessionId: targetSessionId,
           });
+        } else if (history.exists && (!history.messages || history.messages.length === 0)) {
+          // Session exists but is empty (newly created, no conversation yet)
+          chatLogger.info('ℹ️ Session exists but is empty (new conversation), skipping restoration', {
+            pythonSessionId: targetSessionId,
+            exists: history.exists,
+            hasMessages: !!(history.messages && history.messages.length > 0),
+            fieldsCollected: history.fields_collected || 0,
+            reportId,
+          });
+          // Don't clear pythonSessionId - it's a valid new session, just empty
+          // The conversation will start fresh
         } else {
           // Conversation doesn't exist (expired or cleared from Redis)
           chatLogger.warn('⚠️ Conversation not found in Redis (expired or cleared)', {
@@ -834,24 +845,37 @@ export const AIAssistedValuation: React.FC<AIAssistedValuationProps> = ({
         );
         
         if (is404) {
-          chatLogger.warn('⚠️ Conversation not found (404) - clearing pythonSessionId', {
-            pythonSessionId: targetSessionId,
-            reportId,
-          });
-          
-          // Clear from state
-          setPythonSessionId(null);
-          setIsRestoredSessionId(false);
-          
-          // Clear from Supabase
-          updateSessionData({
-            pythonSessionId: null
-          } as Partial<ValuationRequest>).catch(err => {
-            chatLogger.warn('Failed to clear pythonSessionId from Supabase after 404', {
-              error: err instanceof Error ? err.message : 'Unknown error',
+          // Only clear pythonSessionId if it was restored from Supabase (not newly created)
+          // Newly created sessions will get 404 until they have conversation history
+          if (isRestoredSessionId) {
+            chatLogger.warn('⚠️ Conversation not found (404) - clearing expired pythonSessionId', {
+              pythonSessionId: targetSessionId,
               reportId,
+              wasRestored: true,
             });
-          });
+            
+            // Clear from state
+            setPythonSessionId(null);
+            setIsRestoredSessionId(false);
+            
+            // Clear from Supabase
+            updateSessionData({
+              pythonSessionId: null
+            } as Partial<ValuationRequest>).catch(err => {
+              chatLogger.warn('Failed to clear pythonSessionId from Supabase after 404', {
+                error: err instanceof Error ? err.message : 'Unknown error',
+                reportId,
+              });
+            });
+          } else {
+            // Newly created session - 404 is expected (no conversation history yet)
+            chatLogger.debug('ℹ️ New session - 404 expected (no conversation history yet)', {
+              pythonSessionId: targetSessionId,
+              reportId,
+              wasRestored: false,
+            });
+            // Don't clear - this is a valid new session
+          }
         } else {
           chatLogger.error('❌ Failed to restore conversation', {
             error: error instanceof Error ? error.message : 'Unknown error',
