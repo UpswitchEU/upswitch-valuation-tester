@@ -7,13 +7,15 @@ interface LoadingStateProps {
   variant?: 'light' | 'dark';
   centered?: boolean;
   compact?: boolean; // tighter vertical spacing (for preview panels)
+  containerClassName?: string; // optional override for outer container spacing
 }
 
 export const LoadingState: React.FC<LoadingStateProps> = ({ 
   steps = GENERATION_STEPS, 
   variant = 'light',
   centered = true,
-  compact = false
+  compact = false,
+  containerClassName,
 }) => {
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
 
@@ -29,12 +31,12 @@ export const LoadingState: React.FC<LoadingStateProps> = ({
   const currentStep = steps[currentStepIndex];
   const isDark = variant === 'dark';
 
+  const baseContainer = centered 
+    ? 'justify-center min-h-[300px] px-4 py-6' 
+    : 'justify-start min-h-[200px] px-4 py-2';
+
   return (
-    <div className={`flex flex-col items-center w-full h-full max-w-lg mx-auto text-center ${
-      centered 
-        ? 'justify-center min-h-[300px] px-4 py-6' 
-        : 'justify-start min-h-[200px] px-4 py-2'
-    }`}>
+    <div className={containerClassName || `flex flex-col items-center w-full h-full max-w-lg mx-auto text-center ${baseContainer}`}>
       <div className={`relative group ${centered ? 'mb-2' : 'mb-1'}`}>
         {/* Outer pulsing rings - refined for subtlety */}
         <div 
@@ -91,5 +93,20 @@ export const LoadingState: React.FC<LoadingStateProps> = ({
         </p>
       </div>
     </div>
+  );
+};
+
+/**
+ * Compact variant for preview panels (tighter spacing, smaller container padding).
+ * Keeps the default LoadingState untouched for the main calculator.
+ */
+export const CompactLoadingState: React.FC<Omit<LoadingStateProps, 'compact' | 'containerClassName'>> = (props) => {
+  return (
+    <LoadingState
+      {...props}
+      compact
+      centered
+      containerClassName="flex flex-col items-center w-full h-full max-w-lg mx-auto text-center justify-center min-h-[220px] px-3 py-3"
+    />
   );
 };

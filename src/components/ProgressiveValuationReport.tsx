@@ -2,7 +2,7 @@ import { AlertTriangle } from 'lucide-react';
 import React from 'react';
 import { HTMLProcessor } from '../utils/htmlProcessor';
 import { ErrorState } from './ErrorState';
-import { LoadingState } from './LoadingState';
+import { CompactLoadingState } from './LoadingState';
 
 interface ReportSection {
   id: string;
@@ -139,7 +139,7 @@ export const ProgressiveValuationReport: React.FC<ProgressiveValuationReportProp
       {/* 1. LOADING STATE - Centered & Persistent until content or error */}
       {showFullLoadingState && !showFullErrorState && (
         <div className="flex flex-col items-center justify-center w-full flex-grow min-h-[400px]">
-          <LoadingState compact />
+          <CompactLoadingState />
         </div>
       )}
 
