@@ -127,6 +127,7 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
   const inputValidator = useMemo(() => new InputValidator(), []);
   const messageManager = useMemo(() => new MessageManager(), []);
   // Use extracted conversation initializer - store return value to access isInitializing
+  // CRITICAL: Pass initialMessages to prevent starting new conversation when restoring
   const { isInitializing } = useConversationInitializer(sessionId, userId, {
     addMessage: (message) => {
       const { updatedMessages, newMessage } = messageManager.addMessage(state.messages, message);
@@ -136,6 +137,7 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
     setMessages: state.setMessages,
     user: user as UserProfile | undefined,
     initialData: initialData,
+    initialMessages: initialMessages, // CRITICAL: Pass restored messages to skip initialization
     onSessionIdUpdate: (newSessionId) => {
       chatLogger.info('Updating to Python session ID', {
         clientSessionId: sessionId,

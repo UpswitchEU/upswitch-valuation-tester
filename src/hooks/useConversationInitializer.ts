@@ -56,6 +56,7 @@ export interface ConversationInitializerCallbacks {
   user?: UserProfile;
   onSessionIdUpdate?: (sessionId: string) => void;
   initialData?: Partial<any>; // Pre-filled data from session (for resuming conversations)
+  initialMessages?: Message[]; // CRITICAL: Restored conversation history - skip initialization if present
 }
 
 /**
@@ -409,10 +410,32 @@ export const useConversationInitializer = (
 
   /**
    * Initialize conversation with backend - Fixed to prevent infinite loop
+   * CRITICAL: Skip initialization if we have restored messages (conversation already exists)
    */
   useEffect(() => {
+    if (!callbacks) return;
+    
+    // CRITICAL: Skip initialization if we have restored messages
+    // This means the conversation already exists and we're just restoring it
+    const hasRestoredMessages = callbacks.initialMessages && callbacks.initialMessages.length > 0;
+    
+    if (hasRestoredMessages) {
+      chatLogger.info('Skipping conversation initialization - messages already restored', {
+        sessionId,
+        restoredMessagesCount: callbacks.initialMessages.length,
+      });
+      // Abort any ongoing initialization if messages were restored
+      if (hasInitializedRef.current && abortControllerRef.current) {
+        abortControllerRef.current.abort();
+        abortControllerRef.current = new AbortController();
+      }
+      hasInitializedRef.current = true;
+      setIsInitializing(false);
+      return;
+    }
+    
     // Prevent double initialization
-    if (hasInitializedRef.current || !callbacks) return;
+    if (hasInitializedRef.current) return;
     
     hasInitializedRef.current = true;
     initializeWithRetry();
