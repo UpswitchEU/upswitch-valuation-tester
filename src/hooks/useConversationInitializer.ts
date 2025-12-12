@@ -59,6 +59,7 @@ export interface ConversationInitializerCallbacks {
   initialData?: Partial<any>; // Pre-filled data from session (for resuming conversations)
   initialMessages?: Message[]; // CRITICAL: Restored conversation history - skip initialization if present
   isRestoring?: boolean; // CRITICAL: Indicates if conversation restoration is in progress
+  isSessionInitialized?: boolean; // CRITICAL: Indicates if session initialization is complete
 }
 
 /**

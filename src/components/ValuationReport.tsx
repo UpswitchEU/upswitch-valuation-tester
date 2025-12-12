@@ -18,8 +18,9 @@ const ManualValuationFlow = lazy(() =>
     default: module.ManualValuationFlow 
   }))
 );
+// Conversational valuation flow with improved architecture and robust session handling
 const AIAssistedValuation = lazy(() => 
-  import('./AIAssistedValuation').then(module => ({ 
+  import('./ConversationalValuationFlow').then(module => ({ 
     default: module.AIAssistedValuation 
   }))
 );

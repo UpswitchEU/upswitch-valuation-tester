@@ -65,6 +65,7 @@ export interface StreamingChatProps {
   initialData?: Partial<any>; // Pre-filled data from session (for resuming conversations)
   initialMessages?: Message[]; // CRITICAL: Restored conversation history for page refresh
   isRestoring?: boolean; // CRITICAL: Indicates if conversation restoration is in progress
+  isSessionInitialized?: boolean; // CRITICAL: Indicates if session initialization is complete
 }
 
 /**
@@ -101,8 +102,9 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
   autoSend = false,
   initialData,
   initialMessages = [], // NEW: Restored messages from backend
-  isRestoring = false // NEW: Indicates if conversation restoration is in progress
-}) => {
+  isRestoring = false, // NEW: Indicates if conversation restoration is in progress
+  isSessionInitialized = false // NEW: Indicates if session initialization is complete
+}: StreamingChatProps) => {
   // Get user data from AuthContext
   const { user } = useAuth();
   

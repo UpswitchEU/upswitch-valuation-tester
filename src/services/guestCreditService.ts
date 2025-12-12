@@ -60,6 +60,13 @@ export const guestCreditService = {
   },
   
   /**
+   * Get remaining credits count
+   */
+  getCreditsRemaining(): number {
+    return this.getCredits();
+  },
+  
+  /**
    * Get credit status for display
    */
   getCreditStatus(): {
