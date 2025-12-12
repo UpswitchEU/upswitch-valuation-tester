@@ -808,33 +808,46 @@ export const AIAssistedValuation: React.FC<AIAssistedValuationProps> = ({
           // The conversation will start fresh
         } else {
           // Conversation doesn't exist (expired or cleared from Redis)
-          chatLogger.warn('⚠️ Conversation not found in Redis (expired or cleared)', {
-            pythonSessionId: targetSessionId,
-            exists: history.exists,
-            hasMessages: !!(history.messages && history.messages.length > 0),
-            reportId,
-          });
-          
-          // CRITICAL: Clear pythonSessionId from Supabase since it's no longer valid
-          // This prevents future attempts to restore a non-existent conversation
-          chatLogger.info('Clearing invalid pythonSessionId from Supabase', {
-            pythonSessionId: targetSessionId,
-            reportId,
-          });
-          
-          // Clear from state
-          setPythonSessionId(null);
-          setIsRestoredSessionId(false);
-          
-          // Clear from Supabase by updating sessionData without pythonSessionId
-          updateSessionData({
-            pythonSessionId: null
-          } as Partial<ValuationRequest>).catch(err => {
-            chatLogger.warn('Failed to clear pythonSessionId from Supabase', {
-              error: err instanceof Error ? err.message : 'Unknown error',
+          // Only clear if this was a restored session (not newly created)
+          if (isRestoredSessionId) {
+            chatLogger.warn('⚠️ Conversation not found in Redis (expired or cleared) - clearing pythonSessionId', {
+              pythonSessionId: targetSessionId,
+              exists: history.exists,
+              hasMessages: !!(history.messages && history.messages.length > 0),
+              reportId,
+              wasRestored: true,
+            });
+            
+            // CRITICAL: Clear pythonSessionId from Supabase since it's no longer valid
+            // This prevents future attempts to restore a non-existent conversation
+            chatLogger.info('Clearing invalid pythonSessionId from Supabase', {
+              pythonSessionId: targetSessionId,
               reportId,
             });
-          });
+            
+            // Clear from state
+            setPythonSessionId(null);
+            setIsRestoredSessionId(false);
+            
+            // Clear from Supabase by updating sessionData without pythonSessionId
+            updateSessionData({
+              pythonSessionId: null
+            } as Partial<ValuationRequest>).catch(err => {
+              chatLogger.warn('Failed to clear pythonSessionId from Supabase', {
+                error: err instanceof Error ? err.message : 'Unknown error',
+                reportId,
+              });
+            });
+          } else {
+            // Newly created session - exists: false is expected (no conversation history yet)
+            chatLogger.debug('ℹ️ New session - exists: false is expected (no conversation history yet)', {
+              pythonSessionId: targetSessionId,
+              exists: history.exists,
+              reportId,
+              wasRestored: false,
+            });
+            // Don't clear - this is a valid new session
+          }
         }
       } catch (error) {
         // Check if it's a 404 error (conversation doesn't exist)
