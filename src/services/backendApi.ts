@@ -847,7 +847,7 @@ class BackendAPI {
    * collected data, and progress metrics. This allows users to
    * return to their conversation and continue where they left off.
    */
-  async getConversationHistory(sessionId: string): Promise<{
+  async getConversationHistory(sessionId: string, signal?: AbortSignal): Promise<{
     exists: boolean;
     session_id: string;
     messages?: Array<{
@@ -880,10 +880,21 @@ class BackendAPI {
           headers: {
             'Content-Type': 'application/json',
           },
+          signal, // CRITICAL: Support abort signal for cancellation
         }
       );
 
+      // CRITICAL FIX: Handle both response formats (status object or direct data)
       const result = response.data.status || response.data;
+      
+      // CRITICAL FIX: Check if status indicates exists: false (from graceful error handling)
+      if (result && result.exists === false) {
+        apiLogger.info('Conversation not found (exists: false)', { sessionId });
+        return {
+          exists: false,
+          session_id: sessionId,
+        };
+      }
       
       apiLogger.info('Conversation history retrieved', {
         sessionId,
@@ -895,9 +906,39 @@ class BackendAPI {
 
       return result;
     } catch (error: any) {
+      // CRITICAL FIX: Handle abort signal cancellation gracefully
+      if (error.name === 'AbortError' || error.name === 'CanceledError' || (signal?.aborted)) {
+        apiLogger.debug('Conversation history fetch aborted', { sessionId });
+        // Return a special marker to indicate abort (caller should check for this)
+        throw error; // Re-throw abort errors so caller can handle them
+      }
+      
       // If conversation doesn't exist or network error, return empty state
       if (error.response?.status === 404) {
-        apiLogger.info('No conversation history found', { sessionId });
+        apiLogger.info('No conversation history found (404)', { sessionId });
+        return {
+          exists: false,
+          session_id: sessionId,
+        };
+      }
+      
+      // CRITICAL FIX: Handle 500 errors gracefully (backend may return exists: false in response body)
+      if (error.response?.status === 500) {
+        // Check if response body contains a status object with exists: false
+        const responseData = error.response?.data;
+        if (responseData?.status?.exists === false) {
+          apiLogger.info('Conversation not found (500 with exists: false)', { sessionId });
+          return {
+            exists: false,
+            session_id: sessionId,
+          };
+        }
+        // Otherwise, log the error but still return exists: false
+        apiLogger.warn('Server error fetching conversation history (500)', {
+          error: error instanceof Error ? error.message : 'Unknown error',
+          sessionId,
+          responseData: responseData,
+        });
         return {
           exists: false,
           session_id: sessionId,
