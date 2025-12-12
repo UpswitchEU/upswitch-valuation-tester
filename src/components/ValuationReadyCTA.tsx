@@ -6,7 +6,7 @@
  */
 
 import { motion } from 'framer-motion';
-import { CheckCircle, Bot, TrendingUp } from 'lucide-react';
+import { Bot, CheckCircle, TrendingUp } from 'lucide-react';
 import React from 'react';
 
 export interface ValuationReadyCTAProps {

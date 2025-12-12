@@ -13,9 +13,11 @@ import { backendAPI } from '../services/backendApi';
 import { businessDataService, type BusinessProfileData } from '../services/businessDataService';
 import { DownloadService } from '../services/downloadService';
 import { guestCreditService } from '../services/guestCreditService';
+import UrlGeneratorService from '../services/urlGenerator';
 import { useValuationSessionStore } from '../store/useValuationSessionStore';
 import type { ConversationContext, ValuationRequest, ValuationResponse } from '../types/valuation';
 import { chatLogger } from '../utils/logger';
+import { generateReportId } from '../utils/reportIdGenerator';
 import { ErrorBoundary } from './ErrorBoundary';
 import { FullScreenModal } from './FullScreenModal';
 import { OutOfCreditsModal } from './OutOfCreditsModal';
@@ -44,7 +46,7 @@ export const AIAssistedValuation: React.FC<AIAssistedValuationProps> = ({
   autoSend = false
 }) => {
   const { user, isAuthenticated } = useAuth();
-  const { session, updateSessionData, getSessionData } = useValuationSessionStore();
+  const { session, updateSessionData, getSessionData, clearSession } = useValuationSessionStore();
   const [stage, setStage] = useState<FlowStage>('chat');
   const [valuationResult, setValuationResult] = useState<ValuationResponse | null>(null);
   const [showOutOfCreditsModal, setShowOutOfCreditsModal] = useState(false);
@@ -510,32 +512,32 @@ export const AIAssistedValuation: React.FC<AIAssistedValuationProps> = ({
     setFinalReportHtml(html);
     setFinalValuationId(valuationId);
 
-    // CRITICAL FIX: Create or update valuationResult with the HTML report
-    // This ensures the HTML is displayed in the preview panel when stage changes to 'results'
+    // CRITICAL FIX: Single state update to avoid React state batching issues
+    // Both update the state AND perform conditional logic in one updater function
     setValuationResult(prev => {
       const updated = {
         ...(prev || {} as ValuationResponse),
         html_report: html,
         valuation_id: valuationId
       };
+
       chatLogger.info('Valuation result updated with HTML report', {
         hasResult: !!updated,
         valuationId: updated.valuation_id,
         hasHtmlReport: !!updated.html_report
       });
-      return updated;
-    });
 
-    // Only change to results stage if we have both valuation result and HTML report
-    setValuationResult(currentResult => {
-      if (currentResult && currentResult.html_report) {
+      // Only change to results stage if we have both valuation result and HTML report
+      // Since we're in the same updater function, we see the updated state
+      if (updated && updated.html_report) {
         setStage('results');
         setIsGenerating(false); // Clear loading state when report completes
         chatLogger.info('Moving to results stage - valuation complete');
       } else {
         chatLogger.info('Waiting for valuation result before moving to results stage');
       }
-      return currentResult;
+
+      return updated;
     });
 
     console.log('Final valuation ID set:', valuationId);
@@ -775,33 +777,20 @@ export const AIAssistedValuation: React.FC<AIAssistedValuationProps> = ({
 
 
 
-  // NEW: Toolbar handlers - Retry calculation
+  // NEW: Toolbar handlers - Start fresh session and conversation
   const handleRefresh = useCallback(() => {
-    // Clear error state
-    setError(null);
-    // Clear partial sections and final HTML
-    setReportSections([]);
-    setFinalReportHtml('');
-    setFinalValuationId('');
+    chatLogger.info('Refresh button clicked - starting new session');
     
-    // If we have a valuation result, regenerate it by calling handleValuationComplete again
-    if (valuationResult) {
-      setIsGenerating(true);
-      // Regenerate with the same result
-      handleValuationComplete(valuationResult).catch((error) => {
-        chatLogger.error('Retry failed', { error });
-        setError('Failed to regenerate valuation. Please try again.');
-        setIsGenerating(false);
-      });
-    } else {
-      // If no result, restart the conversation/calculation
-      // This will trigger the chat to regenerate
-      setIsGenerating(true);
-      setStage('chat');
-      // The streaming chat will handle regeneration when user sends a message
-      // For now, we just clear the error and let the user continue the conversation
-    }
-  }, [valuationResult, handleValuationComplete]);
+    // Clear current session
+    clearSession();
+    
+    // Generate new reportId
+    const newReportId = generateReportId();
+    
+    // Navigate to new report (full page refresh)
+    // This ensures all React state is cleared and a fresh session starts
+    window.location.href = UrlGeneratorService.reportById(newReportId);
+  }, [clearSession]);
 
   const handleDownload = async () => {
     if (valuationResult && liveHtmlReport) {

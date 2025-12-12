@@ -5,9 +5,13 @@ import { useAuth } from '../hooks/useAuth';
 import { shouldRetryNetworkError, useRetry } from '../hooks/useRetry';
 import { DownloadService } from '../services/downloadService';
 import { manualValuationStreamService } from '../services/manualValuationStreamService';
+import UrlGeneratorService from '../services/urlGenerator';
 import { useValuationStore } from '../store/useValuationStore';
+import { useValuationSessionStore } from '../store/useValuationSessionStore';
 import type { ValuationResponse } from '../types/valuation';
 import { NameGenerator } from '../utils/nameGenerator';
+import { generateReportId } from '../utils/reportIdGenerator';
+import { generalLogger } from '../utils/logger';
 import { measureWebVitals, performanceTracker } from '../utils/performance';
 import { HTMLView } from './HTMLView';
 import { LoadingState } from './LoadingState';
@@ -38,9 +42,10 @@ interface ManualValuationFlowProps {
   onComplete: (result: ValuationResponse) => void;
 }
 
-export const ManualValuationFlow: React.FC<ManualValuationFlowProps> = memo(({ onComplete }) => {
+export const ManualValuationFlow: React.FC<ManualValuationFlowProps> = memo(({ reportId, onComplete }) => {
   const { result, clearResult, isCalculating, setIsCalculating, setResult, formData, calculateValuation } = useValuationStore();
   const { user } = useAuth();
+  const { clearSession } = useValuationSessionStore();
   const [activeTab, setActiveTab] = useState<'preview' | 'source' | 'info'>('preview');
   const [valuationName, setValuationName] = useState('');
   const [isDownloadingPDF, setIsDownloadingPDF] = useState(false);
@@ -404,11 +409,20 @@ export const ManualValuationFlow: React.FC<ManualValuationFlowProps> = memo(({ o
     }
   }, [isCalculating, isStreaming, retryStream]);
   
-  // Toolbar handlers
-  const handleRefresh = () => {
-    // Clear result and reset form
-    clearResult();
-  };
+  // Toolbar handlers - Start fresh session and flow
+  const handleRefresh = useCallback(() => {
+    generalLogger.info('Refresh button clicked - starting new session');
+    
+    // Clear current session
+    clearSession();
+    
+    // Generate new reportId
+    const newReportId = generateReportId();
+    
+    // Navigate to new report (full page refresh)
+    // This ensures all React state is cleared and a fresh session starts
+    window.location.href = UrlGeneratorService.reportById(newReportId);
+  }, [clearSession]);
 
   const handleDownload = async () => {
     if (!result || !formData) {
