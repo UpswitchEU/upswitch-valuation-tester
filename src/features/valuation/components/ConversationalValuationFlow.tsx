@@ -713,6 +713,7 @@ export const ConversationalValuationFlow: React.FC<AIAssistedValuationProps> = (
               isRestoring={isRestoring}
               isRestorationComplete={isRestorationComplete}
               isSessionInitialized={isSessionInitialized}
+              pythonSessionId={pythonSessionId}
               onPythonSessionIdReceived={handlePythonSessionIdReceived}
               onValuationComplete={handleValuationComplete}
               onValuationStart={() => setIsGenerating(true)}

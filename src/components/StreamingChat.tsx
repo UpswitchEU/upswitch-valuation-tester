@@ -66,6 +66,8 @@ export interface StreamingChatProps {
   initialMessages?: Message[]; // CRITICAL: Restored conversation history for page refresh
   isRestoring?: boolean; // CRITICAL: Indicates if conversation restoration is in progress
   isSessionInitialized?: boolean; // CRITICAL: Indicates if session initialization is complete
+  pythonSessionId?: string | null; // NEW: Current Python sessionId (for restoration coordination)
+  isRestorationComplete?: boolean; // NEW: Explicit restoration completion flag
 }
 
 /**
@@ -103,13 +105,32 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
   initialData,
   initialMessages = [], // NEW: Restored messages from backend
   isRestoring = false, // NEW: Indicates if conversation restoration is in progress
-  isSessionInitialized = false // NEW: Indicates if session initialization is complete
+  isSessionInitialized = false, // NEW: Indicates if session initialization is complete
+  pythonSessionId: pythonSessionIdProp, // NEW: Current Python sessionId from parent (for restoration coordination)
+  isRestorationComplete = false // NEW: Explicit restoration completion flag
 }: StreamingChatProps) => {
   // Get user data from AuthContext
   const { user } = useAuth();
   
   // Track Python-generated session ID separately from client session ID
-  const [pythonSessionId, setPythonSessionId] = useState<string | null>(null);
+  // Use prop if provided (from restoration), otherwise track internally
+  const [internalPythonSessionId, setInternalPythonSessionId] = useState<string | null>(null);
+  const pythonSessionId = pythonSessionIdProp ?? internalPythonSessionId;
+  const setPythonSessionId = useCallback((id: string | null) => {
+    // Always update internal state (for cases where prop is not provided)
+    setInternalPythonSessionId(id);
+    // Notify parent via callback when sessionId is set
+    if (id && onPythonSessionIdReceived) {
+      onPythonSessionIdReceived(id);
+    }
+  }, [onPythonSessionIdReceived]);
+  
+  // Sync prop to internal state when prop changes (from restoration)
+  useEffect(() => {
+    if (pythonSessionIdProp !== undefined && pythonSessionIdProp !== internalPythonSessionId) {
+      setInternalPythonSessionId(pythonSessionIdProp);
+    }
+  }, [pythonSessionIdProp, internalPythonSessionId]);
   
   // Use extracted state management hook
   const state = useStreamingChatState(sessionId, userId);
@@ -201,6 +222,8 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
     initialMessages: initialMessages, // CRITICAL: Pass restored messages to skip initialization
     isRestoring: isRestoring, // CRITICAL: Pass restoration state to delay initialization
     isSessionInitialized: isSessionInitialized, // NEW: Pass session initialization state
+    pythonSessionId: pythonSessionId, // NEW: Current Python sessionId (for restoration coordination)
+    isRestorationComplete: isRestorationComplete, // NEW: Explicit restoration completion flag
     onSessionIdUpdate: (newSessionId: string) => {
       chatLogger.info('Updating to Python session ID', {
         clientSessionId: sessionId,
@@ -221,6 +244,8 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
     initialMessages, // CRITICAL: Re-create callbacks when initialMessages changes
     isRestoring, // CRITICAL: Re-create callbacks when isRestoring changes
     isSessionInitialized, // NEW: Re-create callbacks when session initialization state changes
+    pythonSessionId, // NEW: Re-create callbacks when pythonSessionId changes
+    isRestorationComplete, // NEW: Re-create callbacks when restoration completion changes
     sessionId,
     onPythonSessionIdReceived
   ]);

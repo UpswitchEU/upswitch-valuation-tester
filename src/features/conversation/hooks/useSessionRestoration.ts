@@ -98,6 +98,11 @@ export function useSessionRestoration({
     // Only restore if sessionId was loaded from Supabase (not newly created)
     if (!isRestoredSessionId) {
       chatLogger.debug('Python sessionId is newly created, skipping restoration');
+      // CRITICAL: Mark restoration complete immediately for new sessions
+      // This allows initialization to proceed without waiting
+      setIsRestorationComplete(true);
+      restorationStateRef.current.restorationComplete = true;
+      restorationStateRef.current.currentSessionId = targetSessionId;
       return;
     }
 
@@ -120,8 +125,15 @@ export function useSessionRestoration({
     }
 
     // Clear restored messages if for a different sessionId
-    if (restoredMessages.length > 0 && restorationStateRef.current.currentSessionId !== targetSessionId) {
-      chatLogger.info('Clearing restored messages from previous sessionId');
+    // BUT: Only clear if restoration is complete for the new sessionId
+    // This prevents clearing messages before we know if new sessionId has messages
+    if (restoredMessages.length > 0 && 
+        restorationStateRef.current.currentSessionId !== targetSessionId &&
+        restorationStateRef.current.restorationComplete) {
+      chatLogger.info('Clearing restored messages from previous sessionId', {
+        previousSessionId: restorationStateRef.current.currentSessionId,
+        newSessionId: targetSessionId,
+      });
       setRestoredMessages([]);
     }
 

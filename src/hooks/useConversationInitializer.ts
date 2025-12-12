@@ -60,6 +60,8 @@ export interface ConversationInitializerCallbacks {
   initialMessages?: Message[]; // CRITICAL: Restored conversation history - skip initialization if present
   isRestoring?: boolean; // CRITICAL: Indicates if conversation restoration is in progress
   isSessionInitialized?: boolean; // CRITICAL: Indicates if session initialization is complete
+  pythonSessionId?: string | null; // NEW: Current Python sessionId (for restoration coordination)
+  isRestorationComplete?: boolean; // NEW: Explicit restoration completion flag
 }
 
 /**
@@ -460,6 +462,16 @@ export const useConversationInitializer = (
       return;
     }
     
+    // NEW RULE 3.5: Wait for restoration to complete for current sessionId
+    // This prevents starting new conversation when restoration is still checking new sessionId
+    if (!callbacks.isRestorationComplete && callbacks.pythonSessionId) {
+      chatLogger.debug('Restoration not complete for current sessionId - waiting', { 
+        sessionId,
+        pythonSessionId: callbacks.pythonSessionId 
+      });
+      return;
+    }
+    
     // RULE 4: Already initialized → skip
     if (hasInitializedRef.current) {
       return;
@@ -481,6 +493,8 @@ export const useConversationInitializer = (
     callbacks, 
     callbacks?.isRestoring,
     callbacks?.isSessionInitialized,
+    callbacks?.isRestorationComplete,
+    callbacks?.pythonSessionId,
     callbacks?.getCurrentMessages
   ]);
 

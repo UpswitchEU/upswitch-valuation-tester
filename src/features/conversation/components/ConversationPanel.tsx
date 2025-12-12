@@ -19,6 +19,7 @@ interface ConversationPanelProps {
   isRestoring: boolean;
   isRestorationComplete: boolean;
   isSessionInitialized: boolean;
+  pythonSessionId?: string | null; // NEW: Current Python sessionId (for restoration coordination)
   onPythonSessionIdReceived: (pythonSessionId: string) => void;
   onValuationComplete: (result: ValuationResponse) => void;
   onValuationStart: () => void;
@@ -50,6 +51,7 @@ export const ConversationPanel = memo<ConversationPanelProps>(({
   isRestoring,
   isRestorationComplete,
   isSessionInitialized,
+  pythonSessionId,
   onPythonSessionIdReceived,
   onValuationComplete,
   onValuationStart,
@@ -91,6 +93,8 @@ export const ConversationPanel = memo<ConversationPanelProps>(({
             initialMessages={restoredMessages}
             isRestoring={isRestoring && !isRestorationComplete}
             isSessionInitialized={isSessionInitialized}
+            pythonSessionId={pythonSessionId}
+            isRestorationComplete={isRestorationComplete}
             onPythonSessionIdReceived={onPythonSessionIdReceived}
             onValuationComplete={onValuationComplete}
             onValuationStart={onValuationStart}
