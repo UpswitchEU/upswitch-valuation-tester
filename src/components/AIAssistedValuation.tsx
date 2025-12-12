@@ -638,7 +638,6 @@ export const AIAssistedValuation: React.FC<AIAssistedValuationProps> = ({
   // Track if we've attempted restoration for this sessionId (to prevent retries)
   const [restorationAttempted, setRestorationAttempted] = useState<Set<string>>(new Set());
   // Track restoration state to prevent race conditions
-  const [isRestoring, setIsRestoring] = useState(false);
   const restorationStateRef = useRef<{
     currentSessionId: string | null;
     abortController: AbortController | null;
@@ -741,7 +740,7 @@ export const AIAssistedValuation: React.FC<AIAssistedValuationProps> = ({
         restorationStateRef.current.abortController.abort();
         restorationStateRef.current.abortController = null;
       }
-      setIsRestoring(false);
+      restorationStateRef.current.restorationComplete = true;
     };
   }, [pythonSessionId]); // Cleanup when pythonSessionId changes
 
@@ -811,7 +810,7 @@ export const AIAssistedValuation: React.FC<AIAssistedValuationProps> = ({
       }
       
       // Prevent concurrent restoration attempts
-      if (isRestoring) {
+      if (restorationStateRef.current.currentSessionId === targetSessionId && !restorationStateRef.current.restorationComplete) {
         chatLogger.debug('Restoration already in progress, skipping', {
           pythonSessionId: targetSessionId,
           currentRestoring: restorationStateRef.current.currentSessionId,
@@ -826,7 +825,6 @@ export const AIAssistedValuation: React.FC<AIAssistedValuationProps> = ({
       
       // Create new abort controller for this restoration attempt
       const abortController = new AbortController();
-      setIsRestoring(true);
       restorationStateRef.current = {
         currentSessionId: targetSessionId,
         abortController,
@@ -856,7 +854,7 @@ export const AIAssistedValuation: React.FC<AIAssistedValuationProps> = ({
           // CRITICAL FIX: Handle abort errors gracefully
           if (error.name === 'AbortError' || error.name === 'CanceledError' || abortController.signal.aborted) {
             chatLogger.debug('Restoration aborted during API call', { pythonSessionId: targetSessionId });
-            restorationStateRef.current.isRestoring = false;
+            restorationStateRef.current.restorationComplete = true;
             return;
           }
           // Re-throw other errors to be handled by outer catch block
@@ -866,7 +864,7 @@ export const AIAssistedValuation: React.FC<AIAssistedValuationProps> = ({
         // Check if aborted after API call
         if (abortController.signal.aborted) {
           chatLogger.debug('Restoration aborted after API call', { pythonSessionId: targetSessionId });
-          restorationStateRef.current.isRestoring = false;
+          restorationStateRef.current.restorationComplete = true;
           return;
         }
         
@@ -904,7 +902,6 @@ export const AIAssistedValuation: React.FC<AIAssistedValuationProps> = ({
           
           // Atomic state update: set messages and mark restoration complete
           setRestoredMessages(messages);
-          setIsRestoring(false);
           restorationStateRef.current.restorationComplete = true;
           
           chatLogger.info('✅ Restored messages set in UI', { 
@@ -920,7 +917,6 @@ export const AIAssistedValuation: React.FC<AIAssistedValuationProps> = ({
             fieldsCollected: history.fields_collected || 0,
             reportId,
           });
-          setIsRestoring(false);
           restorationStateRef.current.restorationComplete = true;
           // Don't clear pythonSessionId - it's a valid new session, just empty
           // The conversation will start fresh
@@ -946,7 +942,6 @@ export const AIAssistedValuation: React.FC<AIAssistedValuationProps> = ({
             // Atomic state updates: clear sessionId and mark restoration complete
             setPythonSessionId(null);
             setIsRestoredSessionId(false);
-            restorationStateRef.current.isRestoring = false;
             restorationStateRef.current.restorationComplete = true;
             
             // Clear from Supabase by updating sessionData without pythonSessionId
@@ -966,7 +961,6 @@ export const AIAssistedValuation: React.FC<AIAssistedValuationProps> = ({
               reportId,
               wasRestored: false,
             });
-            restorationStateRef.current.isRestoring = false;
             restorationStateRef.current.restorationComplete = true;
             // Don't clear - this is a valid new session
           }
@@ -986,7 +980,6 @@ export const AIAssistedValuation: React.FC<AIAssistedValuationProps> = ({
         const isNetworkError = errorMessage.includes('Network Error') || errorMessage.includes('Failed to fetch');
         
         // Always mark restoration as complete on error
-        restorationStateRef.current.isRestoring = false;
         restorationStateRef.current.restorationComplete = true;
         
         if (is404) {
@@ -1501,7 +1494,6 @@ export const AIAssistedValuation: React.FC<AIAssistedValuationProps> = ({
                   sessionId={sessionId}
                   userId={user?.id}
                   initialMessages={restoredMessages}
-                  isRestoring={isRestoring}
                   onPythonSessionIdReceived={handlePythonSessionIdReceived}
                   onValuationComplete={handleValuationComplete}
                   onValuationStart={() => {
