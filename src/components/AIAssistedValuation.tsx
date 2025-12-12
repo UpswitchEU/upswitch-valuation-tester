@@ -707,6 +707,7 @@ export const AIAssistedValuation: React.FC<AIAssistedValuationProps> = ({
           hasSession: !!session,
           hasSessionData: !!session?.sessionData,
           sessionDataKeys: session?.sessionData ? Object.keys(session.sessionData) : [],
+          reportId,
         });
         return;
       }
@@ -714,25 +715,37 @@ export const AIAssistedValuation: React.FC<AIAssistedValuationProps> = ({
       // Skip if we already restored messages
       if (restoredMessages.length > 0) {
         chatLogger.debug('Messages already restored, skipping', {
-          restoredCount: restoredMessages.length
+          restoredCount: restoredMessages.length,
+          pythonSessionId: targetSessionId,
+        });
+        return;
+      }
+      
+      // CRITICAL: Only restore if we're in conversational view
+      if (session?.currentView !== 'conversational') {
+        chatLogger.debug('Not in conversational view, skipping conversation restore', {
+          currentView: session?.currentView,
+          pythonSessionId: targetSessionId,
         });
         return;
       }
       
       try {
-        chatLogger.info('Attempting to restore conversation', { 
+        chatLogger.info('🔄 Attempting to restore conversation', { 
           pythonSessionId: targetSessionId,
-          reportId 
+          reportId,
+          currentView: session?.currentView,
         });
         
         const history = await backendAPI.getConversationHistory(targetSessionId);
         
         if (history.exists && history.messages && history.messages.length > 0) {
-          chatLogger.info('✅ Conversation restored', {
+          chatLogger.info('✅ Conversation restored successfully', {
             pythonSessionId: targetSessionId,
             messagesCount: history.messages.length,
             collectedFields: history.fields_collected,
             completeness: history.completeness_percent,
+            reportId,
           });
           
           // Convert backend messages to frontend format
@@ -750,26 +763,31 @@ export const AIAssistedValuation: React.FC<AIAssistedValuationProps> = ({
           }));
           
           setRestoredMessages(messages);
-          chatLogger.info('Restored messages set', { count: messages.length });
+          chatLogger.info('✅ Restored messages set in UI', { 
+            count: messages.length,
+            pythonSessionId: targetSessionId,
+          });
         } else {
           chatLogger.info('No conversation history to restore', {
             pythonSessionId: targetSessionId,
             exists: history.exists,
             hasMessages: !!(history.messages && history.messages.length > 0),
+            reportId,
           });
         }
       } catch (error) {
-        chatLogger.error('Failed to restore conversation', {
+        chatLogger.error('❌ Failed to restore conversation', {
           error: error instanceof Error ? error.message : 'Unknown error',
+          errorStack: error instanceof Error ? error.stack : undefined,
           pythonSessionId: targetSessionId,
-          reportId
+          reportId,
         });
         // Don't block the UI - just log the error
       }
     };
     
     restoreConversation();
-  }, [pythonSessionId, reportId, restoredMessages.length]); // Wait for Python sessionId
+  }, [pythonSessionId, reportId, restoredMessages.length, session?.currentView]); // Wait for Python sessionId and conversational view
   
   // Load session data into conversation context when switching to conversational view
   useEffect(() => {
