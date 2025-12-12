@@ -417,27 +417,32 @@ export const useConversationInitializer = (
   useEffect(() => {
     if (!callbacks) return;
     
-    // CRITICAL: Wait for restoration to complete before initializing
-    // This prevents race conditions where initialization starts before restoration finishes
-    if (callbacks.isRestoring) {
-      chatLogger.debug('Waiting for conversation restoration to complete before initializing', {
-        sessionId,
-        isRestoring: callbacks.isRestoring,
-      });
-      return; // Don't initialize while restoration is in progress
-    }
-    
-    // CRITICAL: Skip initialization if we have restored messages
-    // This means the conversation already exists and we're just restoring it
+    // CRITICAL: ALWAYS check for restored messages FIRST, regardless of restoration state
+    // This prevents race conditions where initialization starts after restoration completes
+    // but before initialMessages prop updates
     const hasRestoredMessages = callbacks.initialMessages && callbacks.initialMessages.length > 0;
     
+    chatLogger.debug('useConversationInitializer hook running', {
+      sessionId,
+      hasRestoredMessages,
+      restoredMessagesCount: callbacks.initialMessages?.length || 0,
+      isRestoring: callbacks.isRestoring,
+      hasInitialized: hasInitializedRef.current,
+    });
+    
     if (hasRestoredMessages) {
-      chatLogger.info('Skipping conversation initialization - messages already restored', {
+      chatLogger.info('✅ Skipping conversation initialization - messages already restored', {
         sessionId,
         restoredMessagesCount: callbacks.initialMessages?.length || 0,
+        firstMessage: callbacks.initialMessages?.[0]?.content?.substring(0, 50),
+        isRestoring: callbacks.isRestoring,
+        hadInitialized: hasInitializedRef.current,
       });
       // Abort any ongoing initialization if messages were restored
       if (hasInitializedRef.current && abortControllerRef.current) {
+        chatLogger.info('Aborting ongoing initialization - messages were restored', {
+          sessionId,
+        });
         abortControllerRef.current.abort();
         abortControllerRef.current = new AbortController();
       }
@@ -446,8 +451,31 @@ export const useConversationInitializer = (
       return;
     }
     
+    // CRITICAL: Wait for restoration to complete before initializing
+    // This prevents race conditions where initialization starts before restoration finishes
+    if (callbacks.isRestoring) {
+      chatLogger.debug('Waiting for conversation restoration to complete before initializing', {
+        sessionId,
+        isRestoring: callbacks.isRestoring,
+        hasInitialMessages: false,
+      });
+      return; // Don't initialize while restoration is in progress
+    }
+    
     // Prevent double initialization
-    if (hasInitializedRef.current) return;
+    if (hasInitializedRef.current) {
+      chatLogger.debug('Already initialized, skipping', {
+        sessionId,
+        hasRestoredMessages,
+      });
+      return;
+    }
+    
+    chatLogger.info('Starting new conversation initialization', {
+      sessionId,
+      hasRestoredMessages,
+      isRestoring: callbacks.isRestoring,
+    });
     
     hasInitializedRef.current = true;
     initializeWithRetry();
@@ -458,7 +486,14 @@ export const useConversationInitializer = (
         abortControllerRef.current.abort();
       }
     };
-  }, [sessionId, initializeWithRetry, callbacks, callbacks?.isRestoring, callbacks?.initialMessages?.length]);
+  }, [
+    sessionId, 
+    initializeWithRetry, 
+    callbacks, 
+    callbacks?.isRestoring, 
+    callbacks?.initialMessages,
+    callbacks?.initialMessages?.length // CRITICAL: Also depend on length to ensure re-run when messages are added
+  ]);
 
   /**
    * Reset initialization state (useful for testing or manual re-initialization)

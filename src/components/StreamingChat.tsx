@@ -128,20 +128,33 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
   // Initialize services (must be before hooks that use them)
   const inputValidator = useMemo(() => new InputValidator(), []);
   const messageManager = useMemo(() => new MessageManager(), []);
-  // Use extracted conversation initializer - store return value to access isInitializing
-  // CRITICAL: Pass initialMessages to prevent starting new conversation when restoring
-  const { isInitializing } = useConversationInitializer(sessionId, userId, {
-    addMessage: (message) => {
-      const { updatedMessages, newMessage } = messageManager.addMessage(state.messages, message);
-      state.setMessages(updatedMessages);
-      return { updatedMessages, newMessage };
-    },
+  
+  // Use ref for messages to avoid recreating eventHandler on every message update
+  const messagesRef = useRef(state.messages);
+  useEffect(() => {
+    messagesRef.current = state.messages;
+  }, [state.messages]);
+  
+  // CRITICAL: Memoize addMessage callback using messagesRef to avoid stale closures
+  const addMessageCallback = useCallback((message: Omit<Message, 'id' | 'timestamp'>) => {
+    // Use ref to get current messages (always up-to-date, no stale closure)
+    const currentMessages = messagesRef.current;
+    const { updatedMessages, newMessage } = messageManager.addMessage(currentMessages, message);
+    state.setMessages(updatedMessages);
+    messagesRef.current = updatedMessages; // Update ref immediately
+    return { updatedMessages, newMessage };
+  }, [messageManager, state.setMessages]);
+  
+  // CRITICAL: Memoize callbacks to prevent unnecessary re-runs of useConversationInitializer
+  // This ensures the effect only runs when initialMessages or isRestoring actually change
+  const initializerCallbacks = useMemo(() => ({
+    addMessage: addMessageCallback,
     setMessages: state.setMessages,
     user: user as UserProfile | undefined,
     initialData: initialData,
     initialMessages: initialMessages, // CRITICAL: Pass restored messages to skip initialization
     isRestoring: isRestoring, // CRITICAL: Pass restoration state to delay initialization
-    onSessionIdUpdate: (newSessionId) => {
+    onSessionIdUpdate: (newSessionId: string) => {
       chatLogger.info('Updating to Python session ID', {
         clientSessionId: sessionId,
         pythonSessionId: newSessionId
@@ -153,7 +166,20 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
         onPythonSessionIdReceived(newSessionId);
       }
     }
-  });
+  }), [
+    addMessageCallback,
+    state.setMessages,
+    user,
+    initialData,
+    initialMessages, // CRITICAL: Re-create callbacks when initialMessages changes
+    isRestoring, // CRITICAL: Re-create callbacks when isRestoring changes
+    sessionId,
+    onPythonSessionIdReceived
+  ]);
+  
+  // Use extracted conversation initializer - store return value to access isInitializing
+  // CRITICAL: Pass initialMessages to prevent starting new conversation when restoring
+  const { isInitializing } = useConversationInitializer(sessionId, userId, initializerCallbacks);
 
   
   // Use extracted metrics tracking
@@ -172,11 +198,7 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
     state.refs.currentStreamingMessageRef
   ), [state.refs.requestIdRef, state.refs.currentStreamingMessageRef]);
   
-  // Use ref for messages to avoid recreating eventHandler on every message update
-  const messagesRef = useRef(state.messages);
-  useEffect(() => {
-    messagesRef.current = state.messages;
-  }, [state.messages]);
+  // messagesRef is already defined above for useConversationInitializer
   
   // Track active streaming requests for cleanup
   const activeRequestRef = useRef<{ abort: () => void } | null>(null);
