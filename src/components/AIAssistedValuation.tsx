@@ -850,12 +850,12 @@ export const AIAssistedValuation: React.FC<AIAssistedValuationProps> = ({
           }
         }
       } catch (error) {
-        // Check if it's a 404 error (conversation doesn't exist)
-        const is404 = error instanceof Error && (
-          error.message.includes('404') || 
-          error.message.includes('Not Found') ||
-          (error as any).response?.status === 404
-        );
+        // Check error type
+        const errorStatus = (error as any).response?.status;
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+        const is404 = errorStatus === 404 || errorMessage.includes('404') || errorMessage.includes('Not Found');
+        const is500 = errorStatus === 500 || errorMessage.includes('500') || errorMessage.includes('Internal Server Error');
+        const isNetworkError = errorMessage.includes('Network Error') || errorMessage.includes('Failed to fetch');
         
         if (is404) {
           // Only clear pythonSessionId if it was restored from Supabase (not newly created)
@@ -889,10 +889,23 @@ export const AIAssistedValuation: React.FC<AIAssistedValuationProps> = ({
             });
             // Don't clear - this is a valid new session
           }
+        } else if (is500 || isNetworkError) {
+          // Server error or network error - don't clear session, just log
+          // This could be a temporary backend issue
+          chatLogger.warn('⚠️ Server/network error during conversation restoration - keeping session', {
+            pythonSessionId: targetSessionId,
+            reportId,
+            errorStatus,
+            errorMessage,
+            wasRestored: isRestoredSessionId,
+          });
+          // Don't clear - might be a temporary backend issue
+          // User can retry by refreshing
         } else {
           chatLogger.error('❌ Failed to restore conversation', {
-            error: error instanceof Error ? error.message : 'Unknown error',
+            error: errorMessage,
             errorStack: error instanceof Error ? error.stack : undefined,
+            errorStatus,
             pythonSessionId: targetSessionId,
             reportId,
           });
