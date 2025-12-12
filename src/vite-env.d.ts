@@ -1,16 +1,24 @@
 /// <reference types="vite/client" />
 
-interface ImportMetaEnv {
-  readonly VITE_BACKEND_URL?: string; // Node.js backend (upswitch.biz) - for auth & saving valuations
-  readonly VITE_VALUATION_API_URL?: string; // Python valuation engine (Railway) - for calculations
-  readonly VITE_VALUATION_ENGINE_URL?: string; // Python valuation engine (Railway) - alias for VITE_VALUATION_API_URL
-  readonly VITE_API_BASE_URL?: string; // Node.js backend - primary in production (web-production-8d00b.up.railway.app)
-  readonly VITE_PARENT_DOMAIN?: string; // Main platform domain for postMessage (upswitch.biz)
-  readonly VITE_SUPABASE_URL?: string; // Supabase project URL
-  readonly VITE_SUPABASE_ANON_KEY?: string; // Supabase anonymous key
-}
+declare module 'html2pdf.js' {
+  interface Html2PdfOptions {
+    margin?: number | number[] | { top?: number; right?: number; bottom?: number; left?: number };
+    filename?: string;
+    image?: { type?: string; quality?: number };
+    html2canvas?: any;
+    jsPDF?: any;
+  }
 
-interface ImportMeta {
-  readonly env: ImportMetaEnv;
-}
+  interface Html2Pdf {
+    set(options: Html2PdfOptions): Html2Pdf;
+    output(type: string): Promise<any>;
+    outputPdf(): Promise<Blob>;
+    save(): Promise<void>;
+    from(element: HTMLElement | string): Html2Pdf;
+  }
 
+  function html2pdf(): Html2Pdf;
+  function html2pdf(element?: HTMLElement | string, options?: Html2PdfOptions): Html2Pdf;
+
+  export = html2pdf;
+}
