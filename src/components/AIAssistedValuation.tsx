@@ -633,6 +633,10 @@ export const AIAssistedValuation: React.FC<AIAssistedValuationProps> = ({
   
   // Track the Python backend sessionId separately (received during conversation init)
   const [pythonSessionId, setPythonSessionId] = useState<string | null>(null);
+  // Track whether pythonSessionId was restored from Supabase (vs newly created)
+  const [isRestoredSessionId, setIsRestoredSessionId] = useState(false);
+  // Track if we've attempted restoration for this sessionId (to prevent retries)
+  const [restorationAttempted, setRestorationAttempted] = useState<Set<string>>(new Set());
   
   // CRITICAL: Extract pythonSessionId from session when session loads
   useEffect(() => {
@@ -656,6 +660,7 @@ export const AIAssistedValuation: React.FC<AIAssistedValuationProps> = ({
           hadPrevious: !!pythonSessionId
         });
         setPythonSessionId(stored);
+        setIsRestoredSessionId(true); // Mark as restored from Supabase
       } else if (!stored && pythonSessionId) {
         // Session loaded but doesn't have pythonSessionId - this shouldn't happen if it was saved
         chatLogger.warn('Session loaded but pythonSessionId missing', {
@@ -680,6 +685,7 @@ export const AIAssistedValuation: React.FC<AIAssistedValuationProps> = ({
     });
     
     setPythonSessionId(newPythonSessionId);
+    setIsRestoredSessionId(false); // Mark as newly created (not restored from Supabase)
     
     // Save to backend session so it persists across page refreshes
     // Type assertion needed because pythonSessionId is not part of ValuationRequest but is stored in sessionData
@@ -712,6 +718,25 @@ export const AIAssistedValuation: React.FC<AIAssistedValuationProps> = ({
         return;
       }
       
+      // CRITICAL: Only restore if this sessionId was loaded from Supabase (not newly created)
+      // Newly created sessions don't have conversation history yet, so skip restoration
+      if (!isRestoredSessionId) {
+        chatLogger.debug('Python sessionId is newly created (not restored), skipping conversation restore', {
+          pythonSessionId: targetSessionId,
+          reportId,
+        });
+        return;
+      }
+      
+      // Skip if we've already attempted restoration for this sessionId
+      if (restorationAttempted.has(targetSessionId)) {
+        chatLogger.debug('Already attempted restoration for this sessionId, skipping', {
+          pythonSessionId: targetSessionId,
+          reportId,
+        });
+        return;
+      }
+      
       // Skip if we already restored messages
       if (restoredMessages.length > 0) {
         chatLogger.debug('Messages already restored, skipping', {
@@ -729,6 +754,9 @@ export const AIAssistedValuation: React.FC<AIAssistedValuationProps> = ({
         });
         return;
       }
+      
+      // Mark that we're attempting restoration for this sessionId
+      setRestorationAttempted(prev => new Set(prev).add(targetSessionId));
       
       try {
         chatLogger.info('🔄 Attempting to restore conversation', { 
@@ -768,26 +796,76 @@ export const AIAssistedValuation: React.FC<AIAssistedValuationProps> = ({
             pythonSessionId: targetSessionId,
           });
         } else {
-          chatLogger.info('No conversation history to restore', {
+          // Conversation doesn't exist (expired or cleared from Redis)
+          chatLogger.warn('⚠️ Conversation not found in Redis (expired or cleared)', {
             pythonSessionId: targetSessionId,
             exists: history.exists,
             hasMessages: !!(history.messages && history.messages.length > 0),
             reportId,
           });
+          
+          // CRITICAL: Clear pythonSessionId from Supabase since it's no longer valid
+          // This prevents future attempts to restore a non-existent conversation
+          chatLogger.info('Clearing invalid pythonSessionId from Supabase', {
+            pythonSessionId: targetSessionId,
+            reportId,
+          });
+          
+          // Clear from state
+          setPythonSessionId(null);
+          setIsRestoredSessionId(false);
+          
+          // Clear from Supabase by updating sessionData without pythonSessionId
+          updateSessionData({
+            pythonSessionId: null
+          } as Partial<ValuationRequest>).catch(err => {
+            chatLogger.warn('Failed to clear pythonSessionId from Supabase', {
+              error: err instanceof Error ? err.message : 'Unknown error',
+              reportId,
+            });
+          });
         }
       } catch (error) {
-        chatLogger.error('❌ Failed to restore conversation', {
-          error: error instanceof Error ? error.message : 'Unknown error',
-          errorStack: error instanceof Error ? error.stack : undefined,
-          pythonSessionId: targetSessionId,
-          reportId,
-        });
-        // Don't block the UI - just log the error
+        // Check if it's a 404 error (conversation doesn't exist)
+        const is404 = error instanceof Error && (
+          error.message.includes('404') || 
+          error.message.includes('Not Found') ||
+          (error as any).response?.status === 404
+        );
+        
+        if (is404) {
+          chatLogger.warn('⚠️ Conversation not found (404) - clearing pythonSessionId', {
+            pythonSessionId: targetSessionId,
+            reportId,
+          });
+          
+          // Clear from state
+          setPythonSessionId(null);
+          setIsRestoredSessionId(false);
+          
+          // Clear from Supabase
+          updateSessionData({
+            pythonSessionId: null
+          } as Partial<ValuationRequest>).catch(err => {
+            chatLogger.warn('Failed to clear pythonSessionId from Supabase after 404', {
+              error: err instanceof Error ? err.message : 'Unknown error',
+              reportId,
+            });
+          });
+        } else {
+          chatLogger.error('❌ Failed to restore conversation', {
+            error: error instanceof Error ? error.message : 'Unknown error',
+            errorStack: error instanceof Error ? error.stack : undefined,
+            pythonSessionId: targetSessionId,
+            reportId,
+          });
+          // Don't block the UI - just log the error
+        }
       }
     };
     
     restoreConversation();
-  }, [pythonSessionId, reportId, restoredMessages.length, session?.currentView]); // Wait for Python sessionId and conversational view
+  }, [pythonSessionId, isRestoredSessionId, reportId, restoredMessages.length, session?.currentView, restorationAttempted, updateSessionData]); // Wait for Python sessionId and conversational view
   
   // Load session data into conversation context when switching to conversational view
   useEffect(() => {
