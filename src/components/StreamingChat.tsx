@@ -64,7 +64,6 @@ export interface StreamingChatProps {
   autoSend?: boolean;
   initialData?: Partial<any>; // Pre-filled data from session (for resuming conversations)
   initialMessages?: Message[]; // CRITICAL: Restored conversation history for page refresh
-  isRestoring?: boolean; // CRITICAL: If true, wait for restoration to complete before initializing
 }
 
 /**
@@ -100,8 +99,7 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
   initialMessage = null,
   autoSend = false,
   initialData,
-  initialMessages = [], // NEW: Restored messages from backend
-  isRestoring = false // NEW: Wait for restoration to complete before initializing
+  initialMessages = [] // NEW: Restored messages from backend
 }) => {
   // Get user data from AuthContext
   const { user } = useAuth();
@@ -140,7 +138,6 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
     user: user as UserProfile | undefined,
     initialData: initialData,
     initialMessages: initialMessages, // CRITICAL: Pass restored messages to skip initialization
-    isRestoring: isRestoring, // CRITICAL: Wait for restoration to complete before initializing
     onSessionIdUpdate: (newSessionId) => {
       chatLogger.info('Updating to Python session ID', {
         clientSessionId: sessionId,

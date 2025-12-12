@@ -57,7 +57,6 @@ export interface ConversationInitializerCallbacks {
   onSessionIdUpdate?: (sessionId: string) => void;
   initialData?: Partial<any>; // Pre-filled data from session (for resuming conversations)
   initialMessages?: Message[]; // CRITICAL: Restored conversation history - skip initialization if present
-  isRestoring?: boolean; // CRITICAL: If true, wait for restoration to complete before initializing
 }
 
 /**
@@ -416,16 +415,6 @@ export const useConversationInitializer = (
    */
   useEffect(() => {
     if (!callbacks) return;
-    
-    // CRITICAL: Wait for restoration to complete before initializing
-    // This prevents race conditions where initialization starts before restoration completes
-    if (callbacks.isRestoring) {
-      chatLogger.debug('Waiting for conversation restoration to complete before initializing', {
-        sessionId,
-        isRestoring: callbacks.isRestoring,
-      });
-      return;
-    }
     
     // CRITICAL: Skip initialization if we have restored messages
     // This means the conversation already exists and we're just restoring it
