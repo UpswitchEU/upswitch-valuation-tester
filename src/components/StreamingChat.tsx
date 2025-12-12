@@ -56,6 +56,7 @@ export interface StreamingChatProps {
   onReportComplete?: (html: string, valuationId: string) => void;
   onContextUpdate?: (context: any) => void;
   onHtmlPreviewUpdate?: (html: string, previewType: string) => void;
+  onPythonSessionIdReceived?: (pythonSessionId: string) => void; // CRITICAL: For conversation restoration
   className?: string;
   placeholder?: string;
   disabled?: boolean;
@@ -92,6 +93,7 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
   onSectionComplete,
   onReportComplete,
   onHtmlPreviewUpdate,
+  onPythonSessionIdReceived, // NEW: Callback when Python sessionId received
   className = '',
   disabled = false,
   initialMessage = null,
@@ -140,6 +142,11 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
         pythonSessionId: newSessionId
       });
       setPythonSessionId(newSessionId);
+      
+      // CRITICAL: Notify parent so it can save pythonSessionId to backend session
+      if (onPythonSessionIdReceived) {
+        onPythonSessionIdReceived(newSessionId);
+      }
     }
   });
 

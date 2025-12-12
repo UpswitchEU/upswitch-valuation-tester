@@ -600,22 +600,97 @@ export const AIAssistedValuation: React.FC<AIAssistedValuationProps> = ({
     }
   }, []);
   
-  // CRITICAL: Restore conversation history on mount (enables returning to conversation)
+  /**
+   * CONVERSATION PERSISTENCE ARCHITECTURE
+   * =======================================
+   * 
+   * Problem: Users lose conversation progress on page refresh
+   * Solution: Multi-layer persistence with session bridging
+   * 
+   * Flow:
+   * -----
+   * 1. FIRST VISIT:
+   *    - Frontend generates client sessionId: "session_timestamp_random"
+   *    - Starts conversation with Python backend
+   *    - Python returns pythonSessionId (UUID): "1ab5b56b-482a-4be7-a403-e3e5f1e89a28"
+   *    - handlePythonSessionIdReceived() saves it to Node.js backend session
+   *    - Conversation continues, messages stored in Redis
+   * 
+   * 2. PAGE REFRESH:
+   *    - Frontend loads session from Node.js backend (by reportId)
+   *    - Session contains pythonSessionId in sessionData
+   *    - pythonSessionId is restored from session
+   *    - useEffect calls getConversationHistory(pythonSessionId)
+   *    - Redis returns messages, collected_data, progress
+   *    - UI shows full conversation history
+   *    - User continues exactly where they left off!
+   * 
+   * Data Stores:
+   * ------------
+   * - PostgreSQL (Node.js): reportId → pythonSessionId mapping (permanent)
+   * - Redis (Python): pythonSessionId → conversation context (7-90 days TTL)
+   */
+  
+  // Track the Python backend sessionId separately (received during conversation init)
+  const [pythonSessionId, setPythonSessionId] = useState<string | null>(() => {
+    // Try to restore from session data on mount
+    const stored = session?.sessionData?.pythonSessionId;
+    if (stored) {
+      chatLogger.info('Restored Python sessionId from backend session', {
+        pythonSessionId: stored,
+        reportId
+      });
+    }
+    return stored || null;
+  });
+  
+  // CRITICAL: Save Python sessionId to backend session when received
+  const handlePythonSessionIdReceived = useCallback((newPythonSessionId: string) => {
+    chatLogger.info('Python sessionId received, saving to backend session', {
+      pythonSessionId: newPythonSessionId,
+      reportId
+    });
+    
+    setPythonSessionId(newPythonSessionId);
+    
+    // Save to backend session so it persists across page refreshes
+    updateSessionData({
+      pythonSessionId: newPythonSessionId
+    });
+  }, [reportId, updateSessionData]);
+  
+  // CRITICAL: Restore conversation history ONLY after we have the Python sessionId
   useEffect(() => {
     const restoreConversation = async () => {
-      if (!session?.sessionId) {
-        chatLogger.debug('No session ID yet, skipping conversation restore');
+      // CRITICAL FIX: Wait for Python backend sessionId, not client sessionId
+      // The Python backend uses UUIDs, client uses "session_timestamp_random" format
+      const targetSessionId = pythonSessionId || session?.sessionData?.pythonSessionId;
+      
+      if (!targetSessionId) {
+        chatLogger.debug('No Python backend sessionId yet, skipping conversation restore', {
+          hasPythonSessionId: !!pythonSessionId,
+          hasSessionData: !!session?.sessionData,
+        });
+        return;
+      }
+      
+      // Skip if we already restored messages
+      if (restoredMessages.length > 0) {
+        chatLogger.debug('Messages already restored, skipping');
         return;
       }
       
       try {
-        chatLogger.info('Attempting to restore conversation', { sessionId: session.sessionId });
+        chatLogger.info('Attempting to restore conversation', { 
+          pythonSessionId: targetSessionId,
+          reportId 
+        });
         
-        const history = await backendAPI.getConversationHistory(session.sessionId);
+        const history = await backendAPI.getConversationHistory(targetSessionId);
         
         if (history.exists && history.messages && history.messages.length > 0) {
           chatLogger.info('✅ Conversation restored', {
-            sessionId: session.sessionId,
+            pythonSessionId: targetSessionId,
             messagesCount: history.messages.length,
             collectedFields: history.fields_collected,
             completeness: history.completeness_percent,
@@ -639,21 +714,21 @@ export const AIAssistedValuation: React.FC<AIAssistedValuationProps> = ({
           chatLogger.info('Restored messages set', { count: messages.length });
         } else {
           chatLogger.info('No conversation history to restore', {
-            sessionId: session.sessionId,
+            pythonSessionId: targetSessionId,
             exists: history.exists,
           });
         }
       } catch (error) {
         chatLogger.error('Failed to restore conversation', {
           error: error instanceof Error ? error.message : 'Unknown error',
-          sessionId: session.sessionId,
+          pythonSessionId: targetSessionId,
         });
         // Don't block the UI - just log the error
       }
     };
     
     restoreConversation();
-  }, [session?.sessionId]); // Only run when sessionId changes
+  }, [pythonSessionId, session?.sessionData?.pythonSessionId, reportId]); // Wait for Python sessionId
   
   // Load session data into conversation context when switching to conversational view
   useEffect(() => {
@@ -1106,7 +1181,8 @@ export const AIAssistedValuation: React.FC<AIAssistedValuationProps> = ({
                 <StreamingChat
                   sessionId={sessionId}
                   userId={user?.id}
-                  initialMessages={restoredMessages} 
+                  initialMessages={restoredMessages}
+                  onPythonSessionIdReceived={handlePythonSessionIdReceived}
                   onValuationComplete={handleValuationComplete}
                   onValuationStart={() => {
                     // Set loading state immediately when user clicks "Create Valuation Report"
