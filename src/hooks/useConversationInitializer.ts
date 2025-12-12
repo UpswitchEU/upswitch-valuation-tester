@@ -53,6 +53,7 @@ export interface UserProfile {
 export interface ConversationInitializerCallbacks {
   addMessage: (message: Omit<Message, 'id' | 'timestamp'>) => { updatedMessages: Message[], newMessage: Message };
   setMessages: React.Dispatch<React.SetStateAction<Message[]>>;
+  getCurrentMessages?: () => Message[]; // CRITICAL: Function to get current messages state (for race condition prevention)
   user?: UserProfile;
   onSessionIdUpdate?: (sessionId: string) => void;
   initialData?: Partial<any>; // Pre-filled data from session (for resuming conversations)
@@ -417,32 +418,26 @@ export const useConversationInitializer = (
   useEffect(() => {
     if (!callbacks) return;
     
-    // CRITICAL: ALWAYS check for restored messages FIRST, regardless of restoration state
-    // This prevents race conditions where initialization starts after restoration completes
-    // but before initialMessages prop updates
-    const hasRestoredMessages = callbacks.initialMessages && callbacks.initialMessages.length > 0;
+    // SIMPLE RULE: Check messages FIRST - if they exist, we're done. Otherwise, start new.
+    // Use getCurrentMessages() as single source of truth (always up-to-date via ref)
+    const currentMessages = callbacks.getCurrentMessages ? callbacks.getCurrentMessages() : [];
+    const hasMessages = currentMessages.length > 0;
     
-    chatLogger.debug('useConversationInitializer hook running', {
+    chatLogger.debug('useConversationInitializer: checking for messages', {
       sessionId,
-      hasRestoredMessages,
-      restoredMessagesCount: callbacks.initialMessages?.length || 0,
+      messageCount: currentMessages.length,
+      hasMessages,
       isRestoring: callbacks.isRestoring,
       hasInitialized: hasInitializedRef.current,
     });
     
-    if (hasRestoredMessages) {
-      chatLogger.info('✅ Skipping conversation initialization - messages already restored', {
+    // RULE 1: If messages exist → use them (skip initialization)
+    if (hasMessages) {
+      chatLogger.info('✅ Messages found - using existing conversation', {
         sessionId,
-        restoredMessagesCount: callbacks.initialMessages?.length || 0,
-        firstMessage: callbacks.initialMessages?.[0]?.content?.substring(0, 50),
-        isRestoring: callbacks.isRestoring,
-        hadInitialized: hasInitializedRef.current,
+        messageCount: currentMessages.length,
       });
-      // Abort any ongoing initialization if messages were restored
-      if (hasInitializedRef.current && abortControllerRef.current) {
-        chatLogger.info('Aborting ongoing initialization - messages were restored', {
-          sessionId,
-        });
+      if (abortControllerRef.current) {
         abortControllerRef.current.abort();
         abortControllerRef.current = new AbortController();
       }
@@ -451,36 +446,22 @@ export const useConversationInitializer = (
       return;
     }
     
-    // CRITICAL: Wait for restoration to complete before initializing
-    // This prevents race conditions where initialization starts before restoration finishes
+    // RULE 2: If restoration in progress → wait
     if (callbacks.isRestoring) {
-      chatLogger.debug('Waiting for conversation restoration to complete before initializing', {
-        sessionId,
-        isRestoring: callbacks.isRestoring,
-        hasInitialMessages: false,
-      });
-      return; // Don't initialize while restoration is in progress
-    }
-    
-    // Prevent double initialization
-    if (hasInitializedRef.current) {
-      chatLogger.debug('Already initialized, skipping', {
-        sessionId,
-        hasRestoredMessages,
-      });
+      chatLogger.debug('Restoration in progress - waiting', { sessionId });
       return;
     }
     
-    chatLogger.info('Starting new conversation initialization', {
-      sessionId,
-      hasRestoredMessages,
-      isRestoring: callbacks.isRestoring,
-    });
+    // RULE 3: Already initialized → skip
+    if (hasInitializedRef.current) {
+      return;
+    }
     
+    // RULE 4: No messages + restoration complete → start new conversation
+    chatLogger.info('No messages found - starting new conversation', { sessionId });
     hasInitializedRef.current = true;
     initializeWithRetry();
     
-    // Cleanup function
     return () => {
       if (abortControllerRef.current) {
         abortControllerRef.current.abort();
@@ -491,8 +472,7 @@ export const useConversationInitializer = (
     initializeWithRetry, 
     callbacks, 
     callbacks?.isRestoring, 
-    callbacks?.initialMessages,
-    callbacks?.initialMessages?.length // CRITICAL: Also depend on length to ensure re-run when messages are added
+    callbacks?.getCurrentMessages
   ]);
 
   /**

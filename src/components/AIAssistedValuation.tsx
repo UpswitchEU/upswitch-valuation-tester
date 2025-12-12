@@ -978,7 +978,8 @@ export const AIAssistedValuation: React.FC<AIAssistedValuationProps> = ({
             metadata: msg.metadata,
           }));
           
-          // Atomic state update: set messages and mark restoration complete
+          // SIMPLE: Set messages and mark complete together
+          // React will batch these updates, and useConversationInitializer checks messages via ref (always current)
           setRestoredMessages(messages);
           restorationStateRef.current.restorationComplete = true;
           setIsRestorationComplete(true);
@@ -1010,6 +1011,7 @@ export const AIAssistedValuation: React.FC<AIAssistedValuationProps> = ({
             fieldsCollected: history.fields_collected || 0,
             reportId,
           });
+          // SIMPLE: Mark restoration complete (no messages to set)
           restorationStateRef.current.restorationComplete = true;
           setIsRestorationComplete(true);
           // Don't clear pythonSessionId - it's a valid new session, just empty

@@ -189,9 +189,11 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
   
   // CRITICAL: Memoize callbacks to prevent unnecessary re-runs of useConversationInitializer
   // This ensures the effect only runs when initialMessages or isRestoring actually change
+  // Use messagesRef to get current messages without including state.messages in dependencies
   const initializerCallbacks = useMemo(() => ({
     addMessage: addMessageCallback,
     setMessages: state.setMessages,
+    getCurrentMessages: () => messagesRef.current, // CRITICAL: Use ref to get current messages without causing re-renders
     user: user as UserProfile | undefined,
     initialData: initialData,
     initialMessages: initialMessages, // CRITICAL: Pass restored messages to skip initialization
