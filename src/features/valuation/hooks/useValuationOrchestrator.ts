@@ -13,6 +13,7 @@ import type { ValuationResponse } from '../../../types/valuation';
 import { chatLogger } from '../../../utils/logger';
 import { useCreditGuard } from '../../auth/hooks/useCreditGuard';
 import { useConversationStateManager } from '../../conversation/hooks/useConversationStateManager';
+import { useSessionRestoration } from '../../conversation/hooks/useSessionRestoration';
 
 type FlowStage = 'chat' | 'results' | 'blocked';
 
@@ -120,12 +121,61 @@ export function useValuationOrchestrator({
     },
   });
 
+  // Session restoration hook connected to state manager
+  const {
+    restoredMessages,
+    isRestoring,
+    isRestorationComplete,
+    restorationError,
+  } = useSessionRestoration({
+    pythonSessionId,
+    isRestoredSessionId,
+    session,
+    onMessagesRestored: (messages) => {
+      chatLogger.info('Restoration complete, notifying state manager', {
+        messageCount: messages.length,
+        reportId: _reportId,
+        sessionId: _sessionId,
+      });
+      conversationState.handleRestorationComplete(messages);
+    },
+  });
+
+  // Notify state manager when restoration completes
+  useEffect(() => {
+    if (isRestorationComplete && !isRestoring) {
+      if (restoredMessages.length > 0) {
+        // Already handled by onMessagesRestored callback
+        return;
+      }
+
+      // For new sessions or empty sessions, notify state manager that restoration is complete
+      chatLogger.debug('Restoration complete with no messages, notifying state manager', {
+        pythonSessionId,
+        reportId: _reportId,
+        sessionId: _sessionId,
+      });
+      conversationState.handleRestorationComplete([]);
+    }
+  }, [isRestorationComplete, isRestoring, restoredMessages.length, pythonSessionId, _reportId, _sessionId, conversationState]);
+
   // Initialize conversation state when component mounts
   useEffect(() => {
     if (session) {
       conversationState.handleSessionLoaded(pythonSessionId, isRestoredSessionId);
+
+      // For new conversations (no pythonSessionId or not restored), mark restoration as complete
+      if (!pythonSessionId || !isRestoredSessionId) {
+        chatLogger.debug('New conversation - marking restoration complete immediately', {
+          pythonSessionId,
+          isRestoredSessionId,
+          reportId: _reportId,
+          sessionId: _sessionId,
+        });
+        conversationState.handleRestorationComplete([]);
+      }
     }
-  }, [session, pythonSessionId, isRestoredSessionId, conversationState]);
+  }, [session, pythonSessionId, isRestoredSessionId, conversationState, _reportId, _sessionId]);
 
   // Credit guard
   const {
@@ -187,10 +237,10 @@ export function useValuationOrchestrator({
     error,
     setError,
 
-    // Session restoration (from centralized state manager)
-    restoredMessages: conversationState.messages,
-    isRestoring: conversationState.isRestoring,
-    isRestorationComplete: conversationState.restorationComplete,
+    // Session restoration (from useSessionRestoration hook)
+    restoredMessages,
+    isRestoring,
+    isRestorationComplete,
     isSessionInitialized: conversationState.isSessionInitialized,
     
     // Credit guard

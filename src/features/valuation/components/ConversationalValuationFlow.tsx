@@ -326,12 +326,13 @@ export const ConversationalValuationFlow: React.FC<AIAssistedValuationProps> = (
         if (profileData) {
           setBusinessProfile(profileData);
           chatLogger.info('Business profile loaded', { profileData });
-          
-          // Show pre-conversation summary for intelligent triage
-          setShowPreConversationSummary(true);
-          chatLogger.info('Showing pre-conversation summary for intelligent triage');
+
+          // Automatically start intelligent conversation with pre-filled data
+          startIntelligentConversation(profileData);
         } else {
           chatLogger.info('No business profile found, starting fresh conversation');
+          // For fresh conversations (guest users), start the conversation automatically
+          setStage('chat');
         }
         
       } catch (error) {
@@ -598,6 +599,7 @@ export const ConversationalValuationFlow: React.FC<AIAssistedValuationProps> = (
                             onClick={() => {
                               setShowPreConversationSummary(false);
                               // Start fresh conversation without pre-filled data
+                              setStage('chat');
                             }}
                             className="px-4 py-2 bg-zinc-700 hover:bg-zinc-600 text-zinc-300 rounded-lg text-sm font-medium transition-colors"
                           >

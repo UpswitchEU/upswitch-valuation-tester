@@ -71,7 +71,7 @@ const STATE_TRANSITIONS: Record<ConversationState, Record<ConversationEvent, Con
     SESSION_CHANGED: 'LOADING_SESSION', // Stay in loading while session changes
     RESTORATION_STARTED: 'LOADING_SESSION', // Invalid - wait for session first
     RESTORATION_COMPLETE: 'LOADING_SESSION', // Invalid - wait for session first
-    INITIALIZATION_STARTED: 'LOADING_SESSION', // Invalid - wait for session first
+    INITIALIZATION_STARTED: 'INITIALIZING', // New conversation - start initialization
     INITIALIZATION_COMPLETE: 'LOADING_SESSION', // Invalid - wait for session first
     MESSAGES_AVAILABLE: 'LOADING_SESSION', // Invalid - wait for session first
   },
@@ -260,12 +260,14 @@ export function useConversationStateManager({
 
     setPythonSessionId(newPythonSessionId);
 
-    // If we have a restored sessionId, attempt restoration
-    // If it's new, go directly to initialization
+    // For restored conversations with pythonSessionId, start restoration
+    // For new conversations, start initialization
     if (newPythonSessionId && isRestored) {
       transitionState('RESTORATION_STARTED');
     } else {
-      transitionState('SESSION_LOADED');
+      // New conversation - start initialization process
+      chatLogger.info('New conversation - starting initialization', { sessionId, reportId });
+      transitionState('INITIALIZATION_STARTED');
     }
   }, [reportId, sessionId, transitionState]);
 

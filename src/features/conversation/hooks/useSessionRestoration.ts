@@ -10,20 +10,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { backendAPI } from '../../../services/backendApi';
 import { chatLogger } from '../../../utils/logger';
+import { Message } from '../../../hooks/useStreamingChatState';
 import type { ValuationSession } from '../../../types/valuation';
-
-interface Message {
-  id: string;
-  type: 'user' | 'ai';
-  role: string;
-  content: string;
-  timestamp: Date;
-  isStreaming: boolean;
-  isComplete: boolean;
-  field_name?: string;
-  confidence?: number;
-  metadata?: any;
-}
 
 interface UseSessionRestorationOptions {
   pythonSessionId: string | null;
@@ -210,14 +198,16 @@ export function useSessionRestoration({
         const messages: Message[] = history.messages.map((msg: any) => ({
           id: msg.id,
           type: msg.role === 'user' ? 'user' : 'ai',
-          role: msg.role,
+          role: msg.role === 'user' ? 'user' : msg.role === 'assistant' ? 'assistant' : 'system',
           content: msg.content,
           timestamp: new Date(msg.timestamp),
           isStreaming: false,
           isComplete: true,
-          field_name: msg.field_name,
-          confidence: msg.confidence,
-          metadata: msg.metadata,
+          metadata: {
+            ...msg.metadata,
+            field_name: msg.field_name,
+            confidence: msg.confidence,
+          },
         }));
 
         setRestoredMessages(messages);
