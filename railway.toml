@@ -1,0 +1,17 @@
+[build]
+builder = "NIXPACKS"
+
+[build.nixpacks]
+build_cmd = "yarn build"
+install_cmd = "yarn install --frozen-lockfile"
+
+[deploy]
+startCommand = "yarn preview"
+healthcheckPath = "/"
+healthcheckTimeout = 300
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 10
+
+[variables]
+NODE_ENV = "production"
+NODE_OPTIONS = "--max-old-space-size=4096"

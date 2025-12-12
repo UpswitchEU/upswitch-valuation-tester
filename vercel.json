@@ -1,5 +1,5 @@
 {
-  "buildCommand": "npm run vercel-build",
+  "buildCommand": "yarn build",
   "outputDirectory": "dist",
   "framework": "vite",
   "rewrites": [

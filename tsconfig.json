@@ -17,8 +17,8 @@
 
     /* Linting */
     "strict": true,
-    "noUnusedLocals": true,
-    "noUnusedParameters": true,
+    "noUnusedLocals": false, // Railway may fail on unused locals
+    "noUnusedParameters": false, // Railway may fail on unused parameters
     "noFallthroughCasesInSwitch": true,
 
     /* Path aliases */

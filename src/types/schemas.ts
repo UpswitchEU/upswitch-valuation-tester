@@ -187,7 +187,7 @@ export function safeParseConversationContext(data: unknown):
  */
 export function formatZodError(error: z.ZodError): string {
   return error.errors
-    .map(err => `${err.path.join('.')}: ${err.message}`)
+    .map((err: z.ZodIssue) => `${err.path.join('.')}: ${err.message}`)
     .join(', ');
 }
 

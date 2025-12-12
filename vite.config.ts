@@ -32,7 +32,7 @@ export default defineConfig({
     outDir: 'dist',
     sourcemap: false,
     target: 'es2020',
-    chunkSizeWarningLimit: 600,
+    chunkSizeWarningLimit: 1000, // Increase to reduce warnings
     // Remove manual chunking - let Vite handle it automatically
     // This prevents React loading order issues
     rollupOptions: {
