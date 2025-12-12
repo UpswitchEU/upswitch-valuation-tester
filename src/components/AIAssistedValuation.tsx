@@ -632,18 +632,23 @@ export const AIAssistedValuation: React.FC<AIAssistedValuationProps> = ({
    */
   
   // Track the Python backend sessionId separately (received during conversation init)
-  const [pythonSessionId, setPythonSessionId] = useState<string | null>(() => {
-    // Try to restore from session data on mount
-    // Type assertion needed because pythonSessionId is stored in sessionData but not part of ValuationRequest type
-    const stored = (session?.sessionData as any)?.pythonSessionId as string | undefined;
-    if (stored) {
-      chatLogger.info('Restored Python sessionId from backend session', {
-        pythonSessionId: stored,
-        reportId
-      });
+  const [pythonSessionId, setPythonSessionId] = useState<string | null>(null);
+  
+  // CRITICAL: Extract pythonSessionId from session when session loads
+  useEffect(() => {
+    if (session?.sessionData) {
+      // Type assertion needed because pythonSessionId is stored in sessionData but not part of ValuationRequest type
+      const stored = (session.sessionData as any)?.pythonSessionId as string | undefined;
+      if (stored && stored !== pythonSessionId) {
+        chatLogger.info('Restored Python sessionId from backend session', {
+          pythonSessionId: stored,
+          reportId,
+          hadPrevious: !!pythonSessionId
+        });
+        setPythonSessionId(stored);
+      }
     }
-    return stored || null;
-  });
+  }, [session?.sessionData, reportId]); // Re-run when session loads or sessionData changes
   
   // CRITICAL: Save Python sessionId to backend session when received
   const handlePythonSessionIdReceived = useCallback((newPythonSessionId: string) => {
@@ -658,7 +663,13 @@ export const AIAssistedValuation: React.FC<AIAssistedValuationProps> = ({
     // Type assertion needed because pythonSessionId is not part of ValuationRequest but is stored in sessionData
     updateSessionData({
       pythonSessionId: newPythonSessionId
-    } as Partial<ValuationRequest>);
+    } as Partial<ValuationRequest>).catch(err => {
+      chatLogger.error('Failed to save pythonSessionId to backend session', {
+        error: err instanceof Error ? err.message : 'Unknown error',
+        pythonSessionId: newPythonSessionId,
+        reportId
+      });
+    });
   }, [reportId, updateSessionData]);
   
   // CRITICAL: Restore conversation history ONLY after we have the Python sessionId
@@ -666,20 +677,23 @@ export const AIAssistedValuation: React.FC<AIAssistedValuationProps> = ({
     const restoreConversation = async () => {
       // CRITICAL FIX: Wait for Python backend sessionId, not client sessionId
       // The Python backend uses UUIDs, client uses "session_timestamp_random" format
-      // Type assertion needed because pythonSessionId is stored in sessionData but not part of ValuationRequest type
-      const targetSessionId = pythonSessionId || (session?.sessionData as any)?.pythonSessionId as string | undefined;
+      const targetSessionId = pythonSessionId;
       
       if (!targetSessionId) {
         chatLogger.debug('No Python backend sessionId yet, skipping conversation restore', {
           hasPythonSessionId: !!pythonSessionId,
+          hasSession: !!session,
           hasSessionData: !!session?.sessionData,
+          sessionDataKeys: session?.sessionData ? Object.keys(session.sessionData) : [],
         });
         return;
       }
       
       // Skip if we already restored messages
       if (restoredMessages.length > 0) {
-        chatLogger.debug('Messages already restored, skipping');
+        chatLogger.debug('Messages already restored, skipping', {
+          restoredCount: restoredMessages.length
+        });
         return;
       }
       
@@ -719,20 +733,21 @@ export const AIAssistedValuation: React.FC<AIAssistedValuationProps> = ({
           chatLogger.info('No conversation history to restore', {
             pythonSessionId: targetSessionId,
             exists: history.exists,
+            hasMessages: !!(history.messages && history.messages.length > 0),
           });
         }
       } catch (error) {
         chatLogger.error('Failed to restore conversation', {
           error: error instanceof Error ? error.message : 'Unknown error',
           pythonSessionId: targetSessionId,
+          reportId
         });
         // Don't block the UI - just log the error
       }
     };
     
     restoreConversation();
-    // Type assertion needed for pythonSessionId access
-  }, [pythonSessionId, (session?.sessionData as any)?.pythonSessionId, reportId]); // Wait for Python sessionId
+  }, [pythonSessionId, reportId, restoredMessages.length]); // Wait for Python sessionId
   
   // Load session data into conversation context when switching to conversational view
   useEffect(() => {
