@@ -634,7 +634,8 @@ export const AIAssistedValuation: React.FC<AIAssistedValuationProps> = ({
   // Track the Python backend sessionId separately (received during conversation init)
   const [pythonSessionId, setPythonSessionId] = useState<string | null>(() => {
     // Try to restore from session data on mount
-    const stored = session?.sessionData?.pythonSessionId;
+    // Type assertion needed because pythonSessionId is stored in sessionData but not part of ValuationRequest type
+    const stored = (session?.sessionData as any)?.pythonSessionId as string | undefined;
     if (stored) {
       chatLogger.info('Restored Python sessionId from backend session', {
         pythonSessionId: stored,
@@ -654,9 +655,10 @@ export const AIAssistedValuation: React.FC<AIAssistedValuationProps> = ({
     setPythonSessionId(newPythonSessionId);
     
     // Save to backend session so it persists across page refreshes
+    // Type assertion needed because pythonSessionId is not part of ValuationRequest but is stored in sessionData
     updateSessionData({
       pythonSessionId: newPythonSessionId
-    });
+    } as Partial<ValuationRequest>);
   }, [reportId, updateSessionData]);
   
   // CRITICAL: Restore conversation history ONLY after we have the Python sessionId
@@ -664,7 +666,8 @@ export const AIAssistedValuation: React.FC<AIAssistedValuationProps> = ({
     const restoreConversation = async () => {
       // CRITICAL FIX: Wait for Python backend sessionId, not client sessionId
       // The Python backend uses UUIDs, client uses "session_timestamp_random" format
-      const targetSessionId = pythonSessionId || session?.sessionData?.pythonSessionId;
+      // Type assertion needed because pythonSessionId is stored in sessionData but not part of ValuationRequest type
+      const targetSessionId = pythonSessionId || (session?.sessionData as any)?.pythonSessionId as string | undefined;
       
       if (!targetSessionId) {
         chatLogger.debug('No Python backend sessionId yet, skipping conversation restore', {
@@ -728,7 +731,8 @@ export const AIAssistedValuation: React.FC<AIAssistedValuationProps> = ({
     };
     
     restoreConversation();
-  }, [pythonSessionId, session?.sessionData?.pythonSessionId, reportId]); // Wait for Python sessionId
+    // Type assertion needed for pythonSessionId access
+  }, [pythonSessionId, (session?.sessionData as any)?.pythonSessionId, reportId]); // Wait for Python sessionId
   
   // Load session data into conversation context when switching to conversational view
   useEffect(() => {
