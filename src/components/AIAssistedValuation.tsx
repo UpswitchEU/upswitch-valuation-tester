@@ -1093,7 +1093,7 @@ export const AIAssistedValuation: React.FC<AIAssistedValuationProps> = ({
     };
     
     restoreConversation();
-  }, [pythonSessionId, isRestoredSessionId, reportId, session, session?.currentView, session?.sessionData, restorationAttempted, updateSessionData]); // CRITICAL: Include session object to re-run when session loads
+  }, [pythonSessionId, isRestoredSessionId, reportId, session, session?.currentView, session?.sessionData, updateSessionData]); // CRITICAL: Include session object to re-run when session loads. Removed restoredMessages.length to prevent unnecessary re-runs
   
   // Load session data into conversation context when switching to conversational view
   useEffect(() => {

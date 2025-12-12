@@ -113,17 +113,39 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
   const state = useStreamingChatState(sessionId, userId);
   
   // CRITICAL: Restore messages from backend on mount (enables conversation continuation)
+  // Use a ref to track the last restored initialMessages to prevent duplicate restorations
+  const lastRestoredMessagesRef = useRef<string>('');
+  
   useEffect(() => {
-    if (initialMessages && initialMessages.length > 0 && state.messages.length === 0) {
-      chatLogger.info('✅ Restoring conversation messages', {
-        sessionId,
-        messagesCount: initialMessages.length,
-        firstMessage: initialMessages[0]?.content?.substring(0, 50),
-        lastMessage: initialMessages[initialMessages.length - 1]?.content?.substring(0, 50),
-      });
-      state.setMessages(initialMessages);
+    if (initialMessages && initialMessages.length > 0) {
+      // Create a fingerprint of the initialMessages to detect changes
+      const messagesFingerprint = initialMessages.map(m => m.id).join(',');
+      
+      // Only restore if:
+      // 1. We don't have messages yet, OR
+      // 2. The initialMessages have changed (different fingerprint)
+      const shouldRestore = state.messages.length === 0 || 
+        lastRestoredMessagesRef.current !== messagesFingerprint;
+      
+      if (shouldRestore) {
+        chatLogger.info('✅ Restoring conversation messages', {
+          sessionId,
+          messagesCount: initialMessages.length,
+          currentMessagesCount: state.messages.length,
+          firstMessage: initialMessages[0]?.content?.substring(0, 50),
+          lastMessage: initialMessages[initialMessages.length - 1]?.content?.substring(0, 50),
+          fingerprint: messagesFingerprint,
+          lastFingerprint: lastRestoredMessagesRef.current,
+        });
+        state.setMessages(initialMessages);
+        lastRestoredMessagesRef.current = messagesFingerprint;
+      }
+    } else if (initialMessages.length === 0 && state.messages.length > 0) {
+      // If initialMessages is cleared (empty array), clear the ref but don't clear messages
+      // This allows the component to handle message clearing separately if needed
+      lastRestoredMessagesRef.current = '';
     }
-  }, [initialMessages, sessionId]); // Only run when initialMessages changes
+  }, [initialMessages, sessionId]); // Only run when initialMessages or sessionId changes
   
   // Initialize services (must be before hooks that use them)
   const inputValidator = useMemo(() => new InputValidator(), []);
