@@ -296,10 +296,19 @@ export class StreamEventHandler {
    * Handle message start events
    */
   private handleMessageStart(_data: any): void {
+    // DEBUG: Log message start events to track confirmation messages
+    console.log('🎯 MESSAGE_START received:', {
+      type: _data.type,
+      field: _data.field,
+      content: _data.content,
+      session_id: _data.session_id,
+      _is_confirmation: _data._is_confirmation
+    });
+
     // CRITICAL FIX: message_start always indicates a NEW message is starting
     // Must reset state and create new message, even if previous message is still active
     // This prevents confirmation messages from appending to previous messages
-    
+
     // If a previous message is still active, complete it first
     if (this.hasStartedMessage) {
       chatLogger.debug('message_start received while previous message active - completing previous message', {
@@ -884,10 +893,19 @@ export class StreamEventHandler {
       // SECURITY: Don't log actual value - may contain PII/financial data
     });
     
+    // DEBUG: Log message complete events to track confirmation messages
+    console.log('✅ MESSAGE_COMPLETE received:', {
+      type: data.type,
+      field: data.field,
+      content: data.content?.substring(0, 100),
+      session_id: data.session_id,
+      _is_confirmation: data._is_confirmation
+    });
+
     // FIX: Don't reset streaming/thinking states here - conversation should continue
     // The backend will immediately stream the next question, which will reset states via message_start
     // Resetting here would block the next question from appearing
-    
+
     // CRITICAL FIX: Sanitize value to ensure it's always a string
     // Backend might send objects, which would render as "[object Object]"
     // MEMORY FIX: Limit JSON stringify size to prevent memory issues

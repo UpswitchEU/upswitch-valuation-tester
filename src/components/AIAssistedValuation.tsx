@@ -509,17 +509,35 @@ export const AIAssistedValuation: React.FC<AIAssistedValuationProps> = ({
     chatLogger.info('Report complete received', { valuationId, htmlLength: html.length });
     setFinalReportHtml(html);
     setFinalValuationId(valuationId);
-    
+
     // CRITICAL FIX: Create or update valuationResult with the HTML report
     // This ensures the HTML is displayed in the preview panel when stage changes to 'results'
-    setValuationResult(prev => ({
-      ...(prev || {} as ValuationResponse),
-      html_report: html,
-      valuation_id: valuationId
-    }));
-    
-    setStage('results');
-    setIsGenerating(false); // Clear loading state when report completes
+    setValuationResult(prev => {
+      const updated = {
+        ...(prev || {} as ValuationResponse),
+        html_report: html,
+        valuation_id: valuationId
+      };
+      chatLogger.info('Valuation result updated with HTML report', {
+        hasResult: !!updated,
+        valuationId: updated.valuation_id,
+        hasHtmlReport: !!updated.html_report
+      });
+      return updated;
+    });
+
+    // Only change to results stage if we have both valuation result and HTML report
+    setValuationResult(currentResult => {
+      if (currentResult && currentResult.html_report) {
+        setStage('results');
+        setIsGenerating(false); // Clear loading state when report completes
+        chatLogger.info('Moving to results stage - valuation complete');
+      } else {
+        chatLogger.info('Waiting for valuation result before moving to results stage');
+      }
+      return currentResult;
+    });
+
     console.log('Final valuation ID set:', valuationId);
   }, []);
 
@@ -697,231 +715,62 @@ export const AIAssistedValuation: React.FC<AIAssistedValuationProps> = ({
 
 
   const handleValuationComplete = async (valuationResult: ValuationResponse) => {
-    chatLogger.info('Valuation complete callback triggered', { 
+    chatLogger.info('Valuation complete callback triggered', {
       hasResult: !!valuationResult,
       valuationId: valuationResult?.valuation_id,
       equityValue: valuationResult?.equity_value_mid,
       reportId: reportId
     });
-    
+
     // Check if there's an existing completed report with actual results
     // Only show warning if we have a real result (valuation_id and html_report), not just a stale session
     const hasExistingReport = valuationResult?.valuation_id && valuationResult?.html_report;
-    
+
     if (hasExistingReport && !regenerateConfirmed) {
       chatLogger.info('Existing report detected, showing regeneration warning');
       setPendingValuationResult(valuationResult);
       setShowRegenerationWarning(true);
       return;
     }
-    
+
     // Reset confirmation flag for next time
     setRegenerateConfirmed(false);
-    
+
     // Clear any previous errors
     setError(null);
-    
-    try {
-      // Credit validation and deduction now handled by backend
-      // Frontend only needs to check localStorage for UI display
-      if (!isAuthenticated) {
-        const hasCredits = guestCreditService.hasCredits();
-        if (!hasCredits) {
-          chatLogger.error('No credits available for guest user');
-          setError('No credits available. Please sign up to get more credits.');
-          setIsGenerating(false);
-          return;
-        }
-        chatLogger.info('Guest user has credits, proceeding with backend validation', { 
-          remainingCredits: guestCreditService.getCredits() 
-        });
-      }
-      
-      // Extract business_model and founding_year from multiple sources with validation and error handling
-      let extractedBusinessModel: string;
-      let extractedFoundingYear: number;
-      
+
+    // Simply store the valuation result - HTML report will come via report_complete event
+    // This prevents double API calls and race conditions
+    setValuationResult(valuationResult);
+
+    // Mark session as completed
+    const { session } = useValuationSessionStore.getState();
+    if (session) {
       try {
-        // Extract business model with validation
-        const validBusinessModels = ['b2b_saas', 'b2c', 'marketplace', 'ecommerce', 'manufacturing', 'services', 'other'];
-        const rawBusinessModel = 
-          (valuationResult as any).business_model ||  // From valuation result
-          businessProfile?.business_model ||  // From business profile
-          conversationContext?.extracted_business_model ||  // From conversation
-          (businessProfile ? businessDataService.extractBusinessModel(businessProfile) : 'services');  // Inferred
-        
-        // Validate business model against enum
-        extractedBusinessModel = validBusinessModels.includes(String(rawBusinessModel)) 
-          ? String(rawBusinessModel) 
-          : 'services';  // Safe fallback
-        
-        chatLogger.info('Business model extraction', {
-          sources: {
-            valuationResult: (valuationResult as any).business_model,
-            businessProfile: businessProfile?.business_model,
-            conversation: conversationContext?.extracted_business_model,
-            inferred: businessProfile ? businessDataService.extractBusinessModel(businessProfile) : 'services'
-          },
-          selected: extractedBusinessModel,
-          reason: 'validated_against_enum'
+        await backendAPI.updateValuationSession(session.reportId, {
+          completedAt: new Date().toISOString(),
         });
+        chatLogger.info('Session marked as completed', { reportId: session.reportId });
       } catch (error) {
-        chatLogger.warn('Failed to extract business model, using fallback', { error });
-        extractedBusinessModel = 'services';  // Safe fallback
-      }
-      
-      try {
-        // Extract founding year with validation
-        const rawFoundingYear = 
-          (valuationResult as any).founding_year ||  // From valuation result
-          businessProfile?.founded_year ||  // From business profile
-          conversationContext?.extracted_founding_year ||  // From conversation
-          (businessProfile ? businessDataService.extractFoundingYear(businessProfile) : new Date().getFullYear() - 5);  // Calculated
-        
-        // Validate founding year is reasonable
-        const currentYear = new Date().getFullYear();
-        extractedFoundingYear = (rawFoundingYear >= 1900 && rawFoundingYear <= currentYear) 
-          ? rawFoundingYear 
-          : currentYear - 5;  // Safe fallback
-        
-        chatLogger.info('Founding year extraction', {
-          sources: {
-            valuationResult: (valuationResult as any).founding_year,
-            businessProfile: businessProfile?.founded_year,
-            conversation: conversationContext?.extracted_founding_year,
-            inferred: businessProfile ? businessDataService.extractFoundingYear(businessProfile) : new Date().getFullYear() - 5
-          },
-          selected: extractedFoundingYear,
-          reason: 'validated_year_range'
-        });
-      } catch (error) {
-        chatLogger.warn('Failed to extract founding year, using fallback', { error });
-        extractedFoundingYear = new Date().getFullYear() - 5;  // Safe fallback
-      }
-      
-      // Convert the valuation result to a proper ValuationRequest for backend processing
-      const request: ValuationRequest = {
-        company_name: valuationResult.company_name || businessProfile?.company_name || 'AI Generated Company',
-        country_code: businessProfile?.country || 'BE',
-        industry: businessProfile?.industry || 'services',
-        business_model: extractedBusinessModel,  // ✅ Extracted from context
-        founding_year: extractedFoundingYear,  // ✅ Extracted from context
-        current_year_data: {
-          year: new Date().getFullYear(),
-          revenue: (valuationResult as any).revenue || 1000000,
-          ebitda: (valuationResult as any).ebitda || 200000,
-        },
-        historical_years_data: [],
-        number_of_employees: 10,
-        recurring_revenue_percentage: 0.8,
-        use_dcf: true,
-        use_multiples: true,
-        projection_years: 10,
-        comparables: [],
-      };
-
-      chatLogger.info('Processing AI-guided valuation with extracted data', {
-        companyName: request.company_name,
-        businessModel: request.business_model,
-        foundingYear: request.founding_year,
-        extractionSource: {
-          businessModel: (valuationResult as any).business_model ? 'valuation_result' : 
-                         businessProfile?.business_model ? 'business_profile' : 
-                         conversationContext?.extracted_business_model ? 'conversation' : 'inferred',
-          foundingYear: (valuationResult as any).founding_year ? 'valuation_result' : 
-                       businessProfile?.founded_year ? 'business_profile' : 
-                       conversationContext?.extracted_founding_year ? 'conversation' : 'calculated'
-        }
-      });
-
-      // Get session dataSource for unified calculation
-      const { session } = useValuationSessionStore.getState();
-      const dataSource = session?.dataSource || 'conversational';
-      
-      // Use unified calculation endpoint with dataSource
-      const backendResult = await backendAPI.calculateValuationUnified(request, dataSource as 'manual' | 'conversational' | 'mixed');
-      
-      chatLogger.info('Unified valuation completed through backend', {
-        valuationId: backendResult.valuation_id,
-        dataSource,
-        flowType: 'ai-guided'
-      });
-      
-      // Mark session as completed
-      if (session) {
-        try {
-          await backendAPI.updateValuationSession(session.reportId, {
-            completedAt: new Date().toISOString(),
-          });
-          chatLogger.info('Session marked as completed', { reportId: session.reportId });
-        } catch (error) {
-          chatLogger.warn('Failed to mark session as completed', { error });
-        }
-      }
-
-      // Update frontend credit count using backend's creditsRemaining
-      if (!isAuthenticated && (backendResult as any).creditsRemaining !== undefined) {
-        const creditsRemaining = (backendResult as any).creditsRemaining;
-        guestCreditService.setCredits(creditsRemaining);
-        chatLogger.info('Frontend credit count synced with backend', { 
-          remainingCredits: creditsRemaining
-        });
-      }
-
-      setValuationResult(backendResult);
-      
-      // Input data no longer needed - Info tab uses server-generated HTML (info_tab_html)
-      
-      setStage('results');
-      setIsGenerating(false); // Clear loading state when valuation completes successfully
-      
-      // Call onComplete callback if provided
-      if (onComplete) {
-        onComplete(backendResult);
-      }
-    } catch (error) {
-      chatLogger.error('Failed to process AI-guided valuation through backend', {
-        error: error instanceof Error ? error.message : 'Unknown error',
-        flowType: 'ai-guided'
-      });
-      
-      // Handle credit-related errors
-      if (error instanceof Error && error.message.includes('Insufficient credits')) {
-        setError('You need 1 credit to run this valuation. Please sign up to get more credits.');
-        setIsGenerating(false);
-        setShowOutOfCreditsModal(true);
-        return;
-      }
-      
-      // Set error state for other errors
-      setError(error instanceof Error ? error.message : 'An unexpected error occurred while generating the valuation.');
-      setIsGenerating(false);
-      
-      // CRITICAL FIX: Don't reset stage to 'results' on error - keep conversation active
-      // This allows user to continue the conversation without losing progress
-      // Only set stage to 'results' if we have a valid valuation result
-      if (valuationResult && valuationResult.valuation_id) {
-        setValuationResult(valuationResult);
-        setStage('results');
-        
-        // Call onComplete callback if provided
-        if (onComplete) {
-          onComplete(valuationResult);
-        }
-      } else {
-        // No valid result - stay in chat stage so user can retry
-        // The error message will be displayed, but conversation history is preserved
-        setStage('chat');
-        chatLogger.info('Valuation error occurred, staying in chat stage to allow retry', {
-          hasValuationResult: !!valuationResult
-        });
+        chatLogger.warn('Failed to mark session as completed', { error });
       }
     }
-    
-    chatLogger.info('Valuation complete, moving to results stage', { 
-      stage: 'results',
-      hasValuationResult: !!valuationResult
-    });
+
+    // Update frontend credit count if available in the result
+    if (!isAuthenticated && (valuationResult as any).creditsRemaining !== undefined) {
+      const creditsRemaining = (valuationResult as any).creditsRemaining;
+      guestCreditService.setCredits(creditsRemaining);
+      chatLogger.info('Frontend credit count synced with backend', {
+        remainingCredits: creditsRemaining
+      });
+    }
+
+    // Call onComplete callback if provided - let handleReportComplete handle UI state
+    if (onComplete) {
+      onComplete(valuationResult);
+    }
+
+    chatLogger.info('Valuation result stored, waiting for HTML report');
   };
 
 
