@@ -639,16 +639,38 @@ export const AIAssistedValuation: React.FC<AIAssistedValuationProps> = ({
     if (session?.sessionData) {
       // Type assertion needed because pythonSessionId is stored in sessionData but not part of ValuationRequest type
       const stored = (session.sessionData as any)?.pythonSessionId as string | undefined;
+      
+      chatLogger.debug('Checking for pythonSessionId in session', {
+        reportId,
+        hasSession: !!session,
+        hasSessionData: !!session.sessionData,
+        sessionDataKeys: session.sessionData ? Object.keys(session.sessionData) : [],
+        storedPythonSessionId: stored,
+        currentPythonSessionId: pythonSessionId,
+      });
+      
       if (stored && stored !== pythonSessionId) {
-        chatLogger.info('Restored Python sessionId from backend session', {
+        chatLogger.info('✅ Restored Python sessionId from backend session', {
           pythonSessionId: stored,
           reportId,
           hadPrevious: !!pythonSessionId
         });
         setPythonSessionId(stored);
+      } else if (!stored && pythonSessionId) {
+        // Session loaded but doesn't have pythonSessionId - this shouldn't happen if it was saved
+        chatLogger.warn('Session loaded but pythonSessionId missing', {
+          reportId,
+          currentPythonSessionId: pythonSessionId,
+          sessionDataKeys: session.sessionData ? Object.keys(session.sessionData) : [],
+        });
       }
+    } else if (session && !session.sessionData) {
+      chatLogger.debug('Session loaded but sessionData is empty', {
+        reportId,
+        hasSession: !!session,
+      });
     }
-  }, [session?.sessionData, reportId]); // Re-run when session loads or sessionData changes
+  }, [session?.sessionData, reportId, pythonSessionId]); // Re-run when session loads or sessionData changes
   
   // CRITICAL: Save Python sessionId to backend session when received
   const handlePythonSessionIdReceived = useCallback((newPythonSessionId: string) => {
