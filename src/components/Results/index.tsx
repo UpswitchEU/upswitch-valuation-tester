@@ -73,19 +73,6 @@ export const Results: React.FC = memo(() => {
   );
 });
 
-// Export individual components for Info tab usage
-export { AdjustmentsSummary } from './AdjustmentsSummary';
-export { CalculationJourneyOverview } from './CalculationJourneyOverview';
-export { CompetitiveComparison } from './CompetitiveComparison';
-export { DataQualityConfidence } from './DataQualityConfidence';
-export { GrowthMetrics } from './GrowthMetrics';
-export { MethodologyBreakdown } from './MethodologyBreakdown';
-export { MultipleWaterfall } from './MultipleWaterfall';
-export { OwnerConcentrationAnalysis } from './OwnerConcentrationAnalysis';
-export { OwnerConcentrationSummaryCard } from './OwnerConcentrationSummaryCard';
-export { OwnershipAdjustments } from './OwnershipAdjustments';
-export { ResultsHeader } from './ResultsHeader';
-export { RiskFactors } from './RiskFactors';
-export { ValuationWaterfall } from './ValuationWaterfall';
-export { ValueDrivers } from './ValueDrivers';
+// Frontend is minimal - only displays final HTML report from backend
+// All complex analysis components removed - calculations happen in Python
 

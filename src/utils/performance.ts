@@ -11,7 +11,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
-/**
+  /**
  * Custom hook for debounced values
  * 
  * Usage:
@@ -59,9 +59,9 @@ export function useThrottle<T extends (...args: any[]) => any>(
     },
     [callback, delay]
   );
-}
+  }
 
-/**
+  /**
  * Custom hook for stable callbacks
  * Like useCallback but with stable identity
  * 
@@ -85,9 +85,9 @@ export function useStableCallback<T extends (...args: any[]) => any>(
   return useCallback((...args: Parameters<T>) => {
     return callbackRef.current(...args);
   }, []);
-}
+  }
 
-/**
+  /**
  * Custom hook for expensive computations with memoization
  * 
  * Usage:
@@ -110,14 +110,14 @@ export function useMemoizedComputation<T>(
   if (isEqual && prevValueRef.current !== undefined) {
     if (isEqual(prevValueRef.current, memoizedValue)) {
       return prevValueRef.current;
-    }
+  }
   }
 
   prevValueRef.current = memoizedValue;
   return memoizedValue;
-}
+  }
 
-/**
+  /**
  * Custom hook for measuring component render performance
  * Only active in development mode
  * 
@@ -143,10 +143,10 @@ export function useRenderPerformance(componentName: string) {
       
       renderStart.current = performance.now();
     });
+    }
   }
-}
 
-/**
+  /**
  * Helper to create shallow comparison function for memoization
  */
 export function shallowEqual<T extends Record<string, any>>(
@@ -164,14 +164,14 @@ export function shallowEqual<T extends Record<string, any>>(
     objB === null
   ) {
     return false;
-  }
+    }
 
   const keysA = Object.keys(objA);
   const keysB = Object.keys(objB);
-
+    
   if (keysA.length !== keysB.length) {
     return false;
-  }
+    }
 
   for (const key of keysA) {
     if (
@@ -215,8 +215,8 @@ export function deepEqual(objA: any, objB: any): boolean {
       !deepEqual(objA[key], objB[key])
     ) {
       return false;
-    }
-  }
+          }
+        }
 
   return true;
 }
@@ -234,7 +234,7 @@ export function useLazyInit<T>(init: () => T): T {
   const ref = useRef<T>();
   if (ref.current === undefined) {
     ref.current = init();
-  }
+          }
   return ref.current;
 }
 

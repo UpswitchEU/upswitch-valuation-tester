@@ -7,14 +7,15 @@
  * @module features/conversational-valuation/components/ConversationalValuationFlow
  */
 
-import React, { useEffect } from 'react';
+import React from 'react';
 import { FeatureErrorBoundary } from '../../../features/shared/components/ErrorBoundary';
 import { ConversationalLayout } from './ConversationalLayout';
-import { ConversationProvider, useConversationActions } from '../context/ConversationContext';
+import { ConversationProvider } from '../context/ConversationContext';
+import type { ValuationResponse } from '../../../types/valuation';
 
 interface ConversationalValuationFlowProps {
   reportId: string;
-  onComplete: (result: any) => void;
+  onComplete: (result: ValuationResponse) => void;
   initialQuery?: string | null;
   autoSend?: boolean;
 }
@@ -23,7 +24,9 @@ interface ConversationalValuationFlowProps {
  * Conversational Valuation Flow - Main Orchestrator
  *
  * Single Responsibility: Feature orchestration and context setup.
- * Delegates all business logic to focused components.
+ * Delegates all UI logic to ConversationalLayout component.
+ *
+ * Frontend is minimal: only collects data and displays final results from backend.
  */
 export const ConversationalValuationFlow: React.FC<ConversationalValuationFlowProps> = ({
   reportId,
@@ -34,7 +37,7 @@ export const ConversationalValuationFlow: React.FC<ConversationalValuationFlowPr
   return (
     <FeatureErrorBoundary feature="conversational-valuation">
       <ConversationProvider initialState={{ sessionId: reportId }}>
-        <ConversationalValuationFlowInner
+        <ConversationalLayout
           reportId={reportId}
           onComplete={onComplete}
           initialQuery={initialQuery}
