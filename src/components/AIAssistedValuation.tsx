@@ -658,6 +658,15 @@ export const AIAssistedValuation: React.FC<AIAssistedValuationProps> = ({
         reportId,
         currentView: session?.currentView,
       });
+      // CRITICAL: Reset restoration state if we're not in conversational view
+      if (isRestoredSessionId || pythonSessionId) {
+        setIsRestoredSessionId(false);
+        setPythonSessionId(null);
+        setIsRestorationComplete(false);
+        restorationStateRef.current.restorationComplete = false;
+        // Clear restored messages when switching away from conversational view
+        setRestoredMessages([]);
+      }
       return;
     }
 
@@ -684,6 +693,13 @@ export const AIAssistedValuation: React.FC<AIAssistedValuationProps> = ({
         });
         setPythonSessionId(stored);
         setIsRestoredSessionId(true); // Mark as restored from Supabase
+        // CRITICAL: Reset restoration complete flag when we get a new sessionId
+        setIsRestorationComplete(false);
+        restorationStateRef.current.restorationComplete = false;
+        // Clear restoration attempted set to allow retry for new sessionId
+        setRestorationAttempted(new Set());
+        // CRITICAL: Clear restored messages when sessionId changes to prevent stale messages
+        setRestoredMessages([]);
       } else if (!stored && pythonSessionId) {
         // Session loaded but doesn't have pythonSessionId - this shouldn't happen if it was saved
         chatLogger.warn('Session loaded but pythonSessionId missing', {
@@ -697,6 +713,9 @@ export const AIAssistedValuation: React.FC<AIAssistedValuationProps> = ({
           reportId,
           sessionDataKeys: session.sessionData ? Object.keys(session.sessionData) : [],
         });
+        // CRITICAL: Ensure restoration is marked as complete for new conversations
+        setIsRestorationComplete(true);
+        restorationStateRef.current.restorationComplete = true;
       }
     } else if (session && !session.sessionData) {
       chatLogger.debug('Session loaded but sessionData is empty', {
@@ -709,7 +728,7 @@ export const AIAssistedValuation: React.FC<AIAssistedValuationProps> = ({
         reportId,
       });
     }
-  }, [session?.sessionData, session?.currentView, reportId, pythonSessionId]); // Re-run when session loads or sessionData changes
+  }, [session, session?.sessionData, session?.currentView, reportId, pythonSessionId, isRestoredSessionId]); // CRITICAL: Include full session object to re-run when session loads
   
   // CRITICAL: Save Python sessionId to backend session when received
   const handlePythonSessionIdReceived = useCallback((newPythonSessionId: string) => {
@@ -800,19 +819,37 @@ export const AIAssistedValuation: React.FC<AIAssistedValuationProps> = ({
         return;
       }
       
-      // Skip if we already restored messages (check both state and ref for race conditions)
-      if (restoredMessages.length > 0 || restorationStateRef.current.restorationComplete) {
-        chatLogger.debug('Messages already restored or restoration complete, skipping', {
+      // Skip if we already restored messages for THIS sessionId (check both state and ref for race conditions)
+      // CRITICAL: Only skip if restoration is complete AND messages exist for the current sessionId
+      const hasRestoredMessagesForThisSession = restoredMessages.length > 0 && 
+        restorationStateRef.current.currentSessionId === targetSessionId;
+      
+      if (hasRestoredMessagesForThisSession || 
+          (restorationStateRef.current.restorationComplete && 
+           restorationStateRef.current.currentSessionId === targetSessionId)) {
+        chatLogger.debug('Messages already restored or restoration complete for this sessionId, skipping', {
           restoredCount: restoredMessages.length,
           restorationComplete: restorationStateRef.current.restorationComplete,
+          currentSessionId: restorationStateRef.current.currentSessionId,
+          targetSessionId,
           pythonSessionId: targetSessionId,
           reportId,
         });
         // Mark restoration as complete if messages are already restored
-        if (restoredMessages.length > 0) {
+        if (hasRestoredMessagesForThisSession) {
           setIsRestorationComplete(true);
         }
         return;
+      }
+      
+      // CRITICAL: If we have restored messages but for a different sessionId, clear them
+      if (restoredMessages.length > 0 && restorationStateRef.current.currentSessionId !== targetSessionId) {
+        chatLogger.info('Clearing restored messages from previous sessionId', {
+          previousSessionId: restorationStateRef.current.currentSessionId,
+          newSessionId: targetSessionId,
+          restoredCount: restoredMessages.length,
+        });
+        setRestoredMessages([]);
       }
       
       // Prevent concurrent restoration attempts
@@ -982,6 +1019,8 @@ export const AIAssistedValuation: React.FC<AIAssistedValuationProps> = ({
         // Check if aborted
         if (abortController.signal.aborted) {
           chatLogger.debug('Restoration aborted during error handling', { pythonSessionId: targetSessionId });
+          restorationStateRef.current.restorationComplete = true;
+          setIsRestorationComplete(true);
           return;
         }
         
@@ -994,6 +1033,7 @@ export const AIAssistedValuation: React.FC<AIAssistedValuationProps> = ({
         
         // Always mark restoration as complete on error
         restorationStateRef.current.restorationComplete = true;
+        setIsRestorationComplete(true);
         
         if (is404) {
           // Only clear pythonSessionId if it was restored from Supabase (not newly created)
@@ -1053,7 +1093,7 @@ export const AIAssistedValuation: React.FC<AIAssistedValuationProps> = ({
     };
     
     restoreConversation();
-  }, [pythonSessionId, isRestoredSessionId, reportId, restoredMessages.length, session?.currentView, restorationAttempted, updateSessionData]); // Wait for Python sessionId and conversational view
+  }, [pythonSessionId, isRestoredSessionId, reportId, session, session?.currentView, session?.sessionData, restorationAttempted, updateSessionData]); // CRITICAL: Include session object to re-run when session loads
   
   // Load session data into conversation context when switching to conversational view
   useEffect(() => {
