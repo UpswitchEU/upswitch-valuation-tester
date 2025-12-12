@@ -3,12 +3,14 @@ import { useValuationSessionStore } from '../store/useValuationSessionStore';
 import { useValuationStore } from '../store/useValuationStore';
 // import { useReportsStore } from '../store/useReportsStore'; // Deprecated: Now saving to database
 import toast from 'react-hot-toast';
+import type { ValuationRequest } from '../types/valuation';
 import { TARGET_COUNTRIES } from '../config/countries';
 import {
     getIndustryGuidance,
     validateEbitdaMargin,
     validateRevenue
 } from '../config/industryGuidance';
+import type { BusinessTypeOption } from '../config/businessTypes';
 import { useAuth } from '../hooks/useAuth';
 import { useBusinessTypes } from '../hooks/useBusinessTypes';
 import { suggestionService } from '../services/businessTypeSuggestionApi';
@@ -41,7 +43,7 @@ export const ValuationForm: React.FC = () => {
   // Auto-focus logic removed - no automatic field jumping
   
   // Match business type string to business_type_id
-  const matchBusinessType = useCallback((query: string, businessTypes: any[]): string | null => {
+  const matchBusinessType = useCallback((query: string, businessTypes: BusinessTypeOption[]): string | null => {
     if (!query || !businessTypes || businessTypes.length === 0) return null;
     
     const queryLower = query.toLowerCase().trim();
@@ -478,7 +480,7 @@ export const ValuationForm: React.FC = () => {
                 
                 // Validate that business type has industry classification
                 if (!businessType.industry && !businessType.industryMapping) {
-                  console.error('Business type missing industry classification:', businessType);
+                  chatLogger.warn('Business type missing industry classification', { businessType });
                   toast.error('Selected business type has no industry classification. Please contact support.');
                   return;
                 }
@@ -554,7 +556,7 @@ export const ValuationForm: React.FC = () => {
               });
               
               // Optional data enrichment (async/non-blocking)
-              const updates: any = {
+              const updates: Partial<ValuationRequest> = {
                 company_name: company.company_name,
                 // Ensure country matches KBO result (usually BE)
                 country_code: company.country_code || formData.country_code || 'BE',

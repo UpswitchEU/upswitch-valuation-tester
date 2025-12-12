@@ -13,6 +13,7 @@ import { useAuth } from '../hooks/useAuth';
 import { useTypingAnimation } from '../hooks/useTypingAnimation';
 import { debugLogger } from '../utils/debugLogger';
 import { chatLogger } from '../utils/logger';
+import type { ValuationResponse } from '../types/valuation';
 import { AIHelpCard } from './AIHelpCard';
 import { BusinessTypeConfirmationCard } from './BusinessTypeConfirmationCard';
 import { BusinessTypeSuggestionsList } from './BusinessTypeSuggestionsList';
@@ -38,17 +39,39 @@ import { StreamingManager } from '../services/chat/StreamingManager';
 import { MessageManager } from '../utils/chat/MessageManager';
 import { InputValidator } from '../utils/validation/InputValidator';
 
+// Callback data types
+export interface CollectedData {
+  field: string;
+  value: string | number | boolean;
+  timestamp?: number;
+  source?: 'user_input' | 'suggestion' | 'validation';
+  confidence?: number;
+}
+
+export interface ValuationPreviewData {
+  estimatedValue?: number;
+  confidence?: number;
+  methodology?: string;
+  assumptions?: Record<string, any>;
+}
+
+export interface CalculateOptionData {
+  method: string;
+  parameters: Record<string, any>;
+  estimatedValue?: number;
+}
+
 // Re-export types for convenience
 export interface StreamingChatProps {
   sessionId: string;
   userId?: string;
   onMessageComplete?: (message: Message) => void;
-  onValuationComplete?: (result: any) => void;
+  onValuationComplete?: (result: ValuationResponse) => void;
   onValuationStart?: () => void;
   onReportUpdate?: (htmlContent: string, progress: number) => void;
-  onDataCollected?: (data: any) => void;
-  onValuationPreview?: (data: any) => void;
-  onCalculateOptionAvailable?: (data: any) => void;
+  onDataCollected?: (data: CollectedData) => void;
+  onValuationPreview?: (data: ValuationPreviewData) => void;
+  onCalculateOptionAvailable?: (data: CalculateOptionData) => void;
   onProgressUpdate?: (data: any) => void;
   onReportSectionUpdate?: (section: string, html: string, phase: number, progress: number, is_fallback?: boolean, is_error?: boolean, error_message?: string) => void;
   onSectionLoading?: (section: string, html: string, phase: number, data?: any) => void;
@@ -1531,7 +1554,7 @@ const MessageItem = React.memo<MessageItemProps>(({
     // Defensive: Extract metadata with fallbacks (in case metadata structure differs)
     const metadata = message.metadata || {};
     
-    console.log('🎨 RENDERING CompanyNameConfirmationCard', {
+    debugLogger.debug('Rendering CompanyNameConfirmationCard', {
       companyName: metadata.company_name || message.content || '',
       registrationNumber: metadata.registration_number,
       legalForm: metadata.legal_form,

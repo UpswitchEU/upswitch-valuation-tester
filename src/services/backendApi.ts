@@ -7,6 +7,36 @@
 
 import axios, { AxiosInstance, AxiosResponse, InternalAxiosRequestConfig } from 'axios';
 import type { ValuationRequest, ValuationResponse } from '../types/valuation';
+import type {
+  SaveValuationRequest,
+  SaveValuationResponse,
+  CreateValuationSessionRequest,
+  CreateValuationSessionResponse,
+  UpdateValuationSessionRequest,
+  UpdateValuationSessionResponse,
+  DeleteValuationSessionRequest,
+  DeleteValuationSessionResponse,
+  CreditCheckRequest,
+  CreditCheckResponse,
+  UseCreditRequest,
+  UseCreditResponse,
+  GuestSessionRequest,
+  GuestSessionResponse,
+  ReportListRequest,
+  ReportListResponse,
+  APIErrorResponse,
+  AxiosErrorData,
+  APIRequestConfig,
+  ConversationHistoryResponse
+} from '../types/api';
+import {
+  APIError,
+  NetworkError,
+  RateLimitError,
+  AuthenticationError,
+  ValidationError,
+  CreditError
+} from '../types/errors';
 // normalizeCalculationSteps removed - calculation steps now in server-generated info_tab_html
 import { apiLogger, createPerformanceLogger, extractCorrelationId, setCorrelationFromResponse } from '../utils/logger';
 import { guestSessionService } from './guestSessionService';
@@ -290,7 +320,7 @@ class BackendAPI {
       }
       
       return responseData; // Extract nested data from { success, data, message }
-    } catch (error: any) {
+    } catch (error) {
       // Cleanup on error
       this.activeRequests.delete(requestId);
       const timeout = this.requestTimeouts.get(requestId);
@@ -342,7 +372,7 @@ class BackendAPI {
       
       console.log('Backend response for AI-guided valuation:', response.data);
       return response.data.data; // Extract nested data from { success, data, message }
-    } catch (error: any) {
+    } catch (error) {
       console.error('AI-guided valuation failed:', error);
       
       // Enhanced error handling
@@ -526,7 +556,7 @@ class BackendAPI {
       });
 
       return response.data;
-    } catch (error: any) {
+    } catch (error) {
       const errorDuration = performance.now() - requestStartTime;
       const correlationId = error.response ? extractCorrelationId(error.response) : null;
       
@@ -588,7 +618,7 @@ class BackendAPI {
   /**
    * Save valuation to backend database
    */
-  async saveValuation(data: any): Promise<{ success: boolean; valuation_id?: string }> {
+  async saveValuation(data: SaveValuationRequest): Promise<SaveValuationResponse> {
     const response = await this.client.post('/api/valuations/save', data);
     return response.data;
   }
@@ -622,7 +652,7 @@ class BackendAPI {
       });
       
       return response.data.data; // Extract nested data from { success, data, message }
-    } catch (error: any) {
+    } catch (error) {
       console.error('HTML preview generation failed:', error);
       
       // Enhanced error handling
@@ -655,7 +685,7 @@ class BackendAPI {
       }
       
       return data;
-    } catch (error: any) {
+    } catch (error) {
       if (error.response?.status === 404) {
         return null; // Session doesn't exist yet
       }
@@ -670,7 +700,7 @@ class BackendAPI {
   /**
    * Create new valuation session
    */
-  async createValuationSession(session: any): Promise<any> {
+  async createValuationSession(session: CreateValuationSessionRequest): Promise<CreateValuationSessionResponse> {
     try {
       // Map frontend 'conversational' to backend 'ai-guided'
       const backendSession = { ...session };
@@ -686,7 +716,7 @@ class BackendAPI {
         if (data.dataSource === 'ai-guided') data.dataSource = 'conversational';
       }
       return data;
-    } catch (error: any) {
+    } catch (error) {
       apiLogger.error('Failed to create valuation session', {
         error: error instanceof Error ? error.message : 'Unknown error',
         session,
@@ -698,7 +728,7 @@ class BackendAPI {
   /**
    * Update valuation session data
    */
-  async updateValuationSession(reportId: string, updates: any): Promise<any> {
+  async updateValuationSession(reportId: string, updates: UpdateValuationSessionRequest): Promise<UpdateValuationSessionResponse> {
     try {
       // Map frontend 'conversational' to backend 'ai-guided'
       const backendUpdates = { ...updates };
@@ -714,7 +744,7 @@ class BackendAPI {
         if (data.dataSource === 'ai-guided') data.dataSource = 'conversational';
       }
       return data;
-    } catch (error: any) {
+    } catch (error) {
       apiLogger.error('Failed to update valuation session', {
         error: error instanceof Error ? error.message : 'Unknown error',
         reportId,
@@ -741,7 +771,7 @@ class BackendAPI {
         if (data.dataSource === 'ai-guided') data.dataSource = 'conversational';
       }
       return data;
-    } catch (error: any) {
+    } catch (error) {
       apiLogger.error('Failed to switch valuation view', {
         error: error instanceof Error ? error.message : 'Unknown error',
         reportId,
@@ -782,7 +812,7 @@ class BackendAPI {
 
       perfLogger.end();
       return response.data.data || response.data; // Extract nested data if present
-    } catch (error: any) {
+    } catch (error) {
       apiLogger.error('Valuation calculation failed', { error, operation: 'calculateValuationUnified' });
       
       if (error.response?.data?.error) {
@@ -830,7 +860,7 @@ class BackendAPI {
       });
 
       return result;
-    } catch (error: any) {
+    } catch (error) {
       apiLogger.error('Guest data migration failed', {
         error: error instanceof Error ? error.message : 'Unknown error',
         guestSessionId,
@@ -857,7 +887,7 @@ class BackendAPI {
       timestamp: string;
       field_name?: string;
       confidence?: number;
-      metadata?: any;
+      metadata?: import('../types/api').MessageMetadata;
     }>;
     messages_count?: number;
     collected_data?: Record<string, any>;
@@ -905,7 +935,7 @@ class BackendAPI {
       });
 
       return result;
-    } catch (error: any) {
+    } catch (error) {
       // CRITICAL FIX: Handle abort signal cancellation gracefully
       if (error.name === 'AbortError' || error.name === 'CanceledError' || (signal?.aborted)) {
         apiLogger.debug('Conversation history fetch aborted', { sessionId });

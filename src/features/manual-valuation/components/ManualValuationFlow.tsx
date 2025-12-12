@@ -649,6 +649,7 @@ export const ManualValuationFlow: React.FC<ManualValuationFlowProps> = memo(({ r
         .animate-slide-up {
           animation: slide-up 0.5s ease-out;
         }
+      `}</style>
     </div>
   );
 };

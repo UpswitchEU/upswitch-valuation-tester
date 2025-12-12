@@ -675,7 +675,7 @@ export interface ValuationResponse {
   
   // Transparency data
   transparency?: TransparencyData;
-  
+
   // NEW: Modular system metadata (Phase 1: Backend Integration)
   modular_system?: ModularSystem;
   
