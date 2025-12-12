@@ -62,6 +62,7 @@ export interface StreamingChatProps {
   initialMessage?: string | null;
   autoSend?: boolean;
   initialData?: Partial<any>; // Pre-filled data from session (for resuming conversations)
+  initialMessages?: Message[]; // CRITICAL: Restored conversation history for page refresh
 }
 
 /**
@@ -95,7 +96,8 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
   disabled = false,
   initialMessage = null,
   autoSend = false,
-  initialData
+  initialData,
+  initialMessages = [] // NEW: Restored messages from backend
 }) => {
   // Get user data from AuthContext
   const { user } = useAuth();
@@ -105,6 +107,19 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
   
   // Use extracted state management hook
   const state = useStreamingChatState(sessionId, userId);
+  
+  // CRITICAL: Restore messages from backend on mount (enables conversation continuation)
+  useEffect(() => {
+    if (initialMessages && initialMessages.length > 0 && state.messages.length === 0) {
+      chatLogger.info('✅ Restoring conversation messages', {
+        sessionId,
+        messagesCount: initialMessages.length,
+        firstMessage: initialMessages[0]?.content?.substring(0, 50),
+        lastMessage: initialMessages[initialMessages.length - 1]?.content?.substring(0, 50),
+      });
+      state.setMessages(initialMessages);
+    }
+  }, [initialMessages, sessionId]); // Only run when initialMessages changes
   
   // Initialize services (must be before hooks that use them)
   const inputValidator = useMemo(() => new InputValidator(), []);

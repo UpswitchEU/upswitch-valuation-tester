@@ -68,14 +68,23 @@ export const AIAssistedValuation: React.FC<AIAssistedValuationProps> = ({
     });
   }, []);
   
-  // NEW: Store session ID in component state (created once on mount)
-  const [sessionId] = useState(() => {
+  // NEW: Store session ID in component state (use existing or create new)
+  const [sessionId, _setSessionId] = useState<string>(() => {
+    // Try to get existing sessionId from the loaded session
+    if (session?.sessionId) {
+      chatLogger.debug('Using existing session ID', { sessionId: session.sessionId });
+      return session.sessionId;
+    }
+    // Otherwise create new one
     const timestamp = Date.now();
     const randomId = Math.random().toString(36).substring(2, 15);
     const newSessionId = `session_${timestamp}_${randomId}`;
     chatLogger.debug('Created new session', { sessionId: newSessionId });
     return newSessionId;
   });
+  
+  // NEW: Restored conversation messages (from backend)
+  const [restoredMessages, setRestoredMessages] = useState<any[]>([]);
   
   // Progressive report state - now implemented
   const [reportSections, setReportSections] = useState<any[]>([]);
@@ -591,6 +600,61 @@ export const AIAssistedValuation: React.FC<AIAssistedValuationProps> = ({
     }
   }, []);
   
+  // CRITICAL: Restore conversation history on mount (enables returning to conversation)
+  useEffect(() => {
+    const restoreConversation = async () => {
+      if (!session?.sessionId) {
+        chatLogger.debug('No session ID yet, skipping conversation restore');
+        return;
+      }
+      
+      try {
+        chatLogger.info('Attempting to restore conversation', { sessionId: session.sessionId });
+        
+        const history = await backendAPI.getConversationHistory(session.sessionId);
+        
+        if (history.exists && history.messages && history.messages.length > 0) {
+          chatLogger.info('✅ Conversation restored', {
+            sessionId: session.sessionId,
+            messagesCount: history.messages.length,
+            collectedFields: history.fields_collected,
+            completeness: history.completeness_percent,
+          });
+          
+          // Convert backend messages to frontend format
+          const messages = history.messages.map((msg: any) => ({
+            id: msg.id,
+            type: msg.role === 'user' ? 'user' : 'ai',
+            role: msg.role,
+            content: msg.content,
+            timestamp: new Date(msg.timestamp),
+            isStreaming: false,
+            isComplete: true,
+            field_name: msg.field_name,
+            confidence: msg.confidence,
+            metadata: msg.metadata,
+          }));
+          
+          setRestoredMessages(messages);
+          chatLogger.info('Restored messages set', { count: messages.length });
+        } else {
+          chatLogger.info('No conversation history to restore', {
+            sessionId: session.sessionId,
+            exists: history.exists,
+          });
+        }
+      } catch (error) {
+        chatLogger.error('Failed to restore conversation', {
+          error: error instanceof Error ? error.message : 'Unknown error',
+          sessionId: session.sessionId,
+        });
+        // Don't block the UI - just log the error
+      }
+    };
+    
+    restoreConversation();
+  }, [session?.sessionId]); // Only run when sessionId changes
+  
   // Load session data into conversation context when switching to conversational view
   useEffect(() => {
     if (session && session.currentView === 'conversational') {
@@ -1042,6 +1106,7 @@ export const AIAssistedValuation: React.FC<AIAssistedValuationProps> = ({
                 <StreamingChat
                   sessionId={sessionId}
                   userId={user?.id}
+                  initialMessages={restoredMessages} 
                   onValuationComplete={handleValuationComplete}
                   onValuationStart={() => {
                     // Set loading state immediately when user clicks "Create Valuation Report"

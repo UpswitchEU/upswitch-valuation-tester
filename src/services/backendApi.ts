@@ -838,6 +838,84 @@ class BackendAPI {
       throw error;
     }
   }
+
+  /**
+   * Get conversation history and state for a session
+   * CRITICAL: This enables conversation restoration on page refresh
+   * 
+   * Returns the full conversation history including all messages,
+   * collected data, and progress metrics. This allows users to
+   * return to their conversation and continue where they left off.
+   */
+  async getConversationHistory(sessionId: string): Promise<{
+    exists: boolean;
+    session_id: string;
+    messages?: Array<{
+      id: string;
+      role: 'user' | 'assistant' | 'system';
+      content: string;
+      timestamp: string;
+      field_name?: string;
+      confidence?: number;
+      metadata?: any;
+    }>;
+    messages_count?: number;
+    collected_data?: Record<string, any>;
+    completeness_level?: string;
+    completeness_percent?: number;
+    fields_collected?: number;
+    missing_fields?: string[];
+    last_updated?: string;
+  }> {
+    try {
+      const valuationEngineUrl = import.meta.env.VITE_VALUATION_ENGINE_URL || 'http://localhost:8001';
+      apiLogger.info('Fetching conversation history', { sessionId, valuationEngineUrl });
+      
+      // Call the valuation engine directly for conversation status
+      const response = await axios.get(
+        `${valuationEngineUrl}/api/v1/conversation/status/${sessionId}`,
+        {
+          timeout: 10000, // 10 seconds
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        }
+      );
+
+      const result = response.data.status || response.data;
+      
+      apiLogger.info('Conversation history retrieved', {
+        sessionId,
+        exists: result.exists,
+        messagesCount: result.messages_count || 0,
+        fieldsCollected: result.fields_collected || 0,
+        completeness: result.completeness_percent || 0,
+      });
+
+      return result;
+    } catch (error: any) {
+      // If conversation doesn't exist or network error, return empty state
+      if (error.response?.status === 404) {
+        apiLogger.info('No conversation history found', { sessionId });
+        return {
+          exists: false,
+          session_id: sessionId,
+        };
+      }
+      
+      apiLogger.warn('Failed to fetch conversation history', {
+        error: error instanceof Error ? error.message : 'Unknown error',
+        sessionId,
+        status: error.response?.status,
+      });
+      
+      // Don't throw error - just return empty state to allow new conversation
+      return {
+        exists: false,
+        session_id: sessionId,
+      };
+    }
+  }
 }
 
 export const backendAPI = new BackendAPI();
