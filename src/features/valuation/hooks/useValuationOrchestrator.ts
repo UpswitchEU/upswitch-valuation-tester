@@ -1,9 +1,10 @@
 /**
  * useValuationOrchestrator Hook
- * 
+ *
  * Main orchestrator for valuation workflow.
  * Coordinates session, conversation, reports, and UI state.
- * 
+ * Uses centralized conversation state management to prevent race conditions.
+ *
  * @module features/valuation/hooks/useValuationOrchestrator
  */
 
@@ -11,7 +12,7 @@ import { useCallback, useEffect, useState } from 'react';
 import type { ValuationResponse } from '../../../types/valuation';
 import { chatLogger } from '../../../utils/logger';
 import { useCreditGuard } from '../../auth/hooks/useCreditGuard';
-import { useSessionRestoration } from '../../conversation/hooks/useSessionRestoration';
+import { useConversationStateManager } from '../../conversation/hooks/useConversationStateManager';
 
 type FlowStage = 'chat' | 'results' | 'blocked';
 
@@ -89,21 +90,42 @@ export function useValuationOrchestrator({
   const [stage, setStage] = useState<FlowStage>('chat');
   const [valuationResult, setValuationResult] = useState<ValuationResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [isSessionInitialized, setIsSessionInitialized] = useState(false);
 
-  // Session restoration
-  const {
-    restoredMessages,
-    isRestoring,
-    isRestorationComplete,
-  } = useSessionRestoration({
-    pythonSessionId,
-    isRestoredSessionId,
-    session,
-    onMessagesRestored: () => {
-      setIsSessionInitialized(true);
+  // Centralized conversation state management
+  const conversationState = useConversationStateManager({
+    reportId: _reportId,
+    sessionId: _sessionId,
+    initialPythonSessionId: pythonSessionId,
+    onStateChange: (state, event) => {
+      chatLogger.debug('Conversation state changed', {
+        state,
+        event,
+        reportId: _reportId,
+        sessionId: _sessionId,
+      });
+    },
+    onMessagesRestored: (messages) => {
+      chatLogger.info('Messages restored in orchestrator', {
+        messageCount: messages.length,
+        reportId: _reportId,
+        sessionId: _sessionId,
+      });
+    },
+    onSessionIdUpdate: (newSessionId) => {
+      chatLogger.info('Python session ID updated in orchestrator', {
+        newSessionId,
+        reportId: _reportId,
+        sessionId: _sessionId,
+      });
     },
   });
+
+  // Initialize conversation state when component mounts
+  useEffect(() => {
+    if (session) {
+      conversationState.handleSessionLoaded(pythonSessionId, isRestoredSessionId);
+    }
+  }, [session, pythonSessionId, isRestoredSessionId, conversationState]);
 
   // Credit guard
   const {
@@ -156,20 +178,20 @@ export function useValuationOrchestrator({
     // Stage
     stage,
     setStage,
-    
+
     // Valuation result
     valuationResult,
     setValuationResult,
-    
+
     // Error
     error,
     setError,
-    
-    // Session restoration
-    restoredMessages,
-    isRestoring,
-    isRestorationComplete,
-    isSessionInitialized,
+
+    // Session restoration (from centralized state manager)
+    restoredMessages: conversationState.messages,
+    isRestoring: conversationState.isRestoring,
+    isRestorationComplete: conversationState.restorationComplete,
+    isSessionInitialized: conversationState.isSessionInitialized,
     
     // Credit guard
     hasCredits,

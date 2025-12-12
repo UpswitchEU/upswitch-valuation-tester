@@ -82,6 +82,9 @@ export const useConversationInitializer = (
   const hasInitializedRef = useRef(false);
   const abortControllerRef = useRef<AbortController | null>(null);
 
+  // Track last pythonSessionId to detect changes
+  const lastPythonSessionIdRef = useRef<string | null>(null);
+
   /**
    * Fallback mode when backend is unavailable
    */
@@ -414,83 +417,102 @@ export const useConversationInitializer = (
   }, [sessionId, userId, callbacks, useFallbackMode]);
 
   /**
-   * Initialize conversation with backend - Fixed to prevent infinite loop
-   * CRITICAL: Skip initialization if we have restored messages (conversation already exists)
-   * CRITICAL: Wait for restoration to complete before initializing
+   * Initialize conversation with backend - Race condition prevention
+   *
+   * RULES (in priority order):
+   * 1. If pythonSessionId changed → reset initialization state
+   * 2. If messages exist → use existing conversation (skip initialization)
+   * 3. If session not initialized → wait
+   * 4. If restoration not complete → wait (prevents starting new before we know if messages exist)
+   * 5. If already initialized → skip
+   * 6. Otherwise → start new conversation
    */
   useEffect(() => {
     if (!callbacks) return;
-    
-    // SIMPLE RULE: Check messages FIRST - if they exist, we're done. Otherwise, start new.
-    // Use getCurrentMessages() as single source of truth (always up-to-date via ref)
-    const currentMessages = callbacks.getCurrentMessages ? callbacks.getCurrentMessages() : [];
-    const hasMessages = currentMessages.length > 0;
-    
-    chatLogger.debug('useConversationInitializer: checking for messages', {
-      sessionId,
-      messageCount: currentMessages.length,
-      hasMessages,
-      isRestoring: callbacks.isRestoring,
-      isSessionInitialized: callbacks.isSessionInitialized,
-      hasInitialized: hasInitializedRef.current,
-    });
-    
-    // RULE 1: If messages exist → use them (skip initialization)
-    if (hasMessages) {
-      chatLogger.info('✅ Messages found - using existing conversation', {
+
+    const currentPythonSessionId = callbacks.pythonSessionId ?? null;
+    const pythonSessionIdChanged = lastPythonSessionIdRef.current !== currentPythonSessionId;
+
+    // RULE 1: Reset state if pythonSessionId changed (session transition)
+    if (pythonSessionIdChanged) {
+      chatLogger.info('🔄 Python sessionId changed - resetting initialization state', {
+        previousSessionId: lastPythonSessionIdRef.current,
+        newSessionId: currentPythonSessionId,
         sessionId,
-        messageCount: currentMessages.length,
       });
+      hasInitializedRef.current = false;
+      setIsInitializing(true);
+      lastPythonSessionIdRef.current = currentPythonSessionId;
+
+      // Abort any pending initialization
       if (abortControllerRef.current) {
         abortControllerRef.current.abort();
         abortControllerRef.current = new AbortController();
       }
+    }
+
+    const currentMessages = callbacks.getCurrentMessages ? callbacks.getCurrentMessages() : [];
+    const hasMessages = currentMessages.length > 0;
+
+    chatLogger.debug('useConversationInitializer: state check', {
+      sessionId,
+      pythonSessionId: currentPythonSessionId,
+      messageCount: currentMessages.length,
+      hasMessages,
+      isRestoring: callbacks.isRestoring,
+      isSessionInitialized: callbacks.isSessionInitialized,
+      isRestorationComplete: callbacks.isRestorationComplete,
+      hasInitialized: hasInitializedRef.current,
+      pythonSessionIdChanged,
+    });
+
+    // RULE 2: Messages exist → use existing conversation
+    if (hasMessages) {
+      chatLogger.info('✅ Messages found - using existing conversation', {
+        sessionId,
+        messageCount: currentMessages.length,
+        pythonSessionId: currentPythonSessionId,
+      });
       hasInitializedRef.current = true;
       setIsInitializing(false);
       return;
     }
-    
-    // RULE 2: If session not initialized yet → wait (prevents starting before session loads)
+
+    // RULE 3: Session not initialized → wait
     if (!callbacks.isSessionInitialized) {
-      chatLogger.debug('Session not initialized yet - waiting', { sessionId });
+      chatLogger.debug('Session not initialized - waiting', { sessionId, pythonSessionId: currentPythonSessionId });
       return;
     }
-    
-    // RULE 3: If restoration in progress → wait
-    if (callbacks.isRestoring) {
-      chatLogger.debug('Restoration in progress - waiting', { sessionId });
+
+    // RULE 4: Restoration not complete → wait (critical for race condition prevention)
+    if (!callbacks.isRestorationComplete) {
+      chatLogger.debug('Restoration not complete - waiting', { sessionId, pythonSessionId: currentPythonSessionId });
       return;
     }
-    
-    // NEW RULE 3.5: Wait for restoration to complete for current sessionId
-    // This prevents starting new conversation when restoration is still checking new sessionId
-    if (!callbacks.isRestorationComplete && callbacks.pythonSessionId) {
-      chatLogger.debug('Restoration not complete for current sessionId - waiting', { 
-        sessionId,
-        pythonSessionId: callbacks.pythonSessionId 
-      });
-      return;
-    }
-    
-    // RULE 4: Already initialized → skip
+
+    // RULE 5: Already initialized → skip
     if (hasInitializedRef.current) {
+      chatLogger.debug('Already initialized - skipping', { sessionId, pythonSessionId: currentPythonSessionId });
       return;
     }
-    
-    // RULE 5: No messages + session initialized + restoration complete → start new conversation
-    chatLogger.info('No messages found - starting new conversation', { sessionId });
+
+    // RULE 6: Start new conversation
+    chatLogger.info('🚀 Starting new conversation', {
+      sessionId,
+      pythonSessionId: currentPythonSessionId,
+    });
     hasInitializedRef.current = true;
     initializeWithRetry();
-    
+
     return () => {
       if (abortControllerRef.current) {
         abortControllerRef.current.abort();
       }
     };
   }, [
-    sessionId, 
-    initializeWithRetry, 
-    callbacks, 
+    sessionId,
+    initializeWithRetry,
+    callbacks,
     callbacks?.isRestoring,
     callbacks?.isSessionInitialized,
     callbacks?.isRestorationComplete,

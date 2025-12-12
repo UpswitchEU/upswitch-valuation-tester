@@ -36,6 +36,7 @@ import { chatLogger } from '../../../utils/logger';
 import { generateReportId } from '../../../utils/reportIdGenerator';
 import { CreditGuard } from '../../auth/components/CreditGuard';
 import { ConversationPanel } from '../../conversation/components/ConversationPanel';
+import { useConversationStateManager } from '../../conversation/hooks/useConversationStateManager';
 import { useValuationOrchestrator } from '../hooks/useValuationOrchestrator';
 const ValuationInfoPanel = React.lazy(() => import('../../../components/ValuationInfoPanel').then(m => ({ default: m.ValuationInfoPanel })));
 const Results = React.lazy(() => import('../../../components/Results').then(m => ({ default: m.Results })));
@@ -157,84 +158,22 @@ export const ConversationalValuationFlow: React.FC<AIAssistedValuationProps> = (
     onComplete,
   });
 
-  // Extract Python sessionId from session - robust race condition handling
-  useEffect(() => {
-    // Only process if we're in conversational view
-    if (session?.currentView !== 'conversational') {
-      chatLogger.debug('Not in conversational view, skipping pythonSessionId extraction', {
-        reportId,
-        currentView: session?.currentView,
-      });
-      // Reset restoration state if we're not in conversational view
-      if (isRestoredSessionId || pythonSessionId) {
-        setIsRestoredSessionId(false);
-        setPythonSessionId(null);
-      }
-      return;
-    }
-
-    // Check if sessionData exists and is not empty
-    const hasSessionData = session?.sessionData && 
-      typeof session.sessionData === 'object' && 
-      Object.keys(session.sessionData).length > 0;
-    
-    if (hasSessionData) {
-      const stored = (session.sessionData as any)?.pythonSessionId as string | undefined;
-      
-      chatLogger.debug('Checking for pythonSessionId in session', {
-        reportId,
-        hasSession: !!session,
-        hasSessionData: hasSessionData,
-        storedPythonSessionId: stored,
-        currentPythonSessionId: pythonSessionId,
-      });
-      
-      if (stored && stored !== pythonSessionId) {
-        chatLogger.info('✅ Restored Python sessionId from backend session', {
-          pythonSessionId: stored,
-          reportId,
-          hadPrevious: !!pythonSessionId,
-        });
-        setPythonSessionId(stored);
-        setIsRestoredSessionId(true); // Mark as restored from Supabase
-      } else if (!stored && pythonSessionId) {
-        // Session loaded but doesn't have pythonSessionId - this shouldn't happen if it was saved
-        chatLogger.warn('Session loaded but pythonSessionId missing', {
-          reportId,
-          currentPythonSessionId: pythonSessionId,
-        });
-      } else if (!stored && !pythonSessionId) {
-        // No pythonSessionId in session - this is expected for new conversations
-        chatLogger.debug('No pythonSessionId in session (new conversation expected)', {
-          reportId,
-        });
-      }
-    } else if (session && (!session.sessionData || Object.keys(session.sessionData || {}).length === 0)) {
-      chatLogger.debug('Session loaded but sessionData is empty or missing', {
-        reportId,
-        hasSession: !!session,
-        hasSessionData: !!session.sessionData,
-      });
-      // No sessionData - this is a new conversation, ensure pythonSessionId is null
-      if (pythonSessionId) {
-        setPythonSessionId(null);
-        setIsRestoredSessionId(false);
-      }
-    }
-  }, [session, session?.sessionData, session?.currentView, reportId, pythonSessionId, isRestoredSessionId]);
-
-  // Handle Python session ID received from conversation
+  // Session management is now handled by the centralized state manager in useValuationOrchestrator
+  // This component just needs to handle session ID updates from the conversation
   const handlePythonSessionIdReceived = useCallback((newPythonSessionId: string) => {
-    chatLogger.info('Python sessionId received, saving to backend session', { pythonSessionId: newPythonSessionId });
-    setPythonSessionId(newPythonSessionId);
-    setIsRestoredSessionId(false);
-    
+    chatLogger.info('Python sessionId received, updating centralized state', {
+      pythonSessionId: newPythonSessionId,
+      reportId
+    });
+
+    // The centralized state manager will handle this
+    // Just save to backend session for persistence
     updateSessionData({
       pythonSessionId: newPythonSessionId
     } as Partial<ValuationRequest>).catch(err => {
       chatLogger.error('Failed to save pythonSessionId', { error: err });
     });
-  }, [updateSessionData]);
+  }, [updateSessionData, reportId]);
 
   // Handle data collection events - sync to session store
   const handleDataCollected = useCallback((data: any) => {

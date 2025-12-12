@@ -76,6 +76,8 @@ export function useSessionRestoration({
 
   /**
    * Attempt to restore conversation history
+   * SIMPLIFIED: Only restore if we have a sessionId that came from Supabase.
+   * For new sessions, mark complete immediately.
    */
   const restoreConversation = useCallback(async () => {
     // Skip if not in conversational view
@@ -84,57 +86,54 @@ export function useSessionRestoration({
       return;
     }
 
-    // Wait for Python sessionId
     const targetSessionId = pythonSessionId;
+
+    // RULE: If no sessionId, can't restore anything
     if (!targetSessionId) {
-      // If sessionData is empty and we're not waiting for restoration, mark as complete
-      if (session.sessionData && Object.keys(session.sessionData).length === 0 && !isRestoredSessionId) {
-        setIsRestorationComplete(true);
-        restorationStateRef.current.restorationComplete = true;
-      }
+      chatLogger.debug('No pythonSessionId available, marking restoration complete');
+      setIsRestorationComplete(true);
+      restorationStateRef.current.restorationComplete = true;
       return;
     }
 
-    // Only restore if sessionId was loaded from Supabase (not newly created)
+    // RULE: If sessionId is newly created (not from Supabase), skip restoration
     if (!isRestoredSessionId) {
       chatLogger.debug('Python sessionId is newly created, skipping restoration');
-      // CRITICAL: Mark restoration complete immediately for new sessions
-      // This allows initialization to proceed without waiting
       setIsRestorationComplete(true);
       restorationStateRef.current.restorationComplete = true;
       restorationStateRef.current.currentSessionId = targetSessionId;
       return;
     }
 
+    // RULE: Only restore if sessionId was loaded from Supabase (existing conversation)
+    // This is the ONLY case where we attempt restoration
+
     // Skip if already attempted restoration for this sessionId
     if (restorationAttempted.has(targetSessionId)) {
+      chatLogger.debug('Already attempted restoration for this sessionId', { targetSessionId });
       return;
     }
 
-    // Skip if already restored messages for this session
-    const hasRestoredMessagesForThisSession = restoredMessages.length > 0 && 
-      restorationStateRef.current.currentSessionId === targetSessionId;
-    
-    if (hasRestoredMessagesForThisSession || 
-        (restorationStateRef.current.restorationComplete && 
-         restorationStateRef.current.currentSessionId === targetSessionId)) {
-      if (hasRestoredMessagesForThisSession) {
-        setIsRestorationComplete(true);
-      }
-      return;
-    }
-
-    // Clear restored messages if for a different sessionId
-    // BUT: Only clear if restoration is complete for the new sessionId
-    // This prevents clearing messages before we know if new sessionId has messages
-    if (restoredMessages.length > 0 && 
-        restorationStateRef.current.currentSessionId !== targetSessionId &&
-        restorationStateRef.current.restorationComplete) {
-      chatLogger.info('Clearing restored messages from previous sessionId', {
+    // GUARD: If we're switching sessionIds, clear old messages and reset state atomically
+    if (restoredMessages.length > 0 && restorationStateRef.current.currentSessionId !== targetSessionId) {
+      chatLogger.info('🔄 SessionId changed - clearing previous messages and resetting state', {
         previousSessionId: restorationStateRef.current.currentSessionId,
         newSessionId: targetSessionId,
+        previousMessageCount: restoredMessages.length,
       });
+
+      // Atomic state reset: clear messages and mark restoration as incomplete for new session
       setRestoredMessages([]);
+      restorationStateRef.current.restorationComplete = false;
+      setIsRestorationComplete(false);
+      restorationStateRef.current.currentSessionId = targetSessionId;
+
+      // Clear attempted restoration for the new sessionId so it will be processed
+      setRestorationAttempted(prev => {
+        const next = new Set(prev);
+        next.delete(targetSessionId);
+        return next;
+      });
     }
 
     // Prevent concurrent restoration attempts
