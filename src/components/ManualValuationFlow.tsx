@@ -42,8 +42,8 @@ interface ManualValuationFlowProps {
   onComplete: (result: ValuationResponse) => void;
 }
 
-export const ManualValuationFlow: React.FC<ManualValuationFlowProps> = memo(({ reportId, onComplete }) => {
-  const { result, clearResult, isCalculating, setIsCalculating, setResult, formData, calculateValuation } = useValuationStore();
+export const ManualValuationFlow: React.FC<ManualValuationFlowProps> = memo(({ reportId: _reportId, onComplete }) => {
+  const { result, clearResult: _clearResult, isCalculating, setIsCalculating, setResult, formData, calculateValuation } = useValuationStore();
   const { user } = useAuth();
   const { clearSession } = useValuationSessionStore();
   const [activeTab, setActiveTab] = useState<'preview' | 'source' | 'info'>('preview');
