@@ -2,6 +2,11 @@
   "buildCommand": "yarn build",
   "outputDirectory": "dist",
   "framework": "vite",
+  "functions": {
+    "src/**/*": {
+      "runtime": "@vercel/node"
+    }
+  },
   "rewrites": [
     {
       "source": "/(.*)",
