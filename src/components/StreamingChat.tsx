@@ -838,13 +838,31 @@ export const StreamingChat: React.FC<StreamingChatProps> = ({
     
     // Find the clarification message to get field and value
     const message = state.messages.find(m => m.id === messageId);
-    if (!message?.metadata?.clarification_field || message.metadata.clarification_value === undefined) {
+    if (!message?.metadata) {
       chatLogger.warn('Cannot confirm clarification: missing metadata', { messageId });
       return;
     }
     
-    const clarificationField = message.metadata.clarification_field;
-    const clarificationValue = message.metadata.clarification_value;
+    // Fallback: if clarification_field is missing, use collected_field (common for CTA buttons)
+    const clarificationField =
+      message.metadata.clarification_field ||
+      message.metadata.collected_field;
+    
+    // Fallback: default valuation CTA to "yes" if value missing
+    const clarificationValue =
+      message.metadata.clarification_value !== undefined
+        ? message.metadata.clarification_value
+        : message.metadata.collected_field === 'valuation_confirmed'
+          ? 'yes'
+          : undefined;
+    
+    if (!clarificationField || clarificationValue === undefined) {
+      chatLogger.warn('Cannot confirm clarification: missing field/value metadata', {
+        messageId,
+        hasCollectedField: !!message.metadata.collected_field
+      });
+      return;
+    }
     const effectiveSessionId = pythonSessionId || sessionId;
     
     // Convert value to string for backend (preserve numeric values)
@@ -1252,6 +1270,11 @@ const MessageItem = React.memo<MessageItemProps>(({
   // Check if this is a Valuation Ready CTA
   const isValuationReadyCTA = message.metadata?.input_type === 'cta_button';
   const buttonText = message.metadata?.button_text || 'Create Valuation Report';
+  // Strip any stray inline typing indicators that may be present in message content
+  const displayContent = React.useMemo(() => {
+    if (!message.content) return message.content;
+    return message.content.replace(/<span class="[^"]*animate-pulse[^"]*"><\/span>/g, '').trimEnd();
+  }, [message.content]);
   
   // Detect business type suggestions in the message
   const businessTypeSuggestions = React.useMemo(() => {
@@ -1307,7 +1330,7 @@ const MessageItem = React.memo<MessageItemProps>(({
   if (isValuationReadyCTA) {
     return (
       <ValuationReadyCTA
-        question={message.content}
+        question={displayContent}
         buttonText={buttonText}
         onConfirm={() => {
           // Check if this is valuation confirmation - if so, trigger loading state immediately
@@ -1406,10 +1429,7 @@ const MessageItem = React.memo<MessageItemProps>(({
                   <div className="flex flex-col gap-1">
                     <div className="rounded-2xl rounded-tl-sm px-5 py-3.5 bg-white/5 text-white border border-white/10 shadow-sm backdrop-blur-sm">
                       <div className="whitespace-pre-wrap text-[15px] leading-relaxed text-zinc-100">
-                        {message.content}
-                        {message.isStreaming && (
-                          <span className="inline-block w-1.5 h-4 bg-primary-400 animate-pulse ml-1 align-middle rounded-full" />
-                        )}
+                        {displayContent}
                       </div>
                     
                     {/* Suggestion chips */}

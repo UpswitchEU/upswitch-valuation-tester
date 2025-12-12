@@ -1375,7 +1375,10 @@ export class StreamEventHandler {
       metadata: {
         input_type: 'cta_button',
         button_text: data.button_text || 'Create Valuation Report',
+        // Ensure CTA can be confirmed even if backend omits clarification metadata
         collected_field: 'valuation_confirmed',
+        clarification_field: data.clarification_field || 'valuation_confirmed',
+        clarification_value: data.clarification_value ?? 'yes',
         valuation_summary: data.summary,
         range_mid: data.range_mid,
         valuation_id: data.valuation_id
@@ -1395,7 +1398,10 @@ export class StreamEventHandler {
       metadata: {
         input_type: 'cta_button',
         button_text: data.button_text || 'Create Valuation Report',
+        // Ensure CTA can be confirmed even if backend omits clarification metadata
         collected_field: 'valuation_confirmed',
+        clarification_field: data.clarification_field || 'valuation_confirmed',
+        clarification_value: data.clarification_value ?? 'yes',
         valuation_summary: data.summary,
         range_mid: data.range_mid,
         valuation_id: data.valuation_id
