@@ -872,8 +872,9 @@ class BackendAPI {
       apiLogger.info('Fetching conversation history', { sessionId, valuationEngineUrl });
       
       // Call the valuation engine directly for conversation status
+      // CRITICAL FIX: Use correct endpoint path - intelligent-conversation, not conversation
       const response = await axios.get(
-        `${valuationEngineUrl}/api/v1/conversation/status/${sessionId}`,
+        `${valuationEngineUrl}/api/v1/intelligent-conversation/status/${sessionId}`,
         {
           timeout: 10000, // 10 seconds
           headers: {
