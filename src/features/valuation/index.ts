@@ -1,16 +1,28 @@
 /**
- * Valuation Feature
- * 
- * Public API for valuation functionality including components,
- * hooks, and services for business valuation workflows.
+ * Valuation Feature - Shared Logic
+ *
+ * Contains shared valuation logic, types, and utilities that are used across
+ * both manual and conversational valuation flows. This feature should not
+ * contain UI components specific to any flow.
  */
 
-// Components will be exported here as they are created
-export * from './components';
+// Service interfaces (DIP compliant)
+export type {
+  IValuationService,
+  ISessionService,
+  IConversationService,
+  IBusinessProfileService,
+  ICreditService,
+  IReportService,
+  BusinessProfile,
+  ConversationStartRequest,
+  ConversationStartResponse,
+} from './services/interfaces';
 
-// Hooks will be exported here as they are created
-export * from './hooks';
+// Service implementations
+export { valuationService } from './services/valuationService';
+export { sessionService } from './services/sessionService';
 
-// Types
+// Shared valuation types
 export * from './types';
 

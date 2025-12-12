@@ -12,6 +12,8 @@
     "preview": "vite preview --port 3001",
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
     "type-check": "tsc --noEmit",
+    "analyze-bundle": "webpack-bundle-analyzer bundle-stats.json --mode static",
+    "build:analyze": "npm run build && npm run analyze-bundle",
     "test": "vitest",
     "test:ui": "vitest --ui",
     "test:run": "vitest run",
@@ -68,7 +70,8 @@
     "typescript": "^5.2.2",
     "vite": "^5.4.19",
     "vite-tsconfig-paths": "^5.1.4",
-    "vitest": "^3.2.4"
+    "vitest": "^3.2.4",
+    "webpack-bundle-analyzer": "^5.1.0"
   },
   "keywords": [
     "valuation",
