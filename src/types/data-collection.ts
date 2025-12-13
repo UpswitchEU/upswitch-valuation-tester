@@ -37,6 +37,22 @@ export interface ValidationRule {
   severity: ValidationSeverity;
 }
 
+// More specific field value types
+export type FieldValue = string | number | boolean | null | undefined;
+export type ParsedFieldValue = string | number | boolean | null;
+
+// Currency value type for financial fields
+export type CurrencyValue = number;
+
+// Number value type for numeric fields
+export type NumberValue = number;
+
+// Boolean value type
+export type BooleanValue = boolean;
+
+// Text value type
+export type TextValue = string;
+
 export interface DataField {
   id: string;
   label: string;
@@ -69,7 +85,7 @@ export interface DataQuestion {
 
 export interface DataResponse {
   fieldId: string;
-  value: string | number | boolean | null | undefined;
+  value: FieldValue;
   method: DataCollectionMethod;
   confidence: number; // 0-1, how confident we are in this value
   source: string; // Where this data came from (user, AI, suggestion, etc.)
@@ -137,8 +153,8 @@ export interface CollectionContext {
 
 export interface FieldRendererProps {
   field: DataField;
-  value?: string | number | boolean | null | undefined;
-  onChange: (value: string | number | boolean | null | undefined, method?: DataCollectionMethod) => void;
+  value?: FieldValue;
+  onChange: (value: FieldValue, method?: DataCollectionMethod) => void;
   errors?: ValidationRule[];
   context: CollectionContext;
   disabled?: boolean;

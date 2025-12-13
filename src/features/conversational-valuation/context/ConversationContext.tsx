@@ -6,7 +6,8 @@
  */
 
 import React, { createContext, useContext, useReducer } from 'react';
-import { ConversationContextValue, ConversationProviderProps, initialConversationState } from '../types/conversation';
+import { ConversationContextValue, ConversationProviderProps } from '../types/conversation';
+import { initialConversationState } from './conversationReducer';
 import { conversationReducer } from './conversationReducer';
 
 // Create the context

@@ -6,7 +6,7 @@
  */
 
 import React from 'react';
-import { DataField, FieldRendererProps } from '../../../types/data-collection';
+import { DataField, FieldRendererProps, FieldValue, ParsedFieldValue } from '../../../types/data-collection';
 
 export const ManualFormFieldRenderer: React.FC<FieldRendererProps> = ({
   field,
@@ -19,7 +19,7 @@ export const ManualFormFieldRenderer: React.FC<FieldRendererProps> = ({
   const hasErrors = errors.length > 0;
   const errorMessage = errors.find(e => e.severity === 'error')?.message;
 
-  const handleChange = (newValue: string | number | boolean | null | undefined) => {
+  const handleChange = (newValue: ParsedFieldValue) => {
     onChange(newValue, 'manual_form');
   };
 
@@ -36,7 +36,7 @@ export const ManualFormFieldRenderer: React.FC<FieldRendererProps> = ({
 
       <FieldInput
         field={field}
-        value={value}
+        value={value ?? ''}
         onChange={handleChange}
         disabled={disabled}
         autoFocus={autoFocus}
@@ -52,8 +52,8 @@ export const ManualFormFieldRenderer: React.FC<FieldRendererProps> = ({
 
 interface FieldInputProps {
   field: DataField;
-  value: string | number | boolean | null | undefined;
-  onChange: (value: string | number | boolean | null | undefined) => void;
+  value: string | number | boolean;
+  onChange: (value: ParsedFieldValue) => void;
   disabled?: boolean;
   autoFocus?: boolean;
   hasErrors?: boolean;
@@ -77,10 +77,11 @@ const FieldInput: React.FC<FieldInputProps> = ({
   switch (field.type) {
     case 'text':
     case 'textarea':
+      const textValue = typeof value === 'string' ? value : String(value || '');
       if (field.type === 'textarea') {
         return (
           <textarea
-            value={value || ''}
+            value={textValue}
             onChange={(e) => onChange(e.target.value)}
             placeholder={field.placeholder}
             disabled={disabled}
@@ -93,7 +94,7 @@ const FieldInput: React.FC<FieldInputProps> = ({
       return (
         <input
           type="text"
-          value={value || ''}
+          value={textValue}
           onChange={(e) => onChange(e.target.value)}
           placeholder={field.placeholder}
           disabled={disabled}
@@ -104,24 +105,26 @@ const FieldInput: React.FC<FieldInputProps> = ({
 
     case 'number':
     case 'currency':
+      const numericValue = typeof value === 'number' ? value : (value ? Number(value) : '');
       return (
         <input
           type="number"
-          value={value || ''}
-          onChange={(e) => onChange(field.type === 'currency' ? parseFloat(e.target.value) : parseInt(e.target.value))}
+          value={numericValue}
+          onChange={(e) => onChange(field.type === 'currency' ? parseFloat(e.target.value) || 0 : parseInt(e.target.value) || 0)}
           placeholder={field.placeholder}
           disabled={disabled}
           autoFocus={autoFocus}
-          min={field.validation?.find(v => v.type === 'min')?.value}
-          max={field.validation?.find(v => v.type === 'max')?.value}
+          min={field.validation?.find(v => v.type === 'min')?.value as number}
+          max={field.validation?.find(v => v.type === 'max')?.value as number}
           className={baseClasses}
         />
       );
 
     case 'select':
+      const selectValue = typeof value === 'string' ? value : String(value || '');
       return (
         <select
-          value={value || ''}
+          value={selectValue}
           onChange={(e) => onChange(e.target.value)}
           disabled={disabled}
           autoFocus={autoFocus}
@@ -139,11 +142,12 @@ const FieldInput: React.FC<FieldInputProps> = ({
       );
 
     case 'boolean':
+      const booleanValue = Boolean(value);
       return (
         <div className="flex items-center space-x-2">
           <input
             type="checkbox"
-            checked={Boolean(value)}
+            checked={booleanValue}
             onChange={(e) => onChange(e.target.checked)}
             disabled={disabled}
             autoFocus={autoFocus}
@@ -154,12 +158,13 @@ const FieldInput: React.FC<FieldInputProps> = ({
       );
 
     case 'percentage':
+      const percentageValue = typeof value === 'number' ? (value * 100) : (value ? Number(value) : '');
       return (
         <div className="relative">
           <input
             type="number"
-            value={value || ''}
-            onChange={(e) => onChange(parseFloat(e.target.value) / 100)} // Store as decimal
+            value={percentageValue}
+            onChange={(e) => onChange((parseFloat(e.target.value) || 0) / 100)} // Store as decimal
             placeholder={field.placeholder}
             disabled={disabled}
             autoFocus={autoFocus}
@@ -172,10 +177,11 @@ const FieldInput: React.FC<FieldInputProps> = ({
       );
 
     default:
+      const defaultValue = typeof value === 'string' ? value : String(value || '');
       return (
         <input
           type="text"
-          value={value || ''}
+          value={defaultValue}
           onChange={(e) => onChange(e.target.value)}
           placeholder={field.placeholder}
           disabled={disabled}

@@ -7,7 +7,7 @@
 
 import { Bot, HelpCircle } from 'lucide-react';
 import React, { useState } from 'react';
-import { DataField, FieldRendererProps } from '../../../types/data-collection';
+import { DataField, FieldRendererProps, ParsedFieldValue } from '../../../types/data-collection';
 
 export const ConversationalFieldRenderer: React.FC<FieldRendererProps> = ({
   field,
@@ -20,7 +20,7 @@ export const ConversationalFieldRenderer: React.FC<FieldRendererProps> = ({
   const [showHelp, setShowHelp] = useState(false);
   const hasErrors = errors.length > 0;
 
-  const handleResponse = (responseValue: string | number | boolean | null | undefined) => {
+  const handleResponse = (responseValue: ParsedFieldValue) => {
     onChange(responseValue, 'conversational');
   };
 
@@ -150,32 +150,54 @@ function getExamplesForField(field: DataField): string[] {
   }
 }
 
-function parseExample(example: string, field: DataField): string | number | boolean | null {
+function parseExample(example: string, field: DataField): ParsedFieldValue {
   switch (field.type) {
-    case 'currency':
+    case 'currency': {
       // Remove currency symbols and parse
-      const cleaned = example.replace(/[€£$]/g, '').replace(/,/g, '');
-      if (cleaned.includes('million') || cleaned.includes('M')) {
-        return parseFloat(cleaned.replace(/million|M/g, '')) * 1000000;
-      }
-      if (cleaned.includes('K')) {
-        return parseFloat(cleaned.replace('K', '')) * 1000;
-      }
-      return parseFloat(cleaned);
+      const cleaned = example.replace(/[€£$]/g, '').replace(/,/g, '').trim();
+      let numericValue: number;
 
-    case 'number':
+      if (cleaned.includes('million') || cleaned.includes('M')) {
+        const baseValue = parseFloat(cleaned.replace(/million|M/g, ''));
+        if (isNaN(baseValue)) return example; // Return original string if parsing fails
+        numericValue = baseValue * 1000000;
+      } else if (cleaned.includes('K')) {
+        const baseValue = parseFloat(cleaned.replace('K', ''));
+        if (isNaN(baseValue)) return example;
+        numericValue = baseValue * 1000;
+      } else {
+        numericValue = parseFloat(cleaned);
+        if (isNaN(numericValue)) return example;
+      }
+
+      return numericValue;
+    }
+
+    case 'number': {
       if (example.includes('-')) {
-        const [min, max] = example.split('-').map(s => parseInt(s.trim()));
+        const parts = example.split('-').map(s => parseInt(s.trim(), 10));
+        if (parts.some(isNaN)) return example;
+
+        const [min, max] = parts;
         return Math.round((min + max) / 2);
       }
-      return parseInt(example);
+
+      const parsed = parseInt(example, 10);
+      return isNaN(parsed) ? example : parsed;
+    }
+
+    case 'boolean':
+      const lowerExample = example.toLowerCase().trim();
+      if (lowerExample === 'yes' || lowerExample === 'true' || lowerExample === '1') return true;
+      if (lowerExample === 'no' || lowerExample === 'false' || lowerExample === '0') return false;
+      return example; // Return original if not a clear boolean
 
     default:
       return example;
   }
 }
 
-function parseSuggestion(suggestion: string, field: DataField): string | number | boolean | null {
+function parseSuggestion(suggestion: string, field: DataField): ParsedFieldValue {
   // Similar to parseExample but for suggestions
   return parseExample(suggestion, field);
 }

@@ -7,7 +7,7 @@
 
 import { AlertCircle, CheckCircle, FileText, Upload } from 'lucide-react';
 import React, { useRef, useState } from 'react';
-import { FieldRendererProps } from '../../../types/data-collection';
+import { FieldRendererProps, ParsedFieldValue } from '../../../types/data-collection';
 
 export const FileUploadFieldRenderer: React.FC<FieldRendererProps> = ({
   field,
@@ -278,7 +278,7 @@ function getExtractionHints(field: import('../../../types/data-collection').Data
   }
 }
 
-function formatValue(value: string | number | boolean | null | undefined, field: import('../../../types/data-collection').DataField): string {
+function formatValue(value: ParsedFieldValue, field: import('../../../types/data-collection').DataField): string {
   if (typeof value === 'number') {
     if (field.type === 'currency') {
       return new Intl.NumberFormat('en-US', {

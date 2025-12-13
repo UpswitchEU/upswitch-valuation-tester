@@ -7,7 +7,7 @@
 
 import { Sparkles } from 'lucide-react';
 import React from 'react';
-import { FieldRendererProps } from '../../../types/data-collection';
+import { FieldRendererProps, ParsedFieldValue } from '../../../types/data-collection';
 
 export const SuggestionFieldRenderer: React.FC<FieldRendererProps> = ({
   field,
@@ -96,32 +96,47 @@ export const SuggestionFieldRenderer: React.FC<FieldRendererProps> = ({
   );
 };
 
-function parseSuggestionValue(suggestion: string, field: import('../../../types/data-collection').DataField): string | number | boolean | null {
+function parseSuggestionValue(suggestion: string, field: import('../../../types/data-collection').DataField): ParsedFieldValue {
   switch (field.type) {
-    case 'number':
+    case 'number': {
       if (suggestion.includes('-')) {
         // Handle ranges like "1-5", "6-20"
-        const [min, max] = suggestion.split('-').map(s => parseInt(s.trim()));
-        if (!isNaN(min) && !isNaN(max)) {
+        const parts = suggestion.split('-').map(s => s.trim());
+        const parsedParts = parts.map(s => parseInt(s, 10));
+
+        if (parts.length === 2 && parsedParts.every(n => !isNaN(n))) {
+          const [min, max] = parsedParts;
           return Math.round((min + max) / 2);
         }
       }
-      const num = parseInt(suggestion.replace(/\D/g, ''));
-      return isNaN(num) ? suggestion : num;
 
-    case 'currency':
+      const num = parseInt(suggestion.replace(/\D/g, ''), 10);
+      return isNaN(num) ? suggestion : num;
+    }
+
+    case 'currency': {
       // Handle currency suggestions like "€100K - €500K"
       if (suggestion.includes('-')) {
         const parts = suggestion.split('-').map(s => s.trim());
         if (parts.length === 2) {
           const min = parseCurrencyValue(parts[0]);
           const max = parseCurrencyValue(parts[1]);
-          if (min && max) {
+          if (min !== null && max !== null) {
             return Math.round((min + max) / 2);
           }
         }
       }
-      return parseCurrencyValue(suggestion) || suggestion;
+
+      const parsed = parseCurrencyValue(suggestion);
+      return parsed !== null ? parsed : suggestion;
+    }
+
+    case 'boolean': {
+      const lowerSuggestion = suggestion.toLowerCase().trim();
+      if (lowerSuggestion === 'yes' || lowerSuggestion === 'true' || lowerSuggestion === '1') return true;
+      if (lowerSuggestion === 'no' || lowerSuggestion === 'false' || lowerSuggestion === '0') return false;
+      return suggestion; // Return original if not a clear boolean
+    }
 
     default:
       return suggestion;
@@ -132,17 +147,21 @@ function parseCurrencyValue(text: string): number | null {
   // Remove currency symbols and normalize
   const cleaned = text.replace(/[€£$]/g, '').trim();
 
+  let multiplier = 1;
+  let finalCleaned = cleaned;
+
   // Handle K/M suffixes
   if (cleaned.includes('K')) {
-    const num = parseFloat(cleaned.replace('K', ''));
-    return isNaN(num) ? null : num * 1000;
-  }
-  if (cleaned.includes('M')) {
-    const num = parseFloat(cleaned.replace('M', ''));
-    return isNaN(num) ? null : num * 1000000;
+    multiplier = 1000;
+    finalCleaned = cleaned.replace('K', '');
+  } else if (cleaned.includes('M')) {
+    multiplier = 1000000;
+    finalCleaned = cleaned.replace('M', '');
   }
 
   // Remove commas and parse
-  const num = parseFloat(cleaned.replace(/,/g, ''));
-  return isNaN(num) ? null : num;
+  const num = parseFloat(finalCleaned.replace(/,/g, ''));
+  if (isNaN(num)) return null;
+
+  return num * multiplier;
 }
