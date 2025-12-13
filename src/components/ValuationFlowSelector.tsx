@@ -9,8 +9,8 @@
 
 'use client'
 
-import dynamic from 'next/dynamic'
-import React, { Suspense, useMemo } from 'react'
+// Dynamic imports are handled with lazy in Vite
+import React, { lazy, Suspense, useMemo } from 'react'
 import type { ValuationResponse, ValuationSession } from '../types/valuation'
 import { LoadingState } from './LoadingState'
 import { INITIALIZATION_STEPS } from './LoadingState.constants'
@@ -38,21 +38,11 @@ interface ValuationFlowSelectorProps {
   onComplete: (result: ValuationResponse) => void
 }
 
-// Lazy load unified flow component with Next.js dynamic imports
-const ValuationFlow = dynamic(
-  () =>
-    import('../features/valuation/components/ValuationFlow').then((module) => ({
-      default: module.ValuationFlow,
-    })),
-  {
-    loading: () => (
-      <div className="flex items-center justify-center p-8">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-500"></div>
-      </div>
-    ),
-    // Enable SSR: false to reduce server bundle size
-    ssr: false,
-  }
+// Lazy load unified flow component
+const ValuationFlow = lazy(() =>
+  import('../features/valuation/components/ValuationFlow').then((module) => ({
+    default: module.ValuationFlow,
+  }))
 )
 
 /**

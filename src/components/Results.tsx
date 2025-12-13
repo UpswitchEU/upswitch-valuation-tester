@@ -1,2 +1,2 @@
 // Re-export the modular Results component
-export { Results } from './results/index'
+export { Results } from './results/index';

@@ -102,7 +102,7 @@ function ConversationalValuation({ reportId, initialQuery, onComplete }) {
 - [Frontend Refactoring Guide](../../../../../docs/refactoring/02-FRONTEND-REFACTORING-GUIDE.md)
 - [Bank-Grade Excellence Framework](../../../../../docs/refactoring/BANK_GRADE_EXCELLENCE_FRAMEWORK.md)
 - [Manual Valuation Flow](../manual-valuation/)
-- [Conversational Valuation Flow](../conversational-valuation/)
+- [Conversational Valuation Flow](../conversational/)
 
 ---
 

@@ -11,7 +11,7 @@ features/
 │   ├── index.ts        # Public API exports
 │   └── README.md       # Feature documentation
 ├── manual-valuation/   # Manual form-based valuation
-├── conversational-valuation/ # AI-assisted conversational valuation
+├── conversational/ # AI-assisted conversational valuation
 ├── auth/               # Authentication & authorization
 └── shared/             # Shared components and utilities
 ```
@@ -99,7 +99,7 @@ import { AIAssistedValuation } from '@/components/AIAssistedValuation';
 
 **After:**
 ```tsx
-import { ConversationalValuationFlow } from '@/features/conversational-valuation/components/ConversationalValuationFlow';
+import { ConversationalLayout } from '@/features/conversational/components/ConversationalLayout';
 ```
 
 ### Key Changes

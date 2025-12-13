@@ -4,4 +4,5 @@
  * Custom React hooks for valuation logic
  */
 
-export { useValuationOrchestrator } from '../../conversational-valuation/hooks/useValuationOrchestrator'
+// TODO: Re-export conversational hooks when available
+// export { useValuationOrchestrator } from '../../conversational/hooks/useValuationOrchestrator'

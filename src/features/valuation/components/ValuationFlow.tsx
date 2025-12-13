@@ -25,9 +25,9 @@ const Results = lazy(() =>
   import('../../../components/Results').then((m) => ({ default: m.Results }))
 )
 
-const ConversationalLayout = lazy(() =>
-  import('../../conversational-valuation/components/ConversationalLayout').then((m) => ({
-    default: m.ConversationalLayout,
+const StreamingChat = lazy(() =>
+  import('../../../components/StreamingChat').then((m) => ({
+    default: m.StreamingChat,
   }))
 )
 
@@ -78,10 +78,29 @@ export const ValuationFlow: React.FC<ValuationFlowProps> = ({
   if (flowType === 'conversational') {
     return (
       <Suspense fallback={<ComponentLoader message="Loading conversational flow..." />}>
-        <ConversationalLayout
-          reportId={reportId}
-          onComplete={onComplete}
-          initialQuery={initialQuery}
+        <StreamingChat
+          sessionId={reportId}
+          userId={undefined} // Will be handled by auth context
+          onMessageComplete={() => {
+            // Handle message completion if needed
+          }}
+          onValuationComplete={onComplete}
+          onValuationStart={() => {
+            // Handle valuation start if needed
+          }}
+          onReportUpdate={() => {
+            // Handle report updates if needed
+          }}
+          onDataCollected={() => {
+            // Handle data collection if needed
+          }}
+          onValuationPreview={() => {
+            // Handle valuation preview if needed
+          }}
+          onCalculateOptionAvailable={() => {
+            // Handle calculate options if needed
+          }}
+          initialMessage={initialQuery || undefined}
           autoSend={autoSend}
         />
       </Suspense>
