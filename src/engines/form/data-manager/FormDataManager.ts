@@ -7,7 +7,7 @@
  * @module engines/form/data-manager/FormDataManager
  */
 
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useState } from 'react';
 import type { ValuationRequest } from '../../../types/valuation';
 import { generalLogger } from '../../../utils/logger';
 

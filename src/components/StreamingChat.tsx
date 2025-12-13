@@ -18,13 +18,32 @@
  * - MessageRenderer: UI component rendering
  */
 
-import React, { useCallback, useEffect, useMemo } from 'react';
+import React, { useCallback, useEffect, useMemo, useState, useRef, startTransition } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { Bot, Loader2 } from 'lucide-react';
+import { Bot, CheckCircle, Loader2 } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { Message, useStreamingChatState } from '../hooks/useStreamingChatState';
 import { chatLogger } from '../utils/logger';
 import type { ValuationResponse } from '../types/valuation';
+import { InputValidator } from '../utils/validation/InputValidator';
+import { MessageManager } from '../utils/chat/MessageManager';
+import { StreamingManager } from '../services/chat/StreamingManager';
+import { StreamEventHandler } from '../services/chat/StreamEventHandler';
+import { useConversationInitializer, type UserProfile } from '../hooks/useConversationInitializer';
+import { useConversationMetrics } from '../hooks/useConversationMetrics';
+import { useTypingAnimation } from '../hooks/useTypingAnimation';
+import { debugLogger } from '../utils/debugLogger';
+import { TypingIndicator } from './TypingIndicator';
+import { AI_CONFIG } from '../config';
+import { hasBusinessTypeSuggestions, parseBusinessTypeSuggestions } from './utils/businessTypeParsing';
+import { hasKBOSuggestions, parseKBOSuggestions } from './utils/kboParsing';
+import { AIHelpCard } from './AIHelpCard';
+import { ValuationReadyCTA } from './ValuationReadyCTA';
+import { BusinessTypeConfirmationCard } from './BusinessTypeConfirmationCard';
+import { CompanyNameConfirmationCard } from './CompanyNameConfirmationCard';
+import { SuggestionChips } from './SuggestionChips';
+import { BusinessTypeSuggestionsList } from './BusinessTypeSuggestionsList';
+import { KBOSuggestionsList } from './KBOSuggestionsList';
 
 // Import Modular Precision Engines
 import {
@@ -1557,7 +1576,7 @@ const MessageItem = React.memo<MessageItemProps>(({
     // Defensive: Extract metadata with fallbacks (in case metadata structure differs)
     const metadata = message.metadata || {};
     
-    debugLogger.log('Rendering CompanyNameConfirmationCard', {
+    debugLogger.log('[StreamingChat]', 'Rendering CompanyNameConfirmationCard', {
       companyName: metadata.company_name || message.content || '',
       registrationNumber: metadata.registration_number,
       legalForm: metadata.legal_form,

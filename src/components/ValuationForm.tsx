@@ -3,7 +3,7 @@ import { useValuationSessionStore } from '../store/useValuationSessionStore';
 import { useValuationStore } from '../store/useValuationStore';
 // import { useReportsStore } from '../store/useReportsStore'; // Deprecated: Now saving to database
 import toast from 'react-hot-toast';
-import type { BusinessTypeOption } from '../config/businessTypes';
+import type { BusinessType } from '../services/businessTypesApi';
 import { TARGET_COUNTRIES } from '../config/countries';
 import {
   getIndustryGuidance,
@@ -29,7 +29,7 @@ import { InfoIcon } from './ui/InfoIcon';
 export const ValuationForm: React.FC = () => {
   const { formData, updateFormData, calculateValuation, quickValuation, isCalculating, error, prefillFromBusinessCard, result } = useValuationStore();
   const { session, updateSessionData, getSessionData } = useValuationSessionStore();
-  const { businessTypeOptions: businessTypes, loading: businessTypesLoading, error: businessTypesError } = useBusinessTypes();
+  const { businessTypes, loading: businessTypesLoading, error: businessTypesError } = useBusinessTypes();
   // const { addReport } = useReportsStore(); // Deprecated: Now saving to database
   const { businessCard, isAuthenticated, user } = useAuth();
   
@@ -43,18 +43,18 @@ export const ValuationForm: React.FC = () => {
   // Auto-focus logic removed - no automatic field jumping
   
   // Match business type string to business_type_id
-  const matchBusinessType = useCallback((query: string, businessTypes: BusinessTypeOption[]): string | null => {
+  const matchBusinessType = useCallback((query: string, businessTypes: BusinessType[]): string | null => {
     if (!query || !businessTypes || businessTypes.length === 0) return null;
     
     const queryLower = query.toLowerCase().trim();
     
-    // 1. Exact match on label (case-insensitive)
+    // 1. Exact match on title (case-insensitive)
     const exactMatch = businessTypes.find(bt =>
-      bt.label.toLowerCase() === queryLower
+      bt.title.toLowerCase() === queryLower
     );
     if (exactMatch) {
-      generalLogger.info('Matched business type (exact)', { query, matched: exactMatch.label, value: exactMatch.value });
-      return exactMatch.value;
+      generalLogger.info('Matched business type (exact)', { query, matched: exactMatch.title, value: exactMatch.id });
+      return exactMatch.id;
     }
     
     // 2. Match on category
@@ -63,18 +63,18 @@ export const ValuationForm: React.FC = () => {
       queryLower.includes(bt.category.toLowerCase())
     );
     if (categoryMatch) {
-      generalLogger.info('Matched business type (category)', { query, matched: categoryMatch.label, value: categoryMatch.value });
-      return categoryMatch.value;
+      generalLogger.info('Matched business type (category)', { query, matched: categoryMatch.title, value: categoryMatch.id });
+      return categoryMatch.id;
     }
     
-    // 3. Partial match on label (contains)
+    // 3. Partial match on title (contains)
     const partialMatch = businessTypes.find(bt =>
-      bt.label.toLowerCase().includes(queryLower) ||
-      queryLower.includes(bt.label.toLowerCase())
+      bt.title.toLowerCase().includes(queryLower) ||
+      queryLower.includes(bt.title.toLowerCase())
     );
     if (partialMatch) {
-      generalLogger.info('Matched business type (partial)', { query, matched: partialMatch.label, value: partialMatch.value });
-      return partialMatch.value;
+      generalLogger.info('Matched business type (partial)', { query, matched: partialMatch.title, value: partialMatch.id });
+      return partialMatch.id;
     }
     
     // 4. Common variations mapping
@@ -90,11 +90,11 @@ export const ValuationForm: React.FC = () => {
     for (const [key, variants] of Object.entries(variations)) {
       if (variants.some(v => queryLower.includes(v))) {
         const variationMatch = businessTypes.find(bt => 
-          bt.label.toLowerCase().includes(key) ||
+          bt.title.toLowerCase().includes(key) ||
           bt.keywords?.some((k: string) => k.toLowerCase().includes(key))
         );
         if (variationMatch) {
-          generalLogger.info('Matched business type (variation)', { query, matched: variationMatch.label, value: variationMatch.value });
+          generalLogger.info('Matched business type (variation)', { query, matched: variationMatch.title, value: variationMatch.id });
           return variationMatch.id;
         }
       }
@@ -142,7 +142,7 @@ export const ValuationForm: React.FC = () => {
             generalLogger.info('Prefilled business type from homepage query', {
               query: prefilledQuery,
               businessTypeId: matchedBusinessTypeId,
-              businessTypeTitle: matchedBusinessType.label
+              businessTypeTitle: matchedBusinessType.title
             });
           }
         }
@@ -347,7 +347,7 @@ export const ValuationForm: React.FC = () => {
         if (matchingType) {
           generalLogger.info('Found matching business type from profile', {
             id: matchingType.id,
-            title: matchingType.label
+            title: matchingType.title
           });
           
           updateFormData({
@@ -366,7 +366,7 @@ export const ValuationForm: React.FC = () => {
         if (matchingType) {
           generalLogger.info('Found matching business type by industry', {
             id: matchingType.id,
-            title: matchingType.label,
+            title: matchingType.title,
             industry: businessCard.industry
           });
           
@@ -454,7 +454,7 @@ export const ValuationForm: React.FC = () => {
                 // Log selected business type for debugging
                 generalLogger.debug('Business type selected', {
                   id: businessType.id,
-                  title: businessType.label,
+                  title: businessType.title,
                   dcfPreference: businessType.dcfPreference,
                   multiplesPreference: businessType.multiplesPreference,
                   ownerDependencyImpact: businessType.ownerDependencyImpact,
@@ -465,7 +465,7 @@ export const ValuationForm: React.FC = () => {
                 
                 generalLogger.info('Business type selected', {
                   id: businessType.id,
-                  title: businessType.label,
+                  title: businessType.title,
                   industryMapping: businessType.industryMapping,
                   industry: businessType.industry,
                   metadata: {
