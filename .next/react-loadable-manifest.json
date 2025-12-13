@@ -1,9 +1,8 @@
 {
   "../node_modules/jspdf/dist/jspdf.es.min.js -> canvg": {
-    "id": 82865,
+    "id": 93803,
     "files": [
-      "static/chunks/bc98253f.168adef1b0cc8d7a.js",
-      "static/chunks/124.8965c4bcf9b1e7c9.js"
+      "static/chunks/vendors-2248855b8fb2beb6.js"
     ]
   },
   "../node_modules/jspdf/dist/jspdf.es.min.js -> dompurify": {
@@ -17,8 +16,7 @@
   "components/ValuationFlowSelector.tsx -> ../features/valuation/components/ValuationFlow": {
     "id": 65892,
     "files": [
-      "static/chunks/427-07ed59798be355bb.js",
-      "static/chunks/892.b274a602bee9bfb0.js"
+      "static/chunks/892.9c26f32ff28ae4e4.js"
     ]
   },
   "features/conversational-valuation/components/BusinessProfileSection.tsx -> ../../../services/api": {
@@ -30,8 +28,9 @@
   "features/conversational-valuation/components/ConversationalLayout.tsx -> ../../../services/downloadService": {
     "id": 55673,
     "files": [
-      "static/chunks/581.e6e8963c6a6441eb.js",
-      "static/chunks/673.f425cd85957cd3e2.js"
+      "static/chunks/vendors-2248855b8fb2beb6.js",
+      "static/chunks/utils-84567ac11ba24c0b.js",
+      "static/chunks/673.0b23d28bbd5c35c1.js"
     ]
   },
   "features/conversational-valuation/components/ReportPanel.tsx -> ../../../components/Results": {
@@ -43,8 +42,9 @@
   "features/conversational-valuation/components/ReportPanel.tsx -> ../../../components/ValuationInfoPanel": {
     "id": 74181,
     "files": [
-      "static/chunks/581.e6e8963c6a6441eb.js",
-      "static/chunks/181.65e849084f7335b3.js"
+      "static/chunks/vendors-2248855b8fb2beb6.js",
+      "static/chunks/utils-84567ac11ba24c0b.js",
+      "static/chunks/181.2f1fc76730eb3fcd.js"
     ]
   },
   "features/valuation/components/ValuationFlow.tsx -> ../../../components/Results": {
@@ -53,28 +53,45 @@
       "static/chunks/595.dff11bf84c720aac.js"
     ]
   },
+  "features/valuation/components/ValuationFlow.tsx -> ../../../components/ValuationToolbar": {
+    "id": 519,
+    "files": [
+      "static/chunks/ui-vendor-e6df5ee0a58bcb4b.js",
+      "static/chunks/utils-84567ac11ba24c0b.js",
+      "static/chunks/519.7028772d80b85a63.js"
+    ]
+  },
+  "features/valuation/components/ValuationFlow.tsx -> ../../../components/data-collection": {
+    "id": 9985,
+    "files": [
+      "static/chunks/ui-vendor-e6df5ee0a58bcb4b.js",
+      "static/chunks/985.d3e36f720d0e8ecf.js"
+    ]
+  },
   "features/valuation/components/ValuationFlow.tsx -> ../../../services/downloadService": {
     "id": 55673,
     "files": [
-      "static/chunks/581.e6e8963c6a6441eb.js",
-      "static/chunks/673.f425cd85957cd3e2.js"
+      "static/chunks/vendors-2248855b8fb2beb6.js",
+      "static/chunks/utils-84567ac11ba24c0b.js",
+      "static/chunks/673.0b23d28bbd5c35c1.js"
     ]
   },
   "features/valuation/components/ValuationFlow.tsx -> ../../conversational-valuation/components/ConversationalLayout": {
-    "id": 61,
+    "id": 5881,
     "files": [
-      "static/chunks/584.6c4ed84e15c50d13.js",
-      "static/chunks/61.a8f817aa6dfd24b5.js"
+      "static/chunks/ui-vendor-e6df5ee0a58bcb4b.js",
+      "static/chunks/vendors-2248855b8fb2beb6.js",
+      "static/chunks/utils-84567ac11ba24c0b.js",
+      "static/chunks/conversational-feature.1fe9b13bcbe0df43.js",
+      "static/chunks/985.d3e36f720d0e8ecf.js",
+      "static/chunks/519.7028772d80b85a63.js",
+      "static/chunks/480.1c285e5a6a67b1b0.js"
     ]
   },
   "services/downloadService.ts -> html2pdf.js": {
     "id": 57127,
     "files": [
-      "static/chunks/2f0b94e8.ade1ca603b53f890.js",
-      "static/chunks/164f4fb6.82e535aa8147b890.js",
-      "static/chunks/b645e135.19bd89ae114996f0.js",
-      "static/chunks/ad2866b8.c6c1c557ab4960e6.js",
-      "static/chunks/729.fe391323c53be657.js"
+      "static/chunks/vendors-2248855b8fb2beb6.js"
     ]
   },
   "store/useValuationSessionStore.ts -> ./useValuationStore": {
