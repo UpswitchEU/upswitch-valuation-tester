@@ -1,19 +1,19 @@
 /**
  * Analytics Configuration for tester.upswitch.com
- * 
+ *
  * Separate analytics setup for the valuation tester subdomain
  * to track valuation-specific metrics and user behavior.
  */
 
-import { generalLogger } from '../utils/logger';
+import { generalLogger } from '../utils/logger'
 
 export interface AnalyticsConfig {
-  googleAnalyticsId?: string;
-  hotjarId?: string;
-  mixpanelToken?: string;
-  environment: 'development' | 'staging' | 'production';
-  appName: string;
-  version: string;
+  googleAnalyticsId?: string
+  hotjarId?: string
+  mixpanelToken?: string
+  environment: 'development' | 'staging' | 'production'
+  appName: string
+  version: string
 }
 
 export const analyticsConfig: AnalyticsConfig = {
@@ -23,20 +23,20 @@ export const analyticsConfig: AnalyticsConfig = {
   environment: (import.meta.env.VITE_ENVIRONMENT as any) || 'development',
   appName: 'Upswitch Valuation Tester',
   version: import.meta.env.VITE_APP_VERSION || '1.0.0',
-};
+}
 
 /**
  * Track valuation-specific events
  */
 export const trackEvent = (eventName: string, parameters?: Record<string, any>) => {
-  if (typeof window === 'undefined') return;
+  if (typeof window === 'undefined') return
 
   // Google Analytics 4
   if (window.gtag && analyticsConfig.googleAnalyticsId) {
     window.gtag('event', eventName, {
       event_category: 'valuation_tester',
       ...parameters,
-    });
+    })
   }
 
   // Mixpanel
@@ -46,14 +46,14 @@ export const trackEvent = (eventName: string, parameters?: Record<string, any>) 
       version: analyticsConfig.version,
       environment: analyticsConfig.environment,
       ...parameters,
-    });
+    })
   }
 
   // Console logging for development
   if (analyticsConfig.environment === 'development') {
-    generalLogger.debug('Analytics event', { eventName, parameters });
+    generalLogger.debug('Analytics event', { eventName, parameters })
   }
-};
+}
 
 /**
  * Valuation-specific tracking events
@@ -64,25 +64,25 @@ export const ValuationEvents = {
   VALUATION_STARTED: 'valuation_started',
   VALUATION_COMPLETED: 'valuation_completed',
   VALUATION_EXPORTED: 'valuation_exported',
-  
+
   // Form Events
   FORM_STARTED: 'form_started',
   FORM_ABANDONED: 'form_abandoned',
   FORM_COMPLETED: 'form_completed',
-  
+
   // Feature Usage
   REGISTRY_LOOKUP: 'registry_lookup',
   DOCUMENT_UPLOAD: 'document_upload',
   LIVE_PREVIEW_USED: 'live_preview_used',
-  
+
   // Error Events
   API_ERROR: 'api_error',
   VALIDATION_ERROR: 'validation_error',
-  
+
   // Performance Events
   CALCULATION_TIME: 'calculation_time',
   PAGE_LOAD_TIME: 'page_load_time',
-} as const;
+} as const
 
 /**
  * Track user journey through valuation process
@@ -92,7 +92,7 @@ export const trackValuationJourney = {
     trackEvent(ValuationEvents.VALUATION_STARTED, {
       method,
       timestamp: new Date().toISOString(),
-    });
+    })
   },
 
   completed: (valuationAmount: number, confidence: number, method: string) => {
@@ -101,14 +101,14 @@ export const trackValuationJourney = {
       confidence_score: confidence,
       calculation_method: method,
       timestamp: new Date().toISOString(),
-    });
+    })
   },
 
   exported: (format: 'pdf' | 'json') => {
     trackEvent(ValuationEvents.VALUATION_EXPORTED, {
       export_format: format,
       timestamp: new Date().toISOString(),
-    });
+    })
   },
 
   abandoned: (step: string, reason?: string) => {
@@ -116,9 +116,9 @@ export const trackValuationJourney = {
       abandonment_step: step,
       reason,
       timestamp: new Date().toISOString(),
-    });
+    })
   },
-};
+}
 
 /**
  * Track performance metrics
@@ -128,16 +128,16 @@ export const trackPerformance = {
     trackEvent(ValuationEvents.CALCULATION_TIME, {
       calculation_time_ms: timeMs,
       method,
-    });
+    })
   },
 
   pageLoadTime: (timeMs: number, page: string) => {
     trackEvent(ValuationEvents.PAGE_LOAD_TIME, {
       load_time_ms: timeMs,
       page,
-    });
+    })
   },
-};
+}
 
 /**
  * Track errors and issues
@@ -148,16 +148,16 @@ export const trackError = (error: Error, context: string) => {
     error_stack: error.stack,
     context,
     timestamp: new Date().toISOString(),
-  });
-};
+  })
+}
 
 // Global type declarations
 declare global {
   interface Window {
-    gtag?: (...args: any[]) => void;
+    gtag?: (...args: any[]) => void
     mixpanel?: {
-      track: (event: string, properties?: Record<string, any>) => void;
-      identify: (id: string) => void;
-    };
+      track: (event: string, properties?: Record<string, any>) => void
+      identify: (id: string) => void
+    }
   }
 }

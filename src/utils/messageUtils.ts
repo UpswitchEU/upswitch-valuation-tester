@@ -5,29 +5,31 @@
  * Extracted from StreamingChat to improve maintainability and testability.
  */
 
-import { generalLogger } from './logger';
+import { generalLogger } from './logger'
 
 export interface Message {
-  id: string;
-  type: 'user' | 'ai' | 'system';
-  content: string;
-  timestamp: Date;
-  isStreaming?: boolean;
-  isComplete?: boolean;
-  metadata?: any;
+  id: string
+  type: 'user' | 'ai' | 'system'
+  content: string
+  timestamp: Date
+  isStreaming?: boolean
+  isComplete?: boolean
+  metadata?: any
 }
 
 /**
  * Type guard to ensure message is valid
  */
 export const isValidMessage = (msg: any): msg is Message => {
-  return msg !== null && 
-         msg !== undefined && 
-         typeof msg === 'object' &&
-         'id' in msg &&
-         'type' in msg &&
-         'content' in msg;
-};
+  return (
+    msg !== null &&
+    msg !== undefined &&
+    typeof msg === 'object' &&
+    'id' in msg &&
+    'type' in msg &&
+    'content' in msg
+  )
+}
 
 /**
  * Create a new message with proper defaults
@@ -43,8 +45,8 @@ export const createMessage = (
   timestamp: new Date(),
   isComplete: true,
   isStreaming: false,
-  metadata
-});
+  metadata,
+})
 
 /**
  * Create a streaming message (incomplete)
@@ -60,8 +62,8 @@ export const createStreamingMessage = (
   timestamp: new Date(),
   isComplete: false,
   isStreaming: true,
-  metadata
-});
+  metadata,
+})
 
 /**
  * Complete a streaming message
@@ -69,23 +71,23 @@ export const createStreamingMessage = (
 export const completeMessage = (message: Message): Message => ({
   ...message,
   isComplete: true,
-  isStreaming: false
-});
+  isStreaming: false,
+})
 
 /**
  * Update message content (for streaming)
  */
 export const updateMessageContent = (message: Message, content: string): Message => ({
   ...message,
-  content
-});
+  content,
+})
 
 /**
  * Filter valid messages from an array
  */
 export const filterValidMessages = (messages: any[]): Message[] => {
-  return messages.filter(isValidMessage);
-};
+  return messages.filter(isValidMessage)
+}
 
 /**
  * Ensure messages array contains only valid messages
@@ -94,50 +96,54 @@ export const filterValidMessages = (messages: any[]): Message[] => {
 export const ensureValidMessages = (messages: any[]): Message[] => {
   const validMessages = messages.filter((msg, index) => {
     if (isValidMessage(msg)) {
-      return true;
+      return true
     } else {
-      generalLogger.warn(`Invalid message at index ${index}`, { message: msg });
-      return false;
+      generalLogger.warn(`Invalid message at index ${index}`, { message: msg })
+      return false
     }
-  });
-  
+  })
+
   if (validMessages.length !== messages.length) {
-    generalLogger.warn(`Filtered out invalid messages`, { totalMessages: messages.length, validMessages: validMessages.length, filteredCount: messages.length - validMessages.length });
+    generalLogger.warn(`Filtered out invalid messages`, {
+      totalMessages: messages.length,
+      validMessages: validMessages.length,
+      filteredCount: messages.length - validMessages.length,
+    })
   }
-  
-  return validMessages;
-};
+
+  return validMessages
+}
 
 /**
  * Safe message array update that prevents nulls
  */
 export const safeUpdateMessages = (
-  currentMessages: Message[], 
+  currentMessages: Message[],
   updateFn: (messages: Message[]) => Message[]
 ): Message[] => {
-  const validCurrent = ensureValidMessages(currentMessages);
-  const updated = updateFn(validCurrent);
-  return ensureValidMessages(updated);
-};
+  const validCurrent = ensureValidMessages(currentMessages)
+  const updated = updateFn(validCurrent)
+  return ensureValidMessages(updated)
+}
 
 /**
  * @deprecated Use backend-driven conversation initialization instead
  * Create welcome message with AI branding
- * 
+ *
  * This function is deprecated because we now use the backend /start endpoint
  * to generate intelligent, personalized first questions based on user profile
  * and the 5-phase conversation flow.
  */
 export const createWelcomeMessage = (aiConfig?: any): Message => {
-  const expertTitle = aiConfig?.branding?.expertTitle?.toLowerCase() || 'ai valuation expert';
-  const levelIndicator = aiConfig?.branding?.levelIndicator?.toLowerCase() || 'big 4 level';
-  
+  const expertTitle = aiConfig?.branding?.expertTitle?.toLowerCase() || 'ai valuation expert'
+  const levelIndicator = aiConfig?.branding?.levelIndicator?.toLowerCase() || 'big 4 level'
+
   return createMessage(
     'ai',
     `Hello! I'm your ${expertTitle} with ${levelIndicator} expertise. I'll help you get a professional business valuation through our intelligent conversation. What's the name of your business?`,
     {
-      reasoning: "Starting with company identification to establish context for valuation",
-      help_text: "Please provide your company's legal name as it appears on official documents"
+      reasoning: 'Starting with company identification to establish context for valuation',
+      help_text: "Please provide your company's legal name as it appears on official documents",
     }
-  );
-};
+  )
+}

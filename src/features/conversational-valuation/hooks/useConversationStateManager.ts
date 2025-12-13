@@ -7,16 +7,16 @@
  * @module features/conversation/hooks/useConversationStateManager
  */
 
-import { useCallback, useEffect, useRef, useState } from 'react';
-import { chatLogger } from '../../../utils/logger';
-import { Message } from '../../../hooks/useStreamingChatState';
+import { useCallback, useEffect, useRef, useState } from 'react'
+import { chatLogger } from '../../../utils/logger'
+import { Message } from '../../../hooks/useStreamingChatState'
 
 export type ConversationState =
-  | 'LOADING_SESSION'      // Loading session from Supabase
-  | 'RESTORING'           // Restoring messages from Redis
-  | 'INITIALIZING'        // Starting new conversation
+  | 'LOADING_SESSION' // Loading session from Supabase
+  | 'RESTORING' // Restoring messages from Redis
+  | 'INITIALIZING' // Starting new conversation
   | 'ACTIVE_CONVERSATION' // Conversation is active with messages
-  | 'ERROR';              // Error state
+  | 'ERROR' // Error state
 
 export type ConversationEvent =
   | 'SESSION_LOADED'
@@ -26,39 +26,39 @@ export type ConversationEvent =
   | 'INITIALIZATION_COMPLETE'
   | 'MESSAGES_AVAILABLE'
   | 'SESSION_CHANGED'
-  | 'ERROR_OCCURRED';
+  | 'ERROR_OCCURRED'
 
 interface ConversationStateManagerOptions {
-  reportId: string;
-  sessionId: string;
-  initialPythonSessionId?: string | null;
-  initialMessages?: Message[];
-  onStateChange?: (state: ConversationState, event: ConversationEvent) => void;
-  onMessagesRestored?: (messages: Message[]) => void;
-  onSessionIdUpdate?: (sessionId: string) => void;
+  reportId: string
+  sessionId: string
+  initialPythonSessionId?: string | null
+  initialMessages?: Message[]
+  onStateChange?: (state: ConversationState, event: ConversationEvent) => void
+  onMessagesRestored?: (messages: Message[]) => void
+  onSessionIdUpdate?: (sessionId: string) => void
 }
 
 interface ConversationStateManagerReturn {
   // Current state
-  state: ConversationState;
-  messages: Message[];
-  pythonSessionId: string | null;
-  isRestoring: boolean;
-  isInitializing: boolean;
-  isSessionInitialized: boolean;
-  restorationComplete: boolean;
-  error: string | null;
+  state: ConversationState
+  messages: Message[]
+  pythonSessionId: string | null
+  isRestoring: boolean
+  isInitializing: boolean
+  isSessionInitialized: boolean
+  restorationComplete: boolean
+  error: string | null
 
   // Actions
-  handleSessionLoaded: (pythonSessionId: string | null, isRestored: boolean) => void;
-  handleRestorationStarted: () => void;
-  handleRestorationComplete: (messages: Message[]) => void;
-  handleRestorationFailed: (error: string) => void;
-  handleInitializationStarted: () => void;
-  handleInitializationComplete: () => void;
-  handleSessionIdChanged: (newSessionId: string) => void;
-  handleMessagesAvailable: (messages: Message[]) => void;
-  handleErrorRecovery: () => void;
+  handleSessionLoaded: (pythonSessionId: string | null, isRestored: boolean) => void
+  handleRestorationStarted: () => void
+  handleRestorationComplete: (messages: Message[]) => void
+  handleRestorationFailed: (error: string) => void
+  handleInitializationStarted: () => void
+  handleInitializationComplete: () => void
+  handleSessionIdChanged: (newSessionId: string) => void
+  handleMessagesAvailable: (messages: Message[]) => void
+  handleErrorRecovery: () => void
 }
 
 /**
@@ -115,7 +115,7 @@ const STATE_TRANSITIONS: Record<ConversationState, Record<ConversationEvent, Con
     MESSAGES_AVAILABLE: 'ERROR', // Stay in error
     ERROR_OCCURRED: 'ERROR', // Already in error
   },
-};
+}
 
 /**
  * Centralized conversation state manager
@@ -132,22 +132,21 @@ export function useConversationStateManager({
   onMessagesRestored,
   onSessionIdUpdate,
 }: ConversationStateManagerOptions): ConversationStateManagerReturn {
-
   // Core state
-  const [state, setState] = useState<ConversationState>('LOADING_SESSION');
-  const [messages, setMessages] = useState<Message[]>(initialMessages);
-  const [pythonSessionId, setPythonSessionId] = useState<string | null>(initialPythonSessionId);
-  const [error, setError] = useState<string | null>(null);
+  const [state, setState] = useState<ConversationState>('LOADING_SESSION')
+  const [messages, setMessages] = useState<Message[]>(initialMessages)
+  const [pythonSessionId, setPythonSessionId] = useState<string | null>(initialPythonSessionId)
+  const [error, setError] = useState<string | null>(null)
 
   // Retry and timeout state
-  const retryCountRef = useRef<Record<string, number>>({});
-  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const retryCountRef = useRef<Record<string, number>>({})
+  const timeoutRef = useRef<NodeJS.Timeout | null>(null)
 
   // Derived state for backward compatibility
-  const isRestoring = state === 'RESTORING';
-  const isInitializing = state === 'INITIALIZING';
-  const isSessionInitialized = ['RESTORING', 'INITIALIZING', 'ACTIVE_CONVERSATION'].includes(state);
-  const restorationComplete = ['INITIALIZING', 'ACTIVE_CONVERSATION'].includes(state);
+  const isRestoring = state === 'RESTORING'
+  const isInitializing = state === 'INITIALIZING'
+  const isSessionInitialized = ['RESTORING', 'INITIALIZING', 'ACTIVE_CONVERSATION'].includes(state)
+  const restorationComplete = ['INITIALIZING', 'ACTIVE_CONVERSATION'].includes(state)
 
   // Error recovery mechanism
   const handleErrorRecovery = useCallback(() => {
@@ -156,65 +155,68 @@ export function useConversationStateManager({
       reportId,
       sessionId,
       pythonSessionId,
-    });
+    })
 
     // Reset to loading state to allow retry
-    setState('LOADING_SESSION');
-    setError(null);
-    setMessages([]);
-  }, [state, reportId, sessionId, pythonSessionId]);
+    setState('LOADING_SESSION')
+    setError(null)
+    setMessages([])
+  }, [state, reportId, sessionId, pythonSessionId])
 
   // State transition function with validation
-  const transitionState = useCallback((event: ConversationEvent, payload?: any) => {
-    setState(currentState => {
-      const nextState = STATE_TRANSITIONS[currentState]?.[event];
+  const transitionState = useCallback(
+    (event: ConversationEvent, payload?: any) => {
+      setState((currentState) => {
+        const nextState = STATE_TRANSITIONS[currentState]?.[event]
 
-      if (!nextState) {
-        chatLogger.error('Invalid state transition attempted', {
-          currentState,
-          event,
-          payload,
-          reportId,
-          sessionId,
-        });
-        // Stay in current state on invalid transition
-        return currentState;
-      }
+        if (!nextState) {
+          chatLogger.error('Invalid state transition attempted', {
+            currentState,
+            event,
+            payload,
+            reportId,
+            sessionId,
+          })
+          // Stay in current state on invalid transition
+          return currentState
+        }
 
-      if (nextState !== currentState) {
-        chatLogger.info('🔄 Conversation state transition', {
-          from: currentState,
-          to: nextState,
-          event,
-          payload,
-          reportId,
-          sessionId,
-          pythonSessionId,
-        });
+        if (nextState !== currentState) {
+          chatLogger.info('🔄 Conversation state transition', {
+            from: currentState,
+            to: nextState,
+            event,
+            payload,
+            reportId,
+            sessionId,
+            pythonSessionId,
+          })
 
-        // Notify parent component
-        onStateChange?.(nextState, event);
-      }
+          // Notify parent component
+          onStateChange?.(nextState, event)
+        }
 
-      return nextState;
-    });
-  }, [reportId, sessionId, pythonSessionId, onStateChange]);
+        return nextState
+      })
+    },
+    [reportId, sessionId, pythonSessionId, onStateChange]
+  )
 
   // Cleanup on unmount and clear timeouts
   useEffect(() => {
     return () => {
       if (timeoutRef.current) {
-        clearTimeout(timeoutRef.current);
-        timeoutRef.current = null;
+        clearTimeout(timeoutRef.current)
+        timeoutRef.current = null
       }
       chatLogger.debug('ConversationStateManager unmounting', {
         finalState: state,
         reportId,
         sessionId,
         pythonSessionId,
-      });
-    };
-  }, [state, reportId, sessionId, pythonSessionId]);
+      })
+    }
+  }, [state, reportId, sessionId, pythonSessionId])
 
   // Timeout handling for stuck operations
   useEffect(() => {
@@ -225,156 +227,178 @@ export function useConversationStateManager({
           reportId,
           sessionId,
           pythonSessionId,
-        });
+        })
 
         // Try recovery
-        handleErrorRecovery();
+        handleErrorRecovery()
       }
-    };
+    }
 
     // Clear existing timeout
     if (timeoutRef.current) {
-      clearTimeout(timeoutRef.current);
+      clearTimeout(timeoutRef.current)
     }
 
     // Set timeout for operations that might hang
     if (state === 'RESTORING' || state === 'INITIALIZING') {
-      timeoutRef.current = setTimeout(handleTimeout, 30000); // 30 second timeout
+      timeoutRef.current = setTimeout(handleTimeout, 30000) // 30 second timeout
     }
 
     return () => {
       if (timeoutRef.current) {
-        clearTimeout(timeoutRef.current);
+        clearTimeout(timeoutRef.current)
       }
-    };
-  }, [state, reportId, sessionId, pythonSessionId, handleErrorRecovery]);
+    }
+  }, [state, reportId, sessionId, pythonSessionId, handleErrorRecovery])
 
   // Event handlers
-  const handleSessionLoaded = useCallback((newPythonSessionId: string | null, isRestored: boolean) => {
-    chatLogger.info('Session loaded', {
-      pythonSessionId: newPythonSessionId,
-      isRestored,
-      reportId,
-      sessionId,
-    });
+  const handleSessionLoaded = useCallback(
+    (newPythonSessionId: string | null, isRestored: boolean) => {
+      chatLogger.info('Session loaded', {
+        pythonSessionId: newPythonSessionId,
+        isRestored,
+        reportId,
+        sessionId,
+      })
 
-    setPythonSessionId(newPythonSessionId);
+      setPythonSessionId(newPythonSessionId)
 
-    // For restored conversations with pythonSessionId, start restoration
-    // For new conversations, start initialization
-    if (newPythonSessionId && isRestored) {
-      transitionState('RESTORATION_STARTED');
-    } else {
-      // New conversation - start initialization process
-      chatLogger.info('New conversation - starting initialization', { sessionId, reportId });
-      transitionState('INITIALIZATION_STARTED');
-    }
-  }, [reportId, sessionId, transitionState]);
+      // For restored conversations with pythonSessionId, start restoration
+      // For new conversations, start initialization
+      if (newPythonSessionId && isRestored) {
+        transitionState('RESTORATION_STARTED')
+      } else {
+        // New conversation - start initialization process
+        chatLogger.info('New conversation - starting initialization', { sessionId, reportId })
+        transitionState('INITIALIZATION_STARTED')
+      }
+    },
+    [reportId, sessionId, transitionState]
+  )
 
   const handleRestorationStarted = useCallback(() => {
-    transitionState('RESTORATION_STARTED');
-  }, [transitionState]);
+    transitionState('RESTORATION_STARTED')
+  }, [transitionState])
 
-  const handleRestorationComplete = useCallback((restoredMessages: Message[]) => {
-    chatLogger.info('Restoration completed successfully', {
-      messageCount: restoredMessages.length,
-      reportId,
-      sessionId,
-      pythonSessionId,
-    });
-
-    setMessages(restoredMessages);
-    setError(null);
-    onMessagesRestored?.(restoredMessages);
-
-    if (restoredMessages.length > 0) {
-      transitionState('MESSAGES_AVAILABLE');
-    } else {
-      // No messages restored, need to initialize
-      transitionState('RESTORATION_COMPLETE');
-    }
-  }, [reportId, sessionId, pythonSessionId, onMessagesRestored, transitionState]);
-
-  const handleRestorationFailed = useCallback((errorMessage: string) => {
-    const key = `restoration-${pythonSessionId}`;
-    const currentRetries = retryCountRef.current[key] || 0;
-
-    chatLogger.error('Restoration failed', {
-      error: errorMessage,
-      reportId,
-      sessionId,
-      pythonSessionId,
-      retryCount: currentRetries,
-    });
-
-    // Retry logic for restoration failures (up to 2 retries)
-    if (currentRetries < 2 && !errorMessage.includes('404') && !errorMessage.includes('expired')) {
-      retryCountRef.current[key] = currentRetries + 1;
-
-      chatLogger.info('Retrying restoration', {
-        retryCount: currentRetries + 1,
+  const handleRestorationComplete = useCallback(
+    (restoredMessages: Message[]) => {
+      chatLogger.info('Restoration completed successfully', {
+        messageCount: restoredMessages.length,
         reportId,
         sessionId,
         pythonSessionId,
-      });
+      })
 
-      // Reset to restoring state to retry
-      setTimeout(() => {
-        transitionState('RESTORATION_STARTED');
-      }, 1000 * (currentRetries + 1)); // Exponential backoff
+      setMessages(restoredMessages)
+      setError(null)
+      onMessagesRestored?.(restoredMessages)
 
-      return;
-    }
+      if (restoredMessages.length > 0) {
+        transitionState('MESSAGES_AVAILABLE')
+      } else {
+        // No messages restored, need to initialize
+        transitionState('RESTORATION_COMPLETE')
+      }
+    },
+    [reportId, sessionId, pythonSessionId, onMessagesRestored, transitionState]
+  )
 
-    // Max retries reached or permanent error
-    setError(errorMessage);
-    retryCountRef.current[key] = 0; // Reset for future attempts
-    transitionState('ERROR_OCCURRED');
-  }, [reportId, sessionId, pythonSessionId, transitionState]);
+  const handleRestorationFailed = useCallback(
+    (errorMessage: string) => {
+      const key = `restoration-${pythonSessionId}`
+      const currentRetries = retryCountRef.current[key] || 0
+
+      chatLogger.error('Restoration failed', {
+        error: errorMessage,
+        reportId,
+        sessionId,
+        pythonSessionId,
+        retryCount: currentRetries,
+      })
+
+      // Retry logic for restoration failures (up to 2 retries)
+      if (
+        currentRetries < 2 &&
+        !errorMessage.includes('404') &&
+        !errorMessage.includes('expired')
+      ) {
+        retryCountRef.current[key] = currentRetries + 1
+
+        chatLogger.info('Retrying restoration', {
+          retryCount: currentRetries + 1,
+          reportId,
+          sessionId,
+          pythonSessionId,
+        })
+
+        // Reset to restoring state to retry
+        setTimeout(
+          () => {
+            transitionState('RESTORATION_STARTED')
+          },
+          1000 * (currentRetries + 1)
+        ) // Exponential backoff
+
+        return
+      }
+
+      // Max retries reached or permanent error
+      setError(errorMessage)
+      retryCountRef.current[key] = 0 // Reset for future attempts
+      transitionState('ERROR_OCCURRED')
+    },
+    [reportId, sessionId, pythonSessionId, transitionState]
+  )
 
   const handleInitializationStarted = useCallback(() => {
-    transitionState('INITIALIZATION_STARTED');
-  }, [transitionState]);
+    transitionState('INITIALIZATION_STARTED')
+  }, [transitionState])
 
   const handleInitializationComplete = useCallback(() => {
     chatLogger.info('Initialization completed successfully', {
       reportId,
       sessionId,
       pythonSessionId,
-    });
+    })
 
-    setError(null);
-    transitionState('INITIALIZATION_COMPLETE');
-  }, [reportId, sessionId, pythonSessionId, transitionState]);
+    setError(null)
+    transitionState('INITIALIZATION_COMPLETE')
+  }, [reportId, sessionId, pythonSessionId, transitionState])
 
-  const handleSessionIdChanged = useCallback((newSessionId: string) => {
-    chatLogger.info('Session ID changed - resetting state', {
-      oldSessionId: pythonSessionId,
-      newSessionId,
-      reportId,
-      sessionId,
-    });
+  const handleSessionIdChanged = useCallback(
+    (newSessionId: string) => {
+      chatLogger.info('Session ID changed - resetting state', {
+        oldSessionId: pythonSessionId,
+        newSessionId,
+        reportId,
+        sessionId,
+      })
 
-    // Reset state for new session
-    setPythonSessionId(newSessionId);
-    setMessages([]);
-    setError(null);
-    onSessionIdUpdate?.(newSessionId);
+      // Reset state for new session
+      setPythonSessionId(newSessionId)
+      setMessages([])
+      setError(null)
+      onSessionIdUpdate?.(newSessionId)
 
-    transitionState('SESSION_CHANGED');
-  }, [pythonSessionId, reportId, sessionId, onSessionIdUpdate, transitionState]);
+      transitionState('SESSION_CHANGED')
+    },
+    [pythonSessionId, reportId, sessionId, onSessionIdUpdate, transitionState]
+  )
 
-  const handleMessagesAvailable = useCallback((newMessages: Message[]) => {
-    chatLogger.info('Messages became available', {
-      messageCount: newMessages.length,
-      reportId,
-      sessionId,
-      pythonSessionId,
-    });
+  const handleMessagesAvailable = useCallback(
+    (newMessages: Message[]) => {
+      chatLogger.info('Messages became available', {
+        messageCount: newMessages.length,
+        reportId,
+        sessionId,
+        pythonSessionId,
+      })
 
-    setMessages(newMessages);
-    transitionState('MESSAGES_AVAILABLE');
-  }, [reportId, sessionId, pythonSessionId, transitionState]);
+      setMessages(newMessages)
+      transitionState('MESSAGES_AVAILABLE')
+    },
+    [reportId, sessionId, pythonSessionId, transitionState]
+  )
 
   return {
     // Current state
@@ -397,5 +421,5 @@ export function useConversationStateManager({
     handleSessionIdChanged,
     handleMessagesAvailable,
     handleErrorRecovery,
-  };
+  }
 }

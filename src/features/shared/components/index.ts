@@ -11,4 +11,4 @@ export {
   FeatureErrorBoundary,
   ComponentErrorBoundary,
   NetworkErrorBoundary,
-} from './ErrorBoundary';
+} from './ErrorBoundary'

@@ -1,49 +1,49 @@
-import { api } from './api';
-import { serviceLogger } from '../utils/logger';
-import type { 
-  ConversationStepRequest, 
-  ConversationStartResponse, 
-  ConversationStepResponse, 
+import { api } from './api'
+import { serviceLogger } from '../utils/logger'
+import type {
+  ConversationStepRequest,
+  ConversationStartResponse,
+  ConversationStepResponse,
   ConversationContext,
   OwnerProfileRequest,
-  BusinessModel  // ADD: BusinessModel import
-} from '../types/valuation';
-import { 
-  mapToBusinessModel, 
-  inferBusinessModelFromIndustry, 
-  isValidYear 
-} from '../utils/businessExtractionUtils';
+  BusinessModel, // ADD: BusinessModel import
+} from '../types/valuation'
+import {
+  mapToBusinessModel,
+  inferBusinessModelFromIndustry,
+  isValidYear,
+} from '../utils/businessExtractionUtils'
 
 export interface TriageSession {
-  session_id: string;
-  complete: boolean;
-  ai_message: string;
-  step: number;
-  field_name?: string;
-  input_type?: string;
-  validation_rules?: Record<string, any>;
-  help_text?: string;
-  context: Record<string, any>;
-  owner_profile_needed: boolean;
-  valuation_result?: any;
+  session_id: string
+  complete: boolean
+  ai_message: string
+  step: number
+  field_name?: string
+  input_type?: string
+  validation_rules?: Record<string, any>
+  help_text?: string
+  context: Record<string, any>
+  owner_profile_needed: boolean
+  valuation_result?: any
 }
 
 export interface StartTriageRequest {
-  user_id?: string;
-  company_id?: string;
-  business_type?: string;
-  industry?: string;
-  country_code?: string;
-  business_context?: Record<string, any>;
-  pre_filled_data?: Record<string, any>;
-  user_preferences?: Record<string, any>;
+  user_id?: string
+  company_id?: string
+  business_type?: string
+  industry?: string
+  country_code?: string
+  business_context?: Record<string, any>
+  pre_filled_data?: Record<string, any>
+  user_preferences?: Record<string, any>
 }
 
 export interface TriageStepRequest {
-  session_id: string;
-  field: string;
-  value: any;
-  context_data?: Record<string, any>;
+  session_id: string
+  field: string
+  value: any
+  context_data?: Record<string, any>
 }
 
 export const intelligentTriageService = {
@@ -52,33 +52,33 @@ export const intelligentTriageService = {
    */
   async startConversation(request: StartTriageRequest): Promise<TriageSession> {
     try {
-      const response: ConversationStartResponse = await api.startConversation(request);
-      
+      const response: ConversationStartResponse = await api.startConversation(request)
+
       // Add null safety checks for response
       if (!response) {
-        serviceLogger.warn('Triage API returned empty response, using fallback');
-        throw new Error('Empty triage response');
+        serviceLogger.warn('Triage API returned empty response, using fallback')
+        throw new Error('Empty triage response')
       }
-      
+
       // Convert to TriageSession format - map backend response directly
       return {
         session_id: response.session_id,
         complete: response.complete || false,
         ai_message: response.ai_message || 'Welcome to the valuation conversation',
         step: response.step || 0,
-        field_name: response.field_name,  // Direct mapping, not response.next_question.id
-        input_type: response.input_type,   // Direct mapping, not response.next_question.question_type
+        field_name: response.field_name, // Direct mapping, not response.next_question.id
+        input_type: response.input_type, // Direct mapping, not response.next_question.question_type
         validation_rules: response.validation_rules || { required: true },
         help_text: response.help_text || '',
         context: response.context || {},
         owner_profile_needed: response.owner_profile_needed || false,
-        valuation_result: response.valuation_result
-      };
+        valuation_result: response.valuation_result,
+      }
     } catch (error) {
       serviceLogger.error('Failed to start triage conversation', {
-        error: error instanceof Error ? error.message : 'Unknown error'
-      });
-      throw new Error('Failed to start intelligent conversation');
+        error: error instanceof Error ? error.message : 'Unknown error',
+      })
+      throw new Error('Failed to start intelligent conversation')
     }
   },
 
@@ -86,32 +86,32 @@ export const intelligentTriageService = {
    * Process conversation step with user response
    */
   async processStep(
-    sessionId: string, 
-    field: string, 
+    sessionId: string,
+    field: string,
     value: any,
     contextData?: Record<string, any>
   ): Promise<TriageSession> {
     try {
       // Extract business_model if mentioned
       if (field === 'business_model' || field === 'industry' || field === 'business_type') {
-        const extractedBusinessModel = this.extractBusinessModelFromValue(value, field);
+        const extractedBusinessModel = this.extractBusinessModelFromValue(value, field)
         if (extractedBusinessModel) {
           // Store in context for later use
           contextData = {
             ...contextData,
-            extracted_business_model: extractedBusinessModel
-          };
+            extracted_business_model: extractedBusinessModel,
+          }
         }
       }
-      
+
       // Extract founding_year if mentioned
       if (field === 'founding_year' || field === 'company_age' || field === 'years_in_operation') {
-        const extractedYear = this.extractFoundingYearFromValue(value, field);
+        const extractedYear = this.extractFoundingYearFromValue(value, field)
         if (extractedYear) {
           contextData = {
             ...contextData,
-            extracted_founding_year: extractedYear
-          };
+            extracted_founding_year: extractedYear,
+          }
         }
       }
 
@@ -119,16 +119,16 @@ export const intelligentTriageService = {
         session_id: sessionId,
         answer: value,
         question_id: field,
-        additional_context: contextData ? JSON.stringify(contextData) : undefined
-      };
-      
-      const response: ConversationStepResponse = await api.conversationStep(request);
-      
+        additional_context: contextData ? JSON.stringify(contextData) : undefined,
+      }
+
+      const response: ConversationStepResponse = await api.conversationStep(request)
+
       // ✅ Add null safety
       if (!response) {
-        throw new Error('Empty response from conversation step API');
+        throw new Error('Empty response from conversation step API')
       }
-      
+
       // Convert to TriageSession format
       return {
         session_id: sessionId,
@@ -137,23 +137,25 @@ export const intelligentTriageService = {
         step: 0, // Will be updated based on progress
         field_name: response.next_question?.id,
         input_type: response.next_question?.question_type,
-        validation_rules: { 
-          required: response.next_question?.required ?? false 
+        validation_rules: {
+          required: response.next_question?.required ?? false,
         },
         help_text: response.next_question?.help_text || '',
-        context: { 
+        context: {
           progress_percentage: response.progress_percentage ?? 0,
           insights: response.insights || [],
-          recommendations: response.recommendations || []
+          recommendations: response.recommendations || [],
         },
         owner_profile_needed: false, // Will be determined by backend
-        valuation_result: response.current_valuation
-      };
+        valuation_result: response.current_valuation,
+      }
     } catch (error) {
       serviceLogger.error('Failed to process triage step', {
-        error: error instanceof Error ? error.message : 'Unknown error'
-      });
-      throw new Error(`Failed to process conversation step: ${error instanceof Error ? error.message : 'Unknown error'}`);
+        error: error instanceof Error ? error.message : 'Unknown error',
+      })
+      throw new Error(
+        `Failed to process conversation step: ${error instanceof Error ? error.message : 'Unknown error'}`
+      )
     }
   },
 
@@ -162,31 +164,31 @@ export const intelligentTriageService = {
    */
   extractBusinessModelFromValue(value: any, field: string): BusinessModel | string | null {
     if (field === 'business_model') {
-      return mapToBusinessModel(String(value));
+      return mapToBusinessModel(String(value))
     }
-    
+
     if (field === 'industry') {
-      return inferBusinessModelFromIndustry(String(value));
+      return inferBusinessModelFromIndustry(String(value))
     }
-    
-    return null;
+
+    return null
   },
-  
+
   /**
    * Extract founding year from conversation value
    */
   extractFoundingYearFromValue(value: any, field: string): number | null {
     if (field === 'founding_year') {
-      const year = parseInt(String(value));
-      return isValidYear(year) ? year : null;
+      const year = parseInt(String(value))
+      return isValidYear(year) ? year : null
     }
-    
+
     if (field === 'years_in_operation' || field === 'company_age') {
-      const years = parseInt(String(value));
-      return new Date().getFullYear() - years;
+      const years = parseInt(String(value))
+      return new Date().getFullYear() - years
     }
-    
-    return null;
+
+    return null
   },
 
   // Note: mapToBusinessModel, inferBusinessModelFromIndustry, and isValidYear
@@ -197,8 +199,8 @@ export const intelligentTriageService = {
    */
   async getContext(sessionId: string): Promise<TriageSession> {
     try {
-      const response: ConversationContext = await api.getConversationContext(sessionId);
-      
+      const response: ConversationContext = await api.getConversationContext(sessionId)
+
       // Convert to TriageSession format
       return {
         session_id: response.session_id,
@@ -213,16 +215,16 @@ export const intelligentTriageService = {
           business_context: response.business_context,
           owner_profile: response.owner_profile,
           conversation_history: response.conversation_history,
-          methodology_selected: response.methodology_selected
+          methodology_selected: response.methodology_selected,
         },
         owner_profile_needed: false,
-        valuation_result: undefined
-      };
+        valuation_result: undefined,
+      }
     } catch (error) {
       serviceLogger.error('Failed to get triage context', {
-        error: error instanceof Error ? error.message : 'Unknown error'
-      });
-      throw new Error('Failed to get conversation context');
+        error: error instanceof Error ? error.message : 'Unknown error',
+      })
+      throw new Error('Failed to get conversation context')
     }
   },
 
@@ -232,11 +234,11 @@ export const intelligentTriageService = {
   async createOwnerProfile(
     businessId: string,
     profileData: {
-      hours_per_week: number;
-      primary_tasks: string[];
-      delegation_capability: number;
-      succession_plan: boolean;
-      succession_details?: string;
+      hours_per_week: number
+      primary_tasks: string[]
+      delegation_capability: number
+      succession_plan: boolean
+      succession_details?: string
     }
   ): Promise<any> {
     try {
@@ -244,31 +246,31 @@ export const intelligentTriageService = {
       const ownerProfile = {
         involvement_level: 'hands_on' as const,
         time_commitment: profileData.hours_per_week,
-        succession_plan: profileData.succession_plan ? 'management' as const : 'none' as const,
+        succession_plan: profileData.succession_plan ? ('management' as const) : ('none' as const),
         risk_tolerance: 'moderate' as const,
         growth_ambition: 'moderate_growth' as const,
         industry_experience: 5, // Default value
         management_team_strength: 'adequate' as const,
         key_man_risk: profileData.delegation_capability < 5,
         personal_guarantees: false,
-        additional_context: profileData.succession_details
-      };
+        additional_context: profileData.succession_details,
+      }
 
       const request: OwnerProfileRequest = {
         profile: ownerProfile,
         business_context: {
           company_name: businessId,
-          country_code: 'BE'
-        }
-      };
+          country_code: 'BE',
+        },
+      }
 
-      const response = await api.submitOwnerProfile(request);
-      return response;
+      const response = await api.submitOwnerProfile(request)
+      return response
     } catch (error) {
       serviceLogger.error('Failed to create owner profile', {
-        error: error instanceof Error ? error.message : 'Unknown error'
-      });
-      throw new Error('Failed to create owner profile');
+        error: error instanceof Error ? error.message : 'Unknown error',
+      })
+      throw new Error('Failed to create owner profile')
     }
-  }
-};
+  },
+}

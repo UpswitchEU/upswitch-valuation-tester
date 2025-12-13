@@ -4,4 +4,4 @@
  * @module services/api/report
  */
 
-export { ReportAPI } from './ReportAPI';
+export { ReportAPI } from './ReportAPI'

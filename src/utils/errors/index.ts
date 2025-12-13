@@ -1,19 +1,19 @@
 /**
  * Error Utilities
- * 
+ *
  * Centralized error handling exports
  */
 
 // Export all error types
-export * from './types';
+export * from './types'
 
 // Export error handler
-export { ErrorHandler } from './handler';
-export type { ErrorHandlingResult } from './handler';
+export { ErrorHandler } from './handler'
+export type { ErrorHandlingResult } from './handler'
 
 // Export recovery manager
-export { ErrorRecoveryManager } from './recovery';
-export type { RetryConfig, RecoveryStrategy } from './recovery';
+export { ErrorRecoveryManager } from './recovery'
+export type { RetryConfig, RecoveryStrategy } from './recovery'
 
 // Re-export commonly used errors for convenience
 export {
@@ -93,5 +93,5 @@ export {
   InsufficientStorageError,
   LoopDetectedError,
   NotExtendedError,
-  NetworkAuthenticationRequiredError
-} from './types';
+  NetworkAuthenticationRequiredError,
+} from './types'

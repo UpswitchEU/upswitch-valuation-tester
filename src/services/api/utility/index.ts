@@ -4,4 +4,4 @@
  * @module services/api/utility
  */
 
-export { UtilityAPI } from './UtilityAPI';
+export { UtilityAPI } from './UtilityAPI'

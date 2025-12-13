@@ -7,374 +7,470 @@
  * @module features/conversational-valuation/components/ConversationalLayout
  */
 
-import React, { useCallback, useEffect, useState } from 'react';
-import { CollectionProgress, DataCollection, DataResponse } from '../../../components/data-collection';
-import { FullScreenModal } from '../../../components/FullScreenModal';
-import { ResizableDivider } from '../../../components/ResizableDivider';
-import { ValuationToolbar } from '../../../components/ValuationToolbar';
-import { MOBILE_BREAKPOINT, PANEL_CONSTRAINTS } from '../../../constants/panelConstants';
-import { useAuth } from '../../../hooks/useAuth';
-import { guestCreditService } from '../../../services/guestCreditService';
-import UrlGeneratorService from '../../../services/urlGenerator';
-import { useValuationStore } from '../../../store/useValuationStore';
-import type { ValuationResponse } from '../../../types/valuation';
-import { convertDataResponsesToFormData } from '../../../utils/dataCollectionUtils';
-import { chatLogger } from '../../../utils/logger';
-import { generateReportId } from '../../../utils/reportIdGenerator';
-import { CreditGuard } from '../../auth/components/CreditGuard';
-import { useConversationActions, useConversationState } from '../context/ConversationContext';
-import { BusinessProfileSection } from './BusinessProfileSection';
-import { ConversationPanel } from './ConversationPanel';
-import { ReportPanel } from './ReportPanel';
+import React, { useCallback, useEffect, useState } from 'react'
+import {
+  CollectionProgress,
+  DataCollection,
+  DataResponse,
+} from '../../../components/data-collection'
+import { FullScreenModal } from '../../../components/FullScreenModal'
+import { ResizableDivider } from '../../../components/ResizableDivider'
+import { ValuationToolbar } from '../../../components/ValuationToolbar'
+import { MOBILE_BREAKPOINT, PANEL_CONSTRAINTS } from '../../../constants/panelConstants'
+import { useAuth } from '../../../hooks/useAuth'
+import { guestCreditService } from '../../../services/guestCreditService'
+import UrlGeneratorService from '../../../services/urlGenerator'
+import { useValuationStore } from '../../../store/useValuationStore'
+import type { ValuationResponse } from '../../../types/valuation'
+import { convertDataResponsesToFormData } from '../../../utils/dataCollectionUtils'
+import { chatLogger } from '../../../utils/logger'
+import { generateReportId } from '../../../utils/reportIdGenerator'
+import { CreditGuard } from '../../auth/components/CreditGuard'
+import { useConversationActions, useConversationState } from '../context/ConversationContext'
+import { BusinessProfileSection } from './BusinessProfileSection'
+import { ConversationPanel } from './ConversationPanel'
+import { ReportPanel } from './ReportPanel'
 
+/**
+ * Conversational Layout Component Props
+ */
 interface ConversationalLayoutProps {
-  reportId: string;
-  onComplete: (result: ValuationResponse) => void;
-  initialQuery?: string | null;
-  autoSend?: boolean;
+  /** Unique report identifier for the conversation session */
+  reportId: string
+  /** Callback when conversational valuation completes */
+  onComplete: (result: ValuationResponse) => void
+  /** Optional initial query to start the conversation */
+  initialQuery?: string | null
+  /** Whether to automatically send the initial query */
+  autoSend?: boolean
 }
 
 /**
  * Conversational Layout Component
  *
- * Orchestrates the main layout for conversational valuation.
- * Handles UI state, panels, and toolbar interactions.
+ * Orchestrates the main layout for conversational valuation with AI-guided data collection.
+ * Provides a chat-like interface for natural business valuation conversations.
+ *
+ * ## Layout Architecture
+ * - **Left Panel**: Conversation chat interface with AI assistant
+ * - **Right Panel**: Live preview of valuation results and business profile
+ * - **Toolbar**: Export controls, refresh, and fullscreen options
+ * - **Resizable Divider**: Adjustable panel sizes with persistence
+ *
+ * ## Data Collection Flow
+ * 1. AI assistant asks contextual questions based on business type
+ * 2. User responds naturally (text, suggestions, or examples)
+ * 3. Real-time validation and progress tracking
+ * 4. Automatic data conversion to valuation format
+ * 5. Live preview updates as data is collected
+ *
+ * ## State Management
+ * - Conversation context with message history
+ * - Business profile data aggregation
+ * - Valuation result streaming and updates
+ * - UI state (panel sizes, mobile view, etc.)
+ *
+ * ## Performance Optimizations
+ * - Memoized event handlers and calculations
+ * - Lazy loading of heavy preview components
+ * - Efficient re-rendering with stable references
+ * - Local storage persistence for UI preferences
+ *
+ * ## Accessibility Features
+ * - Keyboard navigation support
+ * - Screen reader friendly chat interface
+ * - High contrast mode support
+ * - Focus management for panel switching
+ *
+ * ## Mobile Responsiveness
+ * - Collapsible panels for small screens
+ * - Touch-friendly controls and gestures
+ * - Optimized chat interface for mobile
+ *
+ * @param props - Component props
+ * @returns Conversational valuation interface with chat and preview panels
+ *
+ * @example
+ * ```tsx
+ * <ConversationalLayout
+ *   reportId="rpt-456"
+ *   onComplete={(result) => {
+ *     console.log('Conversational valuation complete:', result);
+ *     navigate('/results');
+ *   }}
+ *   initialQuery="I run a SaaS company with 50 employees"
+ *   autoSend={true}
+ * />
+ * ```
+ *
+ * @since 2.0.0
+ * @author UpSwitch Conversational AI Team
  */
-export const ConversationalLayout: React.FC<ConversationalLayoutProps> = React.memo(({
-  reportId,
-  onComplete,
-  initialQuery = null,
-  autoSend = false,
-}) => {
-  const { user } = useAuth();
-  const { state } = useConversationState();
-  const actions = useConversationActions();
-  const { setResult, updateFormData } = useValuationStore();
+export const ConversationalLayout: React.FC<ConversationalLayoutProps> = React.memo(
+  ({ reportId, onComplete, initialQuery = null, autoSend = false }) => {
+    const { user } = useAuth()
+    const { state } = useConversationState()
+    const actions = useConversationActions()
+    const { setResult, updateFormData } = useValuationStore()
 
-  // Data collection state
-  const [collectedData, setCollectedData] = useState<DataResponse[]>([]);
-  const [showDataCollection, setShowDataCollection] = useState(false);
+    // Data collection state
+    const [collectedData, setCollectedData] = useState<DataResponse[]>([])
+    const [showDataCollection, setShowDataCollection] = useState(false)
 
-  // Handle data collection
-  const handleDataCollected = (responses: DataResponse[]) => {
-    setCollectedData(responses);
+    // Memoize data collection handlers
+    const handleDataCollected = useCallback(
+      (responses: DataResponse[]) => {
+        setCollectedData(responses)
 
-    // Convert responses to form data format using shared utility
-    const formData = convertDataResponsesToFormData(responses);
+        // Convert responses to form data format using shared utility
+        const formData = convertDataResponsesToFormData(responses)
 
-    // Update valuation store with collected data
-    updateFormData(formData);
+        // Update valuation store with collected data
+        updateFormData(formData)
 
-    chatLogger.info('Conversational flow collected data:', formData);
-  };
+        chatLogger.info('Conversational flow collected data:', formData)
+      },
+      [updateFormData]
+    )
 
-  // Handle collection completion
-  const handleCollectionComplete = (responses: DataResponse[]) => {
-    // Convert responses to form data format using shared utility
-    const formData = convertDataResponsesToFormData(responses);
+    const handleCollectionComplete = useCallback(
+      (responses: DataResponse[]) => {
+        // Convert responses to form data format using shared utility
+        const formData = convertDataResponsesToFormData(responses)
 
-    // Update valuation store with final collected data
-    updateFormData(formData);
+        // Update valuation store with final collected data
+        updateFormData(formData)
 
-    chatLogger.info('Conversational flow collection complete:', formData);
-    setShowDataCollection(false);
-  };
+        chatLogger.info('Conversational flow collection complete:', formData)
+        setShowDataCollection(false)
+      },
+      [updateFormData]
+    )
 
-  // Handle progress updates
-  const handleProgressUpdate = (progress: CollectionProgress) => {
-    chatLogger.debug('Conversational flow progress:', progress);
-  };
+    const handleProgressUpdate = useCallback((progress: CollectionProgress) => {
+      chatLogger.debug('Conversational flow progress:', progress)
+    }, [])
 
-  // UI State
-  const [isFullScreen, setIsFullScreen] = useState(false);
-  const [isMobile, setIsMobile] = useState(false);
-  const [mobileActivePanel, setMobileActivePanel] = useState<'chat' | 'preview'>('chat');
-  const [showPreConversationSummary, setShowPreConversationSummary] = useState(false);
+    // UI State
+    const [isFullScreen, setIsFullScreen] = useState(false)
+    const [isMobile, setIsMobile] = useState(false)
+    const [mobileActivePanel, setMobileActivePanel] = useState<'chat' | 'preview'>('chat')
+    const [showPreConversationSummary, setShowPreConversationSummary] = useState(false)
 
-  // Panel resize state
-  const [leftPanelWidth, setLeftPanelWidth] = useState(() => {
-    try {
-      const saved = localStorage.getItem('upswitch-panel-width');
-      if (saved) {
-        const parsed = parseFloat(saved);
-        if (!isNaN(parsed) && parsed >= PANEL_CONSTRAINTS.MIN_WIDTH && parsed <= PANEL_CONSTRAINTS.MAX_WIDTH) {
-          return parsed;
+    // Panel resize state
+    const [leftPanelWidth, setLeftPanelWidth] = useState(() => {
+      try {
+        const saved = localStorage.getItem('upswitch-panel-width')
+        if (saved) {
+          const parsed = parseFloat(saved)
+          if (
+            !isNaN(parsed) &&
+            parsed >= PANEL_CONSTRAINTS.MIN_WIDTH &&
+            parsed <= PANEL_CONSTRAINTS.MAX_WIDTH
+          ) {
+            return parsed
+          }
+        }
+      } catch (error) {
+        chatLogger.warn('Failed to load saved panel width', { error })
+      }
+      return PANEL_CONSTRAINTS.DEFAULT_WIDTH
+    })
+
+    // Data collection method toggle (for demonstration)
+    const [useDataCollection, setUseDataCollection] = useState(false)
+
+    // Mobile detection
+    useEffect(() => {
+      const checkMobile = () => setIsMobile(window.innerWidth < MOBILE_BREAKPOINT)
+      checkMobile()
+      window.addEventListener('resize', checkMobile)
+      return () => window.removeEventListener('resize', checkMobile)
+    }, [])
+
+    // Save panel width
+    useEffect(() => {
+      try {
+        localStorage.setItem('upswitch-panel-width', leftPanelWidth.toString())
+      } catch (error) {
+        chatLogger.warn('Failed to save panel width', { error })
+      }
+    }, [leftPanelWidth])
+
+    // Sync valuation result to global store
+    useEffect(() => {
+      if (state.valuationResult) {
+        setResult(state.valuationResult)
+      }
+    }, [state.valuationResult, setResult])
+
+    // Handle panel resize
+    const handleResize = useCallback((newWidth: number) => {
+      const constrainedWidth = Math.max(
+        PANEL_CONSTRAINTS.MIN_WIDTH,
+        Math.min(PANEL_CONSTRAINTS.MAX_WIDTH, newWidth)
+      )
+      if (Math.abs(constrainedWidth - PANEL_CONSTRAINTS.DEFAULT_WIDTH) < 2) {
+        setLeftPanelWidth(PANEL_CONSTRAINTS.DEFAULT_WIDTH)
+      } else {
+        setLeftPanelWidth(constrainedWidth)
+      }
+    }, [])
+
+    // Toolbar handlers
+    const handleRefresh = useCallback(() => {
+      const newReportId = generateReportId()
+      window.location.href = UrlGeneratorService.reportById(newReportId)
+    }, [])
+
+    const handleDownload = useCallback(async () => {
+      if (state.valuationResult && state.finalReportHtml) {
+        try {
+          const { DownloadService } = await import('../../../services/downloadService')
+          const valuationData = {
+            companyName: state.businessProfile?.company_name || 'Company',
+            valuationAmount: state.valuationResult.equity_value_mid,
+            valuationDate: new Date(),
+            method: state.valuationResult.methodology || 'DCF Analysis',
+            confidenceScore: state.valuationResult.confidence_score,
+            inputs: {
+              revenue: state.businessProfile?.revenue,
+              ebitda: state.businessProfile?.ebitda,
+              industry: state.businessProfile?.industry,
+              employees: state.businessProfile?.employees,
+            },
+            assumptions: {
+              growth_rate: '5%',
+              discount_rate: '10%',
+              terminal_growth: '2%',
+            },
+            htmlContent: state.finalReportHtml || state.valuationResult?.html_report || '',
+          }
+          await DownloadService.downloadPDF(valuationData, {
+            format: 'pdf',
+            filename: DownloadService.getDefaultFilename(
+              state.businessProfile?.company_name,
+              'pdf'
+            ),
+          })
+        } catch (error) {
+          chatLogger.error('PDF download failed', { error, reportId })
         }
       }
-    } catch (error) {
-      chatLogger.warn('Failed to load saved panel width', { error });
-    }
-    return PANEL_CONSTRAINTS.DEFAULT_WIDTH;
-  });
+    }, [state.valuationResult, state.finalReportHtml, state.businessProfile])
 
-  // Data collection method toggle (for demonstration)
-  const [useDataCollection, setUseDataCollection] = useState(false);
+    // Handle Python session ID updates from conversation
+    const handlePythonSessionIdReceived = useCallback(
+      (sessionId: string) => {
+        chatLogger.info('Python session ID received, updating conversation state', {
+          sessionId,
+          reportId,
+        })
+        actions.setPythonSessionId(sessionId)
+      },
+      [actions, reportId]
+    )
 
-  // Mobile detection
-  useEffect(() => {
-    const checkMobile = () => setIsMobile(window.innerWidth < MOBILE_BREAKPOINT);
-    checkMobile();
-    window.addEventListener('resize', checkMobile);
-    return () => window.removeEventListener('resize', checkMobile);
-  }, []);
+    // Handle valuation completion
+    const handleValuationComplete = useCallback(
+      async (result: any) => {
+        actions.setValuationResult(result)
+        onComplete(result)
 
-  // Save panel width
-  useEffect(() => {
-    try {
-      localStorage.setItem('upswitch-panel-width', leftPanelWidth.toString());
-    } catch (error) {
-      chatLogger.warn('Failed to save panel width', { error });
-    }
-  }, [leftPanelWidth]);
+        // Update frontend credit count for guests
+        if (!user && (result as any).creditsRemaining !== undefined) {
+          guestCreditService.setCredits((result as any).creditsRemaining)
+        }
+      },
+      [actions, onComplete, user]
+    )
 
-  // Sync valuation result to global store
-  useEffect(() => {
-    if (state.valuationResult) {
-      setResult(state.valuationResult);
-    }
-  }, [state.valuationResult, setResult]);
-
-  // Handle panel resize
-  const handleResize = useCallback((newWidth: number) => {
-    const constrainedWidth = Math.max(PANEL_CONSTRAINTS.MIN_WIDTH, Math.min(PANEL_CONSTRAINTS.MAX_WIDTH, newWidth));
-    if (Math.abs(constrainedWidth - PANEL_CONSTRAINTS.DEFAULT_WIDTH) < 2) {
-      setLeftPanelWidth(PANEL_CONSTRAINTS.DEFAULT_WIDTH);
-    } else {
-      setLeftPanelWidth(constrainedWidth);
-    }
-  }, []);
-
-  // Toolbar handlers
-  const handleRefresh = useCallback(() => {
-    const newReportId = generateReportId();
-    window.location.href = UrlGeneratorService.reportById(newReportId);
-  }, []);
-
-  const handleDownload = useCallback(async () => {
-    if (state.valuationResult && state.finalReportHtml) {
-      try {
-        const { DownloadService } = await import('../../../services/downloadService');
-        const valuationData = {
-          companyName: state.businessProfile?.company_name || 'Company',
-          valuationAmount: state.valuationResult.equity_value_mid,
-          valuationDate: new Date(),
-          method: state.valuationResult.methodology || 'DCF Analysis',
-          confidenceScore: state.valuationResult.confidence_score,
-          inputs: {
-            revenue: state.businessProfile?.revenue,
-            ebitda: state.businessProfile?.ebitda,
-            industry: state.businessProfile?.industry,
-            employees: state.businessProfile?.employees
-          },
-          assumptions: {
-            growth_rate: '5%',
-            discount_rate: '10%',
-            terminal_growth: '2%'
-          },
-          htmlContent: state.finalReportHtml || state.valuationResult?.html_report || ''
-        };
-        await DownloadService.downloadPDF(valuationData, {
-          format: 'pdf',
-          filename: DownloadService.getDefaultFilename(state.businessProfile?.company_name, 'pdf')
-        });
-      } catch (error) {
-        chatLogger.error('PDF download failed', { error, reportId });
-      }
-    }
-  }, [state.valuationResult, state.finalReportHtml, state.businessProfile]);
-
-  // Handle Python session ID updates from conversation
-  const handlePythonSessionIdReceived = useCallback((sessionId: string) => {
-    chatLogger.info('Python session ID received, updating conversation state', {
-      sessionId,
-      reportId
-    });
-    actions.setPythonSessionId(sessionId);
-  }, [actions, reportId]);
-
-  // Handle valuation completion
-  const handleValuationComplete = useCallback(async (result: any) => {
-    actions.setValuationResult(result);
-    onComplete(result);
-
-    // Update frontend credit count for guests
-    if (!user && (result as any).creditsRemaining !== undefined) {
-      guestCreditService.setCredits((result as any).creditsRemaining);
-    }
-  }, [actions, onComplete, user]);
-
-  return (
-    <CreditGuard
-      hasCredits={state.hasCredits}
-      isBlocked={state.isBlocked}
-      showOutOfCreditsModal={state.showOutOfCreditsModal}
-      onCloseModal={() => actions.setShowOutOfCreditsModal(false)}
-      onSignUp={() => {
-        actions.setShowOutOfCreditsModal(false);
-        chatLogger.info('User clicked sign up from out of credits modal');
-      }}
-      onTryManual={() => {
-        actions.setShowOutOfCreditsModal(false);
-        chatLogger.info('User clicked try manual flow from out of credits modal');
-      }}
-    >
-      <div className="flex flex-col h-full overflow-hidden">
-        {/* Toolbar */}
-        <ValuationToolbar
-          onRefresh={handleRefresh}
-          onDownload={handleDownload}
-          onFullScreen={() => setIsFullScreen(true)}
-          isGenerating={state.isGenerating}
-          user={user}
-          valuationName="Valuation"
-          valuationId={state.valuationResult?.valuation_id}
-          activeTab="preview" // This will be managed by ReportPanel
-          onTabChange={() => {}} // Tab changes handled by ReportPanel
-          companyName={state.businessProfile?.company_name}
-          valuationMethod={state.valuationResult?.methodology}
-          customActions={
-            <button
-              onClick={() => setUseDataCollection(!useDataCollection)}
-              className="px-3 py-1 text-xs bg-primary-600 hover:bg-primary-700 text-white rounded transition-colors"
-              title={useDataCollection ? "Switch to Chat Collection" : "Switch to Data Collection"}
-            >
-              {useDataCollection ? "💬 Chat" : "📝 Form"}
-            </button>
-          }
-        />
-
-        {/* Error Display */}
-        {state.error && (
-          <div className="mx-4 mb-4">
-            <div className="bg-rust-500/20 border border-rust-600/30 rounded-lg p-4">
-              <div className="flex items-center gap-2 text-rust-300">
-                <span className="text-rust-400">⚠️</span>
-                <span className="font-medium">Error</span>
-              </div>
-              <p className="text-rust-200 text-sm mt-1">{state.error}</p>
-            </div>
-          </div>
-        )}
-
-        {/* Business Profile Section */}
-        <BusinessProfileSection
-          showPreConversationSummary={showPreConversationSummary}
-          onTogglePreConversationSummary={() => setShowPreConversationSummary(false)}
-        />
-
-        {/* Split Panel */}
-        <div className="flex flex-col lg:flex-row flex-1 overflow-hidden mx-4 my-4 rounded-lg border border-zinc-800" style={{transition: 'width 150ms ease-out'}}>
-          {/* Left Panel: Chat */}
-          <div
-            className={`${
-              isMobile ? (mobileActivePanel === 'chat' ? 'w-full' : 'hidden') : ''
-            } h-full flex flex-col bg-zinc-900 border-r border-zinc-800 w-full lg:w-auto`}
-            style={{
-              width: isMobile ? '100%' : `${leftPanelWidth}%`
-            }}
-          >
-            <div className="flex-1 overflow-y-auto">
-              {useDataCollection ? (
-                // Data Collection (Form-based)
-                <div className="p-4">
-                  <div className="mb-4">
-                    <h3 className="text-lg font-semibold text-white mb-2">Data Collection</h3>
-                    <p className="text-sm text-zinc-400">
-                      Using the same data collection system as manual forms, but in conversational context.
-                    </p>
-                  </div>
-                  <DataCollection
-                    method="conversational"
-                    onDataCollected={handleDataCollected}
-                    onProgressUpdate={handleProgressUpdate}
-                    onComplete={handleCollectionComplete}
-                    initialData={{
-                      // Pre-populate with any existing data from conversation
-                      company_name: state.businessProfile?.company_name,
-                      revenue: state.businessProfile?.revenue,
-                      ebitda: state.businessProfile?.ebitda,
-                      number_of_employees: state.businessProfile?.number_of_employees
-                    }}
-                  />
-                </div>
-              ) : (
-                // Traditional Conversation Panel
-                <ConversationPanel
-                  sessionId={state.sessionId}
-                  userId={user?.id}
-                  restoredMessages={state.messages.filter(m => m.isComplete)}
-                  isRestoring={state.isRestoring}
-                  isRestorationComplete={state.restorationComplete}
-                  isSessionInitialized={state.isSessionInitialized}
-                  pythonSessionId={state.pythonSessionId}
-                  onPythonSessionIdReceived={handlePythonSessionIdReceived}
-                  onValuationComplete={handleValuationComplete}
-                  onValuationStart={() => actions.setGenerating(true)}
-                  onDataCollected={(data) => {
-                    // Handle data collection - sync to session
-                    if (data.field && data.value !== undefined) {
-                      // This would sync to session store
-                      chatLogger.debug('Data collected from conversational flow', { field: data.field, value: data.value });
-                    }
-                  }}
-                initialMessage={initialQuery}
-                autoSend={autoSend}
-              />
-              )}
-            </div>
-          </div>
-
-          {/* Resizable Divider */}
-          <ResizableDivider
-            onResize={handleResize}
-            leftWidth={leftPanelWidth}
-            isMobile={isMobile}
+    return (
+      <CreditGuard
+        hasCredits={state.hasCredits}
+        isBlocked={state.isBlocked}
+        showOutOfCreditsModal={state.showOutOfCreditsModal}
+        onCloseModal={() => actions.setShowOutOfCreditsModal(false)}
+        onSignUp={() => {
+          actions.setShowOutOfCreditsModal(false)
+          chatLogger.info('User clicked sign up from out of credits modal')
+        }}
+        onTryManual={() => {
+          actions.setShowOutOfCreditsModal(false)
+          chatLogger.info('User clicked try manual flow from out of credits modal')
+        }}
+      >
+        <div className="flex flex-col h-full overflow-hidden">
+          {/* Toolbar */}
+          <ValuationToolbar
+            onRefresh={handleRefresh}
+            onDownload={handleDownload}
+            onFullScreen={() => setIsFullScreen(true)}
+            isGenerating={state.isGenerating}
+            user={user}
+            valuationName="Valuation"
+            valuationId={state.valuationResult?.valuation_id}
+            activeTab="preview" // This will be managed by ReportPanel
+            onTabChange={() => {}} // Tab changes handled by ReportPanel
+            companyName={state.businessProfile?.company_name}
+            valuationMethod={state.valuationResult?.methodology}
+            customActions={
+              <button
+                onClick={() => setUseDataCollection(!useDataCollection)}
+                className="px-3 py-1 text-xs bg-primary-600 hover:bg-primary-700 text-white rounded transition-colors"
+                title={
+                  useDataCollection ? 'Switch to Chat Collection' : 'Switch to Data Collection'
+                }
+              >
+                {useDataCollection ? '💬 Chat' : '📝 Form'}
+              </button>
+            }
           />
 
-          {/* Right Panel: Report Display */}
+          {/* Error Display */}
+          {state.error && (
+            <div className="mx-4 mb-4">
+              <div className="bg-rust-500/20 border border-rust-600/30 rounded-lg p-4">
+                <div className="flex items-center gap-2 text-rust-300">
+                  <span className="text-rust-400">⚠️</span>
+                  <span className="font-medium">Error</span>
+                </div>
+                <p className="text-rust-200 text-sm mt-1">{state.error}</p>
+              </div>
+            </div>
+          )}
+
+          {/* Business Profile Section */}
+          <BusinessProfileSection
+            showPreConversationSummary={showPreConversationSummary}
+            onTogglePreConversationSummary={() => setShowPreConversationSummary(false)}
+          />
+
+          {/* Split Panel */}
           <div
-            className={`${
-              isMobile ? (mobileActivePanel === 'preview' ? 'w-full' : 'hidden') : ''
-            } h-full min-h-[400px] lg:min-h-0 w-full lg:w-auto border-t lg:border-t-0 border-zinc-800`}
-            style={{ width: isMobile ? '100%' : `${100 - leftPanelWidth}%` }}
+            className="flex flex-col lg:flex-row flex-1 overflow-hidden mx-4 my-4 rounded-lg border border-zinc-800"
+            style={{ transition: 'width 150ms ease-out' }}
           >
-            <ReportPanel />
+            {/* Left Panel: Chat */}
+            <div
+              className={`${
+                isMobile ? (mobileActivePanel === 'chat' ? 'w-full' : 'hidden') : ''
+              } h-full flex flex-col bg-zinc-900 border-r border-zinc-800 w-full lg:w-auto`}
+              style={{
+                width: isMobile ? '100%' : `${leftPanelWidth}%`,
+              }}
+            >
+              <div className="flex-1 overflow-y-auto">
+                {useDataCollection ? (
+                  // Data Collection (Form-based)
+                  <div className="p-4">
+                    <div className="mb-4">
+                      <h3 className="text-lg font-semibold text-white mb-2">Data Collection</h3>
+                      <p className="text-sm text-zinc-400">
+                        Using the same data collection system as manual forms, but in conversational
+                        context.
+                      </p>
+                    </div>
+                    <DataCollection
+                      method="conversational"
+                      onDataCollected={handleDataCollected}
+                      onProgressUpdate={handleProgressUpdate}
+                      onComplete={handleCollectionComplete}
+                      initialData={{
+                        // Pre-populate with any existing data from conversation
+                        company_name: state.businessProfile?.company_name,
+                        revenue: state.businessProfile?.revenue,
+                        ebitda: state.businessProfile?.ebitda,
+                        number_of_employees: state.businessProfile?.number_of_employees,
+                      }}
+                    />
+                  </div>
+                ) : (
+                  // Traditional Conversation Panel
+                  <ConversationPanel
+                    sessionId={state.sessionId}
+                    userId={user?.id}
+                    restoredMessages={state.messages.filter((m) => m.isComplete)}
+                    isRestoring={state.isRestoring}
+                    isRestorationComplete={state.restorationComplete}
+                    isSessionInitialized={state.isSessionInitialized}
+                    pythonSessionId={state.pythonSessionId}
+                    onPythonSessionIdReceived={handlePythonSessionIdReceived}
+                    onValuationComplete={handleValuationComplete}
+                    onValuationStart={() => actions.setGenerating(true)}
+                    onDataCollected={(data) => {
+                      // Handle data collection - sync to session
+                      if (data.field && data.value !== undefined) {
+                        // This would sync to session store
+                        chatLogger.debug('Data collected from conversational flow', {
+                          field: data.field,
+                          value: data.value,
+                        })
+                      }
+                    }}
+                    initialMessage={initialQuery}
+                    autoSend={autoSend}
+                  />
+                )}
+              </div>
+            </div>
+
+            {/* Resizable Divider */}
+            <ResizableDivider
+              onResize={handleResize}
+              leftWidth={leftPanelWidth}
+              isMobile={isMobile}
+            />
+
+            {/* Right Panel: Report Display */}
+            <div
+              className={`${
+                isMobile ? (mobileActivePanel === 'preview' ? 'w-full' : 'hidden') : ''
+              } h-full min-h-[400px] lg:min-h-0 w-full lg:w-auto border-t lg:border-t-0 border-zinc-800`}
+              style={{ width: isMobile ? '100%' : `${100 - leftPanelWidth}%` }}
+            >
+              <ReportPanel />
+            </div>
           </div>
+
+          {/* Mobile Panel Switcher */}
+          {isMobile && (
+            <div className="fixed bottom-4 left-1/2 transform -translate-x-1/2 flex gap-2 bg-zinc-800 p-1 rounded-full shadow-lg">
+              <button
+                onClick={() => setMobileActivePanel('chat')}
+                className={`px-4 py-2 rounded-full transition-colors ${
+                  mobileActivePanel === 'chat'
+                    ? 'bg-accent-600 text-white'
+                    : 'text-zinc-400 hover:text-white'
+                }`}
+              >
+                Chat
+              </button>
+              <button
+                onClick={() => setMobileActivePanel('preview')}
+                className={`px-4 py-2 rounded-full transition-colors ${
+                  mobileActivePanel === 'preview'
+                    ? 'bg-accent-600 text-white'
+                    : 'text-zinc-400 hover:text-white'
+                }`}
+              >
+                Preview
+              </button>
+            </div>
+          )}
+
+          {/* Full Screen Modal */}
+          <FullScreenModal
+            isOpen={isFullScreen}
+            onClose={() => setIsFullScreen(false)}
+            title="Valuation - Full Screen"
+          >
+            <ReportPanel className="h-full" />
+          </FullScreenModal>
         </div>
+      </CreditGuard>
+    )
+  }
+)
 
-        {/* Mobile Panel Switcher */}
-        {isMobile && (
-          <div className="fixed bottom-4 left-1/2 transform -translate-x-1/2 flex gap-2 bg-zinc-800 p-1 rounded-full shadow-lg">
-            <button
-              onClick={() => setMobileActivePanel('chat')}
-              className={`px-4 py-2 rounded-full transition-colors ${
-                mobileActivePanel === 'chat' ? 'bg-accent-600 text-white' : 'text-zinc-400 hover:text-white'
-              }`}
-            >
-              Chat
-            </button>
-            <button
-              onClick={() => setMobileActivePanel('preview')}
-              className={`px-4 py-2 rounded-full transition-colors ${
-                mobileActivePanel === 'preview' ? 'bg-accent-600 text-white' : 'text-zinc-400 hover:text-white'
-              }`}
-            >
-              Preview
-            </button>
-          </div>
-        )}
-
-        {/* Full Screen Modal */}
-        <FullScreenModal
-          isOpen={isFullScreen}
-          onClose={() => setIsFullScreen(false)}
-          title="Valuation - Full Screen"
-        >
-          <ReportPanel className="h-full" />
-        </FullScreenModal>
-      </div>
-    </CreditGuard>
-  );
-});
-
-ConversationalLayout.displayName = 'ConversationalLayout';
+ConversationalLayout.displayName = 'ConversationalLayout'

@@ -1,11 +1,11 @@
 /**
  * Report API Service - Frontend client for report persistence
- * 
+ *
  * TODO: Implement report persistence API
  * Currently commented out due to missing BackendAPI methods
  */
 
-import { generalLogger } from '../utils/logger';
+import { generalLogger } from '../utils/logger'
 
 // import { backendAPI } from './backendApi';  // Use Node.js backend, not valuation engine
 
@@ -51,28 +51,28 @@ import { generalLogger } from '../utils/logger';
 
 //   async createReport(flowType?: string): Promise<CreateReportResponse> {
 //     const deviceFingerprint = await this.getDeviceFingerprint();
-    
+
 //     // Call Node.js backend at /api/reports
-//     const response = await backendAPI.post('/api/reports', 
+//     const response = await backendAPI.post('/api/reports',
 //       { flow_type: flowType },
 //       { headers: { 'X-Device-Fingerprint': deviceFingerprint } }
 //     );
-    
+
 //     return response.data;
 //   }
-  
+
 //   async getReport(reportId: string): Promise<GetReportResponse> {
 //     const response = await backendAPI.get(`/api/reports/${reportId}`);
 //     return response.data;
 //   }
-  
+
 //   async updateReport(reportId: string, data: Partial<ReportData>): Promise<UpdateReportResponse> {
 //     const deviceFingerprint = await this.getDeviceFingerprint();
-    
+
 //     const response = await backendAPI.patch(`/api/reports/${reportId}`, data, {
 //       headers: { 'X-Device-Fingerprint': deviceFingerprint }
 //     });
-    
+
 //     return response.data;
 //   }
 
@@ -90,7 +90,7 @@ import { generalLogger } from '../utils/logger';
 //     const response = await backendAPI.get(`/api/reports?${params.toString()}`);
 //     return response.data;
 //   }
-  
+
 //   private async getDeviceFingerprint(): Promise<string> {
 //     if (this.deviceFingerprint) {
 //       return this.deviceFingerprint;
@@ -111,9 +111,9 @@ import { generalLogger } from '../utils/logger';
 //         // Add some entropy
 //         Math.random().toString(36).substring(2, 15)
 //       ];
-      
+
 //       const fingerprintString = components.join('|');
-      
+
 //       // Use Web Crypto API if available, fallback to simple hash
 //       if (crypto && crypto.subtle) {
 //         const encoder = new TextEncoder();
@@ -125,15 +125,15 @@ import { generalLogger } from '../utils/logger';
 //         // Fallback for older browsers
 //         this.deviceFingerprint = this.simpleHash(fingerprintString);
 //       }
-      
+
 //       return this.deviceFingerprint;
 //     } catch (error) {
 //       console.warn('Failed to generate device fingerprint, using fallback:', error);
 //       // Fallback to a simple hash
 //       this.deviceFingerprint = this.simpleHash(
-//         navigator.userAgent + 
-//         screen.width + 
-//         screen.height + 
+//         navigator.userAgent +
+//         screen.width +
+//         screen.height +
 //         new Date().getTimezoneOffset()
 //       );
 //       return this.deviceFingerprint;
@@ -143,13 +143,13 @@ import { generalLogger } from '../utils/logger';
 //   private simpleHash(str: string): string {
 //     let hash = 0;
 //     if (str.length === 0) return hash.toString();
-    
+
 //     for (let i = 0; i < str.length; i++) {
 //       const char = str.charCodeAt(i);
 //       hash = ((hash << 5) - hash) + char;
 //       hash = hash & hash; // Convert to 32-bit integer
 //     }
-    
+
 //     return Math.abs(hash).toString(16);
 //   }
 
@@ -186,23 +186,23 @@ import { generalLogger } from '../utils/logger';
 // Temporary mock implementation
 // TODO: Replace with actual backend API implementation when available
 export interface ReportApiResponse {
-  success: boolean;
-  data: unknown;
+  success: boolean
+  data: unknown
 }
 
 export const reportApiService = {
   async savePartialData(reportId: string, data: unknown): Promise<void> {
-    generalLogger.debug('Mock savePartialData called', { reportId, data });
+    generalLogger.debug('Mock savePartialData called', { reportId, data })
   },
   async getReport(reportId: string): Promise<ReportApiResponse> {
-    generalLogger.debug('Mock getReport called', { reportId });
-    return { success: false, data: null };
+    generalLogger.debug('Mock getReport called', { reportId })
+    return { success: false, data: null }
   },
   async updateReport(reportId: string, data: unknown): Promise<ReportApiResponse> {
-    generalLogger.debug('Mock updateReport called', { reportId, data });
-    return { success: true, data };
+    generalLogger.debug('Mock updateReport called', { reportId, data })
+    return { success: true, data }
   },
   async completeReport(reportId: string, data: unknown): Promise<void> {
-    generalLogger.debug('Mock completeReport called', { reportId, data });
-  }
-};
+    generalLogger.debug('Mock completeReport called', { reportId, data })
+  },
+}

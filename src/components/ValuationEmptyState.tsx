@@ -1,5 +1,5 @@
-import { TrendingUp } from 'lucide-react';
-import React from 'react';
+import { TrendingUp } from 'lucide-react'
+import React from 'react'
 
 export const ValuationEmptyState: React.FC = () => {
   return (
@@ -12,6 +12,5 @@ export const ValuationEmptyState: React.FC = () => {
         Start a conversation in the chat to generate insights and reports about your valuation
       </p>
     </div>
-  );
-};
-
+  )
+}

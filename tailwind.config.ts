@@ -5,7 +5,7 @@ import type { Config } from 'tailwindcss';
 
 const config: Config = {
   content: [
-    './index.html',
+    './app/**/*.{js,ts,jsx,tsx}',
     './src/**/*.{js,ts,jsx,tsx}',
     './node_modules/@heroui/theme/dist/components/*.{js,ts,jsx,tsx}',
   ],

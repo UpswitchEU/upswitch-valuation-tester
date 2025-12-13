@@ -1,45 +1,63 @@
-import React from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
-import { reportApiService } from '../services/reportApi';
-import type { ValuationResponse } from '../types/valuation';
-import { generalLogger } from '../utils/logger';
-import { generateReportId, isValidReportId } from '../utils/reportIdGenerator';
-import { ValuationFlowSelector } from './ValuationFlowSelector';
-import { ValuationSessionManager } from './ValuationSessionManager';
+'use client'
+
+import { useRouter } from 'next/navigation'
+import React from 'react'
+import { reportApiService } from '../services/reportApi'
+import type { ValuationResponse } from '../types/valuation'
+import { generalLogger } from '../utils/logger'
+import { generateReportId, isValidReportId } from '../utils/reportIdGenerator'
+import { ValuationFlowSelector } from './ValuationFlowSelector'
+import { ValuationSessionManager } from './ValuationSessionManager'
 
 /**
- * ValuationReport Component - Pure Router
+ * ValuationReport Component - Next.js Compatible
  *
  * Single Responsibility: Route validation and delegation.
  * Handles URL parameter validation and delegates to session/flow management.
  */
-export const ValuationReport: React.FC = React.memo(() => {
-  const { reportId } = useParams<{ reportId: string }>();
-  const navigate = useNavigate();
+interface ValuationReportProps {
+  reportId: string
+}
+
+export const ValuationReport: React.FC<ValuationReportProps> = React.memo(({ reportId }) => {
+  const router = useRouter()
 
   // Handle valuation completion
   const handleValuationComplete = async (result: ValuationResponse) => {
     // Save completed valuation to backend
     try {
-      await reportApiService.completeReport(reportId!, result);
+      await reportApiService.completeReport(reportId!, result)
     } catch (error) {
-      generalLogger.error('Failed to save completed valuation', { error, reportId });
+      generalLogger.error('Failed to save completed valuation', { error, reportId })
       // Don't show error to user as the valuation is already complete locally
     }
-  };
+  }
 
   // Validate report ID and redirect if invalid
+  React.useEffect(() => {
+    if (!reportId || !isValidReportId(reportId)) {
+      // Invalid or missing report ID - generate new one
+      const newReportId = generateReportId()
+      router.replace(`/reports/${newReportId}`)
+    }
+  }, [reportId, router])
+
   if (!reportId || !isValidReportId(reportId)) {
-    // Invalid or missing report ID - generate new one
-    const newReportId = generateReportId();
-    navigate(`/reports/${newReportId}`, { replace: true });
-    return null;
+    return null
   }
 
   return (
     <div className="flex h-screen w-screen flex-col overflow-hidden bg-zinc-950">
       <ValuationSessionManager reportId={reportId}>
-        {({ session, stage, error, showOutOfCreditsModal, onCloseModal, prefilledQuery, autoSend }) => (
+        {({
+          session,
+          stage,
+          error,
+          showOutOfCreditsModal,
+          onCloseModal,
+          prefilledQuery,
+          autoSend,
+        }) => (
           <ValuationFlowSelector
             session={session}
             stage={stage}
@@ -51,7 +69,7 @@ export const ValuationReport: React.FC = React.memo(() => {
         )}
       </ValuationSessionManager>
     </div>
-  );
-});
+  )
+})
 
-ValuationReport.displayName = 'ValuationReport';
+ValuationReport.displayName = 'ValuationReport'

@@ -1,10 +1,10 @@
-import { Code, Copy } from 'lucide-react';
-import React from 'react';
-import type { ValuationResponse } from '../types/valuation';
-import { generalLogger } from '../utils/logger';
+import { Code, Copy } from 'lucide-react'
+import React from 'react'
+import type { ValuationResponse } from '../types/valuation'
+import { generalLogger } from '../utils/logger'
 
 interface HTMLViewProps {
-  result: ValuationResponse | null;
+  result: ValuationResponse | null
 }
 
 export const HTMLView: React.FC<HTMLViewProps> = ({ result }) => {
@@ -14,26 +14,28 @@ export const HTMLView: React.FC<HTMLViewProps> = ({ result }) => {
         <Code className="w-16 h-16 text-zinc-400 mb-4" />
         <p className="text-zinc-500">No valuation data available</p>
       </div>
-    );
+    )
   }
 
   // BANK-GRADE: Use server-generated html_report as single source of truth
   // No fallback HTML generation - if html_report is missing, show error
-  const htmlContent = result.html_report || null;
+  const htmlContent = result.html_report || null
 
   const handleCopyHTML = async () => {
     if (!htmlContent) {
-      generalLogger.error('Cannot copy: HTML report not available', { valuationId: result.valuation_id });
-      return;
+      generalLogger.error('Cannot copy: HTML report not available', {
+        valuationId: result.valuation_id,
+      })
+      return
     }
     try {
-      await navigator.clipboard.writeText(htmlContent);
-      generalLogger.debug('HTML report copied to clipboard', { valuationId: result.valuation_id });
+      await navigator.clipboard.writeText(htmlContent)
+      generalLogger.debug('HTML report copied to clipboard', { valuationId: result.valuation_id })
       // You could add a toast notification here
     } catch (err) {
-      generalLogger.error('Failed to copy HTML', { error: err, valuationId: result.valuation_id });
+      generalLogger.error('Failed to copy HTML', { error: err, valuationId: result.valuation_id })
     }
-  };
+  }
 
   // BANK-GRADE: Fail fast if html_report is missing - no fallback HTML generation
   if (!htmlContent || htmlContent.trim().length === 0) {
@@ -46,8 +48,8 @@ export const HTMLView: React.FC<HTMLViewProps> = ({ result }) => {
           <Code className="w-16 h-16 text-rust-400 mb-4" />
           <h3 className="text-lg font-semibold text-white mb-2">HTML Report Not Available</h3>
           <p className="text-sm text-zinc-400 mb-4 text-center max-w-md">
-            The server-generated HTML report is not available. This indicates an issue with the valuation response.
-            Fallback HTML generation has been removed per bank-grade standards.
+            The server-generated HTML report is not available. This indicates an issue with the
+            valuation response. Fallback HTML generation has been removed per bank-grade standards.
           </p>
           <div className="text-xs text-zinc-500 text-center">
             <p>Valuation ID: {result.valuation_id || 'N/A'}</p>
@@ -56,7 +58,7 @@ export const HTMLView: React.FC<HTMLViewProps> = ({ result }) => {
           </div>
         </div>
       </div>
-    );
+    )
   }
 
   return (
@@ -72,16 +74,14 @@ export const HTMLView: React.FC<HTMLViewProps> = ({ result }) => {
         </button>
       </div>
       <div className="flex-1 overflow-auto p-4">
-        <pre className="text-xs text-zinc-300 whitespace-pre-wrap font-mono">
-          {htmlContent}
-        </pre>
+        <pre className="text-xs text-zinc-300 whitespace-pre-wrap font-mono">{htmlContent}</pre>
       </div>
     </div>
-  );
-};
+  )
+}
 
 // BANK-GRADE REFACTORING: Removed generateHTMLReport() fallback HTML generation function
-// 
+//
 // Rationale (Bank-Grade Excellence Audit):
 // 1. Single Responsibility: Frontend should only render server-generated HTML, not generate fallback HTML
 // 2. No Duplication: Server-generated html_report is the single source of truth

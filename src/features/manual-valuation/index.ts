@@ -6,7 +6,7 @@
  */
 
 // Components
-export { ManualValuationFlow } from './components/ManualValuationFlow';
+export { ManualValuationFlow } from './components/ManualValuationFlow'
 
 // Types will be added as we refactor
 // export * from './types';

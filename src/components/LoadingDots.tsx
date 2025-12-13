@@ -1,17 +1,13 @@
-import React from 'react';
+import React from 'react'
 
 interface LoadingDotsProps {
-  size?: 'sm' | 'md' | 'lg';
-  color?: string;
-  className?: string;
-  layout?: 'inline' | 'block';
+  size?: 'sm' | 'md' | 'lg'
+  color?: string
+  className?: string
+  layout?: 'inline' | 'block'
 }
 
-const DOTS_CONFIG = [
-  { delay: '0ms' },
-  { delay: '150ms' },
-  { delay: '300ms' },
-];
+const DOTS_CONFIG = [{ delay: '0ms' }, { delay: '150ms' }, { delay: '300ms' }]
 
 export const LoadingDots: React.FC<LoadingDotsProps> = ({
   size = 'md',
@@ -23,10 +19,10 @@ export const LoadingDots: React.FC<LoadingDotsProps> = ({
     sm: 'w-1 h-1',
     md: 'w-2 h-2',
     lg: 'w-3 h-3',
-  };
+  }
 
-  const dotSize = sizeClasses[size];
-  const layoutClass = layout === 'block' ? 'flex-col' : 'flex-row';
+  const dotSize = sizeClasses[size]
+  const layoutClass = layout === 'block' ? 'flex-col' : 'flex-row'
 
   return (
     <div className={`flex items-center gap-1 ${layoutClass} ${className}`}>
@@ -42,5 +38,5 @@ export const LoadingDots: React.FC<LoadingDotsProps> = ({
         />
       ))}
     </div>
-  );
-};
+  )
+}

@@ -3,16 +3,16 @@
  * Provides error recovery UI with retry functionality
  */
 
-import { AlertTriangle, RefreshCw, X } from 'lucide-react';
-import React from 'react';
-import { extractErrorInfo, ErrorType } from '../utils/errorHandler';
+import { AlertTriangle, RefreshCw, X } from 'lucide-react'
+import React from 'react'
+import { extractErrorInfo, ErrorType } from '../utils/errorHandler'
 
 interface ErrorRecoveryProps {
-  error: Error | string;
-  onRetry?: () => void;
-  onDismiss?: () => void;
-  showPartialResults?: boolean;
-  partialResults?: any;
+  error: Error | string
+  onRetry?: () => void
+  onDismiss?: () => void
+  showPartialResults?: boolean
+  partialResults?: any
 }
 
 export const ErrorRecovery: React.FC<ErrorRecoveryProps> = ({
@@ -20,13 +20,13 @@ export const ErrorRecovery: React.FC<ErrorRecoveryProps> = ({
   onRetry,
   onDismiss,
   showPartialResults = false,
-  partialResults
+  partialResults,
 }) => {
-  const errorInfo = extractErrorInfo(error instanceof Error ? error : new Error(error));
+  const errorInfo = extractErrorInfo(error instanceof Error ? error : new Error(error))
 
   if (errorInfo.type === ErrorType.CANCELLED) {
     // Don't show error UI for cancelled requests
-    return null;
+    return null
   }
 
   return (
@@ -39,16 +39,12 @@ export const ErrorRecovery: React.FC<ErrorRecoveryProps> = ({
           <h3 className="text-sm font-medium text-red-800">
             {errorInfo.type === ErrorType.TIMEOUT ? 'Calculation Timeout' : 'Error Occurred'}
           </h3>
-          <p className="mt-1 text-sm text-red-700">
-            {errorInfo.userMessage}
-          </p>
+          <p className="mt-1 text-sm text-red-700">{errorInfo.userMessage}</p>
 
           {/* Show partial results if available */}
           {showPartialResults && partialResults && (
             <div className="mt-3 p-3 bg-yellow-50 border border-yellow-200 rounded">
-              <p className="text-sm text-yellow-800 font-medium mb-1">
-                Partial results available
-              </p>
+              <p className="text-sm text-yellow-800 font-medium mb-1">Partial results available</p>
               <p className="text-xs text-yellow-700">
                 Some sections were generated before the error occurred. You can view them below.
               </p>
@@ -91,6 +87,5 @@ export const ErrorRecovery: React.FC<ErrorRecoveryProps> = ({
         </div>
       </div>
     </div>
-  );
-};
-
+  )
+}

@@ -1,13 +1,17 @@
-import React, { lazy, Suspense, useState } from 'react';
-import { CollectionProgress, DataCollection, DataResponse } from '../../../components/data-collection';
-import { useAuth } from '../../../hooks/useAuth';
-import { useValuationStore } from '../../../store/useValuationStore';
-import { convertDataResponsesToFormData } from '../../../utils/dataCollectionUtils';
-import { generalLogger } from '../../../utils/logger';
-import { ValuationToolbar } from './ValuationToolbar';
+import React, { lazy, Suspense, useState } from 'react'
+import {
+  CollectionProgress,
+  DataCollection,
+  DataResponse,
+} from '../../../components/data-collection'
+import { useAuth } from '../../../hooks/useAuth'
+import { useValuationStore } from '../../../store/useValuationStore'
+import { convertDataResponsesToFormData } from '../../../utils/dataCollectionUtils'
+import { generalLogger } from '../../../utils/logger'
+import { ValuationToolbar } from './ValuationToolbar'
 
 // Lazy load results component
-const Results = lazy(() => import('./Results').then(m => ({ default: m.Results })));
+const Results = lazy(() => import('./Results').then((m) => ({ default: m.Results })))
 
 // Loading component
 const ComponentLoader: React.FC<{ message?: string }> = ({ message = 'Loading...' }) => (
@@ -17,61 +21,61 @@ const ComponentLoader: React.FC<{ message?: string }> = ({ message = 'Loading...
       <span className="text-gray-600">{message}</span>
     </div>
   </div>
-);
+)
 
-import type { ValuationResponse } from '../../../types/valuation';
+import type { ValuationResponse } from '../../../types/valuation'
 
 interface ManualValuationFlowProps {
-  reportId?: string;
-  onComplete: (result: ValuationResponse) => void;
+  reportId?: string
+  onComplete: (result: ValuationResponse) => void
 }
 
 export const ManualValuationFlow: React.FC<ManualValuationFlowProps> = ({
   reportId,
-  onComplete
+  onComplete,
 }) => {
-  const { result, isCalculating, calculateValuation, updateFormData } = useValuationStore();
-  const { user } = useAuth();
-  const [collectedData, setCollectedData] = useState<DataResponse[]>([]);
+  const { result, isCalculating, calculateValuation, updateFormData } = useValuationStore()
+  const { user } = useAuth()
+  const [collectedData, setCollectedData] = useState<DataResponse[]>([])
 
   // Handle data collection
   const handleDataCollected = (responses: DataResponse[]) => {
-    setCollectedData(responses);
+    setCollectedData(responses)
 
     // Convert responses to form data format using shared utility
-    const formData = convertDataResponsesToFormData(responses);
+    const formData = convertDataResponsesToFormData(responses)
 
     // Update valuation store with collected data
-    updateFormData(formData);
-  };
+    updateFormData(formData)
+  }
 
   // Handle collection completion
   const handleCollectionComplete = async (responses: DataResponse[]) => {
     // Convert responses to form data format using shared utility
-    const formData = convertDataResponsesToFormData(responses);
+    const formData = convertDataResponsesToFormData(responses)
 
     // Update valuation store with final collected data
-    updateFormData(formData);
+    updateFormData(formData)
 
     // Trigger valuation calculation with collected data
     try {
-      const valuationResult = await calculateValuation();
+      const valuationResult = await calculateValuation()
       if (valuationResult) {
-        onComplete(valuationResult);
+        onComplete(valuationResult)
       }
     } catch (error) {
-      generalLogger.error('Valuation calculation failed', { error, reportId });
+      generalLogger.error('Valuation calculation failed', { error, reportId })
     }
-  };
+  }
 
   // Handle progress updates
   const handleProgressUpdate = (progress: CollectionProgress) => {
-    generalLogger.debug('Manual flow progress update', { 
+    generalLogger.debug('Manual flow progress update', {
       progress: progress.overallProgress,
       completedFields: progress.completedFields,
-      totalFields: progress.totalFields 
-    });
-  };
+      totalFields: progress.totalFields,
+    })
+  }
 
   return (
     <div className="h-full flex flex-col">
@@ -91,23 +95,27 @@ export const ManualValuationFlow: React.FC<ManualValuationFlowProps> = ({
         onDownload={async () => {
           if (result) {
             try {
-              const { DownloadService } = await import('../../../services/downloadService');
+              const { DownloadService } = await import('../../../services/downloadService')
               await DownloadService.downloadPDF(result, {
                 format: 'pdf',
-                filename: `valuation-${Date.now()}.pdf`
-              });
+                filename: `valuation-${Date.now()}.pdf`,
+              })
             } catch (error) {
-              generalLogger.error('PDF download failed', { error, reportId });
+              generalLogger.error('PDF download failed', { error, reportId })
             }
           }
         }}
-        onFullScreen={() => {/* TODO: Implement full screen */}}
+        onFullScreen={() => {
+          /* TODO: Implement full screen */
+        }}
         isGenerating={isCalculating}
         user={user}
         valuationName="Manual Valuation"
         valuationId={result?.valuation_id}
         activeTab="preview"
-        onTabChange={() => {/* Single tab for now */}}
+        onTabChange={() => {
+          /* Single tab for now */
+        }}
       />
 
       {/* Results Display */}
@@ -119,5 +127,5 @@ export const ManualValuationFlow: React.FC<ManualValuationFlowProps> = ({
         </div>
       )}
     </div>
-  );
-};
+  )
+}

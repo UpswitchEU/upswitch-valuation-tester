@@ -4,4 +4,4 @@
  * @module services/chat/handlers/valuation
  */
 
-export { ValuationHandlers } from './ValuationHandlers';
+export { ValuationHandlers } from './ValuationHandlers'

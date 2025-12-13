@@ -1,11 +1,11 @@
 /**
  * Test Setup File for Valuation Tester
- * 
+ *
  * Global test configuration and mocks
  */
 
-import { vi, beforeEach, afterEach } from 'vitest';
-import '@testing-library/jest-dom';
+import { vi, beforeEach, afterEach } from 'vitest'
+import '@testing-library/jest-dom'
 
 // Mock localStorage
 Object.defineProperty(window, 'localStorage', {
@@ -16,7 +16,7 @@ Object.defineProperty(window, 'localStorage', {
     clear: vi.fn(),
   },
   writable: true,
-});
+})
 
 // Mock sessionStorage
 Object.defineProperty(window, 'sessionStorage', {
@@ -27,29 +27,29 @@ Object.defineProperty(window, 'sessionStorage', {
     clear: vi.fn(),
   },
   writable: true,
-});
+})
 
 // Mock fetch
-global.fetch = vi.fn();
+global.fetch = vi.fn()
 
 // Mock ResizeObserver
 global.ResizeObserver = vi.fn().mockImplementation(() => ({
   observe: vi.fn(),
   unobserve: vi.fn(),
   disconnect: vi.fn(),
-}));
+}))
 
 // Mock IntersectionObserver
 global.IntersectionObserver = vi.fn().mockImplementation(() => ({
   observe: vi.fn(),
   unobserve: vi.fn(),
   disconnect: vi.fn(),
-}));
+}))
 
 // Mock matchMedia
 Object.defineProperty(window, 'matchMedia', {
   writable: true,
-  value: vi.fn().mockImplementation(query => ({
+  value: vi.fn().mockImplementation((query) => ({
     matches: false,
     media: query,
     onchange: null,
@@ -59,24 +59,24 @@ Object.defineProperty(window, 'matchMedia', {
     removeEventListener: vi.fn(),
     dispatchEvent: vi.fn(),
   })),
-});
+})
 
 // Mock console methods to reduce noise in tests
-const originalConsoleError = console.error;
-const originalConsoleWarn = console.warn;
+const originalConsoleError = console.error
+const originalConsoleWarn = console.warn
 
 beforeEach(() => {
   // Reset all mocks before each test
-  vi.clearAllMocks();
-  
+  vi.clearAllMocks()
+
   // Reset fetch mock
   if (global.fetch) {
-    (global.fetch as any).mockClear();
+    ;(global.fetch as any).mockClear()
   }
-});
+})
 
 afterEach(() => {
   // Restore console methods
-  console.error = originalConsoleError;
-  console.warn = originalConsoleWarn;
-});
+  console.error = originalConsoleError
+  console.warn = originalConsoleWarn
+})

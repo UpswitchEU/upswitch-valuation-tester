@@ -1,34 +1,32 @@
-import { Building2, X } from 'lucide-react';
-import React, { useState } from 'react';
-import type { KBOSuggestion } from './utils/kboParsing';
+import { Building2, X } from 'lucide-react'
+import React, { useState } from 'react'
+import type { KBOSuggestion } from './utils/kboParsing'
 
 interface KBOSuggestionsListProps {
-  suggestions: KBOSuggestion[];
-  onSelect: (selection: string) => void;
+  suggestions: KBOSuggestion[]
+  onSelect: (selection: string) => void
 }
 
 export const KBOSuggestionsList: React.FC<KBOSuggestionsListProps> = ({
   suggestions,
   onSelect,
 }) => {
-  const [isDismissed, setIsDismissed] = useState(false);
+  const [isDismissed, setIsDismissed] = useState(false)
 
   const handleSelect = (selection: string) => {
     if (selection === 'none') {
-      setIsDismissed(true); // Hide immediately
+      setIsDismissed(true) // Hide immediately
     }
-    onSelect(selection);
-  };
+    onSelect(selection)
+  }
 
   // Early return if dismissed
-  if (isDismissed) return null;
+  if (isDismissed) return null
 
   return (
     <div className="mt-4 space-y-2">
-      <div className="text-xs text-zinc-400 mb-3">
-        Select a company from the list below:
-      </div>
-      
+      <div className="text-xs text-zinc-400 mb-3">Select a company from the list below:</div>
+
       {/* Suggestion Cards */}
       <div className="space-y-2">
         {suggestions.map((suggestion) => (
@@ -43,7 +41,7 @@ export const KBOSuggestionsList: React.FC<KBOSuggestionsListProps> = ({
               <div className="flex-shrink-0 w-8 h-8 bg-primary-600/20 text-primary-400 rounded-full flex items-center justify-center text-sm font-semibold">
                 {suggestion.number}
               </div>
-              
+
               {/* Company Info */}
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2">
@@ -58,7 +56,7 @@ export const KBOSuggestionsList: React.FC<KBOSuggestionsListProps> = ({
                   </div>
                 )}
               </div>
-              
+
               {/* Hover Indicator */}
               <div className="flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
                 <div className="w-2 h-2 bg-primary-500 rounded-full" />
@@ -67,7 +65,7 @@ export const KBOSuggestionsList: React.FC<KBOSuggestionsListProps> = ({
           </button>
         ))}
       </div>
-      
+
       {/* None of these button */}
       <button
         onClick={() => handleSelect('none')}
@@ -80,6 +78,5 @@ export const KBOSuggestionsList: React.FC<KBOSuggestionsListProps> = ({
         </div>
       </button>
     </div>
-  );
-};
-
+  )
+}

@@ -7,14 +7,14 @@
  * @module services/chat/handlers/valuation/ValuationHandlers
  */
 
-import { chatLogger } from '../../../../utils/logger';
-import { StreamEventHandlerCallbacks } from '../../StreamEventHandler';
+import { chatLogger } from '../../../../utils/logger'
+import { StreamEventHandlerCallbacks } from '../../StreamEventHandler'
 
 export class ValuationHandlers {
-  private callbacks: StreamEventHandlerCallbacks;
+  private callbacks: StreamEventHandlerCallbacks
 
   constructor(callbacks: StreamEventHandlerCallbacks) {
-    this.callbacks = callbacks;
+    this.callbacks = callbacks
   }
 
   /**
@@ -24,11 +24,11 @@ export class ValuationHandlers {
     chatLogger.info('Valuation preview received', {
       hasValue: !!data.value,
       value: data.value,
-      metadataKeys: Object.keys(data)
-    });
+      metadataKeys: Object.keys(data),
+    })
 
-    this.callbacks.setValuationPreview(data);
-    this.callbacks.onValuationPreview?.(data);
+    this.callbacks.setValuationPreview(data)
+    this.callbacks.onValuationPreview?.(data)
   }
 
   /**
@@ -39,11 +39,11 @@ export class ValuationHandlers {
       hasParameters: !!data.parameters,
       parametersKeys: data.parameters ? Object.keys(data.parameters) : [],
       hasValue: !!data.estimatedValue,
-      estimatedValue: data.estimatedValue
-    });
+      estimatedValue: data.estimatedValue,
+    })
 
-    this.callbacks.setCalculateOption(data);
-    this.callbacks.onCalculateOptionAvailable?.(data);
+    this.callbacks.setCalculateOption(data)
+    this.callbacks.onCalculateOptionAvailable?.(data)
   }
 
   /**
@@ -51,8 +51,8 @@ export class ValuationHandlers {
    */
   handleValuationReady(data: any): void {
     chatLogger.info('Valuation ready event received', {
-      dataKeys: Object.keys(data)
-    });
+      dataKeys: Object.keys(data),
+    })
 
     // Valuation ready typically triggers UI updates to show calculation is ready
     // The actual CTA creation happens in message metadata
@@ -63,8 +63,8 @@ export class ValuationHandlers {
    */
   handleValuationConfirmed(data: any): void {
     chatLogger.info('Valuation confirmed event received', {
-      dataKeys: Object.keys(data)
-    });
+      dataKeys: Object.keys(data),
+    })
 
     // Valuation confirmed typically indicates user has accepted the valuation
     // This may trigger final report generation
@@ -78,13 +78,13 @@ export class ValuationHandlers {
       hasResult: !!data.result,
       resultKeys: data.result ? Object.keys(data.result) : [],
       hasValuationId: !!data.valuation_id,
-      valuationId: data.valuation_id
-    });
+      valuationId: data.valuation_id,
+    })
 
     // Track conversation completion with valuation
-    this.callbacks.trackConversationCompletion?.(true, true);
+    this.callbacks.trackConversationCompletion?.(true, true)
 
     // Call valuation complete callback
-    this.callbacks.onValuationComplete?.(data.result || data);
+    this.callbacks.onValuationComplete?.(data.result || data)
   }
 }

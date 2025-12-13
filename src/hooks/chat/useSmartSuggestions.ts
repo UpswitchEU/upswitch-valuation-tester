@@ -5,16 +5,16 @@
  * Follows Single Responsibility Principle by focusing only on suggestion logic.
  */
 
-import { useMemo } from 'react';
-import { Message } from '../useStreamingChatState';
+import { useMemo } from 'react'
+import { Message } from '../useStreamingChatState'
 
 export interface UseSmartSuggestionsOptions {
-  messages: Message[];
+  messages: Message[]
 }
 
 export interface UseSmartSuggestionsReturn {
-  suggestions: string[];
-  getSuggestionsForField: (field: string) => string[];
+  suggestions: string[]
+  getSuggestionsForField: (field: string) => string[]
 }
 
 /**
@@ -30,42 +30,39 @@ export function useSmartSuggestions({
   const getSuggestionsForField = (field: string): string[] => {
     switch (field) {
       case 'business_type':
-        return ['SaaS Platform', 'E-commerce Store', 'Consulting Firm', 'Digital Agency'];
+        return ['SaaS Platform', 'E-commerce Store', 'Consulting Firm', 'Digital Agency']
       case 'revenue':
-        return ['$1M - $5M ARR', '$5M - $10M ARR', '$10M - $50M ARR', '$50M+ ARR'];
+        return ['$1M - $5M ARR', '$5M - $10M ARR', '$10M - $50M ARR', '$50M+ ARR']
       case 'employee_count':
-        return ['1-10 team', '11-50 team', '51-200 team', '200+ team'];
+        return ['1-10 team', '11-50 team', '51-200 team', '200+ team']
       case 'industry':
-        return ['Technology', 'Healthcare', 'Finance', 'Retail', 'Manufacturing'];
+        return ['Technology', 'Healthcare', 'Finance', 'Retail', 'Manufacturing']
       case 'country_code':
-        return ['United States', 'United Kingdom', 'Germany', 'France', 'Canada'];
+        return ['United States', 'United Kingdom', 'Germany', 'France', 'Canada']
       default:
-        return [];
+        return []
     }
-  };
+  }
 
   // Calculate suggestions based on last AI message
   const suggestions = useMemo(() => {
-    if (messages.length === 0) return [];
+    if (messages.length === 0) return []
 
-    const lastMessage = messages[messages.length - 1];
+    const lastMessage = messages[messages.length - 1]
     if (lastMessage?.type === 'ai' && lastMessage.metadata) {
-      const metadata = lastMessage.metadata as any;
-      const field =
-        metadata.collected_field ||
-        metadata.clarification_field ||
-        metadata.field;
+      const metadata = lastMessage.metadata as any
+      const field = metadata.collected_field || metadata.clarification_field || metadata.field
 
       if (field) {
-        return getSuggestionsForField(field);
+        return getSuggestionsForField(field)
       }
     }
 
-    return [];
-  }, [messages]);
+    return []
+  }, [messages])
 
   return {
     suggestions,
     getSuggestionsForField,
-  };
+  }
 }

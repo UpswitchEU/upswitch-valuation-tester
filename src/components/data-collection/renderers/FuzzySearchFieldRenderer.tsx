@@ -5,81 +5,82 @@
  * SOLID Principles: SRP, OCP, LSP, ISP, DIP
  */
 
-import { Check, Search } from 'lucide-react';
-import React, { useMemo, useState } from 'react';
-import { FieldRendererProps } from '../../../types/data-collection';
+import { Check, Search } from 'lucide-react'
+import React, { useMemo, useState } from 'react'
+import { FieldRendererProps } from '../../../types/data-collection'
 
 export const FuzzySearchFieldRenderer: React.FC<FieldRendererProps> = ({
   field,
   value,
   onChange,
   errors = [],
-  disabled = false
+  disabled = false,
 }) => {
-  const [query, setQuery] = useState('');
-  const [isOpen, setIsOpen] = useState(false);
-  const hasErrors = errors.length > 0;
-  const errorMessage = errors.find(e => e.severity === 'error')?.message;
+  const [query, setQuery] = useState('')
+  const [isOpen, setIsOpen] = useState(false)
+  const hasErrors = errors.length > 0
+  const errorMessage = errors.find((e) => e.severity === 'error')?.message
 
   // Fuzzy search through options
   const searchResults = useMemo(() => {
-    if (!query.trim() || !field.options) return [];
+    if (!query.trim() || !field.options) return []
 
-    const queryLower = query.toLowerCase();
-    const results: Array<{ option: { value: string; label: string; description?: string }; score: number }> = [];
+    const queryLower = query.toLowerCase()
+    const results: Array<{
+      option: { value: string; label: string; description?: string }
+      score: number
+    }> = []
 
     for (const option of field.options) {
-      const labelLower = option.label.toLowerCase();
-      const valueLower = option.value.toLowerCase();
+      const labelLower = option.label.toLowerCase()
+      const valueLower = option.value.toLowerCase()
 
-      let score = 0;
+      let score = 0
 
       // Exact match
       if (labelLower === queryLower || valueLower === queryLower) {
-        score = 100;
+        score = 100
       }
       // Starts with query
       else if (labelLower.startsWith(queryLower) || valueLower.startsWith(queryLower)) {
-        score = 80;
+        score = 80
       }
       // Contains query
       else if (labelLower.includes(queryLower) || valueLower.includes(queryLower)) {
-        score = 60;
+        score = 60
       }
       // Fuzzy character matching
       else {
-        const queryChars = queryLower.split('');
-        let matches = 0;
+        const queryChars = queryLower.split('')
+        let matches = 0
         for (const char of queryChars) {
           if (labelLower.includes(char) || valueLower.includes(char)) {
-            matches++;
+            matches++
           }
         }
-        score = (matches / queryChars.length) * 40;
+        score = (matches / queryChars.length) * 40
       }
 
       if (score > 20) {
-        results.push({ option, score });
+        results.push({ option, score })
       }
     }
 
-    return results
-      .sort((a, b) => b.score - a.score)
-      .slice(0, 8); // Limit results
-  }, [query, field.options]);
+    return results.sort((a, b) => b.score - a.score).slice(0, 8) // Limit results
+  }, [query, field.options])
 
   const handleSelect = (selectedValue: string) => {
-    onChange(selectedValue, 'fuzzy_search');
-    setQuery('');
-    setIsOpen(false);
-  };
+    onChange(selectedValue, 'fuzzy_search')
+    setQuery('')
+    setIsOpen(false)
+  }
 
   // Get display label for current value
   const getDisplayLabel = () => {
-    if (!value || !field.options) return '';
-    const option = field.options.find(opt => opt.value === value);
-    return option ? option.label : value;
-  };
+    if (!value || !field.options) return ''
+    const option = field.options.find((opt) => opt.value === value)
+    return option ? option.label : value
+  }
 
   return (
     <div className="space-y-2">
@@ -88,9 +89,7 @@ export const FuzzySearchFieldRenderer: React.FC<FieldRendererProps> = ({
         {field.required && <span className="text-red-400 ml-1">*</span>}
       </label>
 
-      {field.description && (
-        <p className="text-xs text-zinc-400">{field.description}</p>
-      )}
+      {field.description && <p className="text-xs text-zinc-400">{field.description}</p>}
 
       {/* Search Input */}
       <div className="relative">
@@ -100,8 +99,8 @@ export const FuzzySearchFieldRenderer: React.FC<FieldRendererProps> = ({
             type="text"
             value={query}
             onChange={(e) => {
-              setQuery(e.target.value);
-              setIsOpen(true);
+              setQuery(e.target.value)
+              setIsOpen(true)
             }}
             onFocus={() => setIsOpen(true)}
             placeholder={`Search ${field.label.toLowerCase()}...`}
@@ -135,9 +134,7 @@ export const FuzzySearchFieldRenderer: React.FC<FieldRendererProps> = ({
                       <div className="text-xs text-zinc-400 mt-1">{option.description}</div>
                     )}
                   </div>
-                  {value === option.value && (
-                    <Check className="w-4 h-4 text-primary-400" />
-                  )}
+                  {value === option.value && <Check className="w-4 h-4 text-primary-400" />}
                 </div>
               </button>
             ))}
@@ -163,7 +160,7 @@ export const FuzzySearchFieldRenderer: React.FC<FieldRendererProps> = ({
         <div className="space-y-2">
           <p className="text-xs text-zinc-500">Popular options:</p>
           <div className="flex flex-wrap gap-2">
-            {field.options.slice(0, 6).map(option => (
+            {field.options.slice(0, 6).map((option) => (
               <button
                 key={option.value}
                 onClick={() => handleSelect(option.value)}
@@ -177,9 +174,7 @@ export const FuzzySearchFieldRenderer: React.FC<FieldRendererProps> = ({
         </div>
       )}
 
-      {errorMessage && (
-        <p className="text-sm text-red-400">{errorMessage}</p>
-      )}
+      {errorMessage && <p className="text-sm text-red-400">{errorMessage}</p>}
     </div>
-  );
-};
+  )
+}

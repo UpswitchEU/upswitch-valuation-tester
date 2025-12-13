@@ -12,7 +12,7 @@ export {
   FeatureErrorBoundary,
   ComponentErrorBoundary,
   NetworkErrorBoundary,
-} from './components/ErrorBoundary';
+} from './components/ErrorBoundary'
 
 // This will be populated with more shared components as we identify them
-export {};
+export {}

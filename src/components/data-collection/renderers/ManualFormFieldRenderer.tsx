@@ -5,8 +5,8 @@
  * SOLID Principles: SRP, OCP, LSP, ISP, DIP
  */
 
-import React from 'react';
-import { DataField, FieldRendererProps, FieldValue, ParsedFieldValue } from '../../../types/data-collection';
+import React from 'react'
+import { DataField, FieldRendererProps, ParsedFieldValue } from '../../../types/data-collection'
 
 export const ManualFormFieldRenderer: React.FC<FieldRendererProps> = ({
   field,
@@ -14,14 +14,14 @@ export const ManualFormFieldRenderer: React.FC<FieldRendererProps> = ({
   onChange,
   errors = [],
   disabled = false,
-  autoFocus = false
+  autoFocus = false,
 }) => {
-  const hasErrors = errors.length > 0;
-  const errorMessage = errors.find(e => e.severity === 'error')?.message;
+  const hasErrors = errors.length > 0
+  const errorMessage = errors.find((e) => e.severity === 'error')?.message
 
   const handleChange = (newValue: ParsedFieldValue) => {
-    onChange(newValue, 'manual_form');
-  };
+    onChange(newValue, 'manual_form')
+  }
 
   return (
     <div className="space-y-2">
@@ -30,9 +30,7 @@ export const ManualFormFieldRenderer: React.FC<FieldRendererProps> = ({
         {field.required && <span className="text-red-400 ml-1">*</span>}
       </label>
 
-      {field.description && (
-        <p className="text-sm text-zinc-400">{field.description}</p>
-      )}
+      {field.description && <p className="text-sm text-zinc-400">{field.description}</p>}
 
       <FieldInput
         field={field}
@@ -43,20 +41,18 @@ export const ManualFormFieldRenderer: React.FC<FieldRendererProps> = ({
         hasErrors={hasErrors}
       />
 
-      {errorMessage && (
-        <p className="text-sm text-red-400">{errorMessage}</p>
-      )}
+      {errorMessage && <p className="text-sm text-red-400">{errorMessage}</p>}
     </div>
-  );
-};
+  )
+}
 
 interface FieldInputProps {
-  field: DataField;
-  value: string | number | boolean;
-  onChange: (value: ParsedFieldValue) => void;
-  disabled?: boolean;
-  autoFocus?: boolean;
-  hasErrors?: boolean;
+  field: DataField
+  value: string | number | boolean
+  onChange: (value: ParsedFieldValue) => void
+  disabled?: boolean
+  autoFocus?: boolean
+  hasErrors?: boolean
 }
 
 const FieldInput: React.FC<FieldInputProps> = ({
@@ -65,19 +61,19 @@ const FieldInput: React.FC<FieldInputProps> = ({
   onChange,
   disabled = false,
   autoFocus = false,
-  hasErrors = false
+  hasErrors = false,
 }) => {
   const baseClasses = `
     w-full px-3 py-2 bg-zinc-800 border rounded-lg text-white placeholder-zinc-400
     focus:outline-none focus:ring-2 focus:ring-primary-500
     ${hasErrors ? 'border-red-500' : 'border-zinc-600'}
     ${disabled ? 'opacity-50 cursor-not-allowed' : ''}
-  `;
+  `
 
   switch (field.type) {
     case 'text':
     case 'textarea':
-      const textValue = typeof value === 'string' ? value : String(value || '');
+      const textValue = typeof value === 'string' ? value : String(value || '')
       if (field.type === 'textarea') {
         return (
           <textarea
@@ -89,7 +85,7 @@ const FieldInput: React.FC<FieldInputProps> = ({
             rows={4}
             className={baseClasses}
           />
-        );
+        )
       }
       return (
         <input
@@ -101,27 +97,33 @@ const FieldInput: React.FC<FieldInputProps> = ({
           autoFocus={autoFocus}
           className={baseClasses}
         />
-      );
+      )
 
     case 'number':
     case 'currency':
-      const numericValue = typeof value === 'number' ? value : (value ? Number(value) : '');
+      const numericValue = typeof value === 'number' ? value : value ? Number(value) : ''
       return (
         <input
           type="number"
           value={numericValue}
-          onChange={(e) => onChange(field.type === 'currency' ? parseFloat(e.target.value) || 0 : parseInt(e.target.value) || 0)}
+          onChange={(e) =>
+            onChange(
+              field.type === 'currency'
+                ? parseFloat(e.target.value) || 0
+                : parseInt(e.target.value) || 0
+            )
+          }
           placeholder={field.placeholder}
           disabled={disabled}
           autoFocus={autoFocus}
-          min={field.validation?.find(v => v.type === 'min')?.value as number}
-          max={field.validation?.find(v => v.type === 'max')?.value as number}
+          min={field.validation?.find((v) => v.type === 'min')?.value as number}
+          max={field.validation?.find((v) => v.type === 'max')?.value as number}
           className={baseClasses}
         />
-      );
+      )
 
     case 'select':
-      const selectValue = typeof value === 'string' ? value : String(value || '');
+      const selectValue = typeof value === 'string' ? value : String(value || '')
       return (
         <select
           value={selectValue}
@@ -130,19 +132,17 @@ const FieldInput: React.FC<FieldInputProps> = ({
           autoFocus={autoFocus}
           className={baseClasses}
         >
-          <option value="">
-            {field.placeholder || `Select ${field.label}`}
-          </option>
-          {field.options?.map(option => (
+          <option value="">{field.placeholder || `Select ${field.label}`}</option>
+          {field.options?.map((option) => (
             <option key={option.value} value={option.value}>
               {option.label}
             </option>
           ))}
         </select>
-      );
+      )
 
     case 'boolean':
-      const booleanValue = Boolean(value);
+      const booleanValue = Boolean(value)
       return (
         <div className="flex items-center space-x-2">
           <input
@@ -155,10 +155,10 @@ const FieldInput: React.FC<FieldInputProps> = ({
           />
           <span className="text-sm text-zinc-300">Yes</span>
         </div>
-      );
+      )
 
     case 'percentage':
-      const percentageValue = typeof value === 'number' ? (value * 100) : (value ? Number(value) : '');
+      const percentageValue = typeof value === 'number' ? value * 100 : value ? Number(value) : ''
       return (
         <div className="relative">
           <input
@@ -174,10 +174,10 @@ const FieldInput: React.FC<FieldInputProps> = ({
           />
           <span className="absolute right-3 top-2 text-zinc-400">%</span>
         </div>
-      );
+      )
 
     default:
-      const defaultValue = typeof value === 'string' ? value : String(value || '');
+      const defaultValue = typeof value === 'string' ? value : String(value || '')
       return (
         <input
           type="text"
@@ -188,6 +188,6 @@ const FieldInput: React.FC<FieldInputProps> = ({
           autoFocus={autoFocus}
           className={baseClasses}
         />
-      );
+      )
   }
-};
+}

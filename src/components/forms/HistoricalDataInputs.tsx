@@ -1,12 +1,12 @@
-import React from 'react';
-import { CustomInputField, CustomNumberInputField } from './index';
+import React from 'react'
+import { CustomInputField, CustomNumberInputField } from './index'
 
 interface HistoricalDataInputsProps {
-  historicalInputs: Record<string, string>;
-  onChange: (inputs: Record<string, string>) => void;
-  onBlur: () => void;
-  foundingYear?: number;
-  currentYear?: number;
+  historicalInputs: Record<string, string>
+  onChange: (inputs: Record<string, string>) => void
+  onBlur: () => void
+  foundingYear?: number
+  currentYear?: number
 }
 
 export const HistoricalDataInputs: React.FC<HistoricalDataInputsProps> = ({
@@ -14,40 +14,40 @@ export const HistoricalDataInputs: React.FC<HistoricalDataInputsProps> = ({
   onChange,
   onBlur,
   foundingYear,
-  currentYear
+  currentYear,
 }) => {
   // Helper function to update historical data
   const updateHistoricalData = (year: number, field: 'revenue' | 'ebitda', value: string) => {
-    const key = `${year}_${field}`;
+    const key = `${year}_${field}`
     onChange({
       ...historicalInputs,
-      [key]: value
-    });
-  };
+      [key]: value,
+    })
+  }
 
   // Calculate dynamic historical years based on founding year
   // Returns years in descending order (most recent first) for better UX
   // Example: If current year is 2025, returns [2024, 2023] (most recent first)
   const calculateHistoricalYears = (): number[] => {
-    const now = currentYear || new Date().getFullYear();
-    const historicalYears: number[] = [];
-    
+    const now = currentYear || new Date().getFullYear()
+    const historicalYears: number[] = []
+
     // Show up to 2 years before current year
     // Loop from 1 to 2 to get years in order: now-1 (most recent), now-2 (older)
     for (let i = 1; i <= 2; i++) {
-      const year = now - i;
+      const year = now - i
       // Only include years >= founding year
       if (!foundingYear || year >= foundingYear) {
-        historicalYears.push(year);
+        historicalYears.push(year)
       }
     }
-    
+
     // Array is already in descending order (most recent first): [2024, 2023]
     // Return as-is - no need to reverse
-    return historicalYears;
-  };
+    return historicalYears
+  }
 
-  const yearsToShow = calculateHistoricalYears();
+  const yearsToShow = calculateHistoricalYears()
 
   // If no years to show, display a helpful message
   if (yearsToShow.length === 0) {
@@ -56,16 +56,16 @@ export const HistoricalDataInputs: React.FC<HistoricalDataInputsProps> = ({
         <p>No historical data available yet.</p>
         <p className="text-xs mt-1">Company was founded in {foundingYear || 'current year'}.</p>
       </div>
-    );
+    )
   }
 
   return (
     <div className="space-y-6">
       {yearsToShow.map((year) => {
-        const revenueKey = `${year}_revenue`;
-        const ebitdaKey = `${year}_ebitda`;
-        const revenue = historicalInputs[revenueKey] || '';
-        const ebitda = historicalInputs[ebitdaKey] || '';
+        const revenueKey = `${year}_revenue`
+        const ebitdaKey = `${year}_ebitda`
+        const revenue = historicalInputs[revenueKey] || ''
+        const ebitda = historicalInputs[ebitdaKey] || ''
 
         return (
           <div key={year} className="grid grid-cols-1 @5xl:grid-cols-3 gap-6">
@@ -108,10 +108,10 @@ export const HistoricalDataInputs: React.FC<HistoricalDataInputsProps> = ({
               />
             </div>
           </div>
-        );
+        )
       })}
     </div>
-  );
-};
+  )
+}
 
-export default HistoricalDataInputs;
+export default HistoricalDataInputs

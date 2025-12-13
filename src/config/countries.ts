@@ -2,13 +2,13 @@
 // Focus on BENELUX + Germany, UK, and France
 
 export interface Country {
-  code: string;
-  name: string;
-  flag: string;
-  currency: string;
-  currencySymbol: string;
-  locale: string;
-  taxSystem: string;
+  code: string
+  name: string
+  flag: string
+  currency: string
+  currencySymbol: string
+  locale: string
+  taxSystem: string
 }
 
 export const TARGET_COUNTRIES: Country[] = [
@@ -67,30 +67,30 @@ export const TARGET_COUNTRIES: Country[] = [
   //   locale: 'fr-FR',
   //   taxSystem: 'french',
   // },
-] as const;
+] as const
 
-export const DEFAULT_COUNTRY = TARGET_COUNTRIES[0]; // Belgium
+export const DEFAULT_COUNTRY = TARGET_COUNTRIES[0] // Belgium
 
 // Helper functions
 export function getCountryByCode(code: string): Country | undefined {
-  return TARGET_COUNTRIES.find(c => c.code === code);
+  return TARGET_COUNTRIES.find((c) => c.code === code)
 }
 
 export function formatCurrency(amount: number, countryCode: string): string {
-  const country = getCountryByCode(countryCode);
-  if (!country) return `€${amount.toLocaleString()}`;
+  const country = getCountryByCode(countryCode)
+  if (!country) return `€${amount.toLocaleString()}`
 
   return new Intl.NumberFormat(country.locale, {
     style: 'currency',
     currency: country.currency,
     minimumFractionDigits: 0,
     maximumFractionDigits: 0,
-  }).format(amount);
+  }).format(amount)
 }
 
 export function getCurrencySymbol(countryCode: string): string {
-  const country = getCountryByCode(countryCode);
-  return country?.currencySymbol || '€';
+  const country = getCountryByCode(countryCode)
+  return country?.currencySymbol || '€'
 }
 
 // Industry categories relevant for these markets
@@ -111,7 +111,6 @@ export const INDUSTRIES = [
   'Education',
   'Agriculture',
   'Other',
-] as const;
+] as const
 
-export type Industry = typeof INDUSTRIES[number];
-
+export type Industry = (typeof INDUSTRIES)[number]

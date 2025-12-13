@@ -5,36 +5,36 @@
  * Components depend on these abstractions, not concrete implementations.
  */
 
-import { Message } from '../../../hooks/useStreamingChatState';
-import { ValuationRequest, ValuationResponse, ValuationSession } from '../../../types/valuation';
+import { Message } from '../../../hooks/useStreamingChatState'
+import { ValuationRequest, ValuationResponse, ValuationSession } from '../../../types/valuation'
 
 // Core domain types
 export interface BusinessProfile {
-  company_name?: string;
-  industry?: string;
-  business_type?: string;
-  revenue?: number;
-  revenue_range?: string;
-  employees?: number;
-  founding_year?: number;
-  country_code?: string;
-  [key: string]: any;
+  company_name?: string
+  industry?: string
+  business_type?: string
+  revenue?: number
+  revenue_range?: string
+  employees?: number
+  founding_year?: number
+  country_code?: string
+  [key: string]: any
 }
 
 export interface ConversationStartRequest {
-  user_id?: string;
-  company_name?: string;
-  industry?: string;
-  business_model?: string;
-  time_commitment?: 'quick' | 'detailed';
-  focus_area?: 'all' | 'financials' | 'operations' | 'market';
-  [key: string]: any;
+  user_id?: string
+  company_name?: string
+  industry?: string
+  business_model?: string
+  time_commitment?: 'quick' | 'detailed'
+  focus_area?: 'all' | 'financials' | 'operations' | 'market'
+  [key: string]: any
 }
 
 export interface ConversationStartResponse {
-  conversation_id: string;
-  valuation_result?: ValuationResponse;
-  message?: string;
+  conversation_id: string
+  valuation_result?: ValuationResponse
+  message?: string
 }
 
 // Service Interfaces (DIP compliant)
@@ -49,7 +49,7 @@ export interface IValuationService {
   /**
    * Calculate valuation based on provided data
    */
-  calculateValuation(request: ValuationRequest): Promise<ValuationResponse>;
+  calculateValuation(request: ValuationRequest): Promise<ValuationResponse>
 
   /**
    * Start streaming valuation calculation
@@ -59,7 +59,7 @@ export interface IValuationService {
     onProgress?: (progress: number, message: string) => void,
     onComplete?: (result: ValuationResponse) => void,
     onError?: (error: string) => void
-  ): Promise<{ stop: () => void }>;
+  ): Promise<{ stop: () => void }>
 }
 
 /**
@@ -71,22 +71,26 @@ export interface ISessionService {
   /**
    * Create a new valuation session
    */
-  createSession(reportId: string, flow: 'manual' | 'conversational', initialData?: any): Promise<ValuationSession>;
+  createSession(
+    reportId: string,
+    flow: 'manual' | 'conversational',
+    initialData?: any
+  ): Promise<ValuationSession>
 
   /**
    * Load existing session by report ID
    */
-  loadSession(reportId: string): Promise<ValuationSession | null>;
+  loadSession(reportId: string): Promise<ValuationSession | null>
 
   /**
    * Update session data
    */
-  updateSession(reportId: string, updates: Partial<ValuationSession>): Promise<void>;
+  updateSession(reportId: string, updates: Partial<ValuationSession>): Promise<void>
 
   /**
    * Delete session
    */
-  deleteSession(reportId: string): Promise<void>;
+  deleteSession(reportId: string): Promise<void>
 }
 
 /**
@@ -98,27 +102,27 @@ export interface IConversationService {
   /**
    * Start a new conversation
    */
-  startConversation(request: ConversationStartRequest): Promise<ConversationStartResponse>;
+  startConversation(request: ConversationStartRequest): Promise<ConversationStartResponse>
 
   /**
    * Send message in conversation
    */
-  sendMessage(conversationId: string, message: string, context?: any): Promise<Message>;
+  sendMessage(conversationId: string, message: string, context?: any): Promise<Message>
 
   /**
    * Get conversation history
    */
-  getConversationHistory(conversationId: string): Promise<{ messages: Message[]; exists: boolean }>;
+  getConversationHistory(conversationId: string): Promise<{ messages: Message[]; exists: boolean }>
 
   /**
    * Restore conversation from backend
    */
-  restoreConversation(sessionId: string): Promise<Message[]>;
+  restoreConversation(sessionId: string): Promise<Message[]>
 
   /**
    * Clear conversation
    */
-  clearConversation(conversationId: string): Promise<void>;
+  clearConversation(conversationId: string): Promise<void>
 }
 
 /**
@@ -130,27 +134,27 @@ export interface IBusinessProfileService {
   /**
    * Fetch user's business profile
    */
-  fetchUserProfile(userId: string): Promise<BusinessProfile | null>;
+  fetchUserProfile(userId: string): Promise<BusinessProfile | null>
 
   /**
    * Save/update business profile
    */
-  saveProfile(userId: string, profile: BusinessProfile): Promise<void>;
+  saveProfile(userId: string, profile: BusinessProfile): Promise<void>
 
   /**
    * Transform profile for conversation start
    */
-  transformForConversation(profile: BusinessProfile, options?: any): ConversationStartRequest;
+  transformForConversation(profile: BusinessProfile, options?: any): ConversationStartRequest
 
   /**
    * Get profile completeness analysis
    */
   getCompletenessAnalysis(profile: BusinessProfile): {
-    completeness: number;
-    complete: string[];
-    priority: string[];
-    estimatedTime: string;
-  };
+    completeness: number
+    complete: string[]
+    priority: string[]
+    estimatedTime: string
+  }
 }
 
 /**
@@ -162,32 +166,32 @@ export interface ICreditService {
   /**
    * Check if user has credits
    */
-  hasCredits(): boolean;
+  hasCredits(): boolean
 
   /**
    * Use a credit
    */
-  useCredit(): boolean;
+  useCredit(): boolean
 
   /**
    * Get remaining credits
    */
-  getCreditsRemaining(): number;
+  getCreditsRemaining(): number
 
   /**
    * Reset credits (admin function)
    */
-  resetCredits(): void;
+  resetCredits(): void
 
   /**
    * Get credit status
    */
   getCreditStatus(): {
-    remaining: number;
-    total: number;
-    hasCredits: boolean;
-    isFirstTime: boolean;
-  };
+    remaining: number
+    total: number
+    hasCredits: boolean
+    isFirstTime: boolean
+  }
 }
 
 /**
@@ -199,20 +203,20 @@ export interface IReportService {
   /**
    * Generate valuation report
    */
-  generateReport(valuationResult: ValuationResponse): Promise<string>;
+  generateReport(valuationResult: ValuationResponse): Promise<string>
 
   /**
    * Download report as PDF
    */
-  downloadPDF(valuationData: any, options: any): Promise<void>;
+  downloadPDF(valuationData: any, options: any): Promise<void>
 
   /**
    * Save report to backend
    */
-  saveReport(reportId: string, reportData: any): Promise<void>;
+  saveReport(reportId: string, reportData: any): Promise<void>
 
   /**
    * Load saved report
    */
-  loadReport(reportId: string): Promise<any>;
+  loadReport(reportId: string): Promise<any>
 }

@@ -1,32 +1,32 @@
 /**
  * ValidationMessage Component
- * 
+ *
  * Displays real-time validation feedback (errors, warnings, suggestions).
  * Supports different severity levels with appropriate styling.
- * 
+ *
  * @author UpSwitch CTO Team
  * @version 2.0.0
  */
 
-import React from 'react';
+import React from 'react'
 
 // ============================================================================
 // TYPES
 // ============================================================================
 
-export type ValidationSeverity = 'error' | 'warning' | 'info';
+export type ValidationSeverity = 'error' | 'warning' | 'info'
 
 export interface ValidationMessageData {
-  field?: string;
-  rule?: string;
-  message: string;
-  severity: ValidationSeverity;
+  field?: string
+  rule?: string
+  message: string
+  severity: ValidationSeverity
 }
 
 interface ValidationMessageProps {
-  validation: ValidationMessageData;
-  className?: string;
-  onDismiss?: () => void;
+  validation: ValidationMessageData
+  className?: string
+  onDismiss?: () => void
 }
 
 // ============================================================================
@@ -38,7 +38,7 @@ export const ValidationMessage: React.FC<ValidationMessageProps> = ({
   className = '',
   onDismiss,
 }) => {
-  const { message, severity } = validation;
+  const { message, severity } = validation
 
   // Severity-based styling
   const severityStyles = {
@@ -57,9 +57,9 @@ export const ValidationMessage: React.FC<ValidationMessageProps> = ({
       icon: 'ℹ️',
       iconBg: 'bg-blue-100',
     },
-  };
+  }
 
-  const styles = severityStyles[severity];
+  const styles = severityStyles[severity]
 
   return (
     <div
@@ -92,11 +92,7 @@ export const ValidationMessage: React.FC<ValidationMessageProps> = ({
           className="ml-3 flex-shrink-0 text-gray-400 hover:text-gray-600 transition-colors"
           aria-label="Dismiss"
         >
-          <svg
-            className="w-5 h-5"
-            fill="currentColor"
-            viewBox="0 0 20 20"
-          >
+          <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
             <path
               fillRule="evenodd"
               d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
@@ -106,17 +102,17 @@ export const ValidationMessage: React.FC<ValidationMessageProps> = ({
         </button>
       )}
     </div>
-  );
-};
+  )
+}
 
 // ============================================================================
 // VALIDATION MESSAGE LIST
 // ============================================================================
 
 interface ValidationMessageListProps {
-  validations: ValidationMessageData[];
-  className?: string;
-  onDismissAll?: () => void;
+  validations: ValidationMessageData[]
+  className?: string
+  onDismissAll?: () => void
 }
 
 export const ValidationMessageList: React.FC<ValidationMessageListProps> = ({
@@ -124,7 +120,7 @@ export const ValidationMessageList: React.FC<ValidationMessageListProps> = ({
   className = '',
   onDismissAll,
 }) => {
-  if (validations.length === 0) return null;
+  if (validations.length === 0) return null
 
   return (
     <div className={`space-y-2 ${className}`}>
@@ -151,8 +147,7 @@ export const ValidationMessageList: React.FC<ValidationMessageListProps> = ({
         />
       ))}
     </div>
-  );
-};
+  )
+}
 
-export default ValidationMessage;
-
+export default ValidationMessage

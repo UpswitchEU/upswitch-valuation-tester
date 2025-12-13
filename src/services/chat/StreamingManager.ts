@@ -1,33 +1,36 @@
 /**
  * StreamingManager - Handles streaming conversation logic
- * 
+ *
  * Extracted from StreamingChat.tsx to reduce component complexity and improve maintainability.
  * Centralizes all streaming logic including async generators, EventSource fallback, and retry mechanisms.
- * 
+ *
  * CRITICAL: Lock Release Robustness
  * - Lock is released in BOTH catch and finally blocks
  * - AbortController ensures proper cleanup
  * - Cleanup method for component unmount
  */
 
-import { Message } from '../../hooks/useStreamingChatState';
-import { debugLogger } from '../../utils/debugLogger';
-import { chatLogger } from '../../utils/logger';
-import { streamingChatService } from './streamingChatService';
+import { Message } from '../../hooks/useStreamingChatState'
+import { debugLogger } from '../../utils/debugLogger'
+import { chatLogger } from '../../utils/logger'
+import { streamingChatService } from './streamingChatService'
 
 export interface StreamingManagerCallbacks {
-  setIsStreaming: (streaming: boolean) => void;
-  addMessage: (message: Omit<Message, 'id' | 'timestamp'>) => { updatedMessages: Message[], newMessage: Message };
-  updateStreamingMessage: (content: string, isComplete?: boolean) => void;
-  onContextUpdate?: (context: any) => void;
-  extractBusinessModelFromInput: (input: string) => string | null;
-  extractFoundingYearFromInput: (input: string) => number | null;
-  onStreamStart?: () => void; // CRITICAL FIX: Callback to reset event handler state when new stream starts
+  setIsStreaming: (streaming: boolean) => void
+  addMessage: (message: Omit<Message, 'id' | 'timestamp'>) => {
+    updatedMessages: Message[]
+    newMessage: Message
+  }
+  updateStreamingMessage: (content: string, isComplete?: boolean) => void
+  onContextUpdate?: (context: any) => void
+  extractBusinessModelFromInput: (input: string) => string | null
+  extractFoundingYearFromInput: (input: string) => number | null
+  onStreamStart?: () => void // CRITICAL FIX: Callback to reset event handler state when new stream starts
 }
 
 /**
  * Centralized streaming manager for conversation handling
- * 
+ *
  * Handles all streaming operations including:
  * - Async generator streaming
  * - EventSource fallback
@@ -36,18 +39,18 @@ export interface StreamingManagerCallbacks {
  * - Timeout handling
  */
 export class StreamingManager {
-  private requestIdRef: React.MutableRefObject<string | null>;
-  private currentStreamingMessageRef: React.MutableRefObject<Message | null>;
-  private currentAbortController: AbortController | null = null;
-  private isRequestInProgressRef: React.MutableRefObject<boolean> | null = null;
-  private setIsStreamingCallback: ((streaming: boolean) => void) | null = null;
+  private requestIdRef: React.MutableRefObject<string | null>
+  private currentStreamingMessageRef: React.MutableRefObject<Message | null>
+  private currentAbortController: AbortController | null = null
+  private isRequestInProgressRef: React.MutableRefObject<boolean> | null = null
+  private setIsStreamingCallback: ((streaming: boolean) => void) | null = null
 
   constructor(
     requestIdRef: React.MutableRefObject<string | null>,
     currentStreamingMessageRef: React.MutableRefObject<Message | null>
   ) {
-    this.requestIdRef = requestIdRef;
-    this.currentStreamingMessageRef = currentStreamingMessageRef;
+    this.requestIdRef = requestIdRef
+    this.currentStreamingMessageRef = currentStreamingMessageRef
   }
 
   /**
@@ -58,8 +61,8 @@ export class StreamingManager {
     isRequestInProgressRef: React.MutableRefObject<boolean>,
     setIsStreamingCallback: (streaming: boolean) => void
   ): void {
-    this.isRequestInProgressRef = isRequestInProgressRef;
-    this.setIsStreamingCallback = setIsStreamingCallback;
+    this.isRequestInProgressRef = isRequestInProgressRef
+    this.setIsStreamingCallback = setIsStreamingCallback
   }
 
   /**
@@ -67,21 +70,21 @@ export class StreamingManager {
    * Ensures both requestId lock and isRequestInProgress ref are cleared
    */
   private releaseLocks(reason: string, requestId?: string): void {
-    debugLogger.warn('[StreamingManager]', `Releasing locks: ${reason}`, { requestId });
-    
-    this.requestIdRef.current = null;
-    
+    debugLogger.warn('[StreamingManager]', `Releasing locks: ${reason}`, { requestId })
+
+    this.requestIdRef.current = null
+
     if (this.isRequestInProgressRef) {
-      this.isRequestInProgressRef.current = false;
+      this.isRequestInProgressRef.current = false
     }
-    
+
     if (this.setIsStreamingCallback) {
-      this.setIsStreamingCallback(false);
+      this.setIsStreamingCallback(false)
     }
-    
+
     if (this.currentAbortController) {
-      this.currentAbortController.abort();
-      this.currentAbortController = null;
+      this.currentAbortController.abort()
+      this.currentAbortController = null
     }
   }
 
@@ -90,13 +93,13 @@ export class StreamingManager {
    * Ensures locks are released when component unmounts
    */
   cleanup(): void {
-    debugLogger.info('[StreamingManager]', 'Cleanup called - releasing all locks');
-    this.releaseLocks('Component unmount or cleanup');
+    debugLogger.info('[StreamingManager]', 'Cleanup called - releasing all locks')
+    this.releaseLocks('Component unmount or cleanup')
   }
 
   /**
    * Start streaming conversation with comprehensive retry logic
-   * 
+   *
    * @param sessionId - Unique session identifier
    * @param userInput - User input message
    * @param userId - Optional user identifier
@@ -114,35 +117,34 @@ export class StreamingManager {
     onError: (error: Error) => void,
     attempt: number = 0
   ): Promise<void> {
-
     // Check if request is already in progress
     if (!userInput.trim() || this.requestIdRef.current) {
       if (this.requestIdRef.current) {
         debugLogger.warn('[StreamingManager]', 'Request already in progress', {
           existingRequestId: this.requestIdRef.current,
-          sessionId
-        });
-        chatLogger.warn('Request already in progress', { 
+          sessionId,
+        })
+        chatLogger.warn('Request already in progress', {
           currentRequestId: this.requestIdRef.current,
-          sessionId 
-        });
+          sessionId,
+        })
       }
-      return;
+      return
     }
 
     // Request deduplication - Generate new request ID
-    const requestId = `${sessionId}_${Date.now()}`;
-    this.requestIdRef.current = requestId;
-    
+    const requestId = `${sessionId}_${Date.now()}`
+    this.requestIdRef.current = requestId
+
     chatLogger.info('Stream request', {
       sessionId,
-      userInput: userInput.substring(0, 30)
-    });
-    
+      userInput: userInput.substring(0, 30),
+    })
+
     // Extract business information from user input
-    const extractedBusinessModel = callbacks.extractBusinessModelFromInput(userInput);
-    const extractedFoundingYear = callbacks.extractFoundingYearFromInput(userInput);
-    
+    const extractedBusinessModel = callbacks.extractBusinessModelFromInput(userInput)
+    const extractedFoundingYear = callbacks.extractFoundingYearFromInput(userInput)
+
     // Update conversation context if extraction found something
     if (extractedBusinessModel || extractedFoundingYear) {
       const contextUpdate = {
@@ -150,17 +152,17 @@ export class StreamingManager {
         extracted_founding_year: extractedFoundingYear,
         extraction_confidence: {
           business_model: extractedBusinessModel ? 0.8 : 0,
-          founding_year: extractedFoundingYear ? 0.8 : 0
-        }
-      };
-      callbacks.onContextUpdate?.(contextUpdate);
+          founding_year: extractedFoundingYear ? 0.8 : 0,
+        },
+      }
+      callbacks.onContextUpdate?.(contextUpdate)
     }
-    
+
     // CRITICAL FIX: Reset event handler state before starting new stream
     // This ensures hasStartedMessage and messageCreationLock are reset for the new message
-    callbacks.onStreamStart?.();
-    
-    callbacks.setIsStreaming(true);
+    callbacks.onStreamStart?.()
+
+    callbacks.setIsStreaming(true)
 
     // FIX: User message is already added in handleSubmit, no need to add it again here
     // This prevents duplicate user messages in the UI
@@ -169,111 +171,115 @@ export class StreamingManager {
     // This ensures single source of truth and prevents duplicate empty messages
 
     // CRITICAL FIX: Create AbortController for this request
-    this.currentAbortController = new AbortController();
-    const abortSignal = this.currentAbortController.signal;
-    
-    
+    this.currentAbortController = new AbortController()
+    const abortSignal = this.currentAbortController.signal
+
     // Add timeout detection
-    const timeoutMs = 30000; // 30 seconds
+    const timeoutMs = 30000 // 30 seconds
     const timeoutPromise = new Promise<void>((_, reject) => {
       setTimeout(() => {
-        reject(new Error(`Stream timeout after ${timeoutMs}ms - no response from backend`));
-      }, timeoutMs);
-    });
-    
+        reject(new Error(`Stream timeout after ${timeoutMs}ms - no response from backend`))
+      }, timeoutMs)
+    })
+
     try {
       await Promise.race([
-        this.streamWithAsyncGenerator(
-          sessionId,
-          userInput,
-          userId,
-          onEvent,
-          abortSignal
-        ),
-        timeoutPromise
-      ]);
-      
+        this.streamWithAsyncGenerator(sessionId, userInput, userId, onEvent, abortSignal),
+        timeoutPromise,
+      ])
     } catch (error) {
       // CRITICAL FIX: Release locks in catch block BEFORE any retry logic
       // This ensures lock is released even if error handling fails
-      const shouldRetry = attempt < 3;
-      
+      const shouldRetry = attempt < 3
+
       if (!shouldRetry) {
         // Only release locks if not retrying (retry will start new request with new lock)
-        this.releaseLocks('Error in stream processing (no retry)', requestId);
+        this.releaseLocks('Error in stream processing (no retry)', requestId)
       }
-      
+
       // Check if it's a timeout error
       if (error instanceof Error && error.message.includes('Stream timeout')) {
-        debugLogger.error('[StreamingManager]', 'Stream timeout', { error });
-        
+        debugLogger.error('[StreamingManager]', 'Stream timeout', { error })
+
         // Show error to user
-        callbacks.setIsStreaming(false);
-        
+        callbacks.setIsStreaming(false)
+
         // Add error message to chat
         callbacks.addMessage({
           type: 'ai',
           content: '⚠️ Connection timeout. The server took too long to respond. Please try again.',
           isComplete: true,
-          isStreaming: false
-        });
-        
-        throw error;
+          isStreaming: false,
+        })
+
+        throw error
       }
-      
+
       debugLogger.error('[StreamingManager]', 'Error in streamWithAsyncGenerator', {
         error,
         message: error instanceof Error ? error.message : String(error),
-        stack: error instanceof Error ? error.stack : undefined
-      });
-      
-      chatLogger.error('Async generator error', { 
+        stack: error instanceof Error ? error.stack : undefined,
+      })
+
+      chatLogger.error('Async generator error', {
         error: error instanceof Error ? error.message : 'Unknown error',
         stack: error instanceof Error ? error.stack : undefined,
         sessionId,
         userInput: userInput.substring(0, 50) + '...',
         attempt,
-        maxRetries: 3
-      });
-      
+        maxRetries: 3,
+      })
+
       // Retry logic with exponential backoff
       if (shouldRetry) {
-        const delay = Math.min(1000 * Math.pow(2, attempt), 10000);
-        chatLogger.info('Retrying streaming conversation', { 
-          attempt: attempt + 1, 
+        const delay = Math.min(1000 * Math.pow(2, attempt), 10000)
+        chatLogger.info('Retrying streaming conversation', {
+          attempt: attempt + 1,
           delay,
-          sessionId 
-        });
-        
+          sessionId,
+        })
+
         // CRITICAL: Release current locks before retry (retry will set new locks)
-        this.releaseLocks('Error in stream processing (will retry)', requestId);
-        
+        this.releaseLocks('Error in stream processing (will retry)', requestId)
+
         setTimeout(() => {
-          this.startStreaming(sessionId, userInput, userId, callbacks, onEvent, onError, attempt + 1);
-        }, delay);
-        return;
+          this.startStreaming(
+            sessionId,
+            userInput,
+            userId,
+            callbacks,
+            onEvent,
+            onError,
+            attempt + 1
+          )
+        }, delay)
+        return
       }
-      
+
       // Max retries exceeded - show error message
-      callbacks.setIsStreaming(false);
+      callbacks.setIsStreaming(false)
       if (this.currentStreamingMessageRef.current) {
         callbacks.updateStreamingMessage(
-          'I apologize, but I\'m having trouble connecting. Please try again.',
+          "I apologize, but I'm having trouble connecting. Please try again.",
           true
-        );
+        )
       }
-      
-      onError(error instanceof Error ? error : new Error('Unknown streaming error'));
+
+      onError(error instanceof Error ? error : new Error('Unknown streaming error'))
     } finally {
       // CRITICAL FIX: Robust lock release in finally block
       // This is the safety net - ensures locks are ALWAYS released
       // Even if catch block is somehow bypassed
-      const wasLocked = this.requestIdRef.current !== null;
+      const wasLocked = this.requestIdRef.current !== null
       if (wasLocked) {
-        debugLogger.warn('[StreamingManager]', 'Finally block releasing locks (safety net)', { requestId });
-        this.releaseLocks('Finally block (safety net)', requestId);
+        debugLogger.warn('[StreamingManager]', 'Finally block releasing locks (safety net)', {
+          requestId,
+        })
+        this.releaseLocks('Finally block (safety net)', requestId)
       } else {
-        debugLogger.log('[StreamingManager]', 'Finally block - locks already released', { requestId });
+        debugLogger.log('[StreamingManager]', 'Finally block - locks already released', {
+          requestId,
+        })
       }
     }
   }
@@ -289,16 +295,15 @@ export class StreamingManager {
     onEvent: (event: any) => void,
     abortSignal?: AbortSignal
   ): Promise<void> {
-    
-    let eventCount = 0;
-    let generatorTimeout: NodeJS.Timeout;
-    
+    let eventCount = 0
+    let generatorTimeout: NodeJS.Timeout
+
     // Set timeout to detect if generator hangs
     generatorTimeout = setTimeout(() => {
-      chatLogger.warn('Async generator timeout - no events received in 10 seconds', { sessionId });
-      throw new Error('Streaming timeout');
-    }, 10000);
-    
+      chatLogger.warn('Async generator timeout - no events received in 10 seconds', { sessionId })
+      throw new Error('Streaming timeout')
+    }, 10000)
+
     try {
       // Use streaming service
       for await (const event of streamingChatService.streamConversation(
@@ -309,42 +314,42 @@ export class StreamingManager {
       )) {
         // CRITICAL FIX: Check if request was aborted
         if (abortSignal?.aborted) {
-          chatLogger.info('Stream aborted via AbortSignal', { sessionId });
-          clearTimeout(generatorTimeout);
-          throw new Error('Stream aborted');
+          chatLogger.info('Stream aborted via AbortSignal', { sessionId })
+          clearTimeout(generatorTimeout)
+          throw new Error('Stream aborted')
         }
-        
-        clearTimeout(generatorTimeout);
-        eventCount++;
-        
+
+        clearTimeout(generatorTimeout)
+        eventCount++
+
         // DEFENSIVE LOGGING: Track callback execution
         try {
-          onEvent(event);
+          onEvent(event)
         } catch (callbackError) {
           chatLogger.error('❌ Error in onEvent callback', {
             error: callbackError instanceof Error ? callbackError.message : String(callbackError),
             stack: callbackError instanceof Error ? callbackError.stack : undefined,
             eventType: event.type,
-            eventCount
-          });
-          throw callbackError;
+            eventCount,
+          })
+          throw callbackError
         }
       }
-      
-      clearTimeout(generatorTimeout);
-      chatLogger.debug('Async generator completed', { 
-        totalEvents: eventCount, 
-        sessionId
-      });
-      
+
+      clearTimeout(generatorTimeout)
+      chatLogger.debug('Async generator completed', {
+        totalEvents: eventCount,
+        sessionId,
+      })
+
       // If no events were received, throw error to trigger fallback
       if (eventCount === 0) {
-        chatLogger.warn('No events received from async generator', { sessionId });
-        throw new Error('No events received from async generator');
+        chatLogger.warn('No events received from async generator', { sessionId })
+        throw new Error('No events received from async generator')
       }
     } catch (error) {
-      clearTimeout(generatorTimeout);
-      throw error;
+      clearTimeout(generatorTimeout)
+      throw error
     }
   }
 
@@ -359,44 +364,44 @@ export class StreamingManager {
     onError: (error: Error) => void,
     onComplete: () => void
   ): EventSource {
-    chatLogger.info('Starting EventSource fallback', { sessionId });
-    
+    chatLogger.info('Starting EventSource fallback', { sessionId })
+
     const eventSource = streamingChatService.streamConversationEventSource(
       sessionId,
       userInput,
       userId,
       (event) => {
-        chatLogger.info('EventSource event received', { 
-          type: event.type, 
-          hasContent: !!event.content 
-        });
-        onEvent(event);
+        chatLogger.info('EventSource event received', {
+          type: event.type,
+          hasContent: !!event.content,
+        })
+        onEvent(event)
       },
       (error) => {
-        chatLogger.error('EventSource error', { error: error.message });
-        onError(error);
+        chatLogger.error('EventSource error', { error: error.message })
+        onError(error)
       },
       () => {
-        chatLogger.info('EventSource completed', { sessionId });
-        onComplete();
+        chatLogger.info('EventSource completed', { sessionId })
+        onComplete()
       }
-    );
-    
-    return eventSource;
+    )
+
+    return eventSource
   }
 
   /**
    * Check if a request is currently in progress
    */
   isRequestInProgress(): boolean {
-    return this.requestIdRef.current !== null;
+    return this.requestIdRef.current !== null
   }
 
   /**
    * Get current request ID
    */
   getCurrentRequestId(): string | null {
-    return this.requestIdRef.current;
+    return this.requestIdRef.current
   }
 
   /**
@@ -404,20 +409,20 @@ export class StreamingManager {
    * CRITICAL FIX: Uses releaseLocks for robust cleanup
    */
   clearCurrentRequest(): void {
-    this.releaseLocks('Manual clearCurrentRequest call');
+    this.releaseLocks('Manual clearCurrentRequest call')
   }
 
   /**
    * Get current streaming message
    */
   getCurrentStreamingMessage(): Message | null {
-    return this.currentStreamingMessageRef.current;
+    return this.currentStreamingMessageRef.current
   }
 
   /**
    * Set current streaming message
    */
   setCurrentStreamingMessage(message: Message | null): void {
-    this.currentStreamingMessageRef.current = message;
+    this.currentStreamingMessageRef.current = message
   }
 }

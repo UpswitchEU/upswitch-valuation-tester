@@ -8,15 +8,15 @@
  */
 
 import {
-    CreateValuationSessionRequest,
-    CreateValuationSessionResponse,
-    UpdateValuationSessionRequest,
-    UpdateValuationSessionResponse
-} from '../../../types/api';
-import type { SwitchViewResponse, ValuationSessionResponse } from '../../../types/api-responses';
-import { APIError, AuthenticationError } from '../../../types/errors';
-import { apiLogger } from '../../../utils/logger';
-import { APIRequestConfig, HttpClient } from '../HttpClient';
+  CreateValuationSessionRequest,
+  CreateValuationSessionResponse,
+  UpdateValuationSessionRequest,
+  UpdateValuationSessionResponse,
+} from '../../../types/api'
+import type { SwitchViewResponse, ValuationSessionResponse } from '../../../types/api-responses'
+import { APIError, AuthenticationError } from '../../../types/errors'
+import { apiLogger } from '../../../utils/logger'
+import { APIRequestConfig, HttpClient } from '../HttpClient'
 
 export class SessionAPI extends HttpClient {
   /**
@@ -27,24 +27,27 @@ export class SessionAPI extends HttpClient {
     options?: APIRequestConfig
   ): Promise<ValuationSessionResponse | null> {
     try {
-      const response = await this.executeRequest<ValuationSessionResponse>({
-        method: 'GET',
-        url: `/api/sessions/${reportId}`
-      }, options);
+      const response = await this.executeRequest<ValuationSessionResponse>(
+        {
+          method: 'GET',
+          url: `/api/sessions/${reportId}`,
+        },
+        options
+      )
 
       // Map backend 'ai-guided' to frontend 'conversational'
       if (response && response.session && response.session.currentView === 'ai-guided') {
-        response.session.currentView = 'conversational';
+        response.session.currentView = 'conversational'
       }
 
-      return response;
+      return response
     } catch (error) {
       // Handle 404 gracefully - session doesn't exist yet
       if (error.response?.status === 404) {
-        apiLogger.debug('Session does not exist yet', { reportId });
-        return null;
+        apiLogger.debug('Session does not exist yet', { reportId })
+        return null
       }
-      this.handleSessionError(error, 'get session');
+      this.handleSessionError(error, 'get session')
     }
   }
 
@@ -59,22 +62,25 @@ export class SessionAPI extends HttpClient {
       // Map frontend 'conversational' to backend 'ai-guided'
       const backendSession = {
         ...session,
-        currentView: session.currentView === 'conversational' ? 'ai-guided' : session.currentView
-      };
+        currentView: session.currentView === 'conversational' ? 'ai-guided' : session.currentView,
+      }
 
-      const response = await this.executeRequest<CreateValuationSessionResponse>({
-        method: 'POST',
-        url: '/api/sessions',
-        data: backendSession
-      }, options);
+      const response = await this.executeRequest<CreateValuationSessionResponse>(
+        {
+          method: 'POST',
+          url: '/api/sessions',
+          data: backendSession,
+        },
+        options
+      )
 
       // Map response back
       return {
         ...response,
-        currentView: response.currentView === 'ai-guided' ? 'conversational' : response.currentView
-      };
+        currentView: response.currentView === 'ai-guided' ? 'conversational' : response.currentView,
+      }
     } catch (error) {
-      this.handleSessionError(error, 'create session');
+      this.handleSessionError(error, 'create session')
     }
   }
 
@@ -90,22 +96,25 @@ export class SessionAPI extends HttpClient {
       // Map frontend 'conversational' to backend 'ai-guided'
       const backendUpdates = {
         ...updates,
-        currentView: updates.currentView === 'conversational' ? 'ai-guided' : updates.currentView
-      };
+        currentView: updates.currentView === 'conversational' ? 'ai-guided' : updates.currentView,
+      }
 
-      const response = await this.executeRequest<UpdateValuationSessionResponse>({
-        method: 'PUT',
-        url: `/api/sessions/${reportId}`,
-        data: backendUpdates
-      }, options);
+      const response = await this.executeRequest<UpdateValuationSessionResponse>(
+        {
+          method: 'PUT',
+          url: `/api/sessions/${reportId}`,
+          data: backendUpdates,
+        },
+        options
+      )
 
       // Map response back
       return {
         ...response,
-        currentView: response.currentView === 'ai-guided' ? 'conversational' : response.currentView
-      };
+        currentView: response.currentView === 'ai-guided' ? 'conversational' : response.currentView,
+      }
     } catch (error) {
-      this.handleSessionError(error, 'update session');
+      this.handleSessionError(error, 'update session')
     }
   }
 
@@ -119,21 +128,24 @@ export class SessionAPI extends HttpClient {
   ): Promise<SwitchViewResponse> {
     try {
       // Map frontend 'conversational' to backend 'ai-guided'
-      const backendView = view === 'conversational' ? 'ai-guided' : view;
+      const backendView = view === 'conversational' ? 'ai-guided' : view
 
-      const response = await this.executeRequest<SwitchViewResponse>({
-        method: 'PUT',
-        url: `/api/sessions/${reportId}/switch-view`,
-        data: { view: backendView }
-      }, options);
+      const response = await this.executeRequest<SwitchViewResponse>(
+        {
+          method: 'PUT',
+          url: `/api/sessions/${reportId}/switch-view`,
+          data: { view: backendView },
+        },
+        options
+      )
 
       // Map response back
       return {
         ...response,
-        currentView: response.currentView === 'ai-guided' ? 'conversational' : response.currentView
-      };
+        currentView: response.currentView === 'ai-guided' ? 'conversational' : response.currentView,
+      }
     } catch (error) {
-      this.handleSessionError(error, 'switch view');
+      this.handleSessionError(error, 'switch view')
     }
   }
 
@@ -141,20 +153,20 @@ export class SessionAPI extends HttpClient {
    * Handle session-specific errors
    */
   private handleSessionError(error: unknown, operation: string): never {
-    apiLogger.error(`Session ${operation} failed`, { error });
+    apiLogger.error(`Session ${operation} failed`, { error })
 
     if (error.response?.status === 404) {
-      throw new APIError('Session not found', error);
+      throw new APIError('Session not found', error)
     }
 
     if (error.response?.status === 401 || error.response?.status === 403) {
-      throw new AuthenticationError('Authentication required for session operation');
+      throw new AuthenticationError('Authentication required for session operation')
     }
 
     if (error.response?.status === 409) {
-      throw new APIError('Session conflict - please refresh and try again', error);
+      throw new APIError('Session conflict - please refresh and try again', error)
     }
 
-    throw new APIError(`Failed to ${operation}`, error);
+    throw new APIError(`Failed to ${operation}`, error)
   }
 }

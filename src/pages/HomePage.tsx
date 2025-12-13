@@ -1,72 +1,66 @@
-import React, { useEffect, useRef, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { MinimalHeader } from '../components/MinimalHeader';
-import { VideoBackground } from '../components/VideoBackground';
-import UrlGeneratorService from '../services/urlGenerator';
-import { ScrollToTop } from '../utils';
-import { generalLogger } from '../utils/logger';
-import { generateReportId } from '../utils/reportIdGenerator';
+import { useRouter } from 'next/navigation'
+import React, { useEffect, useRef, useState } from 'react'
+import { MinimalHeader } from '../components/MinimalHeader'
+import { VideoBackground } from '../components/VideoBackground'
+import { ScrollToTop } from '../utils'
+import { generalLogger } from '../utils/logger'
+import { generateReportId } from '../utils/reportIdGenerator'
 
 export const HomePage: React.FC = () => {
-  const navigate = useNavigate();
-  const [query, setQuery] = useState('');
-  const [mode, setMode] = useState<'manual' | 'conversational'>('manual');
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const router = useRouter()
+  const [query, setQuery] = useState('')
+  const [mode, setMode] = useState<'manual' | 'conversational'>('manual')
+  const textareaRef = useRef<HTMLTextAreaElement>(null)
 
   // Auto-redirect to instant valuation if token is present
   // BUT NOT if coming from main platform (upswitch.biz) - let user choose
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const token = params.get('token');
-    const fromMainPlatform = params.get('from') === 'upswitch';
-    
+    const params = new URLSearchParams(window.location.search)
+    const token = params.get('token')
+    const fromMainPlatform = params.get('from') === 'upswitch'
+
     if (token && !fromMainPlatform) {
-      generalLogger.info('Token detected on homepage - redirecting to new report');
+      generalLogger.info('Token detected on homepage - redirecting to new report')
       // Generate new report ID and redirect
-      const newReportId = generateReportId();
-      navigate(`/reports/${newReportId}?token=${token}`, { replace: true });
+      const newReportId = generateReportId()
+      router.push(`/reports/${newReportId}?token=${token}`)
     } else if (token && fromMainPlatform) {
-      generalLogger.info('Token detected from main platform - staying on homepage for user choice');
+      generalLogger.info('Token detected from main platform - staying on homepage for user choice')
     }
-  }, [navigate]);
+  }, [navigate])
 
   // Auto-focus the textarea when component mounts
   useEffect(() => {
     if (textareaRef.current) {
-      textareaRef.current.focus();
+      textareaRef.current.focus()
     }
-  }, []);
+  }, [])
 
   // Remove body background for video visibility
   useEffect(() => {
-    const originalBodyBg = document.body.style.backgroundColor;
-    document.body.style.backgroundColor = 'transparent';
+    const originalBodyBg = document.body.style.backgroundColor
+    document.body.style.backgroundColor = 'transparent'
 
     return () => {
-      document.body.style.backgroundColor = originalBodyBg || 'black';
-    };
-  }, []);
+      document.body.style.backgroundColor = originalBodyBg || 'black'
+    }
+  }, [])
 
   const handleQuerySubmit = () => {
-    if (!query.trim()) return;
+    if (!query.trim()) return
 
     try {
       // Generate new report ID
-      const newReportId = generateReportId();
-      
+      const newReportId = generateReportId()
+
       // Navigate to selected flow with query context
-      const url = `${UrlGeneratorService.reportById(newReportId)}?flow=${mode}`;
-      
-      navigate(url, {
-        state: {
-          prefilledQuery: query.trim(),
-          autoSend: true,
-        },
-      });
+      const url = `/reports/${newReportId}?flow=${mode}&prefilledQuery=${encodeURIComponent(query.trim())}&autoSend=true`
+
+      router.push(url)
     } catch (error) {
-      generalLogger.error('Error submitting query', { error });
+      generalLogger.error('Error submitting query', { error })
     }
-  };
+  }
 
   // Business type focused examples aligned with AI-guided Q1
   const quickQueries = [
@@ -76,7 +70,7 @@ export const HomePage: React.FC = () => {
     'Manufacturing business',
     'Consulting firm',
     'Tech startup',
-  ];
+  ]
 
   return (
     <>
@@ -84,7 +78,7 @@ export const HomePage: React.FC = () => {
       <MinimalHeader />
 
       {/* Video Background */}
-      <VideoBackground 
+      <VideoBackground
         videos={[
           '/videos/home/business-1.mp4',
           '/videos/home/business-2.mp4',
@@ -109,7 +103,8 @@ export const HomePage: React.FC = () => {
                   your life’s work.
                 </h1>
                 <p className="text-lg md:text-xl text-[#F4F1EA] max-w-4xl mx-auto leading-relaxed opacity-90">
-                  Understanding business value shouldn’t cost a fortune. Get professional-grade accuracy without the friction.
+                  Understanding business value shouldn’t cost a fortune. Get professional-grade
+                  accuracy without the friction.
                 </p>
               </div>
 
@@ -121,9 +116,9 @@ export const HomePage: React.FC = () => {
               {/* Enhanced Query Interface - Ilara Style */}
               <div className="max-w-4xl mx-auto">
                 <form
-                  onSubmit={e => {
-                    e.preventDefault();
-                    handleQuerySubmit();
+                  onSubmit={(e) => {
+                    e.preventDefault()
+                    handleQuerySubmit()
                   }}
                   className="focus-within:bg-zinc-900/30 group flex flex-col gap-3 p-4 duration-150 w-full rounded-3xl border border-zinc-700/50 bg-zinc-900/20 text-base shadow-xl transition-all ease-in-out focus-within:border-zinc-500/40 hover:border-zinc-600/30 focus-within:hover:border-zinc-500/40 backdrop-blur-sm"
                 >
@@ -131,14 +126,14 @@ export const HomePage: React.FC = () => {
                   <div className="relative flex items-center">
                     <textarea
                       value={query}
-                      onChange={e => setQuery(e.target.value)}
+                      onChange={(e) => setQuery(e.target.value)}
                       placeholder="What type of business do you run? (e.g., 'SaaS company')"
                       className="textarea-seamless flex w-full rounded-md px-3 py-3 pr-24 ring-offset-background placeholder:text-zinc-400 focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 disabled:cursor-not-allowed disabled:opacity-50 resize-none text-base leading-snug placeholder-shown:text-ellipsis placeholder-shown:whitespace-nowrap md:text-base max-h-[200px] bg-transparent focus:bg-transparent flex-1 text-white"
                       style={{ minHeight: '80px', height: '80px' }}
-                      onKeyPress={e => {
+                      onKeyPress={(e) => {
                         if (e.key === 'Enter' && !e.shiftKey) {
-                          e.preventDefault();
-                          handleQuerySubmit();
+                          e.preventDefault()
+                          handleQuerySubmit()
                         }
                       }}
                       ref={textareaRef}
@@ -252,7 +247,7 @@ export const HomePage: React.FC = () => {
                     </div>
                   </div>
                 </form>
-                
+
                 {/* Trust Signal */}
                 <div className="mt-4 text-center">
                   <p className="text-xs text-[#F4F1EA] text-opacity-60">
@@ -265,5 +260,5 @@ export const HomePage: React.FC = () => {
         </section>
       </div>
     </>
-  );
-};
+  )
+}

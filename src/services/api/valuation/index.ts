@@ -4,4 +4,4 @@
  * @module services/api/valuation
  */
 
-export { ValuationAPI } from './ValuationAPI';
+export { ValuationAPI } from './ValuationAPI'

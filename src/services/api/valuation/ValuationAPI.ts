@@ -7,10 +7,17 @@
  * @module services/api/valuation/ValuationAPI
  */
 
-import { APIError, AuthenticationError, CreditError, NetworkError, RateLimitError, ValidationError } from '../../../types/errors';
-import { ValuationRequest, ValuationResponse } from '../../../types/valuation';
-import { apiLogger } from '../../../utils/logger';
-import { APIRequestConfig, HttpClient } from '../HttpClient';
+import {
+  APIError,
+  AuthenticationError,
+  CreditError,
+  NetworkError,
+  RateLimitError,
+  ValidationError,
+} from '../../../types/errors'
+import { ValuationRequest, ValuationResponse } from '../../../types/valuation'
+import { apiLogger } from '../../../utils/logger'
+import { APIRequestConfig, HttpClient } from '../HttpClient'
 
 export class ValuationAPI extends HttpClient {
   /**
@@ -21,16 +28,26 @@ export class ValuationAPI extends HttpClient {
     options?: APIRequestConfig
   ): Promise<ValuationResponse> {
     try {
-      return await this.executeRequest<ValuationResponse>({
-        method: 'POST',
-        url: '/api/valuation/calculate-manual',
-        data: {
-          ...data,
-          dataSource: 'manual'
+      return await this.executeRequest<ValuationResponse>(
+        {
+          method: 'POST',
+          url: '/api/valuation/calculate-manual',
+          data: {
+            ...data,
+            dataSource: 'manual',
+          },
+        },
+        {
+          ...options,
+          retry: {
+            maxRetries: 2,
+            initialDelay: 1000,
+            ...options?.retry,
+          },
         }
-      }, options);
+      )
     } catch (error) {
-      this.handleValuationError(error, 'manual valuation');
+      this.handleValuationError(error, 'manual valuation')
     }
   }
 
@@ -42,16 +59,19 @@ export class ValuationAPI extends HttpClient {
     options?: APIRequestConfig
   ): Promise<ValuationResponse> {
     try {
-      return await this.executeRequest<ValuationResponse>({
-        method: 'POST',
-        url: '/api/valuation/calculate-ai-guided',
-        data: {
-          ...data,
-          dataSource: 'ai-guided'
-        }
-      }, options);
+      return await this.executeRequest<ValuationResponse>(
+        {
+          method: 'POST',
+          url: '/api/valuation/calculate-ai-guided',
+          data: {
+            ...data,
+            dataSource: 'ai-guided',
+          },
+        },
+        options
+      )
     } catch (error) {
-      this.handleValuationError(error, 'AI-guided valuation');
+      this.handleValuationError(error, 'AI-guided valuation')
     }
   }
 
@@ -63,16 +83,19 @@ export class ValuationAPI extends HttpClient {
     options?: APIRequestConfig
   ): Promise<ValuationResponse> {
     try {
-      return await this.executeRequest<ValuationResponse>({
-        method: 'POST',
-        url: '/api/valuation/calculate-instant',
-        data: {
-          ...data,
-          dataSource: 'instant'
-        }
-      }, options);
+      return await this.executeRequest<ValuationResponse>(
+        {
+          method: 'POST',
+          url: '/api/valuation/calculate-instant',
+          data: {
+            ...data,
+            dataSource: 'instant',
+          },
+        },
+        options
+      )
     } catch (error) {
-      this.handleValuationError(error, 'instant valuation');
+      this.handleValuationError(error, 'instant valuation')
     }
   }
 
@@ -87,17 +110,27 @@ export class ValuationAPI extends HttpClient {
       // Map frontend 'conversational' to backend 'ai-guided'
       const backendData = {
         ...data,
-        dataSource: data.dataSource === 'conversational' ? 'ai-guided' : data.dataSource
-      };
+        dataSource: data.dataSource === 'conversational' ? 'ai-guided' : data.dataSource,
+      }
 
       // Use unified endpoint - backend determines credit cost based on dataSource
-      return await this.executeRequest<ValuationResponse>({
-        method: 'POST',
-        url: '/api/valuation/calculate-unified',
-        data: backendData
-      }, options);
+      return await this.executeRequest<ValuationResponse>(
+        {
+          method: 'POST',
+          url: '/api/valuation/calculate-unified',
+          data: backendData,
+        },
+        {
+          ...options,
+          retry: {
+            maxRetries: 3,
+            initialDelay: 1000,
+            ...options?.retry,
+          },
+        }
+      )
     } catch (error) {
-      this.handleValuationError(error, 'unified valuation');
+      this.handleValuationError(error, 'unified valuation')
     }
   }
 
@@ -109,14 +142,17 @@ export class ValuationAPI extends HttpClient {
     options?: APIRequestConfig
   ): Promise<{ html: string; completeness_percent: number }> {
     try {
-      return await this.executeRequest<{ html: string; completeness_percent: number }>({
-        method: 'POST',
-        url: '/api/valuation/preview-html',
-        data
-      }, options);
+      return await this.executeRequest<{ html: string; completeness_percent: number }>(
+        {
+          method: 'POST',
+          url: '/api/valuation/preview-html',
+          data,
+        },
+        options
+      )
     } catch (error) {
-      apiLogger.error('Failed to generate preview HTML', { error });
-      throw new APIError('Failed to generate valuation preview', error);
+      apiLogger.error('Failed to generate preview HTML', { error })
+      throw new APIError('Failed to generate valuation preview', error)
     }
   }
 
@@ -124,29 +160,31 @@ export class ValuationAPI extends HttpClient {
    * Handle valuation-specific errors with appropriate error types
    */
   private handleValuationError(error: unknown, operation: string): never {
-    apiLogger.error(`Valuation ${operation} failed`, { error });
+    apiLogger.error(`Valuation ${operation} failed`, { error })
 
     if (error.response?.status === 429) {
-      throw new RateLimitError('Too many valuation requests. Please wait before trying again.');
+      throw new RateLimitError('Too many valuation requests. Please wait before trying again.')
     }
 
     if (error.response?.status === 401 || error.response?.status === 403) {
-      throw new AuthenticationError('Authentication required for valuation calculation.');
+      throw new AuthenticationError('Authentication required for valuation calculation.')
     }
 
     if (error.response?.status === 402) {
-      throw new CreditError('Insufficient credits for valuation calculation.');
+      throw new CreditError('Insufficient credits for valuation calculation.')
     }
 
     if (error.response?.status === 400) {
-      const message = error.response?.data?.message || 'Invalid valuation data provided.';
-      throw new ValidationError(message);
+      const message = error.response?.data?.message || 'Invalid valuation data provided.'
+      throw new ValidationError(message)
     }
 
     if (error.code === 'ECONNABORTED' || error.code === 'ENOTFOUND') {
-      throw new NetworkError('Network error during valuation calculation. Please check your connection.');
+      throw new NetworkError(
+        'Network error during valuation calculation. Please check your connection.'
+      )
     }
 
-    throw new APIError(`Failed to complete ${operation}`, error);
+    throw new APIError(`Failed to complete ${operation}`, error)
   }
 }

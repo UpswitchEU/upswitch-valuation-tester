@@ -7,17 +7,17 @@
  * @module features/conversational-valuation/components/ConversationalValuationFlow
  */
 
-import React from 'react';
-import { FeatureErrorBoundary } from '../../../features/shared/components/ErrorBoundary';
-import type { ValuationResponse } from '../../../types/valuation';
-import { ConversationProvider } from '../context/ConversationContext';
-import { ConversationalLayout } from './ConversationalLayout';
+import React from 'react'
+import { FeatureErrorBoundary } from '../../../features/shared/components/ErrorBoundary'
+import type { ValuationResponse } from '../../../types/valuation'
+import { ConversationProvider } from '../context/ConversationContext'
+import { ConversationalLayout } from './ConversationalLayout'
 
 interface ConversationalValuationFlowProps {
-  reportId: string;
-  onComplete: (result: ValuationResponse) => void;
-  initialQuery?: string | null;
-  autoSend?: boolean;
+  reportId: string
+  onComplete: (result: ValuationResponse) => void
+  initialQuery?: string | null
+  autoSend?: boolean
 }
 
 /**
@@ -45,5 +45,5 @@ export const ConversationalValuationFlow: React.FC<ConversationalValuationFlowPr
         />
       </ConversationProvider>
     </FeatureErrorBoundary>
-  );
-};
+  )
+}

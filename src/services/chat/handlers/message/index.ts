@@ -4,4 +4,4 @@
  * @module services/chat/handlers/message
  */
 
-export { MessageHandlers } from './MessageHandlers';
+export { MessageHandlers } from './MessageHandlers'

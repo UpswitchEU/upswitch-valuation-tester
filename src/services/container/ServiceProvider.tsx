@@ -5,11 +5,11 @@
  * Enables components to depend on abstractions rather than concretions.
  */
 
-import { createContext, ReactNode, useContext } from 'react';
-import { ServiceContainer } from './ServiceContainer';
+import { createContext, ReactNode, useContext } from 'react'
+import { ServiceContainer } from './ServiceContainer'
 
 // Create context for service container
-const ServiceContainerContext = createContext<ServiceContainer | null>(null);
+const ServiceContainerContext = createContext<ServiceContainer | null>(null)
 
 /**
  * Service Provider Component
@@ -17,19 +17,19 @@ const ServiceContainerContext = createContext<ServiceContainer | null>(null);
  * Wraps the application to provide service container to all components.
  */
 export interface ServiceProviderProps {
-  children: ReactNode;
-  container?: ServiceContainer; // Allow injection of custom container (for testing)
+  children: ReactNode
+  container?: ServiceContainer // Allow injection of custom container (for testing)
 }
 
 export function ServiceProvider({
   children,
-  container = ServiceContainer.getInstance()
+  container = ServiceContainer.getInstance(),
 }: ServiceProviderProps) {
   return (
     <ServiceContainerContext.Provider value={container}>
       {children}
     </ServiceContainerContext.Provider>
-  );
+  )
 }
 
 /**
@@ -40,13 +40,13 @@ export function ServiceProvider({
  * const logger = useService<ILogger>('ILogger');
  */
 export function useService<T>(interfaceName: string): T {
-  const container = useContext(ServiceContainerContext);
+  const container = useContext(ServiceContainerContext)
 
   if (!container) {
-    throw new Error('useService must be used within a ServiceProvider');
+    throw new Error('useService must be used within a ServiceProvider')
   }
 
-  return container.resolve<T>(interfaceName);
+  return container.resolve<T>(interfaceName)
 }
 
 /**
@@ -57,11 +57,11 @@ export function useService<T>(interfaceName: string): T {
  * const service = container.resolve<ISomeService>('ISomeService');
  */
 export function useServiceContainer(): ServiceContainer {
-  const container = useContext(ServiceContainerContext);
+  const container = useContext(ServiceContainerContext)
 
   if (!container) {
-    throw new Error('useServiceContainer must be used within a ServiceProvider');
+    throw new Error('useServiceContainer must be used within a ServiceProvider')
   }
 
-  return container;
+  return container
 }

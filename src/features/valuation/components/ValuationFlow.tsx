@@ -10,23 +10,26 @@
  * @module features/valuation/components/ValuationFlow
  */
 
-import React, { lazy, Suspense, useState } from 'react';
-import { CollectionProgress, DataCollection, DataResponse } from '../../../components/data-collection';
-import { ValuationToolbar } from '../../../components/ValuationToolbar';
-import { useAuth } from '../../../hooks/useAuth';
-import { useValuationStore } from '../../../store/useValuationStore';
-import { convertDataResponsesToFormData } from '../../../utils/dataCollectionUtils';
-import { generalLogger } from '../../../utils/logger';
-import type { ValuationResponse } from '../../../types/valuation';
+import React, { lazy, Suspense, useCallback } from 'react'
+import { DataCollection, DataResponse } from '../../../components/data-collection'
+import { ValuationToolbar } from '../../../components/ValuationToolbar'
+import { useAuth } from '../../../hooks/useAuth'
+import { useValuationStore } from '../../../store/useValuationStore'
+import type { ValuationResponse } from '../../../types/valuation'
+import { generalLogger } from '../../../utils/logger'
 
 // Flow types
-export type ValuationFlowType = 'manual' | 'conversational';
+export type ValuationFlowType = 'manual' | 'conversational'
 
 // Lazy load components
-const Results = lazy(() => import('../../../components/Results').then(m => ({ default: m.Results })));
+const Results = lazy(() =>
+  import('../../../components/Results').then((m) => ({ default: m.Results }))
+)
 const ConversationalLayout = lazy(() =>
-  import('../../conversational-valuation/components/ConversationalLayout').then(m => ({ default: m.ConversationalLayout }))
-);
+  import('../../conversational-valuation/components/ConversationalLayout').then((m) => ({
+    default: m.ConversationalLayout,
+  }))
+)
 
 // Loading component
 const ComponentLoader: React.FC<{ message?: string }> = ({ message = 'Loading...' }) => (
@@ -36,14 +39,14 @@ const ComponentLoader: React.FC<{ message?: string }> = ({ message = 'Loading...
       <span className="text-zinc-600">{message}</span>
     </div>
   </div>
-);
+)
 
 interface ValuationFlowProps {
-  reportId: string;
-  flowType: ValuationFlowType;
-  onComplete: (result: ValuationResponse) => void;
-  initialQuery?: string | null;
-  autoSend?: boolean;
+  reportId: string
+  flowType: ValuationFlowType
+  onComplete: (result: ValuationResponse) => void
+  initialQuery?: string | null
+  autoSend?: boolean
 }
 
 /**
@@ -70,70 +73,57 @@ export const ValuationFlow: React.FC<ValuationFlowProps> = ({
           autoSend={autoSend}
         />
       </Suspense>
-    );
+    )
   }
 
   // Manual flow
-  return (
-    <ManualFlow
-      reportId={reportId}
-      onComplete={onComplete}
-    />
-  );
-};
+  return <ManualFlow reportId={reportId} onComplete={onComplete} />
+}
 
 // Manual flow implementation (extracted from ManualValuationFlow)
 interface ManualFlowProps {
-  reportId?: string;
-  onComplete: (result: ValuationResponse) => void;
+  reportId?: string
+  onComplete: (result: ValuationResponse) => void
 }
 
-const ManualFlow: React.FC<ManualFlowProps> = ({
-  reportId,
-  onComplete
-}) => {
-  const { result, isCalculating, calculateValuation, updateFormData } = useValuationStore();
-  const { user } = useAuth();
-  const [collectedData, setCollectedData] = useState<DataResponse[]>([]);
+const ManualFlow: React.FC<ManualFlowProps> = ({ reportId, onComplete }) => {
+  const { result, isCalculating, calculateValuation, setCollectedData } = useValuationStore()
+  const { user } = useAuth()
 
   // Handle data collection
-  const handleDataCollected = (responses: DataResponse[]) => {
-    setCollectedData(responses);
-
-    // Convert responses to form data format using shared utility
-    const formData = convertDataResponsesToFormData(responses);
-
-    // Update valuation store with collected data
-    updateFormData(formData);
-  };
+  const handleDataCollected = useCallback(
+    (responses: DataResponse[]) => {
+      setCollectedData(responses)
+    },
+    [setCollectedData]
+  )
 
   // Handle collection completion
-  const handleCollectionComplete = async (responses: DataResponse[]) => {
-    // Convert responses to form data format using shared utility
-    const formData = convertDataResponsesToFormData(responses);
+  const handleCollectionComplete = useCallback(
+    async (responses: DataResponse[]) => {
+      setCollectedData(responses)
 
-    // Update valuation store with final collected data
-    updateFormData(formData);
-
-    // Trigger valuation calculation with collected data
-    try {
-      const valuationResult = await calculateValuation();
-      if (valuationResult) {
-        onComplete(valuationResult);
+      // Trigger valuation calculation with collected data
+      try {
+        await calculateValuation()
+      } catch (error) {
+        generalLogger.error('Valuation calculation failed', { error, reportId })
       }
-    } catch (error) {
-      generalLogger.error('Valuation calculation failed', { error, reportId });
-    }
-  };
+    },
+    [setCollectedData, calculateValuation, reportId]
+  )
 
   // Handle progress updates
-  const handleProgressUpdate = (progress: CollectionProgress) => {
-    generalLogger.debug('Manual flow progress update', {
-      progress: progress.overallProgress,
-      completedFields: progress.completedFields,
-      totalFields: progress.totalFields
-    });
-  };
+  const handleProgressUpdate = useCallback(
+    (progress: { overallProgress: number; completedFields: number; totalFields: number }) => {
+      generalLogger.debug('Manual flow progress update', {
+        progress: progress.overallProgress,
+        completedFields: progress.completedFields,
+        totalFields: progress.totalFields,
+      })
+    },
+    []
+  )
 
   return (
     <div className="h-full flex flex-col">
@@ -153,23 +143,27 @@ const ManualFlow: React.FC<ManualFlowProps> = ({
         onDownload={async () => {
           if (result) {
             try {
-              const { DownloadService } = await import('../../../services/downloadService');
+              const { DownloadService } = await import('../../../services/downloadService')
               await DownloadService.downloadPDF(result, {
                 format: 'pdf',
-                filename: `valuation-${Date.now()}.pdf`
-              });
+                filename: `valuation-${Date.now()}.pdf`,
+              })
             } catch (error) {
-              generalLogger.error('PDF download failed', { error, reportId });
+              generalLogger.error('PDF download failed', { error, reportId })
             }
           }
         }}
-        onFullScreen={() => {/* TODO: Implement full screen */}}
+        onFullScreen={() => {
+          /* TODO: Implement full screen */
+        }}
         isGenerating={isCalculating}
         user={user}
         valuationName="Manual Valuation"
         valuationId={result?.valuation_id}
         activeTab="preview"
-        onTabChange={() => {/* Single tab for now */}}
+        onTabChange={() => {
+          /* Single tab for now */
+        }}
       />
 
       {/* Results Display */}
@@ -181,7 +175,8 @@ const ManualFlow: React.FC<ManualFlowProps> = ({
         </div>
       )}
     </div>
-  );
-};
+  )
+}
 
-ValuationFlow.displayName = 'ValuationFlow';
+ManualFlow.displayName = 'ManualFlow'
+ValuationFlow.displayName = 'ValuationFlow'

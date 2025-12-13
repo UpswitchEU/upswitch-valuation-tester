@@ -5,116 +5,120 @@
  * SOLID Principles: SRP, OCP, LSP, ISP, DIP
  */
 
-import { AlertCircle, CheckCircle, FileText, Upload } from 'lucide-react';
-import React, { useRef, useState } from 'react';
-import { FieldRendererProps, ParsedFieldValue } from '../../../types/data-collection';
+import { AlertCircle, CheckCircle, FileText, Upload } from 'lucide-react'
+import React, { useRef, useState } from 'react'
+import { FieldRendererProps, ParsedFieldValue } from '../../../types/data-collection'
 
 export const FileUploadFieldRenderer: React.FC<FieldRendererProps> = ({
   field,
   value,
   onChange,
   errors = [],
-  disabled = false
+  disabled = false,
 }) => {
-  const [isDragOver, setIsDragOver] = useState(false);
-  const [uploadedFile, setUploadedFile] = useState<File | null>(null);
-  const [isProcessing, setIsProcessing] = useState(false);
-  const [processingError, setProcessingError] = useState<string | null>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [isDragOver, setIsDragOver] = useState(false)
+  const [uploadedFile, setUploadedFile] = useState<File | null>(null)
+  const [isProcessing, setIsProcessing] = useState(false)
+  const [processingError, setProcessingError] = useState<string | null>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
-  const hasErrors = errors.length > 0;
-  const errorMessage = errors.find(e => e.severity === 'error')?.message;
+  const hasErrors = errors.length > 0
+  const errorMessage = errors.find((e) => e.severity === 'error')?.message
 
-  const supportedFormats = getSupportedFormats(field);
-  const maxSize = 10 * 1024 * 1024; // 10MB
+  const supportedFormats = getSupportedFormats(field)
+  const maxSize = 10 * 1024 * 1024 // 10MB
 
   const validateFile = (file: File): { valid: boolean; errors: string[] } => {
-    const errors: string[] = [];
+    const errors: string[] = []
 
     // Check file size
     if (file.size > maxSize) {
-      errors.push('File size must be less than 10MB');
+      errors.push('File size must be less than 10MB')
     }
 
     // Check file type
-    const fileExtension = '.' + file.name.split('.').pop()?.toLowerCase();
+    const fileExtension = '.' + file.name.split('.').pop()?.toLowerCase()
     if (!supportedFormats.includes(fileExtension)) {
-      errors.push(`File type not supported. Supported formats: ${supportedFormats.join(', ')}`);
+      errors.push(`File type not supported. Supported formats: ${supportedFormats.join(', ')}`)
     }
 
-    return { valid: errors.length === 0, errors };
-  };
+    return { valid: errors.length === 0, errors }
+  }
 
   const processFile = async (file: File) => {
-    setIsProcessing(true);
-    setProcessingError(null);
+    setIsProcessing(true)
+    setProcessingError(null)
 
     try {
       // Simulate file processing (in real implementation, this would call an API)
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      await new Promise((resolve) => setTimeout(resolve, 2000))
 
       // Mock successful processing - in reality, this would extract data from the file
-      const mockExtractedValue = field.id === 'revenue' ? 500000 :
-                                 field.id === 'ebitda' ? 150000 :
-                                 field.id === 'number_of_employees' ? 25 :
-                                 `Extracted from ${file.name}`;
+      const mockExtractedValue =
+        field.id === 'revenue'
+          ? 500000
+          : field.id === 'ebitda'
+            ? 150000
+            : field.id === 'number_of_employees'
+              ? 25
+              : `Extracted from ${file.name}`
 
-      onChange(mockExtractedValue, 'file_upload');
-      setProcessingError(null);
+      onChange(mockExtractedValue, 'file_upload')
+      setProcessingError(null)
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'File processing failed';
-      setProcessingError(errorMessage);
+      const errorMessage = error instanceof Error ? error.message : 'File processing failed'
+      setProcessingError(errorMessage)
     } finally {
-      setIsProcessing(false);
+      setIsProcessing(false)
     }
-  };
+  }
 
   const handleFileSelect = async (file: File) => {
-    const validation = validateFile(file);
+    const validation = validateFile(file)
     if (!validation.valid) {
-      setProcessingError(validation.errors.join(', '));
-      return;
+      setProcessingError(validation.errors.join(', '))
+      return
     }
 
-    setUploadedFile(file);
-    setProcessingError(null);
-    await processFile(file);
-  };
+    setUploadedFile(file)
+    setProcessingError(null)
+    await processFile(file)
+  }
 
   const handleDrop = (e: React.DragEvent) => {
-    e.preventDefault();
-    setIsDragOver(false);
+    e.preventDefault()
+    setIsDragOver(false)
 
-    const files = Array.from(e.dataTransfer.files);
+    const files = Array.from(e.dataTransfer.files)
     if (files.length > 0) {
-      handleFileSelect(files[0]);
+      handleFileSelect(files[0])
     }
-  };
+  }
 
   const handleDragOver = (e: React.DragEvent) => {
-    e.preventDefault();
-    setIsDragOver(true);
-  };
+    e.preventDefault()
+    setIsDragOver(true)
+  }
 
   const handleDragLeave = () => {
-    setIsDragOver(false);
-  };
+    setIsDragOver(false)
+  }
 
   const handleFileInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
+    const files = e.target.files
     if (files && files.length > 0) {
-      handleFileSelect(files[0]);
+      handleFileSelect(files[0])
     }
-  };
+  }
 
   const removeFile = () => {
-    setUploadedFile(null);
-    setProcessingError(null);
-    onChange(undefined, 'file_upload');
+    setUploadedFile(null)
+    setProcessingError(null)
+    onChange(undefined, 'file_upload')
     if (fileInputRef.current) {
-      fileInputRef.current.value = '';
+      fileInputRef.current.value = ''
     }
-  };
+  }
 
   return (
     <div className="space-y-3">
@@ -126,9 +130,7 @@ export const FileUploadFieldRenderer: React.FC<FieldRendererProps> = ({
         </label>
       </div>
 
-      {field.description && (
-        <p className="text-xs text-zinc-400">{field.description}</p>
-      )}
+      {field.description && <p className="text-xs text-zinc-400">{field.description}</p>}
 
       {/* File Upload Area */}
       {!uploadedFile && (
@@ -138,9 +140,10 @@ export const FileUploadFieldRenderer: React.FC<FieldRendererProps> = ({
           onDragLeave={handleDragLeave}
           className={`
             relative border-2 border-dashed rounded-lg p-6 text-center transition-colors cursor-pointer
-            ${isDragOver
-              ? 'border-primary-400 bg-primary-600/10'
-              : 'border-zinc-600 hover:border-zinc-500'
+            ${
+              isDragOver
+                ? 'border-primary-400 bg-primary-600/10'
+                : 'border-zinc-600 hover:border-zinc-500'
             }
             ${disabled ? 'opacity-50 cursor-not-allowed' : ''}
           `}
@@ -156,11 +159,10 @@ export const FileUploadFieldRenderer: React.FC<FieldRendererProps> = ({
           />
 
           <FileText className="w-8 h-8 text-zinc-400 mx-auto mb-2" />
-          <p className="text-sm text-zinc-300 mb-1">
-            Drop your file here or click to browse
-          </p>
+          <p className="text-sm text-zinc-300 mb-1">Drop your file here or click to browse</p>
           <p className="text-xs text-zinc-500">
-            Supported formats: {supportedFormats.join(', ')} (max {Math.round(maxSize / 1024 / 1024)}MB)
+            Supported formats: {supportedFormats.join(', ')} (max{' '}
+            {Math.round(maxSize / 1024 / 1024)}MB)
           </p>
         </div>
       )}
@@ -171,7 +173,9 @@ export const FileUploadFieldRenderer: React.FC<FieldRendererProps> = ({
           <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-primary-500"></div>
           <div>
             <p className="text-sm text-white">Processing {uploadedFile.name}...</p>
-            <p className="text-xs text-zinc-400">Extracting {field.label.toLowerCase()} from document</p>
+            <p className="text-xs text-zinc-400">
+              Extracting {field.label.toLowerCase()} from document
+            </p>
           </div>
         </div>
       )}
@@ -219,7 +223,9 @@ export const FileUploadFieldRenderer: React.FC<FieldRendererProps> = ({
       {/* Extraction Hints */}
       {field.id && (
         <div className="bg-zinc-800/30 rounded-lg p-3 border border-zinc-700/30">
-          <p className="text-xs font-medium text-zinc-300 mb-2">💡 What to look for in your file:</p>
+          <p className="text-xs font-medium text-zinc-300 mb-2">
+            💡 What to look for in your file:
+          </p>
           <ul className="text-xs text-zinc-400 space-y-1">
             {getExtractionHints(field).map((hint, index) => (
               <li key={index}>• {hint}</li>
@@ -229,23 +235,21 @@ export const FileUploadFieldRenderer: React.FC<FieldRendererProps> = ({
       )}
 
       {/* Field-level error */}
-      {errorMessage && (
-        <p className="text-sm text-red-400">{errorMessage}</p>
-      )}
+      {errorMessage && <p className="text-sm text-red-400">{errorMessage}</p>}
     </div>
-  );
-};
+  )
+}
 
 function getSupportedFormats(field: import('../../../types/data-collection').DataField): string[] {
   switch (field.type) {
     case 'currency':
     case 'number':
-      return ['.xlsx', '.xls', '.csv', '.pdf'];
+      return ['.xlsx', '.xls', '.csv', '.pdf']
     case 'text':
     case 'textarea':
-      return ['.pdf', '.docx', '.doc', '.txt'];
+      return ['.pdf', '.docx', '.doc', '.txt']
     default:
-      return ['.pdf', '.xlsx', '.xls', '.csv'];
+      return ['.pdf', '.xlsx', '.xls', '.csv']
   }
 }
 
@@ -255,38 +259,41 @@ function getExtractionHints(field: import('../../../types/data-collection').Data
       return [
         'Look for "Revenue", "Sales", "Turnover" in financial statements',
         'Check income statements or P&L sections',
-        'Annual figures are preferred over monthly'
-      ];
+        'Annual figures are preferred over monthly',
+      ]
     case 'ebitda':
       return [
         'Look for "EBITDA", "Operating Profit", "Earnings Before Interest..."',
         'Check income statements',
-        'Exclude extraordinary items if possible'
-      ];
+        'Exclude extraordinary items if possible',
+      ]
     case 'number_of_employees':
       return [
         'Look for "Number of Employees", "Headcount", "Staff Count"',
         'Check company overview or HR sections',
-        'Full-time equivalents (FTE) preferred'
-      ];
+        'Full-time equivalents (FTE) preferred',
+      ]
     default:
       return [
         `Look for "${field.label}" in the document`,
         'Check tables, headers, and key sections',
-        'Use the most recent or relevant figures'
-      ];
+        'Use the most recent or relevant figures',
+      ]
   }
 }
 
-function formatValue(value: ParsedFieldValue, field: import('../../../types/data-collection').DataField): string {
+function formatValue(
+  value: ParsedFieldValue,
+  field: import('../../../types/data-collection').DataField
+): string {
   if (typeof value === 'number') {
     if (field.type === 'currency') {
       return new Intl.NumberFormat('en-US', {
         style: 'currency',
-        currency: 'EUR'
-      }).format(value);
+        currency: 'EUR',
+      }).format(value)
     }
-    return value.toLocaleString();
+    return value.toLocaleString()
   }
-  return String(value);
+  return String(value)
 }

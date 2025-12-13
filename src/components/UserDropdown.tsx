@@ -1,133 +1,133 @@
-import { Home, Info, LogOut, Settings, User, UserPlus } from 'lucide-react';
-import React, { useEffect, useRef, useState } from 'react';
-import { User as UserType } from '../contexts/AuthContextTypes';
+import { Home, Info, LogOut, Settings, User, UserPlus } from 'lucide-react'
+import React, { useEffect, useRef, useState } from 'react'
+import { User as UserType } from '../contexts/AuthContextTypes'
 
 interface UserDropdownProps {
-  user: UserType | null;
-  onLogout: () => Promise<void>;
+  user: UserType | null
+  onLogout: () => Promise<void>
 }
 
 export const UserDropdown: React.FC<UserDropdownProps> = ({ user, onLogout }) => {
-  const [isOpen, setIsOpen] = useState(false);
-  const dropdownRef = useRef<HTMLDivElement>(null);
-  const buttonRef = useRef<HTMLButtonElement>(null); // Track button position
+  const [isOpen, setIsOpen] = useState(false)
+  const dropdownRef = useRef<HTMLDivElement>(null)
+  const buttonRef = useRef<HTMLButtonElement>(null) // Track button position
 
   // Calculate dropdown position based on button
-  const [dropdownPosition, setDropdownPosition] = useState({ top: 0, right: 0 });
+  const [dropdownPosition, setDropdownPosition] = useState({ top: 0, right: 0 })
 
   // Calculate dropdown position when opened
   useEffect(() => {
     if (isOpen && buttonRef.current) {
-      const rect = buttonRef.current.getBoundingClientRect();
+      const rect = buttonRef.current.getBoundingClientRect()
       setDropdownPosition({
         top: rect.bottom + 8, // 8px below button
         right: window.innerWidth - rect.right, // Align right edge
-      });
+      })
     }
-  }, [isOpen]);
+  }, [isOpen])
 
   // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-        setIsOpen(false);
+        setIsOpen(false)
       }
-    };
+    }
 
     if (isOpen) {
-      document.addEventListener('mousedown', handleClickOutside);
+      document.addEventListener('mousedown', handleClickOutside)
     }
 
     return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, [isOpen]);
+      document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [isOpen])
 
   // Close dropdown on escape key
   useEffect(() => {
     const handleEscapeKey = (event: KeyboardEvent) => {
       if (event.key === 'Escape' && isOpen) {
-        setIsOpen(false);
+        setIsOpen(false)
       }
-    };
+    }
 
     if (isOpen) {
-      document.addEventListener('keydown', handleEscapeKey);
+      document.addEventListener('keydown', handleEscapeKey)
     }
 
     return () => {
-      document.removeEventListener('keydown', handleEscapeKey);
-    };
-  }, [isOpen]);
+      document.removeEventListener('keydown', handleEscapeKey)
+    }
+  }, [isOpen])
 
   // Get user initials for placeholder
   const getUserInitials = () => {
-    if (!user?.name) return '?';
-    const names = user.name.split(' ');
+    if (!user?.name) return '?'
+    const names = user.name.split(' ')
     if (names.length >= 2) {
-      return `${names[0][0]}${names[1][0]}`.toUpperCase();
+      return `${names[0][0]}${names[1][0]}`.toUpperCase()
     }
-    return user.name.substring(0, 2).toUpperCase();
-  };
+    return user.name.substring(0, 2).toUpperCase()
+  }
 
   // Use avatar from user object directly
-  const avatarUrl = user?.avatar_url || user?.avatar;
-  const hasAvatar = !!avatarUrl;
+  const avatarUrl = user?.avatar_url || user?.avatar
+  const hasAvatar = !!avatarUrl
 
   const handleUserClick = () => {
-    setIsOpen(prev => !prev);
-  };
+    setIsOpen((prev) => !prev)
+  }
 
   const handleLogout = async () => {
-    setIsOpen(false);
-    await onLogout();
-  };
+    setIsOpen(false)
+    await onLogout()
+  }
 
   // Removed handleSignIn since Sign In menu item was removed
 
   const handleCreateAccount = () => {
-    setIsOpen(false);
+    setIsOpen(false)
     // Open parent window to sign up
     if (window.parent && window.parent !== window) {
-      window.parent.postMessage({ type: 'OPEN_SIGNUP' }, '*');
+      window.parent.postMessage({ type: 'OPEN_SIGNUP' }, '*')
     } else {
       // Fallback: open in same window
-      window.open('https://upswitch.biz/signup', '_blank');
+      window.open('https://upswitch.biz/signup', '_blank')
     }
-  };
+  }
 
   const handleBackToDashboard = () => {
-    setIsOpen(false);
+    setIsOpen(false)
     // Navigate to parent window dashboard
     if (window.parent && window.parent !== window) {
-      window.parent.postMessage({ type: 'NAVIGATE_TO_DASHBOARD' }, '*');
+      window.parent.postMessage({ type: 'NAVIGATE_TO_DASHBOARD' }, '*')
     } else {
       // Fallback: open in same window
-      window.open('https://upswitch.biz/my-business', '_blank');
+      window.open('https://upswitch.biz/my-business', '_blank')
     }
-  };
+  }
 
   const handleAccountSettings = () => {
-    setIsOpen(false);
+    setIsOpen(false)
     // Navigate to parent window settings
     if (window.parent && window.parent !== window) {
-      window.parent.postMessage({ type: 'NAVIGATE_TO_SETTINGS' }, '*');
+      window.parent.postMessage({ type: 'NAVIGATE_TO_SETTINGS' }, '*')
     } else {
       // Fallback: open in same window
-      window.open('https://upswitch.biz/users/profile', '_blank');
+      window.open('https://upswitch.biz/users/profile', '_blank')
     }
-  };
+  }
 
   const handleLearnMore = () => {
-    setIsOpen(false);
+    setIsOpen(false)
     // Navigate to parent window valuation page
     if (window.parent && window.parent !== window) {
-      window.parent.postMessage({ type: 'NAVIGATE_TO_VALUATION' }, '*');
+      window.parent.postMessage({ type: 'NAVIGATE_TO_VALUATION' }, '*')
     } else {
       // Fallback: open in same window
-      window.open('https://upswitch.biz/valuation', '_blank');
+      window.open('https://upswitch.biz/valuation', '_blank')
     }
-  };
+  }
 
   // Menu items for authenticated users
   const authenticatedMenuItems = [
@@ -153,7 +153,7 @@ export const UserDropdown: React.FC<UserDropdownProps> = ({ user, onLogout }) =>
       label: 'Log Out',
       action: handleLogout,
     },
-  ];
+  ]
 
   // Menu items for guest users
   const guestMenuItems = [
@@ -173,9 +173,9 @@ export const UserDropdown: React.FC<UserDropdownProps> = ({ user, onLogout }) =>
       label: 'Learn More',
       action: handleLearnMore,
     },
-  ];
+  ]
 
-  const menuItems = user ? authenticatedMenuItems : guestMenuItems;
+  const menuItems = user ? authenticatedMenuItems : guestMenuItems
 
   return (
     <div ref={dropdownRef} className="relative" style={{ zIndex: 100 }}>
@@ -198,14 +198,12 @@ export const UserDropdown: React.FC<UserDropdownProps> = ({ user, onLogout }) =>
                 className="w-full h-full rounded-full object-cover"
                 loading="lazy"
                 onError={(e) => {
-                  e.currentTarget.style.display = 'none';
-                  e.currentTarget.nextElementSibling?.classList.remove('hidden');
+                  e.currentTarget.style.display = 'none'
+                  e.currentTarget.nextElementSibling?.classList.remove('hidden')
                 }}
               />
             ) : null}
-            <span className={hasAvatar ? 'hidden' : 'block'}>
-              {getUserInitials()}
-            </span>
+            <span className={hasAvatar ? 'hidden' : 'block'}>{getUserInitials()}</span>
           </>
         ) : (
           <User className="w-4 h-4 text-gray-600" />
@@ -216,13 +214,17 @@ export const UserDropdown: React.FC<UserDropdownProps> = ({ user, onLogout }) =>
       {isOpen && (
         <>
           {/* Backdrop */}
-          <div className="fixed inset-0 z-[9998]" onClick={() => setIsOpen(false)} aria-hidden="true" />
-          
+          <div
+            className="fixed inset-0 z-[9998]"
+            onClick={() => setIsOpen(false)}
+            aria-hidden="true"
+          />
+
           {/* Dropdown */}
-          <div 
+          <div
             className="fixed w-56 bg-zinc-900 rounded-lg shadow-lg border border-zinc-800 py-2 z-[9999]"
             style={{
-              top: `${dropdownPosition.top}px`,   // Dynamic position
+              top: `${dropdownPosition.top}px`, // Dynamic position
               right: `${dropdownPosition.right}px`, // Dynamic position
             }}
           >
@@ -238,8 +240,8 @@ export const UserDropdown: React.FC<UserDropdownProps> = ({ user, onLogout }) =>
                         className="w-full h-full rounded-full object-cover"
                         loading="lazy"
                         onError={(e) => {
-                          e.currentTarget.style.display = 'none';
-                          e.currentTarget.nextElementSibling?.classList.remove('hidden');
+                          e.currentTarget.style.display = 'none'
+                          e.currentTarget.nextElementSibling?.classList.remove('hidden')
                         }}
                       />
                     ) : null}
@@ -261,51 +263,54 @@ export const UserDropdown: React.FC<UserDropdownProps> = ({ user, onLogout }) =>
                 </div>
               )}
             </div>
-            
+
             {/* Menu Items */}
             <div className="py-2">
               {menuItems.map((item, index) => {
                 if (item.isDivider) {
-                  return (
-                    <div key={index} className="h-px bg-zinc-800 my-1" role="separator" />
-                  );
+                  return <div key={index} className="h-px bg-zinc-800 my-1" role="separator" />
                 }
 
-                const Icon = item.icon;
-                const isFirst = index === 0;
-                const isLast = index === menuItems.length - 1;
+                const Icon = item.icon
+                const isFirst = index === 0
+                const isLast = index === menuItems.length - 1
 
-                const isLogout = item.key === 'logout';
+                const isLogout = item.key === 'logout'
                 return (
                   <button
                     key={index}
                     onClick={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      item.action?.();
+                      e.preventDefault()
+                      e.stopPropagation()
+                      item.action?.()
                     }}
                     className={`
                       w-full flex items-center gap-3 px-4 py-4 sm:py-3 text-base sm:text-sm font-medium text-left border-0 bg-transparent
                       transition-colors duration-150
                       ${isFirst ? 'rounded-t-xl' : ''}
                       ${isLast ? 'rounded-b-xl' : ''}
-                      ${isLogout 
-                        ? 'hover:bg-red-900/20 text-red-400 hover:text-red-300' 
-                        : 'hover:bg-zinc-800/50 text-zinc-300 hover:text-white'
+                      ${
+                        isLogout
+                          ? 'hover:bg-red-900/20 text-red-400 hover:text-red-300'
+                          : 'hover:bg-zinc-800/50 text-zinc-300 hover:text-white'
                       }
                     `}
                     role="menuitem"
                     tabIndex={0}
                   >
-                    {Icon && <Icon className={`w-5 h-5 sm:w-4 sm:h-4 flex-shrink-0 ${isLogout ? 'text-red-400' : 'text-zinc-400'}`} />}
+                    {Icon && (
+                      <Icon
+                        className={`w-5 h-5 sm:w-4 sm:h-4 flex-shrink-0 ${isLogout ? 'text-red-400' : 'text-zinc-400'}`}
+                      />
+                    )}
                     <span className="flex-1">{item.label}</span>
                   </button>
-                );
+                )
               })}
             </div>
           </div>
         </>
       )}
     </div>
-  );
-};
+  )
+}

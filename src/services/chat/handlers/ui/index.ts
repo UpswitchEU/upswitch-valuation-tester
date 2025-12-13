@@ -4,4 +4,4 @@
  * @module services/chat/handlers/ui
  */
 
-export { UIHandlers } from './UIHandlers';
+export { UIHandlers } from './UIHandlers'

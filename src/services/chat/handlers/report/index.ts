@@ -4,4 +4,4 @@
  * @module services/chat/handlers/report
  */
 
-export { ReportHandlers } from './ReportHandlers';
+export { ReportHandlers } from './ReportHandlers'

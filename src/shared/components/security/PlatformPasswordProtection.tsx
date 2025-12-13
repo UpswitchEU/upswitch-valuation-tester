@@ -1,6 +1,6 @@
 /**
  * 🔒 Platform Password Protection Component
- * 
+ *
  * FEATURES:
  * - High-security password protection for entire platform
  * - Cookie-based authentication
@@ -10,245 +10,253 @@
  * - Secure password hashing
  */
 
-import React, { useState, useEffect } from 'react';
-import { Lock, Shield } from 'lucide-react';
-import logger from '../../../utils/logger';
-import { SECURITY_CONFIG } from '../../config/security';
-import CustomPasswordInputField from '../forms/CustomPasswordInputField';
-import Button from '../buttons/Button';
-import VideoBackground from '../VideoBackground';
+import React, { useState, useEffect } from 'react'
+import { Lock, Shield } from 'lucide-react'
+import logger from '../../../utils/logger'
+import { SECURITY_CONFIG } from '../../config/security'
+import CustomPasswordInputField from '../forms/CustomPasswordInputField'
+import Button from '../buttons/Button'
+import VideoBackground from '../VideoBackground'
 
 interface PlatformPasswordProtectionProps {
-  children: React.ReactNode;
+  children: React.ReactNode
 }
 
 // Configuration from security config
-const PLATFORM_PASSWORD = SECURITY_CONFIG.PLATFORM_PASSWORD;
-const PLATFORM_COOKIE_NAME = SECURITY_CONFIG.PLATFORM_COOKIE_NAME;
-const COOKIE_EXPIRY_DAYS = SECURITY_CONFIG.COOKIE_EXPIRY_DAYS;
-const MAX_ATTEMPTS = SECURITY_CONFIG.MAX_ATTEMPTS;
-const LOCKOUT_DURATION = SECURITY_CONFIG.LOCKOUT_DURATION;
+const PLATFORM_PASSWORD = SECURITY_CONFIG.PLATFORM_PASSWORD
+const PLATFORM_COOKIE_NAME = SECURITY_CONFIG.PLATFORM_COOKIE_NAME
+const COOKIE_EXPIRY_DAYS = SECURITY_CONFIG.COOKIE_EXPIRY_DAYS
+const MAX_ATTEMPTS = SECURITY_CONFIG.MAX_ATTEMPTS
+const LOCKOUT_DURATION = SECURITY_CONFIG.LOCKOUT_DURATION
 
 // Secure password hashing with salt
 const hashPassword = (password: string): string => {
   // Generate a salt based on the password and a secret
-  const salt = 'UpSwitch_Salt_2024';
-  const saltedPassword = password + salt;
-  
+  const salt = 'UpSwitch_Salt_2024'
+  const saltedPassword = password + salt
+
   // Use Web Crypto API for secure hashing
   if (typeof window !== 'undefined' && window.crypto && window.crypto.subtle) {
     // For production, use proper crypto
     try {
-      return window.btoa(saltedPassword).replace(/[^a-zA-Z0-9]/g, '');
+      return window.btoa(saltedPassword).replace(/[^a-zA-Z0-9]/g, '')
     } catch (error) {
       // Fallback if btoa is not available
-      return Buffer.from(saltedPassword, 'utf8').toString('base64').replace(/[^a-zA-Z0-9]/g, '');
+      return Buffer.from(saltedPassword, 'utf8')
+        .toString('base64')
+        .replace(/[^a-zA-Z0-9]/g, '')
     }
   }
-  
+
   // Fallback for development
-  let hash = 0;
+  let hash = 0
   for (let i = 0; i < saltedPassword.length; i++) {
-    const char = saltedPassword.charCodeAt(i);
-    hash = ((hash << 5) - hash) + char;
-    hash = hash & hash;
+    const char = saltedPassword.charCodeAt(i)
+    hash = (hash << 5) - hash + char
+    hash = hash & hash
   }
-  return hash.toString();
-};
+  return hash.toString()
+}
 
 // Cookie utilities with security settings and error handling
 const setCookie = (name: string, value: string, days: number): boolean => {
   try {
-    const expires = new Date();
-    expires.setTime(expires.getTime() + (days * 24 * 60 * 60 * 1000));
-    const secure = SECURITY_CONFIG.COOKIE_SECURE ? ';secure' : '';
-    const sameSite = `;samesite=${SECURITY_CONFIG.COOKIE_SAME_SITE}`;
-    document.cookie = `${name}=${value};expires=${expires.toUTCString()};path=/${secure}${sameSite}`;
-    return true;
+    const expires = new Date()
+    expires.setTime(expires.getTime() + days * 24 * 60 * 60 * 1000)
+    const secure = SECURITY_CONFIG.COOKIE_SECURE ? ';secure' : ''
+    const sameSite = `;samesite=${SECURITY_CONFIG.COOKIE_SAME_SITE}`
+    document.cookie = `${name}=${value};expires=${expires.toUTCString()};path=/${secure}${sameSite}`
+    return true
   } catch (error) {
-    logger.error({ error }, 'Failed to set cookie');
-    return false;
+    logger.error({ error }, 'Failed to set cookie')
+    return false
   }
-};
+}
 
 const getCookie = (name: string): string | null => {
   try {
-    const nameEQ = name + "=";
-    const ca = document.cookie.split(';');
+    const nameEQ = name + '='
+    const ca = document.cookie.split(';')
     for (let i = 0; i < ca.length; i++) {
-      let c = ca[i];
-      while (c.charAt(0) === ' ') c = c.substring(1, c.length);
-      if (c.indexOf(nameEQ) === 0) return c.substring(nameEQ.length, c.length);
+      let c = ca[i]
+      while (c.charAt(0) === ' ') c = c.substring(1, c.length)
+      if (c.indexOf(nameEQ) === 0) return c.substring(nameEQ.length, c.length)
     }
-    return null;
+    return null
   } catch (error) {
-    logger.error({ error }, 'Failed to get cookie');
-    return null;
+    logger.error({ error }, 'Failed to get cookie')
+    return null
   }
-};
+}
 
 // Local storage for attempt tracking
 const getAttempts = (): number => {
-  const attempts = localStorage.getItem('platform_attempts');
-  return attempts ? parseInt(attempts, 10) : 0;
-};
+  const attempts = localStorage.getItem('platform_attempts')
+  return attempts ? parseInt(attempts, 10) : 0
+}
 
 const setAttempts = (attempts: number) => {
-  localStorage.setItem('platform_attempts', attempts.toString());
-};
+  localStorage.setItem('platform_attempts', attempts.toString())
+}
 
 const getLastAttempt = (): number => {
-  const lastAttempt = localStorage.getItem('platform_last_attempt');
-  return lastAttempt ? parseInt(lastAttempt, 10) : 0;
-};
+  const lastAttempt = localStorage.getItem('platform_last_attempt')
+  return lastAttempt ? parseInt(lastAttempt, 10) : 0
+}
 
 const setLastAttempt = (timestamp: number) => {
-  localStorage.setItem('platform_last_attempt', timestamp.toString());
-};
+  localStorage.setItem('platform_last_attempt', timestamp.toString())
+}
 
 const clearAttempts = () => {
-  localStorage.removeItem('platform_attempts');
-  localStorage.removeItem('platform_last_attempt');
-};
+  localStorage.removeItem('platform_attempts')
+  localStorage.removeItem('platform_last_attempt')
+}
 
 const PlatformPasswordProtection: React.FC<PlatformPasswordProtectionProps> = ({ children }) => {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
-  const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
-  const [isLocked, setIsLocked] = useState(false);
-  const [lockoutTime, setLockoutTime] = useState(0);
+  const [isAuthenticated, setIsAuthenticated] = useState(false)
+  const [isLoading, setIsLoading] = useState(true)
+  const [password, setPassword] = useState('')
+  const [error, setError] = useState('')
+  const [isLocked, setIsLocked] = useState(false)
+  const [lockoutTime, setLockoutTime] = useState(0)
 
   // Check authentication on mount
   useEffect(() => {
     const checkAuthentication = () => {
       try {
-        const token = getCookie(PLATFORM_COOKIE_NAME);
+        const token = getCookie(PLATFORM_COOKIE_NAME)
         if (token && token === hashPassword(PLATFORM_PASSWORD)) {
-          setIsAuthenticated(true);
-          logger.info('Platform access authenticated via cookie');
+          setIsAuthenticated(true)
+          logger.info('Platform access authenticated via cookie')
         } else {
-          setIsAuthenticated(false);
+          setIsAuthenticated(false)
         }
       } catch (error) {
-        logger.error({ error }, 'Authentication check failed');
-        setIsAuthenticated(false);
+        logger.error({ error }, 'Authentication check failed')
+        setIsAuthenticated(false)
       } finally {
-        setIsLoading(false);
+        setIsLoading(false)
       }
-    };
+    }
 
-    checkAuthentication();
-  }, []);
+    checkAuthentication()
+  }, [])
 
   // Check for lockout
   useEffect(() => {
-    const currentAttempts = getAttempts();
-    const lastAttempt = getLastAttempt();
-    const now = Date.now();
-    
+    const currentAttempts = getAttempts()
+    const lastAttempt = getLastAttempt()
+    const now = Date.now()
+
     if (currentAttempts >= MAX_ATTEMPTS) {
-      const timeSinceLastAttempt = now - lastAttempt;
+      const timeSinceLastAttempt = now - lastAttempt
       if (timeSinceLastAttempt < LOCKOUT_DURATION) {
-        setIsLocked(true);
-        setLockoutTime(Math.ceil((LOCKOUT_DURATION - timeSinceLastAttempt) / 1000 / 60));
+        setIsLocked(true)
+        setLockoutTime(Math.ceil((LOCKOUT_DURATION - timeSinceLastAttempt) / 1000 / 60))
       } else {
         // Lockout expired, reset attempts
-        clearAttempts();
-        setIsLocked(false);
+        clearAttempts()
+        setIsLocked(false)
       }
     }
-  }, []);
+  }, [])
 
   // Add SEO protection headers with cleanup
   useEffect(() => {
-    const addedElements: HTMLElement[] = [];
-    
+    const addedElements: HTMLElement[] = []
+
     if (!isAuthenticated) {
       // Add security headers from configuration
       Object.entries(SECURITY_CONFIG.SECURITY_HEADERS).forEach(([header, value]) => {
-        const meta = document.createElement('meta');
-        meta.httpEquiv = header;
-        meta.content = value;
-        document.head.appendChild(meta);
-        addedElements.push(meta);
-      });
+        const meta = document.createElement('meta')
+        meta.httpEquiv = header
+        meta.content = value
+        document.head.appendChild(meta)
+        addedElements.push(meta)
+      })
 
       // Add SEO protection meta tags
-      SECURITY_CONFIG.SEO_PROTECTION.metaTags.forEach(tag => {
-        const meta = document.createElement('meta');
-        meta.name = tag.name;
-        meta.content = tag.content;
-        document.head.appendChild(meta);
-        addedElements.push(meta);
-      });
+      SECURITY_CONFIG.SEO_PROTECTION.metaTags.forEach((tag) => {
+        const meta = document.createElement('meta')
+        meta.name = tag.name
+        meta.content = tag.content
+        document.head.appendChild(meta)
+        addedElements.push(meta)
+      })
     }
 
     // Cleanup function
     return () => {
-      addedElements.forEach(element => {
+      addedElements.forEach((element) => {
         if (element.parentNode) {
-          element.parentNode.removeChild(element);
+          element.parentNode.removeChild(element)
         }
-      });
-    };
-  }, [isAuthenticated]);
+      })
+    }
+  }, [isAuthenticated])
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError('');
+    e.preventDefault()
+    setError('')
 
     if (isLocked) {
-      setError(`Too many failed attempts. Please wait ${lockoutTime} minutes before trying again.`);
-      return;
+      setError(`Too many failed attempts. Please wait ${lockoutTime} minutes before trying again.`)
+      return
     }
 
     try {
-      const currentAttempts = getAttempts();
-      const now = Date.now();
+      const currentAttempts = getAttempts()
+      const now = Date.now()
 
       // Check if we're still in lockout period
       if (currentAttempts >= MAX_ATTEMPTS) {
-        const lastAttempt = getLastAttempt();
-        const timeSinceLastAttempt = now - lastAttempt;
+        const lastAttempt = getLastAttempt()
+        const timeSinceLastAttempt = now - lastAttempt
         if (timeSinceLastAttempt < LOCKOUT_DURATION) {
-          setError(`Too many failed attempts. Please wait ${Math.ceil((LOCKOUT_DURATION - timeSinceLastAttempt) / 1000 / 60)} minutes before trying again.`);
-          return;
+          setError(
+            `Too many failed attempts. Please wait ${Math.ceil((LOCKOUT_DURATION - timeSinceLastAttempt) / 1000 / 60)} minutes before trying again.`
+          )
+          return
         } else {
           // Lockout expired, reset attempts
-          clearAttempts();
-          setIsLocked(false);
+          clearAttempts()
+          setIsLocked(false)
         }
       }
 
       if (password === PLATFORM_PASSWORD) {
         // Correct password
-        const token = hashPassword(PLATFORM_PASSWORD);
-        setCookie(PLATFORM_COOKIE_NAME, token, COOKIE_EXPIRY_DAYS);
-        setIsAuthenticated(true);
-        clearAttempts();
-        logger.info('Platform access granted');
+        const token = hashPassword(PLATFORM_PASSWORD)
+        setCookie(PLATFORM_COOKIE_NAME, token, COOKIE_EXPIRY_DAYS)
+        setIsAuthenticated(true)
+        clearAttempts()
+        logger.info('Platform access granted')
       } else {
         // Wrong password
-        const newAttempts = currentAttempts + 1;
-        setAttempts(newAttempts);
-        setLastAttempt(now);
-        
+        const newAttempts = currentAttempts + 1
+        setAttempts(newAttempts)
+        setLastAttempt(now)
+
         if (newAttempts >= MAX_ATTEMPTS) {
-          setIsLocked(true);
-          setLockoutTime(Math.ceil(LOCKOUT_DURATION / 1000 / 60));
-          setError(`Too many failed attempts. You are locked out for ${Math.ceil(LOCKOUT_DURATION / 1000 / 60)} minutes.`);
-          logger.warn('Platform access blocked - too many failed attempts');
+          setIsLocked(true)
+          setLockoutTime(Math.ceil(LOCKOUT_DURATION / 1000 / 60))
+          setError(
+            `Too many failed attempts. You are locked out for ${Math.ceil(LOCKOUT_DURATION / 1000 / 60)} minutes.`
+          )
+          logger.warn('Platform access blocked - too many failed attempts')
         } else {
-          setError(`Incorrect password. ${MAX_ATTEMPTS - newAttempts} attempts remaining.`);
-          logger.warn(`Platform access attempt failed - ${MAX_ATTEMPTS - newAttempts} attempts remaining`);
+          setError(`Incorrect password. ${MAX_ATTEMPTS - newAttempts} attempts remaining.`)
+          logger.warn(
+            `Platform access attempt failed - ${MAX_ATTEMPTS - newAttempts} attempts remaining`
+          )
         }
       }
     } catch (error) {
-      logger.error({ error }, 'Password verification failed');
-      setError('An error occurred. Please try again.');
+      logger.error({ error }, 'Password verification failed')
+      setError('An error occurred. Please try again.')
     }
-  };
+  }
 
   // Show loading state
   if (isLoading) {
@@ -259,7 +267,7 @@ const PlatformPasswordProtection: React.FC<PlatformPasswordProtectionProps> = ({
           <p className="text-white text-lg">Verifying access...</p>
         </div>
       </div>
-    );
+    )
   }
 
   // Show password form if not authenticated
@@ -267,7 +275,7 @@ const PlatformPasswordProtection: React.FC<PlatformPasswordProtectionProps> = ({
     return (
       <div className="min-h-screen relative">
         {/* Video Background - Same as pitch pages but static */}
-        <VideoBackground 
+        <VideoBackground
           videos={[
             '/videos/home/business-1.mp4',
             '/videos/home/business-2.mp4',
@@ -278,12 +286,15 @@ const PlatformPasswordProtection: React.FC<PlatformPasswordProtectionProps> = ({
           disableAutoRotation={true}
           disableKeyboardInteraction={true}
         />
-        
+
         {/* Password Modal Overlay */}
-        <div className="fixed inset-0 z-50 flex items-center justify-center" data-password-overlay="true">
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center"
+          data-password-overlay="true"
+        >
           {/* Background with glassmorphism blur */}
           <div className="absolute inset-0 bg-black/20 backdrop-blur-lg" />
-          
+
           {/* Modal content */}
           <div className="relative w-full h-full flex items-center justify-center px-4 pb-4">
             <div className="w-full max-w-md">
@@ -347,11 +358,11 @@ const PlatformPasswordProtection: React.FC<PlatformPasswordProtectionProps> = ({
           </div>
         </div>
       </div>
-    );
+    )
   }
 
   // Show protected content without logout button
-  return <>{children}</>;
-};
+  return <>{children}</>
+}
 
-export default PlatformPasswordProtection;
+export default PlatformPasswordProtection

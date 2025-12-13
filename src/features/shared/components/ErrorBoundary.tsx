@@ -5,20 +5,20 @@
  * Provides graceful error handling at different levels of the application.
  */
 
-import React, { Component, ErrorInfo, ReactNode } from 'react';
-import { generalLogger } from '../../../utils/logger';
+import React, { Component, ErrorInfo, ReactNode } from 'react'
+import { generalLogger } from '../../../utils/logger'
 
 interface ErrorBoundaryState {
-  hasError: boolean;
-  error: Error | null;
-  errorInfo: ErrorInfo | null;
+  hasError: boolean
+  error: Error | null
+  errorInfo: ErrorInfo | null
 }
 
 interface ErrorBoundaryProps {
-  children: ReactNode;
-  fallback?: ReactNode;
-  onError?: (error: Error, errorInfo: ErrorInfo) => void;
-  level: 'app' | 'feature' | 'component' | 'network';
+  children: ReactNode
+  fallback?: ReactNode
+  onError?: (error: Error, errorInfo: ErrorInfo) => void
+  level: 'app' | 'feature' | 'component' | 'network'
 }
 
 /**
@@ -28,12 +28,12 @@ interface ErrorBoundaryProps {
  */
 export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
   constructor(props: ErrorBoundaryProps) {
-    super(props);
+    super(props)
     this.state = {
       hasError: false,
       error: null,
       errorInfo: null,
-    };
+    }
   }
 
   static getDerivedStateFromError(error: Error): ErrorBoundaryState {
@@ -41,11 +41,11 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
       hasError: true,
       error,
       errorInfo: null,
-    };
+    }
   }
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo) {
-    const { level, onError } = this.props;
+    const { level, onError } = this.props
 
     // Log error with level context
     generalLogger.error(`[${level.toUpperCase()}] Error Boundary caught error`, {
@@ -53,33 +53,33 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
       stack: error.stack,
       componentStack: errorInfo.componentStack,
       level,
-    });
+    })
 
     // Update state with error info
     this.setState({
       error,
       errorInfo,
-    });
+    })
 
     // Call custom error handler if provided
-    onError?.(error, errorInfo);
+    onError?.(error, errorInfo)
   }
 
   render() {
-    const { hasError, error } = this.state;
-    const { children, fallback, level } = this.props;
+    const { hasError, error } = this.state
+    const { children, fallback, level } = this.props
 
     if (hasError) {
       // Use custom fallback if provided
       if (fallback) {
-        return fallback;
+        return fallback
       }
 
       // Default error UI based on level
-      return <DefaultErrorFallback error={error} level={level} />;
+      return <DefaultErrorFallback error={error} level={level} />
     }
 
-    return children;
+    return children
   }
 }
 
@@ -89,8 +89,8 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
  * Provides consistent error UI across different levels.
  */
 interface DefaultErrorFallbackProps {
-  error: Error | null;
-  level: 'app' | 'feature' | 'component' | 'network';
+  error: Error | null
+  level: 'app' | 'feature' | 'component' | 'network'
 }
 
 const DefaultErrorFallback: React.FC<DefaultErrorFallbackProps> = ({ error, level }) => {
@@ -104,7 +104,7 @@ const DefaultErrorFallback: React.FC<DefaultErrorFallbackProps> = ({ error, leve
           borderColor: 'border-red-200',
           textColor: 'text-red-800',
           icon: '🚨',
-        };
+        }
       case 'feature':
         return {
           title: 'Feature Error',
@@ -113,7 +113,7 @@ const DefaultErrorFallback: React.FC<DefaultErrorFallbackProps> = ({ error, leve
           borderColor: 'border-orange-200',
           textColor: 'text-orange-800',
           icon: '⚠️',
-        };
+        }
       case 'component':
         return {
           title: 'Component Error',
@@ -122,7 +122,7 @@ const DefaultErrorFallback: React.FC<DefaultErrorFallbackProps> = ({ error, leve
           borderColor: 'border-yellow-200',
           textColor: 'text-yellow-800',
           icon: '🔧',
-        };
+        }
       case 'network':
         return {
           title: 'Connection Error',
@@ -131,7 +131,7 @@ const DefaultErrorFallback: React.FC<DefaultErrorFallbackProps> = ({ error, leve
           borderColor: 'border-blue-200',
           textColor: 'text-blue-800',
           icon: '🌐',
-        };
+        }
       default:
         return {
           title: 'Error',
@@ -140,23 +140,19 @@ const DefaultErrorFallback: React.FC<DefaultErrorFallbackProps> = ({ error, leve
           borderColor: 'border-gray-200',
           textColor: 'text-gray-800',
           icon: '❌',
-        };
+        }
     }
-  };
+  }
 
-  const config = getErrorConfig(level);
+  const config = getErrorConfig(level)
 
   return (
     <div className={`p-6 rounded-lg border ${config.bgColor} ${config.borderColor}`}>
       <div className="flex items-start space-x-3">
         <div className="text-2xl">{config.icon}</div>
         <div className="flex-1">
-          <h3 className={`text-lg font-semibold ${config.textColor}`}>
-            {config.title}
-          </h3>
-          <p className={`mt-2 text-sm ${config.textColor} opacity-90`}>
-            {config.message}
-          </p>
+          <h3 className={`text-lg font-semibold ${config.textColor}`}>{config.title}</h3>
+          <p className={`mt-2 text-sm ${config.textColor} opacity-90`}>{config.message}</p>
           {error && process.env.NODE_ENV === 'development' && (
             <details className="mt-4">
               <summary className={`cursor-pointer text-sm font-medium ${config.textColor}`}>
@@ -179,8 +175,8 @@ const DefaultErrorFallback: React.FC<DefaultErrorFallbackProps> = ({ error, leve
         </div>
       </div>
     </div>
-  );
-};
+  )
+}
 
 /**
  * Application-Level Error Boundary
@@ -192,12 +188,12 @@ export const AppErrorBoundary: React.FC<{ children: ReactNode }> = ({ children }
     level="app"
     onError={(error, errorInfo) => {
       // Could send to error reporting service
-      console.error('Application-level error:', error, errorInfo);
+      console.error('Application-level error:', error, errorInfo)
     }}
   >
     {children}
   </ErrorBoundary>
-);
+)
 
 /**
  * Feature-Level Error Boundary
@@ -205,9 +201,9 @@ export const AppErrorBoundary: React.FC<{ children: ReactNode }> = ({ children }
  * Catches errors within a specific feature. Should wrap feature components.
  */
 export const FeatureErrorBoundary: React.FC<{
-  children: ReactNode;
-  feature: string;
-  fallback?: ReactNode;
+  children: ReactNode
+  feature: string
+  fallback?: ReactNode
 }> = ({ children, feature, fallback }) => (
   <ErrorBoundary
     level="feature"
@@ -217,12 +213,12 @@ export const FeatureErrorBoundary: React.FC<{
         error: error.message,
         feature,
         componentStack: errorInfo.componentStack,
-      });
+      })
     }}
   >
     {children}
   </ErrorBoundary>
-);
+)
 
 /**
  * Component-Level Error Boundary
@@ -230,9 +226,9 @@ export const FeatureErrorBoundary: React.FC<{
  * Catches errors within individual components. Should wrap complex components.
  */
 export const ComponentErrorBoundary: React.FC<{
-  children: ReactNode;
-  component: string;
-  fallback?: ReactNode;
+  children: ReactNode
+  component: string
+  fallback?: ReactNode
 }> = ({ children, component, fallback }) => (
   <ErrorBoundary
     level="component"
@@ -242,12 +238,12 @@ export const ComponentErrorBoundary: React.FC<{
         error: error.message,
         component,
         componentStack: errorInfo.componentStack,
-      });
+      })
     }}
   >
     {children}
   </ErrorBoundary>
-);
+)
 
 /**
  * Network-Level Error Boundary
@@ -255,10 +251,10 @@ export const ComponentErrorBoundary: React.FC<{
  * Catches errors related to network/API calls. Should wrap network-dependent components.
  */
 export const NetworkErrorBoundary: React.FC<{
-  children: ReactNode;
-  operation: string;
-  fallback?: ReactNode;
-  onRetry?: () => void;
+  children: ReactNode
+  operation: string
+  fallback?: ReactNode
+  onRetry?: () => void
 }> = ({ children, operation, fallback, onRetry }) => {
   const networkFallback = fallback || (
     <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
@@ -280,7 +276,7 @@ export const NetworkErrorBoundary: React.FC<{
         </div>
       </div>
     </div>
-  );
+  )
 
   return (
     <ErrorBoundary
@@ -291,10 +287,10 @@ export const NetworkErrorBoundary: React.FC<{
           error: error.message,
           operation,
           componentStack: errorInfo.componentStack,
-        });
+        })
       }}
     >
       {children}
     </ErrorBoundary>
-  );
-};
+  )
+}

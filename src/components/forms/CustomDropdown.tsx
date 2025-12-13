@@ -2,86 +2,86 @@
 // Location: src/shared/components/forms/CustomDropdown.tsx
 // Purpose: Reusable dropdown component with HeroUI styling and floating label
 
-import { ChevronDown } from 'lucide-react';
-import React, { useEffect, useRef, useState } from 'react';
-import { InfoIcon } from '../ui/InfoIcon';
+import { ChevronDown } from 'lucide-react'
+import React, { useEffect, useRef, useState } from 'react'
+import { InfoIcon } from '../ui/InfoIcon'
 
 interface DropdownOption {
-  value: string;
-  label: string;
-  disabled?: boolean;
+  value: string
+  label: string
+  disabled?: boolean
 }
 
 interface CustomDropdownProps {
   /**
    * Label for the dropdown
    */
-  label: string;
+  label: string
 
   /**
    * Placeholder text when no option is selected
    */
-  placeholder?: string;
+  placeholder?: string
 
   /**
    * Array of dropdown options
    */
-  options: DropdownOption[];
+  options: DropdownOption[]
 
   /**
    * Currently selected value
    */
-  value?: string;
+  value?: string
 
   /**
    * Callback when selection changes
    */
-  onChange: (value: string) => void;
+  onChange: (value: string) => void
 
   /**
    * Whether the field is required
    */
-  required?: boolean;
+  required?: boolean
 
   /**
    * Whether the dropdown is disabled
    */
-  disabled?: boolean;
+  disabled?: boolean
 
   /**
    * Error message to display
    */
-  error?: string;
+  error?: string
 
   /**
    * Whether the field has been touched (for validation)
    */
-  touched?: boolean;
+  touched?: boolean
 
   /**
    * Name attribute for the dropdown
    */
-  name?: string;
+  name?: string
 
   /**
    * Custom CSS classes
    */
-  className?: string;
+  className?: string
 
   /**
    * Reference to the dropdown element
    */
-  dropdownRef?: React.RefObject<HTMLDivElement>;
+  dropdownRef?: React.RefObject<HTMLDivElement>
 
   /**
    * Help text to display below the field (McKinsey UX standard)
    */
-  helpText?: string;
+  helpText?: string
 
   /**
    * Help text placement style
    */
-  helpTextPlacement?: 'tooltip' | 'below';
+  helpTextPlacement?: 'tooltip' | 'below'
 }
 
 const CustomDropdown: React.FC<CustomDropdownProps> = ({
@@ -100,112 +100,112 @@ const CustomDropdown: React.FC<CustomDropdownProps> = ({
   helpText,
   helpTextPlacement = 'tooltip',
 }) => {
-  const [isOpen, setIsOpen] = useState(false);
-  const [focusedIndex, setFocusedIndex] = useState(-1);
-  const internalRef = useRef<HTMLDivElement>(null);
-  const ref = dropdownRef || internalRef;
-  const optionRefs = useRef<(HTMLButtonElement | null)[]>([]);
+  const [isOpen, setIsOpen] = useState(false)
+  const [focusedIndex, setFocusedIndex] = useState(-1)
+  const internalRef = useRef<HTMLDivElement>(null)
+  const ref = dropdownRef || internalRef
+  const optionRefs = useRef<(HTMLButtonElement | null)[]>([])
 
   // Find the selected option
-  const selectedOption = options.find(option => option.value === value);
-  const hasValue = !!selectedOption;
+  const selectedOption = options.find((option) => option.value === value)
+  const hasValue = !!selectedOption
 
   // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (ref.current && !ref.current.contains(event.target as Node)) {
-        setIsOpen(false);
+        setIsOpen(false)
         // setIsFocused(false);
       }
-    };
+    }
 
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [ref]);
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [ref])
 
   // Close on escape key
   useEffect(() => {
     const handleEscape = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
-        setIsOpen(false);
+        setIsOpen(false)
         // setIsFocused(false);
       }
-    };
+    }
 
-    document.addEventListener('keydown', handleEscape);
-    return () => document.removeEventListener('keydown', handleEscape);
-  }, []);
+    document.addEventListener('keydown', handleEscape)
+    return () => document.removeEventListener('keydown', handleEscape)
+  }, [])
 
   const handleToggle = () => {
     if (!disabled) {
-      setIsOpen(!isOpen);
+      setIsOpen(!isOpen)
       // setIsFocused(!isOpen);
     }
-  };
+  }
 
   const handleOptionSelect = (optionValue: string) => {
-    onChange(optionValue);
-    setIsOpen(false);
+    onChange(optionValue)
+    setIsOpen(false)
     // setIsFocused(false);
-  };
+  }
 
   const handleKeyDown = (event: React.KeyboardEvent) => {
     if (!isOpen) {
       if (event.key === 'Enter' || event.key === ' ' || event.key === 'ArrowDown') {
-        event.preventDefault();
-        setIsOpen(true);
-        setFocusedIndex(0);
+        event.preventDefault()
+        setIsOpen(true)
+        setFocusedIndex(0)
       }
-      return;
+      return
     }
 
     switch (event.key) {
       case 'ArrowDown':
-        event.preventDefault();
-        setFocusedIndex(prev => {
-          const nextIndex = prev + 1;
-          return nextIndex >= options.length ? 0 : nextIndex;
-        });
-        break;
+        event.preventDefault()
+        setFocusedIndex((prev) => {
+          const nextIndex = prev + 1
+          return nextIndex >= options.length ? 0 : nextIndex
+        })
+        break
       case 'ArrowUp':
-        event.preventDefault();
-        setFocusedIndex(prev => {
-          const prevIndex = prev - 1;
-          return prevIndex < 0 ? options.length - 1 : prevIndex;
-        });
-        break;
+        event.preventDefault()
+        setFocusedIndex((prev) => {
+          const prevIndex = prev - 1
+          return prevIndex < 0 ? options.length - 1 : prevIndex
+        })
+        break
       case 'Enter':
       case ' ':
-        event.preventDefault();
+        event.preventDefault()
         if (focusedIndex >= 0 && focusedIndex < options.length) {
-          handleOptionSelect(options[focusedIndex].value);
+          handleOptionSelect(options[focusedIndex].value)
         }
-        break;
+        break
       case 'Escape':
-        event.preventDefault();
-        setIsOpen(false);
-        setFocusedIndex(-1);
-        break;
+        event.preventDefault()
+        setIsOpen(false)
+        setFocusedIndex(-1)
+        break
       case 'Home':
-        event.preventDefault();
-        setFocusedIndex(0);
-        break;
+        event.preventDefault()
+        setFocusedIndex(0)
+        break
       case 'End':
-        event.preventDefault();
-        setFocusedIndex(options.length - 1);
-        break;
+        event.preventDefault()
+        setFocusedIndex(options.length - 1)
+        break
     }
-  };
+  }
 
   // Focus management
   useEffect(() => {
     if (isOpen && focusedIndex >= 0) {
-      const optionElement = optionRefs.current[focusedIndex];
+      const optionElement = optionRefs.current[focusedIndex]
       if (optionElement) {
-        optionElement.focus();
+        optionElement.focus()
       }
     }
-  }, [focusedIndex, isOpen]);
+  }, [focusedIndex, isOpen])
 
   return (
     <div className={`relative ${className}`} ref={ref}>
@@ -216,7 +216,9 @@ const CustomDropdown: React.FC<CustomDropdownProps> = ({
           tabIndex={0}
           onClick={handleToggle}
           onKeyDown={handleKeyDown}
-          onFocus={() => {/* setIsFocused(true) */}}
+          onFocus={() => {
+            /* setIsFocused(true) */
+          }}
           onBlur={() => {
             // Delay to allow option selection
             // setTimeout(() => setIsFocused(false), 150);
@@ -226,9 +228,10 @@ const CustomDropdown: React.FC<CustomDropdownProps> = ({
           className={`
             w-full h-14 px-4 pt-6 pb-2 text-base text-gray-900 bg-white 
             border rounded-xl transition-all duration-200 
-            ${error && touched 
-              ? 'border-accent-300 focus:border-accent-500 focus:ring-2 focus:ring-accent-500/20' 
-              : 'border-gray-200 hover:border-primary-300 focus:border-primary-600 focus:ring-2 focus:ring-primary-500/20'
+            ${
+              error && touched
+                ? 'border-accent-300 focus:border-accent-500 focus:ring-2 focus:ring-accent-500/20'
+                : 'border-gray-200 hover:border-primary-300 focus:border-primary-600 focus:ring-2 focus:ring-primary-500/20'
             }
             focus:outline-none
             ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}
@@ -256,7 +259,13 @@ const CustomDropdown: React.FC<CustomDropdownProps> = ({
           {/* Info Icon - Positioned centered right (left of chevron) */}
           {helpText && helpTextPlacement === 'tooltip' && (
             <div className="absolute top-1/2 -translate-y-1/2 mt-1 z-20 right-12">
-              <InfoIcon content={helpText} position="left" maxWidth={300} size={24} className="ml-0" />
+              <InfoIcon
+                content={helpText}
+                position="left"
+                maxWidth={300}
+                size={24}
+                className="ml-0"
+              />
             </div>
           )}
 
@@ -287,7 +296,7 @@ const CustomDropdown: React.FC<CustomDropdownProps> = ({
         {/* Dropdown Options */}
         {isOpen && (
           <div className="relative z-[9999] mt-2 w-full">
-            <div 
+            <div
               className="absolute w-full bg-white border border-gray-200 rounded-xl shadow-xl max-h-60 overflow-auto transform transition-all duration-200 origin-top animate-in fade-in slide-in-from-top-2 ring-1 ring-primary-500/10"
               role="listbox"
               aria-labelledby={`${label}-label`}
@@ -296,7 +305,7 @@ const CustomDropdown: React.FC<CustomDropdownProps> = ({
                 <button
                   key={option.value}
                   type="button"
-                  ref={el => optionRefs.current[index] = el}
+                  ref={(el) => (optionRefs.current[index] = el)}
                   onClick={() => handleOptionSelect(option.value)}
                   onKeyDown={handleKeyDown}
                   disabled={option.disabled}
@@ -329,15 +338,13 @@ const CustomDropdown: React.FC<CustomDropdownProps> = ({
           {error}
         </span>
       )}
-      
+
       {/* Help Text (McKinsey UX Standard) */}
       {helpText && helpTextPlacement === 'below' && !error && (
-        <p className="text-xs text-gray-500 mt-2 leading-relaxed">
-          {helpText}
-        </p>
+        <p className="text-xs text-gray-500 mt-2 leading-relaxed">{helpText}</p>
       )}
     </div>
-  );
-};
+  )
+}
 
-export default CustomDropdown;
+export default CustomDropdown

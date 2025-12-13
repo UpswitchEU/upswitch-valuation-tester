@@ -8,7 +8,7 @@
  */
 
 // Components
-export { ValuationFlow } from './components/ValuationFlow';
+export { ValuationFlow } from './components/ValuationFlow'
 
 // Types
-export type { ValuationFlowType } from './components/ValuationFlow';
+export type { ValuationFlowType } from './components/ValuationFlow'

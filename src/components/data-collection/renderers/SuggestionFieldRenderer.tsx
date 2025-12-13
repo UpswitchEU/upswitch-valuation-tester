@@ -5,20 +5,20 @@
  * SOLID Principles: SRP, OCP, LSP, ISP, DIP
  */
 
-import { Sparkles } from 'lucide-react';
-import React from 'react';
-import { FieldRendererProps, ParsedFieldValue } from '../../../types/data-collection';
+import { Sparkles } from 'lucide-react'
+import React from 'react'
+import { FieldRendererProps, ParsedFieldValue } from '../../../types/data-collection'
 
 export const SuggestionFieldRenderer: React.FC<FieldRendererProps> = ({
   field,
   value,
   onChange,
   errors = [],
-  disabled = false
+  disabled = false,
 }) => {
-  const hasErrors = errors.length > 0;
-  const errorMessage = errors.find(e => e.severity === 'error')?.message;
-  const suggestions = field.suggestions || [];
+  const hasErrors = errors.length > 0
+  const errorMessage = errors.find((e) => e.severity === 'error')?.message
+  const suggestions = field.suggestions || []
 
   if (suggestions.length === 0) {
     // Fallback to manual input if no suggestions
@@ -30,17 +30,15 @@ export const SuggestionFieldRenderer: React.FC<FieldRendererProps> = ({
         </label>
         <input
           type="text"
-          value={value || ''}
+          value={typeof value === 'string' ? value : ''}
           onChange={(e) => onChange(e.target.value, 'suggestion')}
           placeholder={field.placeholder}
           disabled={disabled}
           className="w-full px-3 py-2 bg-zinc-800 border border-zinc-600 rounded-lg text-white placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-primary-500"
         />
-        {errorMessage && (
-          <p className="text-sm text-red-400">{errorMessage}</p>
-        )}
+        {errorMessage && <p className="text-sm text-red-400">{errorMessage}</p>}
       </div>
-    );
+    )
   }
 
   return (
@@ -53,9 +51,7 @@ export const SuggestionFieldRenderer: React.FC<FieldRendererProps> = ({
         </label>
       </div>
 
-      {field.description && (
-        <p className="text-xs text-zinc-400">{field.description}</p>
-      )}
+      {field.description && <p className="text-xs text-zinc-400">{field.description}</p>}
 
       <div className="grid grid-cols-2 gap-2">
         {suggestions.map((suggestion, index) => (
@@ -65,9 +61,10 @@ export const SuggestionFieldRenderer: React.FC<FieldRendererProps> = ({
             disabled={disabled}
             className={`
               px-3 py-2 text-left rounded-lg border transition-all duration-200 text-sm
-              ${value === parseSuggestionValue(suggestion, field)
-                ? 'bg-primary-600 border-primary-500 text-white shadow-lg'
-                : 'bg-zinc-800/50 border-zinc-600/50 text-zinc-300 hover:bg-zinc-700/50 hover:border-zinc-500/50'
+              ${
+                value === parseSuggestionValue(suggestion, field)
+                  ? 'bg-primary-600 border-primary-500 text-white shadow-lg'
+                  : 'bg-zinc-800/50 border-zinc-600/50 text-zinc-300 hover:bg-zinc-700/50 hover:border-zinc-500/50'
               }
               ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}
             `}
@@ -89,79 +86,82 @@ export const SuggestionFieldRenderer: React.FC<FieldRendererProps> = ({
         />
       </div>
 
-      {errorMessage && (
-        <p className="text-sm text-red-400">{errorMessage}</p>
-      )}
+      {errorMessage && <p className="text-sm text-red-400">{errorMessage}</p>}
     </div>
-  );
-};
+  )
+}
 
-function parseSuggestionValue(suggestion: string, field: import('../../../types/data-collection').DataField): ParsedFieldValue {
+function parseSuggestionValue(
+  suggestion: string,
+  field: import('../../../types/data-collection').DataField
+): ParsedFieldValue {
   switch (field.type) {
     case 'number': {
       if (suggestion.includes('-')) {
         // Handle ranges like "1-5", "6-20"
-        const parts = suggestion.split('-').map(s => s.trim());
-        const parsedParts = parts.map(s => parseInt(s, 10));
+        const parts = suggestion.split('-').map((s) => s.trim())
+        const parsedParts = parts.map((s) => parseInt(s, 10))
 
-        if (parts.length === 2 && parsedParts.every(n => !isNaN(n))) {
-          const [min, max] = parsedParts;
-          return Math.round((min + max) / 2);
+        if (parts.length === 2 && parsedParts.every((n) => !isNaN(n))) {
+          const [min, max] = parsedParts
+          return Math.round((min + max) / 2)
         }
       }
 
-      const num = parseInt(suggestion.replace(/\D/g, ''), 10);
-      return isNaN(num) ? suggestion : num;
+      const num = parseInt(suggestion.replace(/\D/g, ''), 10)
+      return isNaN(num) ? suggestion : num
     }
 
     case 'currency': {
       // Handle currency suggestions like "€100K - €500K"
       if (suggestion.includes('-')) {
-        const parts = suggestion.split('-').map(s => s.trim());
+        const parts = suggestion.split('-').map((s) => s.trim())
         if (parts.length === 2) {
-          const min = parseCurrencyValue(parts[0]);
-          const max = parseCurrencyValue(parts[1]);
+          const min = parseCurrencyValue(parts[0])
+          const max = parseCurrencyValue(parts[1])
           if (min !== null && max !== null) {
-            return Math.round((min + max) / 2);
+            return Math.round((min + max) / 2)
           }
         }
       }
 
-      const parsed = parseCurrencyValue(suggestion);
-      return parsed !== null ? parsed : suggestion;
+      const parsed = parseCurrencyValue(suggestion)
+      return parsed !== null ? parsed : suggestion
     }
 
     case 'boolean': {
-      const lowerSuggestion = suggestion.toLowerCase().trim();
-      if (lowerSuggestion === 'yes' || lowerSuggestion === 'true' || lowerSuggestion === '1') return true;
-      if (lowerSuggestion === 'no' || lowerSuggestion === 'false' || lowerSuggestion === '0') return false;
-      return suggestion; // Return original if not a clear boolean
+      const lowerSuggestion = suggestion.toLowerCase().trim()
+      if (lowerSuggestion === 'yes' || lowerSuggestion === 'true' || lowerSuggestion === '1')
+        return true
+      if (lowerSuggestion === 'no' || lowerSuggestion === 'false' || lowerSuggestion === '0')
+        return false
+      return suggestion // Return original if not a clear boolean
     }
 
     default:
-      return suggestion;
+      return suggestion
   }
 }
 
 function parseCurrencyValue(text: string): number | null {
   // Remove currency symbols and normalize
-  const cleaned = text.replace(/[€£$]/g, '').trim();
+  const cleaned = text.replace(/[€£$]/g, '').trim()
 
-  let multiplier = 1;
-  let finalCleaned = cleaned;
+  let multiplier = 1
+  let finalCleaned = cleaned
 
   // Handle K/M suffixes
   if (cleaned.includes('K')) {
-    multiplier = 1000;
-    finalCleaned = cleaned.replace('K', '');
+    multiplier = 1000
+    finalCleaned = cleaned.replace('K', '')
   } else if (cleaned.includes('M')) {
-    multiplier = 1000000;
-    finalCleaned = cleaned.replace('M', '');
+    multiplier = 1000000
+    finalCleaned = cleaned.replace('M', '')
   }
 
   // Remove commas and parse
-  const num = parseFloat(finalCleaned.replace(/,/g, ''));
-  if (isNaN(num)) return null;
+  const num = parseFloat(finalCleaned.replace(/,/g, ''))
+  if (isNaN(num)) return null
 
-  return num * multiplier;
+  return num * multiplier
 }

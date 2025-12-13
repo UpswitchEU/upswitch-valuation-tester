@@ -5,7 +5,7 @@
  */
 
 // Main unified component
-export { ValuationFlow } from './ValuationFlow';
+export { ValuationFlow } from './ValuationFlow'
 
 // Re-export types
-export type { ValuationFlowType } from './ValuationFlow';
+export type { ValuationFlowType } from './ValuationFlow'

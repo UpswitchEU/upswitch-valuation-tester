@@ -1,37 +1,37 @@
 /**
  * MessagesList Component
- * 
+ *
  * Single Responsibility: Render list of chat messages
  * Extracted from StreamingChat.tsx to follow SRP
- * 
+ *
  * @module components/chat/MessagesList
  */
 
-import React from 'react';
-import { AnimatePresence } from 'framer-motion';
-import { Message } from '../../hooks/useStreamingChatState';
-import { TypingIndicator } from '../TypingIndicator';
-import { MessageItem } from './MessageItem';
+import React from 'react'
+import { AnimatePresence } from 'framer-motion'
+import { Message } from '../../hooks/useStreamingChatState'
+import { TypingIndicator } from '../TypingIndicator'
+import { MessageItem } from './MessageItem'
 
 export interface MessagesListProps {
-  messages: Message[];
-  isTyping: boolean;
-  isThinking: boolean;
-  isInitializing: boolean;
-  onSuggestionSelect: (suggestion: string) => void;
-  onSuggestionDismiss: () => void;
-  onClarificationConfirm: (messageId: string) => void;
-  onClarificationReject: (messageId: string) => void;
-  onKBOSuggestionSelect: (selection: string) => void;
-  onValuationStart?: () => void;
-  calculateOption?: any;
-  valuationPreview?: any;
-  messagesEndRef: React.RefObject<HTMLDivElement>;
+  messages: Message[]
+  isTyping: boolean
+  isThinking: boolean
+  isInitializing: boolean
+  onSuggestionSelect: (suggestion: string) => void
+  onSuggestionDismiss: () => void
+  onClarificationConfirm: (messageId: string) => void
+  onClarificationReject: (messageId: string) => void
+  onKBOSuggestionSelect: (selection: string) => void
+  onValuationStart?: () => void
+  calculateOption?: any
+  valuationPreview?: any
+  messagesEndRef: React.RefObject<HTMLDivElement>
 }
 
 /**
  * MessagesList Component
- * 
+ *
  * Renders:
  * - List of messages
  * - Typing indicator
@@ -58,18 +58,18 @@ export const MessagesList: React.FC<MessagesListProps> = ({
       {/* Messages */}
       <AnimatePresence initial={false} mode="popLayout">
         {messages
-          .filter(message => {
+          .filter((message) => {
             // CRITICAL FIX: Filter out empty messages to prevent empty bubbles
             // BUT: Allow messages with special metadata (e.g., confirmation cards)
             // that intentionally have empty content but should still be displayed
             if (message.metadata?.is_business_type_confirmation === true) {
-              return true; // Always show business type confirmation cards even with empty content
+              return true // Always show business type confirmation cards even with empty content
             }
             if (message.metadata?.is_company_name_confirmation === true) {
-              return true; // Always show company name confirmation cards even with empty content
+              return true // Always show company name confirmation cards even with empty content
             }
             // Only show messages that have actual content (not just whitespace)
-            return message.content && message.content.trim().length > 0;
+            return message.content && message.content.trim().length > 0
           })
           .map((message) => (
             <MessageItem
@@ -86,7 +86,7 @@ export const MessagesList: React.FC<MessagesListProps> = ({
             />
           ))}
       </AnimatePresence>
-      
+
       {/* Typing Indicator - Show during initialization or when typing */}
       <AnimatePresence>
         {(isTyping || (isInitializing && messages.length === 0)) && (
@@ -95,7 +95,7 @@ export const MessagesList: React.FC<MessagesListProps> = ({
           </div>
         )}
       </AnimatePresence>
-      
+
       {/* Calculate Now Button */}
       {calculateOption && (
         <div className="flex justify-center">
@@ -109,7 +109,7 @@ export const MessagesList: React.FC<MessagesListProps> = ({
           </button>
         </div>
       )}
-      
+
       {/* Valuation Preview */}
       {valuationPreview && (
         <div className="bg-primary-600/10 p-4 rounded-lg border border-primary-600/30">
@@ -119,10 +119,9 @@ export const MessagesList: React.FC<MessagesListProps> = ({
           </div>
         </div>
       )}
-      
+
       {/* Scroll anchor */}
       <div ref={messagesEndRef} />
     </div>
-  );
-};
-
+  )
+}

@@ -1,30 +1,30 @@
-import { DollarSign, Send } from 'lucide-react';
-import React, { useEffect, useRef, useState } from 'react';
-import { useLoadingMessage } from '../hooks/useLoadingMessage';
-import { HTMLProcessor } from '../utils/htmlProcessor';
-import { serviceLogger } from '../utils/logger';
-import { LoadingDots } from './LoadingDots';
+import { DollarSign, Send } from 'lucide-react'
+import React, { useEffect, useRef, useState } from 'react'
+import { useLoadingMessage } from '../hooks/useLoadingMessage'
+import { HTMLProcessor } from '../utils/htmlProcessor'
+import { serviceLogger } from '../utils/logger'
+import { LoadingDots } from './LoadingDots'
 
 interface ConversationalFinancialInputProps {
-  companyId: string;
-  onComplete: (summary: any, valuationId?: string) => void;
-  onError: (error: string) => void;
+  companyId: string
+  onComplete: (summary: any, valuationId?: string) => void
+  onError: (error: string) => void
 }
 
 interface Message {
-  id: string;
-  type: 'user' | 'ai' | 'system';
-  content: string;
-  timestamp: Date;
-  isLoading?: boolean;
+  id: string
+  type: 'user' | 'ai' | 'system'
+  content: string
+  timestamp: Date
+  isLoading?: boolean
 }
 
 export const ConversationalFinancialInput: React.FC<ConversationalFinancialInputProps> = ({
   companyId: _companyId,
   onComplete,
-  onError
+  onError,
 }) => {
-  const loadingMessage = useLoadingMessage();
+  const loadingMessage = useLoadingMessage()
   const [messages, setMessages] = useState<Message[]>([
     {
       id: '1',
@@ -37,128 +37,140 @@ I'll ask you a few quick questions to get your business valuation.
 What's your annual revenue for this year? (in EUR)
 
 💡 Your total income before expenses`,
-      timestamp: new Date()
-    }
-  ]);
-  
-  const [input, setInput] = useState('');
-  const [isProcessing, setIsProcessing] = useState(false);
-  const [currentQuestion, setCurrentQuestion] = useState(0);
-  const [financialData, setFinancialData] = useState<any>({});
-  const messagesEndRef = useRef<HTMLDivElement>(null);
+      timestamp: new Date(),
+    },
+  ])
+
+  const [input, setInput] = useState('')
+  const [isProcessing, setIsProcessing] = useState(false)
+  const [currentQuestion, setCurrentQuestion] = useState(0)
+  const [financialData, setFinancialData] = useState<any>({})
+  const messagesEndRef = useRef<HTMLDivElement>(null)
 
   const questions = [
     {
       field: 'revenue',
       question: "What's your annual revenue for this year? (in EUR)",
-      helpText: "Your total income before expenses",
-      optional: false
+      helpText: 'Your total income before expenses',
+      optional: false,
     },
     {
       field: 'ebitda',
       question: "What's your EBITDA for this year? (in EUR)",
-      helpText: "Earnings Before Interest, Taxes, Depreciation & Amortization",
-      optional: false
-    }
-  ];
+      helpText: 'Earnings Before Interest, Taxes, Depreciation & Amortization',
+      optional: false,
+    },
+  ]
 
   const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  };
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+  }
 
   useEffect(() => {
-    scrollToBottom();
-  }, [messages]);
+    scrollToBottom()
+  }, [messages])
 
   const handleSend = async () => {
-    if (!input.trim() || isProcessing) return;
+    if (!input.trim() || isProcessing) return
 
-    const userMessage = input.trim();
-    
+    const userMessage = input.trim()
+
     // Add user message
-    setMessages(prev => [...prev, {
-      id: Date.now().toString(),
-      type: 'user',
-      content: userMessage,
-      timestamp: new Date()
-    }]);
-    
-    setInput('');
-    setIsProcessing(true);
+    setMessages((prev) => [
+      ...prev,
+      {
+        id: Date.now().toString(),
+        type: 'user',
+        content: userMessage,
+        timestamp: new Date(),
+      },
+    ])
+
+    setInput('')
+    setIsProcessing(true)
 
     try {
-      const currentQ = questions[currentQuestion];
-      
+      const currentQ = questions[currentQuestion]
+
       // Parse the financial value
-      const value = parseFloat(userMessage.replace(/[^0-9.-]/g, ''));
-      
+      const value = parseFloat(userMessage.replace(/[^0-9.-]/g, ''))
+
       if (isNaN(value)) {
-        setMessages(prev => [...prev, {
-          id: Date.now().toString(),
-          type: 'ai',
-          content: `Please enter a valid number. For example: ${currentQ.field.includes('revenue') ? '1000000' : '200000'}${currentQ.optional ? '\n\nOr press Enter to skip this question.' : ''}`,
-          timestamp: new Date()
-        }]);
-        setIsProcessing(false);
-        return;
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: Date.now().toString(),
+            type: 'ai',
+            content: `Please enter a valid number. For example: ${currentQ.field.includes('revenue') ? '1000000' : '200000'}${currentQ.optional ? '\n\nOr press Enter to skip this question.' : ''}`,
+            timestamp: new Date(),
+          },
+        ])
+        setIsProcessing(false)
+        return
       }
 
       // Save the financial data
-      const newData = { ...financialData, [currentQ.field]: value };
-      setFinancialData(newData);
+      const newData = { ...financialData, [currentQ.field]: value }
+      setFinancialData(newData)
 
       // Move to next question or complete
       if (currentQuestion < questions.length - 1) {
-        const nextQ = questions[currentQuestion + 1];
-        setCurrentQuestion(currentQuestion + 1);
-        
-        setMessages(prev => [...prev, {
-          id: Date.now().toString(),
-          type: 'ai',
-          content: `✅ Got it! €${value.toLocaleString()}
+        const nextQ = questions[currentQuestion + 1]
+        setCurrentQuestion(currentQuestion + 1)
+
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: Date.now().toString(),
+            type: 'ai',
+            content: `✅ Got it! €${value.toLocaleString()}
 
 **Question ${currentQuestion + 2} of ${questions.length}:**
 ${nextQ.question}
 
 💡 ${nextQ.helpText}`,
-          timestamp: new Date()
-        }]);
+            timestamp: new Date(),
+          },
+        ])
       } else {
         // All questions answered - complete
-        setMessages(prev => [...prev, {
-          id: Date.now().toString(),
-          type: 'ai',
-          content: `🎉 **Perfect! I have all the data.**
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: Date.now().toString(),
+            type: 'ai',
+            content: `🎉 **Perfect! I have all the data.**
 
 **Current Year (${new Date().getFullYear()}):**
 • Revenue: €${newData.revenue?.toLocaleString()}
 • EBITDA: €${newData.ebitda?.toLocaleString()}
 
 ⚡ Preparing your valuation...`,
-          timestamp: new Date()
-        }]);
+            timestamp: new Date(),
+          },
+        ])
 
         // Complete the financial data collection
         setTimeout(() => {
-          onComplete(newData);
-        }, 2000);
+          onComplete(newData)
+        }, 2000)
       }
     } catch (error) {
       serviceLogger.error('Financial input error', {
-        error: error instanceof Error ? error.message : 'Unknown error'
-      });
-      onError('Failed to process financial data');
+        error: error instanceof Error ? error.message : 'Unknown error',
+      })
+      onError('Failed to process financial data')
     } finally {
-      setIsProcessing(false);
+      setIsProcessing(false)
     }
-  };
+  }
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      handleSend();
+      e.preventDefault()
+      handleSend()
     }
-  };
+  }
 
   return (
     <div className="flex h-full flex-col overflow-hidden bg-zinc-900">
@@ -186,9 +198,7 @@ ${nextQ.question}
               <div className="flex flex-col gap-1">
                 <div
                   className={`px-4 py-3 rounded-lg ${
-                    message.type === 'user' 
-                      ? 'bg-zinc-800 text-white' 
-                      : 'bg-zinc-700/50 text-white'
+                    message.type === 'user' ? 'bg-zinc-800 text-white' : 'bg-zinc-700/50 text-white'
                   }`}
                 >
                   {message.isLoading ? (
@@ -197,15 +207,15 @@ ${nextQ.question}
                       <span className="text-sm text-zinc-300 animate-pulse">{loadingMessage}</span>
                     </div>
                   ) : (
-                    <div 
+                    <div
                       className="whitespace-pre-wrap text-sm"
-                      dangerouslySetInnerHTML={{ 
+                      dangerouslySetInnerHTML={{
                         __html: HTMLProcessor.sanitize(
                           message.content
                             .replace(/\*\*(.*?)\*\*/g, '<strong class="font-bold">$1</strong>')
                             .replace(/\n/g, '<br/>')
                             .replace(/^• /gm, '&nbsp;&nbsp;• ')
-                        )
+                        ),
                       }}
                     />
                   )}
@@ -228,8 +238,8 @@ ${nextQ.question}
       <div className="p-4 border-t border-zinc-800 flex-shrink-0">
         <form
           onSubmit={(e) => {
-            e.preventDefault();
-            handleSend();
+            e.preventDefault()
+            handleSend()
           }}
           className="focus-within:bg-zinc-900/30 group flex flex-col gap-3 p-4 duration-150 w-full rounded-3xl border border-zinc-700/50 bg-zinc-900/20 text-base shadow-xl transition-all ease-in-out focus-within:border-zinc-500/40 hover:border-zinc-600/30 focus-within:hover:border-zinc-500/40 backdrop-blur-sm"
         >
@@ -260,5 +270,5 @@ ${nextQ.question}
         </form>
       </div>
     </div>
-  );
-};
+  )
+}

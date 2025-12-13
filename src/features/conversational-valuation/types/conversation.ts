@@ -5,35 +5,35 @@
  * Following DIP principles with clear interfaces.
  */
 
-import { Message } from '../../../hooks/useStreamingChatState';
-import { ValuationResponse } from '../../../types/valuation';
+import { Message } from '../../../hooks/useStreamingChatState'
+import { ValuationResponse } from '../../../types/valuation'
 
 // Core state interface
 export interface ConversationState {
   // Session
-  sessionId: string;
-  pythonSessionId: string | null;
-  isRestored: boolean;
+  sessionId: string
+  pythonSessionId: string | null
+  isRestored: boolean
 
   // Conversation
-  messages: Message[];
-  isLoading: boolean;
-  isInitialized: boolean;
-  error: string | null;
+  messages: Message[]
+  isLoading: boolean
+  isInitialized: boolean
+  error: string | null
 
   // Valuation
-  valuationResult: ValuationResponse | null;
-  isGenerating: boolean;
+  valuationResult: ValuationResponse | null
+  isGenerating: boolean
 
   // Business Profile
-  businessProfile: any | null; // TODO: Define proper type
-  profileLoading: boolean;
+  businessProfile: any | null // TODO: Define proper type
+  profileLoading: boolean
 
   // UI State
-  activeTab: 'preview' | 'source' | 'info';
-  isFullScreen: boolean;
-  showRegenerationWarning: boolean;
-  pendingValuationResult: ValuationResponse | null;
+  activeTab: 'preview' | 'source' | 'info'
+  isFullScreen: boolean
+  showRegenerationWarning: boolean
+  pendingValuationResult: ValuationResponse | null
 }
 
 // Action types for the reducer
@@ -66,16 +66,16 @@ export type ConversationAction =
   | { type: 'SET_PENDING_RESULT'; payload: ValuationResponse | null }
 
   // Reset
-  | { type: 'RESET_STATE' };
+  | { type: 'RESET_STATE' }
 
 // Context value interface
 export interface ConversationContextValue {
-  state: ConversationState;
-  dispatch: React.Dispatch<ConversationAction>;
+  state: ConversationState
+  dispatch: React.Dispatch<ConversationAction>
 }
 
 // Provider props
 export interface ConversationProviderProps {
-  children: React.ReactNode;
-  initialState?: Partial<ConversationState>;
+  children: React.ReactNode
+  initialState?: Partial<ConversationState>
 }

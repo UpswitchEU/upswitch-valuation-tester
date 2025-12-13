@@ -6,8 +6,8 @@
  */
 
 export interface IAnalyticsService {
-  trackEvent(eventName: string, properties?: Record<string, unknown>): void;
-  trackPageView(pageName: string, properties?: Record<string, unknown>): void;
-  trackUserAction(action: string, properties?: Record<string, unknown>): void;
-  identifyUser(userId: string, traits?: Record<string, unknown>): void;
+  trackEvent(eventName: string, properties?: Record<string, unknown>): void
+  trackPageView(pageName: string, properties?: Record<string, unknown>): void
+  trackUserAction(action: string, properties?: Record<string, unknown>): void
+  identifyUser(userId: string, traits?: Record<string, unknown>): void
 }

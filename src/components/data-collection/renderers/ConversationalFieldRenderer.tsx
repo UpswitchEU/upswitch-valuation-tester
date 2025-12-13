@@ -5,9 +5,9 @@
  * SOLID Principles: SRP, OCP, LSP, ISP, DIP
  */
 
-import { Bot, HelpCircle } from 'lucide-react';
-import React, { useState } from 'react';
-import { DataField, FieldRendererProps, ParsedFieldValue } from '../../../types/data-collection';
+import { Bot, HelpCircle } from 'lucide-react'
+import React, { useState } from 'react'
+import { DataField, FieldRendererProps, ParsedFieldValue } from '../../../types/data-collection'
 
 export const ConversationalFieldRenderer: React.FC<FieldRendererProps> = ({
   field,
@@ -15,19 +15,19 @@ export const ConversationalFieldRenderer: React.FC<FieldRendererProps> = ({
   onChange,
   errors = [],
   context,
-  disabled = false
+  disabled = false,
 }) => {
-  const [showHelp, setShowHelp] = useState(false);
-  const hasErrors = errors.length > 0;
+  const [showHelp, setShowHelp] = useState(false)
+  const hasErrors = errors.length > 0
 
   const handleResponse = (responseValue: ParsedFieldValue) => {
-    onChange(responseValue, 'conversational');
-  };
+    onChange(responseValue, 'conversational')
+  }
 
   // Get question from FIELD_QUESTIONS or generate one
-  const question = getQuestionForField(field);
-  const examples = getExamplesForField(field);
-  const suggestions = field.suggestions || [];
+  const question = getQuestionForField(field)
+  const examples = getExamplesForField(field)
+  const suggestions = field.suggestions || []
 
   return (
     <div className="space-y-4">
@@ -52,16 +52,12 @@ export const ConversationalFieldRenderer: React.FC<FieldRendererProps> = ({
 
       {/* Question */}
       <div className="bg-zinc-800/50 rounded-lg p-4 border border-zinc-700/50">
-        <p className="text-white text-sm leading-relaxed">
-          {question}
-        </p>
+        <p className="text-white text-sm leading-relaxed">{question}</p>
 
         {/* Field Description */}
         {showHelp && field.description && (
           <div className="mt-3 pt-3 border-t border-zinc-600/50">
-            <p className="text-xs text-zinc-400">
-              💡 {field.description}
-            </p>
+            <p className="text-xs text-zinc-400">💡 {field.description}</p>
           </div>
         )}
 
@@ -108,45 +104,45 @@ export const ConversationalFieldRenderer: React.FC<FieldRendererProps> = ({
       {hasErrors && (
         <div className="bg-red-900/20 border border-red-700/50 rounded-lg p-3">
           <p className="text-sm text-red-400">
-            {errors.find(e => e.severity === 'error')?.message}
+            {errors.find((e) => e.severity === 'error')?.message}
           </p>
         </div>
       )}
     </div>
-  );
-};
+  )
+}
 
 // Helper functions
 function getQuestionForField(field: DataField): string {
   // In a real implementation, this would come from FIELD_QUESTIONS
   switch (field.id) {
     case 'company_name':
-      return "What's the name of your business?";
+      return "What's the name of your business?"
     case 'revenue':
-      return "What's your annual revenue for the most recent year?";
+      return "What's your annual revenue for the most recent year?"
     case 'ebitda':
-      return "What's your EBITDA (Earnings Before Interest, Taxes, Depreciation, and Amortization)?";
+      return "What's your EBITDA (Earnings Before Interest, Taxes, Depreciation, and Amortization)?"
     case 'number_of_employees':
-      return "How many employees does your business have?";
+      return 'How many employees does your business have?'
     case 'industry':
-      return "What industry is your business in?";
+      return 'What industry is your business in?'
     case 'country_code':
-      return "Where is your business headquartered?";
+      return 'Where is your business headquartered?'
     default:
-      return `What's your ${field.label.toLowerCase()}?`;
+      return `What's your ${field.label.toLowerCase()}?`
   }
 }
 
 function getExamplesForField(field: DataField): string[] {
   switch (field.id) {
     case 'company_name':
-      return ['TechCorp Inc.', 'Green Energy Solutions'];
+      return ['TechCorp Inc.', 'Green Energy Solutions']
     case 'revenue':
-      return ['€500,000', '£2.3 million', '$1.2M'];
+      return ['€500,000', '£2.3 million', '$1.2M']
     case 'number_of_employees':
-      return ['25', '5-10 team'];
+      return ['25', '5-10 team']
     default:
-      return [];
+      return []
   }
 }
 
@@ -154,50 +150,50 @@ function parseExample(example: string, field: DataField): ParsedFieldValue {
   switch (field.type) {
     case 'currency': {
       // Remove currency symbols and parse
-      const cleaned = example.replace(/[€£$]/g, '').replace(/,/g, '').trim();
-      let numericValue: number;
+      const cleaned = example.replace(/[€£$]/g, '').replace(/,/g, '').trim()
+      let numericValue: number
 
       if (cleaned.includes('million') || cleaned.includes('M')) {
-        const baseValue = parseFloat(cleaned.replace(/million|M/g, ''));
-        if (isNaN(baseValue)) return example; // Return original string if parsing fails
-        numericValue = baseValue * 1000000;
+        const baseValue = parseFloat(cleaned.replace(/million|M/g, ''))
+        if (isNaN(baseValue)) return example // Return original string if parsing fails
+        numericValue = baseValue * 1000000
       } else if (cleaned.includes('K')) {
-        const baseValue = parseFloat(cleaned.replace('K', ''));
-        if (isNaN(baseValue)) return example;
-        numericValue = baseValue * 1000;
+        const baseValue = parseFloat(cleaned.replace('K', ''))
+        if (isNaN(baseValue)) return example
+        numericValue = baseValue * 1000
       } else {
-        numericValue = parseFloat(cleaned);
-        if (isNaN(numericValue)) return example;
+        numericValue = parseFloat(cleaned)
+        if (isNaN(numericValue)) return example
       }
 
-      return numericValue;
+      return numericValue
     }
 
     case 'number': {
       if (example.includes('-')) {
-        const parts = example.split('-').map(s => parseInt(s.trim(), 10));
-        if (parts.some(isNaN)) return example;
+        const parts = example.split('-').map((s) => parseInt(s.trim(), 10))
+        if (parts.some(isNaN)) return example
 
-        const [min, max] = parts;
-        return Math.round((min + max) / 2);
+        const [min, max] = parts
+        return Math.round((min + max) / 2)
       }
 
-      const parsed = parseInt(example, 10);
-      return isNaN(parsed) ? example : parsed;
+      const parsed = parseInt(example, 10)
+      return isNaN(parsed) ? example : parsed
     }
 
     case 'boolean':
-      const lowerExample = example.toLowerCase().trim();
-      if (lowerExample === 'yes' || lowerExample === 'true' || lowerExample === '1') return true;
-      if (lowerExample === 'no' || lowerExample === 'false' || lowerExample === '0') return false;
-      return example; // Return original if not a clear boolean
+      const lowerExample = example.toLowerCase().trim()
+      if (lowerExample === 'yes' || lowerExample === 'true' || lowerExample === '1') return true
+      if (lowerExample === 'no' || lowerExample === 'false' || lowerExample === '0') return false
+      return example // Return original if not a clear boolean
 
     default:
-      return example;
+      return example
   }
 }
 
 function parseSuggestion(suggestion: string, field: DataField): ParsedFieldValue {
   // Similar to parseExample but for suggestions
-  return parseExample(suggestion, field);
+  return parseExample(suggestion, field)
 }

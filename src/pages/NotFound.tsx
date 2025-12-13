@@ -2,8 +2,8 @@
  * 404 Not Found Page
  */
 
-import { Link } from 'react-router-dom';
-import { ScrollToTop } from '../utils';
+import { Link } from 'react-router-dom'
+import { ScrollToTop } from '../utils'
 
 export const NotFound: React.FC = () => {
   return (
@@ -13,9 +13,7 @@ export const NotFound: React.FC = () => {
         <div className="mb-8">
           <h1 className="text-9xl font-bold text-primary-600">404</h1>
           <div className="text-6xl mb-4">🔍</div>
-          <h2 className="text-3xl font-bold text-gray-900 mb-2">
-            Page Not Found
-          </h2>
+          <h2 className="text-3xl font-bold text-gray-900 mb-2">Page Not Found</h2>
           <p className="text-gray-600 mb-8">
             Sorry, the page you're looking for doesn't exist or has been moved.
           </p>
@@ -28,7 +26,7 @@ export const NotFound: React.FC = () => {
           >
             Go to Home
           </Link>
-          
+
           <Link
             to="/reports/new"
             className="block w-full px-6 py-3 bg-white text-primary-600 font-semibold rounded-lg border-2 border-primary-600 hover:bg-primary-50 transition-colors"
@@ -36,8 +34,7 @@ export const NotFound: React.FC = () => {
             Start Valuation
           </Link>
         </div>
-
       </div>
     </div>
-  );
-};
+  )
+}

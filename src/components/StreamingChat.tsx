@@ -18,22 +18,25 @@
  * - useTypingAnimation: Smooth AI response animation
  */
 
-import React, { useCallback, useEffect, useRef } from 'react';
-import { useMessageManagement } from '../hooks/chat/useMessageManagement';
-import { useSmartSuggestions } from '../hooks/chat/useSmartSuggestions';
-import { useStreamingCoordinator } from '../hooks/chat/useStreamingCoordinator';
-import { useAuth } from '../hooks/useAuth';
-import { useConversationInitializer, type UserProfile } from '../hooks/useConversationInitializer';
-import { useConversationMetrics } from '../hooks/useConversationMetrics';
-import { useStreamingChatState } from '../hooks/useStreamingChatState';
-import { useTypingAnimation } from '../hooks/useTypingAnimation';
-import { chatLogger } from '../utils/logger';
-import { ChatInputForm, MessagesList } from './chat';
+import React, { useCallback, useEffect, useRef } from 'react'
+import { useMessageManagement } from '../hooks/chat/useMessageManagement'
+import { useSmartSuggestions } from '../hooks/chat/useSmartSuggestions'
+import { useStreamingCoordinator } from '../hooks/chat/useStreamingCoordinator'
+import { useAuth } from '../hooks/useAuth'
+import { useConversationInitializer, type UserProfile } from '../hooks/useConversationInitializer'
+import { useConversationMetrics } from '../hooks/useConversationMetrics'
+import { useStreamingChatState } from '../hooks/useStreamingChatState'
+import { useTypingAnimation } from '../hooks/useTypingAnimation'
+import { chatLogger } from '../utils/logger'
+import { ChatInputForm, MessagesList } from './chat'
 
 // Re-export types for backward compatibility
 export type {
-    CalculateOptionData, CollectedData, StreamingChatProps, ValuationPreviewData
-} from './StreamingChat.types';
+  CalculateOptionData,
+  CollectedData,
+  StreamingChatProps,
+  ValuationPreviewData,
+} from './StreamingChat.types'
 
 export const StreamingChat: React.FC<import('./StreamingChat.types').StreamingChatProps> = ({
   sessionId,
@@ -65,28 +68,31 @@ export const StreamingChat: React.FC<import('./StreamingChat.types').StreamingCh
   isRestorationComplete = false,
 }) => {
   // Get user data from AuthContext
-  const { user } = useAuth();
+  const { user } = useAuth()
 
   // Track Python-generated session ID separately from client session ID
-  const [internalPythonSessionId, setInternalPythonSessionId] = React.useState<string | null>(null);
-  const pythonSessionId = pythonSessionIdProp ?? internalPythonSessionId;
+  const [internalPythonSessionId, setInternalPythonSessionId] = React.useState<string | null>(null)
+  const pythonSessionId = pythonSessionIdProp ?? internalPythonSessionId
 
-  const setPythonSessionId = useCallback((id: string | null) => {
-    setInternalPythonSessionId(id);
-    if (id && onPythonSessionIdReceived) {
-      onPythonSessionIdReceived(id);
-    }
-  }, [onPythonSessionIdReceived]);
+  const setPythonSessionId = useCallback(
+    (id: string | null) => {
+      setInternalPythonSessionId(id)
+      if (id && onPythonSessionIdReceived) {
+        onPythonSessionIdReceived(id)
+      }
+    },
+    [onPythonSessionIdReceived]
+  )
 
   // Sync prop to internal state when prop changes
   useEffect(() => {
     if (pythonSessionIdProp !== undefined && pythonSessionIdProp !== internalPythonSessionId) {
-      setInternalPythonSessionId(pythonSessionIdProp);
+      setInternalPythonSessionId(pythonSessionIdProp)
     }
-  }, [pythonSessionIdProp, internalPythonSessionId]);
+  }, [pythonSessionIdProp, internalPythonSessionId])
 
   // Use centralized state management
-  const state = useStreamingChatState(sessionId, userId);
+  const state = useStreamingChatState(sessionId, userId)
 
   // Extract message management logic
   const messageManagement = useMessageManagement({
@@ -94,12 +100,12 @@ export const StreamingChat: React.FC<import('./StreamingChat.types').StreamingCh
     messages: state.messages,
     setMessages: state.setMessages,
     onMessageComplete,
-  });
+  })
 
   // Extract smart suggestions logic
   const { suggestions } = useSmartSuggestions({
     messages: state.messages,
-  });
+  })
 
   // Extract streaming coordination logic
   const streamingCoordinator = useStreamingCoordinator({
@@ -127,101 +133,123 @@ export const StreamingChat: React.FC<import('./StreamingChat.types').StreamingCh
     onReportComplete,
     onContextUpdate,
     onHtmlPreviewUpdate,
-  });
+  })
 
   // Extract stream submission logic - simplified version for new architecture
   // Accepts optional input parameter to handle async state updates
-  const submitStream = useCallback(async (inputValue?: string) => {
-    const inputToSubmit = inputValue ?? state.input;
-    
-    // Validate input before submission
-    if (!inputToSubmit || !inputToSubmit.trim()) {
-      chatLogger.warn('Attempted to submit empty input', { sessionId });
-      return;
-    }
+  const submitStream = useCallback(
+    async (inputValue?: string) => {
+      const inputToSubmit = inputValue ?? state.input
 
-    try {
-      // Add user message before starting stream
-      messageManagement.addMessage({
-        type: 'user',
-        content: inputToSubmit.trim(),
-        role: 'user'
-      });
-
-      // Clear input before starting stream (use provided value or state)
-      if (inputValue) {
-        state.setInput('');
-      } else {
-        state.setInput('');
+      // Validate input before submission
+      if (!inputToSubmit || !inputToSubmit.trim()) {
+        chatLogger.warn('Attempted to submit empty input', { sessionId })
+        return
       }
 
-      // Start streaming with validated input
-      await streamingCoordinator.startStreaming(inputToSubmit.trim());
-    } catch (error) {
-      chatLogger.error('Stream submission failed', { error, sessionId });
-      // Reset streaming state on error
-      state.setIsStreaming(false);
-    }
-  }, [state.input, state.setInput, state.setIsStreaming, streamingCoordinator, messageManagement, sessionId]);
+      try {
+        // Add user message before starting stream
+        messageManagement.addMessage({
+          type: 'user',
+          content: inputToSubmit.trim(),
+          role: 'user',
+        })
+
+        // Clear input before starting stream (use provided value or state)
+        if (inputValue) {
+          state.setInput('')
+        } else {
+          state.setInput('')
+        }
+
+        // Start streaming with validated input
+        await streamingCoordinator.startStreaming(inputToSubmit.trim())
+      } catch (error) {
+        chatLogger.error('Stream submission failed', { error, sessionId })
+        // Reset streaming state on error
+        state.setIsStreaming(false)
+      }
+    },
+    [
+      state.input,
+      state.setInput,
+      state.setIsStreaming,
+      streamingCoordinator,
+      messageManagement,
+      sessionId,
+    ]
+  )
 
   // Extract suggestion handlers - simplified version
   const suggestionHandlers = {
-    handleSuggestionSelect: useCallback((suggestion: string) => {
-      // Fix Bug 2: Pass suggestion directly to submitStream to avoid async state update issue
-      state.setInput(suggestion);
-      // Use the suggestion value directly instead of relying on state update
-      submitStream(suggestion);
-    }, [state.setInput, submitStream]),
+    handleSuggestionSelect: useCallback(
+      (suggestion: string) => {
+        // Fix Bug 2: Pass suggestion directly to submitStream to avoid async state update issue
+        state.setInput(suggestion)
+        // Use the suggestion value directly instead of relying on state update
+        submitStream(suggestion)
+      },
+      [state.setInput, submitStream]
+    ),
 
     handleSuggestionDismiss: useCallback(() => {
       // Handle suggestion dismissal if needed
     }, []),
 
-    handleClarificationConfirm: useCallback((messageId: string) => {
-      // Fix Bug 3: Set input before calling submitStream
-      const confirmationText = 'Yes';
-      state.setInput(confirmationText);
-      // Pass the confirmation text directly to avoid async state issue
-      submitStream(confirmationText);
-    }, [state.setInput, submitStream]),
+    handleClarificationConfirm: useCallback(
+      (messageId: string) => {
+        // Fix Bug 3: Set input before calling submitStream
+        const confirmationText = 'Yes'
+        state.setInput(confirmationText)
+        // Pass the confirmation text directly to avoid async state issue
+        submitStream(confirmationText)
+      },
+      [state.setInput, submitStream]
+    ),
 
-    handleClarificationReject: useCallback((messageId: string) => {
-      // Fix Bug 3: Set input before calling submitStream
-      const rejectionText = 'No';
-      state.setInput(rejectionText);
-      // Pass the rejection text directly to avoid async state issue
-      submitStream(rejectionText);
-    }, [state.setInput, submitStream]),
+    handleClarificationReject: useCallback(
+      (messageId: string) => {
+        // Fix Bug 3: Set input before calling submitStream
+        const rejectionText = 'No'
+        state.setInput(rejectionText)
+        // Pass the rejection text directly to avoid async state issue
+        submitStream(rejectionText)
+      },
+      [state.setInput, submitStream]
+    ),
 
-    handleKBOSuggestionSelect: useCallback((selection: string) => {
-      // Fix Bug 2: Pass selection directly to submitStream to avoid async state update issue
-      state.setInput(selection);
-      // Use the selection value directly instead of relying on state update
-      submitStream(selection);
-    }, [state.setInput, submitStream])
-  };
+    handleKBOSuggestionSelect: useCallback(
+      (selection: string) => {
+        // Fix Bug 2: Pass selection directly to submitStream to avoid async state update issue
+        state.setInput(selection)
+        // Use the selection value directly instead of relying on state update
+        submitStream(selection)
+      },
+      [state.setInput, submitStream]
+    ),
+  }
 
   // CRITICAL: Restore messages from backend on mount
-  const lastRestoredMessagesRef = useRef<string>('');
+  const lastRestoredMessagesRef = useRef<string>('')
 
   useEffect(() => {
     if (initialMessages && initialMessages.length > 0) {
-      const messagesFingerprint = initialMessages.map(m => m.id).join(',');
+      const messagesFingerprint = initialMessages.map((m) => m.id).join(',')
 
-      const shouldRestore = state.messages.length === 0 ||
-        lastRestoredMessagesRef.current !== messagesFingerprint;
+      const shouldRestore =
+        state.messages.length === 0 || lastRestoredMessagesRef.current !== messagesFingerprint
 
       if (shouldRestore) {
         chatLogger.info('✅ Restoring conversation messages in StreamingChat', {
           sessionId,
           messagesCount: initialMessages.length,
           fingerprint: messagesFingerprint,
-        });
-        state.setMessages(initialMessages);
-        lastRestoredMessagesRef.current = messagesFingerprint;
+        })
+        state.setMessages(initialMessages)
+        lastRestoredMessagesRef.current = messagesFingerprint
       }
     }
-  }, [initialMessages, sessionId, state.messages.length]);
+  }, [initialMessages, sessionId, state.messages.length])
 
   // Use extracted conversation initializer
   const { isInitializing } = useConversationInitializer(sessionId, userId, {
@@ -236,30 +264,36 @@ export const StreamingChat: React.FC<import('./StreamingChat.types').StreamingCh
     pythonSessionId,
     isRestorationComplete,
     onSessionIdUpdate: setPythonSessionId,
-  });
+  })
 
   // Use extracted metrics tracking
-  const { trackModelPerformance, trackConversationCompletion } = useConversationMetrics(sessionId, userId);
+  const { trackModelPerformance, trackConversationCompletion } = useConversationMetrics(
+    sessionId,
+    userId
+  )
 
   // Typing animation for smooth AI responses
   const { complete } = useTypingAnimation({
     baseSpeed: 50,
     adaptiveSpeed: true,
     punctuationPauses: true,
-    showCursor: true
-  });
+    showCursor: true,
+  })
 
   // Handle form submission
-  const handleSubmit = useCallback(async (e?: React.FormEvent) => {
-    if (e) e.preventDefault();
-    if (!state.input.trim()) return;
+  const handleSubmit = useCallback(
+    async (e?: React.FormEvent) => {
+      if (e) e.preventDefault()
+      if (!state.input.trim()) return
 
-    try {
-      await submitStream();
-    } catch (error) {
-      chatLogger.error('Stream submission failed', { error, sessionId });
-    }
-  }, [state.input, submitStream, sessionId]);
+      try {
+        await submitStream()
+      } catch (error) {
+        chatLogger.error('Stream submission failed', { error, sessionId })
+      }
+    },
+    [state.input, submitStream, sessionId]
+  )
 
   return (
     <div className={`flex h-full flex-col overflow-hidden flex-1 ${className}`}>
@@ -291,7 +325,7 @@ export const StreamingChat: React.FC<import('./StreamingChat.types').StreamingCh
         suggestions={suggestions}
       />
     </div>
-  );
-};
+  )
+}
 
-export default StreamingChat;
+export default StreamingChat

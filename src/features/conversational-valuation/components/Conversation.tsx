@@ -1,9 +1,9 @@
 /**
  * Conversation Compound Component
- * 
+ *
  * Compound component pattern for conversation interface.
  * Reduces prop drilling by using React Context internally.
- * 
+ *
  * Usage:
  * ```tsx
  * <Conversation value={conversationData}>
@@ -12,41 +12,41 @@
  *   <Conversation.Input />
  * </Conversation>
  * ```
- * 
+ *
  * @module features/conversation/components/Conversation
  */
 
-import React, { createContext, memo, ReactNode, useContext } from 'react';
-import { MessageCircle, Loader2 } from 'lucide-react';
+import React, { createContext, memo, ReactNode, useContext } from 'react'
+import { MessageCircle, Loader2 } from 'lucide-react'
 
 interface Message {
-  id: string;
-  type: 'user' | 'ai';
-  content: string;
-  timestamp: Date;
+  id: string
+  type: 'user' | 'ai'
+  content: string
+  timestamp: Date
 }
 
 interface ConversationContextValue {
-  messages: Message[];
-  isLoading: boolean;
-  sessionId: string;
-  onSendMessage?: (message: string) => void;
-  onClearHistory?: () => void;
+  messages: Message[]
+  isLoading: boolean
+  sessionId: string
+  onSendMessage?: (message: string) => void
+  onClearHistory?: () => void
 }
 
-const ConversationContext = createContext<ConversationContextValue | null>(null);
+const ConversationContext = createContext<ConversationContextValue | null>(null)
 
 function useConversationContext() {
-  const context = useContext(ConversationContext);
+  const context = useContext(ConversationContext)
   if (!context) {
-    throw new Error('Conversation compound components must be used within <Conversation>');
+    throw new Error('Conversation compound components must be used within <Conversation>')
   }
-  return context;
+  return context
 }
 
 interface ConversationProps {
-  children: ReactNode;
-  value: ConversationContextValue;
+  children: ReactNode
+  value: ConversationContextValue
 }
 
 /**
@@ -56,22 +56,20 @@ interface ConversationProps {
 const ConversationRoot = memo<ConversationProps>(({ children, value }) => {
   return (
     <ConversationContext.Provider value={value}>
-      <div className="h-full flex flex-col bg-zinc-900">
-        {children}
-      </div>
+      <div className="h-full flex flex-col bg-zinc-900">{children}</div>
     </ConversationContext.Provider>
-  );
-});
+  )
+})
 
-ConversationRoot.displayName = 'Conversation';
+ConversationRoot.displayName = 'Conversation'
 
 /**
  * Conversation Header sub-component
  * Displays conversation title and metadata
  */
 const ConversationHeader = memo(() => {
-  const { onClearHistory } = useConversationContext();
-  
+  const { onClearHistory } = useConversationContext()
+
   return (
     <div className="border-b border-zinc-800 p-4 flex items-center justify-between">
       <div className="flex items-center gap-2">
@@ -87,18 +85,18 @@ const ConversationHeader = memo(() => {
         </button>
       )}
     </div>
-  );
-});
+  )
+})
 
-ConversationHeader.displayName = 'Conversation.Header';
+ConversationHeader.displayName = 'Conversation.Header'
 
 /**
  * Conversation Messages sub-component
  * Displays message list
  */
 const ConversationMessages = memo(() => {
-  const { messages, isLoading } = useConversationContext();
-  
+  const { messages, isLoading } = useConversationContext()
+
   if (messages.length === 0 && !isLoading) {
     return (
       <div className="flex-1 flex items-center justify-center p-8">
@@ -107,9 +105,9 @@ const ConversationMessages = memo(() => {
           <p className="text-zinc-400 text-sm">Start a conversation to begin your valuation</p>
         </div>
       </div>
-    );
+    )
   }
-  
+
   return (
     <div className="flex-1 overflow-y-auto p-4 space-y-4">
       {messages.map((message) => (
@@ -119,15 +117,11 @@ const ConversationMessages = memo(() => {
         >
           <div
             className={`max-w-[80%] rounded-lg px-4 py-2 ${
-              message.type === 'user'
-                ? 'bg-primary-600 text-white'
-                : 'bg-zinc-800 text-zinc-100'
+              message.type === 'user' ? 'bg-primary-600 text-white' : 'bg-zinc-800 text-zinc-100'
             }`}
           >
             <p className="text-sm whitespace-pre-wrap">{message.content}</p>
-            <p className="text-xs mt-1 opacity-70">
-              {message.timestamp.toLocaleTimeString()}
-            </p>
+            <p className="text-xs mt-1 opacity-70">{message.timestamp.toLocaleTimeString()}</p>
           </div>
         </div>
       ))}
@@ -139,27 +133,27 @@ const ConversationMessages = memo(() => {
         </div>
       )}
     </div>
-  );
-});
+  )
+})
 
-ConversationMessages.displayName = 'Conversation.Messages';
+ConversationMessages.displayName = 'Conversation.Messages'
 
 /**
  * Conversation Input sub-component
  * Displays input field for sending messages
  */
 const ConversationInput = memo(() => {
-  const { onSendMessage, isLoading } = useConversationContext();
-  const [input, setInput] = React.useState('');
-  
+  const { onSendMessage, isLoading } = useConversationContext()
+  const [input, setInput] = React.useState('')
+
   const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
+    e.preventDefault()
     if (input.trim() && onSendMessage) {
-      onSendMessage(input);
-      setInput('');
+      onSendMessage(input)
+      setInput('')
     }
-  };
-  
+  }
+
   return (
     <div className="border-t border-zinc-800 p-4">
       <form onSubmit={handleSubmit} className="flex gap-2">
@@ -180,10 +174,10 @@ const ConversationInput = memo(() => {
         </button>
       </form>
     </div>
-  );
-});
+  )
+})
 
-ConversationInput.displayName = 'Conversation.Input';
+ConversationInput.displayName = 'Conversation.Input'
 
 /**
  * Compound Conversation component with sub-components
@@ -192,5 +186,4 @@ export const Conversation = Object.assign(ConversationRoot, {
   Header: ConversationHeader,
   Messages: ConversationMessages,
   Input: ConversationInput,
-});
-
+})

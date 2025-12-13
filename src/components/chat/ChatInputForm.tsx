@@ -1,27 +1,27 @@
 /**
  * ChatInputForm Component
- * 
+ *
  * Single Responsibility: Render chat input form with suggestions
  * Extracted from StreamingChat.tsx to follow SRP
- * 
+ *
  * @module components/chat/ChatInputForm
  */
 
-import React from 'react';
+import React from 'react'
 
 export interface ChatInputFormProps {
-  input: string;
-  onInputChange: (value: string) => void;
-  onSubmit: (e: React.FormEvent) => void;
-  isStreaming: boolean;
-  disabled?: boolean;
-  placeholder?: string;
-  suggestions?: string[];
+  input: string
+  onInputChange: (value: string) => void
+  onSubmit: (e: React.FormEvent) => void
+  isStreaming: boolean
+  disabled?: boolean
+  placeholder?: string
+  suggestions?: string[]
 }
 
 /**
  * ChatInputForm Component
- * 
+ *
  * Renders the input form with:
  * - Textarea for user input
  * - Smart follow-up suggestions
@@ -33,7 +33,7 @@ export const ChatInputForm: React.FC<ChatInputFormProps> = ({
   onSubmit,
   isStreaming,
   disabled = false,
-  placeholder = "Ask about your business valuation...",
+  placeholder = 'Ask about your business valuation...',
   suggestions = [],
 }) => {
   return (
@@ -49,8 +49,8 @@ export const ChatInputForm: React.FC<ChatInputFormProps> = ({
             onChange={(e) => onInputChange(e.target.value)}
             onKeyPress={(e) => {
               if (e.key === 'Enter' && !e.shiftKey) {
-                e.preventDefault();
-                onSubmit(e);
+                e.preventDefault()
+                onSubmit(e)
               }
             }}
             placeholder={placeholder}
@@ -74,25 +74,36 @@ export const ChatInputForm: React.FC<ChatInputFormProps> = ({
               {suggestion}
             </button>
           ))}
-          
+
           {/* Right side with send button */}
           <div className="flex flex-grow items-center justify-end gap-2">
             <button
               type="submit"
               disabled={!input.trim() || isStreaming || disabled}
               className={`submit-button-white flex h-8 w-8 items-center justify-center rounded-full transition-all duration-200 ease-out shadow-lg disabled:cursor-not-allowed disabled:opacity-50 disabled:shadow-none ${
-                isStreaming 
-                  ? 'bg-zinc-800 scale-95 ring-2 ring-primary-500/20' 
+                isStreaming
+                  ? 'bg-zinc-800 scale-95 ring-2 ring-primary-500/20'
                   : 'bg-white hover:bg-zinc-200 hover:shadow-white/20 active:scale-90'
               }`}
             >
               {isStreaming ? (
                 <div className="relative w-4 h-4">
-                   <div className="absolute inset-0 border-2 border-zinc-600 rounded-full"></div>
-                   <div className="absolute inset-0 border-2 border-t-primary-500 rounded-full animate-spin"></div>
+                  <div className="absolute inset-0 border-2 border-zinc-600 rounded-full"></div>
+                  <div className="absolute inset-0 border-2 border-t-primary-500 rounded-full animate-spin"></div>
                 </div>
               ) : (
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-zinc-900 ml-0.5">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  className="text-zinc-900 ml-0.5"
+                >
                   <line x1="22" y1="2" x2="11" y2="13"></line>
                   <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
                 </svg>
@@ -102,6 +113,5 @@ export const ChatInputForm: React.FC<ChatInputFormProps> = ({
         </div>
       </form>
     </div>
-  );
-};
-
+  )
+}

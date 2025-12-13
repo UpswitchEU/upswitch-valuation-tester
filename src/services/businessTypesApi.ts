@@ -1,64 +1,67 @@
 /**
  * Business Types API Service for Valuation Tester
- * 
+ *
  * Fetches business types from the main backend API with caching.
  * Falls back to hardcoded data if API is unavailable.
- * 
+ *
  * Enhanced with Phase 2 features:
  * - Full business type metadata
  * - Dynamic questions
  * - Real-time validation
  * - Benchmark comparison
- * 
+ *
  * @author UpSwitch CTO Team
  * @version 2.0.0
  */
 
-import axios, { AxiosInstance } from 'axios';
-import { BUSINESS_TYPES_FALLBACK, BusinessTypeOption as ConfigBusinessTypeOption } from '../config/businessTypes';
-import { generalLogger } from '../utils/logger';
-import { businessTypesCache } from './cache/businessTypesCache';
+import axios, { AxiosInstance } from 'axios'
+import {
+  BUSINESS_TYPES_FALLBACK,
+  BusinessTypeOption as ConfigBusinessTypeOption,
+} from '../config/businessTypes'
+import { generalLogger } from '../utils/logger'
+import { businessTypesCache } from './cache/businessTypesCache'
 
 // ============================================================================
 // TYPES
 // ============================================================================
 
 export interface BusinessType {
-  id: string;
-  title: string;
-  description: string;
-  short_description?: string;
-  icon: string;
-  category: string;
-  category_id: string;
-  industryMapping: string;
-  industry?: string;
-  keywords: string[];
-  popular: boolean;
-  dcfPreference?: number;
-  multiplesPreference?: number;
-  ownerDependencyImpact?: number;
-  keyMetrics?: string[];
-  typicalEmployeeRange?: { min: number; max: number };
-  typicalRevenueRange?: { min: number; max: number };
-  status: string;
-  createdAt: string;
-  updatedAt: string;
+  id: string
+  title: string
+  description: string
+  short_description?: string
+  icon: string
+  category: string
+  category_id: string
+  industryMapping: string
+  industry?: string
+  keywords: string[]
+  popular: boolean
+  dcfPreference?: number
+  multiplesPreference?: number
+  ownerDependencyImpact?: number
+  keyMetrics?: string[]
+  typicalEmployeeRange?: { min: number; max: number }
+  typicalRevenueRange?: { min: number; max: number }
+  status: string
+  createdAt: string
+  updatedAt: string
 }
 
 export interface BusinessTypeOption {
-  value: string;
-  label: string;
-  icon?: string;
-  category: string;
+  value: string
+  label: string
+  icon?: string
+  category: string
 }
 
 export interface ApiResponse<T> {
-  success: boolean;
-  data?: T;
-  error?: string;
-  cached?: boolean;
-  timestamp: string;
+  success: boolean
+  data?: T
+  error?: string
+  cached?: boolean
+  timestamp: string
 }
 
 // ============================================================================
@@ -66,20 +69,20 @@ export interface ApiResponse<T> {
 // ============================================================================
 
 class BusinessTypesApiService {
-  private api: AxiosInstance;
-  private baseUrl: string;
+  private api: AxiosInstance
+  private baseUrl: string
 
   constructor() {
     // Use the main backend API
-    this.baseUrl = 'https://web-production-8d00b.up.railway.app';
-    
+    this.baseUrl = 'https://web-production-8d00b.up.railway.app'
+
     this.api = axios.create({
       baseURL: `${this.baseUrl}/api/business-types`,
       timeout: 10000,
       headers: {
         'Content-Type': 'application/json',
       },
-    });
+    })
   }
 
   /**
@@ -89,48 +92,48 @@ class BusinessTypesApiService {
     try {
       // Check cache first
       if (businessTypesCache.hasValidCache()) {
-        const cachedData = await businessTypesCache.getBusinessTypes();
+        const cachedData = await businessTypesCache.getBusinessTypes()
         if (cachedData) {
           generalLogger.debug('[BusinessTypesAPI] Serving from cache', {
             businessTypes: cachedData.businessTypes.length,
             categories: cachedData.categories.length,
-            popularTypes: cachedData.popularTypes.length
-          });
-          return cachedData.businessTypes;
+            popularTypes: cachedData.popularTypes.length,
+          })
+          return cachedData.businessTypes
         }
       }
 
       // Fetch from API
-      generalLogger.debug('[BusinessTypesAPI] Fetching from API');
+      generalLogger.debug('[BusinessTypesAPI] Fetching from API')
       const [typesResponse, categoriesResponse] = await Promise.all([
         this.api.get('/types', { params: { limit: 200 } }),
-        this.api.get('/categories')
-      ]);
-      
+        this.api.get('/categories'),
+      ])
+
       if (typesResponse.data.success && typesResponse.data.data) {
-        const businessTypes = typesResponse.data.data.business_types;
-        const categories = categoriesResponse.data.success ? categoriesResponse.data.data : [];
-        
+        const businessTypes = typesResponse.data.data.business_types
+        const categories = categoriesResponse.data.success ? categoriesResponse.data.data : []
+
         // Cache the complete data
         await businessTypesCache.setBusinessTypes({
           businessTypes,
           categories,
-          popularTypes: businessTypes.filter((bt: BusinessType) => bt.popular)
-        });
-        
-        generalLogger.info('[BusinessTypesAPI] Fetched and cached', { count: businessTypes.length });
-        return businessTypes;
+          popularTypes: businessTypes.filter((bt: BusinessType) => bt.popular),
+        })
+
+        generalLogger.info('[BusinessTypesAPI] Fetched and cached', { count: businessTypes.length })
+        return businessTypes
       }
-      
-      throw new Error('API returned unsuccessful response');
+
+      throw new Error('API returned unsuccessful response')
     } catch (error) {
-      generalLogger.error('[BusinessTypesAPI] Failed to fetch business types', { error });
-      
+      generalLogger.error('[BusinessTypesAPI] Failed to fetch business types', { error })
+
       // Return hardcoded fallback
-      generalLogger.warn('[BusinessTypesAPI] Using hardcoded fallback data');
-      const fallbackData = this.getHardcodedBusinessTypes();
-      
-      return fallbackData;
+      generalLogger.warn('[BusinessTypesAPI] Using hardcoded fallback data')
+      const fallbackData = this.getHardcodedBusinessTypes()
+
+      return fallbackData
     }
   }
 
@@ -138,14 +141,14 @@ class BusinessTypesApiService {
    * Get business types as options for dropdown
    */
   async getBusinessTypeOptions(): Promise<BusinessTypeOption[]> {
-    const businessTypes = await this.getBusinessTypes();
-    
-    return businessTypes.map(bt => ({
+    const businessTypes = await this.getBusinessTypes()
+
+    return businessTypes.map((bt) => ({
       value: bt.id,
       label: `${bt.icon} ${bt.title}`,
       icon: bt.icon,
-      category: bt.category
-    }));
+      category: bt.category,
+    }))
   }
 
   /**
@@ -173,8 +176,8 @@ class BusinessTypesApiService {
       typicalRevenueRange: { min: 100000, max: 5000000 },
       status: 'active',
       createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
-    }));
+      updatedAt: new Date().toISOString(),
+    }))
   }
 
   // ==========================================================================
@@ -188,27 +191,30 @@ class BusinessTypesApiService {
   async getBusinessTypeFull(businessTypeId: string): Promise<any> {
     try {
       if (import.meta.env.DEV) {
-        generalLogger.debug(`[BusinessTypesApi] Fetching full metadata for: ${businessTypeId}`);
+        generalLogger.debug(`[BusinessTypesApi] Fetching full metadata for: ${businessTypeId}`)
       }
-      
-      const response = await this.api.get(`/types/${businessTypeId}/full`);
-      
+
+      const response = await this.api.get(`/types/${businessTypeId}/full`)
+
       if (response.data.success && response.data.data) {
         if (import.meta.env.DEV) {
           generalLogger.debug(`[BusinessTypesApi] Full metadata loaded`, {
             businessTypeId,
             questionsCount: response.data.data.questions?.length || 0,
-          validationsCount: response.data.data.validations?.length || 0,
-          benchmarksCount: response.data.data.benchmarks?.length || 0,
-          });
+            validationsCount: response.data.data.validations?.length || 0,
+            benchmarksCount: response.data.data.benchmarks?.length || 0,
+          })
         }
-        return response.data.data;
+        return response.data.data
       }
-      
-      return null;
+
+      return null
     } catch (error) {
-      generalLogger.error(`[BusinessTypesApi] Failed to fetch full metadata`, { error, businessTypeId });
-      throw error;
+      generalLogger.error(`[BusinessTypesApi] Failed to fetch full metadata`, {
+        error,
+        businessTypeId,
+      })
+      throw error
     }
   }
 
@@ -218,67 +224,64 @@ class BusinessTypesApiService {
   async getBusinessTypeQuestions(
     businessTypeId: string,
     options?: {
-      flow_type?: 'manual' | 'ai_guided';
-      phase?: string;
-      existing_data?: Record<string, unknown>;
+      flow_type?: 'manual' | 'ai_guided'
+      phase?: string
+      existing_data?: Record<string, unknown>
     }
   ): Promise<{
-    questions?: Array<{ id: string; text: string; required: boolean }>;
-    total_required?: number;
-    estimated_time?: number;
+    questions?: Array<{ id: string; text: string; required: boolean }>
+    total_required?: number
+    estimated_time?: number
   } | null> {
     try {
-      generalLogger.debug(`[BusinessTypesApi] Fetching questions for: ${businessTypeId}`, options);
-      
-      const params: Record<string, string | undefined> = {};
-      
+      generalLogger.debug(`[BusinessTypesApi] Fetching questions for: ${businessTypeId}`, options)
+
+      const params: Record<string, string | undefined> = {}
+
       if (options?.flow_type) {
-        params.flow_type = options.flow_type;
+        params.flow_type = options.flow_type
       }
-      
+
       if (options?.phase) {
-        params.phase = options.phase;
+        params.phase = options.phase
       }
-      
+
       if (options?.existing_data) {
-        params.existing_data = JSON.stringify(options.existing_data);
+        params.existing_data = JSON.stringify(options.existing_data)
       }
-      
-      const response = await this.api.get(`/types/${businessTypeId}/questions`, { params });
-      
+
+      const response = await this.api.get(`/types/${businessTypeId}/questions`, { params })
+
       if (response.data.success && response.data.data) {
         if (import.meta.env.DEV) {
           generalLogger.debug(`[BusinessTypesApi] Questions loaded`, {
             businessTypeId,
             totalQuestions: response.data.data.questions?.length || 0,
-          requiredQuestions: response.data.data.total_required || 0,
-          estimatedTime: response.data.data.estimated_time,
-          });
+            requiredQuestions: response.data.data.total_required || 0,
+            estimatedTime: response.data.data.estimated_time,
+          })
         }
-        return response.data.data;
+        return response.data.data
       }
-      
-      return null;
+
+      return null
     } catch (error) {
-      generalLogger.error(`[BusinessTypesApi] Failed to fetch questions`, { error, businessTypeId });
-      throw error;
+      generalLogger.error(`[BusinessTypesApi] Failed to fetch questions`, { error, businessTypeId })
+      throw error
     }
   }
 
   /**
    * Validate user data against business-type-specific rules
    */
-  async validateBusinessTypeData(
-    businessTypeId: string,
-    data: Record<string, any>
-  ): Promise<any> {
+  async validateBusinessTypeData(businessTypeId: string, data: Record<string, any>): Promise<any> {
     try {
       generalLogger.debug(`[BusinessTypesApi] Validating data for: ${businessTypeId}`, {
         dataKeys: Object.keys(data),
-      });
-      
-      const response = await this.api.post(`/types/${businessTypeId}/validate`, { data });
-      
+      })
+
+      const response = await this.api.post(`/types/${businessTypeId}/validate`, { data })
+
       if (response.data.success && response.data.data) {
         generalLogger.debug(`[BusinessTypesApi] Validation complete`, {
           businessTypeId,
@@ -286,14 +289,14 @@ class BusinessTypesApiService {
           errorsCount: response.data.data.errors?.length || 0,
           warningsCount: response.data.data.warnings?.length || 0,
           suggestionsCount: response.data.data.suggestions?.length || 0,
-        });
-        return response.data.data;
+        })
+        return response.data.data
       }
-      
-      return null;
+
+      return null
     } catch (error) {
-      generalLogger.error(`[BusinessTypesApi] Validation failed`, { error, businessTypeId });
-      throw error;
+      generalLogger.error(`[BusinessTypesApi] Validation failed`, { error, businessTypeId })
+      throw error
     }
   }
 
@@ -303,74 +306,78 @@ class BusinessTypesApiService {
   async getBusinessTypeBenchmarks(
     businessTypeId: string,
     options?: {
-      country?: string;
-      metrics?: string[];
-      user_data?: Record<string, number>;
+      country?: string
+      metrics?: string[]
+      user_data?: Record<string, number>
     }
   ): Promise<any> {
     try {
-      generalLogger.debug(`[BusinessTypesApi] Fetching benchmarks for: ${businessTypeId}`, options);
-      
-      const params: any = {};
-      
+      generalLogger.debug(`[BusinessTypesApi] Fetching benchmarks for: ${businessTypeId}`, options)
+
+      const params: any = {}
+
       if (options?.country) {
-        params.country = options.country;
+        params.country = options.country
       }
-      
+
       if (options?.metrics && options.metrics.length > 0) {
-        params.metrics = options.metrics.join(',');
+        params.metrics = options.metrics.join(',')
       }
-      
+
       if (options?.user_data) {
-        params.user_data = JSON.stringify(options.user_data);
+        params.user_data = JSON.stringify(options.user_data)
       }
-      
-      const response = await this.api.get(`/types/${businessTypeId}/benchmarks`, { params });
-      
+
+      const response = await this.api.get(`/types/${businessTypeId}/benchmarks`, { params })
+
       if (response.data.success && response.data.data) {
         generalLogger.debug(`[BusinessTypesApi] Benchmarks loaded`, {
           businessTypeId,
           benchmarksCount: Object.keys(response.data.data.benchmarks || {}).length,
           dataSource: response.data.data.data_source,
           year: response.data.data.year,
-        });
-        return response.data.data;
+        })
+        return response.data.data
       }
-      
-      return null;
+
+      return null
     } catch (error) {
-      generalLogger.error(`[BusinessTypesApi] Failed to fetch benchmarks`, { error, businessTypeId });
-      throw error;
+      generalLogger.error(`[BusinessTypesApi] Failed to fetch benchmarks`, {
+        error,
+        businessTypeId,
+      })
+      throw error
     }
   }
 
   /**
    * Search business types (backend proxy: /api/business-types/types/search)
    */
-  async searchBusinessTypes(query: string, limit: number = 5): Promise<Array<{ text: string; confidence: number; reason: string }>> {
-    if (!query || query.trim().length === 0) return [];
+  async searchBusinessTypes(
+    query: string,
+    limit: number = 5
+  ): Promise<Array<{ text: string; confidence: number; reason: string }>> {
+    if (!query || query.trim().length === 0) return []
     try {
       const response = await this.api.get('/types/search', {
-        params: { q: query, limit }
-      });
+        params: { q: query, limit },
+      })
 
-      const raw = response?.data;
+      const raw = response?.data
       // Flexible parsing: handle various possible shapes
-      const candidates =
-        raw?.data?.business_types ||
-        raw?.data?.results ||
-        raw?.data ||
-        [];
+      const candidates = raw?.data?.business_types || raw?.data?.results || raw?.data || []
 
-      return (candidates as any[]).map((item, idx) => ({
-        text: item?.title || item?.name || item?.label || query,
-        confidence: typeof item?.confidence === 'number' ? item.confidence : 0.7,
-        reason: item?.category || item?.industry || item?.description || 'Similar business type',
-        _index: idx
-      })).filter(s => !!s.text);
+      return (candidates as any[])
+        .map((item, idx) => ({
+          text: item?.title || item?.name || item?.label || query,
+          confidence: typeof item?.confidence === 'number' ? item.confidence : 0.7,
+          reason: item?.category || item?.industry || item?.description || 'Similar business type',
+          _index: idx,
+        }))
+        .filter((s) => !!s.text)
     } catch (error) {
-      generalLogger.error('[BusinessTypesAPI] Failed to search business types', { error });
-      return [];
+      generalLogger.error('[BusinessTypesAPI] Failed to search business types', { error })
+      return []
     }
   }
 }
@@ -379,6 +386,6 @@ class BusinessTypesApiService {
 // EXPORTS
 // ============================================================================
 
-export const businessTypesApiService = new BusinessTypesApiService();
+export const businessTypesApiService = new BusinessTypesApiService()
 
-export default businessTypesApiService;
+export default businessTypesApiService

@@ -5,13 +5,12 @@
  * Provides unified state access throughout the conversational valuation feature.
  */
 
-import React, { createContext, useContext, useReducer } from 'react';
-import { ConversationContextValue, ConversationProviderProps } from '../types/conversation';
-import { initialConversationState } from './conversationReducer';
-import { conversationReducer } from './conversationReducer';
+import React, { createContext, useContext, useReducer } from 'react'
+import { ConversationContextValue, ConversationProviderProps } from '../types/conversation'
+import { conversationReducer, initialConversationState } from './conversationReducer'
 
 // Create the context
-const ConversationContext = createContext<ConversationContextValue | undefined>(undefined);
+const ConversationContext = createContext<ConversationContextValue | undefined>(undefined)
 
 /**
  * Conversation Provider Component
@@ -21,25 +20,23 @@ const ConversationContext = createContext<ConversationContextValue | undefined>(
  */
 export const ConversationProvider: React.FC<ConversationProviderProps> = ({
   children,
-  initialState = {}
+  initialState = {},
 }) => {
   // Initialize state with any provided initial values
   const [state, dispatch] = useReducer(conversationReducer, {
     ...initialConversationState,
     ...initialState,
-  });
+  })
 
   const contextValue: ConversationContextValue = {
     state,
     dispatch,
-  };
+  }
 
   return (
-    <ConversationContext.Provider value={contextValue}>
-      {children}
-    </ConversationContext.Provider>
-  );
-};
+    <ConversationContext.Provider value={contextValue}>{children}</ConversationContext.Provider>
+  )
+}
 
 /**
  * Hook to access conversation context
@@ -48,15 +45,13 @@ export const ConversationProvider: React.FC<ConversationProviderProps> = ({
  * Provides access to unified conversational valuation state.
  */
 export function useConversationContext(): ConversationContextValue {
-  const context = useContext(ConversationContext);
+  const context = useContext(ConversationContext)
 
   if (context === undefined) {
-    throw new Error(
-      'useConversationContext must be used within a ConversationProvider'
-    );
+    throw new Error('useConversationContext must be used within a ConversationProvider')
   }
 
-  return context;
+  return context
 }
 
 /**
@@ -65,8 +60,8 @@ export function useConversationContext(): ConversationContextValue {
  * Returns just the state portion of the context.
  */
 export function useConversationState() {
-  const { state } = useConversationContext();
-  return state;
+  const { state } = useConversationContext()
+  return state
 }
 
 /**
@@ -75,6 +70,9 @@ export function useConversationState() {
  * Returns just the dispatch function of the context.
  */
 export function useConversationDispatch() {
-  const { dispatch } = useConversationContext();
-  return dispatch;
+  const { dispatch } = useConversationContext()
+  return dispatch
 }
+
+// Re-export the actions hook for convenience
+export { useConversationActions } from '../hooks/useConversationActions'
