@@ -33,6 +33,7 @@ export interface FormData {
   ebitda: number | null;
   // Historical data
   current_year_data: {
+    year?: number;
     revenue: number | null;
     ebitda: number | null;
     net_income: number | null;
@@ -348,22 +349,23 @@ export class FormDataManagerImpl implements FormDataManager {
   toValuationRequest(): ValuationRequest {
     const request: ValuationRequest = {
       company_name: this.formData.company_name,
-      business_type: this.formData.business_type,
       country_code: this.formData.country_code,
-      founding_year: this.formData.founding_year || undefined,
-      revenue: this.formData.revenue || undefined,
-      ebitda: this.formData.ebitda || undefined,
+      industry: 'Unknown', // TODO: Map from business_type or add to form
+      business_model: 'Unknown', // TODO: Map from business_type or add to form
+      founding_year: this.formData.founding_year || 2020, // Default to 2020 if not set
+      revenue: this.formData.revenue || 0,
       current_year_data: {
-        revenue: this.formData.current_year_data.revenue || undefined,
-        ebitda: this.formData.current_year_data.ebitda || undefined,
-        net_income: this.formData.current_year_data.net_income || undefined,
+        year: this.formData.current_year_data?.year || new Date().getFullYear(),
+        revenue: this.formData.current_year_data?.revenue || 0,
+        ebitda: this.formData.current_year_data?.ebitda || 0,
+        net_income: this.formData.current_year_data?.net_income || 0,
       },
-      historical_years_data: this.formData.historical_years_data.map(year => ({
+      historical_years_data: this.formData.historical_years_data?.map(year => ({
         year: year.year,
-        revenue: year.revenue || undefined,
-        ebitda: year.ebitda || undefined,
-        net_income: year.net_income || undefined,
-      })),
+        revenue: year.revenue || 0,
+        ebitda: year.ebitda || 0,
+        net_income: year.net_income || 0,
+      })) || [],
     };
 
     // Remove undefined values
@@ -389,19 +391,20 @@ export class FormDataManagerImpl implements FormDataManager {
       company_name: request.company_name || '',
       business_type: request.business_type || '',
       country_code: request.country_code || 'BE',
-      founding_year: request.founding_year || null,
-      revenue: request.revenue || null,
-      ebitda: request.ebitda || null,
+      founding_year: request.founding_year,
+      revenue: request.revenue || request.current_year_data?.revenue || 0,
+      ebitda: request.current_year_data?.ebitda || 0,
       current_year_data: {
-        revenue: request.current_year_data?.revenue || null,
-        ebitda: request.current_year_data?.ebitda || null,
-        net_income: request.current_year_data?.net_income || null,
+        year: request.current_year_data?.year || new Date().getFullYear(),
+        revenue: request.current_year_data?.revenue || 0,
+        ebitda: request.current_year_data?.ebitda || 0,
+        net_income: request.current_year_data?.net_income || 0,
       },
       historical_years_data: request.historical_years_data?.map(year => ({
         year: year.year,
-        revenue: year.revenue || null,
-        ebitda: year.ebitda || null,
-        net_income: year.net_income || null,
+        revenue: year.revenue || 0,
+        ebitda: year.ebitda || 0,
+        net_income: year.net_income || 0,
       })) || [],
     };
 

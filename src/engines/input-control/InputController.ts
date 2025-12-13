@@ -342,7 +342,7 @@ export class InputControllerImpl implements InputController {
     return (
       this.state.isValid &&
       !this.state.isSubmitting &&
-      (this.state.value.length > 0 || this.config.allowEmpty)
+      (this.state.value.length > 0 || (this.config.allowEmpty ?? false))
     );
   }
 

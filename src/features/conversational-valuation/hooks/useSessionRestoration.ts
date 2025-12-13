@@ -8,7 +8,7 @@
  */
 
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { backendAPI } from '../../../services/backendApi';
+import { backendAPI } from '../../../services/BackendAPI';
 import { chatLogger } from '../../../utils/logger';
 import { Message } from '../../../hooks/useStreamingChatState';
 import type { ValuationSession } from '../../../types/valuation';

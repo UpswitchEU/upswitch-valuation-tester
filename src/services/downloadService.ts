@@ -1,6 +1,6 @@
 // Download service for exporting valuation reports
 import type { ValuationRequest } from '../types/valuation';
-import { backendAPI } from './backendApi';
+import { backendAPI } from '../services/BackendAPI';
 import { HTMLProcessor } from '../utils/htmlProcessor';
 
 export interface DownloadOptions {

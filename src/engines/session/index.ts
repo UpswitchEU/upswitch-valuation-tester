@@ -12,13 +12,13 @@
 // ============================================================================
 
 export {
-  SessionManager,
-  SessionManagerImpl,
-  useSessionManager,
-  type SessionConfig,
-  type SessionInitializationOptions,
-  type SessionSummary,
-  type UseSessionManagerResult,
+    SessionManager,
+    SessionManagerImpl,
+    useSessionManager,
+    type SessionConfig,
+    type SessionInitializationOptions,
+    type SessionSummary,
+    type UseSessionManagerResult
 } from './session-manager/SessionManager';
 
 // ============================================================================
@@ -26,14 +26,10 @@ export {
 // ============================================================================
 
 export {
-  DataSynchronizer,
-  DataSynchronizerImpl,
-  useDataSynchronizer,
-  type SynchronizationConfig,
-  type SyncOperation,
-  type SyncResult,
-  type SyncConflict,
-  type UseDataSynchronizerResult,
+    DataSynchronizer,
+    DataSynchronizerImpl,
+    useDataSynchronizer, type SyncConflict, type SyncOperation,
+    type SyncResult, type SynchronizationConfig, type UseDataSynchronizerResult
 } from './data-synchronizer/DataSynchronizer';
 
 // ============================================================================
@@ -41,15 +37,11 @@ export {
 // ============================================================================
 
 export {
-  ViewSwitcher,
-  ViewSwitcherImpl,
-  useViewSwitcher,
-  type ViewSwitchConfig,
-  type ViewSwitchOptions,
-  type ViewSwitchResult,
-  type ViewSwitchConfirmation,
-  type ViewSwitchEvent,
-  type UseViewSwitcherResult,
+    ViewSwitcher,
+    ViewSwitcherImpl,
+    useViewSwitcher, type UseViewSwitcherResult, type ViewSwitchConfig, type ViewSwitchConfirmation,
+    type ViewSwitchEvent, type ViewSwitchOptions,
+    type ViewSwitchResult
 } from './view-switcher/ViewSwitcher';
 
 // ============================================================================
@@ -57,15 +49,10 @@ export {
 // ============================================================================
 
 export {
-  PersistenceManager,
-  PersistenceManagerImpl,
-  usePersistenceManager,
-  type PersistenceConfig,
-  type PersistenceResult,
-  type CacheEntry,
-  type PersistenceHealthStatus,
-  type PersistenceStats,
-  type UsePersistenceManagerResult,
+    PersistenceManager,
+    PersistenceManagerImpl,
+    usePersistenceManager, type CacheEntry, type PersistenceConfig, type PersistenceHealthStatus, type PersistenceResult, type PersistenceStats,
+    type UsePersistenceManagerResult
 } from './persistence-manager/PersistenceManager';
 
 // ============================================================================
@@ -73,15 +60,10 @@ export {
 // ============================================================================
 
 export {
-  StateManager,
-  StateManagerImpl,
-  useStateManager,
-  type StateManagerConfig,
-  type StateUpdate,
-  type ThrottledUpdate,
-  type StateSnapshot,
-  type StateValidationResult,
-  type UseStateManagerResult,
+    StateManager,
+    StateManagerImpl,
+    useStateManager,
+    type StateManagerConfig, type StateSnapshot, type StateUpdate, type StateValidationResult, type ThrottledUpdate, type UseStateManagerResult
 } from './state-manager/StateManager';
 
 // ============================================================================
@@ -123,40 +105,20 @@ export function createSessionEngine(config: {
 // ============================================================================
 
 export type {
-  // Session management
-  SessionManager,
-  SessionConfig,
-  SessionInitializationOptions,
-  SessionSummary,
-
-  // Data synchronization
-  DataSynchronizer,
-  SynchronizationConfig,
-  SyncOperation,
-  SyncResult,
-  SyncConflict,
-
-  // View switching
-  ViewSwitcher,
-  ViewSwitchConfig,
-  ViewSwitchOptions,
-  ViewSwitchResult,
-  ViewSwitchConfirmation,
-  ViewSwitchEvent,
-
-  // Persistence
-  PersistenceManager,
-  PersistenceConfig,
-  PersistenceResult,
-  CacheEntry,
-  PersistenceHealthStatus,
-  PersistenceStats,
-
-  // State management
-  StateManager,
-  StateManagerConfig,
-  StateUpdate,
-  ThrottledUpdate,
-  StateSnapshot,
-  StateValidationResult,
+    CacheEntry,
+    // Data synchronization
+    DataSynchronizer, PersistenceConfig, PersistenceHealthStatus,
+    // Persistence
+    PersistenceManager, PersistenceResult, PersistenceStats, SessionConfig,
+    SessionInitializationOptions,
+    // Session management
+    SessionManager, SessionSummary,
+    // State management
+    StateManager,
+    StateManagerConfig, StateSnapshot, StateUpdate, StateValidationResult, SyncConflict, SyncOperation,
+    SyncResult, SynchronizationConfig, ThrottledUpdate, ViewSwitchConfig, ViewSwitchConfirmation,
+    ViewSwitchEvent, ViewSwitchOptions,
+    ViewSwitchResult,
+    // View switching
+    ViewSwitcher
 };

@@ -7,10 +7,9 @@
  * @module engines/stream/ui-coordinator/UIStateCoordinator
  */
 
-import { useCallback, useMemo, useRef } from 'react';
-import type { Message } from '../../../hooks/useStreamingChatState';
-import type { ParsedEvent } from '../event-parser/EventParser';
+import { useCallback, useMemo } from 'react';
 import { chatLogger } from '../../../utils/logger';
+import type { ParsedEvent } from '../event-parser/EventParser';
 
 // ============================================================================
 // TYPES & INTERFACES

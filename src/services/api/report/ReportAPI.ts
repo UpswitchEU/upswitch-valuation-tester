@@ -1,0 +1,206 @@
+/**
+ * Report API Service
+ *
+ * Single Responsibility: Handle all report CRUD operations and downloads
+ * Extracted from BackendAPI to follow SRP
+ *
+ * @module services/api/report/ReportAPI
+ */
+
+import { ValuationRequest, ValuationResponse } from '../../../types/valuation';
+import { APIError, NetworkError, AuthenticationError } from '../../../types/errors';
+import { apiLogger } from '../../../utils/logger';
+import { HttpClient, APIRequestConfig } from '../HttpClient';
+
+export class ReportAPI extends HttpClient {
+  /**
+   * Get valuation report by ID
+   */
+  async getReport(
+    reportId: string,
+    options?: APIRequestConfig
+  ): Promise<ValuationResponse> {
+    try {
+      return await this.executeRequest<ValuationResponse>({
+        method: 'GET',
+        url: `/api/reports/${reportId}`
+      }, options);
+    } catch (error) {
+      this.handleReportError(error, 'get report');
+    }
+  }
+
+  /**
+   * Update valuation report
+   */
+  async updateReport(
+    reportId: string,
+    data: Partial<ValuationRequest>,
+    options?: APIRequestConfig
+  ): Promise<ValuationResponse> {
+    try {
+      return await this.executeRequest<ValuationResponse>({
+        method: 'PUT',
+        url: `/api/reports/${reportId}`,
+        data
+      }, options);
+    } catch (error) {
+      this.handleReportError(error, 'update report');
+    }
+  }
+
+  /**
+   * Delete valuation report
+   */
+  async deleteReport(
+    reportId: string,
+    options?: APIRequestConfig
+  ): Promise<{ success: boolean }> {
+    try {
+      return await this.executeRequest<{ success: boolean }>({
+        method: 'DELETE',
+        url: `/api/reports/${reportId}`
+      }, options);
+    } catch (error) {
+      this.handleReportError(error, 'delete report');
+    }
+  }
+
+  /**
+   * Download accountant view PDF
+   */
+  async downloadAccountantViewPDF(
+    reportId: string,
+    options?: APIRequestConfig
+  ): Promise<Blob> {
+    const correlationId = Math.random().toString(36).substring(2, 15);
+
+    // Check for duplicate request
+    if (this.activeRequests.has(correlationId)) {
+      apiLogger.warn('Duplicate PDF download request detected, cancelling previous', { correlationId });
+      this.activeRequests.get(correlationId)?.abort();
+    }
+
+    // Create AbortController for this request
+    const controller = new AbortController();
+    this.activeRequests.set(correlationId, controller);
+
+    // Use provided signal or create new one
+    const signal = options?.signal || controller.signal;
+    const timeout = options?.timeout || 120000; // 2 minutes for PDF downloads
+
+    // Set up timeout
+    const timeoutId = setTimeout(() => {
+      apiLogger.warn('PDF download timeout, aborting', { correlationId, timeout });
+      controller.abort();
+    }, timeout);
+    this.requestTimeouts.set(correlationId, timeoutId);
+
+    try {
+      apiLogger.info('Starting PDF download', {
+        correlationId,
+        reportId,
+        timeout
+      });
+
+      // Call Node.js backend endpoint which proxies to Python engine
+      const response = await this.client.request({
+        method: 'GET',
+        url: `/api/reports/${reportId}/accountant-pdf`,
+        responseType: 'blob', // Important: request as blob for PDF
+        signal,
+        timeout
+      });
+
+      const contentLength = response.data?.size || 0;
+      apiLogger.info('PDF download completed', {
+        correlationId,
+        reportId,
+        contentLength,
+        contentType: response.headers?.['content-type']
+      });
+
+      // Validate PDF blob
+      if (!response.data || response.data.size === 0) {
+        throw new Error('Received empty PDF blob');
+      }
+
+      if (response.headers?.['content-type'] !== 'application/pdf') {
+        apiLogger.warn('Unexpected content type for PDF download', {
+          contentType: response.headers?.['content-type'],
+          expected: 'application/pdf'
+        });
+      }
+
+      return response.data;
+    } catch (error: any) {
+      // Comprehensive error logging
+      const errorContext = {
+        correlationId,
+        reportId,
+        error: error.message,
+        status: error.response?.status,
+        statusText: error.response?.statusText,
+        isTimeout: error.code === 'ECONNABORTED',
+        isAbort: error.name === 'AbortError'
+      };
+
+      if (error.response?.status === 404) {
+        apiLogger.error('Report not found for PDF download', errorContext);
+        throw new APIError('Report not found. Please check the report ID.');
+      }
+
+      if (error.response?.status === 403 || error.response?.status === 401) {
+        apiLogger.error('Unauthorized PDF download attempt', errorContext);
+        throw new AuthenticationError('You do not have permission to download this report.');
+      }
+
+      if (error.code === 'ECONNABORTED') {
+        apiLogger.error('PDF download timed out', errorContext);
+        throw new NetworkError('PDF download timed out. Please try again.');
+      }
+
+      if (error.name === 'AbortError') {
+        apiLogger.info('PDF download was cancelled', errorContext);
+        throw error; // Re-throw abort errors
+      }
+
+      // Log additional error context
+      apiLogger.error('PDF download failed with unknown error', {
+        ...errorContext,
+        stack: error.stack,
+        responseData: error.response?.data
+      });
+
+      throw new APIError('Failed to download PDF. Please try again.', error);
+    } finally {
+      // Cleanup
+      this.activeRequests.delete(correlationId);
+      if (this.requestTimeouts.has(correlationId)) {
+        clearTimeout(this.requestTimeouts.get(correlationId)!);
+        this.requestTimeouts.delete(correlationId);
+      }
+    }
+  }
+
+  /**
+   * Handle report-specific errors
+   */
+  private handleReportError(error: any, operation: string): never {
+    apiLogger.error(`Report ${operation} failed`, { error });
+
+    if (error.response?.status === 404) {
+      throw new APIError('Report not found', error);
+    }
+
+    if (error.response?.status === 401 || error.response?.status === 403) {
+      throw new AuthenticationError('Authentication required for report operation');
+    }
+
+    if (error.code === 'ECONNABORTED' || error.code === 'ENOTFOUND') {
+      throw new NetworkError('Network error during report operation');
+    }
+
+    throw new APIError(`Failed to ${operation}`, error);
+  }
+}

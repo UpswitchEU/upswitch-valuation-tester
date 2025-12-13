@@ -12,13 +12,10 @@
 // ============================================================================
 
 export {
-  FormManager,
-  FormManagerImpl,
-  useFormManager,
-  type BusinessCardData,
-  type FormValidationResult,
-  type FormUpdate,
-  type UseFormManagerResult,
+    FormManager,
+    FormManagerImpl,
+    useFormManager,
+    type BusinessCardData, type FormUpdate, type FormValidationResult, type UseFormManagerResult
 } from './form-manager/FormManager';
 
 // ============================================================================
@@ -26,15 +23,10 @@ export {
 // ============================================================================
 
 export {
-  ResultsManager,
-  ResultsManagerImpl,
-  useResultsManager,
-  type ResultsDisplayConfig,
-  type ResultsMetadata,
-  type ResultsAnalysis,
-  type ResultsComparison,
-  type ResultsHistoryEntry,
-  type UseResultsManagerResult,
+    ResultsManager,
+    ResultsManagerImpl,
+    useResultsManager, type ResultsAnalysis,
+    type ResultsComparison, type ResultsDisplayConfig, type ResultsHistoryEntry, type ResultsMetadata, type UseResultsManagerResult
 } from './results-manager/ResultsManager';
 
 // ============================================================================
@@ -42,15 +34,12 @@ export {
 // ============================================================================
 
 export {
-  CalculationCoordinator,
-  CalculationCoordinatorImpl,
-  useCalculationCoordinator,
-  type CalculationConfig,
-  type CalculationState,
-  type CalculationOptions,
-  type CalculationResult,
-  type CalculationStep,
-  type UseCalculationCoordinatorResult,
+    CalculationCoordinator,
+    CalculationCoordinatorImpl,
+    useCalculationCoordinator,
+    type CalculationConfig, type CalculationOptions,
+    type CalculationResult, type CalculationState, type CalculationStep,
+    type UseCalculationCoordinatorResult
 } from './calculation-coordinator/CalculationCoordinator';
 
 // ============================================================================
@@ -58,13 +47,13 @@ export {
 // ============================================================================
 
 export {
-  PersistenceCoordinator,
-  PersistenceCoordinatorImpl,
-  usePersistenceCoordinator,
-  type PersistenceConfig,
-  type PersistenceResult,
-  type PersistenceState,
-  type UsePersistenceCoordinatorResult,
+    PersistenceCoordinator,
+    PersistenceCoordinatorImpl,
+    usePersistenceCoordinator,
+    type PersistenceConfig,
+    type PersistenceResult,
+    type PersistenceState,
+    type UsePersistenceCoordinatorResult
 } from './persistence-coordinator/PersistenceCoordinator';
 
 // ============================================================================
@@ -72,14 +61,11 @@ export {
 // ============================================================================
 
 export {
-  PreviewManager,
-  PreviewManagerImpl,
-  usePreviewManager,
-  type PreviewConfig,
-  type PreviewState,
-  type PreviewUpdate,
-  type PreviewStats,
-  type UsePreviewManagerResult,
+    PreviewManager,
+    PreviewManagerImpl,
+    usePreviewManager,
+    type PreviewConfig,
+    type PreviewState, type PreviewStats, type PreviewUpdate, type UsePreviewManagerResult
 } from './preview-manager/PreviewManager';
 
 // ============================================================================
@@ -87,16 +73,11 @@ export {
 // ============================================================================
 
 export {
-  UIManager,
-  UIManagerImpl,
-  useUIManager,
-  type UIConfig,
-  type UIState,
-  type UIUpdate,
-  type LoadingState,
-  type InteractionStats,
-  type ActivitySummary,
-  type UseUIManagerResult,
+    UIManager,
+    UIManagerImpl,
+    useUIManager, type ActivitySummary, type InteractionStats, type LoadingState, type UIConfig,
+    type UIState,
+    type UIUpdate, type UseUIManagerResult
 } from './ui-manager/UIManager';
 
 // ============================================================================
@@ -142,47 +123,21 @@ export function createValuationEngine(config: {
 // ============================================================================
 
 export type {
-  // Form management
-  FormManager,
-  BusinessCardData,
-  FormValidationResult,
-  FormUpdate,
-
-  // Results management
-  ResultsManager,
-  ResultsDisplayConfig,
-  ResultsMetadata,
-  ResultsAnalysis,
-  ResultsComparison,
-  ResultsHistoryEntry,
-
-  // Calculation coordination
-  CalculationCoordinator,
-  CalculationConfig,
-  CalculationState,
-  CalculationOptions,
-  CalculationResult,
-  CalculationStep,
-
-  // Persistence coordination
-  PersistenceCoordinator,
-  PersistenceConfig,
-  PersistenceResult,
-  PersistenceState,
-
-  // Preview management
-  PreviewManager,
-  PreviewConfig,
-  PreviewState,
-  PreviewUpdate,
-  PreviewStats,
-
-  // UI management
-  UIManager,
-  UIConfig,
-  UIState,
-  UIUpdate,
-  LoadingState,
-  InteractionStats,
-  ActivitySummary,
+    ActivitySummary, BusinessCardData, CalculationConfig,
+    // Calculation coordination
+    CalculationCoordinator, CalculationOptions,
+    CalculationResult, CalculationState, CalculationStep,
+    // Form management
+    FormManager, FormUpdate, FormValidationResult, InteractionStats, LoadingState, PersistenceConfig,
+    // Persistence coordination
+    PersistenceCoordinator, PersistenceResult,
+    PersistenceState, PreviewConfig,
+    // Preview management
+    PreviewManager, PreviewState, PreviewStats, PreviewUpdate, ResultsAnalysis,
+    ResultsComparison, ResultsDisplayConfig, ResultsHistoryEntry,
+    // Results management
+    ResultsManager, ResultsMetadata, UIConfig,
+    // UI management
+    UIManager, UIState,
+    UIUpdate
 };

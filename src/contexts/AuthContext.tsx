@@ -6,7 +6,7 @@
  */
 
 import React, { useCallback, useEffect, useState } from 'react';
-import { backendAPI } from '../services/backendApi';
+import { backendAPI } from '../services/BackendAPI';
 import { guestSessionService } from '../services/guestSessionService';
 import { authLogger } from '../utils/logger';
 import { AuthContext, AuthContextType, User } from './AuthContextTypes';

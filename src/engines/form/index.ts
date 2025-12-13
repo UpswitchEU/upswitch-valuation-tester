@@ -7,16 +7,23 @@
  * @module engines/form
  */
 
+import { useBusinessTypeMatcher } from './business-type-matcher/BusinessTypeMatcher';
+import { useFormDataManager } from './data-manager/FormDataManager';
+import { useFormRenderer } from './renderer/FormRenderer';
+
 // ============================================================================
 // BUSINESS TYPE MATCHING
 // ============================================================================
 
 export {
-  BusinessTypeMatcher,
-  BusinessTypeMatcherImpl,
-  useBusinessTypeMatcher,
-  type MatchResult,
-  type UseBusinessTypeMatcherResult,
+    BusinessTypeMatcherImpl,
+    useBusinessTypeMatcher
+} from './business-type-matcher/BusinessTypeMatcher';
+
+export type {
+    BusinessTypeMatcher,
+    MatchResult,
+    UseBusinessTypeMatcherResult
 } from './business-type-matcher/BusinessTypeMatcher';
 
 // ============================================================================
@@ -24,13 +31,14 @@ export {
 // ============================================================================
 
 export {
-  FormDataManager,
-  FormDataManagerImpl,
-  useFormDataManager,
-  type FormData,
-  type ValidationResult,
-  type FormField,
-  type UseFormDataManagerResult,
+    FormDataManagerImpl,
+    useFormDataManager
+} from './data-manager/FormDataManager';
+
+export type {
+    FormDataManager,
+    FormData, FormField,
+    UseFormDataManagerResult, ValidationResult
 } from './data-manager/FormDataManager';
 
 // ============================================================================
@@ -45,12 +53,13 @@ export {
 // ============================================================================
 
 export {
-  ValuationOrchestrator,
-  ValuationOrchestratorImpl,
-  useValuationOrchestrator,
-  type OrchestratorConfig,
-  type ValuationState,
-  type UseValuationOrchestratorResult,
+    useValuationOrchestrator,
+    ValuationOrchestratorImpl
+} from './orchestrator/ValuationOrchestrator';
+
+export type {
+    ValuationOrchestrator,
+    OrchestratorConfig, UseValuationOrchestratorResult, ValuationState
 } from './orchestrator/ValuationOrchestrator';
 
 // ============================================================================
@@ -65,11 +74,14 @@ export {
 // ============================================================================
 
 export {
-  FormRenderer,
-  FormRendererImpl,
-  useFormRenderer,
-  type RenderConfig,
-  type UseFormRendererResult,
+    FormRendererImpl,
+    useFormRenderer
+} from './renderer/FormRenderer';
+
+export type {
+    FormRenderer,
+    RenderConfig,
+    UseFormRendererResult
 } from './renderer/FormRenderer';
 
 // ============================================================================
@@ -98,22 +110,7 @@ export function createFormEngine(config: {
   };
 }
 
+
 // ============================================================================
-// TYPE EXPORTS
+// TYPE EXPORTS - Handled by individual module exports above
 // ============================================================================
-
-export type {
-  // Business type matching
-  BusinessTypeMatcher,
-
-  // Form data management
-  FormDataManager,
-  ValidationResult,
-
-  // Valuation orchestration
-  ValuationOrchestrator,
-  ValuationState,
-
-  // Form rendering
-  FormRenderer,
-};

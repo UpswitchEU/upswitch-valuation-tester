@@ -9,8 +9,7 @@
 
 import React, { useCallback, useMemo } from 'react';
 import type { BusinessTypeOption } from '../../../config/businessTypes';
-import type { FormData } from '../data-manager/FormDataManager';
-import type { ValidationResult } from '../data-manager/FormDataManager';
+import type { FormData, ValidationResult } from '../data-manager/FormDataManager';
 
 // ============================================================================
 // TYPES & INTERFACES
@@ -149,7 +148,7 @@ export class FormRendererImpl implements FormRenderer {
           id: 'company_name',
           type: 'text',
           value: formData.company_name,
-          onChange: (e) => onChange(e.target.value),
+          onChange: (e: React.ChangeEvent<HTMLSelectElement>) => onChange(e.target.value),
           className: `field-input ${hasErrors ? 'error' : ''}`,
           placeholder: 'Enter company name',
           maxLength: 100,
@@ -197,7 +196,7 @@ export class FormRendererImpl implements FormRenderer {
         {
           id: 'business_type',
           value: formData.business_type,
-          onChange: (e) => onChange(e.target.value),
+          onChange: (e: React.ChangeEvent<HTMLSelectElement>) => onChange(e.target.value),
           className: `field-select ${hasErrors ? 'error' : ''}`,
         },
         React.createElement('option', { value: '' }, 'Select business type...'),
@@ -261,7 +260,7 @@ export class FormRendererImpl implements FormRenderer {
         {
           id: 'country_code',
           value: formData.country_code,
-          onChange: (e) => onChange(e.target.value),
+          onChange: (e: React.ChangeEvent<HTMLSelectElement>) => onChange(e.target.value),
           className: `field-select ${hasErrors ? 'error' : ''}`,
         },
         ...options
@@ -612,12 +611,12 @@ export const useFormRenderer = (
       [renderer, mergedConfig]
     ),
 
-    CompanyNameField: useCallback((props) =>
+    CompanyNameField: useCallback((props: any) =>
       renderer.renderCompanyNameField(props.formData, props.validation, props.onChange),
       [renderer]
     ),
 
-    BusinessTypeField: useCallback((props) =>
+    BusinessTypeField: useCallback((props: any) =>
       renderer.renderBusinessTypeField(
         props.formData,
         props.validation,
@@ -628,7 +627,7 @@ export const useFormRenderer = (
       [renderer]
     ),
 
-    ActionButtons: useCallback((props) =>
+    ActionButtons: useCallback((props: any) =>
       renderer.renderActionButtons(
         props.canCalculate,
         props.canQuickValuate,
@@ -639,17 +638,17 @@ export const useFormRenderer = (
       [renderer]
     ),
 
-    ValidationSummary: useCallback((props) =>
+    ValidationSummary: useCallback((props: any) =>
       renderer.renderValidationSummary(props.validation),
       [renderer]
     ),
 
-    ErrorMessage: useCallback((props) =>
+    ErrorMessage: useCallback((props: any) =>
       renderer.renderErrorMessage(props.error, props.onRetry),
       [renderer]
     ),
 
-    SuccessMessage: useCallback((props) =>
+    SuccessMessage: useCallback((props: any) =>
       renderer.renderSuccessMessage(props.message),
       [renderer]
     ),

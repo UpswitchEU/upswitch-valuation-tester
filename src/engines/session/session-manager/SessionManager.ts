@@ -8,7 +8,7 @@
  */
 
 import { useCallback, useMemo } from 'react';
-import type { ValuationSession, ValuationRequest } from '../../../types/valuation';
+import type { ValuationRequest, ValuationSession } from '../../../types/valuation';
 import { storeLogger } from '../../../utils/logger';
 
 // ============================================================================

@@ -7,7 +7,7 @@
  * @module engines/stream/performance-tracker/PerformanceTracker
  */
 
-import { useCallback, useMemo, useRef } from 'react';
+import { useCallback, useMemo } from 'react';
 import { chatLogger } from '../../../utils/logger';
 
 // ============================================================================

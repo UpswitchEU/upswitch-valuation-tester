@@ -428,11 +428,11 @@ export class DataSynchronizerImpl implements DataSynchronizer {
       country_code: partialData.country_code || 'BE',
       founding_year: partialData.founding_year || undefined,
       revenue: partialData.revenue || undefined,
-      ebitda: partialData.ebitda || undefined,
       current_year_data: {
-        revenue: partialData.current_year_data?.revenue || partialData.current_year_revenue,
-        ebitda: partialData.current_year_data?.ebitda || partialData.current_year_ebitda,
-        net_income: partialData.current_year_data?.net_income || partialData.current_year_net_income,
+        year: partialData.current_year_data?.year || new Date().getFullYear(),
+        revenue: partialData.current_year_data?.revenue || partialData.current_year_revenue || 0,
+        ebitda: partialData.current_year_data?.ebitda || partialData.current_year_ebitda || 0,
+        net_income: partialData.current_year_data?.net_income || partialData.current_year_net_income || 0,
       },
       historical_years_data: partialData.historical_years_data || partialData.historical_data || [],
     };
@@ -447,9 +447,9 @@ export class DataSynchronizerImpl implements DataSynchronizer {
       partialData: {
         ...session.partialData,
         ...data,
-        _lastSyncTime: Date.now(),
       },
       updatedAt: new Date(),
+      lastSyncedAt: new Date(),
     };
   }
 
@@ -477,7 +477,7 @@ export class DataSynchronizerImpl implements DataSynchronizer {
       errors.push('Revenue must be a non-negative number');
     }
 
-    if (data.ebitda !== undefined && typeof data.ebitda !== 'number') {
+    if (data.current_year_data?.ebitda !== undefined && typeof data.current_year_data.ebitda !== 'number') {
       errors.push('EBITDA must be a number');
     }
 
@@ -520,7 +520,6 @@ export class DataSynchronizerImpl implements DataSynchronizer {
       country_code: partialData.country_code || 'BE',
       founding_year: partialData.founding_year || undefined,
       revenue: partialData.revenue || undefined,
-      ebitda: partialData.ebitda || undefined,
       current_year_data: partialData.current_year_data || {},
       historical_years_data: partialData.historical_years_data || [],
     };

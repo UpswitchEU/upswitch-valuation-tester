@@ -7,8 +7,8 @@
  * @module engines/session/state-manager/StateManager
  */
 
-import { useCallback, useMemo, useRef } from 'react';
-import type { ValuationRequest, ValuationSession } from '../../../types/valuation';
+import { useCallback, useMemo } from 'react';
+import type { ValuationSession } from '../../../types/valuation';
 import { storeLogger } from '../../../utils/logger';
 
 // ============================================================================

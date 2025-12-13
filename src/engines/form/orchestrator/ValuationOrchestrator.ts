@@ -230,7 +230,7 @@ export class ValuationOrchestratorImpl implements ValuationOrchestrator {
 
     generalLogger.info('[ValuationOrchestrator] Showing regeneration warning', {
       lastValuationId: lastValuation.valuation_id,
-      lastValuationDate: lastValuation.created_at,
+      lastValuationDate: lastValuation.timestamp || lastValuation.valuation_date,
     });
 
     this.onRegenerationWarning?.(lastValuation);
@@ -376,7 +376,7 @@ export const useValuationOrchestrator = (
 
   const helpers = {
     canCalculate: !orchestrator.isCalculating() && !state.regenerationWarning.show,
-    canQuickValuate: config?.enableQuickValuation && !orchestrator.isCalculating(),
+    canQuickValuate: (config?.enableQuickValuation ?? false) && !orchestrator.isCalculating(),
     canRegenerate: state.regenerationWarning.confirmed,
     isCalculating: orchestrator.isCalculating(),
     hasError: orchestrator.hasError(),

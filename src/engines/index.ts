@@ -1,150 +1,48 @@
 /**
- * Modular Precision Engines - Core Architecture
+ * Engines - Modular Engine Management
  *
- * This directory contains focused, single-responsibility engines that implement
- * the Bank-Grade Excellence Framework principles.
+ * This directory contains focused engines for various aspects of the application,
+ * breaking down god components into manageable, single-responsibility modules.
  *
  * @module engines
  */
 
 // ============================================================================
-// CONVERSATION MANAGEMENT
+// FORM ENGINES
 // ============================================================================
 
 export {
-  ConversationManager,
-  ConversationManagerImpl,
-  useConversationManager,
-  type ConversationConfig,
-  type ConversationState,
-  type UseConversationManagerResult,
-} from './conversation/ConversationManager';
+  BusinessTypeMatcherImpl,
+  FormDataManagerImpl,
+  FormRendererImpl,
+  ValuationOrchestratorImpl,
+  useBusinessTypeMatcher,
+  useFormDataManager,
+  useFormRenderer,
+  useValuationOrchestrator,
+  createFormEngine
+} from './form';
 
 // ============================================================================
-// DATA COLLECTION & PROCESSING
+// STREAM ENGINES
 // ============================================================================
 
-export {
-  DataCollectionEngine,
-  DataCollectionEngineImpl,
-  useDataCollectionEngine,
-  type CollectedData,
-  type ValidationResult,
-  type NormalizedData,
-  type AIResponse,
-  type UseDataCollectionEngineResult,
-} from './data-collection/DataCollectionEngine';
+export * from './stream';
 
 // ============================================================================
-// INPUT CONTROL & VALIDATION
+// UI RENDERING ENGINES
 // ============================================================================
 
 export {
-  InputController,
-  InputControllerImpl,
-  useInputController,
-  createLengthValidator,
-  createContentValidator,
-  createSpamValidator,
-  type InputValidation,
-  type InputConfig,
-  type InputState,
-  type InputController as InputControllerInterface,
-  type UseInputControllerResult,
-  type InputValidator,
-} from './input-control/InputController';
-
-// ============================================================================
-// VALUATION CALLBACKS & BUSINESS LOGIC
-// ============================================================================
-
-export {
-  ValuationCallbacks,
-  ValuationCallbacksImpl,
-  useValuationCallbacks,
-  type ValuationProgressData,
-  type ValuationPreviewData,
-  type CalculateOptionData,
-  type ValuationCallbacksConfig,
-  type UseValuationCallbacksResult,
-} from './valuation/ValuationCallbacks';
-
-// ============================================================================
-// STREAMING COORDINATION
-// ============================================================================
-
-export {
-  StreamingCoordinator,
-  StreamingCoordinatorImpl,
-  useStreamingCoordinator,
-  type StreamingConfig,
-  type StreamingEvent,
-  type ConnectionState,
-  type UseStreamingCoordinatorResult,
-  type MessageCallback,
-} from './streaming/StreamingCoordinator';
-
-// ============================================================================
-// UI RENDERING & COMPONENTS
-// ============================================================================
-
-export {
-  MessageRenderer,
   MessageRendererImpl,
-  useMessageRenderer,
-  type RenderConfig,
-  type SuggestionData,
-  type TypingIndicatorData,
-  type UseMessageRendererResult,
+  useMessageRenderer
 } from './ui-rendering/MessageRenderer';
 
 // ============================================================================
-// ENGINE COMPOSITION HELPERS
+// DATA COLLECTION ENGINES
 // ============================================================================
 
-/**
- * Compose multiple engines into a cohesive conversational interface
- *
- * This function demonstrates how to combine focused engines into
- * a complete conversational AI system while maintaining separation of concerns.
- */
-export function createConversationalEngine(config: {
-  conversation: ConversationConfig;
-  input?: InputConfig;
-  rendering?: RenderConfig;
-  streaming?: StreamingConfig;
-  valuation?: ValuationCallbacksConfig;
-}) {
-  return {
-    conversation: () => useConversationManager(config.conversation),
-    input: () => useInputController(config.input),
-    rendering: () => useMessageRenderer(config.rendering),
-    streaming: () => useStreamingCoordinator(config.streaming),
-    valuation: () => useValuationCallbacks(config.valuation),
-    dataCollection: () => useDataCollectionEngine(),
-  };
-}
-
-// ============================================================================
-// TYPE EXPORTS FOR EXTERNAL USAGE
-// ============================================================================
-
-export type {
-  // Conversation types
-  ConversationManager,
-
-  // Data collection types
-  DataCollectionEngine,
-
-  // Input control types
-  InputController,
-
-  // Valuation types
-  ValuationCallbacks,
-
-  // Streaming types
-  StreamingCoordinator,
-
-  // UI rendering types
-  MessageRenderer,
-};
+export {
+  DataCollectionEngineImpl,
+  useDataCollectionEngine
+} from './data-collection/DataCollectionEngine';

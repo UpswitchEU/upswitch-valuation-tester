@@ -22,6 +22,7 @@ import { BusinessProfileSection } from './BusinessProfileSection';
 import { ConversationPanel } from './ConversationPanel';
 import { ReportPanel } from './ReportPanel';
 import { useConversationActions, useConversationState } from '../context/ConversationContext';
+import { chatLogger } from '../../../utils/logger';
 
 interface ConversationalLayoutProps {
   reportId: string;
@@ -142,6 +143,15 @@ export const ConversationalLayout: React.FC<ConversationalLayoutProps> = React.m
     }
   }, [state.valuationResult, state.finalReportHtml, state.businessProfile]);
 
+  // Handle Python session ID updates from conversation
+  const handlePythonSessionIdReceived = useCallback((sessionId: string) => {
+    chatLogger.info('Python session ID received, updating conversation state', {
+      sessionId,
+      reportId
+    });
+    actions.setPythonSessionId(sessionId);
+  }, [actions, reportId]);
+
   // Handle valuation completion
   const handleValuationComplete = useCallback(async (result: any) => {
     actions.setValuationResult(result);
@@ -223,7 +233,7 @@ export const ConversationalLayout: React.FC<ConversationalLayoutProps> = React.m
                 isRestorationComplete={state.restorationComplete}
                 isSessionInitialized={state.isSessionInitialized}
                 pythonSessionId={state.pythonSessionId}
-                onPythonSessionIdReceived={(sessionId) => actions.setPythonSessionId(sessionId)}
+                onPythonSessionIdReceived={handlePythonSessionIdReceived}
                 onValuationComplete={handleValuationComplete}
                 onValuationStart={() => actions.setGenerating(true)}
                 onDataCollected={(data) => {

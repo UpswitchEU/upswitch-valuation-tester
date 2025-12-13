@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { api } from '../services/api';
-import { backendAPI } from '../services/backendApi';
+import { backendAPI } from '../services/BackendAPI';
 import type { QuickValuationRequest, ValuationFormData, ValuationInputData, ValuationRequest, ValuationResponse } from '../types/valuation';
 // normalizeCalculationSteps removed - calculation steps now in server-generated info_tab_html
 import { correlationContext, storeLogger } from '../utils/logger';
