@@ -7,14 +7,15 @@
  * @module features/conversational/components/ReportPanel
  */
 
-import React, { lazy, Suspense, useState } from 'react'
 import { Edit3 } from 'lucide-react'
-import { Results } from '../../../components/results'
+import React, { Suspense, useState } from 'react'
 import { HTMLView } from '../../../components/HTMLView'
+import { LoadingState } from '../../../components/LoadingState'
+import { GENERATION_STEPS } from '../../../components/LoadingState.constants'
+import { Results } from '../../../components/Results'
 import { ValuationInfoPanel } from '../../../components/ValuationInfoPanel'
-import { LoadingState, GENERATION_STEPS } from '../../../components/LoadingState'
-import { useValuationResultsStore } from '../../../store/useValuationResultsStore'
 import { useValuationApiStore } from '../../../store/useValuationApiStore'
+import { useValuationResultsStore } from '../../../store/useValuationResultsStore'
 import { useConversationState } from '../context/ConversationContext'
 
 /**

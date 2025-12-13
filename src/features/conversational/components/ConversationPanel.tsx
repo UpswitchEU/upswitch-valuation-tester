@@ -10,6 +10,7 @@
 import React, { useCallback } from 'react'
 import { StreamingChat } from '../../../components/StreamingChat'
 import { useValuationFormStore } from '../../../store/useValuationFormStore'
+import { useValuationResultsStore } from '../../../store/useValuationResultsStore'
 import type { Message } from '../../../types/message'
 import type { ValuationResponse } from '../../../types/valuation'
 import { chatLogger } from '../../../utils/logger'
@@ -102,19 +103,22 @@ export const ConversationPanel: React.FC<ConversationPanelProps> = ({
         value: data.value,
       })
 
-      // Sync to form store
-      // Convert single data point to DataResponse format if needed
-      // For now, we'll accumulate in a simple way
+      // Sync to form store if field and value are present
+      // Note: StreamingChat manages its own collectedData state internally
+      // This callback is for external notification, but we can also sync here if needed
       if (data.field && data.value !== undefined) {
-        // This will be handled by StreamingChat's onDataCollected callback
-        // which should sync to session store
+        // Call parent callback (used by ConversationalLayout for logging)
         onDataCollected?.(data)
+        
+        // Data will be synced to session store through StreamingChat's internal mechanisms
+        // When valuation is triggered, the collected data will be used
       }
     },
     [onDataCollected]
   )
 
   // Handle valuation complete - sync to context and results store
+  const { setResult } = useValuationResultsStore()
   const handleValuationComplete = useCallback(
     (result: ValuationResponse) => {
       chatLogger.info('ConversationPanel: Valuation complete', {
@@ -125,10 +129,13 @@ export const ConversationPanel: React.FC<ConversationPanelProps> = ({
       actions.setValuationResult(result)
       actions.setGenerating(false)
 
+      // Sync to results store (same as manual flow)
+      setResult(result)
+
       // Call parent callback
       onValuationComplete?.(result)
     },
-    [actions, onValuationComplete]
+    [actions, onValuationComplete, setResult]
   )
 
   // Handle valuation start
@@ -168,7 +175,7 @@ export const ConversationPanel: React.FC<ConversationPanelProps> = ({
       <StreamingChat
         sessionId={sessionId}
         userId={userId}
-        restoredMessages={restoredMessages}
+        initialMessages={restoredMessages}
         isRestoring={isRestoring}
         isRestorationComplete={isRestorationComplete}
         isSessionInitialized={isSessionInitialized}

@@ -12,8 +12,12 @@ import {
 import React from 'react'
 import {
     useValuationToolbarAuth,
+    useValuationToolbarDownload,
     useValuationToolbarFlow,
+    useValuationToolbarFullscreen,
     useValuationToolbarName,
+    useValuationToolbarRefresh,
+    useValuationToolbarTabs,
 } from '../hooks/valuationToolbar'
 import { useValuationSessionStore } from '../store/useValuationSessionStore'
 import { ValuationToolbarProps } from '../types/valuation'
@@ -60,9 +64,41 @@ export const ValuationToolbar: React.FC<ValuationToolbarProps> = ({
 
   const { handleLogout } = useValuationToolbarAuth()
 
+  // Tab management hook - use prop if provided (parent-controlled), otherwise use hook state
+  const { activeTab: hookActiveTab, handleTabChange: handleHookTabChange } =
+    useValuationToolbarTabs({
+      initialTab: activeTab,
+      onTabChange,
+    })
+
+  // Use prop tab if provided (parent-controlled), otherwise use hook state
+  const currentActiveTab = activeTab ?? hookActiveTab
   const handleTabClick = (tab: 'preview' | 'source' | 'info') => {
-    onTabChange?.(tab)
+    // If parent provides onTabChange, use it (parent-controlled)
+    // Otherwise use hook handler (self-controlled)
+    if (onTabChange) {
+      onTabChange(tab)
+    } else {
+      handleHookTabChange(tab)
+    }
   }
+
+  // Refresh hook - use prop if provided, otherwise use hook
+  const { handleRefresh: handleHookRefresh } = useValuationToolbarRefresh()
+  const handleRefresh = onRefresh ?? handleHookRefresh
+
+  // Download hook - track loading state for UI feedback
+  // Note: Parent components should provide onDownload handler that uses the hook
+  const { isDownloading } = useValuationToolbarDownload()
+  const handleDownload = onDownload ?? (() => {
+    // If no prop handler provided, this shouldn't be called
+    // Parent components should always provide onDownload handler
+  })
+
+  // Fullscreen hook - use prop if provided, otherwise use hook
+  const { handleOpenFullscreen: handleHookFullscreen } =
+    useValuationToolbarFullscreen()
+  const handleFullScreen = onFullScreen ?? handleHookFullscreen
 
   return (
     <>
@@ -156,7 +192,7 @@ export const ValuationToolbar: React.FC<ValuationToolbarProps> = ({
                   <button
                     onClick={() => handleTabClick('preview')}
                     className={`p-2 rounded-lg transition-all duration-200 ${
-                      activeTab === 'preview'
+                      currentActiveTab === 'preview'
                         ? 'bg-zinc-700 text-white'
                         : 'text-gray-400 hover:text-gray-300 hover:bg-zinc-800'
                     }`}
@@ -168,7 +204,7 @@ export const ValuationToolbar: React.FC<ValuationToolbarProps> = ({
                   <button
                     onClick={() => handleTabClick('source')}
                     className={`p-2 rounded-lg transition-all duration-200 ${
-                      activeTab === 'source'
+                      currentActiveTab === 'source'
                         ? 'bg-zinc-700 text-white'
                         : 'text-gray-400 hover:text-gray-300 hover:bg-zinc-800'
                     }`}
@@ -180,7 +216,7 @@ export const ValuationToolbar: React.FC<ValuationToolbarProps> = ({
                   <button
                     onClick={() => handleTabClick('info')}
                     className={`p-2 rounded-lg transition-all duration-200 ${
-                      activeTab === 'info'
+                      currentActiveTab === 'info'
                         ? 'bg-zinc-700 text-white'
                         : 'text-gray-400 hover:text-gray-300 hover:bg-zinc-800'
                     }`}
@@ -191,7 +227,7 @@ export const ValuationToolbar: React.FC<ValuationToolbarProps> = ({
                 <div className="mx-2 h-6 w-px bg-zinc-700"></div>
                 <Tooltip content="Refresh" position="bottom" className="">
                   <button
-                    onClick={onRefresh}
+                    onClick={handleRefresh}
                     className="p-2 rounded-lg transition-all duration-200 text-gray-400 hover:text-gray-300 hover:bg-zinc-800"
                     disabled={isGenerating}
                   >
@@ -200,15 +236,20 @@ export const ValuationToolbar: React.FC<ValuationToolbarProps> = ({
                 </Tooltip>
                 <Tooltip content="Download PDF" position="bottom" className="">
                   <button
-                    onClick={onDownload}
+                    onClick={handleDownload}
                     className="p-2 rounded-lg transition-all duration-200 text-gray-400 hover:text-gray-300 hover:bg-zinc-800"
+                    disabled={isDownloading || !onDownload}
                   >
-                    <Download className="w-4 h-4" />
+                    {isDownloading ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <Download className="w-4 h-4" />
+                    )}
                   </button>
                 </Tooltip>
                 <Tooltip content="Open Full Screen" position="bottom" className="">
                   <button
-                    onClick={onFullScreen}
+                    onClick={handleFullScreen}
                     className="p-2 rounded-lg transition-all duration-200 text-gray-400 hover:text-gray-300 hover:bg-zinc-800"
                   >
                     <Maximize className="w-4 h-4" />

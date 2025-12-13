@@ -13,16 +13,23 @@ import { ResizableDivider } from '../../../components/ResizableDivider'
 import { ValuationToolbar } from '../../../components/ValuationToolbar'
 import { MOBILE_BREAKPOINT, PANEL_CONSTRAINTS } from '../../../constants/panelConstants'
 import { useAuth } from '../../../hooks/useAuth'
+import {
+    useValuationToolbarDownload,
+    useValuationToolbarFullscreen,
+    useValuationToolbarRefresh,
+    useValuationToolbarTabs,
+} from '../../../hooks/valuationToolbar'
 import { guestCreditService } from '../../../services/guestCreditService'
 import UrlGeneratorService from '../../../services/urlGenerator'
-import { useValuationFormStore } from '../../../store/useValuationFormStore'
 import { useValuationApiStore } from '../../../store/useValuationApiStore'
+import { useValuationFormStore } from '../../../store/useValuationFormStore'
 import { useValuationResultsStore } from '../../../store/useValuationResultsStore'
 import type { ValuationResponse } from '../../../types/valuation'
 import { chatLogger } from '../../../utils/logger'
 import { generateReportId } from '../../../utils/reportIdGenerator'
 import { CreditGuard } from '../../auth/components/CreditGuard'
 import { ConversationProvider, useConversationActions, useConversationState } from '../context/ConversationContext'
+import { useConversationRestoration } from '../hooks'
 import { BusinessProfileSection } from './BusinessProfileSection'
 import { ConversationPanel } from './ConversationPanel'
 import { ReportPanel } from './ReportPanel'
@@ -59,12 +66,55 @@ const ConversationalLayoutInner: React.FC<ConversationalLayoutProps> = ({
   const { isCalculating } = useValuationApiStore()
   const { result, setResult } = useValuationResultsStore()
 
+  // Restore conversation from Python backend
+  const restoration = useConversationRestoration({
+    sessionId: reportId,
+    enabled: true,
+    onRestored: useCallback(
+      (messages: import('../../../types/message').Message[], pythonSessionId: string | null) => {
+        chatLogger.info('Conversation restored in ConversationalLayout', {
+          reportId,
+          messageCount: messages.length,
+          pythonSessionId,
+        })
+        // Update conversation context with restored messages
+        actions.setMessages(messages)
+        if (pythonSessionId) {
+          actions.setPythonSessionId(pythonSessionId)
+        }
+        actions.setRestored(true)
+        actions.setInitialized(true)
+      },
+      [actions, reportId]
+    ),
+    onError: useCallback(
+      (error: string) => {
+        chatLogger.error('Failed to restore conversation', { reportId, error })
+        actions.setError(error)
+        // Still allow new conversation even if restoration fails
+        actions.setRestored(true)
+        actions.setInitialized(true)
+      },
+      [actions, reportId]
+    ),
+  })
+
+  // Toolbar hooks
+  const { handleRefresh: handleHookRefresh } = useValuationToolbarRefresh()
+  const { handleDownload: handleHookDownload, isDownloading } = useValuationToolbarDownload()
+  const {
+    isFullScreen,
+    handleOpenFullscreen: handleHookOpenFullscreen,
+    handleCloseFullscreen: handleHookCloseFullscreen,
+  } = useValuationToolbarFullscreen()
+  const { activeTab, handleTabChange: handleHookTabChange } = useValuationToolbarTabs({
+    initialTab: 'preview',
+  })
+
   // UI State
-  const [isFullScreen, setIsFullScreen] = useState(false)
   const [isMobile, setIsMobile] = useState(false)
   const [mobileActivePanel, setMobileActivePanel] = useState<'chat' | 'preview'>('chat')
   const [showPreConversationSummary, setShowPreConversationSummary] = useState(false)
-  const [activeTab, setActiveTab] = useState<'preview' | 'source' | 'info'>('preview')
 
   // Panel resize state
   const [leftPanelWidth, setLeftPanelWidth] = useState(() => {
@@ -110,6 +160,16 @@ const ConversationalLayoutInner: React.FC<ConversationalLayoutProps> = ({
     }
   }, [state.valuationResult, setResult])
 
+  // Sync restored messages to conversation context
+  useEffect(() => {
+    if (restoration.state.messages.length > 0 && state.messages.length === 0) {
+      actions.setMessages(restoration.state.messages)
+    }
+    if (restoration.state.pythonSessionId && !state.pythonSessionId) {
+      actions.setPythonSessionId(restoration.state.pythonSessionId)
+    }
+  }, [restoration.state.messages, restoration.state.pythonSessionId, state.messages.length, state.pythonSessionId, actions])
+
   // Handle panel resize
   const handleResize = useCallback((newWidth: number) => {
     const constrainedWidth = Math.max(
@@ -123,38 +183,37 @@ const ConversationalLayoutInner: React.FC<ConversationalLayoutProps> = ({
     }
   }, [])
 
-  // Toolbar handlers
+  // Toolbar handlers - using hooks
   const handleRefresh = useCallback(() => {
+    // Reset restoration state and start new conversation
+    restoration.reset()
+    actions.setMessages([])
+    actions.setValuationResult(null)
+    actions.setGenerating(false)
+    actions.setError(null)
+    actions.setRestored(false)
+    actions.setInitialized(false)
+    
+    // Generate new report ID and navigate
     const newReportId = generateReportId()
     window.location.href = UrlGeneratorService.reportById(newReportId)
-  }, [])
+    handleHookRefresh()
+  }, [restoration, actions, handleHookRefresh])
 
   const handleDownload = useCallback(async () => {
     // Read from results store (same as manual flow)
     const currentResult = result || useValuationResultsStore.getState().result
     if (currentResult && currentResult.html_report) {
-      try {
-        const { DownloadService } = await import('../../../services/downloadService')
-        const valuationData = {
-          companyName: state.businessProfile?.company_name || currentResult.company_name || 'Company',
-          valuationAmount: currentResult.equity_value_mid,
-          valuationDate: new Date(),
-          method: currentResult.methodology || 'DCF Analysis',
-          confidenceScore: currentResult.confidence_score,
-          htmlContent: currentResult.html_report || '',
-        }
-        await DownloadService.downloadPDF(valuationData, {
-          format: 'pdf',
-          filename: DownloadService.getDefaultFilename(
-            state.businessProfile?.company_name || currentResult.company_name,
-            'pdf'
-          ),
-        })
-      } catch (error) {
-        chatLogger.error('PDF download failed', { error, reportId })
-      }
+      await handleHookDownload({
+        companyName: state.businessProfile?.company_name || currentResult.company_name || 'Company',
+        valuationAmount: currentResult.equity_value_mid,
+        valuationDate: new Date(),
+        method: currentResult.methodology || 'DCF Analysis',
+        confidenceScore: currentResult.confidence_score,
+        htmlContent: currentResult.html_report || '',
+      })
     }
-  }, [result, state.businessProfile, reportId])
+  }, [result, state.businessProfile, handleHookDownload])
 
   // Handle Python session ID updates from conversation
   const handlePythonSessionIdReceived = useCallback(
@@ -211,13 +270,13 @@ const ConversationalLayoutInner: React.FC<ConversationalLayoutProps> = ({
         <ValuationToolbar
           onRefresh={handleRefresh}
           onDownload={handleDownload}
-          onFullScreen={() => setIsFullScreen(true)}
-          isGenerating={isGeneratingState}
+          onFullScreen={handleHookOpenFullscreen}
+          isGenerating={isGeneratingState || isDownloading}
           user={user}
           valuationName="Valuation"
           valuationId={result?.valuation_id || state.valuationResult?.valuation_id}
           activeTab={activeTab}
-          onTabChange={setActiveTab}
+          onTabChange={handleHookTabChange}
           companyName={state.businessProfile?.company_name || result?.company_name}
         />
 
@@ -258,11 +317,15 @@ const ConversationalLayoutInner: React.FC<ConversationalLayoutProps> = ({
               <ConversationPanel
                 sessionId={state.sessionId || reportId}
                 userId={user?.id}
-                restoredMessages={state.messages.filter((m) => m.isComplete)}
-                isRestoring={false}
-                isRestorationComplete={state.isRestored}
-                isSessionInitialized={state.isInitialized}
-                pythonSessionId={state.pythonSessionId}
+                restoredMessages={
+                  restoration.state.messages.length > 0
+                    ? restoration.state.messages.filter((m: import('../../../types/message').Message) => m.isComplete)
+                    : state.messages.filter((m: import('../../../types/message').Message) => m.isComplete)
+                }
+                isRestoring={restoration.state.isRestoring}
+                isRestorationComplete={restoration.state.isRestored && state.isRestored}
+                isSessionInitialized={restoration.state.isRestored && state.isInitialized}
+                pythonSessionId={restoration.state.pythonSessionId || state.pythonSessionId}
                 onPythonSessionIdReceived={handlePythonSessionIdReceived}
                 onValuationComplete={handleValuationComplete}
                 onValuationStart={() => actions.setGenerating(true)}
@@ -306,7 +369,7 @@ const ConversationalLayoutInner: React.FC<ConversationalLayoutProps> = ({
             } h-full min-h-[400px] lg:min-h-0 w-full lg:w-auto border-t lg:border-t-0 border-zinc-800`}
             style={{ width: isMobile ? '100%' : `${100 - leftPanelWidth}%` }}
           >
-            <ReportPanel activeTab={activeTab} onTabChange={setActiveTab} />
+            <ReportPanel activeTab={activeTab} onTabChange={handleHookTabChange} />
           </div>
         </div>
 
@@ -339,10 +402,10 @@ const ConversationalLayoutInner: React.FC<ConversationalLayoutProps> = ({
         {/* Full Screen Modal */}
         <FullScreenModal
           isOpen={isFullScreen}
-          onClose={() => setIsFullScreen(false)}
+          onClose={handleHookCloseFullscreen}
           title="Valuation - Full Screen"
         >
-          <ReportPanel className="h-full" activeTab={activeTab} onTabChange={setActiveTab} />
+          <ReportPanel className="h-full" activeTab={activeTab} onTabChange={handleHookTabChange} />
         </FullScreenModal>
       </div>
     </CreditGuard>

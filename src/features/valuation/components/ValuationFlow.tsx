@@ -12,7 +12,14 @@
 
 import React, { lazy, Suspense, useCallback } from 'react'
 import { DataResponse } from '../../../components/data-collection'
+import { FullScreenModal } from '../../../components/FullScreenModal'
 import { useAuth } from '../../../hooks/useAuth'
+import {
+  useValuationToolbarDownload,
+  useValuationToolbarFullscreen,
+  useValuationToolbarRefresh,
+  useValuationToolbarTabs,
+} from '../../../hooks/valuationToolbar'
 import { useValuationApiStore } from '../../../store/useValuationApiStore'
 import { useValuationFormStore } from '../../../store/useValuationFormStore'
 import { useValuationResultsStore } from '../../../store/useValuationResultsStore'
@@ -104,6 +111,15 @@ const ManualFlow: React.FC<ManualFlowProps> = ({ reportId, onComplete }) => {
   const { setCollectedData } = useValuationFormStore()
   const { user } = useAuth()
 
+  // Toolbar hooks
+  const { handleRefresh } = useValuationToolbarRefresh()
+  const { handleDownload, isDownloading } = useValuationToolbarDownload()
+  const { isFullScreen, handleOpenFullscreen, handleCloseFullscreen } =
+    useValuationToolbarFullscreen()
+  const { activeTab, handleTabChange } = useValuationToolbarTabs({
+    initialTab: 'preview',
+  })
+
   // Handle data collection
   const handleDataCollected = useCallback(
     (responses: DataResponse[]) => {
@@ -139,6 +155,20 @@ const ManualFlow: React.FC<ManualFlowProps> = ({ reportId, onComplete }) => {
     []
   )
 
+  // Handle download with valuation data
+  const handleDownloadClick = useCallback(async () => {
+    if (result) {
+      await handleDownload({
+        companyName: result.company_name || 'Company',
+        valuationAmount: result.equity_value_mid,
+        valuationDate: new Date(),
+        method: 'DCF Analysis',
+        confidenceScore: result.confidence_score,
+        htmlContent: result.html_report,
+      })
+    }
+  }, [result, handleDownload])
+
   return (
     <div className="h-full flex flex-col">
       {/* Data Collection Section */}
@@ -155,43 +185,31 @@ const ManualFlow: React.FC<ManualFlowProps> = ({ reportId, onComplete }) => {
 
       {/* Toolbar */}
       <Suspense fallback={<ComponentLoader message="Loading toolbar..." />}>
-      <ValuationToolbar
-        onRefresh={() => window.location.reload()}
-        onDownload={async () => {
-          if (result) {
-            try {
-              // Lazy load heavy PDF library only when needed
-              const { DownloadService } = await import('../../../services/downloadService')
-              const valuationData = {
-                companyName: result.company_name || 'Company',
-                valuationAmount: result.equity_value_mid,
-                valuationDate: new Date(),
-                method: 'DCF Analysis',
-                confidenceScore: result.confidence_score,
-                htmlContent: result.html_report,
-              }
-              await DownloadService.downloadPDF(valuationData, {
-                format: 'pdf',
-                filename: `valuation-${Date.now()}.pdf`,
-              })
-            } catch (error) {
-              generalLogger.error('PDF download failed', { error, reportId })
-            }
-          }
-        }}
-        onFullScreen={() => {
-          /* TODO: Implement full screen */
-        }}
-        isGenerating={isCalculating}
-        user={user}
-        valuationName="Manual Valuation"
-        valuationId={result?.valuation_id}
-        activeTab="preview"
-        onTabChange={() => {
-          /* Single tab for now */
-        }}
-      />
+        <ValuationToolbar
+          onRefresh={handleRefresh}
+          onDownload={handleDownloadClick}
+          onFullScreen={handleOpenFullscreen}
+          isGenerating={isCalculating || isDownloading}
+          user={user}
+          valuationName="Manual Valuation"
+          valuationId={result?.valuation_id}
+          activeTab={activeTab}
+          onTabChange={handleTabChange}
+        />
       </Suspense>
+
+      {/* Fullscreen Modal */}
+      {isFullScreen && result && (
+        <FullScreenModal
+          isOpen={isFullScreen}
+          onClose={handleCloseFullscreen}
+          title="Valuation Report - Full Screen"
+        >
+          <div className="p-4">
+            <div dangerouslySetInnerHTML={{ __html: result.html_report || '' }} />
+          </div>
+        </FullScreenModal>
+      )}
 
       {/* Results Display */}
       {result && (
