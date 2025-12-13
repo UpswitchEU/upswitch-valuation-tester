@@ -13,6 +13,7 @@ import { CustomDropdown, CustomNumberInputField } from '../index';
 interface OwnershipStructureSectionProps {
   formData: any;
   updateFormData: (data: Partial<any>) => void;
+  employeeCountError?: string | null;
 }
 
 /**
@@ -23,8 +24,12 @@ interface OwnershipStructureSectionProps {
 export const OwnershipStructureSection: React.FC<OwnershipStructureSectionProps> = ({
   formData,
   updateFormData,
+  employeeCountError: parentEmployeeCountError,
 }) => {
-  const [employeeCountError, setEmployeeCountError] = useState<string | null>(null);
+  const [localEmployeeCountError, setLocalEmployeeCountError] = useState<string | null>(null);
+
+  // Prioritize parent error (from form submission) over local error (from user input)
+  const employeeCountError = parentEmployeeCountError || localEmployeeCountError;
 
   return (
     <div className="space-y-6">

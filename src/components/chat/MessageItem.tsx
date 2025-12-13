@@ -10,7 +10,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { Bot, CheckCircle, Loader2 } from 'lucide-react';
-import { Message } from '../../hooks/useStreamingChatState';
+import type { Message } from '../../types/message';
 import { debugLogger } from '../../utils/debugLogger';
 import { AI_CONFIG } from '../../config';
 import { hasBusinessTypeSuggestions, parseBusinessTypeSuggestions } from '../utils/businessTypeParsing';
@@ -56,13 +56,27 @@ export const MessageItem = React.memo<MessageItemProps>(({
   isTyping = false,
   isThinking = false
 }) => {
+  // Safe metadata access helpers
+  const getMetadataValue = <T,>(key: string, defaultValue?: T): T | undefined => {
+    const metadata = message.metadata as Record<string, unknown> | undefined;
+    return metadata?.[key] as T ?? defaultValue;
+  };
+
+  const getMetadataString = (key: string, defaultValue = ''): string => {
+    return getMetadataValue<string>(key, defaultValue);
+  };
+
+  const getMetadataNumber = (key: string, defaultValue?: number): number | undefined => {
+    return getMetadataValue<number>(key, defaultValue);
+  };
+
   // Check if this is an AI help message
-  const isAIHelp = message.metadata?.is_ai_help === true;
-  const aiResponse = message.metadata?.ai_response;
+  const isAIHelp = getMetadataValue<boolean>('is_ai_help') === true;
+  const aiResponse = getMetadataValue<Record<string, unknown>>('ai_response');
   
   // Check if this is a Valuation Ready CTA
-  const isValuationReadyCTA = message.metadata?.input_type === 'cta_button';
-  const buttonText = message.metadata?.button_text || 'Create Valuation Report';
+  const isValuationReadyCTA = getMetadataString('input_type') === 'cta_button';
+  const buttonText = getMetadataString('button_text', 'Create Valuation Report');
   
   // Strip any stray inline typing indicators that may be present in message content
   const displayContent = React.useMemo(() => {
@@ -73,47 +87,44 @@ export const MessageItem = React.memo<MessageItemProps>(({
   // Detect business type suggestions in the message
   const businessTypeSuggestions = React.useMemo(() => {
     // First check metadata clarification_message (if available)
-    if (message.metadata?.clarification_message) {
-      const clarificationMsg = message.metadata.clarification_message;
-      if (hasBusinessTypeSuggestions(clarificationMsg)) {
-        return parseBusinessTypeSuggestions(clarificationMsg);
-      }
+    const clarificationMsg = getMetadataString('clarification_message');
+    if (clarificationMsg && hasBusinessTypeSuggestions(clarificationMsg)) {
+      return parseBusinessTypeSuggestions(clarificationMsg);
     }
     // Check message content directly (primary source)
     if (hasBusinessTypeSuggestions(message.content)) {
       return parseBusinessTypeSuggestions(message.content);
     }
     return null;
-  }, [message.content, message.metadata?.clarification_message]);
+  }, [message.content, message.metadata]);
   
   const hasBusinessTypeSuggestionsInMessage = businessTypeSuggestions !== null && businessTypeSuggestions.length > 0;
   
   // Detect KBO suggestions in the message
   const kboSuggestions = React.useMemo(() => {
     // First check metadata clarification_message (if available)
-    if (message.metadata?.clarification_message) {
-      const clarificationMsg = message.metadata.clarification_message;
-      if (hasKBOSuggestions(clarificationMsg)) {
-        return parseKBOSuggestions(clarificationMsg);
-      }
+    const clarificationMsg = getMetadataString('clarification_message');
+    if (clarificationMsg && hasKBOSuggestions(clarificationMsg)) {
+      return parseKBOSuggestions(clarificationMsg);
     }
     // Check message content directly (primary source)
     if (hasKBOSuggestions(message.content)) {
       return parseKBOSuggestions(message.content);
     }
     return null;
-  }, [message.content, message.metadata?.clarification_message]);
+  }, [message.content, message.metadata]);
   
   const hasKBOSuggestionsInMessage = kboSuggestions !== null && kboSuggestions.length > 0;
   
   // Render AI Help Card if this is an AI help response
   if (isAIHelp && aiResponse) {
+    const aiResponseData = aiResponse as Record<string, unknown>;
     return (
       <AIHelpCard
-        answer={aiResponse.answer || message.content}
-        reasoning={aiResponse.reasoning}
-        example={aiResponse.example}
-        nudge={aiResponse.nudge || ''}
+        answer={getMetadataString('answer', aiResponseData.answer as string) || message.content}
+        reasoning={getMetadataString('reasoning', aiResponseData.reasoning as string)}
+        example={getMetadataString('example', aiResponseData.example as string)}
+        nudge={getMetadataString('nudge', aiResponseData.nudge as string) || ''}
         timestamp={message.timestamp}
       />
     );
@@ -140,12 +151,11 @@ export const MessageItem = React.memo<MessageItemProps>(({
   }
 
   // Check if this is a business type confirmation
-  const isBusinessTypeConfirmation = message.metadata?.is_business_type_confirmation === true;
+  const isBusinessTypeConfirmation = getMetadataValue<boolean>('is_business_type_confirmation') === true;
 
   if (isBusinessTypeConfirmation) {
-    // Defensive: Extract metadata with fallbacks (in case metadata structure differs)
-    const metadata = message.metadata || {};
-    const industry = metadata.industry_mapping || metadata.industry || undefined;
+    // Safe access to metadata properties
+    const industry = getMetadataString('industry_mapping') || getMetadataString('industry') || undefined;
     
     return (
       <BusinessTypeConfirmationCard

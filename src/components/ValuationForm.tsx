@@ -272,6 +272,7 @@ export const ValuationForm: React.FC = () => {
       <OwnershipStructureSection
         formData={formData}
         updateFormData={updateFormData}
+        employeeCountError={employeeCountError}
       />
 
       {/* Financial Data Section */}

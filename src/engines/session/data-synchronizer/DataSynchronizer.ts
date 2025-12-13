@@ -424,8 +424,9 @@ export class DataSynchronizerImpl implements DataSynchronizer {
 
     return {
       company_name: partialData.company_name || '',
-      business_type: partialData.business_type || '',
       country_code: partialData.country_code || 'BE',
+      industry: 'Unknown', // TODO: Map from business_type or add to form
+      business_model: 'Unknown', // TODO: Map from business_type or add to form
       founding_year: partialData.founding_year || undefined,
       revenue: partialData.revenue || undefined,
       current_year_data: {
@@ -516,8 +517,9 @@ export class DataSynchronizerImpl implements DataSynchronizer {
 
     return {
       company_name: partialData.company_name || '',
-      business_type: partialData.business_type || '',
       country_code: partialData.country_code || 'BE',
+      industry: 'Unknown', // TODO: Map from business_type or add to form
+      business_model: 'Unknown', // TODO: Map from business_type or add to form
       founding_year: partialData.founding_year || undefined,
       revenue: partialData.revenue || undefined,
       current_year_data: partialData.current_year_data || {},

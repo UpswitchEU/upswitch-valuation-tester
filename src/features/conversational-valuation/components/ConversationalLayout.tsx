@@ -171,11 +171,11 @@ export const ConversationalLayout: React.FC<ConversationalLayoutProps> = React.m
       onCloseModal={() => actions.setShowOutOfCreditsModal(false)}
       onSignUp={() => {
         actions.setShowOutOfCreditsModal(false);
-        console.log('Sign up clicked');
+        chatLogger.info('User clicked sign up from out of credits modal');
       }}
       onTryManual={() => {
         actions.setShowOutOfCreditsModal(false);
-        console.log('Try manual flow clicked');
+        chatLogger.info('User clicked try manual flow from out of credits modal');
       }}
     >
       <div className="flex flex-col h-full overflow-hidden">
@@ -240,7 +240,7 @@ export const ConversationalLayout: React.FC<ConversationalLayoutProps> = React.m
                   // Handle data collection - sync to session
                   if (data.field && data.value !== undefined) {
                     // This would sync to session store
-                    console.log('Data collected:', data);
+                    chatLogger.debug('Data collected from conversational flow', { field: data.field, value: data.value });
                   }
                 }}
                 initialMessage={initialQuery}

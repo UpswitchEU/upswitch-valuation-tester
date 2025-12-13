@@ -27,8 +27,8 @@ export const useBusinessTypeMatching = () => {
       bt.label.toLowerCase() === queryLower
     );
     if (exactMatch) {
-      generalLogger.info('Matched business type (exact)', { query, matched: exactMatch.label, value: exactMatch.value });
-      return exactMatch.value;
+      generalLogger.info('Matched business type (exact)', { query, matched: exactMatch.label, id: exactMatch.id });
+      return exactMatch.id;
     }
     
     // 2. Match on category
@@ -37,8 +37,8 @@ export const useBusinessTypeMatching = () => {
       queryLower.includes(bt.category.toLowerCase())
     );
     if (categoryMatch) {
-      generalLogger.info('Matched business type (category)', { query, matched: categoryMatch.label, value: categoryMatch.value });
-      return categoryMatch.value;
+      generalLogger.info('Matched business type (category)', { query, matched: categoryMatch.label, id: categoryMatch.id });
+      return categoryMatch.id;
     }
     
     // 3. Partial match on label (contains)
@@ -47,8 +47,8 @@ export const useBusinessTypeMatching = () => {
       queryLower.includes(bt.label.toLowerCase())
     );
     if (partialMatch) {
-      generalLogger.info('Matched business type (partial)', { query, matched: partialMatch.label, value: partialMatch.value });
-      return partialMatch.value;
+      generalLogger.info('Matched business type (partial)', { query, matched: partialMatch.label, id: partialMatch.id });
+      return partialMatch.id;
     }
     
     // 4. Common variations mapping
@@ -68,7 +68,7 @@ export const useBusinessTypeMatching = () => {
           bt.keywords?.some((k: string) => k.toLowerCase().includes(key))
         );
         if (variationMatch) {
-          generalLogger.info('Matched business type (variation)', { query, matched: variationMatch.label, value: variationMatch.value });
+          generalLogger.info('Matched business type (variation)', { query, matched: variationMatch.label, id: variationMatch.id });
           return variationMatch.id;
         }
       }

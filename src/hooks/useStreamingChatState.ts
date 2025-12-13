@@ -6,6 +6,7 @@
  */
 
 import { useCallback, useRef, useState } from 'react';
+import type { Message } from '../types/message';
 
 // CRITICAL FIX: Message window management constants
 // Limits message history to prevent unbounded growth and token limit issues
@@ -15,16 +16,7 @@ const KEEP_RECENT = 50; // Keep most recent N messages when pruning
 const KEEP_FIRST = 10; // Keep first N messages (initial context)
 
 // Re-export types for convenience
-export interface Message {
-  id: string;
-  type: 'user' | 'ai' | 'system' | 'suggestion';
-  role?: 'user' | 'assistant' | 'system';
-  content: string;
-  timestamp: Date;
-  isStreaming?: boolean;
-  isComplete?: boolean;
-  metadata?: any;
-}
+export type { Message } from '../types/message';
 
 export interface ConversationMetrics {
   session_id: string;

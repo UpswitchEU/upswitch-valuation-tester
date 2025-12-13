@@ -7,7 +7,7 @@
  * - Clean Architecture: Minimal component coordinating specialized modules
  *
  * BEFORE: 1,311-line god component with 10+ responsibilities
- * AFTER:  ~200-line orchestrator coordinating focused hooks
+ * AFTER:  ~150-line orchestrator coordinating focused hooks
  *
  * Responsibilities now handled by specialized hooks:
  * - useMessageManagement: Message operations and streaming updates
@@ -18,11 +18,11 @@
  * - useTypingAnimation: Smooth AI response animation
  */
 
-import React, { useCallback, useEffect, useRef } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useMessageManagement } from '../hooks/chat/useMessageManagement';
 import { useSmartSuggestions } from '../hooks/chat/useSmartSuggestions';
-import { useStreamSubmission } from '../hooks/chat/useStreamSubmission';
 import { useStreamingCoordinator } from '../hooks/chat/useStreamingCoordinator';
+import { useStreamSubmission } from '../hooks/chat/useStreamSubmission';
 import { useSuggestionHandlers } from '../hooks/chat/useSuggestionHandlers';
 import { useAuth } from '../hooks/useAuth';
 import { useConversationInitializer, type UserProfile } from '../hooks/useConversationInitializer';
@@ -31,13 +31,9 @@ import { useStreamingChatState } from '../hooks/useStreamingChatState';
 import { useTypingAnimation } from '../hooks/useTypingAnimation';
 import { chatLogger } from '../utils/logger';
 import { ChatInputForm, MessagesList } from './chat';
+import type { StreamingChatProps } from './StreamingChat.types';
 
-// Re-export types for backward compatibility
-export type {
-    CalculateOptionData, CollectedData, StreamingChatProps, ValuationPreviewData
-} from './StreamingChat.types';
-
-export const StreamingChat: React.FC<import('./StreamingChat.types').StreamingChatProps> = ({
+export const StreamingChat: React.FC<StreamingChatProps> = ({
   sessionId,
   userId,
   onMessageComplete,
@@ -65,12 +61,12 @@ export const StreamingChat: React.FC<import('./StreamingChat.types').StreamingCh
   isSessionInitialized = false,
   pythonSessionId: pythonSessionIdProp,
   isRestorationComplete = false,
-}) => {
+}: StreamingChatProps) => {
   // Get user data from AuthContext
   const { user } = useAuth();
 
   // Track Python-generated session ID separately from client session ID
-  const [internalPythonSessionId, setInternalPythonSessionId] = React.useState<string | null>(null);
+  const [internalPythonSessionId, setInternalPythonSessionId] = useState<string | null>(null);
   const pythonSessionId = pythonSessionIdProp ?? internalPythonSessionId;
 
   const setPythonSessionId = useCallback((id: string | null) => {
@@ -147,6 +143,9 @@ export const StreamingChat: React.FC<import('./StreamingChat.types').StreamingCh
     setInput: state.setInput,
     handleSubmit: submitStream,
   });
+
+  // Initialize services (must be before hooks that use them)
+  const inputValidator = useMemo(() => new (require('../utils/validation/InputValidator').InputValidator)(), []);
 
   // CRITICAL: Restore messages from backend on mount
   const lastRestoredMessagesRef = useRef<string>('');

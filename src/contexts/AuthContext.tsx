@@ -318,7 +318,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           email: userData.email,
           name: userData.name 
         });
-        console.log('🔵 [AuthContext] User state set:', userData);
         authLogger.info('Authentication successful via token exchange', { email: userData.email });
         authLogger.debug('Token exchange - user data', {
           id: userData.id,

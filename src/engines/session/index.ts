@@ -7,18 +7,25 @@
  * @module engines/session
  */
 
+import { useDataSynchronizer } from './data-synchronizer/DataSynchronizer';
+import { usePersistenceManager } from './persistence-manager/PersistenceManager';
+import { useSessionManager } from './session-manager/SessionManager';
+import { useStateManager } from './state-manager/StateManager';
+import { useViewSwitcher } from './view-switcher/ViewSwitcher';
+
 // ============================================================================
 // SESSION LIFECYCLE MANAGEMENT
 // ============================================================================
 
 export {
-    SessionManager,
     SessionManagerImpl,
-    useSessionManager,
-    type SessionConfig,
-    type SessionInitializationOptions,
-    type SessionSummary,
-    type UseSessionManagerResult
+    useSessionManager
+} from './session-manager/SessionManager';
+
+export type {
+    SessionConfig,
+    SessionInitializationOptions, SessionManager, SessionSummary,
+    UseSessionManagerResult
 } from './session-manager/SessionManager';
 
 // ============================================================================
@@ -26,10 +33,14 @@ export {
 // ============================================================================
 
 export {
-    DataSynchronizer,
     DataSynchronizerImpl,
-    useDataSynchronizer, type SyncConflict, type SyncOperation,
-    type SyncResult, type SynchronizationConfig, type UseDataSynchronizerResult
+    useDataSynchronizer
+} from './data-synchronizer/DataSynchronizer';
+
+export type {
+    DataSynchronizer,
+    SyncConflict, SynchronizationConfig, SyncOperation,
+    SyncResult, UseDataSynchronizerResult
 } from './data-synchronizer/DataSynchronizer';
 
 // ============================================================================
@@ -37,11 +48,12 @@ export {
 // ============================================================================
 
 export {
-    ViewSwitcher,
-    ViewSwitcherImpl,
-    useViewSwitcher, type UseViewSwitcherResult, type ViewSwitchConfig, type ViewSwitchConfirmation,
-    type ViewSwitchEvent, type ViewSwitchOptions,
-    type ViewSwitchResult
+    useViewSwitcher, ViewSwitcherImpl
+} from './view-switcher/ViewSwitcher';
+
+export type {
+    UseViewSwitcherResult, ViewSwitchConfig, ViewSwitchConfirmation, ViewSwitcher, ViewSwitchEvent, ViewSwitchOptions,
+    ViewSwitchResult
 } from './view-switcher/ViewSwitcher';
 
 // ============================================================================
@@ -49,10 +61,13 @@ export {
 // ============================================================================
 
 export {
-    PersistenceManager,
     PersistenceManagerImpl,
-    usePersistenceManager, type CacheEntry, type PersistenceConfig, type PersistenceHealthStatus, type PersistenceResult, type PersistenceStats,
-    type UsePersistenceManagerResult
+    usePersistenceManager
+} from './persistence-manager/PersistenceManager';
+
+export type {
+    CacheEntry, PersistenceConfig, PersistenceHealthStatus, PersistenceManager, PersistenceResult, PersistenceStats,
+    UsePersistenceManagerResult
 } from './persistence-manager/PersistenceManager';
 
 // ============================================================================
@@ -60,10 +75,13 @@ export {
 // ============================================================================
 
 export {
-    StateManager,
     StateManagerImpl,
-    useStateManager,
-    type StateManagerConfig, type StateSnapshot, type StateUpdate, type StateValidationResult, type ThrottledUpdate, type UseStateManagerResult
+    useStateManager
+} from './state-manager/StateManager';
+
+export type {
+    StateManager,
+    StateManagerConfig, StateSnapshot, StateUpdate, StateValidationResult, ThrottledUpdate, UseStateManagerResult
 } from './state-manager/StateManager';
 
 // ============================================================================
@@ -101,24 +119,5 @@ export function createSessionEngine(config: {
 }
 
 // ============================================================================
-// TYPE EXPORTS
+// TYPE EXPORTS - Handled by individual module exports above
 // ============================================================================
-
-export type {
-    CacheEntry,
-    // Data synchronization
-    DataSynchronizer, PersistenceConfig, PersistenceHealthStatus,
-    // Persistence
-    PersistenceManager, PersistenceResult, PersistenceStats, SessionConfig,
-    SessionInitializationOptions,
-    // Session management
-    SessionManager, SessionSummary,
-    // State management
-    StateManager,
-    StateManagerConfig, StateSnapshot, StateUpdate, StateValidationResult, SyncConflict, SyncOperation,
-    SyncResult, SynchronizationConfig, ThrottledUpdate, ViewSwitchConfig, ViewSwitchConfirmation,
-    ViewSwitchEvent, ViewSwitchOptions,
-    ViewSwitchResult,
-    // View switching
-    ViewSwitcher
-};

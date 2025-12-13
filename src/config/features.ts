@@ -1,8 +1,10 @@
 /**
  * Feature Flags Configuration for Valuation Tester
- * 
+ *
  * Centralized feature flag management for the valuation tester frontend
  */
+
+import { generalLogger } from '../utils/logger';
 
 export const FEATURE_FLAGS = {
   // Credit System Flags
@@ -66,9 +68,9 @@ export const validateFeatureFlags = () => {
 
 // Log feature flags on startup (development only)
 if (import.meta.env.DEV) {
-  console.log('🔧 Valuation Tester Feature Flags:', FEATURE_FLAGS);
+  generalLogger.info('Valuation Tester Feature Flags loaded', FEATURE_FLAGS);
   const warnings = validateFeatureFlags();
   if (warnings.length > 0) {
-    console.warn('⚠️ Feature Flag Warnings:', warnings);
+    generalLogger.warn('Feature Flag validation warnings', { warnings });
   }
 }

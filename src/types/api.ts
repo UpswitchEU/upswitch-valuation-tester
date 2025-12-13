@@ -12,7 +12,7 @@ import type { ValuationRequest, ValuationResponse, ValuationSession } from './va
 /**
  * Base API response wrapper
  */
-export interface APIResponse<T = any> {
+export interface APIResponse<T = unknown> {
   success: boolean;
   data?: T;
   error?: string;

@@ -36,8 +36,7 @@ export {
 } from './data-manager/FormDataManager';
 
 export type {
-    FormDataManager,
-    FormData, FormField,
+    FormData, FormDataManager, FormField,
     UseFormDataManagerResult, ValidationResult
 } from './data-manager/FormDataManager';
 
@@ -58,8 +57,7 @@ export {
 } from './orchestrator/ValuationOrchestrator';
 
 export type {
-    ValuationOrchestrator,
-    OrchestratorConfig, UseValuationOrchestratorResult, ValuationState
+    OrchestratorConfig, UseValuationOrchestratorResult, ValuationOrchestrator, ValuationState
 } from './orchestrator/ValuationOrchestrator';
 
 // ============================================================================
