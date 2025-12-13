@@ -11,8 +11,7 @@
  */
 
 import React, { lazy, Suspense, useCallback } from 'react'
-import { DataCollection, DataResponse } from '../../../components/data-collection'
-import { ValuationToolbar } from '../../../components/ValuationToolbar'
+import { DataResponse } from '../../../components/data-collection'
 import { useAuth } from '../../../hooks/useAuth'
 import { useValuationStore } from '../../../store/useValuationStore'
 import type { ValuationResponse } from '../../../types/valuation'
@@ -21,13 +20,26 @@ import { generalLogger } from '../../../utils/logger'
 // Flow types
 export type ValuationFlowType = 'manual' | 'conversational'
 
-// Lazy load components
+// Lazy load heavy components for better code splitting
 const Results = lazy(() =>
   import('../../../components/Results').then((m) => ({ default: m.Results }))
 )
+
 const ConversationalLayout = lazy(() =>
   import('../../conversational-valuation/components/ConversationalLayout').then((m) => ({
     default: m.ConversationalLayout,
+  }))
+)
+
+const ValuationToolbar = lazy(() =>
+  import('../../../components/ValuationToolbar').then((m) => ({
+    default: m.ValuationToolbar,
+  }))
+)
+
+const DataCollection = lazy(() =>
+  import('../../../components/data-collection').then((m) => ({
+    default: m.DataCollection,
   }))
 )
 
@@ -129,20 +141,24 @@ const ManualFlow: React.FC<ManualFlowProps> = ({ reportId, onComplete }) => {
     <div className="h-full flex flex-col">
       {/* Data Collection Section */}
       <div className="flex-1 overflow-y-auto p-4">
-        <DataCollection
-          method="manual_form"
-          onDataCollected={handleDataCollected}
-          onProgressUpdate={handleProgressUpdate}
-          onComplete={handleCollectionComplete}
-        />
+        <Suspense fallback={<ComponentLoader message="Loading data collection..." />}>
+          <DataCollection
+            method="manual_form"
+            onDataCollected={handleDataCollected}
+            onProgressUpdate={handleProgressUpdate}
+            onComplete={handleCollectionComplete}
+          />
+        </Suspense>
       </div>
 
       {/* Toolbar */}
-      <ValuationToolbar
-        onRefresh={() => window.location.reload()}
+      <Suspense fallback={<ComponentLoader message="Loading toolbar..." />}>
+        <ValuationToolbar
+          onRefresh={() => window.location.reload()}
         onDownload={async () => {
           if (result) {
             try {
+              // Lazy load heavy PDF library only when needed
               const { DownloadService } = await import('../../../services/downloadService')
               await DownloadService.downloadPDF(result, {
                 format: 'pdf',
@@ -153,18 +169,19 @@ const ManualFlow: React.FC<ManualFlowProps> = ({ reportId, onComplete }) => {
             }
           }
         }}
-        onFullScreen={() => {
-          /* TODO: Implement full screen */
-        }}
-        isGenerating={isCalculating}
-        user={user}
-        valuationName="Manual Valuation"
-        valuationId={result?.valuation_id}
-        activeTab="preview"
-        onTabChange={() => {
-          /* Single tab for now */
-        }}
-      />
+          onFullScreen={() => {
+            /* TODO: Implement full screen */
+          }}
+          isGenerating={isCalculating}
+          user={user}
+          valuationName="Manual Valuation"
+          valuationId={result?.valuation_id}
+          activeTab="preview"
+          onTabChange={() => {
+            /* Single tab for now */
+          }}
+        />
+      </Suspense>
 
       {/* Results Display */}
       {result && (

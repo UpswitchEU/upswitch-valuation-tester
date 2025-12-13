@@ -7,7 +7,7 @@
  * Inspired by ChatGPT, Claude, and Perplexity's typing experiences.
  */
 
-import { useState, useRef, useCallback, useEffect } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 
 interface TypingAnimationOptions {
   baseSpeed?: number // Base ms per character (default: 50)
@@ -33,7 +33,7 @@ export const useTypingAnimation = (options?: TypingAnimationOptions) => {
         startAnimation()
       }
     },
-    [isTyping]
+    [isTyping, startAnimation]
   )
 
   // Calculate adaptive speed based on content

@@ -185,7 +185,7 @@ export function withRetry<T extends (...args: any[]) => Promise<any>>(
         } catch (error) {
           lastError = error instanceof Error ? error : new Error(String(error))
 
-          if (!retryOptions.shouldRetry!(lastError) || attempt >= retryOptions.maxRetries) {
+          if (!retryOptions.shouldRetry?.(lastError) || attempt >= retryOptions.maxRetries) {
             throw lastError
           }
 

@@ -8,11 +8,11 @@
  */
 
 import { useCallback } from 'react'
-import { StreamingManager } from '../../services/chat/StreamingManager'
 import { StreamEventHandler } from '../../services/chat/StreamEventHandler'
-import { InputValidator } from '../../utils/validation/InputValidator'
+import { StreamingManager } from '../../services/chat/StreamingManager'
 import { MessageManager } from '../../utils/chat/MessageManager'
 import { chatLogger, debugLogger } from '../../utils/logger'
+import { InputValidator } from '../../utils/validation/InputValidator'
 import { Message } from '../useStreamingChatState'
 
 export interface UseStreamSubmissionOptions {
@@ -281,7 +281,6 @@ export const useStreamSubmission = ({
       streamingManager,
       eventHandler,
       inputValidator,
-      messageManager,
       messagesRef,
       isRequestInProgressRef,
       setIsStreaming,

@@ -182,11 +182,12 @@ function parseExample(example: string, field: DataField): ParsedFieldValue {
       return isNaN(parsed) ? example : parsed
     }
 
-    case 'boolean':
+    case 'boolean': {
       const lowerExample = example.toLowerCase().trim()
       if (lowerExample === 'yes' || lowerExample === 'true' || lowerExample === '1') return true
       if (lowerExample === 'no' || lowerExample === 'false' || lowerExample === '0') return false
       return example // Return original if not a clear boolean
+    }
 
     default:
       return example

@@ -4,7 +4,7 @@
  * Hook for managing credit state and operations
  */
 
-import { useState, useEffect, useCallback } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 
 interface UserPlan {
   id: string

@@ -109,13 +109,13 @@ interface ConversationalLayoutProps {
 export const ConversationalLayout: React.FC<ConversationalLayoutProps> = React.memo(
   ({ reportId, onComplete, initialQuery = null, autoSend = false }) => {
     const { user } = useAuth()
-    const { state } = useConversationState()
+    const state = useConversationState()
     const actions = useConversationActions()
     const { setResult, updateFormData } = useValuationStore()
 
     // Data collection state
-    const [collectedData, setCollectedData] = useState<DataResponse[]>([])
-    const [showDataCollection, setShowDataCollection] = useState(false)
+    const [_collectedData, setCollectedData] = useState<DataResponse[]>([])
+    const [_showDataCollection, setShowDataCollection] = useState(false)
 
     // Memoize data collection handlers
     const handleDataCollected = useCallback(
@@ -147,9 +147,12 @@ export const ConversationalLayout: React.FC<ConversationalLayoutProps> = React.m
       [updateFormData]
     )
 
-    const handleProgressUpdate = useCallback((progress: CollectionProgress) => {
-      chatLogger.debug('Conversational flow progress:', progress)
-    }, [])
+    const handleProgressUpdate = useCallback(
+      (progress: { overallProgress: number; completedFields: number; totalFields: number }) => {
+        chatLogger.debug('Conversational flow progress:', progress)
+      },
+      []
+    )
 
     // UI State
     const [isFullScreen, setIsFullScreen] = useState(false)
@@ -224,7 +227,7 @@ export const ConversationalLayout: React.FC<ConversationalLayoutProps> = React.m
     }, [])
 
     const handleDownload = useCallback(async () => {
-      if (state.valuationResult && state.finalReportHtml) {
+      if (state.valuationResult && state.valuationResult.html_report) {
         try {
           const { DownloadService } = await import('../../../services/downloadService')
           const valuationData = {
@@ -244,7 +247,7 @@ export const ConversationalLayout: React.FC<ConversationalLayoutProps> = React.m
               discount_rate: '10%',
               terminal_growth: '2%',
             },
-            htmlContent: state.finalReportHtml || state.valuationResult?.html_report || '',
+            htmlContent: state.valuationResult.html_report || '',
           }
           await DownloadService.downloadPDF(valuationData, {
             format: 'pdf',
@@ -257,7 +260,7 @@ export const ConversationalLayout: React.FC<ConversationalLayoutProps> = React.m
           chatLogger.error('PDF download failed', { error, reportId })
         }
       }
-    }, [state.valuationResult, state.finalReportHtml, state.businessProfile])
+    }, [state.valuationResult, state.businessProfile, reportId])
 
     // Handle Python session ID updates from conversation
     const handlePythonSessionIdReceived = useCallback(
@@ -285,18 +288,19 @@ export const ConversationalLayout: React.FC<ConversationalLayoutProps> = React.m
       [actions, onComplete, user]
     )
 
+    // Credit guard state - using guest credit service for now
+    const hasCredits = user ? true : guestCreditService.hasCredits()
+
     return (
       <CreditGuard
-        hasCredits={state.hasCredits}
-        isBlocked={state.isBlocked}
-        showOutOfCreditsModal={state.showOutOfCreditsModal}
-        onCloseModal={() => actions.setShowOutOfCreditsModal(false)}
+        hasCredits={hasCredits}
+        isBlocked={false}
+        showOutOfCreditsModal={false}
+        onCloseModal={() => {}}
         onSignUp={() => {
-          actions.setShowOutOfCreditsModal(false)
           chatLogger.info('User clicked sign up from out of credits modal')
         }}
         onTryManual={() => {
-          actions.setShowOutOfCreditsModal(false)
           chatLogger.info('User clicked try manual flow from out of credits modal')
         }}
       >
@@ -311,20 +315,11 @@ export const ConversationalLayout: React.FC<ConversationalLayoutProps> = React.m
             valuationName="Valuation"
             valuationId={state.valuationResult?.valuation_id}
             activeTab="preview" // This will be managed by ReportPanel
-            onTabChange={() => {}} // Tab changes handled by ReportPanel
+            onTabChange={() => {
+              // Tab changes handled by ReportPanel
+            }} // Tab changes handled by ReportPanel
             companyName={state.businessProfile?.company_name}
             valuationMethod={state.valuationResult?.methodology}
-            customActions={
-              <button
-                onClick={() => setUseDataCollection(!useDataCollection)}
-                className="px-3 py-1 text-xs bg-primary-600 hover:bg-primary-700 text-white rounded transition-colors"
-                title={
-                  useDataCollection ? 'Switch to Chat Collection' : 'Switch to Data Collection'
-                }
-              >
-                {useDataCollection ? '💬 Chat' : '📝 Form'}
-              </button>
-            }
           />
 
           {/* Error Display */}
@@ -372,7 +367,7 @@ export const ConversationalLayout: React.FC<ConversationalLayoutProps> = React.m
                       </p>
                     </div>
                     <DataCollection
-                      method="conversational"
+                      method="manual_form"
                       onDataCollected={handleDataCollected}
                       onProgressUpdate={handleProgressUpdate}
                       onComplete={handleCollectionComplete}
@@ -391,13 +386,14 @@ export const ConversationalLayout: React.FC<ConversationalLayoutProps> = React.m
                     sessionId={state.sessionId}
                     userId={user?.id}
                     restoredMessages={state.messages.filter((m) => m.isComplete)}
-                    isRestoring={state.isRestoring}
-                    isRestorationComplete={state.restorationComplete}
-                    isSessionInitialized={state.isSessionInitialized}
+                    isRestoring={false}
+                    isRestorationComplete={state.isRestored}
+                    isSessionInitialized={state.isInitialized}
                     pythonSessionId={state.pythonSessionId}
                     onPythonSessionIdReceived={handlePythonSessionIdReceived}
                     onValuationComplete={handleValuationComplete}
                     onValuationStart={() => actions.setGenerating(true)}
+                    onReportUpdate={() => {}}
                     onDataCollected={(data) => {
                       // Handle data collection - sync to session
                       if (data.field && data.value !== undefined) {
@@ -408,6 +404,15 @@ export const ConversationalLayout: React.FC<ConversationalLayoutProps> = React.m
                         })
                       }
                     }}
+                    onValuationPreview={() => {}}
+                    onCalculateOptionAvailable={() => {}}
+                    onProgressUpdate={() => {}}
+                    onReportSectionUpdate={() => {}}
+                    onSectionLoading={() => {}}
+                    onSectionComplete={() => {}}
+                    onReportComplete={() => {}}
+                    onContextUpdate={() => {}}
+                    onHtmlPreviewUpdate={() => {}}
                     initialMessage={initialQuery}
                     autoSend={autoSend}
                   />

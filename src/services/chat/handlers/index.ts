@@ -8,5 +8,5 @@
 
 export { MessageHandlers } from './message'
 export { ReportHandlers } from './report'
-export { ValuationHandlers } from './valuation'
 export { UIHandlers } from './ui'
+export { ValuationHandlers } from './valuation'

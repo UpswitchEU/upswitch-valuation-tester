@@ -11,7 +11,7 @@
  * @version 2.0.0
  */
 
-import { useState, useEffect, useCallback } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { businessTypesApiService } from '../services/businessTypesApi'
 import { logger as generalLogger } from '../utils/loggers'
 

@@ -70,7 +70,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [error, setError] = useState<string | null>(null)
 
   // Helper to map business_type to industry category if industry is not set
-  const getIndustry = (user: User): string | undefined => {
+  const getIndustry = useCallback((user: User): string | undefined => {
     if (user.industry) return user.industry
 
     // Map common business types to industry categories
@@ -144,7 +144,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     const mapped = businessTypeToIndustry[user.business_type?.toLowerCase() || '']
     return mapped || 'services' // Default to services if no mapping found
-  }
+  }, [])
 
   // Compute business card data from user
   const businessCard = React.useMemo(() => {
@@ -178,20 +178,103 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     authLogger.debug('Business card computed', { card })
     return card
-  }, [user])
+  }, [user, getIndustry])
 
   /**
-   * Initialize authentication on mount
+   * Helper function to check if authentication cookie exists
    */
-  useEffect(() => {
-    initAuth()
+  const hasAuthCookie = (): boolean => {
+    return document.cookie
+      .split(';')
+      .some((cookie) => cookie.trim().startsWith('upswitch_session='))
+  }
+
+  /**
+   * Check for existing session
+   */
+  const checkSession = useCallback(async () => {
+    // Check if we have an auth cookie before making API call
+    if (!hasAuthCookie()) {
+      authLogger.info('No business card cookie found - continuing as guest user')
+      setUser(null)
+      return
+    }
+
+    try {
+      const response = await fetch(`${API_URL}/api/auth/me`, {
+        method: 'GET',
+        credentials: 'include', // Send cookies
+        // Don't throw on 404 - it's expected for guest users
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+
+        authLogger.debug('Session response', { data })
+        authLogger.debug('Session response structure', {
+          success: data.success,
+          hasData: !!data.data,
+          hasUser: !!data.user,
+          dataKeys: data.data ? Object.keys(data.data) : [],
+          userKeys: data.user ? Object.keys(data.user) : [],
+        })
+
+        if (data.success && data.data) {
+          // Check if user data is nested in data.data.user
+          const userData = data.data.user || data.data
+
+          authLogger.debug('User data fields (data.data)', {
+            id: userData.id,
+            email: userData.email,
+            company_name: userData.company_name,
+            business_type: userData.business_type,
+            industry: userData.industry,
+            founded_year: userData.founded_year,
+            employee_count_range: userData.employee_count_range,
+            country: userData.country,
+          })
+          authLogger.debug('Full user object (data.data)', { userData: data.data })
+          setUser(userData)
+          authLogger.info('Existing session found (data.data)', { userData })
+        } else if (data.success && data.user) {
+          // Alternative response format
+          authLogger.debug('User data fields (data.user)', {
+            id: data.user.id,
+            email: data.user.email,
+            company_name: data.user.company_name,
+            business_type: data.user.business_type,
+            industry: data.user.industry,
+            founded_year: data.user.founded_year,
+            employee_count_range: data.user.employee_count_range,
+            country: data.user.country,
+          })
+          setUser(data.user)
+          authLogger.info('Existing session found (data.user)', { userData: data.user })
+        } else {
+          authLogger.info('No existing session - response', { data })
+          setUser(null)
+        }
+      } else if (response.status === 404 || response.status === 401) {
+        // Expected: No session exists (guest user or not authenticated)
+        authLogger.info('No active session - continuing as guest user')
+        setUser(null)
+      } else {
+        authLogger.warn('Session check failed', { status: response.status })
+        setUser(null)
+      }
+    } catch (err) {
+      authLogger.error('Session check error', {
+        error: err instanceof Error ? err.message : 'Unknown error',
+      })
+      setUser(null)
+    }
   }, [])
 
   /**
    * Initialize authentication flow
    * Checks for token in URL or existing session
    */
-  const initAuth = async () => {
+  const initAuth = useCallback(async () => {
     setIsLoading(true)
     setError(null)
 
@@ -253,7 +336,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } finally {
       setIsLoading(false)
     }
-  }
+  }, [checkSession, user])
+
+  /**
+   * Initialize authentication on mount
+   */
+  useEffect(() => {
+    initAuth()
+  }, [initAuth])
 
   /**
    * Exchange subdomain token for session cookie
@@ -368,103 +458,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }
 
   /**
-   * Helper function to check if authentication cookie exists
-   */
-  const hasAuthCookie = (): boolean => {
-    return document.cookie
-      .split(';')
-      .some((cookie) => cookie.trim().startsWith('upswitch_session='))
-  }
-
-  /**
-   * Check for existing session
-   */
-  const checkSession = async () => {
-    // Check if we have an auth cookie before making API call
-    if (!hasAuthCookie()) {
-      authLogger.info('No business card cookie found - continuing as guest user')
-      setUser(null)
-      return
-    }
-
-    try {
-      const response = await fetch(`${API_URL}/api/auth/me`, {
-        method: 'GET',
-        credentials: 'include', // Send cookies
-        // Don't throw on 404 - it's expected for guest users
-      })
-
-      if (response.ok) {
-        const data = await response.json()
-
-        authLogger.debug('Session response', { data })
-        authLogger.debug('Session response structure', {
-          success: data.success,
-          hasData: !!data.data,
-          hasUser: !!data.user,
-          dataKeys: data.data ? Object.keys(data.data) : [],
-          userKeys: data.user ? Object.keys(data.user) : [],
-        })
-
-        if (data.success && data.data) {
-          // Check if user data is nested in data.data.user
-          const userData = data.data.user || data.data
-
-          authLogger.debug('User data fields (data.data)', {
-            id: userData.id,
-            email: userData.email,
-            company_name: userData.company_name,
-            business_type: userData.business_type,
-            industry: userData.industry,
-            founded_year: userData.founded_year,
-            employee_count_range: userData.employee_count_range,
-            country: userData.country,
-          })
-          authLogger.debug('Full user object (data.data)', { userData: data.data })
-          setUser(userData)
-          authLogger.info('Existing session found (data.data)', { userData })
-        } else if (data.success && data.user) {
-          // Alternative response format
-          authLogger.debug('User data fields (data.user)', {
-            id: data.user.id,
-            email: data.user.email,
-            company_name: data.user.company_name,
-            business_type: data.user.business_type,
-            industry: data.user.industry,
-            founded_year: data.user.founded_year,
-            employee_count_range: data.user.employee_count_range,
-            country: data.user.country,
-          })
-          setUser(data.user)
-          authLogger.info('Existing session found (data.user)', { userData: data.user })
-        } else {
-          authLogger.info('No existing session - response', { data })
-          setUser(null)
-        }
-      } else if (response.status === 404 || response.status === 401) {
-        // Expected: No session exists (guest user or not authenticated)
-        authLogger.info('No active session - continuing as guest user')
-        setUser(null)
-      } else {
-        authLogger.warn('Session check failed', { status: response.status })
-        setUser(null)
-      }
-    } catch (err) {
-      authLogger.error('Session check error', {
-        error: err instanceof Error ? err.message : 'Unknown error',
-      })
-      setUser(null)
-    }
-  }
-
-  /**
    * Refresh authentication state
    */
   const refreshAuth = useCallback(async () => {
     setIsLoading(true)
     await checkSession()
     setIsLoading(false)
-  }, [])
+  }, [checkSession])
 
   /**
    * Listen for authentication events from parent window

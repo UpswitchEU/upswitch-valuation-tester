@@ -6,24 +6,23 @@
  */
 
 import { useCallback, useEffect, useRef } from 'react'
+import type {
+  CalculateOptionData,
+  CollectedData,
+  ValuationPreviewData,
+} from '../../components/StreamingChat.types'
 import { StreamEventHandler } from '../../services/chat/StreamEventHandler'
 import {
   StreamingManager,
   type StreamingManagerCallbacks,
 } from '../../services/chat/StreamingManager'
+import type { ValuationResponse } from '../../types/valuation'
 import {
   extractBusinessModelFromInput,
   extractFoundingYearFromInput,
 } from '../../utils/businessExtractionUtils'
 import { chatLogger } from '../../utils/logger'
 import type { Message } from '../useStreamingChatState'
-
-import type {
-  CalculateOptionData,
-  CollectedData,
-  ValuationPreviewData,
-} from '../../components/StreamingChat.types'
-import type { ValuationResponse } from '../../types/valuation'
 
 export interface UseStreamingCoordinatorOptions {
   sessionId: string
@@ -33,11 +32,11 @@ export interface UseStreamingCoordinatorOptions {
   setIsStreaming: (streaming: boolean) => void
   setIsTyping: (typing: boolean) => void
   setIsThinking: (thinking: boolean) => void
-  setTypingContext: (context: string) => void
-  setCollectedData: (data: Record<string, unknown>) => void
+  setTypingContext: (context?: string) => void
+  setCollectedData: React.Dispatch<React.SetStateAction<Record<string, any>>>
   setValuationPreview: (preview: ValuationPreviewData) => void
   setCalculateOption: (option: CalculateOptionData) => void
-  updateStreamingMessage: (content: string, isComplete: boolean, metadata?: unknown) => void
+  updateStreamingMessage: (content: string, isComplete?: boolean, metadata?: unknown) => void
   onValuationComplete?: (result: ValuationResponse) => void
   onReportUpdate?: (htmlContent: string, progress: number) => void
   onDataCollected?: (data: CollectedData) => void
@@ -110,7 +109,7 @@ export function useStreamingCoordinator({
   // Refs for streaming state
   const streamingManagerRef = useRef<StreamingManager | null>(null)
   const eventHandlerRef = useRef<StreamEventHandler | null>(null)
-  const activeRequestRef = useRef<{ abort: () => void } | null>(null)
+  const _activeRequestRef = useRef<{ abort: () => void } | null>(null)
 
   // Initialize streaming manager
   useEffect(() => {
@@ -168,7 +167,6 @@ export function useStreamingCoordinator({
     }
   }, [
     sessionId,
-    userId,
     setMessages,
     setIsStreaming,
     setIsTyping,
@@ -221,7 +219,6 @@ export function useStreamingCoordinator({
           return { updatedMessages: [], newMessage: {} as Message }
         },
         updateStreamingMessage,
-        onContextUpdate,
         extractBusinessModelFromInput,
         extractFoundingYearFromInput,
         onStreamStart: () => {

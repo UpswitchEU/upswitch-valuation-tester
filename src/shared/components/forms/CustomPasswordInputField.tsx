@@ -4,8 +4,8 @@
  * Password input field with show/hide toggle functionality
  */
 
-import React, { useState } from 'react'
 import { Eye, EyeOff } from 'lucide-react'
+import React, { useState } from 'react'
 import CustomInputField from '../../../components/forms/CustomInputField'
 
 export interface CustomPasswordInputFieldProps {
@@ -29,8 +29,12 @@ const CustomPasswordInputField: React.FC<CustomPasswordInputFieldProps> = ({
   label = 'Password',
   placeholder = 'Enter password',
   value = '',
-  onChange = () => {},
-  onBlur = () => {},
+  onChange = () => {
+    // Default no-op handler
+  },
+  onBlur = () => {
+    // Default no-op handler
+  },
   name = 'password',
   className = '',
   error,

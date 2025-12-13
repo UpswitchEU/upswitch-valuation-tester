@@ -1,5 +1,5 @@
-import React, { useState } from 'react'
 import { User } from 'lucide-react'
+import React, { useState } from 'react'
 import { useAuth } from '../hooks/useAuth'
 
 interface UserAvatarProps {

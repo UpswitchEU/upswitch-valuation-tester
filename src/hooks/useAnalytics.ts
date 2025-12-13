@@ -5,15 +5,15 @@
  * and user journey monitoring on the tester subdomain.
  */
 
-import { useEffect, useCallback } from 'react'
+import { useCallback, useEffect } from 'react'
 import { useLocation } from 'react-router-dom'
 import {
-  trackEvent,
-  trackValuationJourney,
-  trackPerformance,
-  trackError,
-  ValuationEvents,
   analyticsConfig,
+  trackError,
+  trackEvent,
+  trackPerformance,
+  trackValuationJourney,
+  ValuationEvents,
 } from '../config/analytics'
 
 export const useAnalytics = () => {

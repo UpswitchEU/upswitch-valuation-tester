@@ -109,7 +109,7 @@ class DeviceFingerprintService {
       ctx.fillRect(0, 0, 100, 50)
 
       return canvas.toDataURL()
-    } catch (error) {
+    } catch (_error) {
       return ''
     }
   }
@@ -129,7 +129,7 @@ class DeviceFingerprintService {
         glContext.getParameter(glContext.RENDERER),
         glContext.getParameter(glContext.SHADING_LANGUAGE_VERSION),
       ].join('|')
-    } catch (error) {
+    } catch (_error) {
       return ''
     }
   }

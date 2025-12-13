@@ -122,20 +122,24 @@ export function useValuationOrchestrator({
   })
 
   // Session restoration hook connected to state manager
-  const { restoredMessages, isRestoring, isRestorationComplete, restorationError } =
-    useSessionRestoration({
-      pythonSessionId,
-      isRestoredSessionId,
-      session,
-      onMessagesRestored: (messages) => {
-        chatLogger.info('Restoration complete, notifying state manager', {
-          messageCount: messages.length,
-          reportId: _reportId,
-          sessionId: _sessionId,
-        })
-        conversationState.handleRestorationComplete(messages)
-      },
-    })
+  const {
+    restoredMessages,
+    isRestoring,
+    isRestorationComplete,
+    restorationError: _restorationError,
+  } = useSessionRestoration({
+    pythonSessionId,
+    isRestoredSessionId,
+    session,
+    onMessagesRestored: (messages) => {
+      chatLogger.info('Restoration complete, notifying state manager', {
+        messageCount: messages.length,
+        reportId: _reportId,
+        sessionId: _sessionId,
+      })
+      conversationState.handleRestorationComplete(messages)
+    },
+  })
 
   // Notify state manager when restoration completes
   useEffect(() => {

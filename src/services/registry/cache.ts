@@ -4,8 +4,8 @@
  * LRU cache with TTL for registry requests
  */
 
-import type { CachedData } from './types'
 import { serviceLogger } from '../../utils/logger'
+import type { CachedData } from './types'
 
 export class RegistryCache {
   private cache: Map<string, CachedData>

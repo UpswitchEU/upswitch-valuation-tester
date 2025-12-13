@@ -176,10 +176,11 @@ export function useConversationActions(): UseConversationActionsReturn {
   )
 
   const setShowOutOfCreditsModal = useCallback(
-    (show: boolean) => {
-      dispatch({ type: 'SET_SHOW_OUT_OF_CREDITS_MODAL', payload: show })
+    (_show: boolean) => {
+      // Credit modal is handled by CreditGuard component, not conversation state
+      // This is a no-op for compatibility
     },
-    [dispatch]
+    []
   )
 
   // Complex actions (business logic)

@@ -2,15 +2,19 @@
   "$schema": "https://biomejs.dev/schemas/2.3.8/schema.json",
   "files": {
     "includes": [
-      "**",
-      "!**/node_modules/",
-      "!**/dist/",
-      "!**/.next/",
-      "!**/build/",
-      "!**/coverage/",
+      "src/**",
+      "app/**",
+      "*.{js,ts,tsx,json}",
+      "!**/node_modules/**",
+      "!**/dist/**",
+      "!**/.next/**",
+      "!**/build/**",
+      "!**/coverage/**",
       "!**/*.min.js",
-      "!**/*.min.css"
-    ]
+      "!**/*.min.css",
+      "!**/.turbo/**"
+    ],
+    "ignoreUnknown": true
   },
   "formatter": {
     "enabled": true,
@@ -86,8 +90,7 @@
         "noWith": "error",
         "useGetterReturn": "error"
       }
-    },
-    "includes": ["**", "**/dist"]
+    }
   },
   "javascript": {
     "formatter": {

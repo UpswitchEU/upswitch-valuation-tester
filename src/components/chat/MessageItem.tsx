@@ -9,7 +9,7 @@
 
 import { motion } from 'framer-motion'
 import { Bot, CheckCircle, Loader2 } from 'lucide-react'
-import React from 'react'
+import React, { useCallback } from 'react'
 import { AI_CONFIG } from '../../config'
 import type { Message } from '../../types/message'
 import { debugLogger } from '../../utils/debugLogger'
@@ -20,11 +20,11 @@ import { CompanyNameConfirmationCard } from '../CompanyNameConfirmationCard'
 import { KBOSuggestionsList } from '../KBOSuggestionsList'
 import { SuggestionChips } from '../SuggestionChips'
 import {
-  hasBusinessTypeSuggestions,
-  parseBusinessTypeSuggestions,
-  type BusinessTypeSuggestion,
+    type BusinessTypeSuggestion,
+    hasBusinessTypeSuggestions,
+    parseBusinessTypeSuggestions,
 } from '../utils/businessTypeParsing'
-import { hasKBOSuggestions, parseKBOSuggestions, type KBOSuggestion } from '../utils/kboParsing'
+import { hasKBOSuggestions, type KBOSuggestion, parseKBOSuggestions } from '../utils/kboParsing'
 import { ValuationReadyCTA } from '../ValuationReadyCTA'
 
 export interface MessageItemProps {
@@ -62,14 +62,20 @@ export const MessageItem = React.memo<MessageItemProps>(
     isThinking = false,
   }) => {
     // Safe metadata access helpers
-    const getMetadataValue = <T,>(key: string, defaultValue?: T): T | undefined => {
-      const metadata = message.metadata as Record<string, unknown> | undefined
-      return (metadata?.[key] as T) ?? defaultValue
-    }
+    const getMetadataValue = useCallback(
+      <T,>(key: string, defaultValue?: T): T | undefined => {
+        const metadata = message.metadata as Record<string, unknown> | undefined
+        return (metadata?.[key] as T) ?? defaultValue
+      },
+      [message.metadata]
+    )
 
-    const getMetadataString = (key: string, defaultValue = ''): string => {
-      return getMetadataValue<string>(key, defaultValue) || defaultValue
-    }
+    const getMetadataString = useCallback(
+      (key: string, defaultValue = ''): string => {
+        return getMetadataValue<string>(key, defaultValue) || defaultValue
+      },
+      [getMetadataValue]
+    )
 
     const getMetadataNumber = (key: string, defaultValue?: number): number | undefined => {
       return getMetadataValue<number>(key, defaultValue)
@@ -103,10 +109,25 @@ export const MessageItem = React.memo<MessageItemProps>(
         return parseBusinessTypeSuggestions(message.content)
       }
       return null
-    }, [message.content, message.metadata])
+    }, [message.content, getMetadataString])
 
     const hasBusinessTypeSuggestionsInMessage =
       businessTypeSuggestions !== null && businessTypeSuggestions.length > 0
+
+    // Render business type suggestions element (extracted to fix TypeScript inference)
+    const renderBusinessTypeSuggestions = useCallback(() => {
+      if (!hasBusinessTypeSuggestionsInMessage || !businessTypeSuggestions) {
+        return null as React.ReactNode
+      }
+      return (
+        <div className="mt-3">
+          <BusinessTypeSuggestionsList
+            suggestions={businessTypeSuggestions}
+            onSelect={onKBOSuggestionSelect}
+          />
+        </div>
+      ) as React.ReactNode
+    }, [hasBusinessTypeSuggestionsInMessage, businessTypeSuggestions, onKBOSuggestionSelect])
 
     // Detect KBO suggestions in the message
     const kboSuggestions = React.useMemo((): KBOSuggestion[] | null => {
@@ -120,7 +141,7 @@ export const MessageItem = React.memo<MessageItemProps>(
         return parseKBOSuggestions(message.content)
       }
       return null
-    }, [message.content, message.metadata])
+    }, [message.content, getMetadataString])
 
     const hasKBOSuggestionsInMessage = kboSuggestions !== null && kboSuggestions.length > 0
 
@@ -265,14 +286,8 @@ export const MessageItem = React.memo<MessageItemProps>(
                   )}
 
                   {/* Business Type Suggestions List */}
-                  {hasBusinessTypeSuggestionsInMessage && businessTypeSuggestions ? (
-                    <div className="mt-3">
-                      <BusinessTypeSuggestionsList
-                        suggestions={businessTypeSuggestions}
-                        onSelect={onKBOSuggestionSelect} // Reuse same handler
-                      />
-                    </div>
-                  ) : null}
+                  {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+                  {renderBusinessTypeSuggestions() as any}
 
                   {/* KBO Suggestions List */}
                   {/* Check if this message comes after "none" was clicked - hide suggestions if so */}

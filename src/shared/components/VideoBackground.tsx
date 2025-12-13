@@ -4,7 +4,7 @@
  * Simplified video background for platform protection
  */
 
-import React, { useState, useEffect } from 'react'
+import React, { useEffect, useState } from 'react'
 
 export interface VideoBackgroundProps {
   videos: string[]

@@ -50,6 +50,8 @@ const ValuationFlow = dynamic(
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-500"></div>
       </div>
     ),
+    // Enable SSR: false to reduce server bundle size
+    ssr: false,
   }
 )
 
@@ -109,7 +111,7 @@ export const ValuationFlowSelector: React.FC<ValuationFlowSelectorProps> = React
     // Memoize flow key for animations
     const flowKey = useMemo(() => {
       return session ? `${session.currentView}-flow` : 'no-session-flow'
-    }, [session?.currentView])
+    }, [session?.currentView, session])
 
     // Render based on stage
     if (stage === 'loading') {

@@ -8,7 +8,7 @@
  * @version 2.0.0
  */
 
-import { useState, useEffect, useCallback } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { businessTypesApiService } from '../services/businessTypesApi'
 import { logger as generalLogger } from '../utils/loggers'
 
@@ -117,7 +117,7 @@ export function useBusinessTypeQuestions(
     } finally {
       setLoading(false)
     }
-  }, [businessTypeId, options?.flow_type, options?.phase, options?.existing_data])
+  }, [businessTypeId, options?.flow_type, options?.phase, options?.existing_data, options])
 
   const refetch = useCallback(async () => {
     await fetchQuestions()

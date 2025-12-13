@@ -362,3 +362,4 @@ Re-optimizing dependencies because lockfile has changed
   ➜  Local:   http://localhost:3001/
   ➜  Network: http://192.168.15.21:3001/
   ➜  Network: http://169.254.160.201:3001/
+2:36:29 PM [vite] page reload public/social-card-1200x630.html

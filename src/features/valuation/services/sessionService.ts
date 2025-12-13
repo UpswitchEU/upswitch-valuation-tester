@@ -5,10 +5,10 @@
  * Provides session management and persistence with DIP compliance.
  */
 
-import { ValuationSession } from '../../../types/valuation'
-import { ISessionService } from './interfaces'
 import { useValuationSessionStore } from '../../../store/useValuationSessionStore'
+import type { ValuationRequest, ValuationSession } from '../../../types/valuation'
 import { generalLogger } from '../../../utils/logger'
+import { ISessionService } from './interfaces'
 
 /**
  * Session Service Implementation
@@ -29,13 +29,20 @@ export class SessionService implements ISessionService {
       generalLogger.info('Creating new valuation session', { reportId, flow })
 
       // Use existing store to create session
-      const session = await useValuationSessionStore
+      await useValuationSessionStore
         .getState()
         .initializeSession(reportId, flow, initialData)
 
+      // Get the created session from the store
+      const session = useValuationSessionStore.getState().session
+
+      if (!session) {
+        throw new Error('Failed to create session - session is null')
+      }
+
       generalLogger.info('Session created successfully', {
         reportId,
-        sessionId: session.sessionId,
+        sessionId: session.reportId, // ValuationSession uses reportId, not sessionId
         flow: session.currentView,
       })
 
@@ -78,8 +85,26 @@ export class SessionService implements ISessionService {
     try {
       generalLogger.debug('Updating session', { reportId, updates: Object.keys(updates) })
 
+      // Convert ValuationSession updates to ValuationRequest format
+      // Extract partialData fields if present
+      const requestUpdates: Partial<ValuationRequest> = {}
+      if (updates.partialData && typeof updates.partialData === 'object') {
+        const partialData = updates.partialData as Record<string, unknown>
+        // Map common fields
+        if ('company_name' in partialData) {
+          requestUpdates.company_name = partialData.company_name as string
+        }
+        if ('revenue' in partialData) {
+          requestUpdates.revenue = partialData.revenue as number
+        }
+        if ('number_of_employees' in partialData) {
+          requestUpdates.number_of_employees = partialData.number_of_employees as number
+        }
+        // Add other fields as needed based on ValuationRequest interface
+      }
+
       // Use existing store to update session
-      useValuationSessionStore.getState().updateSessionData(updates)
+      await useValuationSessionStore.getState().updateSessionData(requestUpdates)
 
       generalLogger.debug('Session updated successfully', { reportId })
     } catch (error) {

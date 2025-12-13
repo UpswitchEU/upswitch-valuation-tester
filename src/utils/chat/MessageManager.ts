@@ -5,8 +5,8 @@
  * Centralizes all message-related operations in a single, testable class.
  */
 
-import { Message } from '../../hooks/useStreamingChatState'
-import { chatLogger } from '../logger'
+import { Message } from '../../hooks/useStreamingChatState';
+import { chatLogger } from '../logger';
 
 /**
  * Centralized message manager for streaming chat
@@ -49,7 +49,7 @@ export class MessageManager {
    * Update a streaming message with new content
    *
    * @param messages - Current messages array
-   * @param messageId - ID of message to update
+   * @param messageId - ID of message to update (optional, will find streaming message)
    * @param content - New content to append
    * @param isComplete - Whether the message is complete
    * @param metadata - Optional metadata to attach to message
@@ -57,13 +57,20 @@ export class MessageManager {
    */
   updateStreamingMessage(
     messages: Message[],
-    messageId: string,
+    messageId: string | undefined,
     content: string,
     isComplete: boolean,
     metadata?: any
   ): Message[] {
+    // If no messageId provided, find the streaming message
+    const targetMessageId = messageId || this.findStreamingMessage(messages)?.id
+
+    if (!targetMessageId) {
+      chatLogger.warn('No streaming message found to update')
+      return messages
+    }
     chatLogger.debug('Updating streaming message', {
-      messageId,
+      messageId: targetMessageId,
       contentLength: content.length,
       isComplete,
       hasMetadata: !!metadata,
@@ -71,7 +78,7 @@ export class MessageManager {
     })
 
     return messages.map((msg) =>
-      msg.id === messageId
+      msg.id === targetMessageId
         ? {
             ...msg,
             content: msg.content + content,
@@ -177,6 +184,16 @@ export class MessageManager {
    */
   getIncompleteMessages(messages: Message[]): Message[] {
     return messages.filter((msg) => !msg.isComplete)
+  }
+
+  /**
+   * Find the current streaming message
+   *
+   * @param messages - Messages array
+   * @returns The streaming message or undefined
+   */
+  findStreamingMessage(messages: Message[]): Message | undefined {
+    return messages.find((msg) => msg.isStreaming)
   }
 
   /**

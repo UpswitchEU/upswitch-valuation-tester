@@ -7,8 +7,7 @@
  * @module features/valuation
  */
 
-// Components
-export { ValuationFlow } from './components/ValuationFlow'
-
 // Types
 export type { ValuationFlowType } from './components/ValuationFlow'
+// Components
+export { ValuationFlow } from './components/ValuationFlow'

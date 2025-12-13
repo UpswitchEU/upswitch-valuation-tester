@@ -4,7 +4,7 @@
  * Global test configuration and mocks
  */
 
-import { vi, beforeEach, afterEach } from 'vitest'
+import { afterEach, beforeEach, vi } from 'vitest'
 import '@testing-library/jest-dom'
 
 // Mock localStorage

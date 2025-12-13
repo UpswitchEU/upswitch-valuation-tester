@@ -35,8 +35,12 @@ const CustomInputField: React.FC<CustomInputFieldProps> = ({
   type = 'text',
   placeholder = '',
   value = '',
-  onChange = () => {},
-  onBlur = () => {},
+  onChange = () => {
+    // Default no-op handler
+  },
+  onBlur = () => {
+    // Default no-op handler
+  },
   onFocus,
   onKeyDown,
   name = '',

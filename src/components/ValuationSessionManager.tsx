@@ -9,7 +9,7 @@
 
 'use client'
 
-import { usePathname, useSearchParams } from 'next/navigation'
+import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import React, { useCallback, useEffect, useRef, useState } from 'react'
 import { useAuth } from '../hooks/useAuth'
 import { guestCreditService } from '../services/guestCreditService'
@@ -43,6 +43,7 @@ export const ValuationSessionManager: React.FC<ValuationSessionManagerProps> = R
   ({ reportId, children }) => {
     const searchParams = useSearchParams()
     const pathname = usePathname()
+    const router = useRouter()
     const { isAuthenticated } = useAuth()
 
     const { session, initializeSession } = useValuationSessionStore()
@@ -52,12 +53,8 @@ export const ValuationSessionManager: React.FC<ValuationSessionManagerProps> = R
     const [showOutOfCreditsModal, setShowOutOfCreditsModal] = useState(false)
 
     // Extract prefilled query from location state with proper typing
-    interface LocationState {
-      prefilledQuery?: string | null
-      autoSend?: boolean
-    }
-
-    const locationState = {} // Next.js doesn't support location state like React Router
+    // Note: Next.js doesn't support location state like React Router
+    const locationState: { prefilledQuery?: string | null; autoSend?: boolean } = {}
     const prefilledQuery = locationState.prefilledQuery || null
     const autoSend = locationState.autoSend || false
 
@@ -87,6 +84,7 @@ export const ValuationSessionManager: React.FC<ValuationSessionManagerProps> = R
         try {
           // Check for flow parameter in URL to set initial view
           // searchParams is already available from Next.js hook
+          if (!searchParams) return
           const flowParam = searchParams.get('flow')
           const initialView =
             flowParam === 'manual' || flowParam === 'conversational' ? flowParam : 'manual' // Default to manual
@@ -118,7 +116,7 @@ export const ValuationSessionManager: React.FC<ValuationSessionManagerProps> = R
           setError('Failed to initialize valuation session')
         }
       },
-      [isAuthenticated, initializeSession, prefilledQuery]
+      [isAuthenticated, initializeSession, prefilledQuery, searchParams]
     )
 
     // Validate and set report ID, then initialize session
@@ -150,15 +148,22 @@ export const ValuationSessionManager: React.FC<ValuationSessionManagerProps> = R
       }
 
       // Use searchParams from Next.js hook
+      if (!searchParams) return
       const currentFlow = searchParams.get('flow')
 
       // Only update URL if it's different - this prevents infinite loops
       if (currentFlow !== session.currentView) {
-        searchParams.set('flow', session.currentView)
-        const newUrl = `${pathname}?${searchParams.toString()}`
-        window.history.replaceState(null, '', newUrl)
+        const params = new URLSearchParams(searchParams.toString())
+        params.set('flow', session.currentView)
+        router.replace(`${pathname}?${params.toString()}`)
       }
-    }, [session?.currentView, session?.reportId])
+    }, [
+      session?.currentView,
+      session?.reportId,
+      pathname,
+      searchParams,
+      router,
+    ])
 
     return (
       <>

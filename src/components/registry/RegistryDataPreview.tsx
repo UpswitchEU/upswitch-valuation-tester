@@ -133,7 +133,7 @@ export const RegistryDataPreview: React.FC<RegistryDataPreviewProps> = ({
               .map((year) => ({
                 year: year.year,
                 revenue: year.revenue || 0,
-                ebitda: year.ebitda!, // Preserve negative values (already filtered for undefined/null)
+                ebitda: year.ebitda ?? 0, // Preserve negative values (already filtered for undefined/null)
               }))
           : undefined,
     })

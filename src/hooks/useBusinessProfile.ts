@@ -1,6 +1,7 @@
-import { useState, useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { businessDataService } from '../services/businessDataService'
 import { chatLogger } from '../utils/logger'
+
 // import type { BusinessProfileData } from '../types/business';
 
 // Temporary interface until business types are defined

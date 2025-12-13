@@ -15,8 +15,8 @@ import { usePathname, useSearchParams } from 'next/navigation'
 import { useEffect } from 'react'
 
 const ScrollToTop = () => {
-  const pathname = usePathname()
-  const searchParams = useSearchParams()
+  const _pathname = usePathname()
+  const _searchParams = useSearchParams()
 
   useEffect(() => {
     // Scroll to top when location changes
@@ -25,7 +25,7 @@ const ScrollToTop = () => {
       left: 0,
       behavior: 'instant', // Use 'instant' for immediate scroll, 'smooth' for animated
     })
-  }, [pathname, searchParams])
+  }, [])
 
   return null // This component doesn't render anything
 }

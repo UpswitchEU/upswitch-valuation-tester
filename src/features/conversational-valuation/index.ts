@@ -5,28 +5,26 @@
  * This feature handles chat-based data collection and conversation persistence.
  */
 
+export { BusinessProfileSection } from './components/BusinessProfileSection'
+export { Conversation } from './components/Conversation'
+export { ConversationalLayout } from './components/ConversationalLayout'
+// Components
+export { ConversationalValuationFlow } from './components/ConversationalValuationFlow'
+export { ConversationPanel } from './components/ConversationPanel'
+export { ReportPanel } from './components/ReportPanel'
 // Context & State Management
 export {
   ConversationProvider,
   useConversationContext,
-  useConversationState,
   useConversationDispatch,
+  useConversationState,
 } from './context/ConversationContext'
 export { useConversationActions } from './hooks/useConversationActions'
-
-// Components
-export { ConversationalValuationFlow } from './components/ConversationalValuationFlow'
-export { ConversationalLayout } from './components/ConversationalLayout'
-export { BusinessProfileSection } from './components/BusinessProfileSection'
-export { ReportPanel } from './components/ReportPanel'
-export { ConversationPanel } from './components/ConversationPanel'
-export { Conversation } from './components/Conversation'
-
+export { useConversationStateManager } from './hooks/useConversationStateManager'
+export { useSessionRestoration } from './hooks/useSessionRestoration'
 // Legacy hooks (to be migrated)
 // TODO: Replace with new unified state management
 export { useValuationOrchestrator } from './hooks/useValuationOrchestrator'
-export { useConversationStateManager } from './hooks/useConversationStateManager'
-export { useSessionRestoration } from './hooks/useSessionRestoration'
 
 // Types
 export * from './types/conversation'

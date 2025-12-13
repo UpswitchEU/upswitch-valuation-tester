@@ -7,10 +7,10 @@
 import { apiLogger } from '../logger'
 import {
   AppError,
-  NetworkError,
-  ValidationError,
   AuthenticationError,
+  NetworkError,
   RegistryError,
+  ValidationError,
 } from './types'
 
 export interface ErrorHandlingResult {

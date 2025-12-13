@@ -5,7 +5,7 @@
 
 import { AlertTriangle, RefreshCw, X } from 'lucide-react'
 import React from 'react'
-import { extractErrorInfo, ErrorType } from '../utils/errorHandler'
+import { ErrorType, extractErrorInfo } from '../utils/errorHandler'
 
 interface ErrorRecoveryProps {
   error: Error | string

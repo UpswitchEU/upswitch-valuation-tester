@@ -7,9 +7,9 @@
  * @module components/EnhancedErrorBoundary
  */
 
+import { AlertTriangle, Home, RefreshCw } from 'lucide-react'
 import React, { Component, ReactNode } from 'react'
-import { AlertTriangle, RefreshCw, Home } from 'lucide-react'
-import { isValuationError, isRecoverableError, getUserFriendlyErrorMessage } from '../types/errors'
+import { getUserFriendlyErrorMessage, isRecoverableError, isValuationError } from '../types/errors'
 import { chatLogger } from '../utils/logger'
 
 interface Props {

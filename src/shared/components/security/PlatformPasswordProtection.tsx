@@ -10,12 +10,12 @@
  * - Secure password hashing
  */
 
-import React, { useState, useEffect } from 'react'
 import { Lock, Shield } from 'lucide-react'
+import React, { useEffect, useState } from 'react'
 import logger from '../../../utils/logger'
 import { SECURITY_CONFIG } from '../../config/security'
-import CustomPasswordInputField from '../forms/CustomPasswordInputField'
 import Button from '../buttons/Button'
+import CustomPasswordInputField from '../forms/CustomPasswordInputField'
 import VideoBackground from '../VideoBackground'
 
 interface PlatformPasswordProtectionProps {
@@ -40,7 +40,7 @@ const hashPassword = (password: string): string => {
     // For production, use proper crypto
     try {
       return window.btoa(saltedPassword).replace(/[^a-zA-Z0-9]/g, '')
-    } catch (error) {
+    } catch (_error) {
       // Fallback if btoa is not available
       return Buffer.from(saltedPassword, 'utf8')
         .toString('base64')
@@ -317,7 +317,9 @@ const PlatformPasswordProtection: React.FC<PlatformPasswordProtectionProps> = ({
                     placeholder="Enter platform password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    onBlur={() => {}}
+                    onBlur={() => {
+                      // No-op handler
+                    }}
                     name="password"
                     required
                     disabled={isLocked}

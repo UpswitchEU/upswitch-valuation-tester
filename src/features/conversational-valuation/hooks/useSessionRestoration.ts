@@ -8,10 +8,10 @@
  */
 
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { backendAPI } from '../../../services/BackendAPI'
-import { chatLogger } from '../../../utils/logger'
 import { Message } from '../../../hooks/useStreamingChatState'
+import { backendAPI } from '../../../services/BackendAPI'
 import type { ValuationSession } from '../../../types/valuation'
+import { chatLogger } from '../../../utils/logger'
 
 interface UseSessionRestorationOptions {
   pythonSessionId: string | null
@@ -295,7 +295,7 @@ export function useSessionRestoration({
       }
       restorationStateRef.current.restorationComplete = true
     }
-  }, [pythonSessionId])
+  }, [])
 
   /**
    * Retry restoration (useful for error recovery)

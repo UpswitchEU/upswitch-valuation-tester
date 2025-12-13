@@ -104,6 +104,7 @@ export function useMemoizedComputation<T>(
   deps: React.DependencyList,
   isEqual?: (prev: T, next: T) => boolean
 ): T {
+  // biome-ignore lint/correctness/useExhaustiveDependencies: deps is intentionally dynamic for utility function
   const memoizedValue = useMemo(compute, deps)
   const prevValueRef = useRef<T>(memoizedValue)
 
@@ -170,7 +171,7 @@ export function shallowEqual<T extends Record<string, any>>(objA: T, objB: T): b
   }
 
   for (const key of keysA) {
-    if (!Object.prototype.hasOwnProperty.call(objB, key) || !Object.is(objA[key], objB[key])) {
+    if (!Object.hasOwn(objB, key) || !Object.is(objA[key], objB[key])) {
       return false
     }
   }
@@ -198,7 +199,7 @@ export function deepEqual(objA: any, objB: any): boolean {
   }
 
   for (const key of keysA) {
-    if (!Object.prototype.hasOwnProperty.call(objB, key) || !deepEqual(objA[key], objB[key])) {
+    if (!Object.hasOwn(objB, key) || !deepEqual(objA[key], objB[key])) {
       return false
     }
   }

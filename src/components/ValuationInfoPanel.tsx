@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react'
 import type { ValuationResponse } from '../types/valuation'
-import { componentLogger } from '../utils/logger'
 import { HTMLProcessor } from '../utils/htmlProcessor'
+import { componentLogger } from '../utils/logger'
 
 interface ValuationInfoPanelProps {
   result: ValuationResponse

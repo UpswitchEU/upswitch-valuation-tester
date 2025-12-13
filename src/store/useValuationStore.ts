@@ -1,110 +1,6 @@
 import { create } from 'zustand'
-import { ValuationAPI } from '../services/api/valuation/ValuationAPI'
-import type { DataResponse, ValuationResponse } from '../types/data-collection'
+import type { DataResponse } from '../types/data-collection'
 import { storeLogger } from '../utils/logger'
-
-interface ValuationStore {
-  // Collected data from data collection components
-  collectedData: DataResponse[]
-
-  // Results from backend
-  result: ValuationResponse | null
-
-  // UI state
-  isCalculating: boolean
-  error: string | null
-
-  // Actions
-  setCollectedData: (data: DataResponse[]) => void
-  calculateValuation: () => Promise<void>
-  setResult: (result: ValuationResponse | null) => void
-  setIsCalculating: (calculating: boolean) => void
-  setError: (error: string | null) => void
-  clearData: () => void
-}
-
-export const useValuationStore = create<ValuationStore>((set, get) => ({
-  // Collected data from data collection components
-  collectedData: [],
-
-  // Results from backend
-  result: null,
-
-  // UI state
-  isCalculating: false,
-  error: null,
-
-  // Actions
-  setCollectedData: (data) => set({ collectedData: data }),
-
-  calculateValuation: async () => {
-    const { collectedData, setIsCalculating, setResult, setError } = get()
-
-    if (collectedData.length === 0) {
-      setError('No data collected')
-      return
-    }
-
-    setError(null)
-    setIsCalculating(true)
-
-    try {
-      // Convert collected data to valuation request format
-      const valuationData: Record<string, any> = {}
-      collectedData.forEach((response) => {
-        valuationData[response.fieldId] = response.value
-      })
-
-      // Create valuation request
-      const request = {
-        company_name: valuationData.company_name || 'Unknown Company',
-        country_code: valuationData.country_code || 'BE',
-        industry: valuationData.industry || 'services',
-        business_model: valuationData.business_model || 'services',
-        founding_year: valuationData.founding_year || new Date().getFullYear() - 5,
-        current_year_data: {
-          year: valuationData.current_year_data?.year || new Date().getFullYear(),
-          revenue: valuationData.revenue || valuationData.current_year_data?.revenue || 100000,
-          ebitda: valuationData.ebitda || valuationData.current_year_data?.ebitda || 25000,
-        },
-      }
-
-      storeLogger.info('Starting valuation calculation', {
-        companyName: request.company_name,
-        revenue: request.current_year_data.revenue,
-        ebitda: request.current_year_data.ebitda,
-      })
-
-      // Call backend API
-      const valuationAPI = new ValuationAPI()
-      const result = await valuationAPI.calculateValuationUnified(request)
-
-      setResult(result)
-
-      storeLogger.info('Valuation calculation completed', {
-        valuationId: result.valuation_id,
-        equityValue: result.equity_value_mid,
-      })
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Valuation calculation failed'
-      storeLogger.error('Valuation calculation failed', { error: errorMessage })
-      setError(errorMessage)
-    } finally {
-      setIsCalculating(false)
-    }
-  },
-
-  setResult: (result) => set({ result }),
-  setIsCalculating: (calculating) => set({ isCalculating: calculating }),
-  setError: (error) => set({ error }),
-
-  clearData: () =>
-    set({
-      collectedData: [],
-      result: null,
-      error: null,
-    }),
-}))
 
 // Helper to get safe current year (allow up to current year, max 2100 per backend validation)
 const getSafeCurrentYear = () => Math.min(new Date().getFullYear(), 2100)
@@ -127,7 +23,11 @@ const defaultFormData: ValuationFormData = {
   },
 }
 
-export const useValuationStore = create<ValuationStore>((set, get) => ({
+export const useValuationStore = create<any>((set, get) => ({
+  // Collected data from data collection components (for ValuationFlow compatibility)
+  collectedData: [],
+  setCollectedData: (data: DataResponse[]) => set({ collectedData: data }),
+
   // Form data
   formData: defaultFormData,
   updateFormData: (data) =>

@@ -16,7 +16,7 @@ export const SuggestionFieldRenderer: React.FC<FieldRendererProps> = ({
   errors = [],
   disabled = false,
 }) => {
-  const hasErrors = errors.length > 0
+  const _hasErrors = errors.length > 0
   const errorMessage = errors.find((e) => e.severity === 'error')?.message
   const suggestions = field.suggestions || []
 

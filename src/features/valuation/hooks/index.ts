@@ -4,4 +4,4 @@
  * Custom React hooks for valuation logic
  */
 
-export { useValuationOrchestrator } from './useValuationOrchestrator'
+export { useValuationOrchestrator } from '../../conversational-valuation/hooks/useValuationOrchestrator'

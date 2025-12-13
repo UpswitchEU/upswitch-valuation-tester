@@ -45,16 +45,19 @@ interface ReportPanelProps {
  * Follows SRP - only responsible for report presentation.
  */
 export const ReportPanel: React.FC<ReportPanelProps> = React.memo(({ className = '' }) => {
-  const { state } = useConversationState()
+  const state = useConversationState()
   const [activeTab, setActiveTab] = useState<'preview' | 'source' | 'info'>('preview')
 
   const renderTabContent = () => {
+    const hasValuationResult = !!state.valuationResult?.html_report
+    const isGenerating = state.isGenerating
+
     switch (activeTab) {
       case 'preview':
         return (
           <div className="h-full">
             {/* During conversation: Show empty state */}
-            {state.stage === 'chat' && (
+            {!hasValuationResult && !isGenerating && (
               <div className="flex flex-col items-center justify-center h-full p-6 sm:p-8 text-center">
                 <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-zinc-100 flex items-center justify-center mb-3 sm:mb-4">
                   <TrendingUp className="w-6 h-6 sm:w-8 sm:h-8 text-zinc-400" />
@@ -69,11 +72,11 @@ export const ReportPanel: React.FC<ReportPanelProps> = React.memo(({ className =
             )}
 
             {/* After conversation: Show Results component */}
-            {state.stage === 'results' && state.valuationResult?.html_report ? (
+            {hasValuationResult ? (
               <Suspense fallback={<ComponentLoader message="Loading report..." />}>
                 <Results />
               </Suspense>
-            ) : state.stage !== 'chat' ? (
+            ) : isGenerating ? (
               <ValuationEmptyState />
             ) : null}
           </div>

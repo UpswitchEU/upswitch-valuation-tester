@@ -6,9 +6,9 @@
  */
 
 export {
-  ErrorBoundary,
   AppErrorBoundary,
-  FeatureErrorBoundary,
   ComponentErrorBoundary,
+  ErrorBoundary,
+  FeatureErrorBoundary,
   NetworkErrorBoundary,
 } from './ErrorBoundary'

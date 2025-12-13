@@ -22,7 +22,7 @@ export const FileUploadFieldRenderer: React.FC<FieldRendererProps> = ({
   const [processingError, setProcessingError] = useState<string | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
-  const hasErrors = errors.length > 0
+  const _hasErrors = errors.length > 0
   const errorMessage = errors.find((e) => e.severity === 'error')?.message
 
   const supportedFormats = getSupportedFormats(field)

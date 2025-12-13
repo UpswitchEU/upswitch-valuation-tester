@@ -7,7 +7,7 @@
  * @module features/auth/hooks/useCreditGuard
  */
 
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { guestCreditService } from '../../../services/guestCreditService'
 import { chatLogger } from '../../../utils/logger'
 
@@ -49,7 +49,7 @@ export function useCreditGuard({
   /**
    * Check if user has credits
    */
-  const checkCredits = (): boolean => {
+  const checkCredits = useCallback((): boolean => {
     if (isAuthenticated) {
       // Authenticated users have unlimited credits
       return true
@@ -62,7 +62,7 @@ export function useCreditGuard({
     setCreditsRemaining(remaining)
 
     return credits
-  }
+  }, [isAuthenticated])
 
   /**
    * Check credits on mount for guest users
@@ -85,7 +85,7 @@ export function useCreditGuard({
       setHasCredits(true)
       setIsBlocked(false)
     }
-  }, [isAuthenticated])
+  }, [isAuthenticated, checkCredits, onOutOfCredits])
 
   return {
     hasCredits,

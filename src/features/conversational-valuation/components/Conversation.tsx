@@ -16,8 +16,8 @@
  * @module features/conversation/components/Conversation
  */
 
+import { Loader2, MessageCircle } from 'lucide-react'
 import React, { createContext, memo, ReactNode, useContext } from 'react'
-import { MessageCircle, Loader2 } from 'lucide-react'
 
 interface Message {
   id: string

@@ -74,8 +74,12 @@ export const HistoricalDataInputs: React.FC<HistoricalDataInputsProps> = ({
                 label="Year"
                 type="text"
                 value={year.toString()}
-                onChange={() => {}}
-                onBlur={() => {}}
+                onChange={() => {
+                  // Read-only field, no-op handler
+                }}
+                onBlur={() => {
+                  // Read-only field, no-op handler
+                }}
                 disabled={true}
                 placeholder=""
               />

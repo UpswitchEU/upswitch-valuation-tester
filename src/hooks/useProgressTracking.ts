@@ -5,7 +5,7 @@
  * Extracted from StreamingChat to improve reusability and testability.
  */
 
-import { useState, useCallback } from 'react'
+import { useCallback, useState } from 'react'
 
 export interface ProgressItem {
   id: string

@@ -21,7 +21,7 @@ export interface UseMessageManagementReturn {
     updatedMessages: Message[]
     newMessage: Message
   }
-  updateStreamingMessage: (content: string, isComplete: boolean, metadata?: unknown) => void
+  updateStreamingMessage: (content: string, isComplete?: boolean, metadata?: unknown) => void
   dedupeValuationCTA: (
     messages: Message[],
     incoming: Omit<Message, 'id' | 'timestamp'>
@@ -46,7 +46,7 @@ export function useMessageManagement({
 
   // Check if message is a valuation ready CTA
   const isValuationReadyCTA = useCallback((msg: { metadata?: unknown }) => {
-    const meta = msg?.metadata as any
+    const meta = msg?.metadata as Record<string, unknown> | undefined
     if (!meta) return false
     const field = meta.collected_field || meta.clarification_field || meta.field
     return meta.input_type === 'cta_button' && field === 'valuation_confirmed'
@@ -77,13 +77,17 @@ export function useMessageManagement({
 
   // Update streaming message content
   const updateStreamingMessage = useCallback(
-    (content: string, isComplete: boolean, metadata?: unknown) => {
+    (content: string, isComplete?: boolean, metadata?: unknown) => {
+      // Find the streaming message ID
+      const streamingMessage = messages.find((msg) => msg.isStreaming && !msg.isComplete)
+      const messageId = streamingMessage?.id || ''
+
       const updatedMessages = messageManager.updateStreamingMessage(
         messages,
-        undefined, // Let manager find the streaming message
+        messageId,
         content,
-        isComplete,
-        metadata as any
+        isComplete ?? false,
+        metadata
       )
 
       setMessages(updatedMessages)

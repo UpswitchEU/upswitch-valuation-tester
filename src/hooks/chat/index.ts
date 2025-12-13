@@ -6,8 +6,8 @@
  * @module hooks/chat
  */
 
-export { useStreamSubmission } from './useStreamSubmission'
-export { useSuggestionHandlers } from './useSuggestionHandlers'
 export { useSmartFollowUps } from './useSmartFollowUps'
 export type { UseStreamSubmissionOptions } from './useStreamSubmission'
+export { useStreamSubmission } from './useStreamSubmission'
 export type { UseSuggestionHandlersOptions } from './useSuggestionHandlers'
+export { useSuggestionHandlers } from './useSuggestionHandlers'

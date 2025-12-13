@@ -1,5 +1,5 @@
-import React, { useState, useRef } from 'react'
-import { PANEL_CONSTRAINTS, FALLBACK_CONTAINER_WIDTH } from '../constants/panelConstants'
+import React, { useRef, useState } from 'react'
+import { FALLBACK_CONTAINER_WIDTH, PANEL_CONSTRAINTS } from '../constants/panelConstants'
 
 interface ResizableDividerProps {
   onResize: (leftWidth: number) => void

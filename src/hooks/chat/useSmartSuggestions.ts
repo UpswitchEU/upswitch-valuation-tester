@@ -59,7 +59,7 @@ export function useSmartSuggestions({
     }
 
     return []
-  }, [messages])
+  }, [messages, getSuggestionsForField])
 
   return {
     suggestions,

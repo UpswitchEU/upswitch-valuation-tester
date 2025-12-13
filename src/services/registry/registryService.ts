@@ -5,20 +5,20 @@
  * with a single, well-architected solution.
  */
 
-import { serviceLogger } from '../../utils/logger'
-import { RegistryCache } from './cache'
 import {
+  ErrorHandler,
   NetworkError,
   RegistryError,
   TimeoutError,
   ValidationError,
-  ErrorHandler,
 } from '../../utils/errors'
+import { serviceLogger } from '../../utils/logger'
+import { RegistryCache } from './cache'
 import type {
   CompanyFinancialData,
   CompanySearchResponse,
-  SearchSuggestion,
   RegistryServiceConfig,
+  SearchSuggestion,
 } from './types'
 
 export class RegistryService {

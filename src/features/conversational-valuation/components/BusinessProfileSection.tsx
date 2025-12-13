@@ -8,11 +8,11 @@
  */
 
 import { Building2 } from 'lucide-react'
-import React, { useCallback, useEffect, useState, useMemo } from 'react'
+import React, { useCallback, useEffect, useMemo, useState } from 'react'
 import { useAuth } from '../../../hooks/useAuth'
 import {
-  businessDataService,
   type BusinessProfileData,
+  businessDataService,
 } from '../../../services/businessDataService'
 import { chatLogger } from '../../../utils/logger'
 import { useConversationActions } from '../hooks/useConversationActions'
@@ -36,52 +36,6 @@ export const BusinessProfileSection: React.FC<BusinessProfileSectionProps> = Rea
     const [businessProfile, setLocalBusinessProfile] = useState<BusinessProfileData | null>(null)
     const [isLoadingProfile, setIsLoadingProfile] = useState(true)
     const [profileError, setProfileError] = useState<string | null>(null)
-
-    // Fetch business profile data
-    useEffect(() => {
-      const fetchBusinessProfile = async () => {
-        try {
-          setIsLoadingProfile(true)
-          setProfileError(null)
-
-          // Check if user is authenticated
-          if (!isAuthenticated || !user?.id) {
-            chatLogger.info('No authenticated user, skipping profile fetch')
-            setIsLoadingProfile(false)
-            return
-          }
-
-          const userId = user.id
-
-          chatLogger.debug('Fetching business profile for instant valuation')
-          const profileData = await businessDataService.fetchUserBusinessData(userId)
-
-          if (profileData) {
-            setLocalBusinessProfile(profileData)
-            setBusinessProfile(profileData) // Sync to global state
-            chatLogger.info('Business profile loaded', { profileData })
-
-            // Automatically start intelligent conversation with pre-filled data
-            startIntelligentConversation(profileData)
-          } else {
-            chatLogger.info('No business profile found, starting fresh conversation')
-            // For fresh conversations (guest users), start the conversation automatically
-            startConversation(null)
-          }
-        } catch (error) {
-          chatLogger.error('Error fetching business profile', {
-            error: error instanceof Error ? error.message : 'Unknown error',
-            stack: error instanceof Error ? error.stack : undefined,
-          })
-          setProfileError('Failed to load business profile. Starting fresh conversation.')
-        } finally {
-          setIsLoadingProfile(false)
-          setProfileLoading(false)
-        }
-      }
-
-      fetchBusinessProfile()
-    }, [isAuthenticated, user?.id, setBusinessProfile, setProfileLoading, startConversation])
 
     // Start intelligent conversation with pre-filled data
     const startIntelligentConversation = useCallback(
@@ -129,6 +83,59 @@ export const BusinessProfileSection: React.FC<BusinessProfileSectionProps> = Rea
       },
       [user?.id, startConversation]
     )
+
+    // Fetch business profile data
+    useEffect(() => {
+      const fetchBusinessProfile = async () => {
+        try {
+          setIsLoadingProfile(true)
+          setProfileError(null)
+
+          // Check if user is authenticated
+          if (!isAuthenticated || !user?.id) {
+            chatLogger.info('No authenticated user, skipping profile fetch')
+            setIsLoadingProfile(false)
+            return
+          }
+
+          const userId = user.id
+
+          chatLogger.debug('Fetching business profile for instant valuation')
+          const profileData = await businessDataService.fetchUserBusinessData(userId)
+
+          if (profileData) {
+            setLocalBusinessProfile(profileData)
+            setBusinessProfile(profileData) // Sync to global state
+            chatLogger.info('Business profile loaded', { profileData })
+
+            // Automatically start intelligent conversation with pre-filled data
+            startIntelligentConversation(profileData)
+          } else {
+            chatLogger.info('No business profile found, starting fresh conversation')
+            // For fresh conversations (guest users), start the conversation automatically
+            startConversation(null)
+          }
+        } catch (error) {
+          chatLogger.error('Error fetching business profile', {
+            error: error instanceof Error ? error.message : 'Unknown error',
+            stack: error instanceof Error ? error.stack : undefined,
+          })
+          setProfileError('Failed to load business profile. Starting fresh conversation.')
+        } finally {
+          setIsLoadingProfile(false)
+          setProfileLoading(false)
+        }
+      }
+
+      fetchBusinessProfile()
+    }, [
+      isAuthenticated,
+      user?.id,
+      setBusinessProfile,
+      setProfileLoading,
+      startConversation,
+      startIntelligentConversation,
+    ])
 
     // Don't render anything if no profile and not loading
     if (!businessProfile && !isLoadingProfile && !profileError) {
@@ -191,7 +198,7 @@ export const BusinessProfileSection: React.FC<BusinessProfileSectionProps> = Rea
                   {(() => {
                     const analysis = useMemo(
                       () => businessDataService.getFieldAnalysis(businessProfile),
-                      [businessProfile]
+                      []
                     )
 
                     return (

@@ -16,10 +16,10 @@ interface BusinessTypeSuggestionsListProps {
   onSelect: (selection: string) => void
 }
 
-export const BusinessTypeSuggestionsList: React.FC<BusinessTypeSuggestionsListProps> = ({
+export const BusinessTypeSuggestionsList = ({
   suggestions,
   onSelect,
-}) => {
+}: BusinessTypeSuggestionsListProps): React.ReactElement | null => {
   const [isDismissed, setIsDismissed] = useState(false)
 
   const handleSelect = (selection: string) => {

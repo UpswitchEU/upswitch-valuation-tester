@@ -8,8 +8,8 @@
  */
 
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { chatLogger } from '../../../utils/logger'
 import { Message } from '../../../hooks/useStreamingChatState'
+import { chatLogger } from '../../../utils/logger'
 
 export type ConversationState =
   | 'LOADING_SESSION' // Loading session from Supabase

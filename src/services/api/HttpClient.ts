@@ -269,7 +269,7 @@ export class HttpClient {
     this.activeRequests.clear()
 
     // Clear all timeouts
-    for (const [correlationId, timeoutId] of this.requestTimeouts) {
+    for (const [_correlationId, timeoutId] of this.requestTimeouts) {
       clearTimeout(timeoutId)
     }
     this.requestTimeouts.clear()

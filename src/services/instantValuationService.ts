@@ -6,8 +6,8 @@
  */
 
 import { backendAPI } from '../services/BackendAPI'
-import { serviceLogger } from '../utils/logger'
 import type { ValuationRequest, ValuationResponse } from '../types/valuation'
+import { serviceLogger } from '../utils/logger'
 
 class InstantValuationService {
   /**

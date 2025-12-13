@@ -6,7 +6,7 @@
  */
 
 import React, { useCallback, useState } from 'react'
-import { BUSINESS_DATA_FIELDS, DataResponse } from '../../types/data-collection'
+import { BUSINESS_DATA_FIELDS, DataResponse, FieldValue } from '../../types/data-collection'
 import { FieldRenderer } from './FieldRenderer'
 
 interface DataCollectionProps {
@@ -56,7 +56,7 @@ export const DataCollection: React.FC<DataCollectionProps> = ({
 
   // Handle field value changes
   const handleFieldChange = useCallback(
-    (fieldId: string, value: any) => {
+    (fieldId: string, value: FieldValue) => {
       const response: DataResponse = {
         fieldId,
         value,
@@ -137,6 +137,7 @@ export const DataCollection: React.FC<DataCollectionProps> = ({
             errors={[]}
             context={{
               session: {
+                id: 'manual-form-session',
                 fields: [],
                 responses: new Map(),
                 completedFieldIds: new Set(),

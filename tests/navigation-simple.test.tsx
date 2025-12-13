@@ -1,22 +1,22 @@
 /**
  * Simple Navigation Flow Tests
- * 
+ *
  * Tests the core navigation functionality
  */
 
-import { render, screen, fireEvent } from '@testing-library/react';
-import { BrowserRouter } from 'react-router-dom';
-import { vi } from 'vitest';
-import { HomePage } from '../src/pages/HomePage';
+import { fireEvent, render, screen } from '@testing-library/react'
+import { BrowserRouter } from 'react-router-dom'
+import { vi } from 'vitest'
+import { HomePage } from '../src/pages/HomePage'
 
 // Mock the auth context
 vi.mock('../src/hooks/useAuth', () => ({
   useAuth: () => ({
     user: null,
     isAuthenticated: false,
-    businessCard: null
-  })
-}));
+    businessCard: null,
+  }),
+}))
 
 describe('Simple Navigation Flow', () => {
   it('should render HomePage with Manual Input button', () => {
@@ -24,24 +24,24 @@ describe('Simple Navigation Flow', () => {
       <BrowserRouter>
         <HomePage />
       </BrowserRouter>
-    );
+    )
 
-    expect(screen.getByText('Manual Input')).toBeInTheDocument();
-    expect(screen.getByText('AI-Guided Valuation')).toBeInTheDocument();
-  });
+    expect(screen.getByText('Manual Input')).toBeInTheDocument()
+    expect(screen.getByText('AI-Guided Valuation')).toBeInTheDocument()
+  })
 
   it('should have correct navigation paths for buttons', () => {
     render(
       <BrowserRouter>
         <HomePage />
       </BrowserRouter>
-    );
+    )
 
-    const manualButton = screen.getByText('Manual Input');
-    const aiGuidedButton = screen.getByText('AI-Guided Valuation');
+    const manualButton = screen.getByText('Manual Input')
+    const aiGuidedButton = screen.getByText('AI-Guided Valuation')
 
     // Check that buttons are clickable
-    expect(manualButton).toBeInTheDocument();
-    expect(aiGuidedButton).toBeInTheDocument();
-  });
-});
+    expect(manualButton).toBeInTheDocument()
+    expect(aiGuidedButton).toBeInTheDocument()
+  })
+})

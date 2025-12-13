@@ -8,8 +8,8 @@
  */
 
 import { useCallback } from 'react'
-import { StreamingManager } from '../../services/chat/StreamingManager'
 import { StreamEventHandler } from '../../services/chat/StreamEventHandler'
+import { StreamingManager } from '../../services/chat/StreamingManager'
 import { chatLogger } from '../../utils/logger'
 import { Message } from '../useStreamingChatState'
 

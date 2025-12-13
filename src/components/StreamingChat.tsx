@@ -23,7 +23,7 @@ import { useMessageManagement } from '../hooks/chat/useMessageManagement'
 import { useSmartSuggestions } from '../hooks/chat/useSmartSuggestions'
 import { useStreamingCoordinator } from '../hooks/chat/useStreamingCoordinator'
 import { useAuth } from '../hooks/useAuth'
-import { useConversationInitializer, type UserProfile } from '../hooks/useConversationInitializer'
+import { type UserProfile, useConversationInitializer } from '../hooks/useConversationInitializer'
 import { useConversationMetrics } from '../hooks/useConversationMetrics'
 import { useStreamingChatState } from '../hooks/useStreamingChatState'
 import { useTypingAnimation } from '../hooks/useTypingAnimation'
@@ -249,7 +249,7 @@ export const StreamingChat: React.FC<import('./StreamingChat.types').StreamingCh
         lastRestoredMessagesRef.current = messagesFingerprint
       }
     }
-  }, [initialMessages, sessionId, state.messages.length])
+  }, [initialMessages, sessionId, state.messages.length, state.setMessages])
 
   // Use extracted conversation initializer
   const { isInitializing } = useConversationInitializer(sessionId, userId, {
@@ -267,13 +267,13 @@ export const StreamingChat: React.FC<import('./StreamingChat.types').StreamingCh
   })
 
   // Use extracted metrics tracking
-  const { trackModelPerformance, trackConversationCompletion } = useConversationMetrics(
-    sessionId,
-    userId
-  )
+  const {
+    trackModelPerformance: _trackModelPerformance,
+    trackConversationCompletion: _trackConversationCompletion,
+  } = useConversationMetrics(sessionId, userId)
 
   // Typing animation for smooth AI responses
-  const { complete } = useTypingAnimation({
+  const { complete: _complete } = useTypingAnimation({
     baseSpeed: 50,
     adaptiveSpeed: true,
     punctuationPauses: true,

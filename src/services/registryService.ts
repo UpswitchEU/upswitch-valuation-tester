@@ -8,7 +8,7 @@
  */
 
 import { registryService } from './registry/registryService'
-import type { CompanySearchResult, CompanyFinancialData, SearchSuggestion } from './registry/types'
+import type { CompanyFinancialData, CompanySearchResult, SearchSuggestion } from './registry/types'
 
 // Re-export types for backward compatibility
 export type { CompanySearchResult, CompanyFinancialData, SearchSuggestion }

@@ -2,8 +2,69 @@
 const nextConfig = {
   // Enable experimental features for better performance
   experimental: {
-    // Enable optimizePackageImports for better bundle size
-    optimizePackageImports: ['lucide-react', '@heroui/react'],
+    optimizeCss: true,
+    scrollRestoration: true,
+  },
+
+  // Optimize bundle splitting and tree-shaking
+  webpack: (config, { dev, isServer }) => {
+    // Production optimizations
+    if (!dev && !isServer) {
+      // Enable webpack optimizations for better tree-shaking
+      config.optimization = {
+        ...config.optimization,
+        splitChunks: {
+          chunks: 'all',
+          cacheGroups: {
+            // Vendor libraries
+            vendor: {
+              test: /[\\/]node_modules[\\/]/,
+              name: 'vendors',
+              chunks: 'all',
+              priority: 10,
+            },
+            // React ecosystem
+            react: {
+              test: /[\\/]node_modules[\\/](react|react-dom|@heroui)[\\/]/,
+              name: 'react-vendor',
+              chunks: 'all',
+              priority: 20,
+            },
+            // UI components
+            ui: {
+              test: /[\\/]node_modules[\\/](lucide-react|framer-motion)[\\/]/,
+              name: 'ui-vendor',
+              chunks: 'all',
+              priority: 15,
+            },
+            // Feature modules
+            conversational: {
+              test: /src[\\/]features[\\/]conversational-valuation/,
+              name: 'conversational-feature',
+              chunks: 'all',
+              priority: 5,
+            },
+            manual: {
+              test: /src[\\/]features[\\/]manual-valuation/,
+              name: 'manual-feature',
+              chunks: 'all',
+              priority: 5,
+            },
+            // Utility modules
+            utils: {
+              test: /src[\\/]utils[\\/]/,
+              name: 'utils',
+              chunks: 'all',
+              priority: 5,
+            },
+          },
+        },
+        // Enable more aggressive minification
+        minimize: true,
+      }
+    }
+
+    return config
   },
 
   // Configure images
@@ -32,7 +93,7 @@ const nextConfig = {
           },
         ],
       },
-    ];
+    ]
   },
 
   // Configure rewrites for API routes
@@ -42,7 +103,7 @@ const nextConfig = {
         source: '/api/:path*',
         destination: '/api/:path*',
       },
-    ];
+    ]
   },
 
   // Bundle analyzer configuration
@@ -53,11 +114,11 @@ const nextConfig = {
           new webpack.DefinePlugin({
             __BUNDLE_ANALYZE__: JSON.stringify(true),
           })
-        );
+        )
       }
-      return config;
+      return config
     },
   }),
-};
+}
 
-module.exports = nextConfig;
+export default nextConfig

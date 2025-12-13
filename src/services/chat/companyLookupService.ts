@@ -10,9 +10,9 @@
  * - Conversation context management
  */
 
-import { registryService } from '../registry/registryService'
-import type { CompanySearchResponse, CompanyFinancialData } from '../registry/types'
 import { serviceLogger } from '../../utils/logger'
+import { registryService } from '../registry/registryService'
+import type { CompanyFinancialData, CompanySearchResponse } from '../registry/types'
 
 export interface ChatMessage {
   id: string

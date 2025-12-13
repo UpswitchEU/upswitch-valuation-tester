@@ -147,8 +147,12 @@ class ManualValuationStreamService {
         onopen: null,
         onmessage: null,
         onerror: null,
-        addEventListener: () => {},
-        removeEventListener: () => {},
+        addEventListener: () => {
+          // Mock EventSource - no-op handler
+        },
+        removeEventListener: () => {
+          // Mock EventSource - no-op handler
+        },
         dispatchEvent: () => false,
       } as any
     } catch (error) {

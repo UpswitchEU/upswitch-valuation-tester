@@ -10,10 +10,6 @@
  * enabling better testability and maintainability.
  */
 
-import { IAnalyticsService } from './interfaces/IAnalyticsService'
-import { ICacheService } from './interfaces/ICacheService'
-import { ILogger } from './interfaces/ILogger'
-
 // Concrete implementations
 import { AnalyticsService } from '../analytics/AnalyticsService'
 import { CacheService } from '../cache/CacheService'
@@ -21,6 +17,9 @@ import { CreditService } from '../credit/CreditService'
 import { Logger } from '../logger/Logger'
 import { SessionService } from '../session/SessionService'
 import { ValuationService } from '../valuation/ValuationService'
+import { IAnalyticsService } from './interfaces/IAnalyticsService'
+import { ICacheService } from './interfaces/ICacheService'
+import { ILogger } from './interfaces/ILogger'
 
 /**
  * Service Container - Singleton pattern for dependency injection

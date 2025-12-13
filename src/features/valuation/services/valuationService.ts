@@ -5,10 +5,10 @@
  * Provides valuation calculation functionality with DIP compliance.
  */
 
-import { ValuationRequest, ValuationResponse } from '../../../types/valuation'
-import { IValuationService } from './interfaces'
 import { manualValuationStreamService } from '../../../services/manualValuationStreamService'
+import { ValuationRequest, ValuationResponse } from '../../../types/valuation'
 import { generalLogger } from '../../../utils/logger'
+import { IValuationService } from './interfaces'
 
 /**
  * Valuation Service Implementation
@@ -29,16 +29,17 @@ export class ValuationService implements IValuationService {
 
       // Use existing manual valuation stream service
       // This is a temporary adapter - should be refactored to not use streaming
-      const result = await new Promise<ValuationResponse>((resolve, reject) => {
+      const result = await new Promise<ValuationResponse>(async (resolve, reject) => {
         let finalResult: ValuationResponse | null = null
 
-        const stream = manualValuationStreamService.startStreaming(request, {
-          onReportComplete: (htmlReport: string, valuationId: string, fullResponse?: any) => {
+        const stream = await manualValuationStreamService.streamManualValuation(request, {
+          onComplete: (htmlReport: string, valuationId: string, fullResponse?: any) => {
             finalResult = {
               ...fullResponse,
               html_report: htmlReport,
               valuation_id: valuationId,
             } as ValuationResponse
+            resolve(finalResult)
           },
           onError: (error: string) => {
             reject(new Error(error))
@@ -51,8 +52,8 @@ export class ValuationService implements IValuationService {
             resolve(finalResult)
           } else {
             reject(new Error('Valuation calculation timed out'))
+            stream.close()
           }
-          stream.stop?.()
         }, 30000) // 30 second timeout
       })
 
@@ -82,9 +83,9 @@ export class ValuationService implements IValuationService {
         companyName: request.company_name,
       })
 
-      const stream = manualValuationStreamService.startStreaming(request, {
+      const stream = await manualValuationStreamService.streamManualValuation(request, {
         onProgress,
-        onReportComplete: (htmlReport: string, valuationId: string, fullResponse?: any) => {
+        onComplete: (htmlReport: string, valuationId: string, fullResponse?: any) => {
           const result: ValuationResponse = {
             ...fullResponse,
             html_report: htmlReport,
@@ -96,7 +97,7 @@ export class ValuationService implements IValuationService {
       })
 
       return {
-        stop: () => stream.stop?.(),
+        stop: () => stream.close(),
       }
     } catch (error) {
       generalLogger.error('Failed to start streaming valuation', { error })

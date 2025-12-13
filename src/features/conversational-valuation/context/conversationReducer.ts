@@ -5,7 +5,7 @@
  * Implements single source of truth following clean architecture principles.
  */
 
-import { ConversationState, ConversationAction } from '../types/conversation'
+import { ConversationAction, ConversationState } from '../types/conversation'
 
 // Initial state
 export const initialConversationState: ConversationState = {
@@ -99,6 +99,10 @@ export function conversationReducer(
 
     case 'SET_PENDING_RESULT':
       return { ...state, pendingValuationResult: action.payload }
+
+    case 'SET_SHOW_OUT_OF_CREDITS_MODAL':
+      // This action is handled by CreditGuard component, not stored in conversation state
+      return state
 
     // Reset
     case 'RESET_STATE':

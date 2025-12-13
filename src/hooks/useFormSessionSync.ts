@@ -8,9 +8,9 @@
  */
 
 import { useCallback, useEffect, useState } from 'react'
+import type { ValuationSessionStore } from '../store/useValuationSessionStore'
 import { debounce } from '../utils/debounce'
 import { generalLogger } from '../utils/logger'
-import type { ValuationSessionStore } from '../store/useValuationSessionStore'
 
 interface UseFormSessionSyncOptions {
   session: any
@@ -114,6 +114,7 @@ export const useFormSessionSync = ({
     hasLoadedSessionData,
     businessTypes,
     matchBusinessType,
+    session,
   ])
 
   // Debounced sync form data to session store (500ms delay)
@@ -170,7 +171,7 @@ export const useFormSessionSync = ({
         generalLogger.warn('Failed to sync form data to session', { error: err })
       }
     }, 500),
-    [session, updateSessionData]
+    []
   )
 
   // Sync form data to session store whenever it changes (debounced)

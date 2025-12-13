@@ -6,9 +6,9 @@
  * @module components/chat
  */
 
-export { MessageItem } from './MessageItem'
-export { ChatInputForm } from './ChatInputForm'
-export { MessagesList } from './MessagesList'
-export type { MessageItemProps } from './MessageItem'
 export type { ChatInputFormProps } from './ChatInputForm'
+export { ChatInputForm } from './ChatInputForm'
+export type { MessageItemProps } from './MessageItem'
+export { MessageItem } from './MessageItem'
 export type { MessagesListProps } from './MessagesList'
+export { MessagesList } from './MessagesList'

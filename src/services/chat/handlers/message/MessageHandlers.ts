@@ -7,7 +7,6 @@
  * @module services/chat/handlers/message/MessageHandlers
  */
 
-import { Message } from '../../../../hooks/useStreamingChatState'
 import { chatLogger } from '../../../../utils/logger'
 import { StreamEventHandlerCallbacks } from '../../StreamEventHandler'
 
@@ -247,7 +246,7 @@ export class MessageHandlers {
       chatLogger.debug('Creating new streaming message')
 
       // Create a new AI message for streaming
-      const { newMessage } = this.callbacks.addMessage({
+      this.callbacks.addMessage({
         type: 'ai',
         content: '',
         isStreaming: true,

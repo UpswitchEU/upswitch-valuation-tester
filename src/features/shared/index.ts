@@ -7,10 +7,10 @@
 
 // Error Boundaries (hierarchical error handling)
 export {
-  ErrorBoundary,
   AppErrorBoundary,
-  FeatureErrorBoundary,
   ComponentErrorBoundary,
+  ErrorBoundary,
+  FeatureErrorBoundary,
   NetworkErrorBoundary,
 } from './components/ErrorBoundary'
 

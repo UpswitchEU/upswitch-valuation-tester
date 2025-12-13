@@ -1,5 +1,5 @@
 import { DollarSign, Send } from 'lucide-react'
-import React, { useEffect, useRef, useState } from 'react'
+import React, { useCallback, useEffect, useRef, useState } from 'react'
 import { useLoadingMessage } from '../hooks/useLoadingMessage'
 import { HTMLProcessor } from '../utils/htmlProcessor'
 import { serviceLogger } from '../utils/logger'
@@ -62,13 +62,13 @@ What's your annual revenue for this year? (in EUR)
     },
   ]
 
-  const scrollToBottom = () => {
+  const scrollToBottom = useCallback(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }
+  }, [])
 
   useEffect(() => {
     scrollToBottom()
-  }, [messages])
+  }, [scrollToBottom])
 
   const handleSend = async () => {
     if (!input.trim() || isProcessing) return

@@ -1,3 +1,5 @@
+'use client'
+
 import { useRouter } from 'next/navigation'
 import React, { useEffect, useRef, useState } from 'react'
 import { MinimalHeader } from '../components/MinimalHeader'
@@ -27,7 +29,7 @@ export const HomePage: React.FC = () => {
     } else if (token && fromMainPlatform) {
       generalLogger.info('Token detected from main platform - staying on homepage for user choice')
     }
-  }, [navigate])
+  }, [router])
 
   // Auto-focus the textarea when component mounts
   useEffect(() => {

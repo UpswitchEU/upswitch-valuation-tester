@@ -1,18 +1,18 @@
-import { api } from './api'
-import { serviceLogger } from '../utils/logger'
 import type {
-  ConversationStepRequest,
-  ConversationStartResponse,
-  ConversationStepResponse,
-  ConversationContext,
-  OwnerProfileRequest,
   BusinessModel, // ADD: BusinessModel import
+  ConversationContext,
+  ConversationStartResponse,
+  ConversationStepRequest,
+  ConversationStepResponse,
+  OwnerProfileRequest,
 } from '../types/valuation'
 import {
-  mapToBusinessModel,
   inferBusinessModelFromIndustry,
   isValidYear,
+  mapToBusinessModel,
 } from '../utils/businessExtractionUtils'
+import { serviceLogger } from '../utils/logger'
+import { api } from './api'
 
 export interface TriageSession {
   session_id: string

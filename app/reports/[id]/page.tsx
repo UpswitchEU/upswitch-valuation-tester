@@ -1,20 +1,15 @@
-'use client';
+'use client'
 
-import { ValuationReport } from '../../../src/components/ValuationReport';
+import { use } from 'react'
+import { ValuationReport } from '../../../src/components/ValuationReport'
 
 interface ValuationReportPageProps {
-  params: {
-    id: string;
-  };
+  params: Promise<{
+    id: string
+  }>
 }
 
 export default function ValuationReportPage({ params }: ValuationReportPageProps) {
-  return <ValuationReport reportId={params.id} />;
-}
-
-export async function generateMetadata({ params }: ValuationReportPageProps) {
-  return {
-    title: `Valuation Report ${params.id}`,
-    description: 'Professional business valuation analysis and report',
-  };
+  const { id } = use(params)
+  return <ValuationReport reportId={id} />
 }

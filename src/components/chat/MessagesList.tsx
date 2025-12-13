@@ -7,8 +7,8 @@
  * @module components/chat/MessagesList
  */
 
-import React from 'react'
 import { AnimatePresence } from 'framer-motion'
+import React from 'react'
 import { Message } from '../../hooks/useStreamingChatState'
 import { TypingIndicator } from '../TypingIndicator'
 import { MessageItem } from './MessageItem'

@@ -305,7 +305,9 @@ const CustomDropdown: React.FC<CustomDropdownProps> = ({
                 <button
                   key={option.value}
                   type="button"
-                  ref={(el) => (optionRefs.current[index] = el)}
+                  ref={(el) => {
+                    optionRefs.current[index] = el
+                  }}
                   onClick={() => handleOptionSelect(option.value)}
                   onKeyDown={handleKeyDown}
                   disabled={option.disabled}

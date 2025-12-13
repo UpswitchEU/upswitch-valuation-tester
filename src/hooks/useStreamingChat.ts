@@ -5,16 +5,16 @@
  * Extracted from StreamingChat to improve testability and reusability.
  */
 
-import { useState, useRef, useCallback } from 'react'
+import { useCallback, useRef, useState } from 'react'
 import { streamingChatService } from '../services/chat/streamingChatService'
 import { chatLogger } from '../utils/logger'
 import {
+  completeMessage,
   createMessage,
   createStreamingMessage,
-  completeMessage,
-  updateMessageContent,
   filterValidMessages,
   type Message,
+  updateMessageContent,
 } from '../utils/messageUtils'
 
 interface StreamingChatState {
@@ -139,16 +139,7 @@ export const useStreamingChat = (
         setCurrentStreamingMessage(null)
       }
     },
-    [
-      isStreaming,
-      sessionId,
-      userId,
-      addMessage,
-      onMessageComplete,
-      onValuationComplete,
-      onReportUpdate,
-      onProgressUpdate,
-    ]
+    [isStreaming, sessionId, userId, addMessage, onMessageComplete, onReportUpdate]
   )
 
   const stopStreaming = useCallback(() => {

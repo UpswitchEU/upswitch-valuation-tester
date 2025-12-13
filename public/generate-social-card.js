@@ -1,5 +1,5 @@
-import fs from 'fs';
-import path from 'path';
+import fs from 'fs'
+import path from 'path'
 
 // Simple HTML to PNG converter using canvas-like approach
 // This is a fallback - in production you'd use Puppeteer or similar
@@ -190,11 +190,13 @@ const htmlContent = `<!DOCTYPE html>
         <div class="value-prop">Trusted by 10,000+ European SMEs</div>
     </div>
 </body>
-</html>`;
+</html>`
 
 // Write the HTML content to a file
-fs.writeFileSync('social-card-1200x630.html', htmlContent);
+fs.writeFileSync('social-card-1200x630.html', htmlContent)
 
-console.log('Social card HTML generated successfully!');
-console.log('To generate the PNG, open social-card-1200x630.html in a browser and take a screenshot at 1200x630 resolution.');
-console.log('Or use a tool like Puppeteer to automate the screenshot process.');
+console.log('Social card HTML generated successfully!')
+console.log(
+  'To generate the PNG, open social-card-1200x630.html in a browser and take a screenshot at 1200x630 resolution.'
+)
+console.log('Or use a tool like Puppeteer to automate the screenshot process.')

@@ -352,7 +352,7 @@ export class HttpCompressionError extends AppError {
   }
 }
 
-export class RangeError extends AppError {
+export class HttpRangeError extends AppError {
   constructor(message: string, context?: Record<string, any>) {
     super(message, 'RANGE_ERROR', 416, context)
   }

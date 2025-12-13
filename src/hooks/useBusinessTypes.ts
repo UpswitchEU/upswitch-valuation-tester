@@ -7,11 +7,11 @@
  * @version 1.0.0
  */
 
-import { useState, useEffect, useCallback } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import {
-  businessTypesApiService,
   BusinessType,
   BusinessTypeOption,
+  businessTypesApiService,
 } from '../services/businessTypesApi'
 
 // ============================================================================

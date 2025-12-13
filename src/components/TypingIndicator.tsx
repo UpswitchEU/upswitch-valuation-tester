@@ -1,6 +1,6 @@
-import React from 'react'
-import { Bot } from 'lucide-react'
 import { motion } from 'framer-motion'
+import { Bot } from 'lucide-react'
+import React from 'react'
 
 interface TypingIndicatorProps {
   context?: string

@@ -58,7 +58,7 @@ class GuestSessionService {
       } else {
         this.consecutiveFailures = failureCount
       }
-    } catch (error) {
+    } catch (_error) {
       // If localStorage fails, start fresh
       this.resetCircuitBreaker()
     }
@@ -75,7 +75,7 @@ class GuestSessionService {
       localStorage.removeItem(ACTIVITY_UPDATE_DISABLED_KEY)
       localStorage.removeItem(ACTIVITY_FAILURE_COUNT_KEY)
       localStorage.removeItem(ACTIVITY_LAST_FAILURE_KEY)
-    } catch (error) {
+    } catch (_error) {
       // Ignore localStorage errors
     }
   }
@@ -90,7 +90,7 @@ class GuestSessionService {
     try {
       localStorage.setItem(ACTIVITY_FAILURE_COUNT_KEY, this.consecutiveFailures.toString())
       localStorage.setItem(ACTIVITY_LAST_FAILURE_KEY, now.toString())
-    } catch (error) {
+    } catch (_error) {
       // Ignore localStorage errors
     }
 
@@ -99,7 +99,7 @@ class GuestSessionService {
       this.circuitBreakerOpenUntil = now + CIRCUIT_BREAKER_COOLDOWN
       try {
         localStorage.setItem(ACTIVITY_UPDATE_DISABLED_KEY, 'true')
-      } catch (error) {
+      } catch (_error) {
         // Ignore localStorage errors
       }
       generalLogger.warn(
@@ -117,7 +117,7 @@ class GuestSessionService {
       try {
         localStorage.removeItem(ACTIVITY_FAILURE_COUNT_KEY)
         localStorage.removeItem(ACTIVITY_LAST_FAILURE_KEY)
-      } catch (error) {
+      } catch (_error) {
         // Ignore localStorage errors
       }
     }

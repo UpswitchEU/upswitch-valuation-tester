@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { generalLogger } from '../utils/logger'
 
 // Note: Owner Dependency UI has been removed. This hook is kept for backward compatibility
@@ -57,7 +57,7 @@ export const useProfileData = (): UseProfileDataReturn => {
 
   useEffect(() => {
     fetchProfile()
-  }, [])
+  }, [fetchProfile])
 
   return {
     profileData,

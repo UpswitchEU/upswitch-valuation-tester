@@ -8,10 +8,10 @@ import { useAuth } from '../../../hooks/useAuth'
 import { useValuationStore } from '../../../store/useValuationStore'
 import { convertDataResponsesToFormData } from '../../../utils/dataCollectionUtils'
 import { generalLogger } from '../../../utils/logger'
-import { ValuationToolbar } from './ValuationToolbar'
+import { ValuationToolbar } from '../../../components/ValuationToolbar'
 
 // Lazy load results component
-const Results = lazy(() => import('./Results').then((m) => ({ default: m.Results })))
+const Results = lazy(() => import('../../../components/Results').then((m) => ({ default: m.Results })))
 
 // Loading component
 const ComponentLoader: React.FC<{ message?: string }> = ({ message = 'Loading...' }) => (
@@ -36,7 +36,7 @@ export const ManualValuationFlow: React.FC<ManualValuationFlowProps> = ({
 }) => {
   const { result, isCalculating, calculateValuation, updateFormData } = useValuationStore()
   const { user } = useAuth()
-  const [collectedData, setCollectedData] = useState<DataResponse[]>([])
+  const [_collectedData, setCollectedData] = useState<DataResponse[]>([])
 
   // Handle data collection
   const handleDataCollected = (responses: DataResponse[]) => {
@@ -69,7 +69,9 @@ export const ManualValuationFlow: React.FC<ManualValuationFlowProps> = ({
   }
 
   // Handle progress updates
-  const handleProgressUpdate = (progress: CollectionProgress) => {
+  const handleProgressUpdate = (
+    progress: { overallProgress: number; completedFields: number; totalFields: number }
+  ) => {
     generalLogger.debug('Manual flow progress update', {
       progress: progress.overallProgress,
       completedFields: progress.completedFields,

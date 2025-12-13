@@ -72,7 +72,7 @@ const FieldInput: React.FC<FieldInputProps> = ({
 
   switch (field.type) {
     case 'text':
-    case 'textarea':
+    case 'textarea': {
       const textValue = typeof value === 'string' ? value : String(value || '')
       if (field.type === 'textarea') {
         return (
@@ -98,9 +98,10 @@ const FieldInput: React.FC<FieldInputProps> = ({
           className={baseClasses}
         />
       )
+    }
 
     case 'number':
-    case 'currency':
+    case 'currency': {
       const numericValue = typeof value === 'number' ? value : value ? Number(value) : ''
       return (
         <input
@@ -121,8 +122,9 @@ const FieldInput: React.FC<FieldInputProps> = ({
           className={baseClasses}
         />
       )
+    }
 
-    case 'select':
+    case 'select': {
       const selectValue = typeof value === 'string' ? value : String(value || '')
       return (
         <select
@@ -140,8 +142,9 @@ const FieldInput: React.FC<FieldInputProps> = ({
           ))}
         </select>
       )
+    }
 
-    case 'boolean':
+    case 'boolean': {
       const booleanValue = Boolean(value)
       return (
         <div className="flex items-center space-x-2">
@@ -156,8 +159,9 @@ const FieldInput: React.FC<FieldInputProps> = ({
           <span className="text-sm text-zinc-300">Yes</span>
         </div>
       )
+    }
 
-    case 'percentage':
+    case 'percentage': {
       const percentageValue = typeof value === 'number' ? value * 100 : value ? Number(value) : ''
       return (
         <div className="relative">
@@ -175,8 +179,9 @@ const FieldInput: React.FC<FieldInputProps> = ({
           <span className="absolute right-3 top-2 text-zinc-400">%</span>
         </div>
       )
+    }
 
-    default:
+    default: {
       const defaultValue = typeof value === 'string' ? value : String(value || '')
       return (
         <input
@@ -189,5 +194,6 @@ const FieldInput: React.FC<FieldInputProps> = ({
           className={baseClasses}
         />
       )
+    }
   }
 }

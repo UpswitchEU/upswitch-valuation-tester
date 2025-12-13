@@ -64,6 +64,7 @@ export type ConversationAction =
   | { type: 'SET_FULLSCREEN'; payload: boolean }
   | { type: 'SET_REGENERATION_WARNING'; payload: boolean }
   | { type: 'SET_PENDING_RESULT'; payload: ValuationResponse | null }
+  | { type: 'SET_SHOW_OUT_OF_CREDITS_MODAL'; payload: boolean }
 
   // Reset
   | { type: 'RESET_STATE' }

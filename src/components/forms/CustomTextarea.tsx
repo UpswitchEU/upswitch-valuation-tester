@@ -2,7 +2,7 @@
 // Location: src/shared/components/forms/CustomTextarea.tsx
 // Purpose: Reusable textarea with smooth animations and validation states
 
-import React, { useEffect, useRef, useState } from 'react'
+import React, { useCallback, useEffect, useRef, useState } from 'react'
 
 export interface CustomTextareaProps {
   label: string
@@ -73,7 +73,7 @@ const CustomTextarea: React.FC<CustomTextareaProps> = ({
   const hasError = error && touched
 
   // Auto-resize functionality
-  const adjustHeight = () => {
+  const adjustHeight = useCallback(() => {
     if (autoResize && ref.current) {
       const textarea = ref.current
       textarea.style.height = 'auto'
@@ -83,11 +83,11 @@ const CustomTextarea: React.FC<CustomTextareaProps> = ({
       const newHeight = Math.min(Math.max(scrollHeight, minHeightPx), maxHeightPx)
       textarea.style.height = `${newHeight}px`
     }
-  }
+  }, [autoResize, minRows, minHeight, maxRows, maxHeight, ref])
 
   useEffect(() => {
     adjustHeight()
-  }, [value, autoResize, minHeight, maxHeight, adjustHeight])
+  }, [adjustHeight])
 
   return (
     <div className={`mb-6 ${className}`}>

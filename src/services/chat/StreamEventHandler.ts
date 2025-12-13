@@ -10,7 +10,7 @@ import { Message } from '../../hooks/useStreamingChatState'
 import { chatLogger } from '../../utils/logger'
 import { businessTypesApiService } from '../businessTypesApi'
 import { registryService } from '../registry/registryService'
-import { MessageHandlers, ReportHandlers, ValuationHandlers, UIHandlers } from './handlers'
+import { MessageHandlers, ReportHandlers, UIHandlers, ValuationHandlers } from './handlers'
 
 const normalizeText = (value: string) => value.trim().toLowerCase()
 
@@ -31,7 +31,7 @@ const simpleSimilarity = (a: string, b: string): number => {
   return longest / Math.max(s1.length, s2.length)
 }
 
-const getFallbackBusinessTypeSuggestions = (query: string, limit = 5) => {
+const _getFallbackBusinessTypeSuggestions = (query: string, limit = 5) => {
   const normalized = normalizeText(query)
   const scored = BUSINESS_TYPES_FALLBACK.map((bt: BusinessTypeOption) => ({
     text: bt.label?.replace(/^[^\s]+\s/, '') || bt.label || bt.value,

@@ -4,19 +4,19 @@
  * Comprehensive test suite for error handling functionality
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ErrorHandler } from '../handler'
 import {
-  NetworkError,
-  RegistryError,
-  ValidationError,
   AuthenticationError,
-  TimeoutError,
-  RateLimitError,
-  ServerError,
-  NotFoundError,
   BusinessLogicError,
   DataQualityError,
+  NetworkError,
+  NotFoundError,
+  RateLimitError,
+  RegistryError,
+  ServerError,
+  TimeoutError,
+  ValidationError,
 } from '../types'
 
 // Mock the logger to avoid console output during tests

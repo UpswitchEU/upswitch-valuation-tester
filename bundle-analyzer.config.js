@@ -5,8 +5,8 @@
  * Run with: npm run analyze-bundle
  */
 
-const { BundleAnalyzerPlugin } = require('webpack-bundle-analyzer');
-const path = require('path');
+const { BundleAnalyzerPlugin } = require('webpack-bundle-analyzer')
+const path = require('path')
 
 module.exports = {
   plugins: [
@@ -73,4 +73,4 @@ module.exports = {
       },
     },
   },
-};
+}

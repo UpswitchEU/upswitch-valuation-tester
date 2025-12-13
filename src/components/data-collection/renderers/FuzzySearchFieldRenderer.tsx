@@ -18,7 +18,7 @@ export const FuzzySearchFieldRenderer: React.FC<FieldRendererProps> = ({
 }) => {
   const [query, setQuery] = useState('')
   const [isOpen, setIsOpen] = useState(false)
-  const hasErrors = errors.length > 0
+  const _hasErrors = errors.length > 0
   const errorMessage = errors.find((e) => e.severity === 'error')?.message
 
   // Fuzzy search through options
