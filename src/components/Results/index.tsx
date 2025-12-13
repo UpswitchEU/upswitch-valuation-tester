@@ -1,5 +1,5 @@
 import React, { memo } from 'react'
-import { useValuationStore } from '../../store/useValuationStore'
+import { useValuationResultsStore } from '../../store/useValuationResultsStore'
 
 /**
  * Results Component - Displays Accountant View HTML Report (Preview Tab)
@@ -17,7 +17,7 @@ import { useValuationStore } from '../../store/useValuationStore'
  * PERFORMANCE: Memoized to prevent unnecessary re-renders
  */
 export const Results: React.FC = memo(() => {
-  const { result } = useValuationStore()
+  const { result } = useValuationResultsStore()
 
   // Note: Result state logging removed - HTML report rendering is handled by dangerouslySetInnerHTML
 

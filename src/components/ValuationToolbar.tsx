@@ -46,6 +46,7 @@ export const ValuationToolbar: React.FC<ValuationToolbarProps> = ({
   const {
     isEditingName,
     editedName,
+    setEditedName,
     generatedName,
     nameInputRef,
     handleNameEdit,

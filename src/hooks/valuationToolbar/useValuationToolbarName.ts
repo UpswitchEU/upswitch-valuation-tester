@@ -14,6 +14,7 @@ import { NameGenerator } from '../../utils/nameGenerator'
 export interface UseValuationToolbarNameReturn {
   isEditingName: boolean
   editedName: string
+  setEditedName: (name: string) => void
   generatedName: string
   nameInputRef: React.RefObject<HTMLInputElement>
   handleNameEdit: () => void
@@ -106,6 +107,7 @@ export const useValuationToolbarName = (
   return {
     isEditingName,
     editedName,
+    setEditedName,
     generatedName,
     nameInputRef,
     handleNameEdit,
@@ -114,3 +116,4 @@ export const useValuationToolbarName = (
     handleKeyDown,
   }
 }
+

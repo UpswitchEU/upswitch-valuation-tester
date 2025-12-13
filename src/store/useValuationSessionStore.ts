@@ -431,8 +431,8 @@ export const useValuationSessionStore = create<ValuationSessionStore>((set, get)
       // This prevents the regeneration modal from appearing incorrectly
       // Results are flow-specific and should not carry over between flows
       try {
-        const { useValuationStore } = await import('./useValuationStore')
-        useValuationStore.getState().clearResult()
+        const { useValuationResultsStore } = await import('./useValuationResultsStore')
+        useValuationResultsStore.getState().clearResult()
         storeLogger.info('Cleared valuation result on flow switch', {
           from: session.currentView,
           to: view,

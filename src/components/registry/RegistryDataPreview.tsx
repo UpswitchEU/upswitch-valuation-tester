@@ -1,15 +1,15 @@
 import {
-  Building2,
-  Calculator,
-  Calendar,
-  Check,
-  Edit2,
-  ExternalLink,
-  TrendingUp,
-  X,
+    Building2,
+    Calculator,
+    Calendar,
+    Check,
+    Edit2,
+    ExternalLink,
+    TrendingUp,
+    X,
 } from 'lucide-react'
 import React, { useState } from 'react'
-import { useValuationStore } from '../../store/useValuationStore'
+import { useValuationFormStore } from '../../store/useValuationFormStore'
 import type { CompanyFinancialData, FinancialFilingYear } from '../../types/registry'
 
 interface RegistryDataPreviewProps {
@@ -21,7 +21,7 @@ export const RegistryDataPreview: React.FC<RegistryDataPreviewProps> = ({
   companyData,
   onCalculateValuation,
 }) => {
-  const { updateFormData } = useValuationStore()
+  const { updateFormData } = useValuationFormStore()
   const [isEditing, setIsEditing] = useState(false)
   const [editedData, setEditedData] = useState<FinancialFilingYear>(
     companyData.filing_history[0] || {
@@ -70,20 +70,20 @@ export const RegistryDataPreview: React.FC<RegistryDataPreviewProps> = ({
         revenue: editedData.revenue || 0,
         ebitda:
           editedData.ebitda !== undefined && editedData.ebitda !== null ? editedData.ebitda : 0, // Preserve negative values
-        net_income: editedData.net_income,
-        total_assets: editedData.total_assets,
-        total_debt: editedData.total_debt,
-        cash: editedData.cash,
-      },
+        ...(editedData.net_income !== undefined && { net_income: editedData.net_income }),
+        ...(editedData.total_assets !== undefined && { total_assets: editedData.total_assets }),
+        ...(editedData.total_debt !== undefined && { total_debt: editedData.total_debt }),
+        ...(editedData.cash !== undefined && { cash: editedData.cash }),
+      } as any,
       // Add historical data if available (excluding the current year)
       historical_years_data: companyData.filing_history.slice(1).map((year) => ({
         year: year.year,
         revenue: year.revenue || 0,
         ebitda: year.ebitda !== undefined && year.ebitda !== null ? year.ebitda : 0, // Preserve negative values
-        net_income: year.net_income,
-        total_assets: year.total_assets,
-        total_debt: year.total_debt,
-        cash: year.cash,
+        ...(year.net_income !== undefined && { net_income: year.net_income }),
+        ...(year.total_assets !== undefined && { total_assets: year.total_assets }),
+        ...(year.total_debt !== undefined && { total_debt: year.total_debt }),
+        ...(year.cash !== undefined && { cash: year.cash }),
       })),
     })
     setIsEditing(false)

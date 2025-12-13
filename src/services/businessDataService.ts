@@ -30,50 +30,6 @@ import {
 // Re-export types for backward compatibility
 export type { BusinessCardData, BusinessProfileData }
 
-export interface BusinessProfileData {
-  user_id: string
-  company_name?: string
-  industry?: string
-  business_type?: string
-  business_model?: string // ADD: Business model field
-  business_type_id?: string // NEW: PostgreSQL business type ID
-  years_in_operation?: number
-  founded_year?: number
-  company_age?: number // ADD: Company age field
-  employee_count_range?: string
-  revenue_range?: string
-  asking_price_range?: string
-  company_description?: string
-  business_highlights?: string
-  reason_for_selling?: string
-  city?: string
-  // Add financial data properties for intelligent triage
-  revenue?: number
-  ebitda?: number
-  employees?: number
-  country?: string
-  business_verified?: boolean
-  listing_status?: string
-  created_at: string
-  updated_at: string
-}
-
-export interface BusinessCardData {
-  company_name?: string
-  industry?: string
-  business_type?: string
-  years_in_operation?: number
-  founded_year?: number
-  employee_count_range?: string
-  revenue_range?: string
-  asking_price_range?: string
-  company_description?: string
-  business_highlights?: string
-  reason_for_selling?: string
-  city?: string
-  country?: string
-}
-
 /**
  * Legacy BusinessDataService class - delegates to new focused services
  * Maintains backward compatibility while using the new modular architecture

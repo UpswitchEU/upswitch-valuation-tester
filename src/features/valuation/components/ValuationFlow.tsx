@@ -13,8 +13,9 @@
 import React, { lazy, Suspense, useCallback } from 'react'
 import { DataResponse } from '../../../components/data-collection'
 import { useAuth } from '../../../hooks/useAuth'
+import { useValuationApiStore } from '../../../store/useValuationApiStore'
 import { useValuationFormStore } from '../../../store/useValuationFormStore'
-import { useValuationStore } from '../../../store/useValuationStore'
+import { useValuationResultsStore } from '../../../store/useValuationResultsStore'
 import type { ValuationResponse } from '../../../types/valuation'
 import { generalLogger } from '../../../utils/logger'
 
@@ -26,9 +27,9 @@ const Results = lazy(() =>
   import('../../../components/Results').then((m) => ({ default: m.Results }))
 )
 
-const StreamingChat = lazy(() =>
-  import('../../../components/StreamingChat').then((m) => ({
-    default: m.StreamingChat,
+const ConversationalLayout = lazy(() =>
+  import('../../conversational/components/ConversationalLayout').then((m) => ({
+    default: m.ConversationalLayout,
   }))
 )
 
@@ -98,7 +99,9 @@ interface ManualFlowProps {
 }
 
 const ManualFlow: React.FC<ManualFlowProps> = ({ reportId, onComplete }) => {
-  const { result, isCalculating, calculateValuation, setCollectedData } = useValuationStore()
+  const { result } = useValuationResultsStore()
+  const { isCalculating, calculateValuation } = useValuationApiStore()
+  const { setCollectedData } = useValuationFormStore()
   const { user } = useAuth()
 
   // Handle data collection
@@ -159,7 +162,15 @@ const ManualFlow: React.FC<ManualFlowProps> = ({ reportId, onComplete }) => {
             try {
               // Lazy load heavy PDF library only when needed
               const { DownloadService } = await import('../../../services/downloadService')
-              await DownloadService.downloadPDF(result, {
+              const valuationData = {
+                companyName: result.company_name || 'Company',
+                valuationAmount: result.equity_value_mid,
+                valuationDate: new Date(),
+                method: 'DCF Analysis',
+                confidenceScore: result.confidence_score,
+                htmlContent: result.html_report,
+              }
+              await DownloadService.downloadPDF(valuationData, {
                 format: 'pdf',
                 filename: `valuation-${Date.now()}.pdf`,
               })
@@ -209,59 +220,29 @@ const ConversationalFlow: React.FC<ConversationalFlowProps> = ({
   reportId,
   onComplete,
   initialQuery = null,
-  autoSend = false
+  autoSend = false,
 }) => {
-  const { user } = useAuth()
-
-  // Handle valuation completion from chat
+  // Handle valuation completion
   const handleValuationComplete = useCallback(
-    (result: any) => {
-      // Convert chat result to ValuationResponse format if needed
-      onComplete(result as ValuationResponse)
+    (result: ValuationResponse) => {
+      generalLogger.info('Conversational valuation complete', {
+        valuationId: result.valuation_id,
+        reportId,
+      })
+      onComplete(result)
     },
-    [onComplete]
+    [onComplete, reportId]
   )
 
   return (
-    <div className="h-full flex flex-col">
-      {/* Toolbar */}
-      <Suspense fallback={<ComponentLoader message="Loading toolbar..." />}>
-        <ValuationToolbar
-          onRefresh={() => window.location.reload()}
-          onDownload={async () => {
-            // TODO: Implement conversational PDF download
-            console.log('PDF download not yet implemented for conversational flow')
-          }}
-          onFullScreen={() => {
-            /* TODO: Implement full screen */
-          }}
-          isGenerating={false} // TODO: Connect to chat state
-          user={user}
-          valuationName="Conversational Valuation"
-          valuationId={undefined}
-          activeTab="preview"
-          onTabChange={() => {
-            /* Single view for now */
-          }}
-        />
-      </Suspense>
-
-      {/* Chat Interface */}
-      <div className="flex-1 overflow-hidden">
-        <Suspense fallback={<ComponentLoader message="Loading chat..." />}>
-          <StreamingChat
-            sessionId={reportId}
-            userId={user?.id}
-            onValuationComplete={handleValuationComplete}
-            onValuationStart={() => {
-              generalLogger.info('Conversational valuation started', { reportId })
-            }}
-            initialMessage={initialQuery}
-            autoSend={autoSend}
-          />
-        </Suspense>
-      </div>
-    </div>
+    <Suspense fallback={<ComponentLoader message="Loading conversational interface..." />}>
+      <ConversationalLayout
+        reportId={reportId}
+        onComplete={handleValuationComplete}
+        initialQuery={initialQuery}
+        autoSend={autoSend}
+      />
+    </Suspense>
   )
 }
 
