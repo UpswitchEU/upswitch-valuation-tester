@@ -1,9 +1,11 @@
 /**
- * Valuation Components
+ * Valuation Feature Components
  *
- * Shared UI components for valuation workflows
- * This module contains components used across multiple valuation features.
+ * Exports unified valuation flow components.
  */
 
-// No components currently - this is for shared valuation components only
-// ConversationalValuationFlow belongs to conversational-valuation feature
+// Main unified component
+export { ValuationFlow } from './ValuationFlow';
+
+// Re-export types
+export type { ValuationFlowType } from './ValuationFlow';

@@ -6,15 +6,14 @@ This directory contains feature-based modules following clean architecture princ
 
 ```
 features/
-├── valuation/          # Core valuation workflow
-│   ├── components/     # UI components
-│   ├── hooks/          # Custom React hooks
-│   ├── services/       # Business logic & API
-│   ├── types/         # TypeScript types
-│   └── utils/         # Feature utilities
-├── conversation/       # Conversational AI
-├── reports/           # Report generation & display
-└── auth/              # Authentication & authorization
+├── valuation/          # Unified valuation workflow (manual + conversational)
+│   ├── components/     # Unified ValuationFlow component
+│   ├── index.ts        # Public API exports
+│   └── README.md       # Feature documentation
+├── manual-valuation/   # Manual form-based valuation
+├── conversational-valuation/ # AI-assisted conversational valuation
+├── auth/               # Authentication & authorization
+└── shared/             # Shared components and utilities
 ```
 
 ## Design Principles

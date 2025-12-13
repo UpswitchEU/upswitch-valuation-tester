@@ -24,19 +24,12 @@ interface ValuationFlowSelectorProps {
   onComplete: (result: ValuationResponse) => void;
 }
 
-// Lazy load flow components with performance monitoring
-const ManualValuationFlow = createMonitoredLazy(
-  () => import('../features/manual-valuation/components/ManualValuationFlow').then(module => ({
-    default: module.ManualValuationFlow
+// Lazy load unified flow component with performance monitoring
+const ValuationFlow = createMonitoredLazy(
+  () => import('../features/valuation/components/ValuationFlow').then(module => ({
+    default: module.ValuationFlow
   })),
-  'ManualValuationFlow'
-);
-
-const ConversationalValuationFlow = createMonitoredLazy(
-  () => import('../features/conversational-valuation/components/ConversationalValuationFlow').then(module => ({
-    default: module.ConversationalValuationFlow
-  })),
-  'ConversationalValuationFlow'
+  'ValuationFlow'
 );
 
 /**
@@ -85,37 +78,22 @@ export const ValuationFlowSelector: React.FC<ValuationFlowSelectorProps> = React
   if (stage === 'data-entry' && session) {
     return (
       <div className="relative h-full w-full">
-        {/* Conditionally render only the active flow component for better performance */}
+        {/* Render unified flow component based on session view */}
         {/* Smooth fade-in animation when component mounts */}
-        {session.currentView === 'manual' && (
-          <div
-            key="manual-flow"
-            className="absolute inset-0 animate-in fade-in duration-200 ease-out"
-          >
-            <Suspense fallback={null}>
-              <ManualValuationFlow
-                reportId={session.reportId}
-                onComplete={onComplete}
-              />
-            </Suspense>
-          </div>
-        )}
-
-        {session.currentView === 'conversational' && (
-          <div
-            key="conversational-flow"
-            className="absolute inset-0 animate-in fade-in duration-200 ease-out"
-          >
-            <Suspense fallback={null}>
-              <ConversationalValuationFlow
-                reportId={session.reportId}
-                onComplete={onComplete}
-                initialQuery={prefilledQuery}
-                autoSend={autoSend}
-              />
-            </Suspense>
-          </div>
-        )}
+        <div
+          key={`${session.currentView}-flow`}
+          className="absolute inset-0 animate-in fade-in duration-200 ease-out"
+        >
+          <Suspense fallback={null}>
+            <ValuationFlow
+              reportId={session.reportId}
+              flowType={session.currentView === 'manual' ? 'manual' : 'conversational'}
+              onComplete={onComplete}
+              initialQuery={prefilledQuery}
+              autoSend={autoSend}
+            />
+          </Suspense>
+        </div>
       </div>
     );
   }
