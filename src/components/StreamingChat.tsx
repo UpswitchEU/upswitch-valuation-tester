@@ -34,16 +34,8 @@ import { useConversationMetrics } from '../hooks/useConversationMetrics';
 import { useTypingAnimation } from '../hooks/useTypingAnimation';
 import { debugLogger } from '../utils/debugLogger';
 import { TypingIndicator } from './TypingIndicator';
-import { AI_CONFIG } from '../config';
-import { hasBusinessTypeSuggestions, parseBusinessTypeSuggestions } from './utils/businessTypeParsing';
-import { hasKBOSuggestions, parseKBOSuggestions } from './utils/kboParsing';
-import { AIHelpCard } from './AIHelpCard';
-import { ValuationReadyCTA } from './ValuationReadyCTA';
-import { BusinessTypeConfirmationCard } from './BusinessTypeConfirmationCard';
-import { CompanyNameConfirmationCard } from './CompanyNameConfirmationCard';
-import { SuggestionChips } from './SuggestionChips';
-import { BusinessTypeSuggestionsList } from './BusinessTypeSuggestionsList';
-import { KBOSuggestionsList } from './KBOSuggestionsList';
+import { MessagesList, ChatInputForm } from './chat';
+import { useStreamSubmission, useSuggestionHandlers, useSmartFollowUps } from '../hooks/chat';
 
 // Import Modular Precision Engines
 import {
