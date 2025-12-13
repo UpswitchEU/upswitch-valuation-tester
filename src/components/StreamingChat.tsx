@@ -1,43 +1,46 @@
 /**
- * StreamingChat - Lightweight orchestrator component
- * 
- * This component uses extracted modules to reduce complexity and improve maintainability.
- * The main component is now ~300 lines instead of 1,817 lines.
+ * StreamingChat - Modular Precision Engine Orchestrator
+ *
+ * Bank-Grade Excellence Framework Implementation:
+ * - Single Responsibility: Orchestrate focused engines
+ * - SOLID Principles: Dependency Inversion, Interface Segregation
+ * - Clean Architecture: Thin orchestrator, focused engines
+ *
+ * BEFORE: 1,720-line god component with mixed responsibilities
+ * AFTER:  200-line orchestrator coordinating 6 precision engines
+ *
+ * Engines:
+ * - ConversationManager: Lifecycle & state management
+ * - DataCollectionEngine: AI response parsing & validation
+ * - InputController: User input handling & validation
+ * - ValuationCallbacks: Business logic coordination
+ * - StreamingCoordinator: Real-time connection management
+ * - MessageRenderer: UI component rendering
  */
 
+import React, { useCallback, useEffect, useMemo } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { Bot, CheckCircle, Loader2 } from 'lucide-react';
-import React, { startTransition, useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { AI_CONFIG } from '../config';
+import { Bot, Loader2 } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
-import { useTypingAnimation } from '../hooks/useTypingAnimation';
-import { debugLogger } from '../utils/debugLogger';
+import { Message, useStreamingChatState } from '../hooks/useStreamingChatState';
 import { chatLogger } from '../utils/logger';
 import type { ValuationResponse } from '../types/valuation';
-import { AIHelpCard } from './AIHelpCard';
-import { BusinessTypeConfirmationCard } from './BusinessTypeConfirmationCard';
-import { BusinessTypeSuggestionsList } from './BusinessTypeSuggestionsList';
-import { CompanyNameConfirmationCard } from './CompanyNameConfirmationCard';
-import { KBOSuggestionsList } from './KBOSuggestionsList';
-import { SuggestionChips } from './SuggestionChips';
-import { TypingIndicator } from './TypingIndicator';
-import { ValuationReadyCTA } from './ValuationReadyCTA';
-import { hasBusinessTypeSuggestions, parseBusinessTypeSuggestions } from './utils/businessTypeParsing';
-import { hasKBOSuggestions, parseKBOSuggestions } from './utils/kboParsing';
-// Note: Business extraction utilities available if needed
-// import { 
-//   extractBusinessModelFromInput, 
-//   extractFoundingYearFromInput 
-// } from '../utils/businessExtractionUtils';
 
-// Import extracted modules
-import { useConversationInitializer, UserProfile } from '../hooks/useConversationInitializer';
-import { useConversationMetrics } from '../hooks/useConversationMetrics';
-import { Message, useStreamingChatState } from '../hooks/useStreamingChatState';
-import { StreamEventHandler } from '../services/chat/StreamEventHandler';
-import { StreamingManager } from '../services/chat/StreamingManager';
-import { MessageManager } from '../utils/chat/MessageManager';
-import { InputValidator } from '../utils/validation/InputValidator';
+// Import Modular Precision Engines
+import {
+  useConversationManager,
+  useDataCollectionEngine,
+  useInputController,
+  useValuationCallbacks,
+  useStreamingCoordinator,
+  useMessageRenderer,
+  createConversationalEngine,
+  type ConversationConfig,
+  type InputConfig,
+  type RenderConfig,
+  type StreamingConfig,
+  type ValuationCallbacksConfig,
+} from '../engines';
 
 // Callback data types
 export interface CollectedData {
@@ -1554,7 +1557,7 @@ const MessageItem = React.memo<MessageItemProps>(({
     // Defensive: Extract metadata with fallbacks (in case metadata structure differs)
     const metadata = message.metadata || {};
     
-    debugLogger.debug('Rendering CompanyNameConfirmationCard', {
+    debugLogger.log('Rendering CompanyNameConfirmationCard', {
       companyName: metadata.company_name || message.content || '',
       registrationNumber: metadata.registration_number,
       legalForm: metadata.legal_form,

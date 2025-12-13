@@ -9,9 +9,9 @@
 
 import React from 'react';
 import { FeatureErrorBoundary } from '../../../features/shared/components/ErrorBoundary';
-import { ConversationalLayout } from './ConversationalLayout';
-import { ConversationProvider } from '../context/ConversationContext';
 import type { ValuationResponse } from '../../../types/valuation';
+import { ConversationProvider } from '../context/ConversationContext';
+import { ConversationalLayout } from './ConversationalLayout';
 
 interface ConversationalValuationFlowProps {
   reportId: string;
