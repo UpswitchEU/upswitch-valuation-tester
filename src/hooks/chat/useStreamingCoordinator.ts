@@ -61,8 +61,9 @@ export interface UseStreamingCoordinatorOptions {
     phase?: number
   }) => void
   onReportComplete?: (html: string, valuationId: string) => void
-  onContextUpdate?: (context: unknown) => void
   onHtmlPreviewUpdate?: (html: string, previewType: string) => void
+  trackModelPerformance?: (metrics: ModelPerformanceMetrics) => void
+  trackConversationCompletion?: (success: boolean, hasValuation: boolean) => void
 }
 
 export interface UseStreamingCoordinatorReturn {
@@ -103,7 +104,6 @@ export function useStreamingCoordinator({
   onSectionLoading,
   onSectionComplete,
   onReportComplete,
-  onContextUpdate,
   onHtmlPreviewUpdate,
 }: UseStreamingCoordinatorOptions): UseStreamingCoordinatorReturn {
   // Refs for streaming state
@@ -152,8 +152,9 @@ export function useStreamingCoordinator({
       onSectionLoading,
       onSectionComplete,
       onReportComplete,
-      onContextUpdate,
       onHtmlPreviewUpdate,
+      trackModelPerformance: trackModelPerformance || (() => {}),
+      trackConversationCompletion: trackConversationCompletion || (() => {}),
     })
 
     return () => {
@@ -186,7 +187,6 @@ export function useStreamingCoordinator({
     onSectionLoading,
     onSectionComplete,
     onReportComplete,
-    onContextUpdate,
     onHtmlPreviewUpdate,
   ])
 

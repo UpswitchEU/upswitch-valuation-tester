@@ -77,33 +77,12 @@ export const ValuationFlow: React.FC<ValuationFlowProps> = ({
   // Render different flow based on type
   if (flowType === 'conversational') {
     return (
-      <Suspense fallback={<ComponentLoader message="Loading conversational flow..." />}>
-        <StreamingChat
-          sessionId={reportId}
-          userId={undefined} // Will be handled by auth context
-          onMessageComplete={() => {
-            // Handle message completion if needed
-          }}
-          onValuationComplete={onComplete}
-          onValuationStart={() => {
-            // Handle valuation start if needed
-          }}
-          onReportUpdate={() => {
-            // Handle report updates if needed
-          }}
-          onDataCollected={() => {
-            // Handle data collection if needed
-          }}
-          onValuationPreview={() => {
-            // Handle valuation preview if needed
-          }}
-          onCalculateOptionAvailable={() => {
-            // Handle calculate options if needed
-          }}
-          initialMessage={initialQuery || undefined}
-          autoSend={autoSend}
-        />
-      </Suspense>
+      <ConversationalFlow
+        reportId={reportId}
+        onComplete={onComplete}
+        initialQuery={initialQuery}
+        autoSend={autoSend}
+      />
     )
   }
 
@@ -161,19 +140,19 @@ const ManualFlow: React.FC<ManualFlowProps> = ({ reportId, onComplete }) => {
       {/* Data Collection Section */}
       <div className="flex-1 overflow-y-auto p-4">
         <Suspense fallback={<ComponentLoader message="Loading data collection..." />}>
-          <DataCollection
-            method="manual_form"
-            onDataCollected={handleDataCollected}
-            onProgressUpdate={handleProgressUpdate}
-            onComplete={handleCollectionComplete}
-          />
+        <DataCollection
+          method="manual_form"
+          onDataCollected={handleDataCollected}
+          onProgressUpdate={handleProgressUpdate}
+          onComplete={handleCollectionComplete}
+        />
         </Suspense>
       </div>
 
       {/* Toolbar */}
       <Suspense fallback={<ComponentLoader message="Loading toolbar..." />}>
-        <ValuationToolbar
-          onRefresh={() => window.location.reload()}
+      <ValuationToolbar
+        onRefresh={() => window.location.reload()}
         onDownload={async () => {
           if (result) {
             try {
@@ -188,18 +167,18 @@ const ManualFlow: React.FC<ManualFlowProps> = ({ reportId, onComplete }) => {
             }
           }
         }}
-          onFullScreen={() => {
-            /* TODO: Implement full screen */
-          }}
-          isGenerating={isCalculating}
-          user={user}
-          valuationName="Manual Valuation"
-          valuationId={result?.valuation_id}
-          activeTab="preview"
-          onTabChange={() => {
-            /* Single tab for now */
-          }}
-        />
+        onFullScreen={() => {
+          /* TODO: Implement full screen */
+        }}
+        isGenerating={isCalculating}
+        user={user}
+        valuationName="Manual Valuation"
+        valuationId={result?.valuation_id}
+        activeTab="preview"
+        onTabChange={() => {
+          /* Single tab for now */
+        }}
+      />
       </Suspense>
 
       {/* Results Display */}
@@ -216,3 +195,73 @@ const ManualFlow: React.FC<ManualFlowProps> = ({ reportId, onComplete }) => {
 
 ManualFlow.displayName = 'ManualFlow'
 ValuationFlow.displayName = 'ValuationFlow'
+
+// Conversational flow implementation
+interface ConversationalFlowProps {
+  reportId: string
+  onComplete: (result: ValuationResponse) => void
+  initialQuery?: string | null
+  autoSend?: boolean
+}
+
+const ConversationalFlow: React.FC<ConversationalFlowProps> = ({
+  reportId,
+  onComplete,
+  initialQuery = null,
+  autoSend = false
+}) => {
+  const { user } = useAuth()
+
+  // Handle valuation completion from chat
+  const handleValuationComplete = useCallback(
+    (result: any) => {
+      // Convert chat result to ValuationResponse format if needed
+      onComplete(result as ValuationResponse)
+    },
+    [onComplete]
+  )
+
+  return (
+    <div className="h-full flex flex-col">
+      {/* Toolbar */}
+      <Suspense fallback={<ComponentLoader message="Loading toolbar..." />}>
+        <ValuationToolbar
+          onRefresh={() => window.location.reload()}
+          onDownload={async () => {
+            // TODO: Implement conversational PDF download
+            console.log('PDF download not yet implemented for conversational flow')
+          }}
+          onFullScreen={() => {
+            /* TODO: Implement full screen */
+          }}
+          isGenerating={false} // TODO: Connect to chat state
+          user={user}
+          valuationName="Conversational Valuation"
+          valuationId={undefined}
+          activeTab="preview"
+          onTabChange={() => {
+            /* Single view for now */
+          }}
+        />
+      </Suspense>
+
+      {/* Chat Interface */}
+      <div className="flex-1 overflow-hidden">
+        <Suspense fallback={<ComponentLoader message="Loading chat..." />}>
+          <StreamingChat
+            sessionId={reportId}
+            userId={user?.id}
+            onValuationComplete={handleValuationComplete}
+            onValuationStart={() => {
+              generalLogger.info('Conversational valuation started', { reportId })
+            }}
+            initialMessage={initialQuery}
+            autoSend={autoSend}
+          />
+        </Suspense>
+      </div>
+    </div>
+  )
+}
+
+ConversationalFlow.displayName = 'ConversationalFlow'

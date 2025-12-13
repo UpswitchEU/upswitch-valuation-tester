@@ -131,8 +131,9 @@ export const StreamingChat: React.FC<import('./StreamingChat.types').StreamingCh
     onSectionLoading,
     onSectionComplete,
     onReportComplete,
-    onContextUpdate,
     onHtmlPreviewUpdate,
+    trackModelPerformance: () => {}, // Placeholder implementation
+    trackConversationCompletion: () => {}, // Placeholder implementation
   })
 
   // Extract stream submission logic - simplified version for new architecture

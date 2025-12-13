@@ -37,16 +37,10 @@ const nextConfig = {
               chunks: 'all',
               priority: 15,
             },
-            // Feature modules
-            conversational: {
-              test: /src[\\/]features[\\/]conversational-valuation/,
-              name: 'conversational-feature',
-              chunks: 'all',
-              priority: 5,
-            },
-            manual: {
-              test: /src[\\/]features[\\/]manual-valuation/,
-              name: 'manual-feature',
+            // Feature modules - using streaming chat for conversational flow
+            streaming: {
+              test: /src[\\/]components[\\/]StreamingChat/,
+              name: 'streaming-feature',
               chunks: 'all',
               priority: 5,
             },
