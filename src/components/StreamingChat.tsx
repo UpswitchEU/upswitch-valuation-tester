@@ -21,9 +21,7 @@
 import React, { useCallback, useEffect, useRef } from 'react';
 import { useMessageManagement } from '../hooks/chat/useMessageManagement';
 import { useSmartSuggestions } from '../hooks/chat/useSmartSuggestions';
-import { useStreamSubmission } from '../hooks/chat/useStreamSubmission';
 import { useStreamingCoordinator } from '../hooks/chat/useStreamingCoordinator';
-import { useSuggestionHandlers } from '../hooks/chat/useSuggestionHandlers';
 import { useAuth } from '../hooks/useAuth';
 import { useConversationInitializer, type UserProfile } from '../hooks/useConversationInitializer';
 import { useConversationMetrics } from '../hooks/useConversationMetrics';
@@ -130,23 +128,55 @@ export const StreamingChat: React.FC<import('./StreamingChat.types').StreamingCh
     onHtmlPreviewUpdate,
   });
 
-  // Extract stream submission logic
-  const { handleSubmit: submitStream } = useStreamSubmission({
-    sessionId,
-    userId,
-    input: state.input,
-    setInput: state.setInput,
-    messages: state.messages,
-    addMessage: messageManagement.addMessage,
-    startStreaming: streamingCoordinator.startStreaming,
-    setIsStreaming: state.setIsStreaming,
-  });
+  // Extract stream submission logic - simplified version for new architecture
+  const submitStream = useCallback(async () => {
+    if (!state.input.trim()) return;
 
-  // Extract suggestion handlers
-  const suggestionHandlers = useSuggestionHandlers({
-    setInput: state.setInput,
-    handleSubmit: submitStream,
-  });
+    try {
+      await streamingCoordinator.startStreaming(state.input);
+      state.setInput(''); // Clear input after submission
+    } catch (error) {
+      chatLogger.error('Stream submission failed', { error, sessionId });
+    }
+  }, [state.input, streamingCoordinator, state.setInput, sessionId]);
+
+  // Extract suggestion handlers - simplified version
+  const suggestionHandlers = {
+    handleSuggestionSelect: useCallback((suggestion: string) => {
+      state.setInput(suggestion);
+      submitStream();
+    }, [state.setInput, submitStream]),
+
+    handleSuggestionDismiss: useCallback(() => {
+      // Handle suggestion dismissal if needed
+    }, []),
+
+    handleClarificationConfirm: useCallback((messageId: string) => {
+      // Handle clarification confirmation
+      messageManagement.addMessage({
+        type: 'user',
+        content: 'Yes',
+        role: 'user'
+      });
+      submitStream();
+    }, [messageManagement, submitStream]),
+
+    handleClarificationReject: useCallback((messageId: string) => {
+      // Handle clarification rejection
+      messageManagement.addMessage({
+        type: 'user',
+        content: 'No',
+        role: 'user'
+      });
+      submitStream();
+    }, [messageManagement, submitStream]),
+
+    handleKBOSuggestionSelect: useCallback((selection: string) => {
+      // Handle KBO suggestion selection
+      state.setInput(selection);
+      submitStream();
+    }, [state.setInput, submitStream])
+  };
 
   // CRITICAL: Restore messages from backend on mount
   const lastRestoredMessagesRef = useRef<string>('');

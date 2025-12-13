@@ -7,21 +7,21 @@
  * @module components/chat/MessageItem
  */
 
-import React from 'react';
 import { motion } from 'framer-motion';
 import { Bot, CheckCircle, Loader2 } from 'lucide-react';
+import React from 'react';
+import { AI_CONFIG } from '../../config';
 import type { Message } from '../../types/message';
 import { debugLogger } from '../../utils/debugLogger';
-import { AI_CONFIG } from '../../config';
-import { hasBusinessTypeSuggestions, parseBusinessTypeSuggestions } from '../utils/businessTypeParsing';
-import { hasKBOSuggestions, parseKBOSuggestions } from '../utils/kboParsing';
 import { AIHelpCard } from '../AIHelpCard';
-import { ValuationReadyCTA } from '../ValuationReadyCTA';
 import { BusinessTypeConfirmationCard } from '../BusinessTypeConfirmationCard';
-import { CompanyNameConfirmationCard } from '../CompanyNameConfirmationCard';
-import { SuggestionChips } from '../SuggestionChips';
 import { BusinessTypeSuggestionsList } from '../BusinessTypeSuggestionsList';
+import { CompanyNameConfirmationCard } from '../CompanyNameConfirmationCard';
 import { KBOSuggestionsList } from '../KBOSuggestionsList';
+import { SuggestionChips } from '../SuggestionChips';
+import { hasBusinessTypeSuggestions, parseBusinessTypeSuggestions, type BusinessTypeSuggestion } from '../utils/businessTypeParsing';
+import { hasKBOSuggestions, parseKBOSuggestions, type KBOSuggestion } from '../utils/kboParsing';
+import { ValuationReadyCTA } from '../ValuationReadyCTA';
 
 export interface MessageItemProps {
   message: Message;
@@ -63,7 +63,7 @@ export const MessageItem = React.memo<MessageItemProps>(({
   };
 
   const getMetadataString = (key: string, defaultValue = ''): string => {
-    return getMetadataValue<string>(key, defaultValue);
+    return getMetadataValue<string>(key, defaultValue) || defaultValue;
   };
 
   const getMetadataNumber = (key: string, defaultValue?: number): number | undefined => {
@@ -85,7 +85,7 @@ export const MessageItem = React.memo<MessageItemProps>(({
   }, [message.content]);
   
   // Detect business type suggestions in the message
-  const businessTypeSuggestions = React.useMemo(() => {
+  const businessTypeSuggestions = React.useMemo((): BusinessTypeSuggestion[] | null => {
     // First check metadata clarification_message (if available)
     const clarificationMsg = getMetadataString('clarification_message');
     if (clarificationMsg && hasBusinessTypeSuggestions(clarificationMsg)) {
@@ -101,7 +101,7 @@ export const MessageItem = React.memo<MessageItemProps>(({
   const hasBusinessTypeSuggestionsInMessage = businessTypeSuggestions !== null && businessTypeSuggestions.length > 0;
   
   // Detect KBO suggestions in the message
-  const kboSuggestions = React.useMemo(() => {
+  const kboSuggestions = React.useMemo((): KBOSuggestion[] | null => {
     // First check metadata clarification_message (if available)
     const clarificationMsg = getMetadataString('clarification_message');
     if (clarificationMsg && hasKBOSuggestions(clarificationMsg)) {
@@ -138,7 +138,7 @@ export const MessageItem = React.memo<MessageItemProps>(({
         buttonText={buttonText}
         onConfirm={() => {
           // Check if this is valuation confirmation - if so, trigger loading state immediately
-          const isValuationConfirmation = message.metadata?.clarification_field === 'valuation_confirmed';
+          const isValuationConfirmation = getMetadataString('clarification_field') === 'valuation_confirmed';
           if (isValuationConfirmation && onValuationStart) {
             onValuationStart();
           }
@@ -159,39 +159,38 @@ export const MessageItem = React.memo<MessageItemProps>(({
     
     return (
       <BusinessTypeConfirmationCard
-        businessType={metadata.business_type || ''}
+        businessType={getMetadataString('business_type', '')}
         industry={industry}
-        category={metadata.category}
-        icon={metadata.icon}
-        confidence={metadata.confidence}
+        category={getMetadataString('category')}
+        icon={getMetadataString('icon')}
+        confidence={getMetadataNumber('confidence')}
         timestamp={message.timestamp}
       />
     );
   }
 
   // Check if this is a company name KBO confirmation
-  const isCompanyNameConfirmation = message.metadata?.is_company_name_confirmation === true;
+  const isCompanyNameConfirmation = getMetadataValue<boolean>('is_company_name_confirmation') === true;
 
   if (isCompanyNameConfirmation) {
-    // Defensive: Extract metadata with fallbacks (in case metadata structure differs)
-    const metadata = message.metadata || {};
+    // Safe access to metadata properties
     
     debugLogger.log('[MessageItem]', 'Rendering CompanyNameConfirmationCard', {
-      companyName: metadata.company_name || message.content || '',
-      registrationNumber: metadata.registration_number,
-      legalForm: metadata.legal_form,
+      companyName: getMetadataString('company_name') || message.content || '',
+      registrationNumber: getMetadataString('registration_number'),
+      legalForm: getMetadataString('legal_form'),
       hasMetadata: !!message.metadata,
       metadataKeys: message.metadata ? Object.keys(message.metadata) : []
     });
-    
+
     return (
       <CompanyNameConfirmationCard
-        companyName={metadata.company_name || message.content || ''}
-        registrationNumber={metadata.registration_number}
-        legalForm={metadata.legal_form}
-        foundingYear={metadata.founding_year}
-        industryDescription={metadata.industry_description}
-        confidence={metadata.confidence}
+        companyName={getMetadataString('company_name') || message.content || ''}
+        registrationNumber={getMetadataString('registration_number')}
+        legalForm={getMetadataString('legal_form')}
+        foundingYear={getMetadataNumber('founding_year')}
+        industryDescription={getMetadataString('industry_description')}
+        confidence={getMetadataNumber('confidence')}
         timestamp={message.timestamp}
       />
     );
@@ -236,11 +235,15 @@ export const MessageItem = React.memo<MessageItemProps>(({
                 </div>
               
                 {/* Suggestion chips */}
-                {message.type === 'suggestion' && message.metadata?.suggestions && (
+                {message.type === 'suggestion' && getMetadataValue<unknown[]>('suggestions') && (
                   <div className="mt-4">
                     <SuggestionChips
-                      suggestions={message.metadata.suggestions}
-                      originalValue={message.metadata.originalValue || ''}
+                      suggestions={(getMetadataValue<unknown[]>('suggestions') || []).map((s: unknown) => ({
+                        text: (s as any)?.text || '',
+                        confidence: (s as any)?.confidence || 0,
+                        reason: (s as any)?.reason || ''
+                      }))}
+                      originalValue={getMetadataString('originalValue', '')}
                       onSelect={onSuggestionSelect}
                       onDismiss={onSuggestionDismiss}
                     />
@@ -248,14 +251,14 @@ export const MessageItem = React.memo<MessageItemProps>(({
                 )}
                 
                 {/* Business Type Suggestions List */}
-                {hasBusinessTypeSuggestionsInMessage && businessTypeSuggestions && (
+                {hasBusinessTypeSuggestionsInMessage && businessTypeSuggestions ? (
                   <div className="mt-3">
                     <BusinessTypeSuggestionsList
                       suggestions={businessTypeSuggestions}
                       onSelect={onKBOSuggestionSelect} // Reuse same handler
                     />
                   </div>
-                )}
+                ) : null}
                 
                 {/* KBO Suggestions List */}
                 {/* Check if this message comes after "none" was clicked - hide suggestions if so */}
@@ -304,23 +307,23 @@ export const MessageItem = React.memo<MessageItemProps>(({
                 )}
                 
                 {/* Help text */}
-                {AI_CONFIG.showHelpText && message.metadata?.help_text && (
+                {AI_CONFIG.showHelpText && getMetadataString('help_text') && (
                   <div className="mt-3 pt-3 border-t border-white/10">
                     <p className="text-xs text-zinc-400 flex items-start gap-1.5">
                       <span className="mt-0.5">ℹ️</span>
-                      <span className="leading-relaxed">{message.metadata.help_text}</span>
+                      <span className="leading-relaxed">{getMetadataString('help_text')}</span>
                     </p>
                   </div>
                 )}
-                
+
                 {/* Valuation narrative */}
-                {AI_CONFIG.showNarratives && message.metadata?.valuation_narrative && (
+                {AI_CONFIG.showNarratives && getMetadataString('valuation_narrative') && (
                   <div className="mt-3 p-3 bg-primary-600/10 rounded-xl border border-primary-600/20">
                     <h4 className="text-xs font-semibold text-primary-300 mb-1 uppercase tracking-wider">
                       Valuation Insight
                     </h4>
                     <div className="text-sm text-zinc-300 whitespace-pre-wrap leading-relaxed">
-                      {message.metadata.valuation_narrative}
+                      {getMetadataString('valuation_narrative')}
                     </div>
                   </div>
                 )}

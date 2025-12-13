@@ -201,7 +201,7 @@ export class PersistenceManagerImpl implements PersistenceManager {
 
       // Check cache first
       if (this.config.enableCaching) {
-        const cached = this.getCache(`session_${sessionId}`);
+        const cached = this.getCache<ValuationSession>(`session_${sessionId}`);
         if (cached) {
           this.stats.cacheHits++;
 
@@ -358,7 +358,7 @@ export class PersistenceManagerImpl implements PersistenceManager {
 
       // Check cache first
       if (this.config.enableCaching) {
-        const cached = this.getCache(`partial_${sessionId}`);
+        const cached = this.getCache<ValuationRequest>(`partial_${sessionId}`);
         if (cached) {
           this.stats.cacheHits++;
 
@@ -412,7 +412,7 @@ export class PersistenceManagerImpl implements PersistenceManager {
    * Get cached session data
    */
   getCachedSession(sessionId: string): ValuationSession | null {
-    const cached = this.getCache(`session_${sessionId}`);
+    const cached = this.getCache<ValuationSession>(`session_${sessionId}`);
     return cached || null;
   }
 

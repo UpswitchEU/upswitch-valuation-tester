@@ -8,6 +8,7 @@
  */
 
 import React, { useCallback, useEffect, useState } from 'react';
+import { CollectionProgress, DataCollection, DataResponse } from '../../../components/data-collection';
 import { FullScreenModal } from '../../../components/FullScreenModal';
 import { ResizableDivider } from '../../../components/ResizableDivider';
 import { ValuationToolbar } from '../../../components/ValuationToolbar';
@@ -16,13 +17,13 @@ import { useAuth } from '../../../hooks/useAuth';
 import { guestCreditService } from '../../../services/guestCreditService';
 import UrlGeneratorService from '../../../services/urlGenerator';
 import { useValuationStore } from '../../../store/useValuationStore';
+import { chatLogger } from '../../../utils/logger';
 import { generateReportId } from '../../../utils/reportIdGenerator';
 import { CreditGuard } from '../../auth/components/CreditGuard';
+import { useConversationActions, useConversationState } from '../context/ConversationContext';
 import { BusinessProfileSection } from './BusinessProfileSection';
 import { ConversationPanel } from './ConversationPanel';
 import { ReportPanel } from './ReportPanel';
-import { useConversationActions, useConversationState } from '../context/ConversationContext';
-import { chatLogger } from '../../../utils/logger';
 
 interface ConversationalLayoutProps {
   reportId: string;
@@ -48,6 +49,40 @@ export const ConversationalLayout: React.FC<ConversationalLayoutProps> = React.m
   const actions = useConversationActions();
   const { setResult } = useValuationStore();
 
+  // Unified data collection state
+  const [collectedData, setCollectedData] = useState<DataResponse[]>([]);
+  const [showUnifiedCollection, setShowUnifiedCollection] = useState(false);
+
+  // Handle data collection from unified system
+  const handleDataCollected = (responses: DataResponse[]) => {
+    setCollectedData(responses);
+
+    // Convert responses to format expected by conversation system
+    const conversationData: Record<string, any> = {};
+    responses.forEach(response => {
+      conversationData[response.fieldId] = response.value;
+    });
+
+    chatLogger.info('Conversational flow collected data:', conversationData);
+  };
+
+  // Handle collection completion
+  const handleCollectionComplete = (responses: DataResponse[]) => {
+    // Trigger valuation calculation with collected data
+    const valuationData: Record<string, any> = {};
+    responses.forEach(response => {
+      valuationData[response.fieldId] = response.value;
+    });
+
+    chatLogger.info('Conversational flow collection complete:', valuationData);
+    setShowUnifiedCollection(false);
+  };
+
+  // Handle progress updates
+  const handleProgressUpdate = (progress: CollectionProgress) => {
+    chatLogger.debug('Conversational flow progress:', progress);
+  };
+
   // UI State
   const [isFullScreen, setIsFullScreen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
@@ -69,6 +104,9 @@ export const ConversationalLayout: React.FC<ConversationalLayoutProps> = React.m
     }
     return PANEL_CONSTRAINTS.DEFAULT_WIDTH;
   });
+
+  // Data collection method toggle (for demonstration)
+  const [useUnifiedCollection, setUseUnifiedCollection] = useState(false);
 
   // Mobile detection
   useEffect(() => {
@@ -192,6 +230,15 @@ export const ConversationalLayout: React.FC<ConversationalLayoutProps> = React.m
           onTabChange={() => {}} // Tab changes handled by ReportPanel
           companyName={state.businessProfile?.company_name}
           valuationMethod={state.valuationResult?.methodology}
+          customActions={
+            <button
+              onClick={() => setUseUnifiedCollection(!useUnifiedCollection)}
+              className="px-3 py-1 text-xs bg-primary-600 hover:bg-primary-700 text-white rounded transition-colors"
+              title={useUnifiedCollection ? "Switch to Chat Collection" : "Switch to Unified Collection"}
+            >
+              {useUnifiedCollection ? "💬 Chat" : "📝 Form"}
+            </button>
+          }
         />
 
         {/* Error Display */}
@@ -225,27 +272,53 @@ export const ConversationalLayout: React.FC<ConversationalLayoutProps> = React.m
             }}
           >
             <div className="flex-1 overflow-y-auto">
-              <ConversationPanel
-                sessionId={state.sessionId}
-                userId={user?.id}
-                restoredMessages={state.messages.filter(m => m.isComplete)}
-                isRestoring={state.isRestoring}
-                isRestorationComplete={state.restorationComplete}
-                isSessionInitialized={state.isSessionInitialized}
-                pythonSessionId={state.pythonSessionId}
-                onPythonSessionIdReceived={handlePythonSessionIdReceived}
-                onValuationComplete={handleValuationComplete}
-                onValuationStart={() => actions.setGenerating(true)}
-                onDataCollected={(data) => {
-                  // Handle data collection - sync to session
-                  if (data.field && data.value !== undefined) {
-                    // This would sync to session store
-                    chatLogger.debug('Data collected from conversational flow', { field: data.field, value: data.value });
-                  }
-                }}
+              {useUnifiedCollection ? (
+                // Unified Data Collection (Form-based)
+                <div className="p-4">
+                  <div className="mb-4">
+                    <h3 className="text-lg font-semibold text-white mb-2">Data Collection</h3>
+                    <p className="text-sm text-zinc-400">
+                      Using the same data collection system as manual forms, but in conversational context.
+                    </p>
+                  </div>
+                  <DataCollection
+                    method="conversational"
+                    onDataCollected={handleDataCollected}
+                    onProgressUpdate={handleProgressUpdate}
+                    onComplete={handleCollectionComplete}
+                    initialData={{
+                      // Pre-populate with any existing data from conversation
+                      company_name: state.businessProfile?.company_name,
+                      revenue: state.businessProfile?.revenue,
+                      ebitda: state.businessProfile?.ebitda,
+                      number_of_employees: state.businessProfile?.number_of_employees
+                    }}
+                  />
+                </div>
+              ) : (
+                // Traditional Conversation Panel
+                <ConversationPanel
+                  sessionId={state.sessionId}
+                  userId={user?.id}
+                  restoredMessages={state.messages.filter(m => m.isComplete)}
+                  isRestoring={state.isRestoring}
+                  isRestorationComplete={state.restorationComplete}
+                  isSessionInitialized={state.isSessionInitialized}
+                  pythonSessionId={state.pythonSessionId}
+                  onPythonSessionIdReceived={handlePythonSessionIdReceived}
+                  onValuationComplete={handleValuationComplete}
+                  onValuationStart={() => actions.setGenerating(true)}
+                  onDataCollected={(data) => {
+                    // Handle data collection - sync to session
+                    if (data.field && data.value !== undefined) {
+                      // This would sync to session store
+                      chatLogger.debug('Data collected from conversational flow', { field: data.field, value: data.value });
+                    }
+                  }}
                 initialMessage={initialQuery}
                 autoSend={autoSend}
               />
+              )}
             </div>
           </div>
 

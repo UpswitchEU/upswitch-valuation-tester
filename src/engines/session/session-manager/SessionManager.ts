@@ -15,6 +15,17 @@ import { storeLogger } from '../../../utils/logger';
 // TYPES & INTERFACES
 // ============================================================================
 
+/**
+ * Internal session partial data with additional metadata fields
+ */
+export interface SessionPartialData extends Partial<ValuationRequest> {
+  _sessionId?: string;
+  _createdAt?: string;
+  _viewSwitchCount?: number;
+  _lastActivity?: string;
+  _errorCount?: number;
+}
+
 export interface SessionConfig {
   sessionIdPrefix?: string;
   defaultView?: 'manual' | 'conversational';
@@ -146,7 +157,7 @@ export class SessionManagerImpl implements SessionManager {
         _sessionId: sessionId,
         _createdAt: now.toISOString(),
         _viewSwitchCount: 0,
-      },
+      } as SessionPartialData,
       createdAt: now,
       updatedAt: now,
     };

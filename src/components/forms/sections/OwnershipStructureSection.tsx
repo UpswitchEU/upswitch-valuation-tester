@@ -16,20 +16,16 @@ interface OwnershipStructureSectionProps {
   employeeCountError?: string | null;
 }
 
-/**
- * Ownership Structure Section
- * 
- * Renders: Business Structure, Shares for Sale, Owner-Managers, Employees, Risk Warning
- */
 export const OwnershipStructureSection: React.FC<OwnershipStructureSectionProps> = ({
   formData,
   updateFormData,
-  employeeCountError: parentEmployeeCountError,
+  employeeCountError: externalEmployeeCountError,
 }) => {
-  const [localEmployeeCountError, setLocalEmployeeCountError] = useState<string | null>(null);
+  const [internalEmployeeCountError, setInternalEmployeeCountError] = useState<string | null>(null);
 
-  // Prioritize parent error (from form submission) over local error (from user input)
-  const employeeCountError = parentEmployeeCountError || localEmployeeCountError;
+  // Use external error if provided, otherwise use internal state
+  const employeeCountError = externalEmployeeCountError ?? internalEmployeeCountError;
+  const setEmployeeCountError = setInternalEmployeeCountError;
 
   return (
     <div className="space-y-6">

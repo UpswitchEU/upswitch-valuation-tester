@@ -45,6 +45,9 @@ export interface GuestMigrationResponse {
   migrated: boolean;
   message?: string;
   user_session_id?: string;
+  migratedReports?: string[];
+  migratedSessions?: string[];
+  errors?: string[];
 }
 
 // Conversation API responses

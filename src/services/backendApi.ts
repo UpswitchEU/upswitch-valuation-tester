@@ -17,23 +17,23 @@
  * - UtilityAPI: Health checks and utility operations
  */
 
-import { ValuationRequest, ValuationResponse } from '../types/valuation';
 import type {
-  ValuationSessionResponse,
-  CreateValuationSessionResponse,
-  UpdateValuationSessionResponse,
-  SwitchViewResponse,
-  SaveValuationResponse,
-  GuestMigrationResponse,
-  ConversationStatusResponse,
-  ConversationHistoryResponse
+    ConversationHistoryResponse,
+    ConversationStatusResponse,
+    CreateValuationSessionResponse,
+    GuestMigrationResponse,
+    SaveValuationResponse,
+    SwitchViewResponse,
+    UpdateValuationSessionResponse,
+    ValuationSessionResponse
 } from '../types/api-responses';
-import { ValuationAPI } from './api/valuation';
+import { ValuationRequest, ValuationResponse } from '../types/valuation';
+import { CreditAPI } from './api/credit';
+import { APIRequestConfig } from './api/HttpClient';
 import { ReportAPI } from './api/report';
 import { SessionAPI } from './api/session';
-import { CreditAPI } from './api/credit';
 import { UtilityAPI } from './api/utility';
-import { APIRequestConfig } from './api/HttpClient';
+import { ValuationAPI } from './api/valuation';
 
 /**
  * Refactored BackendAPI - Clean orchestrator for API operations

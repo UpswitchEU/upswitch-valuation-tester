@@ -20,7 +20,7 @@ export interface StreamingChatUIProps {
 
 // Message lifecycle callbacks
 export interface StreamingChatMessageCallbacks {
-  onMessageComplete?: (message: import('../hooks/useStreamingChatState').Message) => void;
+  onMessageComplete?: (message: import('../types/message').Message) => void;
 }
 
 // Valuation lifecycle callbacks
@@ -66,7 +66,7 @@ export interface StreamingChatRestorationProps {
   initialMessage?: string | null;
   autoSend?: boolean;
   initialData?: Partial<unknown>;
-  initialMessages?: import('./StreamingChat').Message[];
+  initialMessages?: import('../types/message').Message[];
   isRestoring?: boolean;
   isSessionInitialized?: boolean;
   pythonSessionId?: string | null;
@@ -108,4 +108,4 @@ export interface CalculateOptionData {
 }
 
 // Re-export Message type for convenience
-export type { Message } from '../hooks/useStreamingChatState';
+export type { Message } from '../types/message';
