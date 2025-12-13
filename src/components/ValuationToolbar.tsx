@@ -1,20 +1,22 @@
 import {
-  Code,
-  Download,
-  Edit3,
-  Eye,
-  Info,
-  Loader2,
-  Maximize,
-  MessageSquare,
-  RefreshCw,
+    Code,
+    Download,
+    Edit3,
+    Eye,
+    Info,
+    Loader2,
+    Maximize,
+    MessageSquare,
+    RefreshCw,
 } from 'lucide-react'
-import React, { useEffect, useRef, useState } from 'react'
-import { useAuth } from '../hooks/useAuth'
+import React from 'react'
+import {
+    useValuationToolbarAuth,
+    useValuationToolbarFlow,
+    useValuationToolbarName,
+} from '../hooks/valuationToolbar'
 import { useValuationSessionStore } from '../store/useValuationSessionStore'
 import { ValuationToolbarProps } from '../types/valuation'
-import { generalLogger } from '../utils/logger'
-import { NameGenerator } from '../utils/nameGenerator'
 import { FlowSwitchWarningModal } from './FlowSwitchWarningModal'
 import { UserDropdown } from './UserDropdown'
 import { Tooltip } from './ui/Tooltip'
@@ -30,155 +32,35 @@ export const ValuationToolbar: React.FC<ValuationToolbarProps> = ({
   onTabChange,
   companyName,
 }) => {
-  const { refreshAuth } = useAuth()
+  const { session, pendingFlowSwitch } = useValuationSessionStore()
 
-  // Flow switch modal state
-  const { session, switchView, pendingFlowSwitch, setPendingFlowSwitch, isSyncing } =
-    useValuationSessionStore()
-  const [showSwitchConfirmation, setShowSwitchConfirmation] = useState(false)
+  // Use focused hooks for business logic
+  const {
+    showSwitchConfirmation,
+    handleFlowIconClick,
+    handleConfirmSwitch,
+    handleCancelSwitch,
+    isSyncing,
+  } = useValuationToolbarFlow()
 
-  // Sync modal visibility with pendingFlowSwitch state
-  useEffect(() => {
-    if (pendingFlowSwitch) {
-      setShowSwitchConfirmation(true)
-    } else {
-      setShowSwitchConfirmation(false)
-    }
-  }, [pendingFlowSwitch])
-
-  // Handler for flow toggle icon clicks
-  const handleFlowIconClick = async (flow: 'manual' | 'conversational') => {
-    if (!session || session.currentView === flow) return // Already in this flow or no session
-
-    // Attempt to switch - preserve data when switching flows (resetData=false)
-    // Both flows share the same session data
-    const result = await switchView(flow, false, false) // resetData=false, skipConfirmation=false
-
-    // If confirmation is needed, show modal
-    // Note: With the updated logic, this should always return needsConfirmation=true for user-initiated switches
-    if (result?.needsConfirmation) {
-      setShowSwitchConfirmation(true)
-    }
-  }
-
-  const handleConfirmSwitch = async () => {
-    if (!pendingFlowSwitch) return
-
-    // Execute the switch with confirmation skipped - preserve data
-    await switchView(pendingFlowSwitch, false, true) // resetData=false, skipConfirmation=true
-    setShowSwitchConfirmation(false)
-    setPendingFlowSwitch(null)
-  }
-
-  const handleCancelSwitch = () => {
-    setShowSwitchConfirmation(false)
-    setPendingFlowSwitch(null) // Clear pending switch when user cancels
-  }
-
-  const [isEditingName, setIsEditingName] = useState(false)
-  const [editedName, setEditedName] = useState(valuationName)
-
-  // Generate unique name based on company or default
-  const [generatedName, setGeneratedName] = useState(() => {
-    if (companyName) {
-      return NameGenerator.generateFromCompany(companyName)
-    }
-    return NameGenerator.generateValuationName()
+  const {
+    isEditingName,
+    editedName,
+    generatedName,
+    nameInputRef,
+    handleNameEdit,
+    handleNameSave,
+    handleNameCancel,
+    handleKeyDown,
+  } = useValuationToolbarName({
+    initialName: valuationName,
+    companyName,
   })
-  const nameInputRef = useRef<HTMLInputElement>(null)
 
-  // Focus input when editing starts
-  useEffect(() => {
-    if (isEditingName && nameInputRef.current) {
-      nameInputRef.current.focus()
-      nameInputRef.current.select()
-    }
-  }, [isEditingName])
-
-  // Sync editedName when generatedName changes
-  useEffect(() => {
-    if (!isEditingName) {
-      setEditedName(generatedName)
-    }
-  }, [generatedName, isEditingName])
-
-  const handleNameEdit = () => {
-    setIsEditingName(true)
-  }
-
-  const handleNameSave = async () => {
-    if (!editedName.trim()) {
-      setEditedName(valuationName) // Reset if empty
-      setIsEditingName(false)
-      return
-    }
-
-    // Update the displayed name
-    setGeneratedName(editedName.trim())
-    setIsEditingName(false)
-
-    try {
-      // Log the save for debugging
-      generalLogger.info('Valuation name saved', { name: editedName.trim() })
-
-      // TODO: In future, persist to backend
-      // await saveValuationName(editedName.trim());
-    } catch (error) {
-      generalLogger.error('Failed to save valuation name', { error })
-      // Note: We don't revert here since the UI update is already done
-    }
-  }
-
-  const handleNameCancel = () => {
-    setEditedName(valuationName)
-    setIsEditingName(false)
-  }
-
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') {
-      handleNameSave()
-    } else if (e.key === 'Escape') {
-      handleNameCancel()
-    }
-  }
+  const { handleLogout } = useValuationToolbarAuth()
 
   const handleTabClick = (tab: 'preview' | 'source' | 'info') => {
     onTabChange?.(tab)
-  }
-
-  const handleLogout = async () => {
-    try {
-      generalLogger.info('Logging out user')
-
-      // Get backend URL from environment
-      const backendUrl =
-        import.meta.env.VITE_BACKEND_URL ||
-        import.meta.env.VITE_API_BASE_URL ||
-        'https://web-production-8d00b.up.railway.app'
-
-      // Call backend logout endpoint
-      const response = await fetch(`${backendUrl}/api/auth/logout`, {
-        method: 'POST',
-        credentials: 'include', // Send authentication cookie
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      })
-
-      if (response.ok) {
-        generalLogger.info('Logout successful')
-        // Refresh auth state to clear user data
-        await refreshAuth()
-      } else {
-        generalLogger.warn('Logout request failed', { status: response.status })
-        // Still refresh auth state in case session is already invalid
-        await refreshAuth()
-      }
-    } catch (error) {
-      generalLogger.error('Logout failed', { error })
-      // Still refresh auth state to clear local state
-      await refreshAuth()
-    }
   }
 
   return (

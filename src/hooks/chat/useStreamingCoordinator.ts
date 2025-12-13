@@ -11,7 +11,7 @@ import type {
   CollectedData,
   ValuationPreviewData,
 } from '../../components/StreamingChat.types'
-import { StreamEventHandler } from '../../services/chat/StreamEventHandler'
+import { StreamEventHandler, ModelPerformanceMetrics } from '../../services/chat/StreamEventHandler'
 import {
   StreamingManager,
   type StreamingManagerCallbacks,
@@ -105,6 +105,8 @@ export function useStreamingCoordinator({
   onSectionComplete,
   onReportComplete,
   onHtmlPreviewUpdate,
+  trackModelPerformance,
+  trackConversationCompletion,
 }: UseStreamingCoordinatorOptions): UseStreamingCoordinatorReturn {
   // Refs for streaming state
   const streamingManagerRef = useRef<StreamingManager | null>(null)
@@ -115,8 +117,8 @@ export function useStreamingCoordinator({
   useEffect(() => {
     const requestIdRef = { current: null }
     const currentStreamingMessageRef = { current: null }
-    const eventSourceRef = { current: null }
-    const abortControllerRef = { current: null }
+    const eventSourceRef: { current: EventSource | null } = { current: null }
+    const abortControllerRef: { current: AbortController | null } = { current: null }
 
     streamingManagerRef.current = new StreamingManager(requestIdRef, currentStreamingMessageRef)
 
@@ -282,7 +284,7 @@ export function useStreamingCoordinator({
         throw error
       }
     },
-    [sessionId, userId, setIsStreaming, setMessages, updateStreamingMessage, onContextUpdate]
+    [sessionId, userId, setIsStreaming, setMessages, updateStreamingMessage]
   )
 
   // Stop streaming session

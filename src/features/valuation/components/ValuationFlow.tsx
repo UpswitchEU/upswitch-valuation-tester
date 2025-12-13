@@ -13,6 +13,7 @@
 import React, { lazy, Suspense, useCallback } from 'react'
 import { DataResponse } from '../../../components/data-collection'
 import { useAuth } from '../../../hooks/useAuth'
+import { useValuationFormStore } from '../../../store/useValuationFormStore'
 import { useValuationStore } from '../../../store/useValuationStore'
 import type { ValuationResponse } from '../../../types/valuation'
 import { generalLogger } from '../../../utils/logger'
@@ -111,7 +112,7 @@ const ManualFlow: React.FC<ManualFlowProps> = ({ reportId, onComplete }) => {
   // Handle collection completion
   const handleCollectionComplete = useCallback(
     async (responses: DataResponse[]) => {
-      setCollectedData(responses)
+      useValuationFormStore.getState().setCollectedData(responses)
 
       // Trigger valuation calculation with collected data
       try {
@@ -120,7 +121,7 @@ const ManualFlow: React.FC<ManualFlowProps> = ({ reportId, onComplete }) => {
         generalLogger.error('Valuation calculation failed', { error, reportId })
       }
     },
-    [setCollectedData, calculateValuation, reportId]
+    [calculateValuation, reportId]
   )
 
   // Handle progress updates

@@ -1,7 +1,8 @@
 import { create } from 'zustand'
 import { backendAPI } from '../services/BackendAPI'
-import type { ValuationFormData, ValuationRequest, ValuationSession } from '../types/valuation'
+import type { ValuationRequest, ValuationSession } from '../types/valuation'
 import { storeLogger } from '../utils/logger'
+import { useValuationSyncStore } from './useValuationSyncStore'
 
 interface ValuationSessionStore {
   // Session state
@@ -23,12 +24,12 @@ interface ValuationSessionStore {
   getSessionData: () => ValuationRequest | null
   clearSession: () => void
 
-  // Sync methods for cross-flow data sharing
+  // Sync methods delegate to useValuationSyncStore
   syncFromManualForm: () => Promise<void>
   syncToManualForm: () => void
   getCompleteness: () => number
 
-  // Sync state
+  // Session operation state (loading, updating, switching views)
   isSyncing: boolean
   syncError: string | null
 
@@ -46,6 +47,7 @@ export const useValuationSessionStore = create<ValuationSessionStore>((set, get)
   return {
     // Initial state
     session: null,
+    // Session operation state (separate from sync store's sync state)
     isSyncing: false,
     syncError: null,
     pendingFlowSwitch: null,
@@ -110,7 +112,6 @@ export const useValuationSessionStore = create<ValuationSessionStore>((set, get)
                 ? new Date(existingSession.completedAt)
                 : undefined,
             },
-            syncError: null,
           })
           storeLogger.info('Loaded existing session', {
             reportId,
@@ -135,7 +136,7 @@ export const useValuationSessionStore = create<ValuationSessionStore>((set, get)
 
           set({
             session: newSession,
-            syncError: null,
+            // Note: Sync state is managed by useValuationSyncStore
           })
 
           storeLogger.info('Created new session', {
@@ -166,7 +167,7 @@ export const useValuationSessionStore = create<ValuationSessionStore>((set, get)
 
         set({
           session: newSession,
-          syncError: error.message || 'Failed to sync with backend',
+          // Note: Sync state is managed by useValuationSyncStore
         })
 
         storeLogger.warn('Created local session (backend sync failed)', { reportId, sessionId })
@@ -190,22 +191,18 @@ export const useValuationSessionStore = create<ValuationSessionStore>((set, get)
               updatedAt: new Date(session.updatedAt),
               completedAt: session.completedAt ? new Date(session.completedAt) : undefined,
             },
-            isSyncing: false,
-            syncError: null,
+            // Note: Sync state is managed by useValuationSyncStore
           })
           storeLogger.info('Session loaded', { reportId })
         } else {
-          set({ isSyncing: false, syncError: 'Session not found' })
+          // Note: Sync state is managed by useValuationSyncStore
         }
       } catch (error) {
         storeLogger.error('Failed to load session', {
           error: error instanceof Error ? error.message : 'Unknown error',
           reportId,
         })
-        set({
-          isSyncing: false,
-          syncError: error.message || 'Failed to load session',
-        })
+        // Note: Sync state is managed by useValuationSyncStore
       }
     },
 
@@ -246,7 +243,7 @@ export const useValuationSessionStore = create<ValuationSessionStore>((set, get)
       lastUpdateTime = now
 
       try {
-        set({ isSyncing: true, syncError: null })
+        // Note: Sync state is managed by useValuationSyncStore
 
         // Deep merge function for nested objects
         const deepMerge = (target: any, source: any) => {
@@ -354,8 +351,7 @@ export const useValuationSessionStore = create<ValuationSessionStore>((set, get)
             updatedAt: new Date(),
             completeness,
           },
-          isSyncing: false,
-          syncError: error.message || 'Failed to sync with backend',
+          // Note: Sync state is managed by useValuationSyncStore
         })
       }
     },
@@ -494,8 +490,7 @@ export const useValuationSessionStore = create<ValuationSessionStore>((set, get)
       // OPTIMISTIC UPDATE: Update UI immediately for instant feedback
       set({
         session: updatedSession,
-        isSyncing: true, // Keep syncing flag true during background sync
-        syncError: null,
+        // Note: Sync state is managed by useValuationSyncStore
       })
 
       storeLogger.info('View switched optimistically (UI updated immediately)', {
@@ -513,10 +508,7 @@ export const useValuationSessionStore = create<ValuationSessionStore>((set, get)
           // Backend sync successful - clear syncing flag
           const { session: latestSession } = get()
           if (latestSession?.reportId === currentSession.reportId) {
-            set({
-              isSyncing: false,
-              syncError: null,
-            })
+            // Note: Sync state is managed by useValuationSyncStore
             storeLogger.info('Backend sync completed successfully', {
               reportId: currentSession.reportId,
               view,
@@ -535,16 +527,14 @@ export const useValuationSessionStore = create<ValuationSessionStore>((set, get)
           if (latestSession?.reportId === currentSession.reportId) {
             set({
               session: originalSession,
-              isSyncing: false,
-              syncError: error.message || 'Failed to sync with backend',
+              // Note: Sync state is managed by useValuationSyncStore
             })
             storeLogger.warn('Rolled back view switch due to backend error', {
               reportId: currentSession.reportId,
               originalView: originalSession.currentView,
             })
           } else {
-            // Session changed, just clear syncing flag
-            set({ isSyncing: false, syncError: error.message || 'Failed to sync with backend' })
+            // Session changed, sync state managed by useValuationSyncStore
           }
         })
     },
@@ -633,197 +623,33 @@ export const useValuationSessionStore = create<ValuationSessionStore>((set, get)
     clearSession: () => {
       set({
         session: null,
-        isSyncing: false,
-        syncError: null,
+        // Note: Sync state is managed by useValuationSyncStore
       })
       storeLogger.info('Session cleared')
     },
 
     /**
      * Sync data from manual form to session
-     * Reads current form data from useValuationStore and updates session
+     * Delegates to useValuationSyncStore
      */
     syncFromManualForm: async () => {
-      const { session } = get()
-
-      if (!session) {
-        storeLogger.warn('Cannot sync from manual form: no active session')
-        return
-      }
-
-      try {
-        // Import dynamically to avoid circular dependency
-        const { useValuationStore } = await import('./useValuationStore')
-        const manualFormData = useValuationStore.getState().formData
-
-        storeLogger.debug('Syncing from manual form to session', {
-          reportId: session.reportId,
-          fieldsPresent: Object.keys(manualFormData).length,
-        })
-
-        // Convert form data to ValuationRequest format
-        const sessionUpdate: Partial<ValuationRequest> = {
-          company_name: manualFormData.company_name,
-          country_code: manualFormData.country_code,
-          industry: manualFormData.industry,
-          business_model: manualFormData.business_model,
-          founding_year: manualFormData.founding_year,
-          current_year_data: manualFormData.current_year_data,
-          historical_years_data: manualFormData.historical_years_data,
-          number_of_employees: manualFormData.number_of_employees,
-          number_of_owners: manualFormData.number_of_owners,
-          recurring_revenue_percentage: manualFormData.recurring_revenue_percentage,
-          shares_for_sale: manualFormData.shares_for_sale,
-          business_type_id: manualFormData.business_type_id,
-          business_context: manualFormData.business_context,
-          comparables: manualFormData.comparables,
-        }
-
-        // Remove undefined values
-        Object.keys(sessionUpdate).forEach((key) => {
-          if (sessionUpdate[key as keyof typeof sessionUpdate] === undefined) {
-            delete sessionUpdate[key as keyof typeof sessionUpdate]
-          }
-        })
-
-        // Update session with merged data
-        await get().updateSessionData(sessionUpdate)
-
-        // Update lastSyncedAt
-        set({
-          session: {
-            ...session,
-            lastSyncedAt: new Date(),
-          },
-        })
-
-        storeLogger.info('Synced from manual form to session', {
-          reportId: session.reportId,
-          fieldsUpdated: Object.keys(sessionUpdate).length,
-        })
-      } catch (error) {
-        storeLogger.error('Failed to sync from manual form', {
-          error: error instanceof Error ? error.message : 'Unknown error',
-        })
-      }
+      return useValuationSyncStore.getState().syncFromManualForm()
     },
 
     /**
      * Sync data from session to manual form
-     * Writes session data to useValuationStore for manual form display
+     * Delegates to useValuationSyncStore
      */
     syncToManualForm: () => {
-      const { session } = get()
-
-      if (!session || !session.sessionData) {
-        storeLogger.warn('Cannot sync to manual form: no session data')
-        return
-      }
-
-      try {
-        // Import dynamically to avoid circular dependency
-        const { useValuationStore } = require('./useValuationStore')
-        const sessionData = session.sessionData
-
-        storeLogger.debug('Syncing from session to manual form', {
-          reportId: session.reportId,
-          fieldsPresent: Object.keys(sessionData).length,
-        })
-
-        // Convert session data to form data format
-        const formUpdate: Partial<ValuationFormData> = {
-          company_name: sessionData.company_name,
-          country_code: sessionData.country_code,
-          industry: sessionData.industry,
-          business_model: sessionData.business_model,
-          founding_year: sessionData.founding_year,
-          current_year_data: sessionData.current_year_data,
-          historical_years_data: sessionData.historical_years_data,
-          number_of_employees: sessionData.number_of_employees,
-          number_of_owners: sessionData.number_of_owners,
-          recurring_revenue_percentage: sessionData.recurring_revenue_percentage,
-          shares_for_sale: sessionData.shares_for_sale,
-          business_type_id: sessionData.business_type_id,
-          business_context: sessionData.business_context,
-          comparables: sessionData.comparables,
-        }
-
-        // Remove undefined values
-        Object.keys(formUpdate).forEach((key) => {
-          if (formUpdate[key as keyof typeof formUpdate] === undefined) {
-            delete formUpdate[key as keyof typeof formUpdate]
-          }
-        })
-
-        // Update manual form store
-        useValuationStore.getState().updateFormData(formUpdate)
-
-        storeLogger.info('Synced from session to manual form', {
-          reportId: session.reportId,
-          fieldsUpdated: Object.keys(formUpdate).length,
-        })
-      } catch (error) {
-        storeLogger.error('Failed to sync to manual form', {
-          error: error instanceof Error ? error.message : 'Unknown error',
-        })
-      }
+      return useValuationSyncStore.getState().syncToManualForm()
     },
 
     /**
      * Calculate data completeness percentage (0-100)
-     * Based on required fields for valuation
+     * Delegates to useValuationSyncStore
      */
     getCompleteness: () => {
-      const { session } = get()
-
-      if (!session || !session.sessionData) {
-        return 0
-      }
-
-      const data = session.sessionData
-
-      // Define required fields with weights
-      const requiredFields = [
-        { key: 'company_name', weight: 1 },
-        { key: 'country_code', weight: 1 },
-        { key: 'industry', weight: 1 },
-        { key: 'business_model', weight: 1 },
-        { key: 'founding_year', weight: 1 },
-        { key: 'current_year_data.revenue', weight: 2 },
-        { key: 'current_year_data.ebitda', weight: 2 },
-      ]
-
-      let completedWeight = 0
-      let totalWeight = 0
-
-      requiredFields.forEach(({ key, weight }) => {
-        totalWeight += weight
-
-        // Handle nested keys
-        if (key.includes('.')) {
-          const [parent, child] = key.split('.')
-          if (
-            data[parent as keyof typeof data] &&
-            (data[parent as keyof typeof data] as any)[child] !== undefined &&
-            (data[parent as keyof typeof data] as any)[child] !== null &&
-            (data[parent as keyof typeof data] as any)[child] !== ''
-          ) {
-            completedWeight += weight
-          }
-        } else {
-          if (
-            data[key as keyof typeof data] !== undefined &&
-            data[key as keyof typeof data] !== null &&
-            data[key as keyof typeof data] !== ''
-          ) {
-            completedWeight += weight
-          }
-        }
-      })
-
-      const completeness = totalWeight > 0 ? Math.round((completedWeight / totalWeight) * 100) : 0
-
-      return completeness
+      return useValuationSyncStore.getState().getCompleteness()
     },
 
     /**
