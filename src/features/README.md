@@ -100,7 +100,7 @@ import { AIAssistedValuation } from '@/components/AIAssistedValuation';
 
 **After:**
 ```tsx
-import { AIAssistedValuationRefactored } from '@/features/valuation/components/AIAssistedValuationRefactored';
+import { ConversationalValuationFlow } from '@/features/conversational-valuation/components/ConversationalValuationFlow';
 ```
 
 ### Key Changes

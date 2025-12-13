@@ -2,6 +2,7 @@ import React from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { reportApiService } from '../services/reportApi';
 import type { ValuationResponse } from '../types/valuation';
+import { generalLogger } from '../utils/logger';
 import { generateReportId, isValidReportId } from '../utils/reportIdGenerator';
 import { ValuationFlowSelector } from './ValuationFlowSelector';
 import { ValuationSessionManager } from './ValuationSessionManager';
@@ -22,7 +23,7 @@ export const ValuationReport: React.FC = React.memo(() => {
     try {
       await reportApiService.completeReport(reportId!, result);
     } catch (error) {
-      console.error('Failed to save completed valuation:', error);
+      generalLogger.error('Failed to save completed valuation', { error, reportId });
       // Don't show error to user as the valuation is already complete locally
     }
   };

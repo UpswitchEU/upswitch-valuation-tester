@@ -104,6 +104,7 @@ export const StreamingChat: React.FC<import('./StreamingChat.types').StreamingCh
   // Extract streaming coordination logic
   const streamingCoordinator = useStreamingCoordinator({
     sessionId,
+    userId: userId ?? user?.id,
     messages: state.messages,
     setMessages: state.setMessages,
     setIsStreaming: state.setIsStreaming,
@@ -129,22 +130,47 @@ export const StreamingChat: React.FC<import('./StreamingChat.types').StreamingCh
   });
 
   // Extract stream submission logic - simplified version for new architecture
-  const submitStream = useCallback(async () => {
-    if (!state.input.trim()) return;
+  // Accepts optional input parameter to handle async state updates
+  const submitStream = useCallback(async (inputValue?: string) => {
+    const inputToSubmit = inputValue ?? state.input;
+    
+    // Validate input before submission
+    if (!inputToSubmit || !inputToSubmit.trim()) {
+      chatLogger.warn('Attempted to submit empty input', { sessionId });
+      return;
+    }
 
     try {
-      await streamingCoordinator.startStreaming(state.input);
-      state.setInput(''); // Clear input after submission
+      // Add user message before starting stream
+      messageManagement.addMessage({
+        type: 'user',
+        content: inputToSubmit.trim(),
+        role: 'user'
+      });
+
+      // Clear input before starting stream (use provided value or state)
+      if (inputValue) {
+        state.setInput('');
+      } else {
+        state.setInput('');
+      }
+
+      // Start streaming with validated input
+      await streamingCoordinator.startStreaming(inputToSubmit.trim());
     } catch (error) {
       chatLogger.error('Stream submission failed', { error, sessionId });
+      // Reset streaming state on error
+      state.setIsStreaming(false);
     }
-  }, [state.input, streamingCoordinator, state.setInput, sessionId]);
+  }, [state.input, state.setInput, state.setIsStreaming, streamingCoordinator, messageManagement, sessionId]);
 
   // Extract suggestion handlers - simplified version
   const suggestionHandlers = {
     handleSuggestionSelect: useCallback((suggestion: string) => {
+      // Fix Bug 2: Pass suggestion directly to submitStream to avoid async state update issue
       state.setInput(suggestion);
-      submitStream();
+      // Use the suggestion value directly instead of relying on state update
+      submitStream(suggestion);
     }, [state.setInput, submitStream]),
 
     handleSuggestionDismiss: useCallback(() => {
@@ -152,29 +178,26 @@ export const StreamingChat: React.FC<import('./StreamingChat.types').StreamingCh
     }, []),
 
     handleClarificationConfirm: useCallback((messageId: string) => {
-      // Handle clarification confirmation
-      messageManagement.addMessage({
-        type: 'user',
-        content: 'Yes',
-        role: 'user'
-      });
-      submitStream();
-    }, [messageManagement, submitStream]),
+      // Fix Bug 3: Set input before calling submitStream
+      const confirmationText = 'Yes';
+      state.setInput(confirmationText);
+      // Pass the confirmation text directly to avoid async state issue
+      submitStream(confirmationText);
+    }, [state.setInput, submitStream]),
 
     handleClarificationReject: useCallback((messageId: string) => {
-      // Handle clarification rejection
-      messageManagement.addMessage({
-        type: 'user',
-        content: 'No',
-        role: 'user'
-      });
-      submitStream();
-    }, [messageManagement, submitStream]),
+      // Fix Bug 3: Set input before calling submitStream
+      const rejectionText = 'No';
+      state.setInput(rejectionText);
+      // Pass the rejection text directly to avoid async state issue
+      submitStream(rejectionText);
+    }, [state.setInput, submitStream]),
 
     handleKBOSuggestionSelect: useCallback((selection: string) => {
-      // Handle KBO suggestion selection
+      // Fix Bug 2: Pass selection directly to submitStream to avoid async state update issue
       state.setInput(selection);
-      submitStream();
+      // Use the selection value directly instead of relying on state update
+      submitStream(selection);
     }, [state.setInput, submitStream])
   };
 

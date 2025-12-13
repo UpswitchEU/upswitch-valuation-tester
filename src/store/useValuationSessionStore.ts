@@ -119,7 +119,7 @@ export const useValuationSessionStore = create<ValuationSessionStore>((set, get)
         
         storeLogger.info('Created new session', { reportId, sessionId, currentView, hasPrefilledQuery: !!prefilledQuery });
       }
-    } catch (error: any) {
+    } catch (error) {
       storeLogger.error('Failed to initialize session', {
         error: error instanceof Error ? error.message : 'Unknown error',
         reportId,
@@ -171,7 +171,7 @@ export const useValuationSessionStore = create<ValuationSessionStore>((set, get)
       } else {
         set({ isSyncing: false, syncError: 'Session not found' });
       }
-    } catch (error: any) {
+    } catch (error) {
       storeLogger.error('Failed to load session', {
         error: error instanceof Error ? error.message : 'Unknown error',
         reportId,
@@ -282,14 +282,14 @@ export const useValuationSessionStore = create<ValuationSessionStore>((set, get)
         fieldsUpdated: Object.keys(data),
         completeness,
       });
-    } catch (error: any) {
+    } catch (error) {
       storeLogger.error('Failed to update session data', {
         error: error instanceof Error ? error.message : 'Unknown error',
         reportId: session.reportId,
       });
       
       // Deep merge function for fallback
-      const deepMerge = (target: any, source: any) => {
+      const deepMerge = (target: Record<string, unknown>, source: Record<string, unknown>): Record<string, unknown> => {
         const output = { ...target };
         
         for (const key in source) {
@@ -487,7 +487,7 @@ export const useValuationSessionStore = create<ValuationSessionStore>((set, get)
           });
         }
       })
-      .catch((error: any) => {
+      .catch((error) => {
         storeLogger.error('Failed to sync view switch with backend', {
           error: error instanceof Error ? error.message : 'Unknown error',
           reportId: currentSession.reportId,
@@ -539,7 +539,7 @@ export const useValuationSessionStore = create<ValuationSessionStore>((set, get)
     // WHY: EBITDA and other financial metrics can legitimately be zero or negative
     // HOW: Validates value exists and is appropriate type, allows zero for numbers
     // WHEN: When filtering sessionData before returning
-    const hasMeaningfulValue = (value: any, fieldName?: string): boolean => {
+    const hasMeaningfulValue = (value: unknown, fieldName?: string): boolean => {
       if (value === null || value === undefined) return false;
       if (typeof value === 'string' && value.trim() === '') return false;
       // CRITICAL: Don't exclude zero for financial fields where zero is valid (ebitda can be zero/negative)
@@ -565,8 +565,8 @@ export const useValuationSessionStore = create<ValuationSessionStore>((set, get)
     for (const [key, value] of Object.entries(sessionData)) {
       // Special handling for nested objects like current_year_data
       if (key === 'current_year_data' && typeof value === 'object' && value !== null) {
-        const nestedFiltered: any = {};
-        for (const [nestedKey, nestedValue] of Object.entries(value as any)) {
+        const nestedFiltered: Record<string, unknown> = {};
+        for (const [nestedKey, nestedValue] of Object.entries(value as Record<string, unknown>)) {
           if (hasMeaningfulValue(nestedValue)) {
             nestedFiltered[nestedKey] = nestedValue;
           }
@@ -664,7 +664,7 @@ export const useValuationSessionStore = create<ValuationSessionStore>((set, get)
         reportId: session.reportId,
         fieldsUpdated: Object.keys(sessionUpdate).length,
       });
-    } catch (error: any) {
+    } catch (error) {
       storeLogger.error('Failed to sync from manual form', {
         error: error instanceof Error ? error.message : 'Unknown error',
       });
@@ -725,7 +725,7 @@ export const useValuationSessionStore = create<ValuationSessionStore>((set, get)
         reportId: session.reportId,
         fieldsUpdated: Object.keys(formUpdate).length,
       });
-    } catch (error: any) {
+    } catch (error) {
       storeLogger.error('Failed to sync to manual form', {
         error: error instanceof Error ? error.message : 'Unknown error',
       });

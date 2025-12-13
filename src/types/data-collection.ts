@@ -1,11 +1,10 @@
 /**
- * Unified Data Collection Types
+ * Data Collection Types
  *
  * Defines the shared data collection system used by both manual and conversational flows.
  * Ensures consistent data structures, validation, and collection mechanisms across all flows.
  */
 
-import type { ValuationRequest } from './valuation';
 
 // ============================================================================
 // CORE DATA FIELD TYPES
@@ -33,7 +32,7 @@ export type ValidationSeverity = 'error' | 'warning' | 'info';
 
 export interface ValidationRule {
   type: 'required' | 'min' | 'max' | 'pattern' | 'custom';
-  value?: any;
+  value?: string | number | boolean | RegExp | ((value: unknown) => boolean);
   message: string;
   severity: ValidationSeverity;
 }
@@ -70,12 +69,12 @@ export interface DataQuestion {
 
 export interface DataResponse {
   fieldId: string;
-  value: any;
+  value: string | number | boolean | null | undefined;
   method: DataCollectionMethod;
   confidence: number; // 0-1, how confident we are in this value
   source: string; // Where this data came from (user, AI, suggestion, etc.)
   timestamp: Date;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
 }
 
 // ============================================================================
@@ -107,13 +106,13 @@ export interface CollectionProgress {
 }
 
 // ============================================================================
-// UNIFIED DATA COLLECTOR INTERFACE
+// DATA COLLECTOR INTERFACE
 // ============================================================================
 
 export interface DataCollector {
   // Core collection methods
   collect(field: DataField, context?: CollectionContext): Promise<DataResponse>;
-  validate(field: DataField, value: any): ValidationRule[];
+  validate(field: DataField, value: string | number | boolean | null | undefined): ValidationRule[];
 
   // Batch operations
   collectMultiple(fields: DataField[], context?: CollectionContext): Promise<DataResponse[]>;
@@ -127,8 +126,8 @@ export interface DataCollector {
 export interface CollectionContext {
   session: CollectionSession;
   previousResponses: DataResponse[];
-  userProfile?: any;
-  conversationHistory?: any[];
+  userProfile?: Record<string, unknown>;
+  conversationHistory?: string[];
   method: DataCollectionMethod;
 }
 
@@ -138,8 +137,8 @@ export interface CollectionContext {
 
 export interface FieldRendererProps {
   field: DataField;
-  value?: any;
-  onChange: (value: any, method?: DataCollectionMethod) => void;
+  value?: string | number | boolean | null | undefined;
+  onChange: (value: string | number | boolean | null | undefined, method?: DataCollectionMethod) => void;
   errors?: ValidationRule[];
   context: CollectionContext;
   disabled?: boolean;

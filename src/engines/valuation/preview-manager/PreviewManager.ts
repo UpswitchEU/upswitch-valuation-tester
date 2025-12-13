@@ -8,7 +8,8 @@
  */
 
 import { useCallback, useMemo } from 'react';
-import type { ValuationFormData, ValuationResponse } from '../../../types/valuation';
+import { backendAPI } from '../../../services/BackendAPI';
+import type { ValuationFormData, ValuationRequest, ValuationResponse } from '../../../types/valuation';
 import { storeLogger } from '../../../utils/logger';
 
 // ============================================================================
@@ -392,31 +393,73 @@ export class PreviewManagerImpl implements PreviewManager {
   }
 
   private async generatePreviewEstimate(formData: ValuationFormData): Promise<ValuationResponse> {
-    // Simple preview calculation - in real implementation would call a lightweight API
-    const baseValue = (formData.revenue || 100000) * 2.0; // Conservative multiple for preview
+    // Call backend preview API instead of frontend calculation
+    // Backend provides lightweight preview estimate
+    try {
+      // Convert ValuationFormData to ValuationRequest for preview
+      const request: ValuationRequest = {
+        company_name: formData.company_name || 'Preview',
+        country_code: formData.country_code || 'BE',
+        industry: formData.industry || 'services',
+        business_model: formData.business_model || 'services',
+        founding_year: formData.founding_year || new Date().getFullYear() - 5,
+        current_year_data: formData.current_year_data || {
+          year: new Date().getFullYear(),
+          revenue: formData.revenue || 0,
+          ebitda: formData.ebitda || 0,
+        },
+        use_dcf: true,
+        use_multiples: true,
+        projection_years: 10,
+      };
 
-    await new Promise(resolve => setTimeout(resolve, 100)); // Simulate calculation time
-
-    return {
-      valuation_id: `preview_${Date.now()}`,
-      equity_value_low: baseValue * 0.8,
-      equity_value_mid: baseValue,
-      equity_value_high: baseValue * 1.2,
-      confidence_score: 0.5, // Lower confidence for preview
-      methodology: 'preview_estimate',
-      assumptions: {
-        growth_rate: 0.03,
-        discount_rate: 0.12,
-        terminal_growth: 0.02,
-      },
-      key_metrics: {},
-      risk_factors: ['Preview estimate - limited data'],
-      key_value_drivers: ['Based on provided financial information'],
-      html_report: '',
-      info_tab_html: '',
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-    };
+      // Call backend preview HTML generation endpoint
+      // This provides a lightweight preview estimate
+      const previewResult = await backendAPI.generatePreviewHtml(request);
+      
+      // For preview, we create a minimal response
+      // Full calculation would come from calculateValuationUnified
+      // This is just for UI preview purposes
+      return {
+        valuation_id: `preview_${Date.now()}`,
+        equity_value_low: 0, // Preview doesn't provide full range
+        equity_value_mid: 0,
+        equity_value_high: 0,
+        confidence_score: previewResult.completeness_percent / 100,
+        methodology: 'preview_estimate',
+        assumptions: {},
+        key_metrics: {},
+        risk_factors: ['Preview estimate - limited data'],
+        key_value_drivers: ['Based on provided financial information'],
+        html_report: previewResult.html,
+        info_tab_html: '',
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      };
+    } catch (error) {
+      storeLogger.warn('[PreviewManager] Preview API call failed, returning minimal estimate', {
+        error: error instanceof Error ? error.message : 'Unknown error',
+      });
+      
+      // Fallback: return minimal response if preview API fails
+      // This is acceptable for preview - full calculation will work
+      return {
+        valuation_id: `preview_${Date.now()}`,
+        equity_value_low: 0,
+        equity_value_mid: 0,
+        equity_value_high: 0,
+        confidence_score: 0.3,
+        methodology: 'preview_estimate',
+        assumptions: {},
+        key_metrics: {},
+        risk_factors: ['Preview unavailable'],
+        key_value_drivers: [],
+        html_report: '',
+        info_tab_html: '',
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      };
+    }
   }
 
   private calculateChanges(oldData: ValuationFormData, newData: ValuationFormData): PreviewUpdate['changes'] {

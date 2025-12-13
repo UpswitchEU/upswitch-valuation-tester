@@ -106,7 +106,7 @@ export class HttpClient {
    * Execute request with timeout and abort management
    */
   protected async executeRequest<T>(
-    config: any,
+    config: InternalAxiosRequestConfig,
     options?: APIRequestConfig
   ): Promise<T> {
     const timeout = options?.timeout || 90000; // Default 90 seconds

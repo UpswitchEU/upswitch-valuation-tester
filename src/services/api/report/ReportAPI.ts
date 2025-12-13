@@ -7,10 +7,10 @@
  * @module services/api/report/ReportAPI
  */
 
+import { APIError, AuthenticationError, NetworkError } from '../../../types/errors';
 import { ValuationRequest, ValuationResponse } from '../../../types/valuation';
-import { APIError, NetworkError, AuthenticationError } from '../../../types/errors';
 import { apiLogger } from '../../../utils/logger';
-import { HttpClient, APIRequestConfig } from '../HttpClient';
+import { APIRequestConfig, HttpClient } from '../HttpClient';
 
 export class ReportAPI extends HttpClient {
   /**
@@ -133,7 +133,7 @@ export class ReportAPI extends HttpClient {
       }
 
       return response.data;
-    } catch (error: any) {
+    } catch (error) {
       // Comprehensive error logging
       const errorContext = {
         correlationId,
@@ -186,7 +186,7 @@ export class ReportAPI extends HttpClient {
   /**
    * Handle report-specific errors
    */
-  private handleReportError(error: any, operation: string): never {
+  private handleReportError(error: unknown, operation: string): never {
     apiLogger.error(`Report ${operation} failed`, { error });
 
     if (error.response?.status === 404) {

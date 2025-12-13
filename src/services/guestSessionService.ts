@@ -5,6 +5,8 @@
  * Ensures 100% session capture for guest users
  */
 
+import { generalLogger } from '../utils/logger';
+
 const GUEST_SESSION_KEY = 'upswitch_guest_session_id';
 const GUEST_SESSION_EXPIRES_KEY = 'upswitch_guest_session_expires_at';
 const ACTIVITY_UPDATE_DISABLED_KEY = 'upswitch_activity_update_disabled';
@@ -99,7 +101,7 @@ class GuestSessionService {
       } catch (error) {
         // Ignore localStorage errors
       }
-      console.warn('Guest session activity updates disabled due to repeated failures. Will retry after cooldown period.');
+      generalLogger.warn('Guest session activity updates disabled due to repeated failures. Will retry after cooldown period.');
     }
   }
 
@@ -177,7 +179,7 @@ class GuestSessionService {
               }
             }
           } catch (error) {
-            console.warn('Failed to verify existing session, creating new one', error);
+            generalLogger.warn('Failed to verify existing session, creating new one', { error });
           }
         }
       }
@@ -207,7 +209,7 @@ class GuestSessionService {
       localStorage.setItem(GUEST_SESSION_KEY, data.data.session_id);
       localStorage.setItem(GUEST_SESSION_EXPIRES_KEY, data.data.expires_at);
 
-      console.log('Guest session created', {
+      generalLogger.info('Guest session created', {
         session_id: data.data.session_id,
         expires_at: data.data.expires_at,
         days_remaining: data.data.days_remaining
@@ -215,7 +217,7 @@ class GuestSessionService {
 
       return data.data.session_id;
     } catch (error) {
-      console.error('Failed to get or create guest session', error);
+      generalLogger.error('Failed to get or create guest session', { error });
       // Fallback: use client-generated session ID even if backend fails
       const fallbackSessionId = this.generateSessionId();
       localStorage.setItem(GUEST_SESSION_KEY, fallbackSessionId);
@@ -348,7 +350,7 @@ class GuestSessionService {
    */
   resetActivityUpdateCircuitBreaker(): void {
     this.resetCircuitBreaker();
-    console.info('Guest session activity update circuit breaker manually reset');
+    generalLogger.info('Guest session activity update circuit breaker manually reset');
   }
 
   /**

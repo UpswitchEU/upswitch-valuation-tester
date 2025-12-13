@@ -5,9 +5,9 @@
  * SOLID Principles: SRP, OCP, LSP, ISP, DIP
  */
 
-import React, { useState } from 'react';
-import { FieldRendererProps, DataField } from '../../../types/data-collection';
 import { Bot, HelpCircle } from 'lucide-react';
+import React, { useState } from 'react';
+import { DataField, FieldRendererProps } from '../../../types/data-collection';
 
 export const ConversationalFieldRenderer: React.FC<FieldRendererProps> = ({
   field,
@@ -20,7 +20,7 @@ export const ConversationalFieldRenderer: React.FC<FieldRendererProps> = ({
   const [showHelp, setShowHelp] = useState(false);
   const hasErrors = errors.length > 0;
 
-  const handleResponse = (responseValue: any) => {
+  const handleResponse = (responseValue: string | number | boolean | null | undefined) => {
     onChange(responseValue, 'conversational');
   };
 
@@ -150,7 +150,7 @@ function getExamplesForField(field: DataField): string[] {
   }
 }
 
-function parseExample(example: string, field: DataField): any {
+function parseExample(example: string, field: DataField): string | number | boolean | null {
   switch (field.type) {
     case 'currency':
       // Remove currency symbols and parse
@@ -175,7 +175,7 @@ function parseExample(example: string, field: DataField): any {
   }
 }
 
-function parseSuggestion(suggestion: string, field: DataField): any {
+function parseSuggestion(suggestion: string, field: DataField): string | number | boolean | null {
   // Similar to parseExample but for suggestions
   return parseExample(suggestion, field);
 }

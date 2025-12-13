@@ -6,6 +6,7 @@
  */
 
 import axios, { AxiosInstance } from 'axios';
+import { generalLogger } from '../utils/logger';
 
 export interface BusinessTypeSuggestion {
   suggestion: string;
@@ -40,18 +41,18 @@ class BusinessTypeSuggestionService {
    */
   async submitSuggestion(suggestion: BusinessTypeSuggestion): Promise<void> {
     try {
-      console.log('[BusinessTypeSuggestion] Submitting:', suggestion);
+      generalLogger.debug('[BusinessTypeSuggestion] Submitting', { suggestion });
       
       // Try to submit to backend
       await this.api.post('/suggest', suggestion);
       
-      console.log('[BusinessTypeSuggestion] Successfully submitted');
+      generalLogger.info('[BusinessTypeSuggestion] Successfully submitted');
     } catch (error) {
-      console.error('[BusinessTypeSuggestion] Failed to submit:', error);
+      generalLogger.error('[BusinessTypeSuggestion] Failed to submit', { error, suggestion });
       
       // Fail silently - don't block user
       // Log to console for debugging
-      console.log('[BusinessTypeSuggestion] Fallback: Logging suggestion locally', suggestion);
+      generalLogger.debug('[BusinessTypeSuggestion] Fallback: Logging suggestion locally', { suggestion });
       
       // Store in localStorage as fallback
       this.logSuggestionLocally(suggestion);
@@ -79,7 +80,7 @@ class BusinessTypeSuggestionService {
       
       localStorage.setItem(key, JSON.stringify(suggestions));
     } catch (error) {
-      console.error('[BusinessTypeSuggestion] Failed to log locally:', error);
+      generalLogger.error('[BusinessTypeSuggestion] Failed to log locally', { error, suggestion });
     }
   }
 
@@ -92,7 +93,7 @@ class BusinessTypeSuggestionService {
       const existing = localStorage.getItem(key);
       return existing ? JSON.parse(existing) : [];
     } catch (error) {
-      console.error('[BusinessTypeSuggestion] Failed to retrieve local suggestions:', error);
+      generalLogger.error('[BusinessTypeSuggestion] Failed to retrieve local suggestions', { error });
       return [];
     }
   }

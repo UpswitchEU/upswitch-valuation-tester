@@ -3,6 +3,8 @@
  * Generates consistent device fingerprints for guest user tracking
  */
 
+import { generalLogger } from '../utils/logger';
+
 class DeviceFingerprintService {
   private static instance: DeviceFingerprintService;
   private fingerprint: string | null = null;
@@ -25,7 +27,7 @@ class DeviceFingerprintService {
       this.fingerprint = await this.generateFingerprint();
       return this.fingerprint;
     } catch (error) {
-      console.warn('Failed to generate device fingerprint:', error);
+      generalLogger.warn('Failed to generate device fingerprint', { error });
       this.fingerprint = this.generateFallbackFingerprint();
       return this.fingerprint;
     }

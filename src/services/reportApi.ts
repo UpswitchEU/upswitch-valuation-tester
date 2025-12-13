@@ -5,6 +5,8 @@
  * Currently commented out due to missing BackendAPI methods
  */
 
+import { generalLogger } from '../utils/logger';
+
 // import { backendAPI } from './backendApi';  // Use Node.js backend, not valuation engine
 
 // export interface ReportData {
@@ -182,27 +184,25 @@
 // export const reportApiService = new ReportApiService();
 
 // Temporary mock implementation
+// TODO: Replace with actual backend API implementation when available
+export interface ReportApiResponse {
+  success: boolean;
+  data: unknown;
+}
+
 export const reportApiService = {
-  async savePartialData(reportId: string, data: any): Promise<void> {
-    if (import.meta.env.DEV) {
-      console.log('Mock savePartialData called:', { reportId, data });
-    }
+  async savePartialData(reportId: string, data: unknown): Promise<void> {
+    generalLogger.debug('Mock savePartialData called', { reportId, data });
   },
-  async getReport(reportId: string): Promise<any> {
-    if (import.meta.env.DEV) {
-      console.log('Mock getReport called:', { reportId });
-    }
+  async getReport(reportId: string): Promise<ReportApiResponse> {
+    generalLogger.debug('Mock getReport called', { reportId });
     return { success: false, data: null };
   },
-  async updateReport(reportId: string, data: any): Promise<any> {
-    if (import.meta.env.DEV) {
-      console.log('Mock updateReport called:', { reportId, data });
-    }
+  async updateReport(reportId: string, data: unknown): Promise<ReportApiResponse> {
+    generalLogger.debug('Mock updateReport called', { reportId, data });
     return { success: true, data };
   },
-  async completeReport(reportId: string, data: any): Promise<void> {
-    if (import.meta.env.DEV) {
-      console.log('Mock completeReport called:', { reportId, data });
-    }
+  async completeReport(reportId: string, data: unknown): Promise<void> {
+    generalLogger.debug('Mock completeReport called', { reportId, data });
   }
 };

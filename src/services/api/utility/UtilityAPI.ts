@@ -8,8 +8,9 @@
  */
 
 import { APIError } from '../../../types/errors';
+import type { Message } from '../../../types/message';
 import { apiLogger } from '../../../utils/logger';
-import { HttpClient, APIRequestConfig } from '../HttpClient';
+import { APIRequestConfig, HttpClient } from '../HttpClient';
 
 export class UtilityAPI extends HttpClient {
   /**
@@ -64,8 +65,8 @@ export class UtilityAPI extends HttpClient {
     options?: APIRequestConfig
   ): Promise<{
     exists: boolean;
-    messages?: any[];
-    metadata?: any;
+    messages?: Message[];
+    metadata?: Record<string, unknown>;
   }> {
     try {
       // Call the valuation engine directly for conversation status
@@ -101,7 +102,7 @@ export class UtilityAPI extends HttpClient {
       });
 
       return { exists: false };
-    } catch (error: any) {
+    } catch (error) {
       // CRITICAL FIX: Handle abort signal cancellation gracefully
       if (error.name === 'AbortError') {
         apiLogger.debug('Conversation status check was cancelled', { sessionId });
@@ -138,7 +139,7 @@ export class UtilityAPI extends HttpClient {
     }
   }
 
-  async getConversationHistory(conversationId: string, signal?: AbortSignal): Promise<{ messages: any[]; exists: boolean }> {
+  async getConversationHistory(conversationId: string, signal?: AbortSignal): Promise<{ messages: Message[]; exists: boolean }> {
     try {
       const response = await this.client.request({
         method: 'GET',
@@ -150,13 +151,13 @@ export class UtilityAPI extends HttpClient {
       const data = response.data?.data || response.data;
       if (data && Array.isArray(data.messages)) {
         return {
-          messages: data.messages,
+          messages: data.messages as Message[],
           exists: true
         };
       }
 
       return { messages: [], exists: false };
-    } catch (error: any) {
+    } catch (error) {
       if (error.name === 'AbortError') {
         apiLogger.debug('Conversation history request was cancelled', { conversationId });
         throw error;

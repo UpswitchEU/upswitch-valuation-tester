@@ -8,22 +8,22 @@
  * that works seamlessly across manual forms, conversational AI, suggestions, and future file uploads.
  */
 
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
-  DataCollector,
-  ManualFormCollector,
-  ConversationalCollector,
-  SuggestionCollector,
-  FuzzySearchCollector,
-  FileUploadCollector,
-  DataField,
-  DataResponse,
-  CollectionSession,
-  CollectionProgress,
-  BUSINESS_DATA_FIELDS,
-  DataCollectionMethod
+    BUSINESS_DATA_FIELDS,
+    CollectionProgress,
+    CollectionSession,
+    ConversationalCollector,
+    DataCollectionMethod,
+    DataCollector,
+    DataField,
+    DataResponse,
+    FileUploadCollector,
+    FuzzySearchCollector,
+    ManualFormCollector,
+    SuggestionCollector
 } from '../../engines/data-collection';
-import { AdaptiveFieldRenderer } from './AdaptiveFieldRenderer';
+import { FieldRenderer } from './FieldRenderer';
 
 interface DataCollectionProps {
   method: DataCollectionMethod;
@@ -191,7 +191,7 @@ export const DataCollection: React.FC<DataCollectionProps> = ({
       {/* Field Renderers */}
       <div className="space-y-4">
         {fieldsToDisplay.map(field => (
-          <AdaptiveFieldRenderer
+          <FieldRenderer
             key={field.id}
             field={field}
             value={responses.get(field.id)?.value}

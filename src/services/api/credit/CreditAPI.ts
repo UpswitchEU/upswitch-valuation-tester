@@ -10,7 +10,7 @@
 import { SaveValuationRequest, SaveValuationResponse } from '../../../types/api';
 import { APIError, AuthenticationError, CreditError } from '../../../types/errors';
 import { apiLogger } from '../../../utils/logger';
-import { HttpClient, APIRequestConfig } from '../HttpClient';
+import { APIRequestConfig, HttpClient } from '../HttpClient';
 
 export class CreditAPI extends HttpClient {
   /**
@@ -50,7 +50,7 @@ export class CreditAPI extends HttpClient {
   /**
    * Handle credit-specific errors
    */
-  private handleCreditError(error: any, operation: string): never {
+  private handleCreditError(error: unknown, operation: string): never {
     apiLogger.error(`Credit ${operation} failed`, { error });
 
     if (error.response?.status === 401 || error.response?.status === 403) {

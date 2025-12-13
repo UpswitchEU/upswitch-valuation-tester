@@ -1,5 +1,5 @@
 /**
- * Data Collection Components - Unified Interface
+ * Data Collection Components
  *
  * Exports all data collection components for easy importing.
  * Provides a consistent API across manual and conversational flows.
@@ -8,8 +8,8 @@
 // Core data collection component
 export { DataCollection } from './DataCollection';
 
-// Adaptive renderer
-export { AdaptiveFieldRenderer } from './AdaptiveFieldRenderer';
+// Field renderer
+export { FieldRenderer } from './FieldRenderer';
 
 // Individual renderers (for advanced use cases)
 export { ConversationalFieldRenderer } from './renderers/ConversationalFieldRenderer';

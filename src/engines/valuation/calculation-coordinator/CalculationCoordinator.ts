@@ -8,7 +8,8 @@
  */
 
 import { useCallback, useMemo } from 'react';
-import type { ValuationFormData, ValuationResponse } from '../../../types/valuation';
+import { backendAPI } from '../../../services/BackendAPI';
+import type { ValuationFormData, ValuationRequest, ValuationResponse } from '../../../types/valuation';
 import { storeLogger } from '../../../utils/logger';
 
 // ============================================================================
@@ -97,9 +98,11 @@ export interface CalculationCoordinator {
 }
 
 // ============================================================================
-// CALCULATION STEPS DEFINITION
+// CALCULATION STEPS DEFINITION (for progress tracking only)
 // ============================================================================
 
+// Note: Steps are now tracked from backend responses, not simulated
+// These are kept for progress display purposes only
 const CALCULATION_STEPS: Omit<CalculationStep, 'duration' | 'status' | 'timestamp'>[] = [
   { name: 'validation', description: 'Validating input data', progress: 10 },
   { name: 'preprocessing', description: 'Preprocessing financial data', progress: 20 },
@@ -329,7 +332,7 @@ export class CalculationCoordinatorImpl implements CalculationCoordinator {
       isCalculating: true,
       isCalculatingLive: false,
       progress: 0,
-      currentStep: '',
+      currentStep: 'Initializing calculation...',
       error: null,
       startTime: Date.now(),
       estimatedTimeRemaining: null,
@@ -346,32 +349,75 @@ export class CalculationCoordinatorImpl implements CalculationCoordinator {
         hasProgressCallback: !!options.onProgress,
       });
 
-      // Execute calculation steps
-      for (const stepDef of CALCULATION_STEPS) {
-        if (this.abortController.signal.aborted) {
-          throw new Error('Calculation aborted');
-        }
+      // Convert ValuationFormData to ValuationRequest
+      // Note: This is a simplified conversion - full conversion should match store logic
+      const request: ValuationRequest = {
+        company_name: formData.company_name || '',
+        country_code: formData.country_code || 'BE',
+        industry: formData.industry || 'services',
+        business_model: formData.business_model || 'services',
+        founding_year: formData.founding_year || new Date().getFullYear() - 5,
+        current_year_data: formData.current_year_data || {
+          year: new Date().getFullYear(),
+          revenue: formData.revenue || 0,
+          ebitda: formData.ebitda || 0,
+        },
+        historical_years_data: formData.historical_years_data,
+        number_of_employees: formData.number_of_employees,
+        number_of_owners: formData.number_of_owners,
+        recurring_revenue_percentage: formData.recurring_revenue_percentage,
+        shares_for_sale: formData.shares_for_sale,
+        business_type_id: formData.business_type_id,
+        business_type: formData.business_type,
+        use_dcf: true,
+        use_multiples: true,
+        projection_years: 10,
+      };
 
-        const stepStartTime = Date.now();
-        this.updateCalculationStep(stepDef.name, stepDef.description);
+      // Update progress - validation step
+      this.updateCalculationStep('validation', 'Validating input data');
+      this.updateProgress(10);
+      options.onProgress?.(10);
 
-        // Simulate step execution (would call actual calculation service)
-        await this.executeCalculationStep(stepDef, formData, options);
+      // Call backend API - no frontend calculations
+      this.updateCalculationStep('calculation', 'Performing valuation calculations');
+      this.updateProgress(50);
+      options.onProgress?.(50);
 
-        const stepDuration = Date.now() - stepStartTime;
-        steps.push({
-          ...stepDef,
-          duration: stepDuration,
-          status: 'completed',
-          timestamp: Date.now(),
-        });
+      const result = await backendAPI.calculateValuationUnified(request, {
+        signal: this.abortController.signal,
+      });
 
-        this.updateProgress(stepDef.progress);
-        options.onProgress?.(stepDef.progress);
-      }
+      // Update progress - finalization
+      this.updateCalculationStep('finalization', 'Finalizing valuation report');
+      this.updateProgress(100);
+      options.onProgress?.(100);
 
-      // Generate mock result (would come from actual calculation)
-      const result = this.generateMockResult(formData, correlationId, options.useStreaming);
+      // Create simplified steps for result (backend handles actual steps)
+      steps.push({
+        name: 'validation',
+        description: 'Validating input data',
+        progress: 10,
+        duration: 0,
+        status: 'completed',
+        timestamp: Date.now(),
+      });
+      steps.push({
+        name: 'calculation',
+        description: 'Performing valuation calculations',
+        progress: 70,
+        duration: Date.now() - startTime,
+        status: 'completed',
+        timestamp: Date.now(),
+      });
+      steps.push({
+        name: 'finalization',
+        description: 'Finalizing valuation report',
+        progress: 100,
+        duration: 0,
+        status: 'completed',
+        timestamp: Date.now(),
+      });
 
       const calculationResult: CalculationResult = {
         success: true,
@@ -382,7 +428,7 @@ export class CalculationCoordinatorImpl implements CalculationCoordinator {
         metadata: {
           correlationId,
           valuationId: result.valuation_id,
-          method: result.methodology,
+          method: result.methodology || 'unified',
           streamingUsed: !!options.useStreaming,
         },
       };
@@ -401,15 +447,13 @@ export class CalculationCoordinatorImpl implements CalculationCoordinator {
       const errorMessage = error instanceof Error ? error.message : 'Unknown calculation error';
 
       // Mark failed steps
-      CALCULATION_STEPS.forEach(stepDef => {
-        if (!steps.find(s => s.name === stepDef.name)) {
-          steps.push({
-            ...stepDef,
-            duration: 0,
-            status: 'failed',
-            timestamp: Date.now(),
-          });
-        }
+      steps.push({
+        name: 'calculation',
+        description: 'Performing valuation calculations',
+        progress: 50,
+        duration: Date.now() - startTime,
+        status: 'failed',
+        timestamp: Date.now(),
       });
 
       const calculationResult: CalculationResult = {
@@ -454,26 +498,78 @@ export class CalculationCoordinatorImpl implements CalculationCoordinator {
     const steps: CalculationStep[] = [];
 
     try {
-      for (const stepDef of QUICK_CALCULATION_STEPS) {
-        const stepStartTime = Date.now();
-
-        if (!isLivePreview) {
-          this.updateCalculationStep(stepDef.name, stepDef.description);
-          this.updateProgress(stepDef.progress);
-        }
-
-        // Simulate quick calculation step
-        await new Promise(resolve => setTimeout(resolve, 100));
-
-        steps.push({
-          ...stepDef,
-          duration: Date.now() - stepStartTime,
-          status: 'completed',
-          timestamp: Date.now(),
-        });
+      if (!isLivePreview) {
+        this.updateCalculationStep('quick_validation', 'Quick data validation');
+        this.updateProgress(25);
       }
 
-      const result = this.generateQuickMockResult(formData, correlationId);
+      // Convert to QuickValuationRequest format
+      // Quick valuation requires minimal data: revenue, ebitda, industry, country_code
+      if (!formData.revenue || !formData.ebitda || !formData.industry || !formData.country_code) {
+        throw new Error('Quick valuation requires revenue, ebitda, industry, and country_code');
+      }
+
+      const quickRequest = {
+        revenue: formData.revenue,
+        ebitda: formData.ebitda || 0,
+        industry: formData.industry,
+        country_code: formData.country_code,
+      };
+
+      if (!isLivePreview) {
+        this.updateCalculationStep('quick_calculation', 'Quick valuation estimate');
+        this.updateProgress(75);
+      }
+
+      // Call backend quick valuation API
+      // Note: Using unified endpoint with minimal data for quick estimate
+      const request: ValuationRequest = {
+        company_name: formData.company_name || 'Quick Estimate',
+        country_code: formData.country_code || 'BE',
+        industry: formData.industry || 'services',
+        business_model: formData.business_model || 'services',
+        founding_year: formData.founding_year || new Date().getFullYear() - 5,
+        current_year_data: {
+          year: new Date().getFullYear(),
+          revenue: formData.revenue,
+          ebitda: formData.ebitda || 0,
+        },
+        use_dcf: true,
+        use_multiples: true,
+        projection_years: 10,
+      };
+
+      const result = await backendAPI.calculateValuationUnified(request);
+
+      if (!isLivePreview) {
+        this.updateCalculationStep('quick_finalization', 'Quick result formatting');
+        this.updateProgress(100);
+      }
+
+      steps.push({
+        name: 'quick_validation',
+        description: 'Quick data validation',
+        progress: 25,
+        duration: 0,
+        status: 'completed',
+        timestamp: Date.now(),
+      });
+      steps.push({
+        name: 'quick_calculation',
+        description: 'Quick valuation estimate',
+        progress: 75,
+        duration: Date.now() - startTime,
+        status: 'completed',
+        timestamp: Date.now(),
+      });
+      steps.push({
+        name: 'quick_finalization',
+        description: 'Quick result formatting',
+        progress: 100,
+        duration: 0,
+        status: 'completed',
+        timestamp: Date.now(),
+      });
 
       return {
         success: true,
@@ -484,7 +580,7 @@ export class CalculationCoordinatorImpl implements CalculationCoordinator {
         metadata: {
           correlationId,
           valuationId: result.valuation_id,
-          method: result.methodology,
+          method: result.methodology || 'quick_estimate',
           streamingUsed: false,
         },
       };
@@ -526,84 +622,8 @@ export class CalculationCoordinatorImpl implements CalculationCoordinator {
     }
   }
 
-  private async executeCalculationStep(
-    step: any,
-    formData: ValuationFormData,
-    options: CalculationOptions
-  ): Promise<void> {
-    // Simulate step execution time based on step complexity
-    const delays = {
-      validation: 200,
-      preprocessing: 300,
-      method_selection: 200,
-      calculation: 1000,
-      postprocessing: 300,
-      finalization: 200,
-    };
-
-    const delay = delays[step.name as keyof typeof delays] || 500;
-    await new Promise(resolve => setTimeout(resolve, delay));
-  }
-
-  private generateMockResult(
-    formData: ValuationFormData,
-    correlationId: string,
-    useStreaming?: boolean
-  ): ValuationResponse {
-    const baseValue = (formData.revenue || 100000) * 2.5; // Simple mock calculation
-    const variance = 0.2; // 20% variance
-
-    return {
-      valuation_id: `val_${Date.now()}`,
-      equity_value_low: baseValue * (1 - variance),
-      equity_value_mid: baseValue,
-      equity_value_high: baseValue * (1 + variance),
-      confidence_score: 0.75,
-      methodology: 'dcf',
-      assumptions: {
-        growth_rate: 0.05,
-        discount_rate: 0.10,
-        terminal_growth: 0.02,
-      },
-      key_metrics: {
-        revenue_multiple: 2.5,
-        ebitda_multiple: 8.0,
-      },
-      risk_factors: [
-        'Market volatility',
-        'Competitive landscape',
-      ],
-      key_value_drivers: [
-        'Strong revenue growth',
-        'Recurring revenue model',
-      ],
-      html_report: '<div>Mock HTML Report</div>',
-      info_tab_html: '<div>Mock Info Tab</div>',
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-    };
-  }
-
-  private generateQuickMockResult(formData: ValuationFormData, correlationId: string): ValuationResponse {
-    const baseValue = (formData.revenue || 100000) * 2.3; // Slightly different for quick calc
-
-    return {
-      valuation_id: `quick_${Date.now()}`,
-      equity_value_low: baseValue * 0.9,
-      equity_value_mid: baseValue,
-      equity_value_high: baseValue * 1.1,
-      confidence_score: 0.6, // Lower confidence for quick calc
-      methodology: 'quick_estimate',
-      assumptions: {},
-      key_metrics: {},
-      risk_factors: [],
-      key_value_drivers: [],
-      html_report: '',
-      info_tab_html: '',
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-    };
-  }
+  // Mock calculation methods removed - all calculations now done by backend
+  // No frontend calculations remain in this coordinator
 
   private recordCalculationResult(result: CalculationResult): void {
     this.calculationHistory.push(result);

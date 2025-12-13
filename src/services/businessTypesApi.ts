@@ -16,6 +16,7 @@
 
 import axios, { AxiosInstance } from 'axios';
 import { BUSINESS_TYPES_FALLBACK, BusinessTypeOption as ConfigBusinessTypeOption } from '../config/businessTypes';
+import { generalLogger } from '../utils/logger';
 import { businessTypesCache } from './cache/businessTypesCache';
 
 // ============================================================================
@@ -90,21 +91,17 @@ class BusinessTypesApiService {
       if (businessTypesCache.hasValidCache()) {
         const cachedData = await businessTypesCache.getBusinessTypes();
         if (cachedData) {
-          if (import.meta.env.DEV) {
-            console.log('[BusinessTypesAPI] Serving from cache', {
-              businessTypes: cachedData.businessTypes.length,
-              categories: cachedData.categories.length,
-              popularTypes: cachedData.popularTypes.length
-            });
-          }
+          generalLogger.debug('[BusinessTypesAPI] Serving from cache', {
+            businessTypes: cachedData.businessTypes.length,
+            categories: cachedData.categories.length,
+            popularTypes: cachedData.popularTypes.length
+          });
           return cachedData.businessTypes;
         }
       }
 
       // Fetch from API
-      if (import.meta.env.DEV) {
-        console.log('[BusinessTypesAPI] Fetching from API');
-      }
+      generalLogger.debug('[BusinessTypesAPI] Fetching from API');
       const [typesResponse, categoriesResponse] = await Promise.all([
         this.api.get('/types', { params: { limit: 200 } }),
         this.api.get('/categories')
@@ -121,20 +118,16 @@ class BusinessTypesApiService {
           popularTypes: businessTypes.filter((bt: BusinessType) => bt.popular)
         });
         
-        if (import.meta.env.DEV) {
-          console.log('[BusinessTypesAPI] Fetched and cached', businessTypes.length, 'business types');
-        }
+        generalLogger.info('[BusinessTypesAPI] Fetched and cached', { count: businessTypes.length });
         return businessTypes;
       }
       
       throw new Error('API returned unsuccessful response');
     } catch (error) {
-      console.error('[BusinessTypesAPI] Failed to fetch business types:', error);
+      generalLogger.error('[BusinessTypesAPI] Failed to fetch business types', { error });
       
       // Return hardcoded fallback
-      if (import.meta.env.DEV) {
-        console.log('[BusinessTypesAPI] Using hardcoded fallback data');
-      }
+      generalLogger.warn('[BusinessTypesAPI] Using hardcoded fallback data');
       const fallbackData = this.getHardcodedBusinessTypes();
       
       return fallbackData;
@@ -195,14 +188,14 @@ class BusinessTypesApiService {
   async getBusinessTypeFull(businessTypeId: string): Promise<any> {
     try {
       if (import.meta.env.DEV) {
-        console.log(`[BusinessTypesApi] Fetching full metadata for: ${businessTypeId}`);
+        generalLogger.debug(`[BusinessTypesApi] Fetching full metadata for: ${businessTypeId}`);
       }
       
       const response = await this.api.get(`/types/${businessTypeId}/full`);
       
       if (response.data.success && response.data.data) {
         if (import.meta.env.DEV) {
-          console.log(`[BusinessTypesApi] Full metadata loaded`, {
+          generalLogger.debug(`[BusinessTypesApi] Full metadata loaded`, {
             businessTypeId,
             questionsCount: response.data.data.questions?.length || 0,
           validationsCount: response.data.data.validations?.length || 0,
@@ -214,7 +207,7 @@ class BusinessTypesApiService {
       
       return null;
     } catch (error) {
-      console.error(`[BusinessTypesApi] Failed to fetch full metadata:`, error);
+      generalLogger.error(`[BusinessTypesApi] Failed to fetch full metadata`, { error, businessTypeId });
       throw error;
     }
   }
@@ -227,15 +220,17 @@ class BusinessTypesApiService {
     options?: {
       flow_type?: 'manual' | 'ai_guided';
       phase?: string;
-      existing_data?: Record<string, any>;
+      existing_data?: Record<string, unknown>;
     }
-  ): Promise<any> {
+  ): Promise<{
+    questions?: Array<{ id: string; text: string; required: boolean }>;
+    total_required?: number;
+    estimated_time?: number;
+  } | null> {
     try {
-      if (import.meta.env.DEV) {
-        console.log(`[BusinessTypesApi] Fetching questions for: ${businessTypeId}`, options);
-      }
+      generalLogger.debug(`[BusinessTypesApi] Fetching questions for: ${businessTypeId}`, options);
       
-      const params: any = {};
+      const params: Record<string, string | undefined> = {};
       
       if (options?.flow_type) {
         params.flow_type = options.flow_type;
@@ -253,7 +248,7 @@ class BusinessTypesApiService {
       
       if (response.data.success && response.data.data) {
         if (import.meta.env.DEV) {
-          console.log(`[BusinessTypesApi] Questions loaded`, {
+          generalLogger.debug(`[BusinessTypesApi] Questions loaded`, {
             businessTypeId,
             totalQuestions: response.data.data.questions?.length || 0,
           requiredQuestions: response.data.data.total_required || 0,
@@ -265,7 +260,7 @@ class BusinessTypesApiService {
       
       return null;
     } catch (error) {
-      console.error(`[BusinessTypesApi] Failed to fetch questions:`, error);
+      generalLogger.error(`[BusinessTypesApi] Failed to fetch questions`, { error, businessTypeId });
       throw error;
     }
   }
@@ -278,14 +273,14 @@ class BusinessTypesApiService {
     data: Record<string, any>
   ): Promise<any> {
     try {
-      console.log(`[BusinessTypesApi] Validating data for: ${businessTypeId}`, {
+      generalLogger.debug(`[BusinessTypesApi] Validating data for: ${businessTypeId}`, {
         dataKeys: Object.keys(data),
       });
       
       const response = await this.api.post(`/types/${businessTypeId}/validate`, { data });
       
       if (response.data.success && response.data.data) {
-        console.log(`[BusinessTypesApi] Validation complete`, {
+        generalLogger.debug(`[BusinessTypesApi] Validation complete`, {
           businessTypeId,
           valid: response.data.data.valid,
           errorsCount: response.data.data.errors?.length || 0,
@@ -297,7 +292,7 @@ class BusinessTypesApiService {
       
       return null;
     } catch (error) {
-      console.error(`[BusinessTypesApi] Validation failed:`, error);
+      generalLogger.error(`[BusinessTypesApi] Validation failed`, { error, businessTypeId });
       throw error;
     }
   }
@@ -314,7 +309,7 @@ class BusinessTypesApiService {
     }
   ): Promise<any> {
     try {
-      console.log(`[BusinessTypesApi] Fetching benchmarks for: ${businessTypeId}`, options);
+      generalLogger.debug(`[BusinessTypesApi] Fetching benchmarks for: ${businessTypeId}`, options);
       
       const params: any = {};
       
@@ -333,7 +328,7 @@ class BusinessTypesApiService {
       const response = await this.api.get(`/types/${businessTypeId}/benchmarks`, { params });
       
       if (response.data.success && response.data.data) {
-        console.log(`[BusinessTypesApi] Benchmarks loaded`, {
+        generalLogger.debug(`[BusinessTypesApi] Benchmarks loaded`, {
           businessTypeId,
           benchmarksCount: Object.keys(response.data.data.benchmarks || {}).length,
           dataSource: response.data.data.data_source,
@@ -344,7 +339,7 @@ class BusinessTypesApiService {
       
       return null;
     } catch (error) {
-      console.error(`[BusinessTypesApi] Failed to fetch benchmarks:`, error);
+      generalLogger.error(`[BusinessTypesApi] Failed to fetch benchmarks`, { error, businessTypeId });
       throw error;
     }
   }
@@ -374,7 +369,7 @@ class BusinessTypesApiService {
         _index: idx
       })).filter(s => !!s.text);
     } catch (error) {
-      console.error('[BusinessTypesAPI] Failed to search business types:', error);
+      generalLogger.error('[BusinessTypesAPI] Failed to search business types', { error });
       return [];
     }
   }

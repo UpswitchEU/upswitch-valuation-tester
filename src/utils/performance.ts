@@ -136,9 +136,12 @@ export function useRenderPerformance(componentName: string) {
       const renderTime = performance.now() - renderStart.current;
       
       if (renderTime > 16) {  // Slower than 60fps
-        console.warn(
-          `[Performance] ${componentName} render #${renderCount.current} took ${renderTime.toFixed(2)}ms`
-        );
+        // Use structured logging in production - console.warn is acceptable for dev-only performance warnings
+        if (import.meta.env.DEV) {
+          console.warn(
+            `[Performance] ${componentName} render #${renderCount.current} took ${renderTime.toFixed(2)}ms`
+          );
+        }
       }
       
       renderStart.current = performance.now();

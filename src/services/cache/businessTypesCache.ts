@@ -8,6 +8,7 @@
  * @version 1.0.0
  */
 
+import { generalLogger } from '../../utils/logger';
 import { BusinessType } from '../businessTypesApi';
 
 // Define BusinessCategory interface locally since it's not exported
@@ -80,14 +81,14 @@ export class BusinessTypesCacheService {
   private setItemWithQuotaHandling(key: string, value: string): void {
     try {
       localStorage.setItem(key, value);
-    } catch (error: any) {
-      if (error.name === 'QuotaExceededError') {
-        console.warn('[BusinessTypesCache] Storage quota exceeded, clearing cache and retrying');
+    } catch (error) {
+      if (error instanceof Error && error.name === 'QuotaExceededError') {
+        generalLogger.warn('[BusinessTypesCache] Storage quota exceeded, clearing cache and retrying');
         this.clearAll();
         try {
           localStorage.setItem(key, value);
         } catch (retryError) {
-          console.error('[BusinessTypesCache] Failed to cache even after clearing storage');
+          generalLogger.error('[BusinessTypesCache] Failed to cache even after clearing storage', { error: retryError });
           throw retryError;
         }
       } else {
@@ -112,7 +113,7 @@ export class BusinessTypesCacheService {
       
       // Check size before storing
       if (serialized.length > CACHE_CONFIG.MAX_SIZE) {
-        console.warn('[BusinessTypesCache] Data too large for cache, storing without some metadata');
+        generalLogger.warn('[BusinessTypesCache] Data too large for cache, storing without some metadata');
         // Store without some optional fields to reduce size
         const compressedEntry = {
           data: {
@@ -130,15 +131,13 @@ export class BusinessTypesCacheService {
       }
 
       this.updateStats(true);
-      if (import.meta.env.DEV) {
-        console.log('[BusinessTypesCache] Data cached successfully', {
-          businessTypes: data.businessTypes.length,
-          categories: data.categories.length,
+      generalLogger.debug('[BusinessTypesCache] Data cached successfully', {
+        businessTypes: data.businessTypes.length,
+        categories: data.categories.length,
         popularTypes: data.popularTypes.length
-        });
-      }
+      });
     } catch (error) {
-      console.error('[BusinessTypesCache] Failed to cache data:', error);
+      generalLogger.error('[BusinessTypesCache] Failed to cache data', { error });
       this.updateStats(false);
     }
   }
@@ -159,9 +158,7 @@ export class BusinessTypesCacheService {
       
       // Check if cache is expired
       if (this.isExpired(cacheEntry)) {
-        if (import.meta.env.DEV) {
-          console.log('[BusinessTypesCache] Cache expired, removing');
-        }
+        generalLogger.debug('[BusinessTypesCache] Cache expired, removing');
         this.clearBusinessTypes();
         this.updateStats(false);
         return null;
@@ -169,9 +166,7 @@ export class BusinessTypesCacheService {
 
       // Check version compatibility
       if (cacheEntry.version !== CACHE_CONFIG.VERSION) {
-        if (import.meta.env.DEV) {
-          console.log('[BusinessTypesCache] Version mismatch, clearing cache');
-        }
+        generalLogger.debug('[BusinessTypesCache] Version mismatch, clearing cache');
         this.clearBusinessTypes();
         this.updateStats(false);
         return null;
@@ -184,22 +179,20 @@ export class BusinessTypesCacheService {
       const hitRate = this.stats.hitCount / (this.stats.hitCount + this.stats.missCount);
       const cacheSize = this.getCacheSize();
       
-      if (import.meta.env.DEV) {
-        console.log('[BusinessTypesCache] Cache hit', {
-          businessTypes: cacheEntry.data.businessTypes.length,
-          categories: cacheEntry.data.categories.length,
-          popularTypes: cacheEntry.data.popularTypes.length,
+      generalLogger.debug('[BusinessTypesCache] Cache hit', {
+        businessTypes: cacheEntry.data.businessTypes.length,
+        categories: cacheEntry.data.categories.length,
+        popularTypes: cacheEntry.data.popularTypes.length,
         age: cacheAge,
         size: cacheSize,
         hitRate: hitRate.toFixed(2),
         totalHits: this.stats.hitCount,
         totalMisses: this.stats.missCount
-        });
-      }
+      });
 
       return cacheEntry.data;
     } catch (error) {
-      console.error('[BusinessTypesCache] Failed to retrieve cached data:', error);
+      generalLogger.error('[BusinessTypesCache] Failed to retrieve cached data', { error });
       this.clearBusinessTypes();
       this.updateStats(false);
       return null;
@@ -217,7 +210,7 @@ export class BusinessTypesCacheService {
       const cacheEntry: CacheEntry<BusinessTypesCacheData> = JSON.parse(cached);
       return !this.isExpired(cacheEntry) && cacheEntry.version === CACHE_CONFIG.VERSION;
     } catch (error) {
-      console.error('[BusinessTypesCache] Error checking cache validity:', error);
+      generalLogger.error('[BusinessTypesCache] Error checking cache validity', { error });
       return false;
     }
   }
@@ -228,9 +221,9 @@ export class BusinessTypesCacheService {
   public clearBusinessTypes(): void {
     try {
       localStorage.removeItem(CACHE_CONFIG.KEYS.BUSINESS_TYPES);
-      console.log('[BusinessTypesCache] Business types cache cleared');
+      generalLogger.debug('[BusinessTypesCache] Business types cache cleared');
     } catch (error) {
-      console.error('[BusinessTypesCache] Error clearing business types cache:', error);
+      generalLogger.error('[BusinessTypesCache] Error clearing business types cache', { error });
     }
   }
 
@@ -242,9 +235,9 @@ export class BusinessTypesCacheService {
       Object.values(CACHE_CONFIG.KEYS).forEach(key => {
         localStorage.removeItem(key);
       });
-      console.log('[BusinessTypesCache] All cache cleared');
+      generalLogger.debug('[BusinessTypesCache] All cache cleared');
     } catch (error) {
-      console.error('[BusinessTypesCache] Error clearing all cache:', error);
+      generalLogger.error('[BusinessTypesCache] Error clearing all cache', { error });
     }
   }
 
@@ -279,7 +272,7 @@ export class BusinessTypesCacheService {
       const cacheEntry: CacheEntry<BusinessTypesCacheData> = JSON.parse(cached);
       return Date.now() - cacheEntry.timestamp;
     } catch (error) {
-      console.error('[BusinessTypesCache] Error getting cache age:', error);
+      generalLogger.error('[BusinessTypesCache] Error getting cache age', { error });
       return 0;
     }
   }
@@ -288,7 +281,7 @@ export class BusinessTypesCacheService {
   // PRIVATE METHODS
   // ============================================================================
 
-  private isExpired(cacheEntry: CacheEntry<any>): boolean {
+  private isExpired(cacheEntry: CacheEntry<BusinessTypesCacheData>): boolean {
     const now = Date.now();
     return (now - cacheEntry.timestamp) > cacheEntry.ttl;
   }
@@ -300,7 +293,7 @@ export class BusinessTypesCacheService {
         return JSON.parse(stats);
       }
     } catch (error) {
-      console.error('[BusinessTypesCache] Error loading stats:', error);
+      generalLogger.error('[BusinessTypesCache] Error loading stats', { error });
     }
 
     return {
@@ -316,7 +309,7 @@ export class BusinessTypesCacheService {
     try {
       localStorage.setItem(CACHE_CONFIG.KEYS.STATS, JSON.stringify(this.stats));
     } catch (error) {
-      console.error('[BusinessTypesCache] Failed to save stats:', error);
+      generalLogger.error('[BusinessTypesCache] Failed to save stats', { error });
     }
   }
 
@@ -330,7 +323,7 @@ export class BusinessTypesCacheService {
       const totalRequests = this.stats.hitCount + this.stats.missCount;
       const hitRate = totalRequests > 0 ? this.stats.hitCount / totalRequests : 0;
       
-      console.log('[BusinessTypesCache] Cache miss', {
+      generalLogger.debug('[BusinessTypesCache] Cache miss', {
         reason: 'No cache or expired',
         hitRate: hitRate.toFixed(2),
         totalHits: this.stats.hitCount,

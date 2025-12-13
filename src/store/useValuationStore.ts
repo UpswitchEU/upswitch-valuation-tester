@@ -2,11 +2,9 @@ import { create } from 'zustand';
 import { api } from '../services/api';
 import { backendAPI } from '../services/BackendAPI';
 import type { QuickValuationRequest, ValuationFormData, ValuationInputData, ValuationRequest, ValuationResponse } from '../types/valuation';
-// normalizeCalculationSteps removed - calculation steps now in server-generated info_tab_html
 import { correlationContext, storeLogger } from '../utils/logger';
 import { validatePreference } from '../utils/numberUtils';
 import { useValuationSessionStore } from './useValuationSessionStore';
-// import { useReportsStore } from './useReportsStore'; // Deprecated: Now saving to database
 
 interface ValuationStore {
   // Form data
@@ -277,8 +275,8 @@ export const useValuationStore = create<ValuationStore>((set, get) => ({
         },
         historical_years_data: sourceData.historical_years_data && sourceData.historical_years_data.length > 0 
           ? sourceData.historical_years_data
-              .filter((year: any) => year.ebitda !== undefined && year.ebitda !== null) // Only include years with EBITDA values
-              .map((year: any) => ({
+              .filter((year: YearDataInput) => year.ebitda !== undefined && year.ebitda !== null) // Only include years with EBITDA values
+              .map((year: YearDataInput) => ({
                 ...year,
                 year: Math.min(Math.max(Number(year.year), 2000), 2100),
                 revenue: Math.max(Number(year.revenue) || 0, 1), // Ensure positive revenue
@@ -528,18 +526,12 @@ export const useValuationStore = create<ValuationStore>((set, get) => ({
         // Don't fail the whole operation - valuation still calculated successfully
       }
       
-      // 📝 DEPRECATED: localStorage save (keeping for backward compatibility/guest users)
-      // TODO: Remove this after guest user flow is implemented
-      // useReportsStore.getState().addReport({
-      //   company_name: formData.company_name,
-      //   source: 'manual',
-      //   result: response,
-      //   form_data: formData,
-      // });
-    } catch (error: any) {
+    } catch (error) {
       storeLogger.error('Valuation error', { 
         error: error instanceof Error ? error.message : 'Unknown error',
-        response: error.response?.data 
+        response: error && typeof error === 'object' && 'response' in error 
+          ? (error as { response?: { data?: unknown } }).response?.data 
+          : undefined
       });
       
       // Extract detailed error message
@@ -559,15 +551,16 @@ export const useValuationStore = create<ValuationStore>((set, get) => ({
           errorMessage = detail;
         } else if (Array.isArray(detail)) {
           // Handle Pydantic validation errors (array format)
-          errorMessage = detail.map((err: any) => {
+          errorMessage = detail.map((err: { loc?: string[]; msg?: string }) => {
             const field = err.loc?.join('.') || 'unknown field';
-            return `${field}: ${err.msg}`;
+            return `${field}: ${err.msg || 'Validation error'}`;
           }).join('; ');
         } else if (typeof detail === 'object' && detail !== null) {
           // Handle business logic validation errors (object format with errors array)
-          if (Array.isArray(detail.errors) && detail.errors.length > 0) {
+          const detailObj = detail as { errors?: Array<{ field?: string; message?: string }> };
+          if (Array.isArray(detailObj.errors) && detailObj.errors.length > 0) {
             // Extract validation error messages from errors array
-            errorMessage = detail.errors.map((err: any) => {
+            errorMessage = detailObj.errors.map((err) => {
               // Format: "field: message" or just "message" if field is not available
               return err.field && err.message 
                 ? `${err.field}: ${err.message}`
@@ -633,7 +626,7 @@ export const useValuationStore = create<ValuationStore>((set, get) => ({
       
       const response = await api.quickValuation(quickRequest);
       setLiveEstimate(response);
-    } catch (error: any) {
+    } catch (error) {
       // Silently fail for live preview
       storeLogger.error('Quick valuation failed', {
         error: error instanceof Error ? error.message : 'Unknown error'
@@ -719,7 +712,7 @@ export const useValuationStore = create<ValuationStore>((set, get) => ({
       } else {
         throw new Error('Invalid response from server');
       }
-    } catch (error: any) {
+    } catch (error) {
       storeLogger.error('Failed to save valuation', {
         error: error instanceof Error ? error.message : 'Unknown error'
       });

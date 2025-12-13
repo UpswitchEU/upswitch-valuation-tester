@@ -5,16 +5,16 @@
  * SOLID Principles: SRP, OCP, LSP, ISP, DIP
  */
 
-import {
-  DataField,
-  DataResponse,
-  DataCollector,
-  CollectionContext,
-  DataCollectionMethod,
-  ValidationRule
-} from '../../../types/data-collection';
 import { ILogger } from '../../../services/container/interfaces/ILogger';
 import { ServiceContainer } from '../../../services/container/ServiceContainer';
+import {
+    CollectionContext,
+    DataCollectionMethod,
+    DataCollector,
+    DataField,
+    DataResponse,
+    ValidationRule
+} from '../../../types/data-collection';
 
 export class SuggestionCollector implements DataCollector {
   private logger: ILogger;
@@ -79,7 +79,7 @@ export class SuggestionCollector implements DataCollector {
 
     for (const response of responses) {
       // Note: In a real implementation, we'd need access to the fields
-      // This is a simplified version - the UnifiedDataCollector handles this
+      // This is a simplified version - the DataCollector handles this
       const errors: ValidationRule[] = [];
       if (errors.length > 0) {
         results.set(response.fieldId, errors);

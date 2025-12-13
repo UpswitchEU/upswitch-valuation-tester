@@ -5,9 +5,9 @@
  * SOLID Principles: SRP, OCP, LSP, ISP, DIP
  */
 
+import { Sparkles } from 'lucide-react';
 import React from 'react';
 import { FieldRendererProps } from '../../../types/data-collection';
-import { Sparkles } from 'lucide-react';
 
 export const SuggestionFieldRenderer: React.FC<FieldRendererProps> = ({
   field,
@@ -96,7 +96,7 @@ export const SuggestionFieldRenderer: React.FC<FieldRendererProps> = ({
   );
 };
 
-function parseSuggestionValue(suggestion: string, field: import('../../../types/data-collection').DataField): any {
+function parseSuggestionValue(suggestion: string, field: import('../../../types/data-collection').DataField): string | number | boolean | null {
   switch (field.type) {
     case 'number':
       if (suggestion.includes('-')) {

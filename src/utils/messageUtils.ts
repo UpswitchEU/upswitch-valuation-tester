@@ -1,9 +1,11 @@
 /**
  * Message Utilities
- * 
+ *
  * Reusable utilities for message validation, creation, and manipulation.
  * Extracted from StreamingChat to improve maintainability and testability.
  */
+
+import { generalLogger } from './logger';
 
 export interface Message {
   id: string;
@@ -94,13 +96,13 @@ export const ensureValidMessages = (messages: any[]): Message[] => {
     if (isValidMessage(msg)) {
       return true;
     } else {
-      console.warn(`Invalid message at index ${index}:`, msg);
+      generalLogger.warn(`Invalid message at index ${index}`, { message: msg });
       return false;
     }
   });
   
   if (validMessages.length !== messages.length) {
-    console.warn(`Filtered out ${messages.length - validMessages.length} invalid messages`);
+    generalLogger.warn(`Filtered out invalid messages`, { totalMessages: messages.length, validMessages: validMessages.length, filteredCount: messages.length - validMessages.length });
   }
   
   return validMessages;

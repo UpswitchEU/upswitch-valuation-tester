@@ -7,13 +7,13 @@
  * @module components/ValuationSessionManager
  */
 
-import React, { Suspense, lazy, useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { guestCreditService } from '../services/guestCreditService';
 import { useValuationSessionStore } from '../store/useValuationSessionStore';
-import { LoadingState } from './LoadingState';
-import { INITIALIZATION_STEPS } from './LoadingState.constants';
+import type { ValuationSession } from '../types/valuation';
+import { generalLogger } from '../utils/logger';
 import { OutOfCreditsModal } from './OutOfCreditsModal';
 
 type Stage = 'loading' | 'data-entry' | 'processing' | 'flow-selection';
@@ -21,7 +21,7 @@ type Stage = 'loading' | 'data-entry' | 'processing' | 'flow-selection';
 interface ValuationSessionManagerProps {
   reportId: string;
   children: (props: {
-    session: any;
+    session: ValuationSession | null;
     stage: Stage;
     error: string | null;
     showOutOfCreditsModal: boolean;
@@ -50,9 +50,15 @@ export const ValuationSessionManager: React.FC<ValuationSessionManagerProps> = R
   const [error, setError] = useState<string | null>(null);
   const [showOutOfCreditsModal, setShowOutOfCreditsModal] = useState(false);
 
-  // Extract prefilled query from location state
-  const prefilledQuery = (location.state as any)?.prefilledQuery || null;
-  const autoSend = (location.state as any)?.autoSend || false;
+  // Extract prefilled query from location state with proper typing
+  interface LocationState {
+    prefilledQuery?: string | null;
+    autoSend?: boolean;
+  }
+
+  const locationState = (location.state as LocationState) || {};
+  const prefilledQuery = locationState.prefilledQuery || null;
+  const autoSend = locationState.autoSend || false;
 
   // Track initialization state per reportId using ref to avoid dependency loops
   const initializationState = useRef<Map<string, { initialized: boolean; isInitializing: boolean }>>(new Map());
@@ -102,7 +108,7 @@ export const ValuationSessionManager: React.FC<ValuationSessionManagerProps> = R
     } catch (error) {
       // On error, allow retry by not marking as initialized
       initializationState.current.set(reportId, { initialized: false, isInitializing: false });
-      console.error('Failed to initialize session:', error);
+      generalLogger.error('Failed to initialize session', { error, reportId });
       setError('Failed to initialize valuation session');
     }
   }, [isAuthenticated, initializeSession, prefilledQuery]);
@@ -165,7 +171,7 @@ export const ValuationSessionManager: React.FC<ValuationSessionManagerProps> = R
         onSignUp={() => {
           setShowOutOfCreditsModal(false);
           // TODO: Implement actual sign-up flow
-          console.log('Sign up clicked');
+          generalLogger.info('Sign up clicked from out of credits modal', { reportId });
         }}
         onTryManual={async () => {
           setShowOutOfCreditsModal(false);

@@ -5,9 +5,9 @@
  * SOLID Principles: SRP, OCP, LSP, ISP, DIP
  */
 
-import React, { useState, useMemo } from 'react';
+import { Check, Search } from 'lucide-react';
+import React, { useMemo, useState } from 'react';
 import { FieldRendererProps } from '../../../types/data-collection';
-import { Search, Check } from 'lucide-react';
 
 export const FuzzySearchFieldRenderer: React.FC<FieldRendererProps> = ({
   field,
@@ -26,7 +26,7 @@ export const FuzzySearchFieldRenderer: React.FC<FieldRendererProps> = ({
     if (!query.trim() || !field.options) return [];
 
     const queryLower = query.toLowerCase();
-    const results: Array<{ option: any; score: number }> = [];
+    const results: Array<{ option: { value: string; label: string; description?: string }; score: number }> = [];
 
     for (const option of field.options) {
       const labelLower = option.label.toLowerCase();

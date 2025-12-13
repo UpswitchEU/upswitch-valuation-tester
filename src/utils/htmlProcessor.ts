@@ -1,4 +1,5 @@
 import DOMPurify from 'dompurify';
+import { generalLogger } from './logger';
 
 /**
  * HTML Processor for sanitizing and processing HTML content
@@ -95,7 +96,7 @@ export class HTMLProcessor {
     // BANK-GRADE: Type validation - ensure input is string
     if (typeof htmlContent !== 'string') {
       if (process.env.NODE_ENV === 'development') {
-        console.warn('[HTMLProcessor] Invalid input type for sanitize', {
+        generalLogger.warn('[HTMLProcessor] Invalid input type for sanitize', {
           type: typeof htmlContent,
           expected: 'string'
         });
@@ -119,7 +120,7 @@ export class HTMLProcessor {
       // BANK-GRADE: Specific error handling - CSS extraction failure
       // This is non-critical - continue with sanitization without CSS extraction
       if (process.env.NODE_ENV === 'development') {
-        console.warn('[HTMLProcessor] CSS extraction failed, continuing without CSS fallback', {
+        generalLogger.warn('[HTMLProcessor] CSS extraction failed, continuing without CSS fallback', {
           error: error instanceof Error ? error.message : String(error)
         });
       }
@@ -165,7 +166,7 @@ export class HTMLProcessor {
       // BANK-GRADE: Specific error handling - DOMPurify sanitization failure
       // DOMPurify typically doesn't throw, but handle edge cases (SSR, invalid config)
       if (process.env.NODE_ENV === 'development') {
-        console.error('[HTMLProcessor] DOMPurify sanitization failed', {
+        generalLogger.error('[HTMLProcessor] DOMPurify sanitization failed', {
           error: error instanceof Error ? error.message : String(error),
           htmlLength: htmlWithoutStyle.length,
           fallback: 'returning empty string'
@@ -179,7 +180,7 @@ export class HTMLProcessor {
     // BANK-GRADE: Validate sanitized output
     if (typeof sanitized !== 'string') {
       if (process.env.NODE_ENV === 'development') {
-        console.warn('[HTMLProcessor] DOMPurify returned non-string, using fallback', {
+        generalLogger.warn('[HTMLProcessor] DOMPurify returned non-string, using fallback', {
           type: typeof sanitized
         });
       }
@@ -200,7 +201,7 @@ export class HTMLProcessor {
         // BANK-GRADE: Log CSS re-injection for security audit trail
         // This is safe because CSS is server-generated (not user input)
         if (process.env.NODE_ENV === 'development') {
-          console.info('[HTMLProcessor] CSS extracted and re-injected (DOMPurify fallback)', {
+          generalLogger.info('[HTMLProcessor] CSS extracted and re-injected (DOMPurify fallback)', {
             cssLength: extractedCSS.length,
             htmlLength: sanitized.length,
             finalLength: result.length,
@@ -213,7 +214,7 @@ export class HTMLProcessor {
       } else {
         // Style tag was preserved by DOMPurify - log success for monitoring
         if (process.env.NODE_ENV === 'development') {
-          console.info('[HTMLProcessor] Style tag preserved by DOMPurify', {
+          generalLogger.info('[HTMLProcessor] Style tag preserved by DOMPurify', {
             cssLength: extractedCSS.length,
             htmlLength: sanitized.length,
             status: 'success'
@@ -273,7 +274,7 @@ export class HTMLProcessor {
     // BANK-GRADE: Type validation
     if (typeof htmlContent !== 'string') {
       if (process.env.NODE_ENV === 'development') {
-        console.warn('[HTMLProcessor] Invalid input type for extractSections', {
+        generalLogger.warn('[HTMLProcessor] Invalid input type for extractSections', {
           type: typeof htmlContent
         });
       }
@@ -294,7 +295,7 @@ export class HTMLProcessor {
       // BANK-GRADE: Specific error handling - DOMParser failure
       // This is non-critical - return empty array if parsing fails
       if (process.env.NODE_ENV === 'development') {
-        console.warn('[HTMLProcessor] Failed to extract sections from HTML', {
+        generalLogger.warn('[HTMLProcessor] Failed to extract sections from HTML', {
           error: error instanceof Error ? error.message : String(error)
         });
       }

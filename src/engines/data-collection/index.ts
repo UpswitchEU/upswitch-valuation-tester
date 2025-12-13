@@ -1,7 +1,7 @@
 /**
- * Unified Data Collection Engine
+ * Data Collection Engine
  *
- * Single Responsibility: Provide unified data collection across all methods
+ * Single Responsibility: Provide data collection across all methods
  * SOLID Principles: SRP, OCP, LSP, ISP, DIP
  *
  * This engine provides a single interface for collecting business valuation data

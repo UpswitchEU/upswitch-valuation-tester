@@ -6,7 +6,7 @@
  */
 
 import React from 'react';
-import { FieldRendererProps, DataField } from '../../../types/data-collection';
+import { DataField, FieldRendererProps } from '../../../types/data-collection';
 
 export const ManualFormFieldRenderer: React.FC<FieldRendererProps> = ({
   field,
@@ -19,7 +19,7 @@ export const ManualFormFieldRenderer: React.FC<FieldRendererProps> = ({
   const hasErrors = errors.length > 0;
   const errorMessage = errors.find(e => e.severity === 'error')?.message;
 
-  const handleChange = (newValue: any) => {
+  const handleChange = (newValue: string | number | boolean | null | undefined) => {
     onChange(newValue, 'manual_form');
   };
 
@@ -52,8 +52,8 @@ export const ManualFormFieldRenderer: React.FC<FieldRendererProps> = ({
 
 interface FieldInputProps {
   field: DataField;
-  value: any;
-  onChange: (value: any) => void;
+  value: string | number | boolean | null | undefined;
+  onChange: (value: string | number | boolean | null | undefined) => void;
   disabled?: boolean;
   autoFocus?: boolean;
   hasErrors?: boolean;

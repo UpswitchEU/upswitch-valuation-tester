@@ -1,6 +1,7 @@
 import { Code, Copy } from 'lucide-react';
 import React from 'react';
 import type { ValuationResponse } from '../types/valuation';
+import { generalLogger } from '../utils/logger';
 
 interface HTMLViewProps {
   result: ValuationResponse | null;
@@ -22,14 +23,15 @@ export const HTMLView: React.FC<HTMLViewProps> = ({ result }) => {
 
   const handleCopyHTML = async () => {
     if (!htmlContent) {
-      console.error('Cannot copy: HTML report not available');
+      generalLogger.error('Cannot copy: HTML report not available', { valuationId: result.valuation_id });
       return;
     }
     try {
       await navigator.clipboard.writeText(htmlContent);
+      generalLogger.debug('HTML report copied to clipboard', { valuationId: result.valuation_id });
       // You could add a toast notification here
     } catch (err) {
-      console.error('Failed to copy HTML:', err);
+      generalLogger.error('Failed to copy HTML', { error: err, valuationId: result.valuation_id });
     }
   };
 

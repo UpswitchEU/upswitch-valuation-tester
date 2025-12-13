@@ -8,15 +8,15 @@
  */
 
 import React, { Suspense } from 'react';
-import type { ValuationResponse } from '../types/valuation';
 import { createMonitoredLazy } from '../hooks/usePerformanceMonitor';
+import type { ValuationResponse, ValuationSession } from '../types/valuation';
 import { LoadingState } from './LoadingState';
 import { INITIALIZATION_STEPS } from './LoadingState.constants';
 
 type Stage = 'loading' | 'data-entry' | 'processing' | 'flow-selection';
 
 interface ValuationFlowSelectorProps {
-  session: any;
+  session: ValuationSession | null;
   stage: Stage;
   error: string | null;
   prefilledQuery: string | null;

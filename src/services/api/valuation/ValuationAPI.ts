@@ -7,10 +7,10 @@
  * @module services/api/valuation/ValuationAPI
  */
 
+import { APIError, AuthenticationError, CreditError, NetworkError, RateLimitError, ValidationError } from '../../../types/errors';
 import { ValuationRequest, ValuationResponse } from '../../../types/valuation';
-import { APIError, NetworkError, RateLimitError, AuthenticationError, ValidationError, CreditError } from '../../../types/errors';
 import { apiLogger } from '../../../utils/logger';
-import { HttpClient, APIRequestConfig } from '../HttpClient';
+import { APIRequestConfig, HttpClient } from '../HttpClient';
 
 export class ValuationAPI extends HttpClient {
   /**
@@ -123,7 +123,7 @@ export class ValuationAPI extends HttpClient {
   /**
    * Handle valuation-specific errors with appropriate error types
    */
-  private handleValuationError(error: any, operation: string): never {
+  private handleValuationError(error: unknown, operation: string): never {
     apiLogger.error(`Valuation ${operation} failed`, { error });
 
     if (error.response?.status === 429) {

@@ -17,6 +17,8 @@ import { useAuth } from '../../../hooks/useAuth';
 import { guestCreditService } from '../../../services/guestCreditService';
 import UrlGeneratorService from '../../../services/urlGenerator';
 import { useValuationStore } from '../../../store/useValuationStore';
+import type { ValuationResponse } from '../../../types/valuation';
+import { convertDataResponsesToFormData } from '../../../utils/dataCollectionUtils';
 import { chatLogger } from '../../../utils/logger';
 import { generateReportId } from '../../../utils/reportIdGenerator';
 import { CreditGuard } from '../../auth/components/CreditGuard';
@@ -27,7 +29,7 @@ import { ReportPanel } from './ReportPanel';
 
 interface ConversationalLayoutProps {
   reportId: string;
-  onComplete: (result: any) => void;
+  onComplete: (result: ValuationResponse) => void;
   initialQuery?: string | null;
   autoSend?: boolean;
 }
@@ -47,35 +49,35 @@ export const ConversationalLayout: React.FC<ConversationalLayoutProps> = React.m
   const { user } = useAuth();
   const { state } = useConversationState();
   const actions = useConversationActions();
-  const { setResult } = useValuationStore();
+  const { setResult, updateFormData } = useValuationStore();
 
-  // Unified data collection state
+  // Data collection state
   const [collectedData, setCollectedData] = useState<DataResponse[]>([]);
-  const [showUnifiedCollection, setShowUnifiedCollection] = useState(false);
+  const [showDataCollection, setShowDataCollection] = useState(false);
 
-  // Handle data collection from unified system
+  // Handle data collection
   const handleDataCollected = (responses: DataResponse[]) => {
     setCollectedData(responses);
 
-    // Convert responses to format expected by conversation system
-    const conversationData: Record<string, any> = {};
-    responses.forEach(response => {
-      conversationData[response.fieldId] = response.value;
-    });
+    // Convert responses to form data format using shared utility
+    const formData = convertDataResponsesToFormData(responses);
 
-    chatLogger.info('Conversational flow collected data:', conversationData);
+    // Update valuation store with collected data
+    updateFormData(formData);
+
+    chatLogger.info('Conversational flow collected data:', formData);
   };
 
   // Handle collection completion
   const handleCollectionComplete = (responses: DataResponse[]) => {
-    // Trigger valuation calculation with collected data
-    const valuationData: Record<string, any> = {};
-    responses.forEach(response => {
-      valuationData[response.fieldId] = response.value;
-    });
+    // Convert responses to form data format using shared utility
+    const formData = convertDataResponsesToFormData(responses);
 
-    chatLogger.info('Conversational flow collection complete:', valuationData);
-    setShowUnifiedCollection(false);
+    // Update valuation store with final collected data
+    updateFormData(formData);
+
+    chatLogger.info('Conversational flow collection complete:', formData);
+    setShowDataCollection(false);
   };
 
   // Handle progress updates
@@ -100,13 +102,13 @@ export const ConversationalLayout: React.FC<ConversationalLayoutProps> = React.m
         }
       }
     } catch (error) {
-      console.warn('Failed to load saved panel width:', error);
+      chatLogger.warn('Failed to load saved panel width', { error });
     }
     return PANEL_CONSTRAINTS.DEFAULT_WIDTH;
   });
 
   // Data collection method toggle (for demonstration)
-  const [useUnifiedCollection, setUseUnifiedCollection] = useState(false);
+  const [useDataCollection, setUseDataCollection] = useState(false);
 
   // Mobile detection
   useEffect(() => {
@@ -121,7 +123,7 @@ export const ConversationalLayout: React.FC<ConversationalLayoutProps> = React.m
     try {
       localStorage.setItem('upswitch-panel-width', leftPanelWidth.toString());
     } catch (error) {
-      console.warn('Failed to save panel width:', error);
+      chatLogger.warn('Failed to save panel width', { error });
     }
   }, [leftPanelWidth]);
 
@@ -176,7 +178,7 @@ export const ConversationalLayout: React.FC<ConversationalLayoutProps> = React.m
           filename: DownloadService.getDefaultFilename(state.businessProfile?.company_name, 'pdf')
         });
       } catch (error) {
-        console.error('Download failed:', error);
+        chatLogger.error('PDF download failed', { error, reportId });
       }
     }
   }, [state.valuationResult, state.finalReportHtml, state.businessProfile]);
@@ -232,11 +234,11 @@ export const ConversationalLayout: React.FC<ConversationalLayoutProps> = React.m
           valuationMethod={state.valuationResult?.methodology}
           customActions={
             <button
-              onClick={() => setUseUnifiedCollection(!useUnifiedCollection)}
+              onClick={() => setUseDataCollection(!useDataCollection)}
               className="px-3 py-1 text-xs bg-primary-600 hover:bg-primary-700 text-white rounded transition-colors"
-              title={useUnifiedCollection ? "Switch to Chat Collection" : "Switch to Unified Collection"}
+              title={useDataCollection ? "Switch to Chat Collection" : "Switch to Data Collection"}
             >
-              {useUnifiedCollection ? "💬 Chat" : "📝 Form"}
+              {useDataCollection ? "💬 Chat" : "📝 Form"}
             </button>
           }
         />
@@ -272,8 +274,8 @@ export const ConversationalLayout: React.FC<ConversationalLayoutProps> = React.m
             }}
           >
             <div className="flex-1 overflow-y-auto">
-              {useUnifiedCollection ? (
-                // Unified Data Collection (Form-based)
+              {useDataCollection ? (
+                // Data Collection (Form-based)
                 <div className="p-4">
                   <div className="mb-4">
                     <h3 className="text-lg font-semibold text-white mb-2">Data Collection</h3>

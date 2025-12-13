@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { generalLogger } from '../utils/logger';
 
 // Note: Owner Dependency UI has been removed. This hook is kept for backward compatibility
 // and future backend integration, but the assessment is now handled conversationally.
@@ -43,11 +44,11 @@ export const useProfileData = (): UseProfileDataReturn => {
       
       // For now, return null (no profile data available)
       // This allows the tester to work standalone without backend integration
-      console.log('[useProfileData] Profile data fetch not yet implemented');
+      generalLogger.debug('[useProfileData] Profile data fetch not yet implemented');
       setProfileData(null);
       
     } catch (err) {
-      console.error('[useProfileData] Error fetching profile:', err);
+      generalLogger.error('[useProfileData] Error fetching profile', { error: err });
       setError(err as Error);
       setProfileData(null);
     } finally {

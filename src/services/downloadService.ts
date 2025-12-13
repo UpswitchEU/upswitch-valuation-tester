@@ -1,6 +1,6 @@
 // Download service for exporting valuation reports
-import type { ValuationRequest } from '../types/valuation';
 import { backendAPI } from '../services/BackendAPI';
+import type { ValuationRequest } from '../types/valuation';
 import { HTMLProcessor } from '../utils/htmlProcessor';
 
 export interface DownloadOptions {
@@ -88,7 +88,7 @@ export class DownloadService {
       document.body.removeChild(tempDiv);
       
     } catch (error) {
-      console.error('PDF generation failed:', error);
+      generalLogger.error('PDF generation failed', { error });
       // Fallback to HTML download
       await this.downloadHTML(data, { ...options, format: 'html' });
     }
@@ -359,7 +359,7 @@ export class DownloadService {
     const downloadId = `pdf_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
     
     try {
-      console.log('[DownloadService] PDF download initiated', {
+      generalLogger.info('[DownloadService] PDF download initiated', {
         downloadId,
         company_name: request.company_name,
         timestamp: new Date().toISOString(),
@@ -369,7 +369,7 @@ export class DownloadService {
 
       const filename = options?.filename || this.getDefaultFilename(request.company_name, 'pdf');
       
-      console.log('[DownloadService] PDF filename determined', {
+      generalLogger.debug('[DownloadService] PDF filename determined', {
         downloadId,
         filename,
         company_name: request.company_name
@@ -378,11 +378,11 @@ export class DownloadService {
       // Show loading state if progress callback provided
       if (options?.onProgress) {
         options.onProgress(0);
-        console.log('[DownloadService] Progress callback initialized', { downloadId, progress: 0 });
+        generalLogger.debug('[DownloadService] Progress callback initialized', { downloadId, progress: 0 });
       }
 
       const apiCallStartTime = performance.now();
-      console.log('[DownloadService] Calling backend API for PDF generation', {
+      generalLogger.debug('[DownloadService] Calling backend API for PDF generation', {
         downloadId,
         company_name: request.company_name,
         endpoint: '/api/valuations/pdf/accountant-view'
@@ -395,7 +395,7 @@ export class DownloadService {
           if (options?.onProgress) {
             options.onProgress(progress);
           }
-          console.log('[DownloadService] PDF download progress', {
+          generalLogger.debug('[DownloadService] PDF download progress', {
             downloadId,
             progress,
             company_name: request.company_name
@@ -404,7 +404,7 @@ export class DownloadService {
       });
 
       const apiCallDuration = performance.now() - apiCallStartTime;
-      console.log('[DownloadService] Backend API call completed', {
+      generalLogger.debug('[DownloadService] Backend API call completed', {
         downloadId,
         company_name: request.company_name,
         pdfSize: pdfBlob.size,
@@ -415,11 +415,11 @@ export class DownloadService {
 
       if (options?.onProgress) {
         options.onProgress(100);
-        console.log('[DownloadService] Progress set to 100%', { downloadId });
+        generalLogger.debug('[DownloadService] Progress set to 100%', { downloadId });
       }
 
       const downloadStartTime = performance.now();
-      console.log('[DownloadService] Initiating browser download', {
+      generalLogger.debug('[DownloadService] Initiating browser download', {
         downloadId,
         filename,
         pdfSize: pdfBlob.size
@@ -440,7 +440,7 @@ export class DownloadService {
       const downloadDuration = performance.now() - downloadStartTime;
       const totalDuration = performance.now() - startTime;
       
-      console.log('[DownloadService] PDF download completed successfully', {
+      generalLogger.info('[DownloadService] PDF download completed successfully', {
         downloadId,
         filename,
         pdfSize: pdfBlob.size,
@@ -461,11 +461,11 @@ export class DownloadService {
         timestamp: new Date().toISOString()
       };
       
-      console.error('[DownloadService] PDF download failed', errorDetails);
+      generalLogger.error('[DownloadService] PDF download failed', errorDetails);
       
       // Log additional error details if available
       if (error instanceof Error && error.stack) {
-        console.error('[DownloadService] Error stack trace', {
+        generalLogger.error('[DownloadService] Error stack trace', {
           downloadId,
           stack: error.stack
         });

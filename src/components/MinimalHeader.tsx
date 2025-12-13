@@ -13,7 +13,6 @@ import { UserDropdown } from './UserDropdown';
  */
 export const MinimalHeader: React.FC = () => {
   const { user, refreshAuth } = useAuth();
-  console.log('🔵 [MinimalHeader] User from useAuth:', user);
 
   const handleLogout = async () => {
     try {

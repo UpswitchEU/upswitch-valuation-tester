@@ -2,6 +2,8 @@ import React, { lazy, Suspense, useState } from 'react';
 import { CollectionProgress, DataCollection, DataResponse } from '../../../components/data-collection';
 import { useAuth } from '../../../hooks/useAuth';
 import { useValuationStore } from '../../../store/useValuationStore';
+import { convertDataResponsesToFormData } from '../../../utils/dataCollectionUtils';
+import { generalLogger } from '../../../utils/logger';
 import { ValuationToolbar } from './ValuationToolbar';
 
 // Lazy load results component
@@ -17,49 +19,58 @@ const ComponentLoader: React.FC<{ message?: string }> = ({ message = 'Loading...
   </div>
 );
 
+import type { ValuationResponse } from '../../../types/valuation';
+
 interface ManualValuationFlowProps {
   reportId?: string;
-  onComplete: (result: any) => void;
+  onComplete: (result: ValuationResponse) => void;
 }
 
 export const ManualValuationFlow: React.FC<ManualValuationFlowProps> = ({
   reportId,
   onComplete
 }) => {
-  const { result, isCalculating, calculateValuation } = useValuationStore();
+  const { result, isCalculating, calculateValuation, updateFormData } = useValuationStore();
   const { user } = useAuth();
   const [collectedData, setCollectedData] = useState<DataResponse[]>([]);
 
-  // Handle data collection from unified system
+  // Handle data collection
   const handleDataCollected = (responses: DataResponse[]) => {
     setCollectedData(responses);
 
-    // Convert responses to form data format expected by valuation store
-    const formData: Record<string, any> = {};
-    responses.forEach(response => {
-      formData[response.fieldId] = response.value;
-    });
+    // Convert responses to form data format using shared utility
+    const formData = convertDataResponsesToFormData(responses);
 
     // Update valuation store with collected data
-    // Note: In a real implementation, this would integrate with the existing valuation store
-    console.log('Manual flow collected data:', formData);
+    updateFormData(formData);
   };
 
   // Handle collection completion
-  const handleCollectionComplete = (responses: DataResponse[]) => {
-    // Trigger valuation calculation with collected data
-    const formData: Record<string, any> = {};
-    responses.forEach(response => {
-      formData[response.fieldId] = response.value;
-    });
+  const handleCollectionComplete = async (responses: DataResponse[]) => {
+    // Convert responses to form data format using shared utility
+    const formData = convertDataResponsesToFormData(responses);
 
-    // This would normally call calculateValuation with the form data
-    console.log('Manual flow collection complete:', formData);
+    // Update valuation store with final collected data
+    updateFormData(formData);
+
+    // Trigger valuation calculation with collected data
+    try {
+      const valuationResult = await calculateValuation();
+      if (valuationResult) {
+        onComplete(valuationResult);
+      }
+    } catch (error) {
+      generalLogger.error('Valuation calculation failed', { error, reportId });
+    }
   };
 
   // Handle progress updates
   const handleProgressUpdate = (progress: CollectionProgress) => {
-    console.log('Manual flow progress:', progress);
+    generalLogger.debug('Manual flow progress update', { 
+      progress: progress.overallProgress,
+      completedFields: progress.completedFields,
+      totalFields: progress.totalFields 
+    });
   };
 
   return (
@@ -86,7 +97,7 @@ export const ManualValuationFlow: React.FC<ManualValuationFlowProps> = ({
                 filename: `valuation-${Date.now()}.pdf`
               });
             } catch (error) {
-              console.error('Download failed:', error);
+              generalLogger.error('PDF download failed', { error, reportId });
             }
           }
         }}

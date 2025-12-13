@@ -5,9 +5,9 @@
  * SOLID Principles: SRP, OCP, LSP, ISP, DIP
  */
 
-import React, { useState, useRef } from 'react';
+import { AlertCircle, CheckCircle, FileText, Upload } from 'lucide-react';
+import React, { useRef, useState } from 'react';
 import { FieldRendererProps } from '../../../types/data-collection';
-import { Upload, FileText, AlertCircle, CheckCircle } from 'lucide-react';
 
 export const FileUploadFieldRenderer: React.FC<FieldRendererProps> = ({
   field,
@@ -278,7 +278,7 @@ function getExtractionHints(field: import('../../../types/data-collection').Data
   }
 }
 
-function formatValue(value: any, field: import('../../../types/data-collection').DataField): string {
+function formatValue(value: string | number | boolean | null | undefined, field: import('../../../types/data-collection').DataField): string {
   if (typeof value === 'number') {
     if (field.type === 'currency') {
       return new Intl.NumberFormat('en-US', {

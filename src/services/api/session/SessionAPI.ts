@@ -8,14 +8,15 @@
  */
 
 import {
-  CreateValuationSessionRequest,
-  CreateValuationSessionResponse,
-  UpdateValuationSessionRequest,
-  UpdateValuationSessionResponse
+    CreateValuationSessionRequest,
+    CreateValuationSessionResponse,
+    UpdateValuationSessionRequest,
+    UpdateValuationSessionResponse
 } from '../../../types/api';
+import type { SwitchViewResponse, ValuationSessionResponse } from '../../../types/api-responses';
 import { APIError, AuthenticationError } from '../../../types/errors';
 import { apiLogger } from '../../../utils/logger';
-import { HttpClient, APIRequestConfig } from '../HttpClient';
+import { APIRequestConfig, HttpClient } from '../HttpClient';
 
 export class SessionAPI extends HttpClient {
   /**
@@ -24,20 +25,20 @@ export class SessionAPI extends HttpClient {
   async getValuationSession(
     reportId: string,
     options?: APIRequestConfig
-  ): Promise<any> {
+  ): Promise<ValuationSessionResponse | null> {
     try {
-      const response = await this.executeRequest<any>({
+      const response = await this.executeRequest<ValuationSessionResponse>({
         method: 'GET',
         url: `/api/sessions/${reportId}`
       }, options);
 
       // Map backend 'ai-guided' to frontend 'conversational'
-      if (response && response.currentView === 'ai-guided') {
-        response.currentView = 'conversational';
+      if (response && response.session && response.session.currentView === 'ai-guided') {
+        response.session.currentView = 'conversational';
       }
 
       return response;
-    } catch (error: any) {
+    } catch (error) {
       // Handle 404 gracefully - session doesn't exist yet
       if (error.response?.status === 404) {
         apiLogger.debug('Session does not exist yet', { reportId });
@@ -115,12 +116,12 @@ export class SessionAPI extends HttpClient {
     reportId: string,
     view: 'manual' | 'conversational',
     options?: APIRequestConfig
-  ): Promise<any> {
+  ): Promise<SwitchViewResponse> {
     try {
       // Map frontend 'conversational' to backend 'ai-guided'
       const backendView = view === 'conversational' ? 'ai-guided' : view;
 
-      const response = await this.executeRequest<any>({
+      const response = await this.executeRequest<SwitchViewResponse>({
         method: 'PUT',
         url: `/api/sessions/${reportId}/switch-view`,
         data: { view: backendView }
@@ -139,7 +140,7 @@ export class SessionAPI extends HttpClient {
   /**
    * Handle session-specific errors
    */
-  private handleSessionError(error: any, operation: string): never {
+  private handleSessionError(error: unknown, operation: string): never {
     apiLogger.error(`Session ${operation} failed`, { error });
 
     if (error.response?.status === 404) {

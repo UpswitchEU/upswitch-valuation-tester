@@ -452,3 +452,4 @@ export const useEventParser = (): UseEventParserResult => {
     utilities,
   };
 };
+

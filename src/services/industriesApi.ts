@@ -5,6 +5,8 @@
  * from the valuation engine API.
  */
 
+import { generalLogger } from '../utils/logger';
+
 export interface IndustryListResponse {
   industries: string[];
   count: number;
@@ -77,7 +79,7 @@ function normalizeIndustriesResponse(data: any): IndustryListResponse {
   }
 
   // Invalid format - use fallback
-  console.warn('Invalid industries response format, using fallback:', data);
+  generalLogger.warn('Invalid industries response format, using fallback', { data });
   return {
     industries: FALLBACK_INDUSTRIES,
     count: FALLBACK_INDUSTRIES.length,
@@ -133,7 +135,7 @@ class IndustriesApiService {
 
       return await response.json();
     } catch (error) {
-      console.error('Error fetching industry stats:', error);
+      generalLogger.error('Error fetching industry stats', { error });
       throw error;
     }
   }
@@ -151,13 +153,13 @@ class IndustriesApiService {
       
       // Validate response structure
       if (!industriesData || !industriesData.industries || !Array.isArray(industriesData.industries)) {
-        console.warn('Invalid industries data structure, using fallback for validation');
+        generalLogger.warn('Invalid industries data structure, using fallback for validation');
         return FALLBACK_INDUSTRIES.includes(industry.toLowerCase());
       }
 
       return industriesData.industries.includes(industry.toLowerCase());
     } catch (error) {
-      console.error('Error validating industry:', error);
+      generalLogger.error('Error validating industry', { error, industry });
       // Use fallback list for validation on error
       return FALLBACK_INDUSTRIES.includes(industry.toLowerCase());
     }
@@ -176,7 +178,7 @@ class IndustriesApiService {
       
       // Validate response structure
       if (!industriesData || !industriesData.industries || !Array.isArray(industriesData.industries)) {
-        console.warn('Invalid industries data structure, using fallback for suggestions');
+        generalLogger.warn('Invalid industries data structure, using fallback for suggestions');
         const lowerPartial = partial.toLowerCase();
         return FALLBACK_INDUSTRIES
           .filter(industry => industry.includes(lowerPartial))
@@ -188,7 +190,7 @@ class IndustriesApiService {
         .filter(industry => industry.includes(lowerPartial))
         .slice(0, 10); // Limit to 10 suggestions
     } catch (error) {
-      console.error('Error getting industry suggestions:', error);
+      generalLogger.error('Error getting industry suggestions', { error, query });
       // Return fallback suggestions on error
       const lowerPartial = partial.toLowerCase();
       return FALLBACK_INDUSTRIES
@@ -235,20 +237,22 @@ class IndustriesApiService {
       
       // Validate normalized response
       if (!normalized.industries || !Array.isArray(normalized.industries) || normalized.industries.length === 0) {
-        console.warn('API returned empty or invalid industries list, using fallback');
+        generalLogger.warn('API returned empty or invalid industries list, using fallback');
         return normalizeIndustriesResponse(FALLBACK_INDUSTRIES);
       }
 
       return normalized;
-    } catch (error: any) {
-      console.error('Error fetching industries:', {
-        message: error?.message,
-        status: error?.response?.status,
+    } catch (error) {
+      generalLogger.error('Error fetching industries', {
+        message: error instanceof Error ? error.message : 'Unknown error',
+        status: error && typeof error === 'object' && 'response' in error 
+          ? (error as { response?: { status?: number } }).response?.status 
+          : undefined,
         url: 'https://api.upswitch.biz/api/v1/industries'
       });
       
       // Return fallback on error to prevent complete failure
-      console.info('Using fallback industry list due to API error');
+      generalLogger.info('Using fallback industry list due to API error');
       return normalizeIndustriesResponse(FALLBACK_INDUSTRIES);
     }
   }
