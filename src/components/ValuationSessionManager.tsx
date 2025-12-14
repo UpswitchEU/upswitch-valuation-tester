@@ -88,12 +88,12 @@ export const ValuationSessionManager: React.FC<ValuationSessionManagerProps> = R
         }
         
         // Try to restore existing session first (for continuing existing reports)
-        const { restoreSession } = useValuationSessionStore.getState()
+        const { loadSession } = useValuationSessionStore.getState()
         
         try {
           generalLogger.info('Attempting to restore existing session', { reportId })
           
-          await restoreSession(reportId)
+          await loadSession(reportId)
           
           // Session restored successfully
           setStage('data-entry')

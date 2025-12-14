@@ -40,7 +40,7 @@ interface ValuationFlowSelectorProps {
 
 // Lazy load unified flow component
 const ValuationFlow = lazy(() =>
-  import('../features/valuation/components/ValuationFlow').then((module) => ({
+  import('@/features/valuation/components/ValuationFlow').then((module) => ({
     default: module.ValuationFlow,
   }))
 )

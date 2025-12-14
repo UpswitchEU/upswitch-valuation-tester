@@ -3,7 +3,7 @@ import { backendAPI } from '../services/backendApi';
 import type { ValuationFormData, ValuationRequest, ValuationSession } from '../types/valuation';
 import { storeLogger } from '../utils/logger';
 
-interface ValuationSessionStore {
+export interface ValuationSessionStore {
   // Session state
   session: ValuationSession | null;
   
@@ -74,9 +74,10 @@ export const useValuationSessionStore = create<ValuationSessionStore>((set, get)
       }
       
       // Try to load existing session from backend
-      const existingSession = await backendAPI.getValuationSession(reportId);
+      const existingSessionResponse = await backendAPI.getValuationSession(reportId);
       
-      if (existingSession) {
+      if (existingSessionResponse && existingSessionResponse.session) {
+        const existingSession = existingSessionResponse.session;
         // Load existing session - use backend's currentView, not the parameter
         // This prevents overriding a view that was just switched
         const updatedPartialData = { ...existingSession.partialData } as any;
@@ -154,9 +155,10 @@ export const useValuationSessionStore = create<ValuationSessionStore>((set, get)
     try {
       set({ isSyncing: true, syncError: null });
       
-      const session = await backendAPI.getValuationSession(reportId);
+      const sessionResponse = await backendAPI.getValuationSession(reportId);
       
-      if (session) {
+      if (sessionResponse && sessionResponse.session) {
+        const session = sessionResponse.session;
         set({
           session: {
             ...session,
@@ -402,8 +404,8 @@ export const useValuationSessionStore = create<ValuationSessionStore>((set, get)
     // This prevents the regeneration modal from appearing incorrectly
     // Results are flow-specific and should not carry over between flows
     try {
-      const { useValuationStore } = await import('./useValuationStore');
-      useValuationStore.getState().clearResult();
+      const { useValuationResultsStore } = await import('./useValuationResultsStore');
+      useValuationResultsStore.getState().clearResult();
       storeLogger.info('Cleared valuation result on flow switch', {
         from: session.currentView,
         to: view
@@ -604,7 +606,7 @@ export const useValuationSessionStore = create<ValuationSessionStore>((set, get)
   
   /**
    * Sync data from manual form to session
-   * Reads current form data from useValuationStore and updates session
+   * Reads current form data from useValuationFormStore and updates session
    */
   syncFromManualForm: async () => {
     const { session } = get();
@@ -616,8 +618,8 @@ export const useValuationSessionStore = create<ValuationSessionStore>((set, get)
     
     try {
       // Import dynamically to avoid circular dependency
-      const { useValuationStore } = await import('./useValuationStore');
-      const manualFormData = useValuationStore.getState().formData;
+      const { useValuationFormStore } = await import('./useValuationFormStore');
+      const manualFormData = useValuationFormStore.getState().formData;
       
       storeLogger.debug('Syncing from manual form to session', {
         reportId: session.reportId,
@@ -673,7 +675,7 @@ export const useValuationSessionStore = create<ValuationSessionStore>((set, get)
   
   /**
    * Sync data from session to manual form
-   * Writes session data to useValuationStore for manual form display
+   * Writes session data to useValuationFormStore for manual form display
    */
   syncToManualForm: () => {
     const { session } = get();
@@ -685,7 +687,7 @@ export const useValuationSessionStore = create<ValuationSessionStore>((set, get)
     
     try {
       // Import dynamically to avoid circular dependency
-      const { useValuationStore } = require('./useValuationStore');
+      const { useValuationFormStore } = require('./useValuationFormStore');
       const sessionData = session.sessionData;
       
       storeLogger.debug('Syncing from session to manual form', {
@@ -719,7 +721,7 @@ export const useValuationSessionStore = create<ValuationSessionStore>((set, get)
       });
       
       // Update manual form store
-      useValuationStore.getState().updateFormData(formUpdate);
+      useValuationFormStore.getState().updateFormData(formUpdate);
       
       storeLogger.info('Synced from session to manual form', {
         reportId: session.reportId,
