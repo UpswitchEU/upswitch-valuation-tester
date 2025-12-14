@@ -96,15 +96,42 @@ export const useConversationRestoration = (
     try {
       chatLogger.info('🔄 Restoring conversation from Python backend', { sessionId })
 
+      // Get conversation status (does NOT include messages or metadata)
+      // ConversationStatusResponse interface:
+      //   - exists: boolean
+      //   - status: 'active' | 'completed' | 'error'
+      //   - message_count?: number (count only, not the actual messages)
+      //   - last_activity?: string
+      //   - session_id?: string
+      // 
+      // NOTE: status.messages and status.metadata do NOT exist!
+      // To get messages, call getConversationHistory() separately.
       const status = await utilityAPI.getConversationStatus(sessionId, {
         signal: abortControllerRef.current.signal,
       })
 
+      // Verify status object structure (type guard)
+      if (!status || typeof status !== 'object' || !('exists' in status)) {
+        chatLogger.warn('Invalid conversation status response', { sessionId, status })
+        setIsRestored(true)
+        hasRestoredRef.current = true
+        return
+      }
+
       if (status.exists) {
-        // Get conversation history to restore messages
+        // IMPORTANT: status does NOT contain messages or metadata
+        // We must call getConversationHistory() separately to get messages
         const history = await utilityAPI.getConversationHistory(sessionId, abortControllerRef.current.signal)
         
-        if (history.exists && history.messages) {
+        // Verify history object structure (type guard)
+        if (!history || typeof history !== 'object' || !('exists' in history)) {
+          chatLogger.warn('Invalid conversation history response', { sessionId, history })
+          setIsRestored(true)
+          hasRestoredRef.current = true
+          return
+        }
+        
+        if (history.exists && Array.isArray(history.messages) && history.messages.length > 0) {
           // Convert backend messages to frontend Message format
           const restoredMessages: Message[] = history.messages.map((msg: any) => ({
             id: msg.id || `msg-${Date.now()}-${Math.random()}`,

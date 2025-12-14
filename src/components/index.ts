@@ -2,4 +2,4 @@
  * Component exports
  */
 
-export { Results } from './Results'
+export { Results } from './results';

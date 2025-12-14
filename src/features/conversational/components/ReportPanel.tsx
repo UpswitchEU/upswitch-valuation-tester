@@ -9,10 +9,10 @@
 
 import { Edit3 } from 'lucide-react'
 import React, { Suspense, useState } from 'react'
+import { Results } from '../../../components'
 import { HTMLView } from '../../../components/HTMLView'
 import { LoadingState } from '../../../components/LoadingState'
 import { GENERATION_STEPS } from '../../../components/LoadingState.constants'
-import { Results } from '../../../components/Results'
 import { ValuationInfoPanel } from '../../../components/ValuationInfoPanel'
 import { useValuationApiStore } from '../../../store/useValuationApiStore'
 import { useValuationResultsStore } from '../../../store/useValuationResultsStore'

@@ -32,7 +32,7 @@ export type ValuationFlowType = 'manual' | 'conversational'
 
 // Lazy load heavy components for better code splitting
 const Results = lazy(() =>
-  import('../../../components/Results').then((m) => ({ default: m.Results }))
+  import('../../../components').then((m) => ({ default: m.Results }))
 )
 
 const ConversationalLayout = lazy(() =>
