@@ -162,7 +162,7 @@ export class SessionAPI extends HttpClient {
       const backendView = view === 'conversational' ? 'ai-guided' : view
 
       // Backend endpoint: /api/valuation-sessions/:reportId/switch-view (POST, not PUT)
-      const response = await this.executeRequest<{ success: boolean; data: any }>(
+      const response = await this.executeRequest<{ success: boolean; data?: any }>(
         {
           method: 'POST',
           url: `/api/valuation-sessions/${reportId}/switch-view`,
@@ -173,13 +173,50 @@ export class SessionAPI extends HttpClient {
       )
 
       // Backend returns { success: true, data: {...} }
+      // FIX: Add null checks to prevent "Cannot read properties of undefined" errors
+      if (!response || !response.success) {
+        const errorMessage = (response as any)?.error || 'Failed to switch view'
+        throw new APIError(
+          errorMessage,
+          400,
+          undefined,
+          false
+        )
+      }
+
       const sessionData = response.data
 
-      // Map response back
+      // FIX: Handle missing or malformed response data
+      if (!sessionData || typeof sessionData !== 'object') {
+        apiLogger.warn('Invalid response data from switch-view endpoint', {
+          reportId,
+          response,
+        })
+        // Return success with the requested view if data is missing
+        // The optimistic update already happened, so we just confirm it
+        return {
+          success: true,
+          currentView: view,
+        }
+      }
+
+      // Map backend 'ai-guided' to frontend 'conversational'
+      const currentView =
+        sessionData.currentView === 'ai-guided'
+          ? 'conversational'
+          : sessionData.currentView === 'conversational'
+          ? 'conversational'
+          : 'manual'
+
+      // Map response back - previousView is optional and not always returned
       return {
-        success: response.success,
-        currentView: (sessionData.currentView as string) === 'ai-guided' ? 'conversational' : sessionData.currentView,
-        previousView: sessionData.previousView,
+        success: true,
+        currentView: currentView as 'manual' | 'conversational',
+        previousView: sessionData.previousView
+          ? (sessionData.previousView === 'ai-guided'
+              ? 'conversational'
+              : sessionData.previousView)
+          : undefined,
       }
     } catch (error) {
       this.handleSessionError(error, 'switch view')

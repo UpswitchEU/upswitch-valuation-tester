@@ -111,14 +111,54 @@ export const useValuationSessionStore = create<ValuationSessionStore>((set, get)
         };
 
           // Save to backend
-        await backendAPI.createValuationSession(newSession);
+        try {
+          await backendAPI.createValuationSession(newSession);
 
           set({
             session: newSession,
             syncError: null,
-        });
+          });
 
-        storeLogger.info('Created new session', { reportId, sessionId, currentView, hasPrefilledQuery: !!prefilledQuery });
+          storeLogger.info('Created new session', { reportId, sessionId, currentView, hasPrefilledQuery: !!prefilledQuery });
+        } catch (createError: any) {
+          // FIX: Handle 409 Conflict - session was created concurrently
+          // Try to load the existing session instead of failing
+          const axiosError = createError as any
+          if (axiosError?.response?.status === 409 || axiosError?.status === 409) {
+            storeLogger.info('Session creation conflict (409) - loading existing session', { reportId })
+            
+            try {
+              // Session was created by another request - load it
+              const existingSessionResponse = await backendAPI.getValuationSession(reportId)
+              if (existingSessionResponse?.session) {
+                const existingSession = existingSessionResponse.session
+                const updatedPartialData = { ...existingSession.partialData } as any
+                if (prefilledQuery && !updatedPartialData._prefilledQuery) {
+                  updatedPartialData._prefilledQuery = prefilledQuery
+                }
+
+                set({
+                  session: {
+                    ...existingSession,
+                    partialData: updatedPartialData,
+                    createdAt: new Date(existingSession.createdAt),
+                    updatedAt: new Date(existingSession.updatedAt),
+                    completedAt: existingSession.completedAt ? new Date(existingSession.completedAt) : undefined,
+                  },
+                  syncError: null,
+                })
+                storeLogger.info('Loaded existing session after conflict', { reportId, currentView: existingSession.currentView })
+                return // Successfully loaded, exit early
+              }
+            } catch (loadError) {
+              storeLogger.error('Failed to load session after conflict', { reportId, error: loadError })
+              // Fall through to local session creation
+            }
+          }
+          
+          // For other errors or if load failed, throw to be caught by outer catch
+          throw createError
+        }
         }
     } catch (error: any) {
         storeLogger.error('Failed to initialize session', {
@@ -127,24 +167,33 @@ export const useValuationSessionStore = create<ValuationSessionStore>((set, get)
       });
 
         // Create local session even if backend fails (offline mode)
-      const sessionId = `session_${Date.now()}_${Math.random().toString(36).substring(2, 15)}`;
-        const newSession: ValuationSession = {
-          sessionId,
-          reportId,
-          currentView,
-          dataSource: currentView,
-          createdAt: new Date(),
-          updatedAt: new Date(),
-          partialData: {},
-          sessionData: {},
-      };
+        // Only create local session if it's not a 409 conflict (already handled above)
+        const axiosError = error as any
+        const isConflict = axiosError?.response?.status === 409 || axiosError?.status === 409
+        
+        if (!isConflict) {
+          const sessionId = `session_${Date.now()}_${Math.random().toString(36).substring(2, 15)}`;
+          const newSession: ValuationSession = {
+            sessionId,
+            reportId,
+            currentView,
+            dataSource: currentView,
+            createdAt: new Date(),
+            updatedAt: new Date(),
+            partialData: prefilledQuery ? { _prefilledQuery: prefilledQuery } as any : {},
+            sessionData: {},
+          };
 
-        set({
-          session: newSession,
-          syncError: error.message || 'Failed to sync with backend',
-      });
+          set({
+            session: newSession,
+            syncError: error.message || 'Failed to sync with backend',
+          });
 
-      storeLogger.warn('Created local session (backend sync failed)', { reportId, sessionId });
+          storeLogger.warn('Created local session (backend sync failed)', { reportId, sessionId })
+        } else {
+          // 409 conflict but couldn't load - this shouldn't happen, but log it
+          storeLogger.error('Session conflict but failed to load existing session', { reportId, error })
+        }
       }
     },
 
@@ -494,27 +543,32 @@ export const useValuationSessionStore = create<ValuationSessionStore>((set, get)
           }
         })
       .catch((error: any) => {
+          const errorMessage = error instanceof Error ? error.message : 'Unknown error'
           storeLogger.error('Failed to sync view switch with backend', {
-            error: error instanceof Error ? error.message : 'Unknown error',
+            error: errorMessage,
             reportId: currentSession.reportId,
             requestedView: view,
         });
 
-          // Rollback: Restore original session state on error
+          // FIX: Don't rollback on switch error - keep optimistic update
+          // The user has already switched flows, so rolling back would be confusing
+          // Instead, just log the error and clear syncing flag
+          // The session will remain in the switched state, and we'll retry on next action
         const { session: latestSession } = get();
           if (latestSession?.reportId === currentSession.reportId) {
+            // Keep the switched state, just mark sync as failed
             set({
-              session: originalSession,
               isSyncing: false,
-              syncError: error.message || 'Failed to sync with backend',
+              syncError: errorMessage,
           });
-            storeLogger.warn('Rolled back view switch due to backend error', {
+            storeLogger.warn('View switch backend sync failed, keeping optimistic update', {
               reportId: currentSession.reportId,
-              originalView: originalSession.currentView,
+              currentView: latestSession.currentView,
+              error: errorMessage,
           });
           } else {
             // Session changed, just clear syncing flag
-          set({ isSyncing: false, syncError: error.message || 'Failed to sync with backend' });
+          set({ isSyncing: false, syncError: errorMessage });
           }
       });
     },
