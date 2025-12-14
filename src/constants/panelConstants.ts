@@ -6,7 +6,7 @@
 export const PANEL_CONSTRAINTS = {
   MIN_WIDTH: 20, // Minimum panel width as percentage
   MAX_WIDTH: 50, // Maximum panel width as percentage (matches Ilara)
-  DEFAULT_WIDTH: 35, // Default left panel width as percentage
+  DEFAULT_WIDTH: 30, // Default left panel width as percentage (matches pre-merge UI)
 } as const
 
 export const MOBILE_BREAKPOINT = 1024 // px - below this width, mobile layout is used

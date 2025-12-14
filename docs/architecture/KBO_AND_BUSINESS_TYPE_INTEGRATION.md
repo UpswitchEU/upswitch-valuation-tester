@@ -33,7 +33,16 @@
 **Integration Points**:
 - `BasicInformationSection.tsx` - Uses `CompanyNameInput` component
 - `onCompanySelect` callback updates form data with registry information
-- Registry data can be used to prefill form fields
+- **Auto-fills form fields** from registry data (founding_year, industry, employees)
+
+**Auto-Fill Behavior**:
+When a company is selected from KBO registry:
+1. Fetches company financial data using `registryService.getCompanyFinancials()`
+2. Auto-fills `founding_year` if available and not already set
+3. Auto-fills `industry` if available and business type not yet selected (preserves user choice)
+4. Auto-fills `number_of_employees` if available
+5. Shows info banner displaying which fields were auto-filled
+6. Only fills missing fields (never overwrites user-provided data)
 
 ### Flow
 
@@ -57,6 +66,14 @@ sequenceDiagram
     User->>CompanyNameInput: Selects company
     CompanyNameInput->>CompanyNameInput: Show verified badge
     CompanyNameInput->>BasicInformationSection: onCompanySelect(company)
+    BasicInformationSection->>RegistryService: getCompanyFinancials(company_id)
+    RegistryService->>NodeBackend: POST /api/registry/financials
+    NodeBackend->>PythonRegistry: Fetch financial data
+    PythonRegistry-->>NodeBackend: CompanyFinancialData
+    NodeBackend-->>RegistryService: Financial data
+    RegistryService-->>BasicInformationSection: Financial data
+    BasicInformationSection->>BasicInformationSection: Auto-fill fields (founding_year, industry, employees)
+    BasicInformationSection->>BasicInformationSection: Show auto-fill info banner
     BasicInformationSection->>BasicInformationSection: Update formData
 ```
 
@@ -67,12 +84,40 @@ sequenceDiagram
   value={formData.company_name || ''}
   onChange={(value) => updateFormData({ company_name: value })}
   countryCode={formData.country_code || 'BE'}
-  onCompanySelect={(company) => {
+  onCompanySelect={async (company) => {
     // Company verified in KBO registry
-    updateFormData({
+    const updates: Partial<ValuationFormData> = {
       company_name: company.company_name,
-      // Can add more fields from registry data
-    })
+    }
+    
+    // Fetch financial data and auto-fill fields
+    if (company.company_id && company.company_id.length > 3) {
+      try {
+        const financialData = await registryService.getCompanyFinancials(
+          company.company_id,
+          formData.country_code || 'BE'
+        )
+        
+        // Auto-fill founding_year if available and not already set
+        if (financialData.founding_year && !formData.founding_year) {
+          updates.founding_year = financialData.founding_year
+        }
+        
+        // Auto-fill industry if available and business type not selected
+        if (financialData.industry_description && !formData.industry && !formData.business_type_id) {
+          updates.industry = financialData.industry_description
+        }
+        
+        // Auto-fill employees if available
+        if (financialData.employees && !formData.number_of_employees) {
+          updates.number_of_employees = financialData.employees
+        }
+      } catch (error) {
+        // Continue without financial data - not critical
+      }
+    }
+    
+    updateFormData(updates)
   }}
 />
 ```
@@ -209,7 +254,7 @@ const result = await valuationAPI.lookupCompany('Acme Corp', 'BE')
 
 ## Data Flow
 
-### Manual Flow
+### Manual Flow with Auto-Fill
 
 ```
 User enters company name
@@ -228,9 +273,22 @@ Display suggestions + verified badge
   ↓
 User selects company
   ↓
-onCompanySelect callback
+onCompanySelect callback triggered
   ↓
-Update formData with registry info
+Fetch financial data: registryService.getCompanyFinancials()
+  ↓
+POST /api/registry/financials (Node.js backend)
+  ↓
+Python registry returns CompanyFinancialData
+  ↓
+Auto-fill form fields:
+  - founding_year (if available and not set)
+  - industry (if available and business type not selected)
+  - number_of_employees (if available)
+  ↓
+Show auto-fill info banner
+  ↓
+Update formData with all registry info
 ```
 
 ### Business Type Flow
@@ -262,6 +320,9 @@ Display verified business type info card
 - ✅ Verified company badge
 - ✅ Company summary card
 - ✅ Financial data fetching (when available)
+- ✅ **Auto-fill form fields** (founding_year, industry, employees)
+- ✅ **Auto-fill info banner** showing which fields were filled
+- ✅ **Preserves user data** (only fills missing fields)
 
 ### Business Type Check ✅
 - ✅ Searchable business types
@@ -283,7 +344,11 @@ Display verified business type info card
 1. `src/services/api.ts` - Added `lookupCompany()` method
 2. `src/components/forms/CompanyNameInput.tsx` - Already integrated (no changes needed)
 3. `src/components/forms/CustomBusinessTypeSearch.tsx` - Already integrated (no changes needed)
-4. `src/components/ValuationForm/sections/BasicInformationSection.tsx` - Already using both components
+4. `src/components/ValuationForm/sections/BasicInformationSection.tsx` - Enhanced `onCompanySelect` handler:
+   - Fetches financial data when company is selected
+   - Auto-fills `founding_year`, `industry`, and `number_of_employees`
+   - Shows auto-fill info banner
+   - Preserves existing form data (only fills missing fields)
 
 ---
 
@@ -294,7 +359,10 @@ Display verified business type info card
 ✅ **Business Type Integration**: CustomBusinessTypeSearch connected to business types API  
 ✅ **API Method**: lookupCompany() implemented and working  
 ✅ **Backend Connection**: All calls go through Node.js backend  
-✅ **Type Safety**: All types properly defined
+✅ **Type Safety**: All types properly defined  
+✅ **Auto-Fill**: Form fields auto-filled from registry data  
+✅ **Data Preservation**: Existing form data never overwritten  
+✅ **User Feedback**: Auto-fill info banner displays which fields were filled
 
 ---
 

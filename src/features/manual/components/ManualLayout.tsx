@@ -52,8 +52,25 @@ export const ManualLayout: React.FC<ManualLayoutProps> = ({
   const { isCalculating } = useValuationApiStore()
   const { result, setResult } = useValuationResultsStore()
 
-  // Panel width state
-  const [leftPanelWidth, setLeftPanelWidth] = useState(50)
+  // Panel width state - load from localStorage or use default (30% matches pre-merge UI)
+  const [leftPanelWidth, setLeftPanelWidth] = useState(() => {
+    try {
+      const saved = localStorage.getItem('upswitch-panel-width')
+      if (saved) {
+        const parsed = parseFloat(saved)
+        if (
+          !isNaN(parsed) &&
+          parsed >= PANEL_CONSTRAINTS.MIN_WIDTH &&
+          parsed <= PANEL_CONSTRAINTS.MAX_WIDTH
+        ) {
+          return parsed
+        }
+      }
+    } catch (error) {
+      // Ignore localStorage errors
+    }
+    return PANEL_CONSTRAINTS.DEFAULT_WIDTH // 30% default
+  })
   const [isMobile, setIsMobile] = useState(false)
   const [mobileActivePanel, setMobileActivePanel] = useState<'form' | 'preview'>('form')
 
@@ -67,6 +84,17 @@ export const ManualLayout: React.FC<ManualLayoutProps> = ({
     handleCloseFullscreen: handleHookCloseFullscreen,
   } = useValuationToolbarFullscreen()
 
+  // Save panel width to localStorage
+  useEffect(() => {
+    if (!isMobile) {
+      try {
+        localStorage.setItem('upswitch-panel-width', leftPanelWidth.toString())
+      } catch (error) {
+        // Ignore localStorage errors
+      }
+    }
+  }, [leftPanelWidth, isMobile])
+
   // Responsive handling
   useEffect(() => {
     const checkMobile = () => {
@@ -75,7 +103,24 @@ export const ManualLayout: React.FC<ManualLayoutProps> = ({
       if (mobile) {
         setLeftPanelWidth(100)
       } else {
-        setLeftPanelWidth(50)
+        // Restore saved width or use default (30%)
+        try {
+          const saved = localStorage.getItem('upswitch-panel-width')
+          if (saved) {
+            const parsed = parseFloat(saved)
+            if (
+              !isNaN(parsed) &&
+              parsed >= PANEL_CONSTRAINTS.MIN_WIDTH &&
+              parsed <= PANEL_CONSTRAINTS.MAX_WIDTH
+            ) {
+              setLeftPanelWidth(parsed)
+              return
+            }
+          }
+        } catch (error) {
+          // Ignore localStorage errors
+        }
+        setLeftPanelWidth(PANEL_CONSTRAINTS.DEFAULT_WIDTH) // 30% default
       }
     }
 

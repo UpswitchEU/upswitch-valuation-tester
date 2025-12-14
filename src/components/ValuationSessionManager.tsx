@@ -61,11 +61,20 @@ export const ValuationSessionManager: React.FC<ValuationSessionManagerProps> = R
     const initializationState = useRef<
       Map<string, { initialized: boolean; isInitializing: boolean }>
     >(new Map())
+    
+    // Track if we're updating URL ourselves to prevent re-initialization
+    const isUpdatingUrlRef = useRef(false)
 
   // Initialize session on mount - only once per reportId
   const initializeSessionForReport = useCallback(
     async (reportId: string) => {
       const state = initializationState.current.get(reportId)
+
+      // CRITICAL FIX: Don't re-initialize if we're updating URL ourselves
+      // This prevents re-initialization when URL changes due to flow switch
+      if (isUpdatingUrlRef.current) {
+        return // URL update in progress, don't re-initialize
+      }
 
       // Prevent concurrent initialization attempts
       if (state?.isInitializing) {
@@ -109,7 +118,16 @@ export const ValuationSessionManager: React.FC<ValuationSessionManagerProps> = R
         }
         
         // Create new session
-        const flowParam = searchParams.get('flow')
+        // CRITICAL FIX: If we're updating URL ourselves (flow switch), use session's currentView
+        // Otherwise, read from URL params (initial load)
+        let flowParam = searchParams.get('flow')
+        if (isUpdatingUrlRef.current) {
+          // We're updating URL ourselves - use session's currentView as source of truth
+          const currentSession = useValuationSessionStore.getState().session
+          if (currentSession?.currentView) {
+            flowParam = currentSession.currentView
+          }
+        }
         const initialView =
           flowParam === 'manual' || flowParam === 'conversational' ? flowParam : 'manual'
         const tokenParam = searchParams.get('token')
@@ -197,12 +215,22 @@ export const ValuationSessionManager: React.FC<ValuationSessionManagerProps> = R
         return // Wait for initialization to complete
       }
 
+      // CRITICAL FIX: Don't sync URL if a flow switch is in progress
+      // This prevents race conditions where URL update triggers re-initialization
+      const { isSyncing } = useValuationSessionStore.getState()
+      if (isSyncing) {
+        return // Flow switch in progress, don't update URL yet
+      }
+
       // Use searchParams from Next.js hook
       if (!searchParams) return
       const currentFlow = searchParams.get('flow')
 
       // Only update URL if it's different - this prevents infinite loops
       if (currentFlow !== session.currentView && session.reportId) {
+        // Mark that we're updating URL ourselves BEFORE updating
+        isUpdatingUrlRef.current = true
+        
         // Extract existing query params and update flow
         const existingParams: Record<string, string> = {}
         searchParams.forEach((value, key) => {
@@ -212,7 +240,18 @@ export const ValuationSessionManager: React.FC<ValuationSessionManagerProps> = R
         
         // Use centralized URL generator for consistency
         const newUrl = UrlGeneratorService.reportById(session.reportId, existingParams)
-        router.replace(newUrl)
+        
+        // Use router.replace with shallow routing to prevent full page reload
+        router.replace(newUrl, { scroll: false })
+        
+        // Reset flag after URL update completes (Next.js updates URL asynchronously)
+        // Use a longer delay to ensure searchParams has updated
+        setTimeout(() => {
+          isUpdatingUrlRef.current = false
+        }, 300)
+      } else {
+        // URL is already in sync - ensure flag is cleared
+        isUpdatingUrlRef.current = false
       }
     }, [
       session?.currentView,

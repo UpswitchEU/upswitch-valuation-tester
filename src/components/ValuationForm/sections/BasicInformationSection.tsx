@@ -7,7 +7,7 @@
  * @module components/ValuationForm/sections/BasicInformationSection
  */
 
-import React from 'react'
+import React, { useState } from 'react'
 import { TARGET_COUNTRIES } from '../../../config/countries'
 import type { BusinessType } from '../../../services/businessTypesApi'
 import { suggestionService } from '../../../services/businessTypeSuggestionApi'
@@ -44,6 +44,9 @@ export const BasicInformationSection: React.FC<BasicInformationSectionProps> = (
   businessTypesLoading,
   businessTypesError,
 }) => {
+  // Track which fields were auto-filled from registry
+  const [autoFilledFields, setAutoFilledFields] = useState<string[]>([])
+
   return (
     <div className="space-y-6">
       <h3 className="text-xl font-semibold text-white mb-6 pb-2 border-b border-white/10 tracking-tight">
@@ -146,18 +149,97 @@ export const BasicInformationSection: React.FC<BasicInformationSectionProps> = (
           placeholder="e.g., Acme GmbH"
           countryCode={formData.country_code || 'BE'}
           required
-          onCompanySelect={(company) => {
+          onCompanySelect={async (company) => {
             generalLogger.info('Company selected from KBO registry', {
               company_name: company.company_name,
               registration_number: company.registration_number,
+              company_id: company.company_id,
             })
-            // Optionally update form data with registry information
-            updateFormData({
+            
+            // Update company name immediately
+            const updates: Partial<ValuationFormData> = {
               company_name: company.company_name,
-              // Could add more fields if needed from registry data
-            })
+            }
+            
+            // Fetch financial data if company_id is available
+            if (company.company_id && company.company_id.length > 3) {
+              try {
+                const { registryService } = await import('../../../services/registry/registryService')
+                const financialData = await registryService.getCompanyFinancials(
+                  company.company_id,
+                  formData.country_code || 'BE'
+                )
+                
+                // Auto-fill founding_year if available and not already set
+                if (financialData.founding_year && !formData.founding_year) {
+                  updates.founding_year = financialData.founding_year
+                }
+                
+                // Auto-fill industry if available and not already set
+                // Only auto-fill if business type hasn't been selected (to avoid overwriting user choice)
+                if (financialData.industry_description && !formData.industry && !formData.business_type_id) {
+                  updates.industry = financialData.industry_description
+                }
+                
+                // Auto-fill number_of_employees if available
+                if (financialData.employees && !formData.number_of_employees) {
+                  updates.number_of_employees = financialData.employees
+                }
+                
+                // Track which fields were auto-filled
+                const filledFields: string[] = []
+                if (updates.founding_year) filledFields.push('Founding year')
+                if (updates.industry) filledFields.push('Industry')
+                if (updates.number_of_employees) filledFields.push('Employees')
+                
+                if (filledFields.length > 0) {
+                  setAutoFilledFields(filledFields)
+                  // Clear after 5 seconds
+                  setTimeout(() => setAutoFilledFields([]), 5000)
+                }
+                
+                generalLogger.info('Auto-filled fields from KBO registry', {
+                  founding_year: updates.founding_year,
+                  industry: updates.industry,
+                  employees: updates.number_of_employees,
+                  company_id: company.company_id,
+                  filledFields,
+                })
+              } catch (error) {
+                generalLogger.debug('Financial data not available for company', {
+                  companyId: company.company_id,
+                  error: error instanceof Error ? error.message : 'Unknown error',
+                })
+                // Continue without financial data - not critical
+              }
+            }
+            
+            updateFormData(updates)
           }}
         />
+        
+        {/* Registry Data Preview - Show auto-filled fields */}
+        {autoFilledFields.length > 0 && (
+          <div className="@4xl:col-span-2 mt-2 p-3 bg-primary-50/50 border border-primary-200/50 rounded-lg text-sm text-gray-700">
+            <div className="flex items-center gap-2">
+              <svg
+                className="w-4 h-4 text-primary-600 flex-shrink-0"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                />
+              </svg>
+              <span className="font-medium text-primary-900">Auto-filled from registry:</span>
+              <span className="text-gray-600">{autoFilledFields.join(', ')}</span>
+            </div>
+          </div>
+        )}
 
         {/* Founding Year */}
         <CustomNumberInputField
