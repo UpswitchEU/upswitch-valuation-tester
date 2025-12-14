@@ -52,11 +52,9 @@ export const ValuationSessionManager: React.FC<ValuationSessionManagerProps> = R
     const [error, setError] = useState<string | null>(null)
     const [showOutOfCreditsModal, setShowOutOfCreditsModal] = useState(false)
 
-    // Extract prefilled query from location state with proper typing
-    // Note: Next.js doesn't support location state like React Router
-    const locationState: { prefilledQuery?: string | null; autoSend?: boolean } = {}
-    const prefilledQuery = locationState.prefilledQuery || null
-    const autoSend = locationState.autoSend || false
+    // Extract prefilled query from URL search params (Next.js App Router)
+    const prefilledQuery = searchParams?.get('prefilledQuery') || null
+    const autoSend = searchParams?.get('autoSend') === 'true'
 
     // Track initialization state per reportId using ref to avoid dependency loops
     const initializationState = useRef<

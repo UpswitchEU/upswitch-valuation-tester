@@ -147,15 +147,28 @@ export const ValuationFlowSelector: React.FC<ValuationFlowSelectorProps> = React
       )
     }
 
-    // Fallback for unexpected states
-    return (
-      <div className="flex items-center justify-center h-full">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-500 mx-auto mb-4"></div>
-          <p className="text-zinc-400">Loading valuation interface...</p>
+    // If stage is data-entry but no session, something went wrong
+    if (stage === 'data-entry' && !session) {
+      return (
+        <div className="flex items-center justify-center h-full">
+          <div className="max-w-md mx-auto text-center">
+            <div className="bg-rust-500/20 border border-rust-500/30 rounded-lg p-6">
+              <h3 className="text-lg font-semibold text-rust-400 mb-2">Session Error</h3>
+              <p className="text-rust-300 mb-4">Failed to initialize session. Please try again.</p>
+              <button
+                onClick={() => window.location.reload()}
+                className="px-4 py-2 bg-rust-600 hover:bg-rust-700 text-white rounded-lg transition-colors"
+              >
+                Reload Page
+              </button>
+            </div>
+          </div>
         </div>
-      </div>
-    )
+      )
+    }
+
+    // Fallback - should not normally reach here
+    return <LoadingState steps={INITIALIZATION_STEPS} variant="dark" />
   }
 )
 

@@ -171,7 +171,9 @@ export const useValuationSessionStore = create<ValuationSessionStore>((set, get)
         });
         storeLogger.info('Session loaded', { reportId });
         } else {
+        // Session not found - throw error so caller can handle it
         set({ isSyncing: false, syncError: 'Session not found' });
+        throw new Error('Session not found');
         }
     } catch (error: any) {
         storeLogger.error('Failed to load session', {
@@ -182,6 +184,8 @@ export const useValuationSessionStore = create<ValuationSessionStore>((set, get)
           isSyncing: false,
           syncError: error.message || 'Failed to load session',
       });
+      // Re-throw so caller can handle 404 vs other errors
+      throw error;
       }
     },
 
