@@ -49,6 +49,18 @@ export class RefreshService {
   }
 
   /**
+   * Navigate to a new URL (useful for generating new report IDs)
+   *
+   * @param url - URL to navigate to
+   */
+  static navigateTo(url: string): void {
+    if (typeof window !== 'undefined' && window.location) {
+      generalLogger.info('Navigating to new URL', { url })
+      window.location.href = url
+    }
+  }
+
+  /**
    * Soft refresh - reloads only the current route without full page reload
    * Useful for Next.js router-based refresh
    */

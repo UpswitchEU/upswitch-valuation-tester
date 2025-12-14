@@ -53,15 +53,36 @@ export const useConversationRestoration = (
   const [error, setError] = useState<string | null>(null)
 
   const hasRestoredRef = useRef(false)
+  const lastSessionIdRef = useRef<string | null>(null)
   const abortControllerRef = useRef<AbortController | null>(null)
 
   /**
    * Restore conversation from Python backend
    */
   const restore = useCallback(async () => {
-    if (!sessionId || !enabled || hasRestoredRef.current) {
+    if (!sessionId || !enabled) {
       return
     }
+
+    // Reset restoration state if sessionId changed
+    if (lastSessionIdRef.current !== null && lastSessionIdRef.current !== sessionId) {
+      chatLogger.info('🔄 Session ID changed, resetting restoration state', {
+        previousSessionId: lastSessionIdRef.current,
+        newSessionId: sessionId,
+      })
+      hasRestoredRef.current = false
+      setIsRestoring(false)
+      setIsRestored(false)
+      setMessages([])
+      setPythonSessionId(null)
+      setError(null)
+    }
+
+    if (hasRestoredRef.current) {
+      return
+    }
+
+    lastSessionIdRef.current = sessionId
 
     // Abort any pending restoration
     if (abortControllerRef.current) {
@@ -145,6 +166,7 @@ export const useConversationRestoration = (
   const reset = useCallback(() => {
     chatLogger.info('🔄 Resetting conversation restoration state', { sessionId })
     hasRestoredRef.current = false
+    lastSessionIdRef.current = null
     setIsRestoring(false)
     setIsRestored(false)
     setMessages([])

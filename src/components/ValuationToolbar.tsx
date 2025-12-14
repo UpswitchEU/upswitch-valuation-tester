@@ -238,7 +238,7 @@ export const ValuationToolbar: React.FC<ValuationToolbarProps> = ({
                   <button
                     onClick={handleDownload}
                     className="p-2 rounded-lg transition-all duration-200 text-gray-400 hover:text-gray-300 hover:bg-zinc-800"
-                    disabled={isDownloading || !onDownload}
+                    disabled={isDownloading}
                   >
                     {isDownloading ? (
                       <Loader2 className="w-4 h-4 animate-spin" />

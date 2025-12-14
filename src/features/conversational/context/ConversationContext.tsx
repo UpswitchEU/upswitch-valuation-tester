@@ -7,7 +7,7 @@
  * @module features/conversational/context/ConversationContext
  */
 
-import React, { createContext, useCallback, useContext, useState } from 'react'
+import React, { createContext, useCallback, useContext, useEffect, useState } from 'react'
 import type { Message } from '../../../types/message'
 import type { ValuationResponse } from '../../../types/valuation'
 import { chatLogger } from '../../../utils/logger'
@@ -105,6 +105,25 @@ export const ConversationProvider: React.FC<ConversationProviderProps> = ({
   const [pythonSessionId, setPythonSessionId] = useState<string | null>(null)
   const [isInitialized, setInitialized] = useState<boolean>(false)
   const [isRestored, setRestored] = useState<boolean>(false)
+
+  // Update sessionId when initialSessionId prop changes (reportId change)
+  useEffect(() => {
+    if (initialSessionId !== sessionId) {
+      chatLogger.info('ConversationProvider: Session ID changed, resetting state', {
+        previousSessionId: sessionId,
+        newSessionId: initialSessionId,
+      })
+      setSessionId(initialSessionId)
+      setPythonSessionId(null)
+      setInitialized(false)
+      setRestored(false)
+      setMessages([])
+      setValuationResult(null)
+      setBusinessProfile(null)
+      setGenerating(false)
+      setError(null)
+    }
+  }, [initialSessionId, sessionId])
 
   // Messages state
   const [messages, setMessages] = useState<Message[]>([])

@@ -7,10 +7,10 @@
  * @module services/api/credit/CreditAPI
  */
 
-import { SaveValuationRequest, SaveValuationResponse } from '../../../types/api'
-import { APIError, AuthenticationError, CreditError } from '../../../types/errors'
-import { apiLogger } from '../../../utils/logger'
-import { APIRequestConfig, HttpClient } from '../HttpClient'
+import { SaveValuationRequest, SaveValuationResponse } from '../../../types/api';
+import { APIError, AuthenticationError, CreditError } from '../../../types/errors';
+import { apiLogger } from '../../../utils/logger';
+import { APIRequestConfig, HttpClient } from '../HttpClient';
 
 export class CreditAPI extends HttpClient {
   /**

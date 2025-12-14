@@ -8,12 +8,12 @@
  */
 
 import {
-  APIError,
-  AuthenticationError,
-  CreditError,
-  NetworkError,
-  RateLimitError,
-  ValidationError,
+    APIError,
+    AuthenticationError,
+    CreditError,
+    NetworkError,
+    RateLimitError,
+    ValidationError,
 } from '../../../types/errors'
 import { ValuationRequest, ValuationResponse } from '../../../types/valuation'
 import { apiLogger } from '../../../utils/logger'

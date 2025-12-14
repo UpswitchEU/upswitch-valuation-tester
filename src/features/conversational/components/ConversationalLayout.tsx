@@ -20,6 +20,7 @@ import {
     useValuationToolbarTabs,
 } from '../../../hooks/valuationToolbar'
 import { guestCreditService } from '../../../services/guestCreditService'
+import { RefreshService } from '../../../services/toolbar/refreshService'
 import UrlGeneratorService from '../../../services/urlGenerator'
 import { useValuationApiStore } from '../../../store/useValuationApiStore'
 import { useValuationFormStore } from '../../../store/useValuationFormStore'
@@ -170,6 +171,24 @@ const ConversationalLayoutInner: React.FC<ConversationalLayoutProps> = ({
     }
   }, [restoration.state.messages, restoration.state.pythonSessionId, state.messages.length, state.pythonSessionId, actions])
 
+  // Reset conversation context and restoration when reportId changes
+  useEffect(() => {
+    // Reset restoration hook when reportId changes
+    restoration.reset()
+    
+    // Reset conversation context
+    actions.setMessages([])
+    actions.setValuationResult(null)
+    actions.setGenerating(false)
+    actions.setError(null)
+    actions.setRestored(false)
+    actions.setInitialized(false)
+    actions.setPythonSessionId(null)
+    
+    // Update session ID in context
+    actions.setSessionId(reportId)
+  }, [reportId, restoration, actions])
+
   // Handle panel resize
   const handleResize = useCallback((newWidth: number) => {
     const constrainedWidth = Math.max(
@@ -194,9 +213,9 @@ const ConversationalLayoutInner: React.FC<ConversationalLayoutProps> = ({
     actions.setRestored(false)
     actions.setInitialized(false)
     
-    // Generate new report ID and navigate
+    // Generate new report ID and navigate using RefreshService
     const newReportId = generateReportId()
-    window.location.href = UrlGeneratorService.reportById(newReportId)
+    RefreshService.navigateTo(UrlGeneratorService.reportById(newReportId))
     handleHookRefresh()
   }, [restoration, actions, handleHookRefresh])
 
@@ -420,8 +439,10 @@ const ConversationalLayoutInner: React.FC<ConversationalLayoutProps> = ({
  */
 export const ConversationalLayout: React.FC<ConversationalLayoutProps> = React.memo(
   ({ reportId, onComplete, initialQuery = null, autoSend = false }) => {
+    // Use key prop to force remount when reportId changes
+    // This ensures clean state for each new report
     return (
-      <ConversationProvider initialSessionId={reportId}>
+      <ConversationProvider key={reportId} initialSessionId={reportId}>
         <ConversationalLayoutInner
           reportId={reportId}
           onComplete={onComplete}
