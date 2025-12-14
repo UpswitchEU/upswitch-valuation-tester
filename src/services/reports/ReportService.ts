@@ -63,7 +63,8 @@ class ReportServiceImpl implements ReportService {
       
       // Call existing backend endpoint: GET /api/reports
       // This endpoint requires auth currently, will return empty for guests until enhanced
-      const url = `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/reports?limit=${limit}&offset=${offset}`
+      const baseURL = process.env.NEXT_PUBLIC_BACKEND_URL || process.env.NEXT_PUBLIC_API_BASE_URL || 'https://web-production-8d00b.up.railway.app'
+      const url = `${baseURL}/api/reports?limit=${limit}&offset=${offset}`
       
       const response = await fetch(url, {
         method: 'GET',
@@ -228,7 +229,8 @@ class ReportServiceImpl implements ReportService {
       reportLogger.info('Deleting report', { reportId })
       
       // Call existing backend endpoint: DELETE /api/reports/:reportId
-      const url = `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/reports/${reportId}`
+      const baseURL = process.env.NEXT_PUBLIC_BACKEND_URL || process.env.NEXT_PUBLIC_API_BASE_URL || 'https://web-production-8d00b.up.railway.app'
+      const url = `${baseURL}/api/reports/${reportId}`
       
       const response = await fetch(url, {
         method: 'DELETE',
