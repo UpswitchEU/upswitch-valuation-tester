@@ -36,7 +36,7 @@ export const ConversationalValuationFlow: React.FC<ConversationalValuationFlowPr
 }) => {
   return (
     <FeatureErrorBoundary feature="conversational">
-      <ConversationProvider initialSessionId={reportId}>
+      <ConversationProvider initialState={{ sessionId: reportId }}>
         <ConversationalLayout
           reportId={reportId}
           onComplete={onComplete}
