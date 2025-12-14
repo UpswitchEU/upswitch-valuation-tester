@@ -34,10 +34,10 @@ const ConversationalLayout = lazy(() =>
   }))
 )
 
-// Manual flow component - using DataCollection for now
-const ManualFlow = lazy(() =>
-  import('../../../components/data-collection/DataCollection').then((module) => ({
-    default: module.DataCollection,
+// Manual flow component - 2-panel layout with form and report preview
+const ManualLayout = lazy(() =>
+  import('../../manual/components/ManualLayout').then((module) => ({
+    default: module.ManualLayout,
   }))
 )
 
@@ -66,17 +66,13 @@ export const ValuationFlow: React.FC<ValuationFlowProps> = ({
     )
   }
 
-  // Manual flow - render data collection component
-  // TODO: Create proper ManualFlow component if needed
+  // Manual flow - render 2-panel layout with form and report preview
   return (
     <Suspense fallback={<LoadingState steps={GENERATION_STEPS} variant="dark" />}>
-      <div className="flex flex-col h-full">
-        <ManualFlow
-          method="manual_form"
-          onDataCollected={() => {}}
-          onComplete={() => {}}
-        />
-      </div>
+      <ManualLayout
+        reportId={reportId}
+        onComplete={onComplete}
+      />
     </Suspense>
   )
 }
