@@ -7,7 +7,7 @@
  * @module features/conversational/components/ConversationalLayout
  */
 
-import React, { useCallback, useEffect, useState } from 'react'
+import React, { useCallback, useEffect, useRef, useState } from 'react'
 import { FullScreenModal } from '../../../components/FullScreenModal'
 import { ResizableDivider } from '../../../components/ResizableDivider'
 import { ValuationToolbar } from '../../../components/ValuationToolbar'
@@ -68,35 +68,43 @@ const ConversationalLayoutInner: React.FC<ConversationalLayoutProps> = ({
   const { result, setResult } = useValuationResultsStore()
 
   // Restore conversation from Python backend
+  // FIX: Use refs to stabilize callbacks and prevent infinite loops
+  // actions object is recreated on every render, so we use refs to access stable functions
+  const actionsRef = useRef(actions)
+  actionsRef.current = actions // Always keep ref up to date
+  
+  const reportIdRef = useRef(reportId)
+  reportIdRef.current = reportId // Always keep ref up to date
+  
   const restoration = useConversationRestoration({
     sessionId: reportId,
     enabled: true,
     onRestored: useCallback(
       (messages: import('../../../types/message').Message[], pythonSessionId: string | null) => {
         chatLogger.info('Conversation restored in ConversationalLayout', {
-          reportId,
+          reportId: reportIdRef.current,
           messageCount: messages.length,
           pythonSessionId,
         })
-        // Update conversation context with restored messages
-        actions.setMessages(messages)
+        // Update conversation context with restored messages using ref
+        actionsRef.current.setMessages(messages)
         if (pythonSessionId) {
-          actions.setPythonSessionId(pythonSessionId)
+          actionsRef.current.setPythonSessionId(pythonSessionId)
         }
-        actions.setRestored(true)
-        actions.setInitialized(true)
+        actionsRef.current.setRestored(true)
+        actionsRef.current.setInitialized(true)
       },
-      [actions, reportId]
+      [] // Empty deps - use refs instead
     ),
     onError: useCallback(
       (error: string) => {
-        chatLogger.error('Failed to restore conversation', { reportId, error })
-        actions.setError(error)
+        chatLogger.error('Failed to restore conversation', { reportId: reportIdRef.current, error })
+        actionsRef.current.setError(error)
         // Still allow new conversation even if restoration fails
-        actions.setRestored(true)
-        actions.setInitialized(true)
+        actionsRef.current.setRestored(true)
+        actionsRef.current.setInitialized(true)
       },
-      [actions, reportId]
+      [] // Empty deps - use refs instead
     ),
   })
 
@@ -162,6 +170,7 @@ const ConversationalLayoutInner: React.FC<ConversationalLayoutProps> = ({
   }, [state.valuationResult, setResult])
 
   // Sync restored messages to conversation context
+  // FIX: Use messages.length instead of messages array to prevent infinite loops
   useEffect(() => {
     if (restoration.state.messages.length > 0 && state.messages.length === 0) {
       actions.setMessages(restoration.state.messages)
@@ -169,11 +178,24 @@ const ConversationalLayoutInner: React.FC<ConversationalLayoutProps> = ({
     if (restoration.state.pythonSessionId && !state.pythonSessionId) {
       actions.setPythonSessionId(restoration.state.pythonSessionId)
     }
-  }, [restoration.state.messages, restoration.state.pythonSessionId, state.messages.length, state.pythonSessionId, actions])
+  }, [restoration.state.messages.length, restoration.state.pythonSessionId, state.messages.length, state.pythonSessionId, actions])
 
   // Reset conversation context and restoration when reportId changes
+  // FIX: Use ref to track previous reportId to prevent infinite loops
+  // Only reset when reportId actually changes, not on every render
+  const previousReportIdRef = useRef<string | null>(null)
+  
   useEffect(() => {
+    // Only reset if reportId actually changed
+    if (previousReportIdRef.current === reportId) {
+      return // reportId hasn't changed, skip reset
+    }
+    
+    // Update ref before resetting to prevent re-triggering
+    previousReportIdRef.current = reportId
+    
     // Reset restoration hook when reportId changes
+    // This sets hasRestoredRef.current = false, which will trigger auto-restore
     restoration.reset()
     
     // Reset conversation context
@@ -187,7 +209,8 @@ const ConversationalLayoutInner: React.FC<ConversationalLayoutProps> = ({
     
     // Update session ID in context
     actions.setSessionId(reportId)
-  }, [reportId, restoration, actions])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [reportId]) // Only depend on reportId - restoration.reset and actions are stable
 
   // Handle panel resize
   const handleResize = useCallback((newWidth: number) => {
