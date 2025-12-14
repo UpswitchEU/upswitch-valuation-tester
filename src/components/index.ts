@@ -2,4 +2,5 @@
  * Component exports
  */
 
-export { Results } from './results/index';
+import { Results as ResultsComponent } from './results/index'
+export { ResultsComponent as Results }
