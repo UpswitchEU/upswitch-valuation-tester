@@ -181,18 +181,40 @@ const ConversationalLayoutInner: React.FC<ConversationalLayoutProps> = ({
   }, [restoration.state.messages.length, restoration.state.pythonSessionId, state.messages.length, state.pythonSessionId, actions])
 
   // Reset conversation context and restoration when reportId changes
-  // FIX: Use ref to track previous reportId to prevent infinite loops
-  // Only reset when reportId actually changes, not on every render
+  // FIX: Only reset when reportId actually changes, not on remounts or flow switches
+  // Use sessionStorage to persist across remounts, or check restoration state
   const previousReportIdRef = useRef<string | null>(null)
   
   useEffect(() => {
-    // Only reset if reportId actually changed
-    if (previousReportIdRef.current === reportId) {
-      return // reportId hasn't changed, skip reset
+    // On first render, initialize ref from sessionStorage to persist across remounts
+    if (previousReportIdRef.current === null) {
+      const storedReportId = typeof window !== 'undefined' 
+        ? sessionStorage.getItem(`conversational_reportId_${reportId}`)
+        : null
+      previousReportIdRef.current = storedReportId || null
     }
     
-    // Update ref before resetting to prevent re-triggering
+    // Only reset if reportId actually changed (not just remount or flow switch)
+    if (previousReportIdRef.current === reportId) {
+      // reportId hasn't changed - just ensure session ID is set
+      if (state.sessionId !== reportId) {
+        actions.setSessionId(reportId)
+      }
+      return // Skip reset
+    }
+    
+    // FIX: Don't reset if restoration is already in progress
+    // This prevents aborting an ongoing restoration and causing reset loops
+    if (restoration.state.isRestoring) {
+      chatLogger.debug('Skipping reset - restoration already in progress', { reportId })
+      return
+    }
+    
+    // Update ref and sessionStorage before resetting to prevent re-triggering
     previousReportIdRef.current = reportId
+    if (typeof window !== 'undefined') {
+      sessionStorage.setItem(`conversational_reportId_${reportId}`, reportId)
+    }
     
     // Reset restoration hook when reportId changes
     // This sets hasRestoredRef.current = false, which will trigger auto-restore
@@ -210,7 +232,7 @@ const ConversationalLayoutInner: React.FC<ConversationalLayoutProps> = ({
     // Update session ID in context
     actions.setSessionId(reportId)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [reportId]) // Only depend on reportId - restoration.reset and actions are stable
+  }, [reportId, restoration.state.isRestoring]) // Include isRestoring to prevent reset during restoration
 
   // Handle panel resize
   const handleResize = useCallback((newWidth: number) => {

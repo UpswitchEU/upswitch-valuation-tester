@@ -218,7 +218,24 @@ export class SessionAPI extends HttpClient {
               : sessionData.previousView)
           : undefined,
       }
-    } catch (error) {
+    } catch (error: any) {
+      // FIX: Handle 429 rate limiting gracefully
+      const axiosError = error as any
+      const status = axiosError?.response?.status || axiosError?.status
+      
+      if (status === 429) {
+        apiLogger.warn('Rate limited on switch view - keeping optimistic update', {
+          reportId,
+          view,
+        })
+        // Return success with requested view - optimistic update already happened
+        // Don't throw error, just log it
+        return {
+          success: true,
+          currentView: view,
+        }
+      }
+      
       this.handleSessionError(error, 'switch view')
     }
   }

@@ -32,7 +32,7 @@ export const FlowSwitchWarningModal: React.FC<FlowSwitchWarningModalProps> = ({
 
   const flowNames = {
     manual: 'Manual Entry',
-    conversational: 'AI-Guided',
+    conversational: 'Conversational',
   }
 
   const flowName = targetFlow === 'conversational' ? 'Conversational' : 'Manual'

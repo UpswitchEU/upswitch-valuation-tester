@@ -10,7 +10,7 @@ import { retry } from '../utils/retry'
 
 const GUEST_SESSION_KEY = 'upswitch_guest_session_id'
 const GUEST_SESSION_EXPIRES_KEY = 'upswitch_guest_session_expires_at'
-const ACTIVITY_UPDATE_THROTTLE = 5000 // 5 seconds minimum between updates
+const ACTIVITY_UPDATE_THROTTLE = 10000 // 10 seconds minimum between updates (increased to prevent 429 errors)
 
 class GuestSessionService {
   private apiUrl: string
@@ -150,21 +150,31 @@ class GuestSessionService {
     this.lastActivityUpdate = now
 
     // Fire and forget with simple retry
+    // FIX: Handle 429 rate limiting gracefully - don't retry on rate limit
     try {
-      await retry(
-        () =>
-          fetch(`${this.apiUrl}/api/guest/session/${sessionId}/activity`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-          }),
-        2, // Only 2 attempts for activity tracking
-        500
-      )
+      const response = await fetch(`${this.apiUrl}/api/guest/session/${sessionId}/activity`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+      })
+      
+      // If rate limited (429), just skip - don't retry
+      if (response.status === 429) {
+        generalLogger.debug('Activity update rate limited, skipping', { sessionId })
+        return
+      }
+      
+      if (!response.ok) {
+        throw new Error(`Activity update failed: ${response.status}`)
+      }
     } catch (error) {
       // Silent failure - activity tracking is non-critical
-      generalLogger.warn('Activity update failed (will retry next time)', {
-        error: error instanceof Error ? error.message : 'Unknown error',
-      })
+      // Don't log 429 errors as warnings - they're expected under load
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+      if (!errorMessage.includes('429')) {
+        generalLogger.warn('Activity update failed (will retry next time)', {
+          error: errorMessage,
+        })
+      }
     }
   }
 
