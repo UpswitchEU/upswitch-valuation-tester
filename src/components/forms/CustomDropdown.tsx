@@ -316,10 +316,10 @@ const CustomDropdown: React.FC<CustomDropdownProps> = ({
                   ${
                     option.disabled
                       ? 'text-gray-400 cursor-not-allowed'
-                      : 'hover:bg-gray-50 cursor-pointer text-gray-900'
+                      : 'hover:bg-primary-50 hover:text-primary-900 cursor-pointer text-gray-900'
                   }
-                  ${option.value === value ? 'bg-gray-50 text-gray-900' : ''}
-                  ${index === focusedIndex ? 'bg-primary-50 ring-2 ring-primary-500' : ''}
+                  ${option.value === value ? 'bg-primary-50 text-primary-900' : ''}
+                  ${index === focusedIndex ? 'bg-primary-100 ring-2 ring-primary-500' : ''}
                 `}
                   role="option"
                   aria-selected={option.value === value}

@@ -215,18 +215,13 @@ export const ValuationSessionManager: React.FC<ValuationSessionManagerProps> = R
         return // Wait for initialization to complete
       }
 
-      // CRITICAL FIX: Don't sync URL if a flow switch is in progress
-      // This prevents race conditions where URL update triggers re-initialization
-      const { isSyncing } = useValuationSessionStore.getState()
-      if (isSyncing) {
-        return // Flow switch in progress, don't update URL yet
-      }
-
       // Use searchParams from Next.js hook
       if (!searchParams) return
       const currentFlow = searchParams.get('flow')
 
       // Only update URL if it's different - this prevents infinite loops
+      // CRITICAL: Update URL immediately when flow changes, even during sync
+      // The isUpdatingUrlRef prevents re-initialization, so we can update URL safely
       if (currentFlow !== session.currentView && session.reportId) {
         // Mark that we're updating URL ourselves BEFORE updating
         isUpdatingUrlRef.current = true

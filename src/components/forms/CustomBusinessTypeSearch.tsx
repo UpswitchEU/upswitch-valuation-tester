@@ -301,7 +301,7 @@ export const CustomBusinessTypeSearch: React.FC<CustomBusinessTypeSearchProps> =
                         onClick={() => handleSelect(type)}
                         onMouseEnter={() => setHighlightedIndex(globalIndex)}
                         className={`w-full text-left px-4 py-3 transition-all duration-150 group ${
-                          isHighlighted ? 'bg-gray-50' : 'hover:bg-gray-50'
+                          isHighlighted ? 'bg-primary-50' : 'hover:bg-primary-50'
                         }`}
                       >
                         <div className="flex items-start gap-3">

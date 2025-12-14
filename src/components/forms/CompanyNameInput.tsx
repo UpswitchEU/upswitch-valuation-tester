@@ -430,9 +430,9 @@ export const CompanyNameInput: React.FC<CompanyNameInputProps> = ({
                 aria-selected={isExactMatch}
                 className={`w-full text-left px-4 py-3 transition-all duration-150 group relative border-l-2 ${
                   isHighlighted
-                    ? 'bg-gray-50 border-primary-500'
-                    : 'border-transparent hover:bg-gray-50 hover:border-gray-200'
-                } ${isExactMatch ? 'bg-primary-50/60 hover:bg-primary-50 border-primary-500' : ''}`}
+                    ? 'bg-primary-50 border-primary-500'
+                    : 'border-transparent hover:bg-primary-50 hover:border-primary-200'
+                } ${isExactMatch ? 'bg-primary-50/60 hover:bg-primary-100 border-primary-500' : ''}`}
                 onClick={() => handleSelectCompany(company)}
                 onMouseEnter={() => {
                   setHighlightedIndex(index)

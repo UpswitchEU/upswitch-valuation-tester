@@ -48,7 +48,7 @@ export const FormSubmitSection: React.FC<FormSubmitSectionProps> = ({
             ${
               isSubmitting || !isFormValid
                 ? 'bg-zinc-800/30 text-zinc-500 border border-zinc-700 cursor-not-allowed'
-                : 'text-white bg-gradient-to-r from-cyan-600 to-cyan-500 hover:from-cyan-500 hover:to-cyan-400 hover:shadow-cyan-500/20'
+                : 'text-white bg-gradient-to-r from-primary-600 to-primary-500 hover:from-primary-500 hover:to-primary-400 hover:shadow-primary-500/20'
             }
           `}
         >
