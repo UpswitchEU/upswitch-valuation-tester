@@ -1,11 +1,11 @@
-import { heroui } from '@heroui/theme';
-import containerQueries from '@tailwindcss/container-queries';
-import forms from '@tailwindcss/forms';
-import type { Config } from 'tailwindcss';
+import { heroui } from '@heroui/theme'
+import containerQueries from '@tailwindcss/container-queries'
+import forms from '@tailwindcss/forms'
+import type { Config } from 'tailwindcss'
 
 const config: Config = {
   content: [
-    './index.html',
+    './app/**/*.{js,ts,jsx,tsx}',
     './src/**/*.{js,ts,jsx,tsx}',
     './node_modules/@heroui/theme/dist/components/*.{js,ts,jsx,tsx}',
   ],
@@ -172,6 +172,6 @@ const config: Config = {
       },
     }),
   ],
-};
+}
 
-export default config;
+export default config

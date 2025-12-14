@@ -1,48 +1,48 @@
 export interface CompanySearchResult {
-  result_type: string;
-  company_id: string;
-  company_name: string;
-  registration_number: string;
-  country_code: string;
-  legal_form: string;
-  address: string;
-  status: string;
-  confidence_score: number;
-  registry_name: string;
-  registry_url: string;
+  result_type: string
+  company_id: string
+  company_name: string
+  registration_number: string
+  country_code: string
+  legal_form: string
+  address: string
+  status: string
+  confidence_score: number
+  registry_name: string
+  registry_url: string
 }
 
 export interface FinancialFilingYear {
-  year: number;
-  revenue?: number;
-  ebitda?: number;
-  net_income?: number;
-  total_assets?: number;
-  total_debt?: number;
-  cash?: number;
-  cost_of_goods_sold?: number;
-  operating_expenses?: number;
-  filing_date: string;
-  source_url?: string;
+  year: number
+  revenue?: number
+  ebitda?: number
+  net_income?: number
+  total_assets?: number
+  total_debt?: number
+  cash?: number
+  cost_of_goods_sold?: number
+  operating_expenses?: number
+  filing_date: string
+  source_url?: string
 }
 
 export interface CompanyFinancialData {
-  company_id: string;
-  company_name: string;
-  registration_number: string;
-  country_code: string;
-  legal_form: string;
-  industry_code?: string;
-  industry_description?: string;
-  founding_year?: number;
-  employees?: number;
+  company_id: string
+  company_name: string
+  registration_number: string
+  country_code: string
+  legal_form: string
+  industry_code?: string
+  industry_description?: string
+  founding_year?: number
+  employees?: number
   /**
    * Historical financial filings
    * NOTE: Can be empty array if no public financial data available
    */
-  filing_history: FinancialFilingYear[];
-  data_source: string;
-  last_updated: string;
-  completeness_score: number;
-  source_url?: string;
+  filing_history: FinancialFilingYear[]
+  data_source: string
+  last_updated: string
+  completeness_score: number
+  source_url?: string
 }

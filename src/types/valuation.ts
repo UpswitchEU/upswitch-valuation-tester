@@ -2,158 +2,158 @@
 
 // Enums matching backend
 export enum IndustryCode {
-  TECHNOLOGY = "technology",
-  MANUFACTURING = "manufacturing",
-  RETAIL = "retail",
-  SERVICES = "services",
-  HEALTHCARE = "healthcare",
-  FINANCE = "finance",
-  REAL_ESTATE = "real_estate",
-  HOSPITALITY = "hospitality",
-  CONSTRUCTION = "construction",
-  OTHER = "other"
+  TECHNOLOGY = 'technology',
+  MANUFACTURING = 'manufacturing',
+  RETAIL = 'retail',
+  SERVICES = 'services',
+  HEALTHCARE = 'healthcare',
+  FINANCE = 'finance',
+  REAL_ESTATE = 'real_estate',
+  HOSPITALITY = 'hospitality',
+  CONSTRUCTION = 'construction',
+  OTHER = 'other',
 }
 
 export enum BusinessModel {
-  B2B_SAAS = "b2b_saas",
-  B2C = "b2c",
-  MARKETPLACE = "marketplace",
-  ECOMMERCE = "ecommerce",
-  MANUFACTURING = "manufacturing",
-  SERVICES = "services",
-  OTHER = "other"
+  B2B_SAAS = 'b2b_saas',
+  B2C = 'b2c',
+  MARKETPLACE = 'marketplace',
+  ECOMMERCE = 'ecommerce',
+  MANUFACTURING = 'manufacturing',
+  SERVICES = 'services',
+  OTHER = 'other',
 }
 
 export interface YearDataInput {
-  year: number;
-  revenue: number;
-  ebitda: number;
-  
+  year: number
+  revenue: number
+  ebitda: number
+
   // Optional detailed financials
-  cogs?: number;
-  gross_profit?: number;
-  operating_expenses?: number;
-  ebit?: number;
-  depreciation?: number;
-  amortization?: number;
-  interest_expense?: number;
-  tax_expense?: number;
-  net_income?: number;
-  
+  cogs?: number
+  gross_profit?: number
+  operating_expenses?: number
+  ebit?: number
+  depreciation?: number
+  amortization?: number
+  interest_expense?: number
+  tax_expense?: number
+  net_income?: number
+
   // Balance sheet
-  total_assets?: number;
-  current_assets?: number;
-  cash?: number;
-  accounts_receivable?: number;
-  inventory?: number;
-  total_liabilities?: number;
-  current_liabilities?: number;
-  total_debt?: number;
-  total_equity?: number;
-  
+  total_assets?: number
+  current_assets?: number
+  cash?: number
+  accounts_receivable?: number
+  inventory?: number
+  total_liabilities?: number
+  current_liabilities?: number
+  total_debt?: number
+  total_equity?: number
+
   // Cash flow
-  nwc_change?: number;
+  nwc_change?: number
 }
 
 export interface ValuationRequest {
   // Company information (all required)
-  company_name: string;
-  country_code: string; // 2-letter ISO code (e.g., "BE", "DE", "US")
-  industry: IndustryCode | string; // Backend expects IndustryCode enum
-  business_model: BusinessModel | string; // Backend expects BusinessModel enum
-  founding_year: number; // Required by backend
-  
+  company_name: string
+  country_code: string // 2-letter ISO code (e.g., "BE", "DE", "US")
+  industry: IndustryCode | string // Backend expects IndustryCode enum
+  business_model: BusinessModel | string // Backend expects BusinessModel enum
+  founding_year: number // Required by backend
+
   // Financial data (required)
-  current_year_data: YearDataInput;
-  historical_years_data?: YearDataInput[];
-  
+  current_year_data: YearDataInput
+  historical_years_data?: YearDataInput[]
+
   // Optional company details
-  number_of_employees?: number;
-  number_of_owners?: number; // Number of operational owners (C-level + working shareholders)
-  recurring_revenue_percentage?: number; // 0.0 to 1.0
-  shares_for_sale?: number; // Percentage of shares for sale (0-100), used for ownership adjustment
-  
+  number_of_employees?: number
+  number_of_owners?: number // Number of operational owners (C-level + working shareholders)
+  recurring_revenue_percentage?: number // 0.0 to 1.0
+  shares_for_sale?: number // Percentage of shares for sale (0-100), used for ownership adjustment
+
   // Additional business context
-  business_type?: string;
-  revenue?: number;
-  employee_count?: number;
-  business_description?: string;
-  business_highlights?: string;
-  reason_for_selling?: string;
-  city?: string;
-  
+  business_type?: string
+  revenue?: number
+  employee_count?: number
+  business_description?: string
+  business_highlights?: string
+  reason_for_selling?: string
+  city?: string
+
   // NEW: PostgreSQL business type integration
-  business_type_id?: string; // PostgreSQL business type ID
+  business_type_id?: string // PostgreSQL business type ID
   business_context?: {
-    dcfPreference?: number; // 0-1: Weight for DCF methodology
-    multiplesPreference?: number; // 0-1: Weight for Multiples methodology
-    ownerDependencyImpact?: number; // 0-1: Key person risk impact
-    keyMetrics?: string[]; // Industry-specific metrics
-    typicalEmployeeRange?: { min: number; max: number };
-    typicalRevenueRange?: { min: number; max: number };
-  };
-  
+    dcfPreference?: number // 0-1: Weight for DCF methodology
+    multiplesPreference?: number // 0-1: Weight for Multiples methodology
+    ownerDependencyImpact?: number // 0-1: Key person risk impact
+    keyMetrics?: string[] // Industry-specific metrics
+    typicalEmployeeRange?: { min: number; max: number }
+    typicalRevenueRange?: { min: number; max: number }
+  }
+
   // Optional market context overrides
-  government_bond_yield?: number;
-  long_term_gdp_growth?: number;
-  
+  government_bond_yield?: number
+  long_term_gdp_growth?: number
+
   // Valuation preferences
-  use_dcf?: boolean;
-  use_multiples?: boolean;
-  projection_years?: number; // 5-15 years
-  
+  use_dcf?: boolean
+  use_multiples?: boolean
+  projection_years?: number // 5-15 years
+
   // Optional comparable companies
   comparables?: Array<{
-    name: string;
-    ev_ebitda_multiple?: number;
-    ev_revenue_multiple?: number;
-    pe_ratio?: number;
-  }>;
+    name: string
+    ev_ebitda_multiple?: number
+    ev_revenue_multiple?: number
+    pe_ratio?: number
+  }>
 }
 
 // Extended request type for frontend form state
 export interface ValuationFormData extends Partial<ValuationRequest> {
   // Required fields that must be present in form data
-  business_model: BusinessModel | string;
-  founding_year: number;
-  
+  business_model: BusinessModel | string
+  founding_year: number
+
   // NEW: Primary business type ID from PostgreSQL
-  business_type_id?: string;
-  
+  business_type_id?: string
+
   // Phase 2: Sub-industry granularity
-  subIndustry?: string;
-  employees?: number;
-  owners?: number; // Alias for number_of_owners
-  
+  subIndustry?: string
+  employees?: number
+  owners?: number // Alias for number_of_owners
+
   // Internal preferences (stored locally, sent in business_context)
-  _internal_dcf_preference?: number;
-  _internal_multiples_preference?: number;
-  _internal_owner_dependency_impact?: number;
-  _internal_key_metrics?: string[];
-  _internal_typical_employee_range?: { min: number; max: number };
-  _internal_typical_revenue_range?: { min: number; max: number };
-  
+  _internal_dcf_preference?: number
+  _internal_multiples_preference?: number
+  _internal_owner_dependency_impact?: number
+  _internal_key_metrics?: string[]
+  _internal_typical_employee_range?: { min: number; max: number }
+  _internal_typical_revenue_range?: { min: number; max: number }
+
   // Legacy fields for backward compatibility
-  revenue?: number;
-  ebitda?: number;
-  business_type?: 'sole-trader' | 'company';
-  shares_for_sale?: number;
-  employee_count?: number;
-  business_description?: string;
-  business_highlights?: string;
-  reason_for_selling?: string;
-  city?: string;
+  revenue?: number
+  ebitda?: number
+  business_type?: 'sole-trader' | 'company'
+  shares_for_sale?: number
+  employee_count?: number
+  business_description?: string
+  business_highlights?: string
+  reason_for_selling?: string
+  city?: string
 }
 
 export interface QuickValuationRequest {
-  revenue: number;
-  ebitda: number;
-  industry: string;
-  country_code: string;
+  revenue: number
+  ebitda: number
+  industry: string
+  country_code: string
 }
 
 // Quick valuation uses same response format as full valuation
-export type QuickValuationResponse = ValuationResponse;
+export type QuickValuationResponse = ValuationResponse
 
 // =============================================================================
 // MODULAR SYSTEM INTERFACES (Phase 1: Backend Data Structure)
@@ -164,25 +164,25 @@ export type QuickValuationResponse = ValuationResponse;
  * Contains information about the 12-step calculation system execution
  */
 export interface ModularSystem {
-  enabled: boolean;
-  total_steps: number;
-  steps_completed: number;
-  steps_skipped: number;
-  steps_failed?: number;
-  total_execution_time_ms: number;
-  step_details: StepDetail[];
+  enabled: boolean
+  total_steps: number
+  steps_completed: number
+  steps_skipped: number
+  steps_failed?: number
+  total_execution_time_ms: number
+  step_details: StepDetail[]
 }
 
 /**
  * Individual step detail from modular system
  */
 export interface StepDetail {
-  step: number;
-  name: string;
-  status: 'completed' | 'skipped' | 'failed' | 'pending' | 'executing';
-  execution_time_ms: number;
-  error?: string;
-  reason?: string; // Reason for skip
+  step: number
+  name: string
+  status: 'completed' | 'skipped' | 'failed' | 'pending' | 'executing'
+  execution_time_ms: number
+  error?: string
+  reason?: string // Reason for skip
 }
 
 /**
@@ -193,7 +193,7 @@ export enum StepStatus {
   EXECUTING = 'executing',
   COMPLETED = 'completed',
   SKIPPED = 'skipped',
-  FAILED = 'failed'
+  FAILED = 'failed',
 }
 
 // =============================================================================
@@ -204,168 +204,168 @@ export enum StepStatus {
  * Academic source reference
  */
 export interface AcademicSource {
-  author: string;
-  year: number | string;
-  title: string;
-  relevance: string;
-  edition?: string;
-  publisher?: string;
-  journal?: string;
-  volume?: string;
-  pages?: string;
+  author: string
+  year: number | string
+  title: string
+  relevance: string
+  edition?: string
+  publisher?: string
+  journal?: string
+  volume?: string
+  pages?: string
 }
 
 /**
  * Professional review readiness assessment
  */
 export interface ProfessionalReviewReady {
-  ready: boolean;
-  status: 'PROFESSIONAL_REVIEW_READY' | 'NOT_READY' | 'REVIEW_RECOMMENDED';
-  checks: string[];
-  warnings: string[];
-  notes: string[];
+  ready: boolean
+  status: 'PROFESSIONAL_REVIEW_READY' | 'NOT_READY' | 'REVIEW_RECOMMENDED'
+  checks: string[]
+  warnings: string[]
+  notes: string[]
 }
 
 /**
  * Enhanced transparency data with full step information
  */
 export interface TransparencyData {
-  data_sources: DataSource[];
+  data_sources: DataSource[]
   /** @deprecated Use info_tab_html instead. Calculation details are now available in server-generated HTML. */
-  calculation_steps?: EnhancedCalculationStep[];
-  comparable_companies?: ComparableCompany[];
-  confidence_breakdown: ConfidenceBreakdown;
-  range_methodology: RangeMethodology;
-  adjustments_applied?: AdjustmentDetail[];
-  standards_compliance?: string[];
-  methodology_statement?: string;
-  academic_sources?: AcademicSource[];
-  professional_review_ready?: ProfessionalReviewReady;
+  calculation_steps?: EnhancedCalculationStep[]
+  comparable_companies?: ComparableCompany[]
+  confidence_breakdown: ConfidenceBreakdown
+  range_methodology: RangeMethodology
+  adjustments_applied?: AdjustmentDetail[]
+  standards_compliance?: string[]
+  methodology_statement?: string
+  academic_sources?: AcademicSource[]
+  professional_review_ready?: ProfessionalReviewReady
 }
 
 /**
  * Data source information
  */
 export interface DataSource {
-  name: string;
-  value: any;
-  source: string;
-  timestamp: string;
-  confidence: number;
-  api_url?: string;
-  cache_status?: string;
-  type?: string; // e.g., 'Multiples', 'DCF', etc.
+  name: string
+  value: any
+  source: string
+  timestamp: string
+  confidence: number
+  api_url?: string
+  cache_status?: string
+  type?: string // e.g., 'Multiples', 'DCF', etc.
 }
 
 /**
  * Enhanced calculation step with status and metadata
  */
 export interface EnhancedCalculationStep {
-  step: number; // Step number (0-11)
-  step_number?: number; // Alias for backward compatibility
-  name: string; // Step name
-  description: string; // Human-readable description
-  status: 'completed' | 'skipped' | 'failed' | 'not_executed';
-  execution_time_ms: number;
-  key_outputs?: Record<string, any>; // Key outputs from step
-  reason?: string; // Reason for skip
-  error?: string; // Error message if failed
-  methodology_note?: string; // Methodology-specific note
-  formula?: string; // Calculation formula (legacy)
-  inputs?: Record<string, any>; // Input data (legacy)
-  outputs?: Record<string, any>; // Output data (legacy)
-  explanation?: string; // Explanation (legacy)
+  step: number // Step number (0-11)
+  step_number?: number // Alias for backward compatibility
+  name: string // Step name
+  description: string // Human-readable description
+  status: 'completed' | 'skipped' | 'failed' | 'not_executed'
+  execution_time_ms: number
+  key_outputs?: Record<string, any> // Key outputs from step
+  reason?: string // Reason for skip
+  error?: string // Error message if failed
+  methodology_note?: string // Methodology-specific note
+  formula?: string // Calculation formula (legacy)
+  inputs?: Record<string, any> // Input data (legacy)
+  outputs?: Record<string, any> // Output data (legacy)
+  explanation?: string // Explanation (legacy)
   sme_calibration?: {
-    applied: boolean;
-    revenue: number;
+    applied: boolean
+    revenue: number
     ebitda_multiple?: {
-      raw: number;
-      calibrated: number;
-      calibration_factor: number;
-      reduction_percentage: number;
-      explanation: string;
-    };
+      raw: number
+      calibrated: number
+      calibration_factor: number
+      reduction_percentage: number
+      explanation: string
+    }
     revenue_multiple?: {
-      raw: number;
-      calibrated: number;
-      calibration_factor: number;
-      reduction_percentage: number;
-      explanation: string;
-    };
-    academic_reference?: string;
-    rationale?: string;
-  };
+      raw: number
+      calibrated: number
+      calibration_factor: number
+      reduction_percentage: number
+      explanation: string
+    }
+    academic_reference?: string
+    rationale?: string
+  }
 }
 
 /**
  * Legacy calculation step interface for backward compatibility
  */
 export interface CalculationStep {
-  step_number: number;
-  description: string;
-  formula: string;
-  inputs: Record<string, any>;
-  outputs: Record<string, any>;
-  explanation: string;
+  step_number: number
+  description: string
+  formula: string
+  inputs: Record<string, any>
+  outputs: Record<string, any>
+  explanation: string
 }
 
 /**
  * Adjustment detail with comprehensive information
  */
 export interface AdjustmentDetail {
-  step: string; // Step name
-  step_number: number;
-  adjustment: number; // Decimal format (e.g., -0.12 for -12%)
-  adjustment_pct: number; // Percentage format (e.g., -12)
-  type: string; // 'owner_concentration' | 'size_discount' | 'liquidity_discount' | 'control_premium' | 'minority_discount' | 'deadlock_discount'
-  rationale: string;
-  tier?: string; // Size tier, risk level, etc.
-  ownership_percentage?: number; // For ownership adjustments
+  step: string // Step name
+  step_number: number
+  adjustment: number // Decimal format (e.g., -0.12 for -12%)
+  adjustment_pct: number // Percentage format (e.g., -12)
+  type: string // 'owner_concentration' | 'size_discount' | 'liquidity_discount' | 'control_premium' | 'minority_discount' | 'deadlock_discount'
+  rationale: string
+  tier?: string // Size tier, risk level, etc.
+  ownership_percentage?: number // For ownership adjustments
 }
 
 export interface ComparableCompany {
-  name: string;
-  country: string;
-  revenue: number;
-  ebitda_multiple?: number;
-  revenue_multiple?: number;
-  similarity_score: number;
-  source: string;
+  name: string
+  country: string
+  revenue: number
+  ebitda_multiple?: number
+  revenue_multiple?: number
+  similarity_score: number
+  source: string
 }
 
 export interface ConfidenceBreakdown {
-  data_quality: number;
-  historical_data: number;
-  methodology_agreement: number;
-  industry_benchmarks: number;
-  company_profile: number;
-  market_conditions: number;
-  geographic_data: number;
-  business_model_clarity: number;
-  overall_score: number;
+  data_quality: number
+  historical_data: number
+  methodology_agreement: number
+  industry_benchmarks: number
+  company_profile: number
+  market_conditions: number
+  geographic_data: number
+  business_model_clarity: number
+  overall_score: number
   // Optional extended properties
-  methodology_quality?: number;
-  market_data_quality?: number;
+  methodology_quality?: number
+  market_data_quality?: number
 }
 
 export interface RangeMethodology {
-  mid_point: number;
-  confidence_level: string;
-  base_spread: number;
-  asymmetric_adjustment: boolean;
-  downside_factor: number;
-  upside_factor: number;
-  low_value: number;
-  high_value: number;
-  academic_source: string;
+  mid_point: number
+  confidence_level: string
+  base_spread: number
+  asymmetric_adjustment: boolean
+  downside_factor: number
+  upside_factor: number
+  low_value: number
+  high_value: number
+  academic_source: string
 }
 
 export interface ValidationWarning {
-  type: 'wacc' | 'cagr' | 'growth_consistency' | 'methodology_variance' | 'data_quality';
-  severity: 'critical' | 'high' | 'medium' | 'low';
-  message: string;
-  details?: string;
-  recommended_action?: string;
+  type: 'wacc' | 'cagr' | 'growth_consistency' | 'methodology_variance' | 'data_quality'
+  severity: 'critical' | 'high' | 'medium' | 'low'
+  message: string
+  details?: string
+  recommended_action?: string
 }
 
 // ============================================================================
@@ -377,29 +377,29 @@ export interface ValidationWarning {
  * Matches backend StepOutput.result structure from step_4_owner_concentration.py
  */
 export interface Step4OwnerConcentrationResult {
-  enterprise_value_low: number;
-  enterprise_value_mid: number;
-  enterprise_value_high: number;
-  owner_employee_ratio?: number | null;
-  normalized_ratio?: number;
-  risk_level?: string;
-  adjustment_percentage: number;
-  ev_change?: number;
-  calibration_used?: boolean;
+  enterprise_value_low: number
+  enterprise_value_mid: number
+  enterprise_value_high: number
+  owner_employee_ratio?: number | null
+  normalized_ratio?: number
+  risk_level?: string
+  adjustment_percentage: number
+  ev_change?: number
+  calibration_used?: boolean
   // Legacy compatibility fields (from metadata)
-  ev_low_before?: number;
-  ev_mid_before?: number;
-  ev_high_before?: number;
-  ev_low_after?: number;
-  ev_mid_after?: number;
-  ev_high_after?: number;
-  calibration_type?: 'industry-specific' | 'universal' | 'standard';
-  business_type_id?: string | null;
-  number_of_owners?: number;
-  number_of_employees?: number;
-  skipped?: boolean;
+  ev_low_before?: number
+  ev_mid_before?: number
+  ev_high_before?: number
+  ev_low_after?: number
+  ev_mid_after?: number
+  ev_high_after?: number
+  calibration_type?: 'industry-specific' | 'universal' | 'standard'
+  business_type_id?: string | null
+  number_of_owners?: number
+  number_of_employees?: number
+  skipped?: boolean
   // McKinsey-level transparency (2025)
-  pipeline_stage?: MultiplePipelineStage | null;
+  pipeline_stage?: MultiplePipelineStage | null
 }
 
 /**
@@ -407,26 +407,26 @@ export interface Step4OwnerConcentrationResult {
  * Matches backend StepOutput.result structure from step_5_size_discount.py
  */
 export interface Step5SizeDiscountResult {
-  enterprise_value_low: number;
-  enterprise_value_mid: number;
-  enterprise_value_high: number;
-  size_tier?: string;
-  base_discount: number;
-  adjustment_multiplier?: number;
-  size_discount_percentage: number;
-  business_category?: string;
-  ev_change?: number;
+  enterprise_value_low: number
+  enterprise_value_mid: number
+  enterprise_value_high: number
+  size_tier?: string
+  base_discount: number
+  adjustment_multiplier?: number
+  size_discount_percentage: number
+  business_category?: string
+  ev_change?: number
   // Legacy compatibility fields (from metadata)
-  ev_low_before?: number;
-  ev_mid_before?: number;
-  ev_high_before?: number;
-  ev_low_after?: number;
-  ev_mid_after?: number;
-  ev_high_after?: number;
-  revenue_tier?: string;
-  sole_trader_adjustment?: number;
+  ev_low_before?: number
+  ev_mid_before?: number
+  ev_high_before?: number
+  ev_low_after?: number
+  ev_mid_after?: number
+  ev_high_after?: number
+  revenue_tier?: string
+  sole_trader_adjustment?: number
   // McKinsey-level transparency (2025)
-  pipeline_stage?: MultiplePipelineStage | null;
+  pipeline_stage?: MultiplePipelineStage | null
 }
 
 /**
@@ -434,45 +434,45 @@ export interface Step5SizeDiscountResult {
  * Matches backend StepOutput.result structure from step_6_liquidity_discount.py
  */
 export interface Step6LiquidityDiscountResult {
-  enterprise_value_low: number;
-  enterprise_value_mid: number;
-  enterprise_value_high: number;
-  base_discount: number;
-  margin_bonus?: number;
-  growth_bonus?: number;
-  recurring_revenue_bonus?: number;
-  size_bonus?: number;
-  total_discount_percentage: number;
-  ebitda_margin?: number;
-  growth_rate?: number;
-  recurring_revenue_pct?: number;
-  revenue?: number;
-  business_category?: string;
+  enterprise_value_low: number
+  enterprise_value_mid: number
+  enterprise_value_high: number
+  base_discount: number
+  margin_bonus?: number
+  growth_bonus?: number
+  recurring_revenue_bonus?: number
+  size_bonus?: number
+  total_discount_percentage: number
+  ebitda_margin?: number
+  growth_rate?: number
+  recurring_revenue_pct?: number
+  revenue?: number
+  business_category?: string
   // Legacy compatibility fields (from metadata)
-  ev_low_before?: number;
-  ev_mid_before?: number;
-  ev_high_before?: number;
-  ev_low_after?: number;
-  ev_mid_after?: number;
-  ev_high_after?: number;
-  base_step?: number;
+  ev_low_before?: number
+  ev_mid_before?: number
+  ev_high_before?: number
+  ev_low_after?: number
+  ev_mid_after?: number
+  ev_high_after?: number
+  base_step?: number
   adjustments?: {
-    margin?: number;
-    growth?: number;
-    recurring_revenue?: number;
-    size?: number;
-  };
-  sole_trader_adjustment?: number;
-  is_sole_trader?: boolean;
-  liquidity_discount_percentage?: number;
+    margin?: number
+    growth?: number
+    recurring_revenue?: number
+    size?: number
+  }
+  sole_trader_adjustment?: number
+  is_sole_trader?: boolean
+  liquidity_discount_percentage?: number
   sme_calibration_interaction?: {
-    sme_calibration_applied: boolean;
-    step6_skipped: boolean;
-    rationale: string;
-    academic_reference: string;
-  };
+    sme_calibration_applied: boolean
+    step6_skipped: boolean
+    rationale: string
+    academic_reference: string
+  }
   // McKinsey-level transparency (2025)
-  pipeline_stage?: MultiplePipelineStage | null;
+  pipeline_stage?: MultiplePipelineStage | null
 }
 
 /**
@@ -480,40 +480,40 @@ export interface Step6LiquidityDiscountResult {
  * Matches backend StepOutput.result structure from step_7_ev_to_equity.py
  */
 export interface Step7EVToEquityResult {
-  equity_value_low: number;
-  equity_value_mid: number;
-  equity_value_high: number;
-  total_debt?: number;
-  cash?: number;
-  operating_cash?: number;
-  excess_cash?: number;
-  operating_cash_pct?: number;
-  net_debt: number;
-  debt_to_ev_ratio?: number;
-  cash_to_ev_ratio?: number;
-  net_debt_to_ev_ratio?: number;
-  exemption_applied?: boolean;
-  exemption_rationale?: string;
-  size_tier?: string;
-  business_category?: string | null;
-  range_validated?: boolean;
-  range_corrected?: boolean;
-  balance_sheet_available?: boolean;
-  ev_source_step?: number;
-  calculated_equity_mid?: number;
+  equity_value_low: number
+  equity_value_mid: number
+  equity_value_high: number
+  total_debt?: number
+  cash?: number
+  operating_cash?: number
+  excess_cash?: number
+  operating_cash_pct?: number
+  net_debt: number
+  debt_to_ev_ratio?: number
+  cash_to_ev_ratio?: number
+  net_debt_to_ev_ratio?: number
+  exemption_applied?: boolean
+  exemption_rationale?: string
+  size_tier?: string
+  business_category?: string | null
+  range_validated?: boolean
+  range_corrected?: boolean
+  balance_sheet_available?: boolean
+  ev_source_step?: number
+  calculated_equity_mid?: number
   // Legacy compatibility fields
-  ev_low?: number;
-  ev_mid?: number;
-  ev_high?: number;
+  ev_low?: number
+  ev_mid?: number
+  ev_high?: number
   balance_sheet_validation?: {
-    warnings?: string[];
-    notes?: string[];
-    negative_debt?: boolean;
-    negative_cash?: boolean;
-    high_debt_ratio?: boolean;
-    high_cash_ratio?: boolean;
-  };
-  edge_case_notes?: string[];
+    warnings?: string[]
+    notes?: string[]
+    negative_debt?: boolean
+    negative_cash?: boolean
+    high_debt_ratio?: boolean
+    high_cash_ratio?: boolean
+  }
+  edge_case_notes?: string[]
 }
 
 /**
@@ -521,408 +521,409 @@ export interface Step7EVToEquityResult {
  * Matches backend StepOutput.result structure from step_8_ownership_adjustment.py
  */
 export interface Step8OwnershipAdjustmentResult {
-  equity_value_low: number;
-  equity_value_mid: number;
-  equity_value_high: number;
-  ownership_percentage: number;
-  adjustment_type: string;
-  adjustment_percentage: number;
-  ownership_multiplier?: number;
+  equity_value_low: number
+  equity_value_mid: number
+  equity_value_high: number
+  ownership_percentage: number
+  adjustment_type: string
+  adjustment_percentage: number
+  ownership_multiplier?: number
   // Legacy compatibility fields (from metadata)
-  equity_low_before?: number;
-  equity_mid_before?: number;
-  equity_high_before?: number;
-  equity_low_after?: number;
-  equity_mid_after?: number;
-  equity_high_after?: number;
-  base_adjustment?: number;
-  base_adjustment_pct?: number;
-  business_type_multiplier?: number;
-  revenue_multiplier?: number;
-  rationale?: string;
-  tier_description?: string;
-  shares_for_sale?: number;
-  calibration_type?: string;
+  equity_low_before?: number
+  equity_mid_before?: number
+  equity_high_before?: number
+  equity_low_after?: number
+  equity_mid_after?: number
+  equity_high_after?: number
+  base_adjustment?: number
+  base_adjustment_pct?: number
+  business_type_multiplier?: number
+  revenue_multiplier?: number
+  rationale?: string
+  tier_description?: string
+  shares_for_sale?: number
+  calibration_type?: string
 }
 
 // Small Firm Effect Transparency Types
 // Updated to support both legacy (number) and modular (object) formats
 export interface SmallFirmAdjustments {
   // Legacy format: numbers
-  size_discount: number | Step5SizeDiscountResult;
-  size_discount_reason: string;
-  liquidity_discount: number | Step6LiquidityDiscountResult;
-  liquidity_discount_reason: string;
-  country_adjustment: number;
-  country_adjustment_reason: string;
-  growth_premium: number;
-  growth_premium_reason: string;
-  combined_effect: number;
-  base_value_before_adjustments: number;
-  adjusted_value_after_adjustments: number;
+  size_discount: number | Step5SizeDiscountResult
+  size_discount_reason: string
+  liquidity_discount: number | Step6LiquidityDiscountResult
+  liquidity_discount_reason: string
+  country_adjustment: number
+  country_adjustment_reason: string
+  growth_premium: number
+  growth_premium_reason: string
+  combined_effect: number
+  base_value_before_adjustments: number
+  adjusted_value_after_adjustments: number
 }
 
 export interface MethodologySelection {
-  selected_methodology: string;
-  dcf_included: boolean;
-  dcf_weight: number;
-  dcf_exclusion_reason?: string;
-  methodology_downgrade_reason?: string;
-  multiples_included: boolean;
-  multiples_weight: number;
-  selection_rationale: string;
+  selected_methodology: string
+  dcf_included: boolean
+  dcf_weight: number
+  dcf_exclusion_reason?: string
+  methodology_downgrade_reason?: string
+  multiples_included: boolean
+  multiples_weight: number
+  selection_rationale: string
 }
 
 // Multiple-First Discounting (NEW)
 // Discount component breakdown (McKinsey-level transparency)
 export interface DiscountComponent {
-  name: string;  // e.g., "Owner Concentration Risk", "Management Absence"
-  percentage: number;  // e.g., -15.0
-  source: string;  // e.g., "Damodaran (2012)"
-  description: string;  // Explanation of this component
+  name: string // e.g., "Owner Concentration Risk", "Management Absence"
+  percentage: number // e.g., -15.0
+  source: string // e.g., "Damodaran (2012)"
+  description: string // Explanation of this component
 }
 
 // Complete discount breakdown with academic sources
 export interface DiscountBreakdown {
-  base_adjustment?: number;  // Base discount percentage
-  risk_level?: string;  // e.g., "HIGH", "MEDIUM", "LOW"
-  owner_employee_ratio?: number;  // For owner concentration
-  revenue?: number;  // For size/liquidity context
-  revenue_tier?: string;  // e.g., "Micro (<€1M)"
-  sme_status?: string;  // e.g., "skipped", "applied"
-  components: DiscountComponent[];  // Component-level breakdown
-  total: number;  // Total discount percentage
-  academic_sources: string[];  // Full academic citations
-  rationale?: string;  // Overall rationale for discount
+  base_adjustment?: number // Base discount percentage
+  risk_level?: string // e.g., "HIGH", "MEDIUM", "LOW"
+  owner_employee_ratio?: number // For owner concentration
+  revenue?: number // For size/liquidity context
+  revenue_tier?: string // e.g., "Micro (<€1M)"
+  sme_status?: string // e.g., "skipped", "applied"
+  components: DiscountComponent[] // Component-level breakdown
+  total: number // Total discount percentage
+  academic_sources: string[] // Full academic citations
+  rationale?: string // Overall rationale for discount
 }
 
 // Waterfall step for multiple progression visualization
 export interface WaterfallStep {
-  step: number | string;  // Step number or "Initial"
-  step_name: string;  // e.g., "Owner Concentration", "Base Multiple (Step 3)"
-  multiple_before_low?: number | null;
-  multiple_before_mid?: number | null;
-  multiple_before_high?: number | null;
-  multiple_after_low: number;
-  multiple_after_mid: number;
-  multiple_after_high: number;
-  discount_percentage: number;  // e.g., -20.0
-  description: string;  // Explanation of this step
+  step: number | string // Step number or "Initial"
+  step_name: string // e.g., "Owner Concentration", "Base Multiple (Step 3)"
+  multiple_before_low?: number | null
+  multiple_before_mid?: number | null
+  multiple_before_high?: number | null
+  multiple_after_low: number
+  multiple_after_mid: number
+  multiple_after_high: number
+  discount_percentage: number // e.g., -20.0
+  description: string // Explanation of this step
 }
 
 export interface MultiplePipelineStage {
-  step_number: number;
-  step_name: string;
-  discount_type: string;  // 'owner_concentration', 'size', 'liquidity', 'ownership'
-  discount_percentage: number;  // e.g., -20.0 for 20% discount
-  multiple_before: number;
-  multiple_after: number;
+  step_number: number
+  step_name: string
+  discount_type: string // 'owner_concentration', 'size', 'liquidity', 'ownership'
+  discount_percentage: number // e.g., -20.0 for 20% discount
+  multiple_before: number
+  multiple_after: number
   // NEW: Enhanced multiple tracking (low/mid/high)
-  multiple_before_low?: number;
-  multiple_before_mid?: number;
-  multiple_before_high?: number;
-  multiple_after_low?: number;
-  multiple_after_mid?: number;
-  multiple_after_high?: number;
-  metric_value: number;
-  ev_before: number;
-  ev_after: number;
-  explanation: string;
-  description?: string;
+  multiple_before_low?: number
+  multiple_before_mid?: number
+  multiple_before_high?: number
+  multiple_after_low?: number
+  multiple_after_mid?: number
+  multiple_after_high?: number
+  metric_value: number
+  ev_before: number
+  ev_after: number
+  explanation: string
+  description?: string
   // NEW: Detailed discount breakdown with academic sources
-  discount_breakdown?: DiscountBreakdown;
+  discount_breakdown?: DiscountBreakdown
 }
 
 export interface MultiplePipeline {
-  initial_multiple: number;  // Starting multiple (e.g., 10x) - mid-point
-  final_multiple: number;  // Final adjusted multiple (e.g., 6.48x) - mid-point
+  initial_multiple: number // Starting multiple (e.g., 10x) - mid-point
+  final_multiple: number // Final adjusted multiple (e.g., 6.48x) - mid-point
   // NEW: Enhanced multiple tracking (low/mid/high)
-  initial_multiple_low?: number;
-  initial_multiple_mid?: number;
-  initial_multiple_high?: number;
-  final_multiple_low?: number;
-  final_multiple_mid?: number;
-  final_multiple_high?: number;
-  total_reduction_percentage: number;  // e.g., -35.2%
-  metric_type: 'EBITDA' | 'Revenue';
-  metric_value: number;
-  stages: MultiplePipelineStage[];
+  initial_multiple_low?: number
+  initial_multiple_mid?: number
+  initial_multiple_high?: number
+  final_multiple_low?: number
+  final_multiple_mid?: number
+  final_multiple_high?: number
+  total_reduction_percentage: number // e.g., -35.2%
+  metric_type: 'EBITDA' | 'Revenue'
+  metric_value: number
+  stages: MultiplePipelineStage[]
   // NEW: Complete discount waterfall for visualization
-  discount_waterfall?: WaterfallStep[];
+  discount_waterfall?: WaterfallStep[]
 }
 
 export interface ValuationResponse {
-  valuation_id: string;
-  company_name: string;
-  timestamp?: string;
-  valuation_date?: string;
-  creditsRemaining?: number; // Added for backend credit synchronization
-  
+  valuation_id: string
+  company_name: string
+  timestamp?: string
+  valuation_date?: string
+  creditsRemaining?: number // Added for backend credit synchronization
+
   // Final results
-  equity_value_low: number;
-  equity_value_mid: number;
-  equity_value_high: number;
-  range_methodology?: 'multiple_dispersion' | 'confidence_spread';  // Methodology used for range calculation
-  recommended_asking_price: number;
-  
+  equity_value_low: number
+  equity_value_mid: number
+  equity_value_high: number
+  range_methodology?: 'multiple_dispersion' | 'confidence_spread' // Methodology used for range calculation
+  recommended_asking_price: number
+
   // Confidence (multiple formats for compatibility)
-  confidence_score: number;
-  overall_confidence: string;
-  confidence?: number; // Alias for confidence_score
-  
+  confidence_score: number
+  overall_confidence: string
+  confidence?: number // Alias for confidence_score
+
   // Validation warnings (from backend sanity checks)
-  validation_warnings?: ValidationWarning[];
-  
+  validation_warnings?: ValidationWarning[]
+
   // Transparency data
-  transparency?: TransparencyData;
-  
+  transparency?: TransparencyData
+
   // NEW: Modular system metadata (Phase 1: Backend Integration)
-  modular_system?: ModularSystem;
-  
+  modular_system?: ModularSystem
+
   // NEW: Methodology statement and academic sources (from Step 11)
-  methodology_statement?: string;
-  academic_sources?: AcademicSource[];
-  professional_review_ready?: ProfessionalReviewReady;
-  
+  methodology_statement?: string
+  academic_sources?: AcademicSource[]
+  professional_review_ready?: ProfessionalReviewReady
+
   // Owner Dependency Assessment (Phase 4: 12-factor analysis)
   owner_dependency_result?: {
     factors: {
-      client_concentration: string;
-      operational_knowledge: string;
-      sales_relationship: string;
-      technical_expertise: string;
-      industry_network: string;
-      decision_making: string;
-      brand_reputation: string;
-      process_documentation: string;
-      team_capability: string;
-      succession_planning: string;
-      business_scalability: string;
-      contract_transferability: string;
-    };
-    overall_score: number;
-    risk_level: string;
-    valuation_adjustment: number;
-    explanation: string;
-    key_risks: string[];
-    recommendations: string[];
-  };
-  owner_dependency_adjustment?: number;
-  
+      client_concentration: string
+      operational_knowledge: string
+      sales_relationship: string
+      technical_expertise: string
+      industry_network: string
+      decision_making: string
+      brand_reputation: string
+      process_documentation: string
+      team_capability: string
+      succession_planning: string
+      business_scalability: string
+      contract_transferability: string
+    }
+    overall_score: number
+    risk_level: string
+    valuation_adjustment: number
+    explanation: string
+    key_risks: string[]
+    recommendations: string[]
+  }
+  owner_dependency_adjustment?: number
+
   // Methodology
-  primary_method?: string;
-  methodology?: string;
-  methodology_notes?: string;
-  valuation_summary?: string;
-  
+  primary_method?: string
+  methodology?: string
+  methodology_notes?: string
+  valuation_summary?: string
+
   // Weights
-  dcf_weight: number;
-  multiples_weight: number;
-  
+  dcf_weight: number
+  multiples_weight: number
+
   // DCF Valuation (detailed breakdown from API)
   dcf_valuation?: {
-    enterprise_value: number;
-    equity_value: number;
-    wacc: number;
-    cost_of_equity: number;
-    cost_of_debt: number;
-    terminal_growth_rate: number;
-    terminal_value: number;
-    pv_terminal_value: number;
-    fcf_projections_5y: number[];
-    pv_fcf_projections_5y: number[];
-    sensitivity_wacc: Record<string, number>;
-    sensitivity_growth: Record<string, number>;
-    confidence: string;
-    confidence_score: number;
-    confidence_factors: Record<string, string>;
-  };
-  
+    enterprise_value: number
+    equity_value: number
+    wacc: number
+    cost_of_equity: number
+    cost_of_debt: number
+    terminal_growth_rate: number
+    terminal_value: number
+    pv_terminal_value: number
+    fcf_projections_5y: number[]
+    pv_fcf_projections_5y: number[]
+    sensitivity_wacc: Record<string, number>
+    sensitivity_growth: Record<string, number>
+    confidence: string
+    confidence_score: number
+    confidence_factors: Record<string, string>
+  }
+
   // Market Multiples (detailed breakdown from API)
   multiples_valuation?: {
-    ev_ebitda_valuation: number;
-    ev_revenue_valuation: number;
-    pe_valuation: number | null;
-    ebitda_multiple: number;
-    revenue_multiple: number;
-    pe_multiple: number | null;
-    enterprise_value?: number;  // Optional enterprise value if provided
-    
+    ev_ebitda_valuation: number
+    ev_revenue_valuation: number
+    pe_valuation: number | null
+    ebitda_multiple: number
+    revenue_multiple: number
+    pe_multiple: number | null
+    enterprise_value?: number // Optional enterprise value if provided
+
     // Percentile multiples (P25/P50/P75) from comparable companies
-    p25_ebitda_multiple?: number;
-    p50_ebitda_multiple?: number;
-    p75_ebitda_multiple?: number;
-    p25_revenue_multiple?: number;
-    p50_revenue_multiple?: number;
-    p75_revenue_multiple?: number;
-    
-    comparables_count: number;
-    comparables_quality: string;
-    size_discount: number;
-    liquidity_discount: number;
-    country_adjustment: number;
-    total_adjustment: number;
-    adjusted_equity_value: number;
-    confidence: string;
-    confidence_score: number;
-    
+    p25_ebitda_multiple?: number
+    p50_ebitda_multiple?: number
+    p75_ebitda_multiple?: number
+    p25_revenue_multiple?: number
+    p50_revenue_multiple?: number
+    p75_revenue_multiple?: number
+
+    comparables_count: number
+    comparables_quality: string
+    size_discount: number
+    liquidity_discount: number
+    country_adjustment: number
+    total_adjustment: number
+    adjusted_equity_value: number
+    confidence: string
+    confidence_score: number
+
     // Owner concentration details
     // Supports both legacy format (from multiples_valuation) and modular system format (from step results)
     owner_concentration?: {
-      ratio: number;  // 0.0 to 1.0
-      adjustment_factor: number;  // e.g., -0.12 for -12%
-      number_of_owners: number;
-      number_of_employees: number;
-      risk_level?: string;  // "CRITICAL" | "HIGH" | "MEDIUM" | "LOW"
-      calibration?: {  // Optional: if backend sends calibration details
-        business_type_id?: string;
-        calibration_type?: 'industry-specific' | 'universal';
-        owner_dependency_impact?: number;
-        tier_used?: string;  // "CRITICAL" | "HIGH" | "MEDIUM" | "LOW"
-      };
+      ratio: number // 0.0 to 1.0
+      adjustment_factor: number // e.g., -0.12 for -12%
+      number_of_owners: number
+      number_of_employees: number
+      risk_level?: string // "CRITICAL" | "HIGH" | "MEDIUM" | "LOW"
+      calibration?: {
+        // Optional: if backend sends calibration details
+        business_type_id?: string
+        calibration_type?: 'industry-specific' | 'universal'
+        owner_dependency_impact?: number
+        tier_used?: string // "CRITICAL" | "HIGH" | "MEDIUM" | "LOW"
+      }
       // Extended properties from modular system step results (optional for backward compatibility)
-      enterprise_value_low?: number;
-      enterprise_value_mid?: number;
-      enterprise_value_high?: number;
-      owner_employee_ratio?: number | null;
-      normalized_ratio?: number;
-      adjustment_percentage?: number;
-      ev_change?: number;
-      calibration_used?: boolean;
-      ev_low_before?: number;
-      ev_mid_before?: number;
-      ev_high_before?: number;
-      ev_low_after?: number;
-      ev_mid_after?: number;
-      ev_high_after?: number;
-    };
-    
+      enterprise_value_low?: number
+      enterprise_value_mid?: number
+      enterprise_value_high?: number
+      owner_employee_ratio?: number | null
+      normalized_ratio?: number
+      adjustment_percentage?: number
+      ev_change?: number
+      calibration_used?: boolean
+      ev_low_before?: number
+      ev_mid_before?: number
+      ev_high_before?: number
+      ev_low_after?: number
+      ev_mid_after?: number
+      ev_high_after?: number
+    }
+
     // Original (unadjusted) multiples for transparency
-    unadjusted_ebitda_multiple?: number;
-    unadjusted_revenue_multiple?: number;
-    
+    unadjusted_ebitda_multiple?: number
+    unadjusted_revenue_multiple?: number
+
     // Primary multiple method transparency (from backend)
-    primary_multiple_method?: string;  // "ebitda_multiple" or "revenue_multiple"
-    primary_multiple_reason?: string;  // Explanation of why this method was selected
-    primary_method?: string;  // "EV/EBITDA" or "EV/Revenue" (from backend Step 2)
-    primary_method_reason?: string;  // Explanation of why primary_method was selected (from backend Step 2)
-  };
-  
+    primary_multiple_method?: string // "ebitda_multiple" or "revenue_multiple"
+    primary_multiple_reason?: string // Explanation of why this method was selected
+    primary_method?: string // "EV/EBITDA" or "EV/Revenue" (from backend Step 2)
+    primary_method_reason?: string // Explanation of why primary_method was selected (from backend Step 2)
+  }
+
   // Financial Metrics (comprehensive)
   financial_metrics: {
-    gross_margin: number;
-    ebitda_margin: number;
-    ebit_margin: number;
-    net_margin: number;
-    return_on_assets: number;
-    return_on_equity: number;
-    current_ratio: number;
-    quick_ratio: number;
-    cash_ratio: number;
-    debt_to_equity: number;
-    debt_to_assets: number;
-    interest_coverage: number;
+    gross_margin: number
+    ebitda_margin: number
+    ebit_margin: number
+    net_margin: number
+    return_on_assets: number
+    return_on_equity: number
+    current_ratio: number
+    quick_ratio: number
+    cash_ratio: number
+    debt_to_equity: number
+    debt_to_assets: number
+    interest_coverage: number
     /**
      * Year-over-year revenue growth in DECIMAL format (0.20 = 20%, -0.15 = -15%)
      * Frontend should multiply by 100 to display as percentage
      */
-    revenue_growth: number;
+    revenue_growth: number
     /**
      * Compound Annual Growth Rate in DECIMAL format (0.0037 = 0.37%, 0.111 = 11.1%)
      * Calculated from first historical year to current year
      * Backend guarantees this is never null/undefined (defaults to 0.0)
      * Frontend should multiply by 100 to display as percentage
      */
-    revenue_cagr_3y: number;
-    ebitda_growth: number;
-    altman_z_score: number;
-    financial_health_score: number;
-    financial_health_description: string;
+    revenue_cagr_3y: number
+    ebitda_growth: number
+    altman_z_score: number
+    financial_health_score: number
+    financial_health_description: string
     /**
      * Optional list of calculation error messages.
      * Presence indicates partial results - some calculations may have failed.
      */
-    calculation_errors?: string[];
-  };
-  
+    calculation_errors?: string[]
+  }
+
   // Legacy fields for backward compatibility
   dcf_result?: {
-    enterprise_value: number;
-    equity_value: number;
-    wacc: number;
-    terminal_value: number;
-    pv_fcf: number;
-    pv_terminal_value: number;
+    enterprise_value: number
+    equity_value: number
+    wacc: number
+    terminal_value: number
+    pv_fcf: number
+    pv_terminal_value: number
     fcf_projections: Array<{
-      year: number;
-      revenue: number;
-      ebitda: number;
-      fcf: number;
-      discount_factor: number;
-      pv_fcf: number;
-    }>;
-  };
-  
+      year: number
+      revenue: number
+      ebitda: number
+      fcf: number
+      discount_factor: number
+      pv_fcf: number
+    }>
+  }
+
   multiples_result?: {
-    ev_ebitda_valuation: number;
-    ev_revenue_valuation: number;
-    pe_valuation: number | null;
+    ev_ebitda_valuation: number
+    ev_revenue_valuation: number
+    pe_valuation: number | null
     comparable_companies: Array<{
-      name: string;
-      ev_ebitda: number;
-      ev_revenue: number;
-      pe_ratio?: number;
-    }>;
-  };
-  
+      name: string
+      ev_ebitda: number
+      ev_revenue: number
+      pe_ratio?: number
+    }>
+  }
+
   // Ownership adjustment (optional)
   ownership_adjustment?: {
-    shares_for_sale: number;
-    control_premium: number;
-    adjusted_value: number;
-  };
-  
+    shares_for_sale: number
+    control_premium: number
+    adjusted_value: number
+  }
+
   // Insights (multiple formats for compatibility)
-  key_value_drivers: string[];
-  value_drivers?: string[]; // Alias for key_value_drivers
-  risk_factors: string[];
-  
+  key_value_drivers: string[]
+  value_drivers?: string[] // Alias for key_value_drivers
+  risk_factors: string[]
+
   // Small Firm Effect Transparency (Phase: Small Firm Transparency)
-  methodology_selection?: MethodologySelection;
-  small_firm_adjustments?: SmallFirmAdjustments;
-  dcf_exclusion_reason?: string;
-  methodology_downgrade_reason?: string; // Backward compatibility field
-  
+  methodology_selection?: MethodologySelection
+  small_firm_adjustments?: SmallFirmAdjustments
+  dcf_exclusion_reason?: string
+  methodology_downgrade_reason?: string // Backward compatibility field
+
   // Multiple-First Discounting pipeline
   /** @deprecated Use info_tab_html instead. Multiple pipeline details are now available in server-generated HTML. */
-  multiple_pipeline?: MultiplePipeline;
-  
+  multiple_pipeline?: MultiplePipeline
+
   // Additional data
-  current_year_data?: YearDataInput; // For accessing revenue, ebitda, etc.
-  historical_years_data?: YearDataInput[]; // Historical financial data for trend analysis
-  
+  current_year_data?: YearDataInput // For accessing revenue, ebitda, etc.
+  historical_years_data?: YearDataInput[] // Historical financial data for trend analysis
+
   // HTML Reports (REQUIRED for display)
   /** Complete Accountant View HTML report (20-30 pages) */
-  html_report?: string;
+  html_report?: string
   /** Complete Info Tab HTML with 12-step calculation breakdown and all validation details */
-  info_tab_html?: string;
+  info_tab_html?: string
 }
 
 export interface CompanyLookupResult {
-  name: string;
-  industry: string;
-  country: string;
-  founding_year?: number;
-  employees?: number;
-  business_model?: string;
-  revenue?: number;
-  description?: string;
+  name: string
+  industry: string
+  country: string
+  founding_year?: number
+  employees?: number
+  business_model?: string
+  revenue?: number
+  description?: string
 }
 
 export interface DocumentParseResult {
-  extracted_data: Partial<ValuationRequest>;
-  confidence: number;
-  warnings: string[];
+  extracted_data: Partial<ValuationRequest>
+  confidence: number
+  warnings: string[]
 }
 
 // =============================================================================
@@ -930,88 +931,88 @@ export interface DocumentParseResult {
 // =============================================================================
 
 export interface ConversationStartRequest {
-  user_id?: string; // Add user_id for intelligent triage
+  user_id?: string // Add user_id for intelligent triage
   business_context?: {
-    company_name?: string;
-    industry?: string;
-    business_model?: string;
-    country_code?: string;
-    founding_year?: number;
-    business_type_id?: string; // NEW: PostgreSQL business type ID
-  };
+    company_name?: string
+    industry?: string
+    business_model?: string
+    country_code?: string
+    founding_year?: number
+    business_type_id?: string // NEW: PostgreSQL business type ID
+  }
   user_preferences?: {
-    preferred_methodology?: string;
-    time_commitment?: 'quick' | 'detailed' | 'comprehensive';
-    focus_area?: 'valuation' | 'growth' | 'risk' | 'all';
-  };
-  pre_filled_data?: Partial<ValuationRequest>;
+    preferred_methodology?: string
+    time_commitment?: 'quick' | 'detailed' | 'comprehensive'
+    focus_area?: 'valuation' | 'growth' | 'risk' | 'all'
+  }
+  pre_filled_data?: Partial<ValuationRequest>
 }
 
 export interface ConversationStartResponse {
-  session_id: string;
-  complete: boolean;
-  ai_message: string;
-  step: number;
-  field_name?: string;
-  input_type?: string;
-  validation_rules?: Record<string, any>;
-  help_text?: string;
-  context: Record<string, any>;
-  owner_profile_needed: boolean;
-  valuation_result?: any;
+  session_id: string
+  complete: boolean
+  ai_message: string
+  step: number
+  field_name?: string
+  input_type?: string
+  validation_rules?: Record<string, any>
+  help_text?: string
+  context: Record<string, any>
+  owner_profile_needed: boolean
+  valuation_result?: any
 }
 
 export interface ConversationQuestion {
-  id: string;
-  question: string;
-  question_type: 'multiple_choice' | 'text' | 'number' | 'yes_no' | 'rating';
-  options?: string[];
-  required: boolean;
-  context?: string;
-  help_text?: string;
+  id: string
+  question: string
+  question_type: 'multiple_choice' | 'text' | 'number' | 'yes_no' | 'rating'
+  options?: string[]
+  required: boolean
+  context?: string
+  help_text?: string
 }
 
 export interface ConversationStepRequest {
-  session_id: string;
-  answer: string | number | boolean;
-  question_id: string;
-  additional_context?: string;
+  session_id: string
+  answer: string | number | boolean
+  question_id: string
+  additional_context?: string
 }
 
 export interface ConversationStepResponse {
-  next_question?: ConversationQuestion;
-  is_complete: boolean;
-  progress_percentage: number;
-  current_valuation?: ValuationResponse;
-  insights?: string[];
-  recommendations?: string[];
+  next_question?: ConversationQuestion
+  is_complete: boolean
+  progress_percentage: number
+  current_valuation?: ValuationResponse
+  insights?: string[]
+  recommendations?: string[]
 }
 
 export interface ConversationContext {
-  session_id: string;
-  business_context: Partial<ValuationRequest>;
-  owner_profile: OwnerProfile;
-  conversation_history: ConversationHistory[];
-  current_step: number;
-  total_steps: number;
-  methodology_selected?: string;
-  collected_data?: Record<string, any>;
-  
+  session_id: string
+  business_context: Partial<ValuationRequest>
+  owner_profile: OwnerProfile
+  conversation_history: ConversationHistory[]
+  current_step: number
+  total_steps: number
+  methodology_selected?: string
+  collected_data?: Record<string, any>
+
   // ADD: Extracted business information
-  extracted_business_model?: BusinessModel | string;
-  extracted_founding_year?: number;
+  extracted_business_model?: BusinessModel | string
+  extracted_founding_year?: number
   extraction_confidence?: {
-    business_model?: number;  // 0-1 confidence score
-    founding_year?: number;
-  };
+    business_model?: number // 0-1 confidence score
+    founding_year?: number
+  }
 }
 
 export interface ConversationHistory {
-  question_id: string;
-  question: string;
-  answer: string | number | boolean;
-  timestamp: string;
-  context_added?: string;
+  question_id: string
+  question: string
+  answer: string | number | boolean
+  timestamp: string
+  context_added?: string
 }
 
 // =============================================================================
@@ -1019,25 +1020,25 @@ export interface ConversationHistory {
 // =============================================================================
 
 export interface BusinessTypeAnalysis {
-  business_type: string;
-  industry_code: string;
-  methodology_recommendation: string;
-  confidence_score: number;
-  reasoning: string;
-  key_factors: string[];
-  risk_factors: string[];
-  growth_potential: 'low' | 'medium' | 'high';
-  market_maturity: 'emerging' | 'growing' | 'mature' | 'declining';
+  business_type: string
+  industry_code: string
+  methodology_recommendation: string
+  confidence_score: number
+  reasoning: string
+  key_factors: string[]
+  risk_factors: string[]
+  growth_potential: 'low' | 'medium' | 'high'
+  market_maturity: 'emerging' | 'growing' | 'mature' | 'declining'
 }
 
 export interface MethodologyRecommendation {
-  recommended_methodology: string;
-  alternative_methodologies: string[];
-  confidence_score: number;
-  reasoning: string;
-  key_factors: string[];
-  expected_accuracy: number;
-  time_estimate: string;
+  recommended_methodology: string
+  alternative_methodologies: string[]
+  confidence_score: number
+  reasoning: string
+  key_factors: string[]
+  expected_accuracy: number
+  time_estimate: string
 }
 
 // =============================================================================
@@ -1045,37 +1046,37 @@ export interface MethodologyRecommendation {
 // =============================================================================
 
 export interface OwnerProfile {
-  involvement_level: 'hands_on' | 'strategic' | 'passive' | 'absentee';
-  time_commitment: number; // hours per week
-  succession_plan: 'family' | 'management' | 'sale' | 'none' | 'uncertain';
-  risk_tolerance: 'conservative' | 'moderate' | 'aggressive';
-  growth_ambition: 'maintain' | 'moderate_growth' | 'aggressive_growth' | 'exit';
-  industry_experience: number; // years
-  management_team_strength: 'weak' | 'adequate' | 'strong' | 'excellent';
-  key_man_risk: boolean;
-  personal_guarantees: boolean;
-  additional_context?: string;
+  involvement_level: 'hands_on' | 'strategic' | 'passive' | 'absentee'
+  time_commitment: number // hours per week
+  succession_plan: 'family' | 'management' | 'sale' | 'none' | 'uncertain'
+  risk_tolerance: 'conservative' | 'moderate' | 'aggressive'
+  growth_ambition: 'maintain' | 'moderate_growth' | 'aggressive_growth' | 'exit'
+  industry_experience: number // years
+  management_team_strength: 'weak' | 'adequate' | 'strong' | 'excellent'
+  key_man_risk: boolean
+  personal_guarantees: boolean
+  additional_context?: string
 }
 
 export interface OwnerProfileRequest {
-  session_id?: string;
-  profile: OwnerProfile;
-  business_context: Partial<ValuationRequest>;
+  session_id?: string
+  profile: OwnerProfile
+  business_context: Partial<ValuationRequest>
 }
 
 export interface OwnerProfileResponse {
   profile_analysis: {
-    risk_assessment: string;
-    value_impact: string;
-    recommendations: string[];
-    confidence_score: number;
-  };
+    risk_assessment: string
+    value_impact: string
+    recommendations: string[]
+    confidence_score: number
+  }
   valuation_adjustments?: {
-    risk_premium_adjustment: number;
-    growth_rate_adjustment: number;
-    multiple_adjustment: number;
-    reasoning: string;
-  };
+    risk_premium_adjustment: number
+    growth_rate_adjustment: number
+    multiple_adjustment: number
+    reasoning: string
+  }
 }
 
 // =============================================================================
@@ -1083,60 +1084,60 @@ export interface OwnerProfileResponse {
 // =============================================================================
 
 export interface ValuationInputData {
-  revenue: number;
-  ebitda: number;
-  industry: string;
-  country_code: string;
-  founding_year?: number;
-  employees?: number;
-  business_model?: string;
-  historical_years_data?: YearDataInput[];
-  total_debt?: number;
-  cash?: number;
+  revenue: number
+  ebitda: number
+  industry: string
+  country_code: string
+  founding_year?: number
+  employees?: number
+  business_model?: string
+  historical_years_data?: YearDataInput[]
+  total_debt?: number
+  cash?: number
   metrics?: {
-    gross_margin: number;
-    ebitda_margin: number;
-    ebit_margin: number;
-    net_margin: number;
-    return_on_assets: number;
-    return_on_equity: number;
-    current_ratio: number;
-    quick_ratio: number;
-    cash_ratio: number;
-    debt_to_equity: number;
-    debt_to_assets: number;
-    interest_coverage: number;
-    asset_turnover: number;
-    inventory_turnover: number;
-    receivables_turnover: number;
-    payables_turnover: number;
-    revenue_growth: number;
-    financial_health_description: string;
-  };
+    gross_margin: number
+    ebitda_margin: number
+    ebit_margin: number
+    net_margin: number
+    return_on_assets: number
+    return_on_equity: number
+    current_ratio: number
+    quick_ratio: number
+    cash_ratio: number
+    debt_to_equity: number
+    debt_to_assets: number
+    interest_coverage: number
+    asset_turnover: number
+    inventory_turnover: number
+    receivables_turnover: number
+    payables_turnover: number
+    revenue_growth: number
+    financial_health_description: string
+  }
 }
 
 export interface ValuationToolbarProps {
-  onRefresh?: () => void;
-  onDownload?: () => void;
-  onFullScreen?: () => void;
-  isGenerating?: boolean;
-  user?: any;
-  valuationName?: string;
-  valuationId?: string;
-  activeTab?: 'preview' | 'source' | 'info';
-  onTabChange?: (tab: 'preview' | 'source' | 'info') => void;
-  companyName?: string;
-  valuationMethod?: string;
+  onRefresh?: () => void
+  onDownload?: () => void
+  onFullScreen?: () => void
+  isGenerating?: boolean
+  user?: any
+  valuationName?: string
+  valuationId?: string
+  activeTab?: 'preview' | 'source' | 'info'
+  onTabChange?: (tab: 'preview' | 'source' | 'info') => void
+  companyName?: string
+  valuationMethod?: string
 }
 
 // NEW: Dual format display type
 export interface ValuationAdjustmentDisplay {
-  percentageFormat: string;
-  multipleFormat: string;
-  baseMultiple: number;
-  adjustedMultiple: number;
-  multipleImpact: number;
-  isApplicable: boolean;
+  percentageFormat: string
+  multipleFormat: string
+  baseMultiple: number
+  adjustedMultiple: number
+  multipleImpact: number
+  isApplicable: boolean
 }
 
 // =============================================================================
@@ -1149,25 +1150,24 @@ export interface ValuationAdjustmentDisplay {
  */
 export interface ValuationSession {
   // Session metadata
-  sessionId: string; // Unique session identifier
-  reportId: string; // Links to report URL (val_timestamp_random format)
-  currentView: 'manual' | 'conversational'; // Current UI view
-  dataSource: 'manual' | 'conversational' | 'mixed'; // Tracks which flow provided data
-  
+  sessionId: string // Unique session identifier
+  reportId: string // Links to report URL (val_timestamp_random format)
+  currentView: 'manual' | 'conversational' // Current UI view
+  dataSource: 'manual' | 'conversational' | 'mixed' // Tracks which flow provided data
+
   // Timestamps
-  createdAt: Date;
-  updatedAt: Date;
-  completedAt?: Date;
-  lastSyncedAt?: Date; // Last time data was synced between flows
-  
+  createdAt: Date
+  updatedAt: Date
+  completedAt?: Date
+  lastSyncedAt?: Date // Last time data was synced between flows
+
   // Data completeness tracking (0-100)
-  completeness?: number;
-  
+  completeness?: number
+
   // Partial data collection (incremental updates)
-  partialData: Partial<ValuationRequest>;
-  
+  partialData: Partial<ValuationRequest>
+
   // Complete session data (merged from partialData)
   // This is the canonical ValuationRequest that will be sent for calculation
-  sessionData?: Partial<ValuationRequest>;
+  sessionData?: Partial<ValuationRequest>
 }
-

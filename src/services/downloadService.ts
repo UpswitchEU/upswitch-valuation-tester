@@ -1,96 +1,102 @@
 // Download service for exporting valuation reports
-import type { ValuationRequest } from '../types/valuation';
-import { backendAPI } from './backendApi';
-import { HTMLProcessor } from '../utils/htmlProcessor';
+import { backendAPI } from '../services/backendApi'
+import type { ValuationRequest } from '../types/valuation'
+import { HTMLProcessor } from '../utils/htmlProcessor'
+import { generalLogger } from '../utils/logger'
 
 export interface DownloadOptions {
-  format: 'html' | 'pdf';
-  includeBranding?: boolean;
-  filename?: string;
+  format: 'html' | 'pdf'
+  includeBranding?: boolean
+  filename?: string
 }
 
 export interface ValuationData {
-  companyName?: string;
-  valuationAmount?: number;
-  valuationDate?: Date;
-  method?: string;
-  confidenceScore?: number;
-  inputs?: Record<string, any>;
-  assumptions?: Record<string, any>;
-  htmlContent?: string;
+  companyName?: string
+  valuationAmount?: number
+  valuationDate?: Date
+  method?: string
+  confidenceScore?: number
+  inputs?: Record<string, any>
+  assumptions?: Record<string, any>
+  htmlContent?: string
 }
 
 export class DownloadService {
   /**
    * Download valuation report as HTML
    */
-  static async downloadHTML(data: ValuationData, options: DownloadOptions = { format: 'html' }): Promise<void> {
-    const filename = options.filename || `valuation-report-${Date.now()}.html`;
-    
+  static async downloadHTML(
+    data: ValuationData,
+    options: DownloadOptions = { format: 'html' }
+  ): Promise<void> {
+    const filename = options.filename || `valuation-report-${Date.now()}.html`
+
     // Create standalone HTML with embedded styles
-    const htmlContent = this.generateStandaloneHTML(data, options);
-    
+    const htmlContent = this.generateStandaloneHTML(data, options)
+
     // Create blob and download
-    const blob = new Blob([htmlContent], { type: 'text/html' });
-    const url = URL.createObjectURL(blob);
-    
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = filename;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    
-    URL.revokeObjectURL(url);
+    const blob = new Blob([htmlContent], { type: 'text/html' })
+    const url = URL.createObjectURL(blob)
+
+    const link = document.createElement('a')
+    link.href = url
+    link.download = filename
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+
+    URL.revokeObjectURL(url)
   }
 
   /**
    * Download valuation report as PDF
    */
-  static async downloadPDF(data: ValuationData, options: DownloadOptions = { format: 'pdf' }): Promise<void> {
+  static async downloadPDF(
+    data: ValuationData,
+    options: DownloadOptions = { format: 'pdf' }
+  ): Promise<void> {
     try {
       // Dynamic import for html2pdf
-      const html2pdf = await import('html2pdf.js');
-      
-      const filename = options.filename || `valuation-report-${Date.now()}.pdf`;
-      
+      const html2pdf = await import('html2pdf.js')
+
+      const filename = options.filename || `valuation-report-${Date.now()}.pdf`
+
       // Generate HTML content
-      const htmlContent = this.generateStandaloneHTML(data, options);
-      
+      const htmlContent = this.generateStandaloneHTML(data, options)
+
       // Create temporary element
-      const tempDiv = document.createElement('div');
-      tempDiv.innerHTML = HTMLProcessor.sanitize(htmlContent);
-      tempDiv.style.position = 'absolute';
-      tempDiv.style.left = '-9999px';
-      document.body.appendChild(tempDiv);
-      
+      const tempDiv = document.createElement('div')
+      tempDiv.innerHTML = HTMLProcessor.sanitize(htmlContent)
+      tempDiv.style.position = 'absolute'
+      tempDiv.style.left = '-9999px'
+      document.body.appendChild(tempDiv)
+
       // Configure PDF options
       const pdfOptions = {
         margin: [0.5, 0.5, 0.5, 0.5] as [number, number, number, number],
         filename: filename,
         image: { type: 'jpeg' as const, quality: 0.98 },
-        html2canvas: { 
+        html2canvas: {
           scale: 2,
           useCORS: true,
-          letterRendering: true
+          letterRendering: true,
         },
-        jsPDF: { 
-          unit: 'in' as const, 
-          format: 'a4' as const, 
-          orientation: 'portrait' as const
-        }
-      };
-      
+        jsPDF: {
+          unit: 'in' as const,
+          format: 'a4' as const,
+          orientation: 'portrait' as const,
+        },
+      }
+
       // Generate and download PDF
-      await html2pdf.default().set(pdfOptions).from(tempDiv).save();
-      
+      await html2pdf.default().set(pdfOptions).from(tempDiv).save()
+
       // Clean up
-      document.body.removeChild(tempDiv);
-      
+      document.body.removeChild(tempDiv)
     } catch (error) {
-      console.error('PDF generation failed:', error);
+      generalLogger.error('PDF generation failed', { error })
       // Fallback to HTML download
-      await this.downloadHTML(data, { ...options, format: 'html' });
+      await this.downloadHTML(data, { ...options, format: 'html' })
     }
   }
 
@@ -98,11 +104,11 @@ export class DownloadService {
    * Generate standalone HTML content with embedded styles
    */
   private static generateStandaloneHTML(data: ValuationData, _options: DownloadOptions): string {
-    const currentDate = new Date().toLocaleDateString();
-    const companyName = data.companyName || 'Company';
-    const valuationAmount = data.valuationAmount ? data.valuationAmount.toLocaleString() : 'N/A';
-    const method = data.method || 'DCF Analysis';
-    const confidenceScore = data.confidenceScore ? Math.round(data.confidenceScore * 100) : 'N/A';
+    const currentDate = new Date().toLocaleDateString()
+    const companyName = data.companyName || 'Company'
+    const valuationAmount = data.valuationAmount ? data.valuationAmount.toLocaleString() : 'N/A'
+    const method = data.method || 'DCF Analysis'
+    const confidenceScore = data.confidenceScore ? Math.round(data.confidenceScore * 100) : 'N/A'
 
     return `
 <!DOCTYPE html>
@@ -321,14 +327,18 @@ export class DownloadService {
             </div>
         </div>
         
-        ${data.htmlContent ? `
+        ${
+          data.htmlContent
+            ? `
         <div class="content-section">
             <h2>Detailed Analysis</h2>
             <div style="margin-top: 1rem;">
                 ${HTMLProcessor.sanitize(data.htmlContent)}
             </div>
         </div>
-        ` : ''}
+        `
+            : ''
+        }
     </div>
     
     <div class="footer">
@@ -339,7 +349,7 @@ export class DownloadService {
         </div>
     </div>
 </body>
-</html>`;
+</html>`
   }
 
   /**
@@ -350,97 +360,96 @@ export class DownloadService {
   static async downloadAccountantViewPDF(
     request: ValuationRequest,
     options?: {
-      filename?: string;
-      onProgress?: (progress: number) => void;
-      signal?: AbortSignal;
+      filename?: string
+      onProgress?: (progress: number) => void
+      signal?: AbortSignal
     }
   ): Promise<void> {
-    const startTime = performance.now();
-    const downloadId = `pdf_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-    
+    const startTime = performance.now()
+    const downloadId = `pdf_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+
     try {
-      console.log('[DownloadService] PDF download initiated', {
+      generalLogger.info('[DownloadService] PDF download initiated', {
         downloadId,
         company_name: request.company_name,
         timestamp: new Date().toISOString(),
         hasSignal: !!options?.signal,
-        hasProgressCallback: !!options?.onProgress
-      });
+        hasProgressCallback: !!options?.onProgress,
+      })
 
-      const filename = options?.filename || this.getDefaultFilename(request.company_name, 'pdf');
-      
-      console.log('[DownloadService] PDF filename determined', {
+      const filename = options?.filename || this.getDefaultFilename(request.company_name, 'pdf')
+
+      generalLogger.debug('[DownloadService] PDF filename determined', {
         downloadId,
         filename,
-        company_name: request.company_name
-      });
-      
+        company_name: request.company_name,
+      })
+
       // Show loading state if progress callback provided
       if (options?.onProgress) {
-        options.onProgress(0);
-        console.log('[DownloadService] Progress callback initialized', { downloadId, progress: 0 });
+        options.onProgress(0)
+        generalLogger.debug('[DownloadService] Progress callback initialized', {
+          downloadId,
+          progress: 0,
+        })
       }
 
-      const apiCallStartTime = performance.now();
-      console.log('[DownloadService] Calling backend API for PDF generation', {
+      const apiCallStartTime = performance.now()
+      generalLogger.debug('[DownloadService] Calling backend API for PDF generation', {
         downloadId,
         company_name: request.company_name,
-        endpoint: '/api/valuations/pdf/accountant-view'
-      });
+        endpoint: '/api/valuations/pdf/accountant-view',
+      })
 
       // Call backend API to generate PDF
-      const pdfBlob = await backendAPI.downloadAccountantViewPDF(request, {
-        signal: options?.signal,
-        onProgress: (progress) => {
-          if (options?.onProgress) {
-            options.onProgress(progress);
-          }
-          console.log('[DownloadService] PDF download progress', {
-            downloadId,
-            progress,
-            company_name: request.company_name
-          });
-        }
-      });
+      // NOTE: downloadAccountantViewPDF expects reportId, not ValuationRequest
+      // We need to extract reportId from request or use a different approach
+      // For now, we'll need to get the reportId from the valuation response
+      // This is a temporary fix - the proper solution would be to pass reportId
+      const reportId = (request as any).reportId || (request as any).valuation_id || ''
+      if (!reportId) {
+        throw new Error('Report ID is required for PDF download')
+      }
+      const pdfBlob = await backendAPI.downloadAccountantViewPDF(reportId)
 
-      const apiCallDuration = performance.now() - apiCallStartTime;
-      console.log('[DownloadService] Backend API call completed', {
+      const apiCallDuration = performance.now() - apiCallStartTime
+      generalLogger.debug('[DownloadService] Backend API call completed', {
         downloadId,
         company_name: request.company_name,
         pdfSize: pdfBlob.size,
         pdfSizeKB: Math.round(pdfBlob.size / 1024),
         apiCallDurationMs: Math.round(apiCallDuration),
-        contentType: pdfBlob.type || 'application/pdf'
-      });
+        contentType: pdfBlob.type || 'application/pdf',
+      })
 
       if (options?.onProgress) {
-        options.onProgress(100);
-        console.log('[DownloadService] Progress set to 100%', { downloadId });
+        options.onProgress(100)
+        generalLogger.debug('[DownloadService] Progress set to 100%', { downloadId })
       }
 
-      const downloadStartTime = performance.now();
-      console.log('[DownloadService] Initiating browser download', {
+      const downloadStartTime = performance.now()
+      generalLogger.debug('[DownloadService] Initiating browser download', {
         downloadId,
         filename,
-        pdfSize: pdfBlob.size
-      });
+        pdfSize: pdfBlob.size,
+      })
 
       // Create download link
-      const url = URL.createObjectURL(pdfBlob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = filename;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      
+      const url = URL.createObjectURL(pdfBlob)
+      const link = document.createElement('a')
+      link.href = url
+      link.download = filename
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+
       // Clean up
-      URL.revokeObjectURL(url);
-      
-      const downloadDuration = performance.now() - downloadStartTime;
-      const totalDuration = performance.now() - startTime;
-      
-      console.log('[DownloadService] PDF download completed successfully', {
+      URL.revokeObjectURL(url)
+
+      const downloadDuration = performance.now() - downloadStartTime
+      const totalDuration = performance.now() - startTime
+
+      generalLogger.info('[DownloadService] PDF download completed successfully', {
         downloadId,
         filename,
         pdfSize: pdfBlob.size,
@@ -448,34 +457,34 @@ export class DownloadService {
         downloadDurationMs: Math.round(downloadDuration),
         totalDurationMs: Math.round(totalDuration),
         company_name: request.company_name,
-        timestamp: new Date().toISOString()
-      });
+        timestamp: new Date().toISOString(),
+      })
     } catch (error) {
-      const errorDuration = performance.now() - startTime;
+      const errorDuration = performance.now() - startTime
       const errorDetails = {
         downloadId,
         company_name: request.company_name,
         error: error instanceof Error ? error.message : 'Unknown error',
         errorType: error instanceof Error ? error.constructor.name : typeof error,
         durationMs: Math.round(errorDuration),
-        timestamp: new Date().toISOString()
-      };
-      
-      console.error('[DownloadService] PDF download failed', errorDetails);
-      
+        timestamp: new Date().toISOString(),
+      }
+
+      generalLogger.error('[DownloadService] PDF download failed', errorDetails)
+
       // Log additional error details if available
       if (error instanceof Error && error.stack) {
-        console.error('[DownloadService] Error stack trace', {
+        generalLogger.error('[DownloadService] Error stack trace', {
           downloadId,
-          stack: error.stack
-        });
+          stack: error.stack,
+        })
       }
-      
+
       // Re-throw with user-friendly message
       if (error instanceof Error) {
-        throw new Error(`Failed to download PDF: ${error.message}`);
+        throw new Error(`Failed to download PDF: ${error.message}`)
       }
-      throw new Error('Failed to download PDF: Unknown error');
+      throw new Error('Failed to download PDF: Unknown error')
     }
   }
 
@@ -483,8 +492,10 @@ export class DownloadService {
    * Get default filename based on company and date
    */
   static getDefaultFilename(companyName?: string, format: 'html' | 'pdf' = 'html'): string {
-    const date = new Date().toISOString().split('T')[0];
-    const company: string = companyName ? companyName.replace(/[^a-zA-Z0-9]/g, '-').toLowerCase() : 'company';
-    return `${company}-valuation-${date}.${format}`;
+    const date = new Date().toISOString().split('T')[0]
+    const company: string = companyName
+      ? companyName.replace(/[^a-zA-Z0-9]/g, '-').toLowerCase()
+      : 'company'
+    return `${company}-valuation-${date}.${format}`
   }
 }

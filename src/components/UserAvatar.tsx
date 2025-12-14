@@ -1,59 +1,55 @@
-import React, { useState } from 'react';
-import { User } from 'lucide-react';
-import { useAuth } from '../hooks/useAuth';
+import { User } from 'lucide-react'
+import React, { useState } from 'react'
+import { useAuth } from '../hooks/useAuth'
 
 interface UserAvatarProps {
-  size?: 'sm' | 'md' | 'lg';
-  className?: string;
+  size?: 'sm' | 'md' | 'lg'
+  className?: string
 }
 
-const UserAvatar: React.FC<UserAvatarProps> = React.memo(({ 
-  size = 'md', 
-  className = '' 
-}) => {
-  const { user, isLoading } = useAuth();
-  const [imageError, setImageError] = useState(false);
+const UserAvatar: React.FC<UserAvatarProps> = React.memo(({ size = 'md', className = '' }) => {
+  const { user, isLoading } = useAuth()
+  const [imageError, setImageError] = useState(false)
 
   // Size configurations
   const sizeConfig = {
     sm: {
       container: 'w-6 h-6',
       text: 'text-xs',
-      icon: 'w-3 h-3'
+      icon: 'w-3 h-3',
     },
     md: {
       container: 'w-8 h-8',
       text: 'text-sm',
-      icon: 'w-4 h-4'
+      icon: 'w-4 h-4',
     },
     lg: {
       container: 'w-10 h-10',
       text: 'text-base',
-      icon: 'w-5 h-5'
-    }
-  };
+      icon: 'w-5 h-5',
+    },
+  }
 
-  const config = sizeConfig[size];
+  const config = sizeConfig[size]
 
   // Get user initials for fallback
   const getUserInitials = () => {
-    if (!user?.name) return '?';
-    const names = user.name.split(' ');
+    if (!user?.name) return '?'
+    const names = user.name.split(' ')
     if (names.length >= 2) {
-      return `${names[0][0]}${names[1][0]}`.toUpperCase();
+      return `${names[0][0]}${names[1][0]}`.toUpperCase()
     }
-    return user.name.substring(0, 2).toUpperCase();
-  };
+    return user.name.substring(0, 2).toUpperCase()
+  }
 
   // Get avatar URL
-  const avatarUrl = user?.avatar_url;
-  const hasValidAvatar = avatarUrl && !imageError;
-
+  const avatarUrl = user?.avatar_url
+  const hasValidAvatar = avatarUrl && !imageError
 
   // Handle image load error
   const handleImageError = () => {
-    setImageError(true);
-  };
+    setImageError(true)
+  }
 
   return (
     <div className={`relative ${className}`}>
@@ -86,10 +82,7 @@ const UserAvatar: React.FC<UserAvatarProps> = React.memo(({
           />
         ) : user ? (
           // User without avatar - show initials
-          <span 
-            className={`${config.text} font-semibold text-gray-700`}
-            style={{ lineHeight: 1 }}
-          >
+          <span className={`${config.text} font-semibold text-gray-700`} style={{ lineHeight: 1 }}>
             {getUserInitials()}
           </span>
         ) : (
@@ -97,9 +90,8 @@ const UserAvatar: React.FC<UserAvatarProps> = React.memo(({
           <User className="w-4 h-4 text-gray-600" />
         )}
       </div>
-
     </div>
-  );
-});
+  )
+})
 
-export default UserAvatar;
+export default UserAvatar

@@ -1,31 +1,31 @@
-import { useContext, useEffect } from 'react';
-import { AuthContext } from '../contexts/AuthContextTypes';
-import { authLogger } from '../utils/logger';
+import { useContext, useEffect } from 'react'
+import { AuthContext } from '../contexts/AuthContextTypes'
+import { authLogger } from '../utils/logger'
 
 /**
  * Hook to access authentication context
  */
 export const useAuth = () => {
-  const context = useContext(AuthContext);
+  const context = useContext(AuthContext)
   if (!context) {
-    throw new Error('useAuth must be used within AuthProvider');
+    throw new Error('useAuth must be used within AuthProvider')
   }
-  return context;
-};
+  return context
+}
 
 /**
  * Hook to require authentication
  * Redirects or shows message if not authenticated
  */
 export const useRequireAuth = () => {
-  const { isAuthenticated, isLoading } = useAuth();
+  const { isAuthenticated, isLoading } = useAuth()
 
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
       // Handle unauthenticated state
-      authLogger.warn('Authentication required');
+      authLogger.warn('Authentication required')
     }
-  }, [isAuthenticated, isLoading]);
+  }, [isAuthenticated, isLoading])
 
-  return { isAuthenticated, isLoading };
-};
+  return { isAuthenticated, isLoading }
+}

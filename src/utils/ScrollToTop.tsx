@@ -6,13 +6,16 @@
  * footer, or anywhere else, the viewport starts at the top of the new page.
  *
  * Usage: Place this component at the root level of your app.
+ * Next.js compatible version.
  */
 
-import { useEffect } from 'react';
-import { useLocation } from 'react-router-dom';
+'use client'
+
+import { usePathname } from 'next/navigation'
+import { useEffect } from 'react'
 
 const ScrollToTop = () => {
-  const location = useLocation();
+  const pathname = usePathname()
 
   useEffect(() => {
     // Scroll to top when location changes
@@ -20,11 +23,10 @@ const ScrollToTop = () => {
       top: 0,
       left: 0,
       behavior: 'instant', // Use 'instant' for immediate scroll, 'smooth' for animated
-    });
-  }, [location.pathname, location.search]);
+    })
+  }, [pathname])
 
-  return null; // This component doesn't render anything
-};
+  return null // This component doesn't render anything
+}
 
-export default ScrollToTop;
-
+export default ScrollToTop

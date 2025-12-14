@@ -1,18 +1,18 @@
-import { AnimatePresence, motion } from 'framer-motion';
-import { ArrowRight, CheckCircle, Sparkles, XCircle } from 'lucide-react';
-import React from 'react';
+import { AnimatePresence, motion } from 'framer-motion'
+import { ArrowRight, CheckCircle, Sparkles, XCircle } from 'lucide-react'
+import React from 'react'
 
 interface Suggestion {
-  text: string;
-  confidence: number;
-  reason: string;
+  text: string
+  confidence: number
+  reason: string
 }
 
 interface SuggestionChipsProps {
-  suggestions: Suggestion[];
-  originalValue: string;
-  onSelect: (suggestion: string) => void;
-  onDismiss: () => void;
+  suggestions: Suggestion[]
+  originalValue: string
+  onSelect: (suggestion: string) => void
+  onDismiss: () => void
 }
 
 export const SuggestionChips: React.FC<SuggestionChipsProps> = ({
@@ -23,7 +23,7 @@ export const SuggestionChips: React.FC<SuggestionChipsProps> = ({
 }) => {
   return (
     <div className="suggestion-chips-container my-4">
-      <motion.div 
+      <motion.div
         initial={{ opacity: 0, y: 5 }}
         animate={{ opacity: 1, y: 0 }}
         className="flex items-center gap-2.5 mb-3"
@@ -59,7 +59,7 @@ export const SuggestionChips: React.FC<SuggestionChipsProps> = ({
                   <CheckCircle className="w-3 h-3 text-moss-400" />
                 </span>
               )}
-              
+
               {/* Hover Arrow */}
               <ArrowRight className="w-3.5 h-3.5 text-primary-400 opacity-0 -ml-2 group-hover:opacity-100 group-hover:ml-0 transition-all duration-200" />
 
@@ -90,6 +90,5 @@ export const SuggestionChips: React.FC<SuggestionChipsProps> = ({
         </AnimatePresence>
       </div>
     </div>
-  );
-};
-
+  )
+}

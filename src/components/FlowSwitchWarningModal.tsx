@@ -1,18 +1,18 @@
-import { AlertTriangle } from 'lucide-react';
-import React from 'react';
-import { createPortal } from 'react-dom';
+import { AlertTriangle } from 'lucide-react'
+import React from 'react'
+import { createPortal } from 'react-dom'
 
 interface FlowSwitchWarningModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-  onConfirm: () => void;
-  targetFlow: 'manual' | 'conversational';
-  currentFlow?: 'manual' | 'conversational';
+  isOpen: boolean
+  onClose: () => void
+  onConfirm: () => void
+  targetFlow: 'manual' | 'conversational'
+  currentFlow?: 'manual' | 'conversational'
 }
 
 /**
  * FlowSwitchWarningModal Component
- * 
+ *
  * Confirms switching between manual and conversational flows.
  * Data is preserved between flows - both flows share the same session data.
  */
@@ -27,25 +27,21 @@ export const FlowSwitchWarningModal: React.FC<FlowSwitchWarningModalProps> = ({
     // Avoid keeping the fullscreen overlay mounted when closed; this was
     // causing a subtle page-wide flicker on some GPUs when combined with
     // backdrop blur.
-    return null;
+    return null
   }
 
   const flowNames = {
     manual: 'Manual Entry',
     conversational: 'AI-Guided',
-  };
-  
-  const flowName = targetFlow === 'conversational' ? 'Conversational' : 'Manual';
-  const currentFlowName = currentFlow ? flowNames[currentFlow] : null;
+  }
+
+  const flowName = targetFlow === 'conversational' ? 'Conversational' : 'Manual'
+  const currentFlowName = currentFlow ? flowNames[currentFlow] : null
 
   const modal = (
     <div className="fixed inset-0 z-50">
       {/* Backdrop without blur to avoid GPU repaints on every interaction */}
-      <div
-        className="absolute inset-0 bg-black/65"
-        onClick={onClose}
-        aria-hidden="false"
-      />
+      <div className="absolute inset-0 bg-black/65" onClick={onClose} aria-hidden="false" />
 
       {/* Modal */}
       <div
@@ -64,9 +60,7 @@ export const FlowSwitchWarningModal: React.FC<FlowSwitchWarningModalProps> = ({
               <div className="flex-shrink-0 w-10 h-10 rounded-full bg-primary-500/10 flex items-center justify-center">
                 <AlertTriangle className="w-5 h-5 text-primary-500" />
               </div>
-              <h2 className="text-xl font-semibold text-white">
-                Switch to {flowName} Flow?
-              </h2>
+              <h2 className="text-xl font-semibold text-white">Switch to {flowName} Flow?</h2>
             </div>
           </div>
 
@@ -79,13 +73,12 @@ export const FlowSwitchWarningModal: React.FC<FlowSwitchWarningModalProps> = ({
                   <span className="font-semibold text-white">{flowNames[targetFlow]}</span>?
                 </>
               ) : (
-                <>
-                  Switch to the {flowName.toLowerCase()} flow?
-                </>
+                <>Switch to the {flowName.toLowerCase()} flow?</>
               )}
             </p>
             <p className="text-zinc-400 text-sm leading-relaxed">
-              Your entered data will be preserved. You can switch between flows at any time without losing your progress.
+              Your entered data will be preserved. You can switch between flows at any time without
+              losing your progress.
             </p>
           </div>
 
@@ -107,13 +100,12 @@ export const FlowSwitchWarningModal: React.FC<FlowSwitchWarningModalProps> = ({
         </div>
       </div>
     </div>
-  );
+  )
 
   // Render via portal so the overlay never reflows the main layout.
   if (typeof document !== 'undefined' && document.body) {
-    return createPortal(modal, document.body);
+    return createPortal(modal, document.body)
   }
 
-  return modal;
-};
-
+  return modal
+}

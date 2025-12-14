@@ -1,16 +1,16 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react'
 
 interface InfoIconProps {
-  content: string;
-  position?: 'top' | 'bottom' | 'left' | 'right';
-  maxWidth?: number;
-  size?: number;
-  className?: string;
+  content: string
+  position?: 'top' | 'bottom' | 'left' | 'right'
+  maxWidth?: number
+  size?: number
+  className?: string
 }
 
 /**
  * InfoIcon Component
- * 
+ *
  * Displays an info icon with a tooltip that shows help text.
  * - Desktop: Hover to show tooltip
  * - Mobile: Tap to toggle tooltip
@@ -24,50 +24,50 @@ export const InfoIcon: React.FC<InfoIconProps> = ({
   size = 14,
   className = 'ml-1',
 }) => {
-  const [isVisible, setIsVisible] = useState(false);
-  const [isTouchDevice, setIsTouchDevice] = useState(false);
-  const [hoverTimeout, setHoverTimeout] = useState<NodeJS.Timeout | null>(null);
-  const tooltipRef = useRef<HTMLDivElement>(null);
-  const triggerRef = useRef<HTMLButtonElement>(null);
+  const [isVisible, setIsVisible] = useState(false)
+  const [isTouchDevice, setIsTouchDevice] = useState(false)
+  const [hoverTimeout, setHoverTimeout] = useState<NodeJS.Timeout | null>(null)
+  const tooltipRef = useRef<HTMLDivElement>(null)
+  const triggerRef = useRef<HTMLButtonElement>(null)
 
   useEffect(() => {
-    setIsTouchDevice('ontouchstart' in window);
-  }, []);
+    setIsTouchDevice('ontouchstart' in window)
+  }, [])
 
   const handleMouseEnter = () => {
-    if (isTouchDevice) return;
-    const timeout = setTimeout(() => setIsVisible(true), 200);
-    setHoverTimeout(timeout);
-  };
+    if (isTouchDevice) return
+    const timeout = setTimeout(() => setIsVisible(true), 200)
+    setHoverTimeout(timeout)
+  }
 
   const handleMouseLeave = () => {
     if (hoverTimeout) {
-      clearTimeout(hoverTimeout);
-      setHoverTimeout(null);
+      clearTimeout(hoverTimeout)
+      setHoverTimeout(null)
     }
-    setIsVisible(false);
-  };
+    setIsVisible(false)
+  }
 
   const handleClick = (e: React.MouseEvent) => {
     if (isTouchDevice) {
-      e.preventDefault();
-      e.stopPropagation();
-      setIsVisible(!isVisible);
+      e.preventDefault()
+      e.stopPropagation()
+      setIsVisible(!isVisible)
     }
-  };
+  }
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' || e.key === ' ') {
-      e.preventDefault();
-      setIsVisible(!isVisible);
+      e.preventDefault()
+      setIsVisible(!isVisible)
     } else if (e.key === 'Escape') {
-      setIsVisible(false);
+      setIsVisible(false)
     }
-  };
+  }
 
   // Close on outside click for mobile
   useEffect(() => {
-    if (!isTouchDevice || !isVisible) return;
+    if (!isTouchDevice || !isVisible) return
 
     const handleClickOutside = (event: MouseEvent) => {
       if (
@@ -76,19 +76,19 @@ export const InfoIcon: React.FC<InfoIconProps> = ({
         triggerRef.current &&
         !triggerRef.current.contains(event.target as Node)
       ) {
-        setIsVisible(false);
+        setIsVisible(false)
       }
-    };
+    }
 
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [isTouchDevice, isVisible]);
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [isTouchDevice, isVisible])
 
   useEffect(() => {
     return () => {
-      if (hoverTimeout) clearTimeout(hoverTimeout);
-    };
-  }, [hoverTimeout]);
+      if (hoverTimeout) clearTimeout(hoverTimeout)
+    }
+  }, [hoverTimeout])
 
   // Position classes for tooltip
   const positionClasses = {
@@ -96,7 +96,7 @@ export const InfoIcon: React.FC<InfoIconProps> = ({
     bottom: 'top-full mt-2 left-1/2 -translate-x-1/2',
     left: 'right-full mr-2 top-1/2 -translate-y-1/2',
     right: 'left-full ml-2 top-1/2 -translate-y-1/2',
-  };
+  }
 
   // Arrow position classes
   const arrowPositionClasses = {
@@ -104,7 +104,7 @@ export const InfoIcon: React.FC<InfoIconProps> = ({
     bottom: 'top-[-4px] left-1/2 -translate-x-1/2',
     left: 'right-[-4px] top-1/2 -translate-y-1/2',
     right: 'left-[-4px] top-1/2 -translate-y-1/2',
-  };
+  }
 
   return (
     <div className={`relative inline-flex items-center ${className}`}>
@@ -119,7 +119,7 @@ export const InfoIcon: React.FC<InfoIconProps> = ({
         onBlur={(e) => {
           // Don't blur if clicking into tooltip
           if (!tooltipRef.current?.contains(e.relatedTarget as Node)) {
-            setIsVisible(false);
+            setIsVisible(false)
           }
         }}
         tabIndex={0}
@@ -150,7 +150,12 @@ export const InfoIcon: React.FC<InfoIconProps> = ({
           ref={tooltipRef}
           role="tooltip"
           className={`absolute z-50 px-3 py-2 text-sm text-white bg-slate-ink rounded-lg shadow-lg transition-opacity duration-200 ${positionClasses[position]}`}
-          style={{ maxWidth: `${maxWidth}px`, width: 'max-content', minWidth: '200px', wordWrap: 'break-word' }}
+          style={{
+            maxWidth: `${maxWidth}px`,
+            width: 'max-content',
+            minWidth: '200px',
+            wordWrap: 'break-word',
+          }}
         >
           <p className="whitespace-normal leading-relaxed">{content}</p>
           <div
@@ -160,6 +165,5 @@ export const InfoIcon: React.FC<InfoIconProps> = ({
         </div>
       )}
     </div>
-  );
-};
-
+  )
+}

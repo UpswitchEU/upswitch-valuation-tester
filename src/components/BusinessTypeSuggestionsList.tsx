@@ -1,43 +1,43 @@
-import { X } from 'lucide-react';
-import React, { useState } from 'react';
+import { X } from 'lucide-react'
+import React, { useState } from 'react'
 
 export interface BusinessTypeSuggestion {
-  number: number;
-  id: string;
-  title: string;
-  description?: string;
-  industry?: string;
-  category?: string;
-  icon?: string;
+  number: number
+  id: string
+  title: string
+  description?: string
+  industry?: string
+  category?: string
+  icon?: string
 }
 
 interface BusinessTypeSuggestionsListProps {
-  suggestions: BusinessTypeSuggestion[];
-  onSelect: (selection: string) => void;
+  suggestions: BusinessTypeSuggestion[]
+  onSelect: (selection: string) => void
 }
 
-export const BusinessTypeSuggestionsList: React.FC<BusinessTypeSuggestionsListProps> = ({
+export const BusinessTypeSuggestionsList = ({
   suggestions,
   onSelect,
-}) => {
-  const [isDismissed, setIsDismissed] = useState(false);
+}: BusinessTypeSuggestionsListProps): React.ReactElement | null => {
+  const [isDismissed, setIsDismissed] = useState(false)
 
   const handleSelect = (selection: string) => {
     if (selection === 'none') {
-      setIsDismissed(true); // Hide immediately
+      setIsDismissed(true) // Hide immediately
     }
-    onSelect(selection);
-  };
+    onSelect(selection)
+  }
 
   // Early return if dismissed
-  if (isDismissed) return null;
+  if (isDismissed) return null
 
   return (
     <div className="mt-4 space-y-2">
       <div className="text-xs text-zinc-400 mb-3">
         Select the business type that best describes your business:
       </div>
-      
+
       {/* Suggestion Cards */}
       <div className="space-y-2">
         {suggestions.map((suggestion) => (
@@ -52,21 +52,17 @@ export const BusinessTypeSuggestionsList: React.FC<BusinessTypeSuggestionsListPr
               <div className="flex-shrink-0 w-8 h-8 bg-primary-600/20 text-primary-400 rounded-full flex items-center justify-center text-sm font-semibold">
                 {suggestion.number}
               </div>
-              
+
               {/* Business Type Info */}
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2">
-                  <span className="text-lg flex-shrink-0">
-                    {suggestion.icon || '🏢'}
-                  </span>
+                  <span className="text-lg flex-shrink-0">{suggestion.icon || '🏢'}</span>
                   <span className="font-semibold text-white group-hover:text-primary-300 transition-colors">
                     {suggestion.title}
                   </span>
                 </div>
                 {suggestion.description && (
-                  <div className="text-xs text-zinc-400 mt-1 ml-8">
-                    {suggestion.description}
-                  </div>
+                  <div className="text-xs text-zinc-400 mt-1 ml-8">{suggestion.description}</div>
                 )}
                 {suggestion.category && (
                   <div className="text-xs text-zinc-500 mt-1 ml-8 font-medium">
@@ -74,7 +70,7 @@ export const BusinessTypeSuggestionsList: React.FC<BusinessTypeSuggestionsListPr
                   </div>
                 )}
               </div>
-              
+
               {/* Hover Indicator */}
               <div className="flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
                 <div className="w-2 h-2 bg-primary-500 rounded-full" />
@@ -83,7 +79,7 @@ export const BusinessTypeSuggestionsList: React.FC<BusinessTypeSuggestionsListPr
           </button>
         ))}
       </div>
-      
+
       {/* None of these button */}
       <button
         onClick={() => handleSelect('none')}
@@ -96,5 +92,5 @@ export const BusinessTypeSuggestionsList: React.FC<BusinessTypeSuggestionsListPr
         </div>
       </button>
     </div>
-  );
-};
+  )
+}

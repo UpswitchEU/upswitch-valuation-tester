@@ -1,43 +1,43 @@
 /**
  * Performance Utilities
- * 
+ *
  * Utilities for optimizing React component performance:
  * - Memoization helpers
  * - Debouncing and throttling
  * - Performance monitoring
- * 
+ *
  * @module utils/performance
  */
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
 /**
  * Custom hook for debounced values
- * 
+ *
  * Usage:
  * ```tsx
  * const debouncedSearch = useDebounce(searchQuery, 300);
  * ```
  */
 export function useDebounce<T>(value: T, delay: number): T {
-  const [debouncedValue, setDebouncedValue] = useState<T>(value);
+  const [debouncedValue, setDebouncedValue] = useState<T>(value)
 
   useEffect(() => {
     const handler = setTimeout(() => {
-      setDebouncedValue(value);
-    }, delay);
+      setDebouncedValue(value)
+    }, delay)
 
     return () => {
-      clearTimeout(handler);
-    };
-  }, [value, delay]);
+      clearTimeout(handler)
+    }
+  }, [value, delay])
 
-  return debouncedValue;
+  return debouncedValue
 }
 
 /**
  * Custom hook for throttled callbacks
- * 
+ *
  * Usage:
  * ```tsx
  * const throttledScroll = useThrottle(handleScroll, 100);
@@ -47,24 +47,24 @@ export function useThrottle<T extends (...args: any[]) => any>(
   callback: T,
   delay: number
 ): (...args: Parameters<T>) => void {
-  const lastRun = useRef(Date.now());
+  const lastRun = useRef(Date.now())
 
   return useCallback(
     (...args: Parameters<T>) => {
-      const now = Date.now();
+      const now = Date.now()
       if (now - lastRun.current >= delay) {
-        callback(...args);
-        lastRun.current = now;
+        callback(...args)
+        lastRun.current = now
       }
     },
     [callback, delay]
-  );
+  )
 }
 
 /**
  * Custom hook for stable callbacks
  * Like useCallback but with stable identity
- * 
+ *
  * Usage:
  * ```tsx
  * const handleClick = useStableCallback((id) => {
@@ -76,20 +76,20 @@ export function useThrottle<T extends (...args: any[]) => any>(
 export function useStableCallback<T extends (...args: any[]) => any>(
   callback: T
 ): (...args: Parameters<T>) => ReturnType<T> {
-  const callbackRef = useRef(callback);
+  const callbackRef = useRef(callback)
 
   useEffect(() => {
-    callbackRef.current = callback;
-  });
+    callbackRef.current = callback
+  })
 
   return useCallback((...args: Parameters<T>) => {
-    return callbackRef.current(...args);
-  }, []);
+    return callbackRef.current(...args)
+  }, [])
 }
 
 /**
  * Custom hook for expensive computations with memoization
- * 
+ *
  * Usage:
  * ```tsx
  * const result = useMemoizedComputation(
@@ -104,85 +104,79 @@ export function useMemoizedComputation<T>(
   deps: React.DependencyList,
   isEqual?: (prev: T, next: T) => boolean
 ): T {
-  const memoizedValue = useMemo(compute, deps);
-  const prevValueRef = useRef<T>(memoizedValue);
+  // biome-ignore lint/correctness/useExhaustiveDependencies: deps is intentionally dynamic for utility function
+  const memoizedValue = useMemo(compute, deps)
+  const prevValueRef = useRef<T>(memoizedValue)
 
   if (isEqual && prevValueRef.current !== undefined) {
     if (isEqual(prevValueRef.current, memoizedValue)) {
-      return prevValueRef.current;
+      return prevValueRef.current
     }
   }
 
-  prevValueRef.current = memoizedValue;
-  return memoizedValue;
+  prevValueRef.current = memoizedValue
+  return memoizedValue
 }
 
 /**
  * Custom hook for measuring component render performance
  * Only active in development mode
- * 
+ *
  * Usage:
  * ```tsx
  * useRenderPerformance('MyComponent');
  * ```
  */
 export function useRenderPerformance(componentName: string) {
-  if (import.meta.env.DEV) {
-    const renderCount = useRef(0);
-    const renderStart = useRef(performance.now());
+  if (process.env.NODE_ENV === 'development') {
+    const renderCount = useRef(0)
+    const renderStart = useRef(performance.now())
 
     useEffect(() => {
-      renderCount.current += 1;
-      const renderTime = performance.now() - renderStart.current;
-      
-      if (renderTime > 16) {  // Slower than 60fps
-        console.warn(
-          `[Performance] ${componentName} render #${renderCount.current} took ${renderTime.toFixed(2)}ms`
-        );
+      renderCount.current += 1
+      const renderTime = performance.now() - renderStart.current
+
+      if (renderTime > 16) {
+        // Slower than 60fps
+        // Use structured logging in production - console.warn is acceptable for dev-only performance warnings
+        if (process.env.NODE_ENV === 'development') {
+          console.warn(
+            `[Performance] ${componentName} render #${renderCount.current} took ${renderTime.toFixed(2)}ms`
+          )
+        }
       }
-      
-      renderStart.current = performance.now();
-    });
+
+      renderStart.current = performance.now()
+    })
   }
 }
 
 /**
  * Helper to create shallow comparison function for memoization
  */
-export function shallowEqual<T extends Record<string, any>>(
-  objA: T,
-  objB: T
-): boolean {
+export function shallowEqual<T extends Record<string, any>>(objA: T, objB: T): boolean {
   if (Object.is(objA, objB)) {
-    return true;
+    return true
   }
 
-  if (
-    typeof objA !== 'object' ||
-    objA === null ||
-    typeof objB !== 'object' ||
-    objB === null
-  ) {
-    return false;
+  if (typeof objA !== 'object' || objA === null || typeof objB !== 'object' || objB === null) {
+    return false
   }
 
-  const keysA = Object.keys(objA);
-  const keysB = Object.keys(objB);
+  const keysA = Object.keys(objA)
+  const keysB = Object.keys(objB)
 
   if (keysA.length !== keysB.length) {
-    return false;
+    return false
   }
 
   for (const key of keysA) {
-    if (
-      !Object.prototype.hasOwnProperty.call(objB, key) ||
-      !Object.is(objA[key], objB[key])
-    ) {
-      return false;
+    if (!(key in objB) || !Object.is(objA[key], objB[key])) {
+      return false
     }
   }
 
-  return true;
+  return true
 }
 
 /**
@@ -190,91 +184,42 @@ export function shallowEqual<T extends Record<string, any>>(
  */
 export function deepEqual(objA: any, objB: any): boolean {
   if (Object.is(objA, objB)) {
-    return true;
+    return true
   }
 
-  if (
-    typeof objA !== 'object' ||
-    objA === null ||
-    typeof objB !== 'object' ||
-    objB === null
-  ) {
-    return false;
+  if (typeof objA !== 'object' || objA === null || typeof objB !== 'object' || objB === null) {
+    return false
   }
 
-  const keysA = Object.keys(objA);
-  const keysB = Object.keys(objB);
+  const keysA = Object.keys(objA)
+  const keysB = Object.keys(objB)
 
   if (keysA.length !== keysB.length) {
-    return false;
+    return false
   }
 
   for (const key of keysA) {
-    if (
-      !Object.prototype.hasOwnProperty.call(objB, key) ||
-      !deepEqual(objA[key], objB[key])
-    ) {
-      return false;
+    if (!(key in objB) || !deepEqual(objA[key], objB[key])) {
+      return false
     }
   }
 
-  return true;
+  return true
 }
 
 /**
  * Custom hook for lazy initialization
  * Useful for expensive initial state calculations
- * 
+ *
  * Usage:
  * ```tsx
  * const [state] = useState(() => useLazyInit(expensiveComputation));
  * ```
  */
 export function useLazyInit<T>(init: () => T): T {
-  const ref = useRef<T>();
+  const ref = useRef<T>()
   if (ref.current === undefined) {
-    ref.current = init();
+    ref.current = init()
   }
-  return ref.current;
-}
-
-/**
- * Performance tracker for report generation
- */
-export const performanceTracker = {
-  marks: new Map<string, number>(),
-  
-  markStart(id: string): void {
-    this.marks.set(id, performance.now());
-  },
-  
-  markEnd(id: string): number {
-    const start = this.marks.get(id);
-    if (!start) return 0;
-    const duration = performance.now() - start;
-    this.marks.delete(id);
-    return duration;
-  },
-  
-  trackSectionRendering(_requestId: string, _section: string, _duration: number): void {
-    // Track section rendering performance
-  },
-  
-  trackReportGeneration(_requestId: string, _duration: number): void {
-    // Track report generation performance
-  },
-  
-  getSummary(_requestId: string): Record<string, any> {
-    return {};
-  },
-};
-
-/**
- * Measure Web Vitals
- */
-export function measureWebVitals(_requestId: string): void {
-  // Measure web vitals if needed
-  if (typeof window !== 'undefined' && 'PerformanceObserver' in window) {
-    // Web vitals measurement can be added here
-  }
+  return ref.current
 }

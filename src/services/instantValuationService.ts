@@ -1,13 +1,13 @@
 /**
  * Instant Valuation Service
- * 
+ *
  * Handles the instant (AI-guided) valuation flow through the backend
  * to ensure proper credit management and flow differentiation
  */
 
-import { backendAPI } from './backendApi';
-import { serviceLogger } from '../utils/logger';
-import type { ValuationRequest, ValuationResponse } from '../types/valuation';
+import { backendAPI } from '../services/backendApi'
+import type { ValuationRequest, ValuationResponse } from '../types/valuation'
+import { serviceLogger } from '../utils/logger'
 
 class InstantValuationService {
   /**
@@ -18,24 +18,24 @@ class InstantValuationService {
     try {
       serviceLogger.info('Processing instant valuation through backend', {
         companyName: data.company_name,
-        flowType: 'instant'
-      });
+        flowType: 'instant',
+      })
 
       // Use backend API which handles credit checks
-      const response = await backendAPI.calculateInstantValuation(data);
-      
+      const response = await backendAPI.calculateInstantValuation(data)
+
       serviceLogger.info('Instant valuation completed', {
         valuationId: response.valuation_id,
-        flowType: 'instant'
-      });
+        flowType: 'instant',
+      })
 
-      return response;
+      return response
     } catch (error) {
       serviceLogger.error('Instant valuation failed', {
         error: error instanceof Error ? error.message : 'Unknown error',
-        flowType: 'instant'
-      });
-      throw error;
+        flowType: 'instant',
+      })
+      throw error
     }
   }
 
@@ -47,24 +47,24 @@ class InstantValuationService {
     try {
       serviceLogger.info('Processing manual valuation through backend', {
         companyName: data.company_name,
-        flowType: 'manual'
-      });
+        flowType: 'manual',
+      })
 
       // Use backend API which doesn't require credits
-      const response = await backendAPI.calculateManualValuation(data);
-      
+      const response = await backendAPI.calculateManualValuation(data)
+
       serviceLogger.info('Manual valuation completed', {
         valuationId: response.valuation_id,
-        flowType: 'manual'
-      });
+        flowType: 'manual',
+      })
 
-      return response;
+      return response
     } catch (error) {
       serviceLogger.error('Manual valuation failed', {
         error: error instanceof Error ? error.message : 'Unknown error',
-        flowType: 'manual'
-      });
-      throw error;
+        flowType: 'manual',
+      })
+      throw error
     }
   }
 
@@ -72,13 +72,16 @@ class InstantValuationService {
    * Legacy method for backward compatibility
    * Routes to appropriate flow based on context
    */
-  async calculateValuation(data: ValuationRequest, flowType: 'manual' | 'instant' = 'instant'): Promise<ValuationResponse> {
+  async calculateValuation(
+    data: ValuationRequest,
+    flowType: 'manual' | 'instant' = 'instant'
+  ): Promise<ValuationResponse> {
     if (flowType === 'manual') {
-      return this.processManualValuation(data);
+      return this.processManualValuation(data)
     } else {
-      return this.processInstantValuation(data);
+      return this.processInstantValuation(data)
     }
   }
 }
 
-export const instantValuationService = new InstantValuationService();
+export const instantValuationService = new InstantValuationService()

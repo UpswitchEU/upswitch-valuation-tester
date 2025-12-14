@@ -1,66 +1,137 @@
 /**
  * Reports Store
- * Manages saved valuation reports
+ * 
+ * Single Responsibility: Manage report list state
+ * Separation: Reports list separate from active session state (useValuationSessionStore)
  */
 
-import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
-import type { ValuationResponse } from '../types/valuation';
+import { create } from 'zustand'
+import { reportService } from '../services/reports'
+import type { ValuationSession } from '../types/valuation'
+import { createContextLogger } from '../utils/logger'
 
-export interface SavedReport {
-  id: string;
-  company_name: string;
-  created_at: string;
-  source: 'manual' | 'instant' | 'document';
-  result: ValuationResponse;
-  form_data?: any;
-}
+const reportsLogger = createContextLogger('ReportsStore')
 
-interface ReportsStore {
-  reports: SavedReport[];
+export interface ReportsStore {
+  // State
+  reports: ValuationSession[]
+  loading: boolean
+  error: string | null
   
   // Actions
-  addReport: (report: Omit<SavedReport, 'id' | 'created_at'>) => void;
-  deleteReport: (id: string) => void;
-  clearAllReports: () => void;
-  getReportById: (id: string) => SavedReport | undefined;
+  fetchReports: (userId?: string) => Promise<void>
+  addReport: (report: ValuationSession) => void
+  updateReport: (reportId: string, updates: Partial<ValuationSession>) => void
+  deleteReport: (reportId: string) => Promise<void>
+  clearReports: () => void
 }
 
-export const useReportsStore = create<ReportsStore>()(
-  persist(
-    (set, get) => ({
-      reports: [],
+export const useReportsStore = create<ReportsStore>((set, get) => ({
+  // Initial state
+  reports: [],
+  loading: false,
+  error: null,
+  
+  /**
+   * Fetch recent reports for the current user/guest
+   */
+  fetchReports: async (userId?: string) => {
+    set({ loading: true, error: null })
+    
+    try {
+      reportsLogger.info('Fetching reports', { 
+        userId: userId ? userId.substring(0, 8) + '...' : 'guest',
+      })
       
-      addReport: (report) => {
-        const newReport: SavedReport = {
-          ...report,
-          id: `report-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-          created_at: new Date().toISOString(),
-        };
-        
-        set((state) => ({
-          reports: [newReport, ...state.reports], // Add new report at the beginning
-        }));
-        
-        return newReport;
-      },
+      const reports = await reportService.listRecentReports({ 
+        userId, 
+        limit: 20,
+        status: 'all',
+      })
       
-      deleteReport: (id) => {
-        set((state) => ({
-          reports: state.reports.filter((report) => report.id !== id),
-        }));
-      },
+      set({ reports, loading: false })
       
-      clearAllReports: () => {
-        set({ reports: [] });
-      },
+      reportsLogger.info('Reports fetched successfully', { 
+        count: reports.length,
+      })
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error'
       
-      getReportById: (id) => {
-        return get().reports.find((report) => report.id === id);
-      },
-    }),
-    {
-      name: 'upswitch-valuation-reports', // localStorage key
+      set({ error: errorMessage, loading: false })
+      
+      reportsLogger.error('Failed to fetch reports', { 
+        error: errorMessage,
+      })
     }
-  )
-);
+  },
+  
+  /**
+   * Add new report to list (prepend - most recent first)
+   */
+  addReport: (report: ValuationSession) => {
+    set(state => ({
+      reports: [report, ...state.reports]
+    }))
+    
+    reportsLogger.info('Report added to list', { 
+      reportId: report.reportId,
+      totalReports: get().reports.length,
+    })
+  },
+  
+  /**
+   * Update existing report in list
+   */
+  updateReport: (reportId: string, updates: Partial<ValuationSession>) => {
+    set(state => ({
+      reports: state.reports.map(r => 
+        r.reportId === reportId ? { ...r, ...updates } : r
+      )
+    }))
+    
+    reportsLogger.info('Report updated in list', { 
+      reportId,
+      updateFields: Object.keys(updates).length,
+    })
+  },
+  
+  /**
+   * Delete report from backend and remove from list
+   */
+  deleteReport: async (reportId: string) => {
+    try {
+      reportsLogger.info('Deleting report', { reportId })
+      
+      // Delete from backend
+      await reportService.deleteReport(reportId)
+      
+      // Remove from local state
+      set(state => ({
+        reports: state.reports.filter(r => r.reportId !== reportId)
+      }))
+      
+      reportsLogger.info('Report deleted successfully', { 
+        reportId,
+        remainingReports: get().reports.length,
+      })
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+      
+      reportsLogger.error('Failed to delete report', { 
+        error: errorMessage,
+        reportId,
+      })
+      
+      throw error
+    }
+  },
+  
+  /**
+   * Clear all reports from state
+   */
+  clearReports: () => {
+    set({ reports: [], error: null })
+    
+    reportsLogger.info('Reports cleared from state')
+  },
+}))

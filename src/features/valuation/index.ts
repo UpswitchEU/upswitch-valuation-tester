@@ -1,16 +1,13 @@
 /**
- * Valuation Feature
- * 
- * Public API for valuation functionality including components,
- * hooks, and services for business valuation workflows.
+ * Valuation Feature Module
+ *
+ * Unified valuation flow orchestration.
+ * Provides components and types for both manual and conversational valuation flows.
+ *
+ * @module features/valuation
  */
 
-// Components will be exported here as they are created
-export * from './components';
-
-// Hooks will be exported here as they are created
-export * from './hooks';
-
 // Types
-export * from './types';
-
+export type { ValuationFlowType } from './components/ValuationFlow'
+// Components
+export { ValuationFlow } from './components/ValuationFlow'

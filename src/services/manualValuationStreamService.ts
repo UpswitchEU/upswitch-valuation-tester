@@ -3,44 +3,47 @@
  * Handles SSE streaming for manual valuation calculations
  */
 
-import type { ValuationRequest } from '../types/valuation';
-import { apiLogger } from '../utils/logger';
+import type { ValuationRequest } from '../types/valuation'
+import { apiLogger } from '../utils/logger'
 
 interface StreamEvent {
-  type: 'progress' | 'section_loading' | 'report_section' | 'report_complete' | 'error';
-  progress?: number;
-  status?: string;
-  message?: string;
-  section?: string;
-  phase?: number;
-  html?: string;
-  html_report?: string;
-  request_id?: string;
-  valuation_id?: string;
-  error?: string;
-  error_type?: string;
-  duration_seconds?: number;
+  type: 'progress' | 'section_loading' | 'report_section' | 'report_complete' | 'error'
+  progress?: number
+  status?: string
+  message?: string
+  section?: string
+  phase?: number
+  html?: string
+  html_report?: string
+  request_id?: string
+  valuation_id?: string
+  error?: string
+  error_type?: string
+  duration_seconds?: number
 }
 
 interface StreamCallbacks {
-  onProgress?: (progress: number, message: string) => void;
-  onSectionLoading?: (section: string, phase: number, progress: number) => void;
-  onSectionUpdate?: (section: string, html: string, phase: number, progress: number) => void;
-  onComplete?: (htmlReport: string, valuationId: string, fullResponse?: any) => void;
-  onError?: (error: string, errorType?: string) => void;
+  onProgress?: (progress: number, message: string) => void
+  onSectionLoading?: (section: string, phase: number, progress: number) => void
+  onSectionUpdate?: (section: string, html: string, phase: number, progress: number) => void
+  onComplete?: (htmlReport: string, valuationId: string, fullResponse?: any) => void
+  onError?: (error: string, errorType?: string) => void
 }
 
 class ManualValuationStreamService {
-  private activeStreams: Map<string, { controller: AbortController; reader?: ReadableStreamDefaultReader }> = new Map();
-  private streamTimeouts: Map<string, NodeJS.Timeout> = new Map();
-  private readonly DEFAULT_TIMEOUT = 90000; // 90 seconds
+  private activeStreams: Map<
+    string,
+    { controller: AbortController; reader?: ReadableStreamDefaultReader }
+  > = new Map()
+  private streamTimeouts: Map<string, NodeJS.Timeout> = new Map()
+  private readonly DEFAULT_TIMEOUT = 90000 // 90 seconds
 
   /**
    * Generate request fingerprint for deduplication
    */
   private getRequestFingerprint(request: ValuationRequest): string {
-    const key = `${request.company_name}_${request.current_year_data?.revenue}_${request.current_year_data?.ebitda}_${request.industry}`;
-    return btoa(key).substring(0, 16);
+    const key = `${request.company_name}_${request.current_year_data?.revenue}_${request.current_year_data?.ebitda}_${request.industry}`
+    return btoa(key).substring(0, 16)
   }
 
   /**
@@ -52,87 +55,88 @@ class ManualValuationStreamService {
     callbacks: StreamCallbacks,
     requestId?: string,
     options?: {
-      timeout?: number;
-      enableDeduplication?: boolean;
+      timeout?: number
+      enableDeduplication?: boolean
     }
   ): Promise<EventSource> {
-    const streamId = requestId || this.getRequestFingerprint(request);
-    const timeout = options?.timeout || this.DEFAULT_TIMEOUT;
-    
+    const streamId = requestId || this.getRequestFingerprint(request)
+    const timeout = options?.timeout || this.DEFAULT_TIMEOUT
+
     // Check for duplicate stream
     if (options?.enableDeduplication !== false && this.activeStreams.has(streamId)) {
-      apiLogger.warn('Duplicate stream detected, closing previous', { streamId });
-      this.closeStream(streamId);
+      apiLogger.warn('Duplicate stream detected, closing previous', { streamId })
+      this.closeStream(streamId)
     }
 
     apiLogger.info('Starting manual valuation stream', {
       requestId: streamId,
-      companyName: request.company_name
-    });
+      companyName: request.company_name,
+    })
 
     // Use Python engine URL directly for streaming
-    const pythonEngineUrl = import.meta.env.VITE_PYTHON_ENGINE_URL || 
-                           'https://upswitch-valuation-engine-production.up.railway.app';
-    
-    const streamUrl = `${pythonEngineUrl}/api/v1/valuation/calculate/stream`;
+    const pythonEngineUrl =
+      process.env.NEXT_PUBLIC_PYTHON_ENGINE_URL ||
+      'https://upswitch-valuation-engine-production.up.railway.app'
+
+    const streamUrl = `${pythonEngineUrl}/api/v1/valuation/calculate/stream`
 
     // For POST requests with SSE, we need to use fetch with ReadableStream
     // EventSource only supports GET requests
-    const abortController = new AbortController();
-    this.activeStreams.set(streamId, { controller: abortController });
+    const abortController = new AbortController()
+    this.activeStreams.set(streamId, { controller: abortController })
 
     // Set up timeout
     const timeoutId = setTimeout(() => {
-      apiLogger.warn('Stream timeout', { streamId, timeout });
-      abortController.abort();
-      callbacks.onError?.('Stream timeout - calculation took too long', 'TimeoutError');
-      this.closeStream(streamId);
-    }, timeout);
-    
-    this.streamTimeouts.set(streamId, timeoutId);
-    
+      apiLogger.warn('Stream timeout', { streamId, timeout })
+      abortController.abort()
+      callbacks.onError?.('Stream timeout - calculation took too long', 'TimeoutError')
+      this.closeStream(streamId)
+    }, timeout)
+
+    this.streamTimeouts.set(streamId, timeoutId)
+
     try {
       const response = await fetch(streamUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Accept': 'text/event-stream',
+          Accept: 'text/event-stream',
         },
         body: JSON.stringify(request),
-        signal: abortController.signal
-      });
+        signal: abortController.signal,
+      })
 
       if (!response.ok) {
-        throw new Error(`Stream failed: ${response.status} ${response.statusText}`);
+        throw new Error(`Stream failed: ${response.status} ${response.statusText}`)
       }
 
-      const reader = response.body?.getReader();
-      const decoder = new TextDecoder();
+      const reader = response.body?.getReader()
+      const decoder = new TextDecoder()
 
       if (!reader) {
-        throw new Error('Response body is not readable');
+        throw new Error('Response body is not readable')
       }
 
       // Store reader for cleanup
-      const streamEntry = this.activeStreams.get(streamId);
+      const streamEntry = this.activeStreams.get(streamId)
       if (streamEntry) {
-        streamEntry.reader = reader;
+        streamEntry.reader = reader
       }
 
       // Process stream asynchronously
       this.processStream(reader, decoder, callbacks, streamId, abortController).finally(() => {
         // Cleanup timeout on completion
-        const timeout = this.streamTimeouts.get(streamId);
+        const timeout = this.streamTimeouts.get(streamId)
         if (timeout) {
-          clearTimeout(timeout);
-          this.streamTimeouts.delete(streamId);
+          clearTimeout(timeout)
+          this.streamTimeouts.delete(streamId)
         }
-      });
+      })
 
       // Return a mock EventSource-like object for compatibility
       return {
         close: () => {
-          this.closeStream(streamId);
+          this.closeStream(streamId)
         },
         readyState: EventSource.CONNECTING,
         url: streamUrl,
@@ -143,19 +147,25 @@ class ManualValuationStreamService {
         onopen: null,
         onmessage: null,
         onerror: null,
-        addEventListener: () => {},
-        removeEventListener: () => {},
-        dispatchEvent: () => false
-      } as any;
-
+        addEventListener: () => {
+          // Mock EventSource - no-op handler
+        },
+        removeEventListener: () => {
+          // Mock EventSource - no-op handler
+        },
+        dispatchEvent: () => false,
+      } as any
     } catch (error) {
       // Cleanup on error
-      this.closeStream(streamId);
-      
+      this.closeStream(streamId)
+
       // Handle abort errors gracefully
-      if (error instanceof Error && (error.name === 'AbortError' || error.name === 'AbortedError')) {
-        apiLogger.info('Stream cancelled by user', { streamId });
-        callbacks.onError?.('Stream cancelled', 'AbortError');
+      if (
+        error instanceof Error &&
+        (error.name === 'AbortError' || error.name === 'AbortedError')
+      ) {
+        apiLogger.info('Stream cancelled by user', { streamId })
+        callbacks.onError?.('Stream cancelled', 'AbortError')
         return {
           close: () => {},
           readyState: EventSource.CLOSED,
@@ -169,21 +179,21 @@ class ManualValuationStreamService {
           onerror: null,
           addEventListener: () => {},
           removeEventListener: () => {},
-          dispatchEvent: () => false
-        } as any;
+          dispatchEvent: () => false,
+        } as any
       }
 
       apiLogger.error('Failed to start manual valuation stream', {
         requestId: streamId,
-        error: error instanceof Error ? error.message : 'Unknown error'
-      });
-      
+        error: error instanceof Error ? error.message : 'Unknown error',
+      })
+
       callbacks.onError?.(
         error instanceof Error ? error.message : 'Failed to start stream',
         error instanceof Error ? error.constructor.name : 'UnknownError'
-      );
-      
-      throw error;
+      )
+
+      throw error
     }
   }
 
@@ -194,59 +204,58 @@ class ManualValuationStreamService {
     streamId: string,
     _abortController: AbortController
   ): Promise<void> {
-    let buffer = '';
+    let buffer = ''
 
     try {
-      // eslint-disable-next-line no-constant-condition
       while (true) {
-        const { done, value } = await reader.read();
+        const { done, value } = await reader.read()
 
         if (done) {
-          apiLogger.info('Manual valuation stream completed', { requestId: streamId });
-          break;
+          apiLogger.info('Manual valuation stream completed', { requestId: streamId })
+          break
         }
 
-        buffer += decoder.decode(value, { stream: true });
-        const lines = buffer.split('\n');
-        buffer = lines.pop() || ''; // Keep incomplete line in buffer
+        buffer += decoder.decode(value, { stream: true })
+        const lines = buffer.split('\n')
+        buffer = lines.pop() || '' // Keep incomplete line in buffer
 
         for (const line of lines) {
           if (line.startsWith('data: ')) {
             try {
-              const jsonStr = line.substring(6); // Remove 'data: ' prefix
-              const event: StreamEvent = JSON.parse(jsonStr);
+              const jsonStr = line.substring(6) // Remove 'data: ' prefix
+              const event: StreamEvent = JSON.parse(jsonStr)
 
-              this.handleStreamEvent(event, callbacks, streamId);
+              this.handleStreamEvent(event, callbacks, streamId)
             } catch (parseError) {
               apiLogger.warn('Failed to parse SSE event', {
                 requestId: streamId,
                 error: parseError instanceof Error ? parseError.message : 'Unknown error',
-                line: line.substring(0, 100) // Log first 100 chars
-              });
+                line: line.substring(0, 100), // Log first 100 chars
+              })
             }
           } else if (line.startsWith('event: ')) {
             // Handle event type if needed
-            const eventType = line.substring(7);
-            apiLogger.debug('SSE event type', { requestId: streamId, eventType });
+            const eventType = line.substring(7)
+            apiLogger.debug('SSE event type', { requestId: streamId, eventType })
           }
         }
       }
     } catch (error) {
       if (error instanceof Error && error.name === 'AbortError') {
-        apiLogger.info('Manual valuation stream aborted', { requestId: streamId });
+        apiLogger.info('Manual valuation stream aborted', { requestId: streamId })
       } else {
         apiLogger.error('Error processing manual valuation stream', {
           requestId: streamId,
-          error: error instanceof Error ? error.message : 'Unknown error'
-        });
+          error: error instanceof Error ? error.message : 'Unknown error',
+        })
         callbacks.onError?.(
           error instanceof Error ? error.message : 'Stream processing error',
           error instanceof Error ? error.constructor.name : 'UnknownError'
-        );
+        )
       }
     } finally {
-      reader.releaseLock();
-      this.activeStreams.delete(streamId);
+      reader.releaseLock()
+      this.activeStreams.delete(streamId)
     }
   }
 
@@ -258,28 +267,33 @@ class ManualValuationStreamService {
     apiLogger.debug('Handling stream event', {
       requestId: streamId,
       eventType: event.type,
-      progress: event.progress
-    });
+      progress: event.progress,
+    })
 
     switch (event.type) {
       case 'progress':
         if (event.progress !== undefined && event.message) {
-          callbacks.onProgress?.(event.progress, event.message);
+          callbacks.onProgress?.(event.progress, event.message)
         }
-        break;
+        break
 
       case 'section_loading':
         if (event.section && event.phase !== undefined && event.progress !== undefined) {
-          callbacks.onSectionLoading?.(event.section, event.phase, event.progress);
+          callbacks.onSectionLoading?.(event.section, event.phase, event.progress)
         }
-        break;
+        break
 
       case 'report_section':
-        if (event.section && event.html && event.phase !== undefined && event.progress !== undefined) {
+        if (
+          event.section &&
+          event.html &&
+          event.phase !== undefined &&
+          event.progress !== undefined
+        ) {
           // Special handling for complete_report section - treat as completion event
           if (event.section === 'complete_report' && event.valuation_id) {
             // DIAGNOSTIC: Log when complete_report is received
-            const htmlLength = event.html?.length || 0;
+            const htmlLength = event.html?.length || 0
             apiLogger.info('[STREAM-FRONTEND] Complete report section received', {
               requestId: streamId,
               section: event.section,
@@ -288,21 +302,21 @@ class ManualValuationStreamService {
               htmlPreview: event.html?.substring(0, 200) || 'N/A',
               phase: event.phase,
               progress: event.progress,
-              hasOnCompleteCallback: !!callbacks.onComplete
-            });
-            
+              hasOnCompleteCallback: !!callbacks.onComplete,
+            })
+
             // This is the full HTML report, trigger completion instead of section update
             callbacks.onComplete?.(
               event.html,
               event.valuation_id,
               event as any // Pass full event as fullResponse
-            );
-            
+            )
+
             apiLogger.info('[STREAM-FRONTEND] onComplete callback triggered for complete_report', {
               requestId: streamId,
               valuationId: event.valuation_id,
-              htmlLength
-            });
+              htmlLength,
+            })
           } else {
             // Regular section update
             apiLogger.debug('[STREAM-FRONTEND] Regular section update received', {
@@ -310,19 +324,19 @@ class ManualValuationStreamService {
               section: event.section,
               htmlLength: event.html?.length || 0,
               phase: event.phase,
-              progress: event.progress
-            });
-            callbacks.onSectionUpdate?.(event.section, event.html, event.phase, event.progress);
+              progress: event.progress,
+            })
+            callbacks.onSectionUpdate?.(event.section, event.html, event.phase, event.progress)
           }
         }
-        break;
+        break
 
       case 'report_complete': {
         // DIAGNOSTIC: Log when report_complete event is received
-        const hasHtmlReport = !!event.html_report;
-        const htmlReportLength = event.html_report?.length || 0;
-        const hasInfoTabHtml = !!(event as any).info_tab_html;
-        const infoTabHtmlLength = ((event as any).info_tab_html?.length || 0);
+        const hasHtmlReport = !!event.html_report
+        const htmlReportLength = event.html_report?.length || 0
+        const hasInfoTabHtml = !!(event as any).info_tab_html
+        const infoTabHtmlLength = (event as any).info_tab_html?.length || 0
         apiLogger.info('[STREAM-FRONTEND] report_complete event received', {
           requestId: streamId,
           valuationId: event.valuation_id,
@@ -331,51 +345,51 @@ class ManualValuationStreamService {
           hasInfoTabHtml,
           infoTabHtmlLength,
           htmlReportPreview: event.html_report?.substring(0, 200) || 'N/A',
-          infoTabHtmlPreview: ((event as any).info_tab_html?.substring(0, 200) || 'N/A'),
+          infoTabHtmlPreview: (event as any).info_tab_html?.substring(0, 200) || 'N/A',
           progress: event.progress,
           status: event.status,
-          hasOnCompleteCallback: !!callbacks.onComplete
-        });
-        
+          hasOnCompleteCallback: !!callbacks.onComplete,
+        })
+
         if (event.html_report && event.valuation_id) {
           callbacks.onComplete?.(
             event.html_report,
             event.valuation_id,
             event as any // Pass full event as fullResponse (includes info_tab_html)
-          );
-          
+          )
+
           apiLogger.info('[STREAM-FRONTEND] onComplete callback triggered for report_complete', {
             requestId: streamId,
             valuationId: event.valuation_id,
             htmlReportLength,
             hasInfoTabHtml,
-            infoTabHtmlLength
-          });
+            infoTabHtmlLength,
+          })
         } else {
-          apiLogger.warn('[STREAM-FRONTEND] report_complete event missing html_report or valuation_id', {
-            requestId: streamId,
-            hasHtmlReport,
-            hasValuationId: !!event.valuation_id,
-            htmlReportLength,
-            hasInfoTabHtml,
-            infoTabHtmlLength
-          });
+          apiLogger.warn(
+            '[STREAM-FRONTEND] report_complete event missing html_report or valuation_id',
+            {
+              requestId: streamId,
+              hasHtmlReport,
+              hasValuationId: !!event.valuation_id,
+              htmlReportLength,
+              hasInfoTabHtml,
+              infoTabHtmlLength,
+            }
+          )
         }
-        break;
+        break
       }
 
       case 'error':
-        callbacks.onError?.(
-          event.error || event.message || 'Unknown error',
-          event.error_type
-        );
-        break;
+        callbacks.onError?.(event.error || event.message || 'Unknown error', event.error_type)
+        break
 
       default:
         apiLogger.warn('Unknown stream event type', {
           requestId: streamId,
-          eventType: event.type
-        });
+          eventType: event.type,
+        })
     }
   }
 
@@ -383,23 +397,23 @@ class ManualValuationStreamService {
    * Close a specific stream
    */
   closeStream(streamId: string): void {
-    const stream = this.activeStreams.get(streamId);
+    const stream = this.activeStreams.get(streamId)
     if (stream) {
-      stream.controller.abort();
+      stream.controller.abort()
       if (stream.reader) {
         stream.reader.cancel().catch(() => {
           // Ignore cancellation errors
-        });
+        })
       }
-      this.activeStreams.delete(streamId);
-      
-      const timeout = this.streamTimeouts.get(streamId);
+      this.activeStreams.delete(streamId)
+
+      const timeout = this.streamTimeouts.get(streamId)
       if (timeout) {
-        clearTimeout(timeout);
-        this.streamTimeouts.delete(streamId);
+        clearTimeout(timeout)
+        this.streamTimeouts.delete(streamId)
       }
-      
-      apiLogger.info('Manual valuation stream closed', { requestId: streamId });
+
+      apiLogger.info('Manual valuation stream closed', { requestId: streamId })
     }
   }
 
@@ -408,26 +422,25 @@ class ManualValuationStreamService {
    */
   closeAllStreams(): void {
     for (const [streamId, stream] of this.activeStreams.entries()) {
-      stream.controller.abort();
+      stream.controller.abort()
       if (stream.reader) {
         stream.reader.cancel().catch(() => {
           // Ignore cancellation errors
-        });
+        })
       }
-      
-      const timeout = this.streamTimeouts.get(streamId);
+
+      const timeout = this.streamTimeouts.get(streamId)
       if (timeout) {
-        clearTimeout(timeout);
+        clearTimeout(timeout)
       }
-      
-      apiLogger.info('Manual valuation stream closed', { requestId: streamId });
+
+      apiLogger.info('Manual valuation stream closed', { requestId: streamId })
     }
-    this.activeStreams.clear();
-    this.streamTimeouts.clear();
+    this.activeStreams.clear()
+    this.streamTimeouts.clear()
   }
 }
 
 // Export singleton instance
-export const manualValuationStreamService = new ManualValuationStreamService();
-export type { StreamCallbacks, StreamEvent };
-
+export const manualValuationStreamService = new ManualValuationStreamService()
+export type { StreamCallbacks, StreamEvent }

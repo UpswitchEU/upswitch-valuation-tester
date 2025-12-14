@@ -1,0 +1,45 @@
+# Biome ignore file for Next.js project
+
+# Build outputs
+.next/
+dist/
+build/
+out/
+
+# Dependencies
+node_modules/
+
+# Cache
+.cache/
+.turbo/
+
+# Test outputs
+coverage/
+.nyc_output/
+
+# Generated files
+*.min.js
+*.min.css
+*.bundle.js
+
+# Next.js specific
+.next/**
+.vercel/**
+.vercel
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# Logs
+*.log
+npm-debug.log*
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db

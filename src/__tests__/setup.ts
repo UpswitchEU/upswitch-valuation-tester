@@ -1,55 +1,54 @@
 /**
- * Test Setup File for Valuation Tester
- * 
- * Global test configuration and mocks
+ * Vitest Test Setup File for Next.js App Router
+ *
+ * Global test configuration and mocks for Next.js 13+ App Router
  */
 
-import { vi, beforeEach, afterEach } from 'vitest';
-import '@testing-library/jest-dom';
+import '@testing-library/jest-dom'
+import { cleanup } from '@testing-library/react'
+import React from 'react'
+import { afterEach, beforeEach, vi } from 'vitest'
 
-// Mock localStorage
-Object.defineProperty(window, 'localStorage', {
-  value: {
-    getItem: vi.fn(),
-    setItem: vi.fn(),
-    removeItem: vi.fn(),
-    clear: vi.fn(),
+// Cleanup after each test
+afterEach(() => {
+  cleanup()
+  vi.clearAllMocks()
+})
+
+// Mock Next.js router
+vi.mock('next/navigation', () => ({
+  useRouter: () => ({
+    push: vi.fn(),
+    replace: vi.fn(),
+    prefetch: vi.fn(),
+    back: vi.fn(),
+    forward: vi.fn(),
+    refresh: vi.fn(),
+  }),
+  usePathname: () => '/',
+  useSearchParams: () => new URLSearchParams(),
+  useParams: () => ({}),
+}))
+
+// Mock Next.js Image component
+vi.mock('next/image', () => ({
+  default: (props: any) => {
+    // Return a simple img element using React.createElement
+    return React.createElement('img', props)
   },
-  writable: true,
-});
+}))
 
-// Mock sessionStorage
-Object.defineProperty(window, 'sessionStorage', {
-  value: {
-    getItem: vi.fn(),
-    setItem: vi.fn(),
-    removeItem: vi.fn(),
-    clear: vi.fn(),
+// Mock Next.js Link component
+vi.mock('next/link', () => ({
+  default: ({ children, href, ...props }: any) => {
+    return React.createElement('a', { href, ...props }, children)
   },
-  writable: true,
-});
+}))
 
-// Mock fetch
-global.fetch = vi.fn();
-
-// Mock ResizeObserver
-global.ResizeObserver = vi.fn().mockImplementation(() => ({
-  observe: vi.fn(),
-  unobserve: vi.fn(),
-  disconnect: vi.fn(),
-}));
-
-// Mock IntersectionObserver
-global.IntersectionObserver = vi.fn().mockImplementation(() => ({
-  observe: vi.fn(),
-  unobserve: vi.fn(),
-  disconnect: vi.fn(),
-}));
-
-// Mock matchMedia
+// Mock window.matchMedia
 Object.defineProperty(window, 'matchMedia', {
   writable: true,
-  value: vi.fn().mockImplementation(query => ({
+  value: vi.fn().mockImplementation((query) => ({
     matches: false,
     media: query,
     onchange: null,
@@ -59,24 +58,59 @@ Object.defineProperty(window, 'matchMedia', {
     removeEventListener: vi.fn(),
     dispatchEvent: vi.fn(),
   })),
-});
+})
 
-// Mock console methods to reduce noise in tests
-const originalConsoleError = console.error;
-const originalConsoleWarn = console.warn;
+// Mock ResizeObserver
+global.ResizeObserver = vi.fn().mockImplementation(() => ({
+  observe: vi.fn(),
+  unobserve: vi.fn(),
+  disconnect: vi.fn(),
+}))
 
+// Mock IntersectionObserver
+global.IntersectionObserver = vi.fn().mockImplementation(() => ({
+  observe: vi.fn(),
+  unobserve: vi.fn(),
+  disconnect: vi.fn(),
+}))
+
+// Mock fetch
+global.fetch = vi.fn()
+
+// Mock localStorage
+const localStorageMock = {
+  getItem: vi.fn(),
+  setItem: vi.fn(),
+  removeItem: vi.fn(),
+  clear: vi.fn(),
+}
+Object.defineProperty(window, 'localStorage', {
+  value: localStorageMock,
+  writable: true,
+})
+
+// Mock sessionStorage
+const sessionStorageMock = {
+  getItem: vi.fn(),
+  setItem: vi.fn(),
+  removeItem: vi.fn(),
+  clear: vi.fn(),
+}
+Object.defineProperty(window, 'sessionStorage', {
+  value: sessionStorageMock,
+  writable: true,
+})
+
+// Suppress console errors in tests (optional - comment out if you want to see them)
+// Note: This is commented out by default to help with debugging
+// Uncomment if you want to suppress console output during tests
+/*
 beforeEach(() => {
-  // Reset all mocks before each test
-  vi.clearAllMocks();
-  
-  // Reset fetch mock
-  if (global.fetch) {
-    (global.fetch as any).mockClear();
-  }
-});
+  vi.spyOn(console, 'error').mockImplementation(() => {})
+  vi.spyOn(console, 'warn').mockImplementation(() => {})
+})
 
 afterEach(() => {
-  // Restore console methods
-  console.error = originalConsoleError;
-  console.warn = originalConsoleWarn;
-});
+  vi.restoreAllMocks()
+})
+*/

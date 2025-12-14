@@ -1,8 +1,7 @@
 /**
  * Valuation Hooks
- * 
+ *
  * Custom React hooks for valuation logic
  */
 
-export { useValuationOrchestrator } from './useValuationOrchestrator';
-
+// No hooks currently exported - valuation logic is handled in components

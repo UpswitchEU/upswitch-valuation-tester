@@ -1,9 +1,9 @@
 /**
  * Debug Logger Utility
- * 
+ *
  * Provides environment-aware logging that only outputs in development
  * or when explicitly enabled via localStorage.
- * 
+ *
  * Usage:
  *   debugLogger.log('[Component]', 'message', { data });
  *   debugLogger.warn('[Component]', 'warning', { data });
@@ -11,42 +11,42 @@
  */
 
 class DebugLogger {
-  private enabled: boolean;
+  private enabled: boolean
 
   constructor() {
     // Enable in development OR if DEBUG_CONVERSATION flag is set
-    this.enabled = 
-      import.meta.env.DEV || 
-      (typeof window !== 'undefined' && localStorage.getItem('DEBUG_CONVERSATION') === 'true');
+    this.enabled =
+      (typeof process !== 'undefined' && process.env.NODE_ENV === 'development') ||
+      (typeof window !== 'undefined' && localStorage.getItem('DEBUG_CONVERSATION') === 'true')
   }
 
   /**
    * Check if debugging is enabled
    */
   isEnabled(): boolean {
-    return this.enabled;
+    return this.enabled
   }
 
   /**
    * Enable debugging at runtime
    */
   enable(): void {
-    this.enabled = true;
+    this.enabled = true
     if (typeof window !== 'undefined') {
-      localStorage.setItem('DEBUG_CONVERSATION', 'true');
+      localStorage.setItem('DEBUG_CONVERSATION', 'true')
     }
-    console.log('🔧 Debug logging enabled');
+    console.log('🔧 Debug logging enabled')
   }
 
   /**
    * Disable debugging at runtime
    */
   disable(): void {
-    this.enabled = false;
+    this.enabled = false
     if (typeof window !== 'undefined') {
-      localStorage.removeItem('DEBUG_CONVERSATION');
+      localStorage.removeItem('DEBUG_CONVERSATION')
     }
-    console.log('🔇 Debug logging disabled');
+    console.log('🔇 Debug logging disabled')
   }
 
   /**
@@ -55,9 +55,9 @@ class DebugLogger {
   log(prefix: string, message: string, data?: any): void {
     if (this.enabled) {
       if (data) {
-        console.log(prefix, message, data);
+        console.log(prefix, message, data)
       } else {
-        console.log(prefix, message);
+        console.log(prefix, message)
       }
     }
   }
@@ -68,9 +68,9 @@ class DebugLogger {
   warn(prefix: string, message: string, data?: any): void {
     if (this.enabled) {
       if (data) {
-        console.warn(prefix, message, data);
+        console.warn(prefix, message, data)
       } else {
-        console.warn(prefix, message);
+        console.warn(prefix, message)
       }
     }
   }
@@ -81,9 +81,9 @@ class DebugLogger {
   error(prefix: string, message: string, data?: any): void {
     // Errors are always logged
     if (data) {
-      console.error(prefix, message, data);
+      console.error(prefix, message, data)
     } else {
-      console.error(prefix, message);
+      console.error(prefix, message)
     }
   }
 
@@ -93,9 +93,9 @@ class DebugLogger {
   info(prefix: string, message: string, data?: any): void {
     if (this.enabled) {
       if (data) {
-        console.info(prefix, message, data);
+        console.info(prefix, message, data)
       } else {
-        console.info(prefix, message);
+        console.info(prefix, message)
       }
     }
   }
@@ -105,19 +105,18 @@ class DebugLogger {
    */
   always(prefix: string, message: string, data?: any): void {
     if (data) {
-      console.log(prefix, message, data);
+      console.log(prefix, message, data)
     } else {
-      console.log(prefix, message);
+      console.log(prefix, message)
     }
   }
 }
 
 // Export singleton instance
-export const debugLogger = new DebugLogger();
+export const debugLogger = new DebugLogger()
 
 // Make available on window for easy enable/disable in console
 if (typeof window !== 'undefined') {
-  (window as any).enableDebug = () => debugLogger.enable();
-  (window as any).disableDebug = () => debugLogger.disable();
+  ;(window as any).enableDebug = () => debugLogger.enable()
+  ;(window as any).disableDebug = () => debugLogger.disable()
 }
-

@@ -1,4 +1,8 @@
 /**
+<<<<<<< HEAD
+=======
+<<<<<<< HEAD
+>>>>>>> refactor-gtm
  * Conversational Valuation Feature
  *
  * Contains all components, hooks, and logic specific to the conversational AI-assisted valuation flow.
@@ -28,3 +32,16 @@ export { useValuationOrchestrator } from './hooks/useValuationOrchestrator'
 
 // Types
 export * from './types/conversation'
+<<<<<<< HEAD
+=======
+=======
+ * Conversational Feature - Unified Export
+ *
+ * @module features/conversational
+ */
+
+export * from './components'
+export * from './context'
+export * from './hooks'
+>>>>>>> refactor-gtm
+>>>>>>> refactor-gtm

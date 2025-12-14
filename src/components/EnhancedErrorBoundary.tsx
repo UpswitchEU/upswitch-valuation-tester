@@ -1,37 +1,33 @@
 /**
  * EnhancedErrorBoundary Component
- * 
+ *
  * Improved error boundary with specific error type handling,
  * recovery options, and user-friendly error displays.
- * 
+ *
  * @module components/EnhancedErrorBoundary
  */
 
-import React, { Component, ReactNode } from 'react';
-import { AlertTriangle, RefreshCw, Home } from 'lucide-react';
-import { 
-  isValuationError, 
-  isRecoverableError,
-  getUserFriendlyErrorMessage 
-} from '../types/errors';
-import { chatLogger } from '../utils/logger';
+import { AlertTriangle, Home, RefreshCw } from 'lucide-react'
+import React, { Component, ReactNode } from 'react'
+import { getUserFriendlyErrorMessage, isRecoverableError, isValuationError } from '../types/errors'
+import { chatLogger } from '../utils/logger'
 
 interface Props {
-  children: ReactNode;
-  fallback?: ReactNode;
-  onError?: (error: Error, errorInfo: React.ErrorInfo) => void;
-  onReset?: () => void;
+  children: ReactNode
+  fallback?: ReactNode
+  onError?: (error: Error, errorInfo: React.ErrorInfo) => void
+  onReset?: () => void
 }
 
 interface State {
-  hasError: boolean;
-  error: Error | null;
-  errorInfo: React.ErrorInfo | null;
+  hasError: boolean
+  error: Error | null
+  errorInfo: React.ErrorInfo | null
 }
 
 /**
  * Enhanced Error Boundary with specific error handling
- * 
+ *
  * Features:
  * - Specific error type recognition
  * - Recovery options for recoverable errors
@@ -41,12 +37,12 @@ interface State {
  */
 export class EnhancedErrorBoundary extends Component<Props, State> {
   constructor(props: Props) {
-    super(props);
+    super(props)
     this.state = {
       hasError: false,
       error: null,
       errorInfo: null,
-    };
+    }
   }
 
   static getDerivedStateFromError(error: Error): State {
@@ -54,7 +50,7 @@ export class EnhancedErrorBoundary extends Component<Props, State> {
       hasError: true,
       error,
       errorInfo: null,
-    };
+    }
   }
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
@@ -65,16 +61,16 @@ export class EnhancedErrorBoundary extends Component<Props, State> {
       componentStack: errorInfo.componentStack,
       isValuationError: isValuationError(error),
       recoverable: isRecoverableError(error),
-    });
+    })
 
     // Call onError callback if provided
     if (this.props.onError) {
-      this.props.onError(error, errorInfo);
+      this.props.onError(error, errorInfo)
     }
 
     this.setState({
       errorInfo,
-    });
+    })
   }
 
   handleReset = () => {
@@ -82,30 +78,30 @@ export class EnhancedErrorBoundary extends Component<Props, State> {
       hasError: false,
       error: null,
       errorInfo: null,
-    });
+    })
 
     if (this.props.onReset) {
-      this.props.onReset();
+      this.props.onReset()
     }
-  };
+  }
 
   handleGoHome = () => {
-    window.location.href = '/';
-  };
+    window.location.href = '/'
+  }
 
   render() {
     if (this.state.hasError && this.state.error) {
       // Use custom fallback if provided
       if (this.props.fallback) {
-        return this.props.fallback;
+        return this.props.fallback
       }
 
-      const error = this.state.error;
-      const isRecoverable = isRecoverableError(error);
-      const userMessage = getUserFriendlyErrorMessage(error);
-      
+      const error = this.state.error
+      const isRecoverable = isRecoverableError(error)
+      const userMessage = getUserFriendlyErrorMessage(error)
+
       // Get additional context if it's a ValuationError
-      const context = isValuationError(error) ? error.context : undefined;
+      const context = isValuationError(error) ? error.context : undefined
 
       return (
         <div className="min-h-screen bg-zinc-950 flex items-center justify-center p-4">
@@ -123,9 +119,7 @@ export class EnhancedErrorBoundary extends Component<Props, State> {
             </h2>
 
             {/* Error Message */}
-            <p className="text-zinc-400 text-center mb-6">
-              {userMessage}
-            </p>
+            <p className="text-zinc-400 text-center mb-6">{userMessage}</p>
 
             {/* Error Code (if available) */}
             {isValuationError(error) && (
@@ -136,7 +130,7 @@ export class EnhancedErrorBoundary extends Component<Props, State> {
             )}
 
             {/* Context Info (in development mode) */}
-            {import.meta.env.DEV && context && (
+            {process.env.NODE_ENV === 'development' && context && (
               <details className="bg-zinc-800 border border-zinc-700 rounded p-3 mb-6">
                 <summary className="text-xs text-zinc-400 cursor-pointer">
                   Technical Details (Dev Mode)
@@ -168,7 +162,7 @@ export class EnhancedErrorBoundary extends Component<Props, State> {
             </div>
 
             {/* Stack Trace (development only) */}
-            {import.meta.env.DEV && this.state.error.stack && (
+            {process.env.NODE_ENV === 'development' && this.state.error.stack && (
               <details className="mt-6 bg-zinc-950 border border-zinc-800 rounded p-4">
                 <summary className="text-xs text-zinc-500 cursor-pointer">
                   Stack Trace (Dev Mode)
@@ -180,10 +174,9 @@ export class EnhancedErrorBoundary extends Component<Props, State> {
             )}
           </div>
         </div>
-      );
+      )
     }
 
-    return this.props.children;
+    return this.props.children
   }
 }
-

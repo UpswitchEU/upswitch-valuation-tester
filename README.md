@@ -280,6 +280,31 @@ const validation = await businessTypesApi.validateBusinessTypeData('bakery', {
 
 ---
 
+## 📦 Bundle Optimization
+
+### Bundle Analysis
+```bash
+# Analyze bundle sizes and get optimization recommendations
+yarn bundle-report
+
+# Build with detailed bundle analysis
+yarn analyze-bundle
+```
+
+### Optimization Features
+- ✅ **Lazy Loading**: Heavy components loaded on-demand
+- ✅ **Code Splitting**: Automatic vendor/library separation
+- ✅ **Tree Shaking**: Unused code automatically removed
+- ✅ **Dynamic Imports**: Feature-based chunk splitting
+
+### Bundle Size Targets
+- **Initial Load**: < 2MB (gzipped)
+- **Vendor Chunk**: < 500KB
+- **Feature Chunks**: < 200KB each
+- **Total Bundle**: < 3MB (gzipped)
+
+---
+
 ## 🎨 Branding
 
 ### **Colors** (matching Upswitch brand)
@@ -365,6 +390,10 @@ yarn type-check
 
 # Lint code
 yarn lint
+
+# Bundle analysis and optimization
+yarn analyze-bundle    # Build with bundle analyzer
+yarn bundle-report     # Analyze bundle sizes and get recommendations
 ```
 
 ### **Environment Variables**

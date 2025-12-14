@@ -1,4 +1,3 @@
-
 export const METHODOLOGY_DOCS = {
   'valuation-approach': {
     title: 'Valuation Approach',
@@ -7,17 +6,17 @@ export const METHODOLOGY_DOCS = {
         <div className="mb-6">
           <h3>How We Value Your Business</h3>
           <p>
-            UpSwitch uses a hybrid approach combining two industry-standard methodologies 
-            to provide the most accurate valuation possible for your business.
+            UpSwitch uses a hybrid approach combining two industry-standard methodologies to provide
+            the most accurate valuation possible for your business.
           </p>
         </div>
-        
+
         <div className="mb-6">
           <h4>Discounted Cash Flow (DCF)</h4>
           <p className="mb-3">
-            The DCF method projects your company's future cash flows and discounts them 
-            to present value using a weighted average cost of capital (WACC). This method 
-            is particularly effective for businesses with:
+            The DCF method projects your company's future cash flows and discounts them to present
+            value using a weighted average cost of capital (WACC). This method is particularly
+            effective for businesses with:
           </p>
           <div className="bg-blue-50 rounded-lg p-4 border-l-4 border-blue-500 transition-colors hover:bg-blue-100">
             <div className="space-y-2.5">
@@ -36,25 +35,27 @@ export const METHODOLOGY_DOCS = {
             </div>
           </div>
         </div>
-        
+
         <div className="mb-6">
           <h4>Market Multiples</h4>
           <p className="mb-3">
-            The market multiples approach compares your business to similar companies 
-            that have been sold or are publicly traded. We analyze:
+            The market multiples approach compares your business to similar companies that have been
+            sold or are publicly traded. We analyze:
           </p>
           <div className="bg-purple-50 rounded-lg p-4 border-l-4 border-purple-500 transition-colors hover:bg-purple-100">
             <div className="space-y-2.5">
               <div className="flex items-start gap-3">
                 <div className="flex-shrink-0 w-2 h-2 rounded-full bg-purple-500 mt-2"></div>
                 <p className="text-sm text-gray-700">
-                  <strong className="text-purple-700">Revenue multiples</strong> (Enterprise Value / Revenue)
+                  <strong className="text-purple-700">Revenue multiples</strong> (Enterprise Value /
+                  Revenue)
                 </p>
               </div>
               <div className="flex items-start gap-3">
                 <div className="flex-shrink-0 w-2 h-2 rounded-full bg-purple-500 mt-2"></div>
                 <p className="text-sm text-gray-700">
-                  <strong className="text-purple-700">EBITDA multiples</strong> (Enterprise Value / EBITDA)
+                  <strong className="text-purple-700">EBITDA multiples</strong> (Enterprise Value /
+                  EBITDA)
                 </p>
               </div>
               <div className="flex items-start gap-3">
@@ -64,12 +65,11 @@ export const METHODOLOGY_DOCS = {
             </div>
           </div>
         </div>
-        
+
         <div className="mb-6">
           <h4>Weighted Combination</h4>
           <p className="mb-3">
-            We don't just average the two methods. Instead, we dynamically weight them 
-            based on:
+            We don't just average the two methods. Instead, we dynamically weight them based on:
           </p>
           <div className="bg-emerald-50 rounded-lg p-4 border-l-4 border-emerald-500 transition-colors hover:bg-emerald-100">
             <div className="space-y-2.5">
@@ -92,17 +92,17 @@ export const METHODOLOGY_DOCS = {
             </div>
           </div>
         </div>
-        
+
         <div className="mt-6 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border-l-4 border-blue-500">
           <p className="text-sm text-gray-800 leading-relaxed">
-            <strong className="text-blue-700">Result:</strong> This approach ensures your valuation reflects the most reliable 
-            methodology for your specific business profile.
+            <strong className="text-blue-700">Result:</strong> This approach ensures your valuation
+            reflects the most reliable methodology for your specific business profile.
           </p>
         </div>
       </>
-    )
+    ),
   },
-  
+
   'confidence-score': {
     title: 'Understanding Your Confidence Score',
     content: (
@@ -110,58 +110,74 @@ export const METHODOLOGY_DOCS = {
         <div className="mb-6">
           <h3>What is the Confidence Score?</h3>
           <p>
-            The confidence score indicates how reliable we believe your valuation is, 
-            based on the quality and completeness of your data and current market conditions.
+            The confidence score indicates how reliable we believe your valuation is, based on the
+            quality and completeness of your data and current market conditions.
           </p>
         </div>
-        
+
         <div className="mb-6">
           <h4>How We Calculate Confidence</h4>
           <p className="mb-4 text-gray-600">We evaluate eight key factors:</p>
-          
+
           <div className="space-y-2.5">
             <div className="bg-gray-50 rounded-lg p-4 border-l-4 border-blue-500 transition-colors hover:bg-gray-100">
               <h5 className="text-blue-700 mb-1 font-semibold">Data Quality</h5>
-              <p className="text-sm text-gray-600">Completeness and accuracy of your financial information</p>
+              <p className="text-sm text-gray-600">
+                Completeness and accuracy of your financial information
+              </p>
             </div>
-            
+
             <div className="bg-gray-50 rounded-lg p-4 border-l-4 border-blue-500 transition-colors hover:bg-gray-100">
               <h5 className="text-blue-700 mb-1 font-semibold">Historical Data</h5>
-              <p className="text-sm text-gray-600">Years of historical financial data available for analysis</p>
+              <p className="text-sm text-gray-600">
+                Years of historical financial data available for analysis
+              </p>
             </div>
-            
+
             <div className="bg-gray-50 rounded-lg p-4 border-l-4 border-blue-500 transition-colors hover:bg-gray-100">
               <h5 className="text-blue-700 mb-1 font-semibold">Methodology Agreement</h5>
-              <p className="text-sm text-gray-600">How closely DCF and Multiples valuations agree with each other</p>
+              <p className="text-sm text-gray-600">
+                How closely DCF and Multiples valuations agree with each other
+              </p>
             </div>
-            
+
             <div className="bg-gray-50 rounded-lg p-4 border-l-4 border-blue-500 transition-colors hover:bg-gray-100">
               <h5 className="text-blue-700 mb-1 font-semibold">Industry Benchmarks</h5>
-              <p className="text-sm text-gray-600">Quality and quantity of comparable companies in your industry</p>
+              <p className="text-sm text-gray-600">
+                Quality and quantity of comparable companies in your industry
+              </p>
             </div>
-            
+
             <div className="bg-gray-50 rounded-lg p-4 border-l-4 border-blue-500 transition-colors hover:bg-gray-100">
               <h5 className="text-blue-700 mb-1 font-semibold">Company Profile</h5>
-              <p className="text-sm text-gray-600">Business stability, profitability, and growth characteristics</p>
+              <p className="text-sm text-gray-600">
+                Business stability, profitability, and growth characteristics
+              </p>
             </div>
-            
+
             <div className="bg-gray-50 rounded-lg p-4 border-l-4 border-blue-500 transition-colors hover:bg-gray-100">
               <h5 className="text-blue-700 mb-1 font-semibold">Market Conditions</h5>
-              <p className="text-sm text-gray-600">Current market volatility and economic environment</p>
+              <p className="text-sm text-gray-600">
+                Current market volatility and economic environment
+              </p>
             </div>
-            
+
             <div className="bg-gray-50 rounded-lg p-4 border-l-4 border-blue-500 transition-colors hover:bg-gray-100">
               <h5 className="text-blue-700 mb-1 font-semibold">Geographic Data</h5>
-              <p className="text-sm text-gray-600">Quality of country-specific market data and benchmarks</p>
+              <p className="text-sm text-gray-600">
+                Quality of country-specific market data and benchmarks
+              </p>
             </div>
-            
+
             <div className="bg-gray-50 rounded-lg p-4 border-l-4 border-blue-500 transition-colors hover:bg-gray-100">
               <h5 className="text-blue-700 mb-1 font-semibold">Business Model Clarity</h5>
-              <p className="text-sm text-gray-600">How well your business model fits standard valuation approaches</p>
+              <p className="text-sm text-gray-600">
+                How well your business model fits standard valuation approaches
+              </p>
             </div>
           </div>
         </div>
-        
+
         <div className="mb-6">
           <h4>What the Score Means</h4>
           <div className="space-y-2 mt-3">
@@ -174,7 +190,7 @@ export const METHODOLOGY_DOCS = {
                 <p className="text-xs text-green-700 mt-0.5">Valuation is highly reliable</p>
               </div>
             </div>
-            
+
             <div className="flex items-start gap-3 p-3.5 bg-emerald-50 rounded-lg border border-emerald-200 transition-colors hover:bg-emerald-100">
               <div className="flex-shrink-0 w-20 text-right">
                 <span className="text-sm font-semibold text-emerald-700">80-89%</span>
@@ -184,7 +200,7 @@ export const METHODOLOGY_DOCS = {
                 <p className="text-xs text-emerald-700 mt-0.5">Valuation is very reliable</p>
               </div>
             </div>
-            
+
             <div className="flex items-start gap-3 p-3.5 bg-blue-50 rounded-lg border border-blue-200 transition-colors hover:bg-blue-100">
               <div className="flex-shrink-0 w-20 text-right">
                 <span className="text-sm font-semibold text-blue-700">70-79%</span>
@@ -194,7 +210,7 @@ export const METHODOLOGY_DOCS = {
                 <p className="text-xs text-blue-700 mt-0.5">Valuation is reliable</p>
               </div>
             </div>
-            
+
             <div className="flex items-start gap-3 p-3.5 bg-yellow-50 rounded-lg border border-yellow-200 transition-colors hover:bg-yellow-100">
               <div className="flex-shrink-0 w-20 text-right">
                 <span className="text-sm font-semibold text-yellow-700">60-69%</span>
@@ -204,7 +220,7 @@ export const METHODOLOGY_DOCS = {
                 <p className="text-xs text-yellow-700 mt-0.5">Valuation is reasonably reliable</p>
               </div>
             </div>
-            
+
             <div className="flex items-start gap-3 p-3.5 bg-orange-50 rounded-lg border border-orange-200 transition-colors hover:bg-orange-100">
               <div className="flex-shrink-0 w-20 text-right">
                 <span className="text-sm font-semibold text-orange-700">&lt;60%</span>
@@ -216,7 +232,7 @@ export const METHODOLOGY_DOCS = {
             </div>
           </div>
         </div>
-        
+
         <div>
           <h4>How to Improve Your Score</h4>
           <div className="mt-3 space-y-2">
@@ -239,8 +255,8 @@ export const METHODOLOGY_DOCS = {
           </div>
         </div>
       </>
-    )
-  }
-} as const;
+    ),
+  },
+} as const
 
-export type DocumentationKey = keyof typeof METHODOLOGY_DOCS;
+export type DocumentationKey = keyof typeof METHODOLOGY_DOCS

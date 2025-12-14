@@ -1,8 +1,10 @@
 /**
- * Valuation Components
- * 
- * UI components for valuation workflows
+ * Valuation Feature Components
+ *
+ * Exports unified valuation flow components.
  */
 
-export { ConversationalValuationFlow } from './ConversationalValuationFlow';
-
+// Re-export types
+export type { ValuationFlowType } from './ValuationFlow'
+// Main unified component
+export { ValuationFlow } from './ValuationFlow'

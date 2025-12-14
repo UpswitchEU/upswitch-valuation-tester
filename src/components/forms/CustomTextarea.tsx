@@ -2,30 +2,30 @@
 // Location: src/shared/components/forms/CustomTextarea.tsx
 // Purpose: Reusable textarea with smooth animations and validation states
 
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react'
 
 export interface CustomTextareaProps {
-  label: string;
-  placeholder: string;
-  value: string;
-  onChange: (_e: React.ChangeEvent<HTMLTextAreaElement>) => void;
-  onBlur: (_e: React.FocusEvent<HTMLTextAreaElement>) => void;
-  onFocus?: (_e: React.FocusEvent<HTMLTextAreaElement>) => void;
-  name: string;
-  className?: string;
-  error?: string;
-  touched?: boolean;
-  textareaRef?: React.RefObject<HTMLTextAreaElement>;
-  required?: boolean;
-  disabled?: boolean;
-      rows?: number;
-      minHeight?: number;
-      maxHeight?: number;
-      autoResize?: boolean;
-      minRows?: number;
-      maxRows?: number;
-      characterLimit?: number;
-      description?: string;
+  label: string
+  placeholder: string
+  value: string
+  onChange: (_e: React.ChangeEvent<HTMLTextAreaElement>) => void
+  onBlur: (_e: React.FocusEvent<HTMLTextAreaElement>) => void
+  onFocus?: (_e: React.FocusEvent<HTMLTextAreaElement>) => void
+  name: string
+  className?: string
+  error?: string
+  touched?: boolean
+  textareaRef?: React.RefObject<HTMLTextAreaElement>
+  required?: boolean
+  disabled?: boolean
+  rows?: number
+  minHeight?: number
+  maxHeight?: number
+  autoResize?: boolean
+  minRows?: number
+  maxRows?: number
+  characterLimit?: number
+  description?: string
 }
 
 const CustomTextarea: React.FC<CustomTextareaProps> = ({
@@ -42,52 +42,52 @@ const CustomTextarea: React.FC<CustomTextareaProps> = ({
   textareaRef,
   required = false,
   disabled = false,
-      rows = 4,
-      minHeight = 120,
-      maxHeight,
-      autoResize = true,
-      minRows,
-      maxRows,
-      characterLimit,
-      description,
+  rows = 4,
+  minHeight = 120,
+  maxHeight,
+  autoResize = true,
+  minRows,
+  maxRows,
+  characterLimit,
+  description,
 }) => {
-  const [isFocused, setIsFocused] = useState(false);
-  const [hasContent, setHasContent] = useState(false);
-  const internalRef = useRef<HTMLTextAreaElement>(null);
-  const ref = textareaRef || internalRef;
+  const [isFocused, setIsFocused] = useState(false)
+  const [hasContent, setHasContent] = useState(false)
+  const internalRef = useRef<HTMLTextAreaElement>(null)
+  const ref = textareaRef || internalRef
 
   useEffect(() => {
-    setHasContent(!!value);
-  }, [value]);
+    setHasContent(!!value)
+  }, [value])
 
   const handleFocus = (e: React.FocusEvent<HTMLTextAreaElement>) => {
-    setIsFocused(true);
-    onFocus?.(e);
-  };
+    setIsFocused(true)
+    onFocus?.(e)
+  }
 
   const handleBlur = (e: React.FocusEvent<HTMLTextAreaElement>) => {
-    setIsFocused(false);
-    onBlur(e);
-  };
+    setIsFocused(false)
+    onBlur(e)
+  }
 
-  const hasError = error && touched;
+  const hasError = error && touched
 
-      // Auto-resize functionality
-      const adjustHeight = () => {
-        if (autoResize && ref.current) {
-          const textarea = ref.current;
-          textarea.style.height = 'auto';
-          const scrollHeight = textarea.scrollHeight;
-          const minHeightPx = minRows ? minRows * 24 : minHeight; // 24px per row
-          const maxHeightPx = maxRows ? maxRows * 24 : (maxHeight || minHeight * 3);
-          const newHeight = Math.min(Math.max(scrollHeight, minHeightPx), maxHeightPx);
-          textarea.style.height = `${newHeight}px`;
-        }
-      };
+  // Auto-resize functionality
+  const adjustHeight = useCallback(() => {
+    if (autoResize && ref.current) {
+      const textarea = ref.current
+      textarea.style.height = 'auto'
+      const scrollHeight = textarea.scrollHeight
+      const minHeightPx = minRows ? minRows * 24 : minHeight // 24px per row
+      const maxHeightPx = maxRows ? maxRows * 24 : maxHeight || minHeight * 3
+      const newHeight = Math.min(Math.max(scrollHeight, minHeightPx), maxHeightPx)
+      textarea.style.height = `${newHeight}px`
+    }
+  }, [autoResize, minRows, minHeight, maxRows, maxHeight, ref])
 
   useEffect(() => {
-    adjustHeight();
-  }, [value, autoResize, minHeight, maxHeight, adjustHeight]);
+    adjustHeight()
+  }, [adjustHeight])
 
   return (
     <div className={`mb-6 ${className}`}>
@@ -121,7 +121,7 @@ const CustomTextarea: React.FC<CustomTextareaProps> = ({
                absolute left-4 transition-all duration-200 ease-in-out pointer-events-none
             ${
               hasContent || isFocused || value
-                ? 'top-3 text-xs text-gray-600' 
+                ? 'top-3 text-xs text-gray-600'
                 : 'top-5 text-md text-gray-500'
             }
             ${hasError ? 'text-red-600' : ''}
@@ -131,19 +131,21 @@ const CustomTextarea: React.FC<CustomTextareaProps> = ({
         </label>
       </div>
 
-          {hasError && <span className="block text-sm text-red-600 mt-2 font-medium">{error}</span>}
-          
-          {/* Character limit and description */}
-          <div className="flex justify-between items-center mt-2">
-            {description && <span className="text-sm text-gray-500">{description}</span>}
-            {characterLimit && (
-              <span className={`text-sm ${value.length > characterLimit ? 'text-red-500' : 'text-gray-500'}`}>
-                {value.length}/{characterLimit}
-              </span>
-            )}
-          </div>
-        </div>
-      );
-    };
+      {hasError && <span className="block text-sm text-red-600 mt-2 font-medium">{error}</span>}
 
-export default CustomTextarea;
+      {/* Character limit and description */}
+      <div className="flex justify-between items-center mt-2">
+        {description && <span className="text-sm text-gray-500">{description}</span>}
+        {characterLimit && (
+          <span
+            className={`text-sm ${value.length > characterLimit ? 'text-red-500' : 'text-gray-500'}`}
+          >
+            {value.length}/{characterLimit}
+          </span>
+        )}
+      </div>
+    </div>
+  )
+}
+
+export default CustomTextarea

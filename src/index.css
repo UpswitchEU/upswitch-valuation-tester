@@ -1,5 +1,5 @@
 /* Import animations */
-@import './styles/animations.css';
+@import "./styles/animations.css";
 
 @tailwind base;
 @tailwind components;
@@ -7,8 +7,14 @@
 
 /* Typing Animation Keyframes */
 @keyframes blink {
-  0%, 49% { opacity: 1; }
-  50%, 100% { opacity: 0; }
+  0%,
+  49% {
+    opacity: 1;
+  }
+  50%,
+  100% {
+    opacity: 0;
+  }
 }
 
 .animate-blink {
@@ -33,12 +39,14 @@
 
 /* Typing Indicator Animation */
 @keyframes typingDots {
-  0%, 60%, 100% { 
-    opacity: 0.3; 
+  0%,
+  60%,
+  100% {
+    opacity: 0.3;
     transform: scale(1);
   }
-  30% { 
-    opacity: 1; 
+  30% {
+    opacity: 1;
     transform: scale(1.1);
   }
 }
@@ -52,19 +60,25 @@
   animation: typingDots 1.4s infinite;
 }
 
-.typing-indicator .dot:nth-child(1) { animation-delay: 0s; }
-.typing-indicator .dot:nth-child(2) { animation-delay: 0.2s; }
-.typing-indicator .dot:nth-child(3) { animation-delay: 0.4s; }
+.typing-indicator .dot:nth-child(1) {
+  animation-delay: 0s;
+}
+.typing-indicator .dot:nth-child(2) {
+  animation-delay: 0.2s;
+}
+.typing-indicator .dot:nth-child(3) {
+  animation-delay: 0.4s;
+}
 
 @layer base {
   :root {
     --navbar-height: 4rem;
   }
-  
+
   html {
-    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    font-family: "Inter", system-ui, -apple-system, sans-serif;
   }
-  
+
   body {
     @apply bg-canvas text-slate-ink;
   }
@@ -74,15 +88,15 @@
   .gradient-primary {
     @apply bg-gradient-to-r from-primary-600 to-primary-500;
   }
-  
+
   .gradient-hero {
     @apply bg-gradient-to-br from-canvas via-white to-canvas;
   }
-  
+
   .glass-effect {
     @apply bg-canvas/80 backdrop-blur-sm border border-white/20;
   }
-  
+
   /* Seamless textarea - completely remove borders like Ilara */
   .textarea-seamless {
     border: none !important;
@@ -92,27 +106,27 @@
     -moz-appearance: none !important;
     appearance: none !important;
   }
-  
+
   .textarea-seamless:focus {
     border: none !important;
     outline: none !important;
     box-shadow: none !important;
     ring: none !important;
   }
-  
+
   /* Data collection animations */
   .data-collected-item {
     animation: slideIn 0.3s ease-out;
   }
-  
+
   .valuation-preview-item {
     animation: fadeInUp 0.5s ease-out;
   }
-  
+
   .progress-bar-animation {
     transition: width 0.5s ease-in-out;
   }
-  
+
   .card-elevated {
     @apply bg-white rounded-xl shadow-elevated;
   }
@@ -120,7 +134,8 @@
 
 /* Custom animations */
 @keyframes pulse-slow {
-  0%, 100% {
+  0%,
+  100% {
     opacity: 1;
   }
   50% {
@@ -186,7 +201,7 @@
 
 /* Valuation Report Preview Styles (Google Docs / Print Preview Style) */
 .valuation-report-preview {
-  background-color: #F3F4F6; /* Gray-100 background for the preview area */
+  background-color: #f3f4f6; /* Gray-100 background for the preview area */
   padding: 40px;
   min-height: 100%;
 }
@@ -197,7 +212,9 @@
   padding: 2cm 1.5cm;
   margin: 0 auto 40px auto;
   background: white;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  box-shadow:
+    0 4px 6px -1px rgba(0, 0, 0, 0.1),
+    0 2px 4px -1px rgba(0, 0, 0, 0.06);
   position: relative;
   box-sizing: border-box;
 }
@@ -212,7 +229,7 @@
     background: white;
     padding: 0;
   }
-  
+
   .valuation-report-preview .page {
     box-shadow: none;
     margin: 0;
@@ -238,7 +255,9 @@
   min-height: 297mm;
   margin: 24px auto;
   background: white;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  box-shadow:
+    0 4px 6px -1px rgba(0, 0, 0, 0.1),
+    0 2px 4px -1px rgba(0, 0, 0, 0.06);
   position: relative;
   page-break-after: always;
   /* No padding on container, to allow full bleed design */
@@ -246,19 +265,19 @@
 
 /* CSS Variables for Colors */
 .valuation-report-preview {
-  --upswitch-navy: #2B303A; /* Slate Ink - Primary Text */
-  --upswitch-blue: #4A5D4F; /* Sage Foundation - Primary Brand */
-  --text-dark: #2B303A;     /* Slate Ink */
-  --text-body: #4B5563;     /* Slate-600 */
-  --text-muted: #6B7280;    /* Slate-500 */
-  --bg-subtle: #F4F1EA;     /* Canvas */
-  --border-light: #E2E8F0;  /* Slate-200 */
-  
+  --upswitch-navy: #2b303a; /* Slate Ink - Primary Text */
+  --upswitch-blue: #4a5d4f; /* Sage Foundation - Primary Brand */
+  --text-dark: #2b303a; /* Slate Ink */
+  --text-body: #4b5563; /* Slate-600 */
+  --text-muted: #6b7280; /* Slate-500 */
+  --bg-subtle: #f4f1ea; /* Canvas */
+  --border-light: #e2e8f0; /* Slate-200 */
+
   /* Base Font settings */
-  font-family: 'Inter', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  font-family: "Inter", "Helvetica Neue", Helvetica, Arial, sans-serif;
   font-size: 11pt;
   line-height: 1.5;
-  color: #2B303A;
+  color: #2b303a;
 }
 
 /* Reset internal elements */
@@ -270,7 +289,7 @@
 
 /* Headers */
 .valuation-report-preview h1 {
-  font-family: 'Inter', sans-serif;
+  font-family: "Inter", sans-serif;
   font-size: 28pt;
   font-weight: 800;
   color: var(--text-dark);
@@ -293,7 +312,7 @@
 }
 
 .valuation-report-preview h2 {
-  font-family: 'Inter', sans-serif;
+  font-family: "Inter", sans-serif;
   font-size: 18pt;
   font-weight: 700;
   color: var(--text-dark);
@@ -305,7 +324,7 @@
 }
 
 .valuation-report-preview h3 {
-  font-family: 'Inter', sans-serif;
+  font-family: "Inter", sans-serif;
   font-size: 14pt;
   font-weight: 600;
   color: var(--text-dark);
@@ -371,13 +390,13 @@
 }
 
 .valuation-report-preview .report-callout.warning {
-  background-color: #FAF5EB; /* Harvest Tint */
-  border-left-color: #D9A558; /* Harvest */
+  background-color: #faf5eb; /* Harvest Tint */
+  border-left-color: #d9a558; /* Harvest */
 }
 
 .valuation-report-preview .report-callout.danger {
-  background-color: #F5EBEA; /* Rust Tint */
-  border-left-color: #B85C56; /* Rust */
+  background-color: #f5ebea; /* Rust Tint */
+  border-left-color: #b85c56; /* Rust */
 }
 
 .valuation-report-preview .report-callout p {
@@ -387,10 +406,10 @@
 
 /* The "Box" Container for Tables */
 .valuation-report-preview .table-card {
-  background: #FFFFFF;
-  border: 1px solid #E2E8F0; /* Slate-200 */
+  background: #ffffff;
+  border: 1px solid #e2e8f0; /* Slate-200 */
   border-radius: 8px;
-  box-shadow: 0 1px 2px rgba(0,0,0,0.05); /* Subtle depth */
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05); /* Subtle depth */
   overflow: hidden; /* Keeps rounded corners clean */
   margin-bottom: 24pt;
   page-break-inside: avoid;
@@ -407,7 +426,7 @@
 /* Header background within card */
 .valuation-report-preview .table-card .step-table th,
 .valuation-report-preview .table-card table th {
-  background-color: #F8FAFC;
+  background-color: #f8fafc;
   border-top: none;
 }
 
@@ -421,7 +440,7 @@
   border-spacing: 0;
   margin-top: 24pt;
   margin-bottom: 24pt;
-  font-family: 'Inter', sans-serif;
+  font-family: "Inter", sans-serif;
   font-size: 10pt;
   line-height: 1.6;
   border: none;
@@ -449,13 +468,13 @@
 
 .valuation-report-preview th,
 .valuation-report-preview .step-table th {
-  background-color: #F8FAFC; /* Academic/Formal header background */
-  border-bottom: 1px solid #CBD5E1;
+  background-color: #f8fafc; /* Academic/Formal header background */
+  border-bottom: 1px solid #cbd5e1;
   font-weight: 700;
   color: var(--upswitch-navy);
   padding: 12pt 12pt;
   text-align: left;
-  font-family: 'Inter', sans-serif;
+  font-family: "Inter", sans-serif;
   text-transform: uppercase;
   font-size: 9pt;
   letter-spacing: 0.05em;
@@ -468,7 +487,7 @@
 .valuation-report-preview .step-table td {
   padding: 12pt 12pt;
   color: var(--text-body);
-  border-bottom: 1px solid #E2E8F0;
+  border-bottom: 1px solid #e2e8f0;
   border-top: none;
   border-left: none;
   border-right: none;
@@ -483,7 +502,7 @@
 
 .valuation-report-preview tr:last-child td,
 .valuation-report-preview .step-table tr:last-child td {
-  border-bottom: 1px solid #CBD5E1; /* Matches header for framing */
+  border-bottom: 1px solid #cbd5e1; /* Matches header for framing */
 }
 
 .valuation-report-preview td.number,
@@ -497,7 +516,7 @@
 }
 
 .valuation-report-preview tr:nth-child(even) {
-  background-color: #FFFFFF; /* No stripes, just clean lines */
+  background-color: #ffffff; /* No stripes, just clean lines */
 }
 
 /* Valuation Box */
@@ -515,7 +534,7 @@
   font-weight: 800;
   margin: 12pt 0 16pt 0;
   color: var(--upswitch-navy);
-  font-family: 'Inter', sans-serif;
+  font-family: "Inter", sans-serif;
   letter-spacing: -1pt;
 }
 
@@ -559,7 +578,7 @@
 
 /* Classification Banner */
 .valuation-report-preview .classification-banner {
-  background-color: #FFFFFF;
+  background-color: #ffffff;
   border: 1pt solid var(--upswitch-navy);
   padding: 12pt;
   margin: 24pt 0;
@@ -568,21 +587,21 @@
 }
 
 .valuation-report-preview .classification-banner.preliminary {
-  background-color: #FEF2F2;
-  border: 1px solid #FECACA;
-  border-left: 4pt solid #EF4444;
+  background-color: #fef2f2;
+  border: 1px solid #fecaca;
+  border-left: 4pt solid #ef4444;
   border-radius: 6px;
   padding: 1.5rem;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
 }
 
 .valuation-report-preview .classification-banner.limited {
-  background-color: #FFF7ED;
-  border: 1px solid #FED7AA;
-  border-left: 4pt solid #F97316;
+  background-color: #fff7ed;
+  border: 1px solid #fed7aa;
+  border-left: 4pt solid #f97316;
   border-radius: 6px;
   padding: 1.5rem;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
 }
 
 .valuation-report-preview .classification-banner h3 {
@@ -657,24 +676,24 @@
 }
 
 .valuation-report-preview .status-badge.completed {
-  background-color: #E9F0EB; /* Moss Tint */
-  color: #6B8E72; /* Moss */
+  background-color: #e9f0eb; /* Moss Tint */
+  color: #6b8e72; /* Moss */
 }
 
 .valuation-report-preview .status-badge.skipped {
-  background-color: #FAF5EB; /* Harvest Tint */
-  color: #D9A558; /* Harvest */
+  background-color: #faf5eb; /* Harvest Tint */
+  color: #d9a558; /* Harvest */
 }
 
 .valuation-report-preview .status-badge.failed {
-  background-color: #F5EBEA; /* Rust Tint */
-  color: #B85C56; /* Rust */
+  background-color: #f5ebea; /* Rust Tint */
+  color: #b85c56; /* Rust */
 }
 
 .valuation-report-preview .status-badge.pending,
 .valuation-report-preview .status-badge.not_executed {
-  background-color: #EBE7DE; /* Stone 100 */
-  color: #85827A; /* Stone 500 */
+  background-color: #ebe7de; /* Stone 100 */
+  color: #85827a; /* Stone 500 */
 }
 .valuation-report-preview div.flex.items-center.mb-4:has(svg.lucide-circle-check-big),
 .valuation-report-preview div:has(> svg.lucide-circle-check-big):has(> h2),

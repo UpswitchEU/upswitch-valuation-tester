@@ -1,9 +1,9 @@
 /**
  * Error Types
- * 
+ *
  * Specific error classes for domain-specific error handling.
  * Follows the principle of "specific errors over generic errors".
- * 
+ *
  * @module types/errors
  */
 
@@ -14,17 +14,17 @@ export class ValuationError extends Error {
   /**
    * Error code for programmatic handling
    */
-  public readonly code: string;
-  
+  public readonly code: string
+
   /**
    * Whether the error is recoverable (user can retry)
    */
-  public readonly recoverable: boolean;
-  
+  public readonly recoverable: boolean
+
   /**
    * Additional context about the error
    */
-  public readonly context?: Record<string, any>;
+  public readonly context?: Record<string, any>
 
   constructor(
     message: string,
@@ -32,15 +32,15 @@ export class ValuationError extends Error {
     recoverable: boolean = true,
     context?: Record<string, any>
   ) {
-    super(message);
-    this.name = 'ValuationError';
-    this.code = code;
-    this.recoverable = recoverable;
-    this.context = context;
-    
+    super(message)
+    this.name = 'ValuationError'
+    this.code = code
+    this.recoverable = recoverable
+    this.context = context
+
     // Maintains proper stack trace for where our error was thrown (only available on V8)
     if (Error.captureStackTrace) {
-      Error.captureStackTrace(this, ValuationError);
+      Error.captureStackTrace(this, ValuationError)
     }
   }
 }
@@ -50,8 +50,8 @@ export class ValuationError extends Error {
  */
 export class SessionRestorationError extends ValuationError {
   constructor(message: string, context?: Record<string, any>) {
-    super(message, 'SESSION_RESTORATION_ERROR', true, context);
-    this.name = 'SessionRestorationError';
+    super(message, 'SESSION_RESTORATION_ERROR', true, context)
+    this.name = 'SessionRestorationError'
   }
 }
 
@@ -60,8 +60,8 @@ export class SessionRestorationError extends ValuationError {
  */
 export class ReportGenerationError extends ValuationError {
   constructor(message: string, recoverable: boolean = true, context?: Record<string, any>) {
-    super(message, 'REPORT_GENERATION_ERROR', recoverable, context);
-    this.name = 'ReportGenerationError';
+    super(message, 'REPORT_GENERATION_ERROR', recoverable, context)
+    this.name = 'ReportGenerationError'
   }
 }
 
@@ -69,8 +69,8 @@ export class ReportGenerationError extends ValuationError {
  * Error thrown when API calls fail
  */
 export class APIError extends ValuationError {
-  public readonly statusCode?: number;
-  public readonly endpoint?: string;
+  public readonly statusCode?: number
+  public readonly endpoint?: string
 
   constructor(
     message: string,
@@ -79,10 +79,10 @@ export class APIError extends ValuationError {
     recoverable: boolean = true,
     context?: Record<string, any>
   ) {
-    super(message, 'API_ERROR', recoverable, context);
-    this.name = 'APIError';
-    this.statusCode = statusCode;
-    this.endpoint = endpoint;
+    super(message, 'API_ERROR', recoverable, context)
+    this.name = 'APIError'
+    this.statusCode = statusCode
+    this.endpoint = endpoint
   }
 }
 
@@ -90,19 +90,14 @@ export class APIError extends ValuationError {
  * Error thrown when validation fails
  */
 export class ValidationError extends ValuationError {
-  public readonly field?: string;
-  public readonly value?: any;
+  public readonly field?: string
+  public readonly value?: any
 
-  constructor(
-    message: string,
-    field?: string,
-    value?: any,
-    context?: Record<string, any>
-  ) {
-    super(message, 'VALIDATION_ERROR', true, context);
-    this.name = 'ValidationError';
-    this.field = field;
-    this.value = value;
+  constructor(message: string, field?: string, value?: any, context?: Record<string, any>) {
+    super(message, 'VALIDATION_ERROR', true, context)
+    this.name = 'ValidationError'
+    this.field = field
+    this.value = value
   }
 }
 
@@ -110,12 +105,12 @@ export class ValidationError extends ValuationError {
  * Error thrown when credit check fails
  */
 export class CreditError extends ValuationError {
-  public readonly creditsRemaining: number;
+  public readonly creditsRemaining: number
 
   constructor(message: string, creditsRemaining: number = 0) {
-    super(message, 'CREDIT_ERROR', false, { creditsRemaining });
-    this.name = 'CreditError';
-    this.creditsRemaining = creditsRemaining;
+    super(message, 'CREDIT_ERROR', false, { creditsRemaining })
+    this.name = 'CreditError'
+    this.creditsRemaining = creditsRemaining
   }
 }
 
@@ -124,8 +119,8 @@ export class CreditError extends ValuationError {
  */
 export class AuthenticationError extends ValuationError {
   constructor(message: string, context?: Record<string, any>) {
-    super(message, 'AUTHENTICATION_ERROR', false, context);
-    this.name = 'AuthenticationError';
+    super(message, 'AUTHENTICATION_ERROR', false, context)
+    this.name = 'AuthenticationError'
   }
 }
 
@@ -133,12 +128,12 @@ export class AuthenticationError extends ValuationError {
  * Error thrown when rate limiting is hit
  */
 export class RateLimitError extends ValuationError {
-  public readonly retryAfter?: number;
+  public readonly retryAfter?: number
 
   constructor(message: string, retryAfter?: number) {
-    super(message, 'RATE_LIMIT_ERROR', true, { retryAfter });
-    this.name = 'RateLimitError';
-    this.retryAfter = retryAfter;
+    super(message, 'RATE_LIMIT_ERROR', true, { retryAfter })
+    this.name = 'RateLimitError'
+    this.retryAfter = retryAfter
   }
 }
 
@@ -147,8 +142,8 @@ export class RateLimitError extends ValuationError {
  */
 export class NetworkError extends ValuationError {
   constructor(message: string, context?: Record<string, any>) {
-    super(message, 'NETWORK_ERROR', true, context);
-    this.name = 'NetworkError';
+    super(message, 'NETWORK_ERROR', true, context)
+    this.name = 'NetworkError'
   }
 }
 
@@ -157,8 +152,8 @@ export class NetworkError extends ValuationError {
  */
 export class ConversationStateError extends ValuationError {
   constructor(message: string, context?: Record<string, any>) {
-    super(message, 'CONVERSATION_STATE_ERROR', true, context);
-    this.name = 'ConversationStateError';
+    super(message, 'CONVERSATION_STATE_ERROR', true, context)
+    this.name = 'ConversationStateError'
   }
 }
 
@@ -166,7 +161,7 @@ export class ConversationStateError extends ValuationError {
  * Type guard to check if error is a ValuationError
  */
 export function isValuationError(error: unknown): error is ValuationError {
-  return error instanceof ValuationError;
+  return error instanceof ValuationError
 }
 
 /**
@@ -174,9 +169,9 @@ export function isValuationError(error: unknown): error is ValuationError {
  */
 export function isRecoverableError(error: unknown): boolean {
   if (isValuationError(error)) {
-    return error.recoverable;
+    return error.recoverable
   }
-  return false;
+  return false
 }
 
 /**
@@ -184,13 +179,12 @@ export function isRecoverableError(error: unknown): boolean {
  */
 export function getUserFriendlyErrorMessage(error: unknown): string {
   if (isValuationError(error)) {
-    return error.message;
+    return error.message
   }
-  
-  if (error instanceof Error) {
-    return error.message;
-  }
-  
-  return 'An unexpected error occurred. Please try again.';
-}
 
+  if (error instanceof Error) {
+    return error.message
+  }
+
+  return 'An unexpected error occurred. Please try again.'
+}

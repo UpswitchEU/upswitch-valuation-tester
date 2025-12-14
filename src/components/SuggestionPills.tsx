@@ -1,17 +1,17 @@
-import React from 'react';
+import React from 'react'
 
 interface SuggestionPillsProps {
-  suggestions: string[];
-  onSelect: (suggestion: string) => void;
-  disabled?: boolean;
+  suggestions: string[]
+  onSelect: (suggestion: string) => void
+  disabled?: boolean
 }
 
-export const SuggestionPills: React.FC<SuggestionPillsProps> = ({ 
-  suggestions, 
-  onSelect, 
-  disabled = false 
+export const SuggestionPills: React.FC<SuggestionPillsProps> = ({
+  suggestions,
+  onSelect,
+  disabled = false,
 }) => {
-  if (suggestions.length === 0) return null;
+  if (suggestions.length === 0) return null
 
   return (
     <div className="flex gap-2 flex-wrap items-center">
@@ -27,6 +27,5 @@ export const SuggestionPills: React.FC<SuggestionPillsProps> = ({
         </button>
       ))}
     </div>
-  );
-};
-
+  )
+}

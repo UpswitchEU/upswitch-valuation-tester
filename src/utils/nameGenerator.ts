@@ -4,22 +4,22 @@
  * Based on Ilara Mercury's straightforward naming approach
  */
 export class NameGenerator {
-  private static readonly GUEST_REPORT_COUNT_KEY = 'upswitch_guest_report_count';
+  private static readonly GUEST_REPORT_COUNT_KEY = 'upswitch_guest_report_count'
 
   /**
    * Get and increment the sequential report number for guest users
    */
   private static getNextGuestReportNumber(): number {
     try {
-      const stored = localStorage.getItem(this.GUEST_REPORT_COUNT_KEY);
-      const currentCount = stored ? parseInt(stored, 10) : 0;
-      const nextCount = currentCount + 1;
-      localStorage.setItem(this.GUEST_REPORT_COUNT_KEY, nextCount.toString());
-      return nextCount;
+      const stored = localStorage.getItem(this.GUEST_REPORT_COUNT_KEY)
+      const currentCount = stored ? parseInt(stored, 10) : 0
+      const nextCount = currentCount + 1
+      localStorage.setItem(this.GUEST_REPORT_COUNT_KEY, nextCount.toString())
+      return nextCount
     } catch (error) {
       // Fallback if localStorage is not available
-      console.warn('Failed to access localStorage for report count:', error);
-      return 1;
+      console.warn('Failed to access localStorage for report count:', error)
+      return 1
     }
   }
 
@@ -30,34 +30,34 @@ export class NameGenerator {
   static generateValuationName(seedSource?: string): string {
     // For guest users, use sequential numbering starting from 1
     // Check if we're in a guest context (no authenticated user)
-    const isGuest = !localStorage.getItem('upswitch_user_id') && !localStorage.getItem('upswitch_auth_token');
-    
+    const isGuest =
+      !localStorage.getItem('upswitch_user_id') && !localStorage.getItem('upswitch_auth_token')
+
     if (isGuest) {
-      const reportNumber = this.getNextGuestReportNumber();
-      return `Valuation Report #${reportNumber}`;
+      const reportNumber = this.getNextGuestReportNumber()
+      return `Valuation Report #${reportNumber}`
     }
 
     // For authenticated users, generate a unique number from seed
-    let hashSum = 0;
-    const seed = seedSource || Date.now().toString();
-    
+    let hashSum = 0
+    const seed = seedSource || Date.now().toString()
+
     for (let i = 0; i < seed.length; i++) {
-      hashSum += seed.charCodeAt(i) * (i + 1);
+      hashSum += seed.charCodeAt(i) * (i + 1)
     }
 
     // Generate a number between 100-999 for professional look
-    const reportNumber = (hashSum % 900) + 100;
+    const reportNumber = (hashSum % 900) + 100
 
-    return `Valuation Report #${reportNumber}`;
+    return `Valuation Report #${reportNumber}`
   }
-
 
   /**
    * Generate a name based on company name
    */
   static generateFromCompany(companyName: string): string {
     if (!companyName) {
-      return this.generateValuationName();
+      return this.generateValuationName()
     }
 
     // Clean and truncate company name
@@ -66,34 +66,45 @@ export class NameGenerator {
       .split(' ')
       .slice(0, 2) // Take first 2 words max
       .join(' ')
-      .substring(0, 20); // Max 20 chars
+      .substring(0, 20) // Max 20 chars
 
     // Generate unique number from company name
-    let hashSum = 0;
+    let hashSum = 0
     for (let i = 0; i < companyName.length; i++) {
-      hashSum += companyName.charCodeAt(i) * (i + 1);
+      hashSum += companyName.charCodeAt(i) * (i + 1)
     }
 
-    const reportNumber = (hashSum % 900) + 100;
+    const reportNumber = (hashSum % 900) + 100
 
-    return `${cleanName} Valuation #${reportNumber}`;
+    return `${cleanName} Valuation #${reportNumber}`
   }
-
 
   /**
    * Generate a name with date context
    */
   static generateWithDate(baseName?: string): string {
-    const date = new Date();
-    const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 
-                        'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-    const month = monthNames[date.getMonth()];
-    const day = date.getDate();
+    const date = new Date()
+    const monthNames = [
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
+    ]
+    const month = monthNames[date.getMonth()]
+    const day = date.getDate()
 
     if (baseName) {
-      return `${baseName} ${month}-${day}`;
+      return `${baseName} ${month}-${day}`
     }
 
-    return `Valuation Report ${month}-${day}`;
+    return `Valuation Report ${month}-${day}`
   }
 }

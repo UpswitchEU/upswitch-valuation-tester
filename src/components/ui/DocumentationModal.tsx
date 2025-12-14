@@ -1,121 +1,121 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef } from 'react'
 
 interface DocumentationModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-  title: string;
-  content: React.ReactNode;
+  isOpen: boolean
+  onClose: () => void
+  title: string
+  content: React.ReactNode
 }
 
 export const DocumentationModal: React.FC<DocumentationModalProps> = ({
   isOpen,
   onClose,
   title,
-  content
+  content,
 }) => {
-  const modalRef = useRef<HTMLDivElement>(null);
-  const previousActiveElement = useRef<HTMLElement | null>(null);
+  const modalRef = useRef<HTMLDivElement>(null)
+  const previousActiveElement = useRef<HTMLElement | null>(null)
 
   // Handle escape key
   useEffect(() => {
-    if (!isOpen) return;
-    
+    if (!isOpen) return
+
     const handleEscape = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
-        onClose();
+        onClose()
       }
-    };
-    
-    document.addEventListener('keydown', handleEscape);
-    return () => document.removeEventListener('keydown', handleEscape);
-  }, [isOpen, onClose]);
-  
+    }
+
+    document.addEventListener('keydown', handleEscape)
+    return () => document.removeEventListener('keydown', handleEscape)
+  }, [isOpen, onClose])
+
   // Prevent body scroll when modal is open
   useEffect(() => {
     if (isOpen) {
       // Store the previously focused element
-      previousActiveElement.current = document.activeElement as HTMLElement;
-      
+      previousActiveElement.current = document.activeElement as HTMLElement
+
       // Store original overflow and padding values to restore later
-      const originalOverflow = document.body.style.overflow;
-      const originalPaddingRight = document.body.style.paddingRight;
-      
+      const originalOverflow = document.body.style.overflow
+      const originalPaddingRight = document.body.style.paddingRight
+
       // Calculate scrollbar width to prevent layout shift
-      const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth;
-      
+      const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth
+
       // Prevent body scroll and compensate for scrollbar removal
-      document.body.style.overflow = 'hidden';
+      document.body.style.overflow = 'hidden'
       if (scrollbarWidth > 0) {
-        document.body.style.paddingRight = `${scrollbarWidth}px`;
+        document.body.style.paddingRight = `${scrollbarWidth}px`
       }
-      
+
       // Focus the modal for accessibility
       setTimeout(() => {
-        modalRef.current?.focus();
-      }, 100);
-      
+        modalRef.current?.focus()
+      }, 100)
+
       return () => {
         // Restore original values
-        document.body.style.overflow = originalOverflow;
-        document.body.style.paddingRight = originalPaddingRight;
+        document.body.style.overflow = originalOverflow
+        document.body.style.paddingRight = originalPaddingRight
         // Return focus to previous element
-        previousActiveElement.current?.focus();
-      };
+        previousActiveElement.current?.focus()
+      }
     } else {
       // Return focus to previous element when closing
-      previousActiveElement.current?.focus();
+      previousActiveElement.current?.focus()
     }
-  }, [isOpen]);
+  }, [isOpen])
 
   // Focus trap implementation
   useEffect(() => {
-    if (!isOpen) return;
+    if (!isOpen) return
 
-    const modal = modalRef.current;
-    if (!modal) return;
+    const modal = modalRef.current
+    if (!modal) return
 
     const focusableElements = modal.querySelectorAll(
       'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
-    );
-    const firstElement = focusableElements[0] as HTMLElement;
-    const lastElement = focusableElements[focusableElements.length - 1] as HTMLElement;
+    )
+    const firstElement = focusableElements[0] as HTMLElement
+    const lastElement = focusableElements[focusableElements.length - 1] as HTMLElement
 
     const handleTabKey = (e: KeyboardEvent) => {
-      if (e.key !== 'Tab') return;
+      if (e.key !== 'Tab') return
 
       if (e.shiftKey) {
         if (document.activeElement === firstElement) {
-          lastElement?.focus();
-          e.preventDefault();
+          lastElement?.focus()
+          e.preventDefault()
         }
       } else {
         if (document.activeElement === lastElement) {
-          firstElement?.focus();
-          e.preventDefault();
+          firstElement?.focus()
+          e.preventDefault()
         }
       }
-    };
+    }
 
-    modal.addEventListener('keydown', handleTabKey);
-    return () => modal.removeEventListener('keydown', handleTabKey);
-  }, [isOpen]);
-  
-  if (!isOpen) return null;
-  
+    modal.addEventListener('keydown', handleTabKey)
+    return () => modal.removeEventListener('keydown', handleTabKey)
+  }, [isOpen])
+
+  if (!isOpen) return null
+
   return (
-    <div 
+    <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 animate-fade-in"
       onClick={onClose}
       role="dialog"
       aria-modal="true"
       aria-labelledby="modal-title"
-      style={{ 
+      style={{
         backdropFilter: 'blur(4px)',
         WebkitBackdropFilter: 'blur(4px)',
-        willChange: 'opacity'
+        willChange: 'opacity',
       }}
     >
-      <div 
+      <div
         ref={modalRef}
         id="modal-content"
         tabIndex={-1}
@@ -123,40 +123,52 @@ export const DocumentationModal: React.FC<DocumentationModalProps> = ({
         onClick={(e) => e.stopPropagation()}
         style={{
           willChange: 'transform',
-          transform: 'translateZ(0)' // Force GPU acceleration
+          transform: 'translateZ(0)', // Force GPU acceleration
         }}
       >
         {/* Header */}
         <div className="flex items-center justify-between px-6 sm:px-8 pt-6 sm:pt-8 pb-5 sm:pb-6 border-b border-gray-100 flex-shrink-0">
-          <h2 id="modal-title" className="text-xl sm:text-2xl font-semibold text-gray-900 tracking-tight pr-4">
+          <h2
+            id="modal-title"
+            className="text-xl sm:text-2xl font-semibold text-gray-900 tracking-tight pr-4"
+          >
             {title}
           </h2>
-          <button 
-            onClick={onClose} 
+          <button
+            onClick={onClose}
             className="text-gray-400 hover:text-gray-600 transition-colors duration-200 p-2 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 flex-shrink-0"
             aria-label="Close modal"
             type="button"
           >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            <svg
+              className="w-5 h-5"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+              aria-hidden="true"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M6 18L18 6M6 6l12 12"
+              />
             </svg>
           </button>
         </div>
-        
+
         {/* Content */}
-        <div 
+        <div
           className="overflow-y-auto px-6 sm:px-8 py-6 flex-1 documentation-scrollable"
           style={{
             WebkitOverflowScrolling: 'touch', // Smooth iOS scrolling
-            overscrollBehavior: 'contain' // Prevent scroll chaining
+            overscrollBehavior: 'contain', // Prevent scroll chaining
           }}
         >
-          <div className="documentation-content">
-            {content}
-          </div>
+          <div className="documentation-content">{content}</div>
         </div>
       </div>
-      
+
       <style>{`
         .documentation-content {
           color: #374151;
@@ -255,5 +267,5 @@ export const DocumentationModal: React.FC<DocumentationModalProps> = ({
         }
       `}</style>
     </div>
-  );
-};
+  )
+}

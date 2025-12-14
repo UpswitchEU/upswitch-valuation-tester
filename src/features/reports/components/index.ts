@@ -1,9 +1,11 @@
 /**
- * Report Components
+ * Reports Components Module
  * 
- * UI components for report display and generation
+ * Barrel export for report-related components
  */
 
-export { ReportPanel } from './ReportPanel';
-export { Report } from './Report';
+export { ReportCard } from './ReportCard'
+export type { ReportCardProps } from './ReportCard'
 
+export { RecentReportsSection } from './RecentReportsSection'
+export type { RecentReportsSectionProps } from './RecentReportsSection'

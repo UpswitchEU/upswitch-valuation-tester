@@ -112,7 +112,7 @@ export const BrandColors = {
     premium: '#C87F63', // Burnt Clay
     secure: '#2B303A', // Slate Ink
   },
-} as const;
+} as const
 
 export const Typography = {
   fontFamily: {
@@ -138,7 +138,7 @@ export const Typography = {
     '4xl': ['2.25rem', { lineHeight: '2.6rem' }],
     '5xl': ['3rem', { lineHeight: '1' }],
   },
-} as const;
+} as const
 
 export const BorderRadius = {
   none: '0',
@@ -150,10 +150,10 @@ export const BorderRadius = {
   '2xl': '1.25rem',
   '3xl': '1.5rem',
   full: '9999px',
-} as const;
+} as const
 
 export default {
   colors: BrandColors,
   typography: Typography,
   borderRadius: BorderRadius,
-} as const;
+} as const
