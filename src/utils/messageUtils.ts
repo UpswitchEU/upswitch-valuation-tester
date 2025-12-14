@@ -125,25 +125,3 @@ export const safeUpdateMessages = (
   const updated = updateFn(validCurrent)
   return ensureValidMessages(updated)
 }
-
-/**
- * @deprecated Use backend-driven conversation initialization instead
- * Create welcome message with AI branding
- *
- * This function is deprecated because we now use the backend /start endpoint
- * to generate intelligent, personalized first questions based on user profile
- * and the 5-phase conversation flow.
- */
-export const createWelcomeMessage = (aiConfig?: any): Message => {
-  const expertTitle = aiConfig?.branding?.expertTitle?.toLowerCase() || 'ai valuation expert'
-  const levelIndicator = aiConfig?.branding?.levelIndicator?.toLowerCase() || 'big 4 level'
-
-  return createMessage(
-    'ai',
-    `Hello! I'm your ${expertTitle} with ${levelIndicator} expertise. I'll help you get a professional business valuation through our intelligent conversation. What's the name of your business?`,
-    {
-      reasoning: 'Starting with company identification to establish context for valuation',
-      help_text: "Please provide your company's legal name as it appears on official documents",
-    }
-  )
-}

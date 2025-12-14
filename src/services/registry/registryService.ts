@@ -6,19 +6,19 @@
  */
 
 import {
-  ErrorHandler,
-  NetworkError,
-  RegistryError,
-  TimeoutError,
-  ValidationError,
+    ErrorHandler,
+    NetworkError,
+    RegistryError,
+    TimeoutError,
+    ValidationError,
 } from '../../utils/errors'
 import { serviceLogger } from '../../utils/logger'
 import { RegistryCache } from './cache'
 import type {
-  CompanyFinancialData,
-  CompanySearchResponse,
-  RegistryServiceConfig,
-  SearchSuggestion,
+    CompanyFinancialData,
+    CompanySearchResponse,
+    RegistryServiceConfig,
+    SearchSuggestion,
 } from './types'
 
 export class RegistryService {
@@ -32,8 +32,8 @@ export class RegistryService {
     // This ensures we use the same route structure as conversational flow
     this.baseURL =
       config?.baseURL ||
-      import.meta.env.VITE_BACKEND_URL ||
-      import.meta.env.VITE_API_BASE_URL ||
+      process.env.NEXT_PUBLIC_BACKEND_URL ||
+      process.env.NEXT_PUBLIC_API_BASE_URL ||
       'https://web-production-8d00b.up.railway.app'
     this.timeout = config?.timeout || 10000
     this.cache = new RegistryCache(config?.maxCacheSize, config?.cacheTTL)

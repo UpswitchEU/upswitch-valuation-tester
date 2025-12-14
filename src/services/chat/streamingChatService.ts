@@ -16,8 +16,8 @@ export class StreamingChatService {
   constructor() {
     // FIX: Use Node.js backend (proxy), not Python engine directly
     this.baseURL =
-      import.meta.env.VITE_BACKEND_URL ||
-      import.meta.env.VITE_API_URL ||
+      process.env.NEXT_PUBLIC_BACKEND_URL ||
+      process.env.NEXT_PUBLIC_API_URL ||
       'https://web-production-8d00b.up.railway.app'
   }
 

@@ -128,7 +128,7 @@ export function useMemoizedComputation<T>(
  * ```
  */
 export function useRenderPerformance(componentName: string) {
-  if (import.meta.env.DEV) {
+  if (process.env.NODE_ENV === 'development') {
     const renderCount = useRef(0)
     const renderStart = useRef(performance.now())
 
@@ -139,7 +139,7 @@ export function useRenderPerformance(componentName: string) {
       if (renderTime > 16) {
         // Slower than 60fps
         // Use structured logging in production - console.warn is acceptable for dev-only performance warnings
-        if (import.meta.env.DEV) {
+        if (process.env.NODE_ENV === 'development') {
           console.warn(
             `[Performance] ${componentName} render #${renderCount.current} took ${renderTime.toFixed(2)}ms`
           )
@@ -171,7 +171,7 @@ export function shallowEqual<T extends Record<string, any>>(objA: T, objB: T): b
   }
 
   for (const key of keysA) {
-    if (!Object.hasOwn(objB, key) || !Object.is(objA[key], objB[key])) {
+    if (!(key in objB) || !Object.is(objA[key], objB[key])) {
       return false
     }
   }
@@ -199,7 +199,7 @@ export function deepEqual(objA: any, objB: any): boolean {
   }
 
   for (const key of keysA) {
-    if (!Object.hasOwn(objB, key) || !deepEqual(objA[key], objB[key])) {
+    if (!(key in objB) || !deepEqual(objA[key], objB[key])) {
       return false
     }
   }

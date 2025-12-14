@@ -22,7 +22,8 @@ export class ReportAPI extends HttpClient {
         {
           method: 'GET',
           url: `/api/reports/${reportId}`,
-        },
+          headers: {},
+        } as any,
         options
       )
     } catch (error) {
@@ -44,7 +45,8 @@ export class ReportAPI extends HttpClient {
           method: 'PUT',
           url: `/api/reports/${reportId}`,
           data,
-        },
+          headers: {},
+        } as any,
         options
       )
     } catch (error) {
@@ -61,7 +63,8 @@ export class ReportAPI extends HttpClient {
         {
           method: 'DELETE',
           url: `/api/reports/${reportId}`,
-        },
+          headers: {},
+        } as any,
         options
       )
     } catch (error) {
@@ -136,33 +139,34 @@ export class ReportAPI extends HttpClient {
 
       return response.data
     } catch (error) {
+      const axiosError = error as any
       // Comprehensive error logging
       const errorContext = {
         correlationId,
         reportId,
-        error: error.message,
-        status: error.response?.status,
-        statusText: error.response?.statusText,
-        isTimeout: error.code === 'ECONNABORTED',
-        isAbort: error.name === 'AbortError',
+        error: error instanceof Error ? error.message : String(error),
+        status: axiosError?.response?.status,
+        statusText: axiosError?.response?.statusText,
+        isTimeout: axiosError?.code === 'ECONNABORTED',
+        isAbort: axiosError?.name === 'AbortError',
       }
 
-      if (error.response?.status === 404) {
+      if (axiosError?.response?.status === 404) {
         apiLogger.error('Report not found for PDF download', errorContext)
-        throw new APIError('Report not found. Please check the report ID.')
+        throw new APIError('Report not found. Please check the report ID.', 404)
       }
 
-      if (error.response?.status === 403 || error.response?.status === 401) {
+      if (axiosError?.response?.status === 403 || axiosError?.response?.status === 401) {
         apiLogger.error('Unauthorized PDF download attempt', errorContext)
         throw new AuthenticationError('You do not have permission to download this report.')
       }
 
-      if (error.code === 'ECONNABORTED') {
+      if (axiosError?.code === 'ECONNABORTED') {
         apiLogger.error('PDF download timed out', errorContext)
         throw new NetworkError('PDF download timed out. Please try again.')
       }
 
-      if (error.name === 'AbortError') {
+      if (axiosError?.name === 'AbortError') {
         apiLogger.info('PDF download was cancelled', errorContext)
         throw error // Re-throw abort errors
       }
@@ -170,11 +174,12 @@ export class ReportAPI extends HttpClient {
       // Log additional error context
       apiLogger.error('PDF download failed with unknown error', {
         ...errorContext,
-        stack: error.stack,
-        responseData: error.response?.data,
+        stack: error instanceof Error ? error.stack : undefined,
+        responseData: axiosError?.response?.data,
       })
 
-      throw new APIError('Failed to download PDF. Please try again.', error)
+      const statusCode = axiosError?.response?.status
+      throw new APIError('Failed to download PDF. Please try again.', statusCode, undefined, true, { originalError: error })
     } finally {
       // Cleanup
       this.activeRequests.delete(correlationId)
@@ -191,18 +196,21 @@ export class ReportAPI extends HttpClient {
   private handleReportError(error: unknown, operation: string): never {
     apiLogger.error(`Report ${operation} failed`, { error })
 
-    if (error.response?.status === 404) {
-      throw new APIError('Report not found', error)
+    const axiosError = error as any
+    const status = axiosError?.response?.status
+
+    if (status === 404) {
+      throw new APIError('Report not found', status, undefined, true)
     }
 
-    if (error.response?.status === 401 || error.response?.status === 403) {
+    if (status === 401 || status === 403) {
       throw new AuthenticationError('Authentication required for report operation')
     }
 
-    if (error.code === 'ECONNABORTED' || error.code === 'ENOTFOUND') {
+    if (axiosError?.code === 'ECONNABORTED' || axiosError?.code === 'ENOTFOUND') {
       throw new NetworkError('Network error during report operation')
     }
 
-    throw new APIError(`Failed to ${operation}`, error)
+    throw new APIError(`Failed to ${operation}`, status, undefined, true, { originalError: error })
   }
 }

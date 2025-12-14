@@ -2,11 +2,11 @@
 
 import { useRouter } from 'next/navigation'
 import React, { useEffect, useRef, useState } from 'react'
-import { MinimalHeader } from '../components/MinimalHeader'
-import { VideoBackground } from '../components/VideoBackground'
-import { ScrollToTop } from '../utils'
-import { generalLogger } from '../utils/logger'
-import { generateReportId } from '../utils/reportIdGenerator'
+import { ScrollToTop } from '../../utils'
+import { generalLogger } from '../../utils/logger'
+import { generateReportId } from '../../utils/reportIdGenerator'
+import { MinimalHeader } from '../MinimalHeader'
+import { VideoBackground } from '../VideoBackground'
 
 export const HomePage: React.FC = () => {
   const router = useRouter()
@@ -17,6 +17,7 @@ export const HomePage: React.FC = () => {
   // Auto-redirect to instant valuation if token is present
   // BUT NOT if coming from main platform (upswitch.biz) - let user choose
   useEffect(() => {
+    if (typeof window === 'undefined') return
     const params = new URLSearchParams(window.location.search)
     const token = params.get('token')
     const fromMainPlatform = params.get('from') === 'upswitch'

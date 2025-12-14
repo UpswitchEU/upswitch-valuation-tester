@@ -1,7 +1,8 @@
 // Download service for exporting valuation reports
-import { backendAPI } from '../services/BackendAPI'
+import { backendAPI } from '../services/backendApi'
 import type { ValuationRequest } from '../types/valuation'
 import { HTMLProcessor } from '../utils/htmlProcessor'
+import { generalLogger } from '../utils/logger'
 
 export interface DownloadOptions {
   format: 'html' | 'pdf'
@@ -401,19 +402,15 @@ export class DownloadService {
       })
 
       // Call backend API to generate PDF
-      const pdfBlob = await backendAPI.downloadAccountantViewPDF(request, {
-        signal: options?.signal,
-        onProgress: (progress) => {
-          if (options?.onProgress) {
-            options.onProgress(progress)
-          }
-          generalLogger.debug('[DownloadService] PDF download progress', {
-            downloadId,
-            progress,
-            company_name: request.company_name,
-          })
-        },
-      })
+      // NOTE: downloadAccountantViewPDF expects reportId, not ValuationRequest
+      // We need to extract reportId from request or use a different approach
+      // For now, we'll need to get the reportId from the valuation response
+      // This is a temporary fix - the proper solution would be to pass reportId
+      const reportId = (request as any).reportId || (request as any).valuation_id || ''
+      if (!reportId) {
+        throw new Error('Report ID is required for PDF download')
+      }
+      const pdfBlob = await backendAPI.downloadAccountantViewPDF(reportId)
 
       const apiCallDuration = performance.now() - apiCallStartTime
       generalLogger.debug('[DownloadService] Backend API call completed', {

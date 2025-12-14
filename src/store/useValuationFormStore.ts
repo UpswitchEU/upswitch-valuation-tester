@@ -9,12 +9,13 @@
 
 import { create } from 'zustand'
 import type { DataResponse } from '../types/data-collection'
+import type { ValuationFormData } from '../types/valuation'
 import { storeLogger } from '../utils/logger'
 
 // Helper to get safe current year (allow up to current year, max 2100 per backend validation)
 const getSafeCurrentYear = () => Math.min(new Date().getFullYear(), 2100)
 
-const defaultFormData: ValuationFormData = {
+const defaultFormData: Partial<ValuationFormData> = {
   company_name: '', // Empty by default - user must enter company name
   country_code: 'BE',
   industry: 'services', // Default to valid industry code
@@ -38,7 +39,7 @@ interface ValuationFormStore {
   setCollectedData: (data: DataResponse[]) => void
 
   // Form data
-  formData: ValuationFormData
+  formData: Partial<ValuationFormData>
   updateFormData: (data: Partial<ValuationFormData>) => void
   resetFormData: () => void
 
@@ -104,46 +105,3 @@ export const useValuationFormStore = create<ValuationFormStore>((set, get) => ({
     }))
   },
 }))
-
-// Type definitions for the form store
-declare global {
-  interface ValuationFormData {
-    company_name: string
-    country_code: string
-    industry: string
-    business_model: string
-    founding_year: number
-    business_type: string
-    shares_for_sale: number
-    number_of_owners: number
-    revenue?: number
-    ebitda?: number
-    current_year_data: {
-      year: number
-      revenue: number
-      ebitda: number
-      total_assets?: number
-      total_debt?: number
-      cash?: number
-    }
-    historical_years_data?: Array<{
-      year: number
-      revenue: number
-      ebitda: number
-    }>
-    number_of_employees?: number
-    recurring_revenue_percentage?: number
-    comparables?: Array<{
-      company_name: string
-      valuation: number
-      industry: string
-    }>
-    business_type_id?: string
-    _internal_dcf_preference?: number
-    _internal_multiples_preference?: number
-    _internal_owner_dependency_impact?: number
-    _internal_key_metrics?: Record<string, any>
-    _internal_typical_employee_range?: [number, number]
-    _internal_typical_revenue_range?: [number, number]
-  }
-}

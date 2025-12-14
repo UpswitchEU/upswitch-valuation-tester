@@ -4,11 +4,11 @@
  * Displays user's current credit status with upgrade prompts
  */
 
-import { Tooltip } from '@heroui/react'
-import React from 'react'
 import { useAuth } from '@/hooks/useAuth'
 import { useCredits } from '@/hooks/useCredits'
 import { guestCreditService } from '@/services/guestCreditService'
+import { Tooltip } from '@heroui/react'
+import React from 'react'
 
 interface CreditBadgeProps {
   className?: string
@@ -19,7 +19,9 @@ interface CreditBadgeProps {
 }
 
 // SOFT DISABLE: Feature flag for unlimited credits mode
-const UNLIMITED_CREDITS_MODE = import.meta.env.VITE_UNLIMITED_CREDITS_MODE !== 'false'
+import { env } from '../../utils/env'
+
+const UNLIMITED_CREDITS_MODE = env.VITE_UNLIMITED_CREDITS_MODE !== 'false'
 
 /**
  * Credit Badge Component

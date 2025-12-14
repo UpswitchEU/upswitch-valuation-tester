@@ -15,15 +15,16 @@ import { DataResponse } from '../../../components/data-collection'
 import { FullScreenModal } from '../../../components/FullScreenModal'
 import { useAuth } from '../../../hooks/useAuth'
 import {
-  useValuationToolbarDownload,
-  useValuationToolbarFullscreen,
-  useValuationToolbarRefresh,
-  useValuationToolbarTabs,
+    useValuationToolbarDownload,
+    useValuationToolbarFullscreen,
+    useValuationToolbarRefresh,
+    useValuationToolbarTabs,
 } from '../../../hooks/valuationToolbar'
 import { useValuationApiStore } from '../../../store/useValuationApiStore'
 import { useValuationFormStore } from '../../../store/useValuationFormStore'
 import { useValuationResultsStore } from '../../../store/useValuationResultsStore'
 import type { ValuationResponse } from '../../../types/valuation'
+import { convertDataResponsesToFormData } from '../../../utils/dataCollectionUtils'
 import { generalLogger } from '../../../utils/logger'
 
 // Flow types
@@ -108,7 +109,7 @@ interface ManualFlowProps {
 const ManualFlow: React.FC<ManualFlowProps> = ({ reportId, onComplete }) => {
   const { result } = useValuationResultsStore()
   const { isCalculating, calculateValuation } = useValuationApiStore()
-  const { setCollectedData } = useValuationFormStore()
+  const { setCollectedData, updateFormData } = useValuationFormStore()
   const { user } = useAuth()
 
   // Toolbar hooks
@@ -123,15 +124,31 @@ const ManualFlow: React.FC<ManualFlowProps> = ({ reportId, onComplete }) => {
   // Handle data collection
   const handleDataCollected = useCallback(
     (responses: DataResponse[]) => {
+      // Sync collectedData (same as conversational flow)
       setCollectedData(responses)
+
+      // Also update formData for consistency (calculateValuation uses formData)
+      const formDataUpdate = convertDataResponsesToFormData(responses)
+      if (Object.keys(formDataUpdate).length > 0) {
+        updateFormData(formDataUpdate)
+      }
     },
-    [setCollectedData]
+    [setCollectedData, updateFormData]
   )
 
   // Handle collection completion
   const handleCollectionComplete = useCallback(
     async (responses: DataResponse[]) => {
-      useValuationFormStore.getState().setCollectedData(responses)
+      const formStore = useValuationFormStore.getState()
+      
+      // Sync collectedData
+      formStore.setCollectedData(responses)
+
+      // Also update formData for consistency (calculateValuation uses formData)
+      const formDataUpdate = convertDataResponsesToFormData(responses)
+      if (Object.keys(formDataUpdate).length > 0) {
+        formStore.updateFormData(formDataUpdate)
+      }
 
       // Trigger valuation calculation with collected data
       try {

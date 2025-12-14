@@ -94,7 +94,7 @@ function ReportView() {
 
 **Before:**
 ```tsx
-import { AIAssistedValuation } from '@/components/AIAssistedValuation';
+// Note: AIAssistedValuation has been replaced by ConversationalLayout
 ```
 
 **After:**

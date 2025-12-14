@@ -100,37 +100,43 @@ export const useConversationRestoration = (
         signal: abortControllerRef.current.signal,
       })
 
-      if (status.exists && status.messages) {
-        // Convert backend messages to frontend Message format
-        const restoredMessages: Message[] = status.messages.map((msg: any) => ({
-          id: msg.id || `msg-${Date.now()}-${Math.random()}`,
-          type: msg.type || (msg.role === 'assistant' ? 'ai' : 'user'),
-          role: msg.role || (msg.type === 'ai' ? 'assistant' : 'user'),
-          content: msg.content || msg.text || '',
-          timestamp: msg.timestamp ? new Date(msg.timestamp) : new Date(),
-          isStreaming: false,
-          isComplete: true,
-          metadata: msg.metadata || {},
-        }))
+      if (status.exists) {
+        // Get conversation history to restore messages
+        const history = await utilityAPI.getConversationHistory(sessionId, abortControllerRef.current.signal)
+        
+        if (history.exists && history.messages) {
+          // Convert backend messages to frontend Message format
+          const restoredMessages: Message[] = history.messages.map((msg: any) => ({
+            id: msg.id || `msg-${Date.now()}-${Math.random()}`,
+            type: msg.type || (msg.role === 'assistant' ? 'ai' : 'user'),
+            role: msg.role || (msg.type === 'ai' ? 'assistant' : 'user'),
+            content: msg.content || msg.text || '',
+            timestamp: msg.timestamp ? new Date(msg.timestamp) : new Date(),
+            isStreaming: false,
+            isComplete: true,
+            metadata: msg.metadata || {},
+          }))
 
-        // Extract Python session ID from metadata if available
-        const extractedPythonSessionId: string | null =
-          (status.metadata?.python_session_id as string | null) ||
-          (status.metadata?.session_id as string | null) ||
-          null
+          // Extract Python session ID from status
+          const extractedPythonSessionId: string | null = status.session_id || null
 
-        setMessages(restoredMessages)
-        setPythonSessionId(extractedPythonSessionId)
-        setIsRestored(true)
-        hasRestoredRef.current = true
+          setMessages(restoredMessages)
+          setPythonSessionId(extractedPythonSessionId)
+          setIsRestored(true)
+          hasRestoredRef.current = true
 
-        chatLogger.info('✅ Conversation restored successfully', {
-          sessionId,
-          messageCount: restoredMessages.length,
-          pythonSessionId: extractedPythonSessionId,
-        })
+          chatLogger.info('✅ Conversation restored successfully', {
+            sessionId,
+            messageCount: restoredMessages.length,
+            pythonSessionId: extractedPythonSessionId,
+          })
 
-        onRestored?.(restoredMessages, extractedPythonSessionId)
+          onRestored?.(restoredMessages, extractedPythonSessionId)
+        } else {
+          chatLogger.info('ℹ️ No existing conversation found, starting new', { sessionId })
+          setIsRestored(true) // Mark as restored even if no messages (new conversation)
+          hasRestoredRef.current = true
+        }
       } else {
         chatLogger.info('ℹ️ No existing conversation found, starting new', { sessionId })
         setIsRestored(true) // Mark as restored even if no messages (new conversation)

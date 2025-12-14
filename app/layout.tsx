@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import { AuthProvider } from '../src/contexts/AuthContext'
 import './globals.css'
 
 export const metadata: Metadata = {
@@ -18,7 +19,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
         <link rel="manifest" href="/manifest.json" />
       </head>
-      <body className="bg-zinc-950 text-white antialiased">{children}</body>
+      <body className="bg-zinc-950 text-white antialiased">
+        <AuthProvider>{children}</AuthProvider>
+      </body>
     </html>
   )
 }

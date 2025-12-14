@@ -17,12 +17,12 @@ export interface AnalyticsConfig {
 }
 
 export const analyticsConfig: AnalyticsConfig = {
-  googleAnalyticsId: import.meta.env.VITE_ANALYTICS_ID,
-  hotjarId: import.meta.env.VITE_HOTJAR_ID,
-  mixpanelToken: import.meta.env.VITE_MIXPANEL_TOKEN,
-  environment: (import.meta.env.VITE_ENVIRONMENT as any) || 'development',
+  googleAnalyticsId: process.env.NEXT_PUBLIC_ANALYTICS_ID,
+  hotjarId: process.env.NEXT_PUBLIC_HOTJAR_ID,
+  mixpanelToken: process.env.NEXT_PUBLIC_MIXPANEL_TOKEN,
+  environment: (process.env.NEXT_PUBLIC_ENVIRONMENT as any) || (process.env.NODE_ENV as any) || 'development',
   appName: 'Upswitch Valuation Tester',
-  version: import.meta.env.VITE_APP_VERSION || '1.0.0',
+  version: process.env.NEXT_PUBLIC_APP_VERSION || '1.0.0',
 }
 
 /**

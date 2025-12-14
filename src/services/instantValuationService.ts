@@ -5,7 +5,7 @@
  * to ensure proper credit management and flow differentiation
  */
 
-import { backendAPI } from '../services/BackendAPI'
+import { backendAPI } from '../services/backendApi'
 import type { ValuationRequest, ValuationResponse } from '../types/valuation'
 import { serviceLogger } from '../utils/logger'
 

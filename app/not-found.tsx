@@ -1,7 +1,10 @@
+'use client'
+
 import Link from 'next/link'
+import { Suspense } from 'react'
 import { ScrollToTop } from '../src/utils'
 
-export default function NotFound() {
+function NotFoundContent() {
   return (
     <div className="min-h-screen bg-gradient-hero flex items-center justify-center px-4">
       <ScrollToTop />
@@ -32,5 +35,13 @@ export default function NotFound() {
         </div>
       </div>
     </div>
+  )
+}
+
+export default function NotFound() {
+  return (
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center">Loading...</div>}>
+      <NotFoundContent />
+    </Suspense>
   )
 }

@@ -27,6 +27,8 @@ import type {
   UpdateValuationSessionResponse,
   ValuationSessionResponse,
 } from '../types/api-responses'
+import type { CreateValuationSessionRequest, SaveValuationRequest, UpdateValuationSessionRequest } from '../types/api'
+import type { ValuationSession } from '../types/valuation'
 import { ValuationRequest, ValuationResponse } from '../types/valuation'
 import { CreditAPI } from './api/credit'
 import { APIRequestConfig } from './api/HttpClient'
@@ -119,21 +121,34 @@ class BackendAPI {
 
   // ===== SESSION OPERATIONS =====
 
-  async getValuationSession(reportId: string): Promise<ValuationSessionResponse> {
+  async getValuationSession(reportId: string): Promise<ValuationSessionResponse | null> {
     return this.sessionAPI.getValuationSession(reportId)
   }
 
   async createValuationSession(
-    session: Partial<ValuationRequest>
+    session: CreateValuationSessionRequest | ValuationSession
   ): Promise<CreateValuationSessionResponse> {
-    return this.sessionAPI.createValuationSession(session)
+    // Convert ValuationSession to CreateValuationSessionRequest if needed
+    const request: CreateValuationSessionRequest = 
+      'reportId' in session && 'currentView' in session
+        ? session as CreateValuationSessionRequest
+        : {
+            reportId: (session as any).reportId,
+            currentView: (session as any).currentView || 'manual',
+            initialData: (session as any).partialData,
+          }
+    return this.sessionAPI.createValuationSession(request)
   }
 
   async updateValuationSession(
     reportId: string,
     updates: Partial<ValuationSession>
   ): Promise<UpdateValuationSessionResponse> {
-    return this.sessionAPI.updateValuationSession(reportId, updates)
+    const request: UpdateValuationSessionRequest = {
+      reportId,
+      updates,
+    }
+    return this.sessionAPI.updateValuationSession(reportId, request)
   }
 
   async switchValuationView(
@@ -149,8 +164,14 @@ class BackendAPI {
     return this.creditAPI.getCreditStatus()
   }
 
-  async saveValuation(data: ValuationResponse): Promise<SaveValuationResponse> {
-    return this.creditAPI.saveValuation(data)
+  async saveValuation(data: ValuationResponse, reportId?: string, sessionId?: string): Promise<SaveValuationResponse> {
+    const request: SaveValuationRequest = {
+      valuation_id: data.valuation_id || '',
+      data,
+      reportId,
+      sessionId,
+    }
+    return this.creditAPI.saveValuation(request)
   }
 
   // ===== UTILITY OPERATIONS =====

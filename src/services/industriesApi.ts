@@ -199,7 +199,7 @@ class IndustriesApiService {
         .filter((industry) => industry.includes(lowerPartial))
         .slice(0, 10) // Limit to 10 suggestions
     } catch (error) {
-      generalLogger.error('Error getting industry suggestions', { error, query })
+      generalLogger.error('Error getting industry suggestions', { error, query: partial })
       // Return fallback suggestions on error
       const lowerPartial = partial.toLowerCase()
       return FALLBACK_INDUSTRIES.filter((industry) => industry.includes(lowerPartial)).slice(0, 10)

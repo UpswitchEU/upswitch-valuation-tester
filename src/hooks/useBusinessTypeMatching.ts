@@ -29,9 +29,9 @@ export const useBusinessTypeMatching = () => {
         generalLogger.info('Matched business type (exact)', {
           query,
           matched: exactMatch.label,
-          id: exactMatch.id,
+          value: exactMatch.value,
         })
-        return exactMatch.id
+        return exactMatch.value
       }
 
       // 2. Match on category
@@ -44,9 +44,9 @@ export const useBusinessTypeMatching = () => {
         generalLogger.info('Matched business type (category)', {
           query,
           matched: categoryMatch.label,
-          id: categoryMatch.id,
+          value: categoryMatch.value,
         })
-        return categoryMatch.id
+        return categoryMatch.value
       }
 
       // 3. Partial match on label (contains)
@@ -58,9 +58,9 @@ export const useBusinessTypeMatching = () => {
         generalLogger.info('Matched business type (partial)', {
           query,
           matched: partialMatch.label,
-          id: partialMatch.id,
+          value: partialMatch.value,
         })
-        return partialMatch.id
+        return partialMatch.value
       }
 
       // 4. Common variations mapping
@@ -78,15 +78,15 @@ export const useBusinessTypeMatching = () => {
           const variationMatch = businessTypes.find(
             (bt) =>
               bt.label.toLowerCase().includes(key) ||
-              bt.keywords?.some((k: string) => k.toLowerCase().includes(key))
+              bt.value.toLowerCase().includes(key)
           )
           if (variationMatch) {
             generalLogger.info('Matched business type (variation)', {
               query,
               matched: variationMatch.label,
-              id: variationMatch.id,
+              value: variationMatch.value,
             })
-            return variationMatch.id
+            return variationMatch.value
           }
         }
       }

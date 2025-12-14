@@ -2,9 +2,10 @@
  * Guest Session Service
  *
  * Manages guest user session tracking in the frontend
- * Ensures 100% session capture for guest users
+ * Simplified for subdomain integration
  */
 
+import { retry } from '../utils/retry'
 import { generalLogger } from '../utils/logger'
 
 const GUEST_SESSION_KEY = 'upswitch_guest_session_id'

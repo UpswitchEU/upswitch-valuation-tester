@@ -1,7 +1,7 @@
 'use client'
 
 import { useRouter } from 'next/navigation'
-import React from 'react'
+import React, { Suspense } from 'react'
 import { reportApiService } from '../services/reportApi'
 import type { ValuationResponse } from '../types/valuation'
 import { generalLogger } from '../utils/logger'
@@ -48,26 +48,28 @@ export const ValuationReport: React.FC<ValuationReportProps> = React.memo(({ rep
 
   return (
     <div className="flex h-screen w-screen flex-col overflow-hidden bg-zinc-950">
-      <ValuationSessionManager reportId={reportId}>
-        {({
-          session,
-          stage,
-          error,
-          showOutOfCreditsModal,
-          onCloseModal,
-          prefilledQuery,
-          autoSend,
-        }) => (
-          <ValuationFlowSelector
-            session={session}
-            stage={stage}
-            error={error}
-            prefilledQuery={prefilledQuery}
-            autoSend={autoSend}
-            onComplete={handleValuationComplete}
-          />
-        )}
-      </ValuationSessionManager>
+      <Suspense fallback={<div className="flex items-center justify-center h-screen">Loading...</div>}>
+        <ValuationSessionManager reportId={reportId}>
+          {({
+            session,
+            stage,
+            error,
+            showOutOfCreditsModal,
+            onCloseModal,
+            prefilledQuery,
+            autoSend,
+          }) => (
+            <ValuationFlowSelector
+              session={session}
+              stage={stage}
+              error={error}
+              prefilledQuery={prefilledQuery}
+              autoSend={autoSend}
+              onComplete={handleValuationComplete}
+            />
+          )}
+        </ValuationSessionManager>
+      </Suspense>
     </div>
   )
 })

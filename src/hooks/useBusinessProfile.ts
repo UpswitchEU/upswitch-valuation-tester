@@ -1,18 +1,10 @@
 import { useEffect, useState } from 'react'
-import { businessDataService } from '../services/businessDataService'
+import {
+    businessDataFetchingService,
+    businessDataValidationService,
+    type BusinessProfileData,
+} from '../services/businessData'
 import { chatLogger } from '../utils/logger'
-
-// import type { BusinessProfileData } from '../types/business';
-
-// Temporary interface until business types are defined
-interface BusinessProfileData {
-  user_id: string
-  company_name?: string
-  industry?: string
-  created_at: string
-  updated_at: string
-  // Add other properties as needed
-}
 
 export const useBusinessProfile = (userId?: string) => {
   const [businessProfile, setBusinessProfile] = useState<BusinessProfileData | null>(null)
@@ -31,7 +23,7 @@ export const useBusinessProfile = (userId?: string) => {
         setError(null)
 
         chatLogger.debug('Fetching business profile for instant valuation', { userId })
-        const profileData = await businessDataService.fetchUserBusinessData(userId)
+        const profileData = await businessDataFetchingService.fetchUserBusinessData(userId)
 
         if (profileData) {
           setBusinessProfile(profileData)
@@ -39,7 +31,7 @@ export const useBusinessProfile = (userId?: string) => {
             profileData: {
               company_name: profileData.company_name,
               industry: profileData.industry,
-              hasCompleteProfile: businessDataService.hasCompleteBusinessProfile(profileData),
+              hasCompleteProfile: businessDataValidationService.hasCompleteBusinessProfile(profileData),
             },
           })
         } else {
@@ -60,9 +52,11 @@ export const useBusinessProfile = (userId?: string) => {
   }, [userId])
 
   const hasCompleteProfile = businessProfile
-    ? businessDataService.hasCompleteBusinessProfile(businessProfile)
+    ? businessDataValidationService.hasCompleteBusinessProfile(businessProfile)
     : false
-  const missingFields = businessProfile ? businessDataService.getMissingFields(businessProfile) : []
+  const missingFields = businessProfile
+    ? businessDataValidationService.getMissingFields(businessProfile)
+    : []
 
   return {
     businessProfile,

@@ -16,7 +16,7 @@ class DebugLogger {
   constructor() {
     // Enable in development OR if DEBUG_CONVERSATION flag is set
     this.enabled =
-      import.meta.env.DEV ||
+      (typeof process !== 'undefined' && process.env.NODE_ENV === 'development') ||
       (typeof window !== 'undefined' && localStorage.getItem('DEBUG_CONVERSATION') === 'true')
   }
 

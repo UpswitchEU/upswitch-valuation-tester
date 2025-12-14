@@ -8,9 +8,10 @@
  */
 
 import { create } from 'zustand'
-import { backendAPI } from '../services/BackendAPI'
+import { backendAPI } from '../services/backendApi'
 import type { ValuationResponse } from '../types/valuation'
 import { storeLogger } from '../utils/logger'
+import { validateBusinessRules, validateRequiredFields } from '../utils/valuationValidation'
 import { useValuationFormStore } from './useValuationFormStore'
 import { useValuationResultsStore } from './useValuationResultsStore'
 import { useValuationSessionStore } from './useValuationSessionStore'
@@ -89,24 +90,37 @@ export const useValuationApiStore = create<ValuationApiStore>((set, get) => ({
         current_year_data: formStore.formData.current_year_data || sessionData?.current_year_data,
       }
 
-      // Validate and construct proper request
-      if (!sourceData.company_name || (sourceData.company_name as string).trim() === '') {
-        throw new Error('Company name is required')
+      // Validate required fields
+      const requiredErrors = validateRequiredFields(sourceData as any)
+      if (requiredErrors.length > 0) {
+        const errorMessage = requiredErrors
+          .filter((e) => e.severity === 'error')
+          .map((e) => e.message)
+          .join('; ')
+        throw new Error(errorMessage || 'Validation failed')
       }
-      if (!sourceData.industry) {
-        throw new Error('Industry is required')
+
+      // Validate business rules
+      const businessRuleErrors = validateBusinessRules(sourceData as any)
+      const criticalErrors = businessRuleErrors.filter((e) => e.severity === 'error')
+      if (criticalErrors.length > 0) {
+        const errorMessage = criticalErrors.map((e) => e.message).join('; ')
+        throw new Error(errorMessage)
       }
+
+      // Log warnings (non-blocking)
+      const warnings = businessRuleErrors.filter((e) => e.severity === 'warning')
+      if (warnings.length > 0) {
+        storeLogger.warn('API store: Data quality warnings', {
+          warnings: warnings.map((w) => `${w.field}: ${w.message}`),
+        })
+      }
+
       const revenue = (sourceData as any).revenue || sourceData.current_year_data?.revenue
-      if (!revenue || revenue <= 0) {
-        throw new Error('Revenue must be greater than 0')
-      }
       const ebitda =
         (sourceData as any).ebitda !== undefined && (sourceData as any).ebitda !== null
           ? (sourceData as any).ebitda
           : sourceData.current_year_data?.ebitda
-      if (ebitda === undefined || ebitda === null) {
-        throw new Error('EBITDA is required')
-      }
 
       // Capture input data for Info tab
       const inputData = {
@@ -184,7 +198,7 @@ export const useValuationApiStore = create<ValuationApiStore>((set, get) => ({
       if (session) {
         try {
           await backendAPI.updateValuationSession(session.reportId, {
-            completedAt: new Date().toISOString(),
+            completedAt: new Date(),
           })
           storeLogger.info('API store: Session marked as completed', { reportId: session.reportId })
         } catch (error) {
@@ -238,13 +252,19 @@ export const useValuationApiStore = create<ValuationApiStore>((set, get) => ({
 
     try {
       const quickRequest = {
-        revenue: formData.revenue,
-        ebitda: formData.ebitda,
-        industry: formData.industry,
-        country_code: formData.country_code,
+        company_name: formData.company_name || 'Quick Valuation',
+        country_code: formData.country_code || 'BE',
+        industry: formData.industry || 'services',
+        business_model: formData.business_model || 'services',
+        founding_year: formData.founding_year || new Date().getFullYear() - 5,
+        current_year_data: {
+          year: new Date().getFullYear(),
+          revenue: formData.revenue || formData.current_year_data?.revenue || 0,
+          ebitda: formData.ebitda || formData.current_year_data?.ebitda || 0,
+        },
       }
 
-      const response = await backendAPI.quickValuation(quickRequest)
+      const response = await backendAPI.calculateInstantValuation(quickRequest)
       setLiveEstimate(response)
     } catch (error) {
       // Silently fail for live preview
@@ -257,6 +277,7 @@ export const useValuationApiStore = create<ValuationApiStore>((set, get) => ({
   },
 
   saveToBackend: async (businessId?: string) => {
+    const { setError } = get()
     const { formData } = useValuationFormStore.getState()
     const resultsStore = useValuationResultsStore.getState()
     const result = resultsStore.result
@@ -300,17 +321,18 @@ export const useValuationApiStore = create<ValuationApiStore>((set, get) => ({
         storeLogger.info('API store: Valuation saved successfully', { valuationId: data.data.id })
 
         // Notify parent window via PostMessage
-        notifyParentWindow(data.data.id, formData.company_name)
+        notifyParentWindow(data.data.id, formData.company_name || 'Unknown Company')
 
         return { id: data.data.id }
       } else {
         throw new Error('Invalid response from server')
       }
     } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to save valuation to backend'
       storeLogger.error('API store: Failed to save valuation', {
-        error: error instanceof Error ? error.message : 'Unknown error',
+        error: errorMessage,
       })
-      setError(error.message || 'Failed to save valuation to backend')
+      setError(errorMessage)
       return null
     }
   },
@@ -415,8 +437,10 @@ function preserveStreamingResults(newResult: ValuationResponse, currentResult: V
 }
 
 function extractErrorMessage(error: unknown): string {
-  if (error.response?.data?.error) {
-    const errorData = error.response.data.error
+  const axiosError = error as any
+  
+  if (axiosError?.response?.data?.error) {
+    const errorData = axiosError.response.data.error
     if (typeof errorData === 'string') {
       return errorData
     } else if (errorData?.message) {
@@ -424,8 +448,10 @@ function extractErrorMessage(error: unknown): string {
     } else if (errorData?.error) {
       return errorData.error
     }
-  } else if (error.response?.data?.detail) {
-    const detail = error.response.data.detail
+  }
+  
+  if (axiosError?.response?.data?.detail) {
+    const detail = axiosError.response.data.detail
     if (typeof detail === 'string') {
       return detail
     } else if (Array.isArray(detail)) {
@@ -449,7 +475,9 @@ function extractErrorMessage(error: unknown): string {
         return detail.message
       }
     }
-  } else if (error.message) {
+  }
+  
+  if (error instanceof Error && error.message) {
     return error.message
   }
 

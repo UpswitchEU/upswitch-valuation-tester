@@ -8,12 +8,15 @@
  */
 
 import {
-  CreateValuationSessionRequest,
-  CreateValuationSessionResponse,
-  UpdateValuationSessionRequest,
-  UpdateValuationSessionResponse,
+    CreateValuationSessionRequest,
+    UpdateValuationSessionRequest,
 } from '../../../types/api'
-import type { SwitchViewResponse, ValuationSessionResponse } from '../../../types/api-responses'
+import type {
+    CreateValuationSessionResponse,
+    SwitchViewResponse,
+    UpdateValuationSessionResponse,
+    ValuationSessionResponse,
+} from '../../../types/api-responses'
 import { APIError, AuthenticationError } from '../../../types/errors'
 import { apiLogger } from '../../../utils/logger'
 import { APIRequestConfig, HttpClient } from '../HttpClient'
@@ -31,19 +34,21 @@ export class SessionAPI extends HttpClient {
         {
           method: 'GET',
           url: `/api/sessions/${reportId}`,
-        },
+          headers: {},
+        } as any,
         options
       )
 
       // Map backend 'ai-guided' to frontend 'conversational'
-      if (response && response.session && response.session.currentView === 'ai-guided') {
+      if (response && response.session && (response.session.currentView as string) === 'ai-guided') {
         response.session.currentView = 'conversational'
       }
 
       return response
     } catch (error) {
+      const axiosError = error as any
       // Handle 404 gracefully - session doesn't exist yet
-      if (error.response?.status === 404) {
+      if (axiosError?.response?.status === 404) {
         apiLogger.debug('Session does not exist yet', { reportId })
         return null
       }
@@ -70,15 +75,16 @@ export class SessionAPI extends HttpClient {
           method: 'POST',
           url: '/api/sessions',
           data: backendSession,
-        },
+          headers: {},
+        } as any,
         options
       )
 
-      // Map response back
-      return {
-        ...response,
-        currentView: response.currentView === 'ai-guided' ? 'conversational' : response.currentView,
+      // Map response back - currentView is on session, not response
+      if (response.session && (response.session.currentView as string) === 'ai-guided') {
+        response.session.currentView = 'conversational'
       }
+      return response
     } catch (error) {
       this.handleSessionError(error, 'create session')
     }
@@ -96,7 +102,10 @@ export class SessionAPI extends HttpClient {
       // Map frontend 'conversational' to backend 'ai-guided'
       const backendUpdates = {
         ...updates,
-        currentView: updates.currentView === 'conversational' ? 'ai-guided' : updates.currentView,
+        updates: {
+          ...updates.updates,
+          currentView: updates.updates?.currentView === 'conversational' ? 'ai-guided' : updates.updates?.currentView,
+        },
       }
 
       const response = await this.executeRequest<UpdateValuationSessionResponse>(
@@ -104,15 +113,16 @@ export class SessionAPI extends HttpClient {
           method: 'PUT',
           url: `/api/sessions/${reportId}`,
           data: backendUpdates,
-        },
+          headers: {},
+        } as any,
         options
       )
 
-      // Map response back
-      return {
-        ...response,
-        currentView: response.currentView === 'ai-guided' ? 'conversational' : response.currentView,
+      // Map response back - currentView is on session, not response
+      if (response.session && (response.session.currentView as string) === 'ai-guided') {
+        response.session.currentView = 'conversational'
       }
+      return response
     } catch (error) {
       this.handleSessionError(error, 'update session')
     }
@@ -135,14 +145,15 @@ export class SessionAPI extends HttpClient {
           method: 'PUT',
           url: `/api/sessions/${reportId}/switch-view`,
           data: { view: backendView },
-        },
+          headers: {},
+        } as any,
         options
       )
 
-      // Map response back
+      // Map response back - currentView is directly on SwitchViewResponse
       return {
         ...response,
-        currentView: response.currentView === 'ai-guided' ? 'conversational' : response.currentView,
+        currentView: (response.currentView as string) === 'ai-guided' ? 'conversational' : response.currentView,
       }
     } catch (error) {
       this.handleSessionError(error, 'switch view')
@@ -155,18 +166,21 @@ export class SessionAPI extends HttpClient {
   private handleSessionError(error: unknown, operation: string): never {
     apiLogger.error(`Session ${operation} failed`, { error })
 
-    if (error.response?.status === 404) {
-      throw new APIError('Session not found', error)
+    const axiosError = error as any
+    const status = axiosError?.response?.status
+
+    if (status === 404) {
+      throw new APIError('Session not found', status, undefined, true)
     }
 
-    if (error.response?.status === 401 || error.response?.status === 403) {
+    if (status === 401 || status === 403) {
       throw new AuthenticationError('Authentication required for session operation')
     }
 
-    if (error.response?.status === 409) {
-      throw new APIError('Session conflict - please refresh and try again', error)
+    if (status === 409) {
+      throw new APIError('Session conflict - please refresh and try again', status, undefined, true)
     }
 
-    throw new APIError(`Failed to ${operation}`, error)
+    throw new APIError(`Failed to ${operation}`, status, undefined, true, { originalError: error })
   }
 }

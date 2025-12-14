@@ -155,8 +155,8 @@ class HealthCheckService {
     // This is intentional - we need to verify Python engine health independently
     // Node.js backend health is checked separately via /api/health endpoint
     const pythonEngineUrl =
-      import.meta.env.VITE_VALUATION_ENGINE_URL ||
-      import.meta.env.VITE_VALUATION_API_URL ||
+      process.env.NEXT_PUBLIC_VALUATION_ENGINE_URL ||
+      process.env.NEXT_PUBLIC_VALUATION_API_URL ||
       'https://upswitch-valuation-engine-production.up.railway.app'
 
     const endpoints = {
@@ -284,4 +284,4 @@ class HealthCheckService {
 export const healthCheckService = new HealthCheckService()
 
 // Export types
-export type { HealthStatus, ServiceHealth, CircuitBreakerState }
+export type { CircuitBreakerState, HealthStatus, ServiceHealth }

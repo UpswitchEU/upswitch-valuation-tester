@@ -175,31 +175,3 @@ export function getAdjustmentsApplied(result: ValuationResponse) {
   return adjustments
 }
 
-/**
- * Get step data for a specific step number
- *
- * @deprecated Calculation details are now available in info_tab_html (server-generated HTML).
- * This function returns null. Use info_tab_html for step details.
- */
-export function getStepData(_result: ValuationResponse, _stepNumber: number) {
-  // Calculation steps are now in server-generated info_tab_html
-  // Return null to indicate data should come from HTML
-  return null
-}
-
-/**
- * Get all step data from valuation response
- *
- * @deprecated Calculation details are now available in info_tab_html (server-generated HTML).
- * This function returns empty array. Use info_tab_html for step details.
- */
-export function getAllStepData(_result: ValuationResponse): Array<{
-  step: number
-  name: string
-  description: string
-  status: string
-}> {
-  // Calculation steps are now in server-generated info_tab_html
-  // Return empty array to indicate data should come from HTML
-  return []
-}

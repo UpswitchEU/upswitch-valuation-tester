@@ -7,7 +7,7 @@
  * @module hooks/usePerformanceMonitor
  */
 
-import { useCallback, useEffect, useRef } from 'react'
+import React, { useCallback, useEffect, useRef } from 'react'
 import { generalLogger } from '../utils/logger'
 
 interface PerformanceMetrics {
@@ -126,7 +126,7 @@ export function usePerformanceMonitor(options: UsePerformanceMonitorOptions) {
 
   // Memory tracking (if enabled)
   useEffect(() => {
-    if (!enableMemoryTracking || !performance.memory) return
+    if (!enableMemoryTracking || !(performance as any).memory) return
 
     const trackMemory = () => {
       const memoryInfo = (performance as any).memory

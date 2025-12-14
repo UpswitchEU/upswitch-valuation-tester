@@ -16,8 +16,8 @@
 
 import axios, { AxiosInstance } from 'axios'
 import {
-  BUSINESS_TYPES_FALLBACK,
-  BusinessTypeOption as ConfigBusinessTypeOption,
+    BUSINESS_TYPES_FALLBACK,
+    BusinessTypeOption as ConfigBusinessTypeOption,
 } from '../config/businessTypes'
 import { generalLogger } from '../utils/logger'
 import { businessTypesCache } from './cache/businessTypesCache'
@@ -190,14 +190,14 @@ class BusinessTypesApiService {
    */
   async getBusinessTypeFull(businessTypeId: string): Promise<any> {
     try {
-      if (import.meta.env.DEV) {
+      if (process.env.NODE_ENV === 'development') {
         generalLogger.debug(`[BusinessTypesApi] Fetching full metadata for: ${businessTypeId}`)
       }
 
       const response = await this.api.get(`/types/${businessTypeId}/full`)
 
       if (response.data.success && response.data.data) {
-        if (import.meta.env.DEV) {
+        if (process.env.NODE_ENV === 'development') {
           generalLogger.debug(`[BusinessTypesApi] Full metadata loaded`, {
             businessTypeId,
             questionsCount: response.data.data.questions?.length || 0,
@@ -253,7 +253,7 @@ class BusinessTypesApiService {
       const response = await this.api.get(`/types/${businessTypeId}/questions`, { params })
 
       if (response.data.success && response.data.data) {
-        if (import.meta.env.DEV) {
+        if (process.env.NODE_ENV === 'development') {
           generalLogger.debug(`[BusinessTypesApi] Questions loaded`, {
             businessTypeId,
             totalQuestions: response.data.data.questions?.length || 0,

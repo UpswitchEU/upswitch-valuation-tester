@@ -7,7 +7,8 @@
  * @module services/api/credit/CreditAPI
  */
 
-import { SaveValuationRequest, SaveValuationResponse } from '../../../types/api';
+import { SaveValuationRequest } from '../../../types/api';
+import type { SaveValuationResponse } from '../../../types/api-responses';
 import { APIError, AuthenticationError, CreditError } from '../../../types/errors';
 import { apiLogger } from '../../../utils/logger';
 import { APIRequestConfig, HttpClient } from '../HttpClient';
@@ -24,7 +25,8 @@ export class CreditAPI extends HttpClient {
         {
           method: 'GET',
           url: '/api/credits/status',
-        },
+          headers: {},
+        } as any,
         options
       )
     } catch (error) {
@@ -45,7 +47,8 @@ export class CreditAPI extends HttpClient {
           method: 'POST',
           url: '/api/valuation/save',
           data,
-        },
+          headers: {},
+        } as any,
         options
       )
     } catch (error) {
@@ -59,18 +62,22 @@ export class CreditAPI extends HttpClient {
   private handleCreditError(error: unknown, operation: string): never {
     apiLogger.error(`Credit ${operation} failed`, { error })
 
-    if (error.response?.status === 401 || error.response?.status === 403) {
+    const axiosError = error as any
+    const status = axiosError?.response?.status
+
+    if (status === 401 || status === 403) {
       throw new AuthenticationError('Authentication required for credit operations')
     }
 
-    if (error.response?.status === 402) {
+    if (status === 402) {
       throw new CreditError('Insufficient credits for this operation')
     }
 
-    if (error.response?.status === 429) {
+    if (status === 429) {
       throw new CreditError('Too many credit operations. Please wait before trying again.')
     }
 
-    throw new APIError(`Failed to ${operation}`, error)
+    const statusCode = axiosError?.response?.status
+    throw new APIError(`Failed to ${operation}`, statusCode, undefined, true, { originalError: error })
   }
 }

@@ -1,19 +1,19 @@
 import axios, { AxiosInstance } from 'axios'
 import type {
-  BusinessTypeAnalysis,
-  CompanyLookupResult,
-  ConversationContext,
-  ConversationStartRequest,
-  ConversationStartResponse,
-  ConversationStepRequest,
-  ConversationStepResponse,
-  DocumentParseResult,
-  MethodologyRecommendation,
-  OwnerProfileRequest,
-  OwnerProfileResponse,
-  QuickValuationRequest,
-  ValuationRequest,
-  ValuationResponse,
+    BusinessTypeAnalysis,
+    CompanyLookupResult,
+    ConversationContext,
+    ConversationStartRequest,
+    ConversationStartResponse,
+    ConversationStepRequest,
+    ConversationStepResponse,
+    DocumentParseResult,
+    MethodologyRecommendation,
+    OwnerProfileRequest,
+    OwnerProfileResponse,
+    QuickValuationRequest,
+    ValuationRequest,
+    ValuationResponse,
 } from '../types/valuation'
 import { apiLogger } from '../utils/logger'
 
@@ -29,8 +29,8 @@ class ValuationAPI {
     // WHEN: When creating API client for all valuation and conversation endpoints
     this.client = axios.create({
       baseURL:
-        import.meta.env.VITE_BACKEND_URL ||
-        import.meta.env.VITE_API_BASE_URL ||
+        process.env.NEXT_PUBLIC_BACKEND_URL ||
+        process.env.NEXT_PUBLIC_API_BASE_URL ||
         'https://web-production-8d00b.up.railway.app',
       timeout: 90000, // 90 seconds - allows for Python processing (60-70s) + buffer
       headers: {

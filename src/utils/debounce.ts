@@ -1,27 +1,40 @@
 /**
- * Debounce utility function
- * Delays execution of a function until after a specified wait time has passed
- * since the last time it was invoked.
- *
- * @param func - The function to debounce
- * @param wait - The number of milliseconds to delay
- * @returns Debounced function
+ * Debounce Utility
+ * 
+ * Delays execution of async functions until a specified time has passed
+ * without any new calls. Useful for throttling API requests.
+ * 
+ * @param fn - The async function to debounce
+ * @param delay - Delay in milliseconds before execution
+ * @returns Debounced version of the function
  */
-export function debounce<T extends (...args: any[]) => any>(
-  func: T,
-  wait: number
-): (...args: Parameters<T>) => void {
-  let timeout: NodeJS.Timeout | null = null
-
-  return function executedFunction(...args: Parameters<T>) {
-    const later = () => {
-      timeout = null
-      func(...args)
+export function debounce<T extends (...args: any[]) => Promise<any>>(
+  fn: T,
+  delay: number
+): T {
+  let timeoutId: NodeJS.Timeout | null = null
+  let lastPromise: Promise<any> | null = null
+  
+  return ((...args: any[]) => {
+    // Clear any pending timeout
+    if (timeoutId) {
+      clearTimeout(timeoutId)
     }
-
-    if (timeout) {
-      clearTimeout(timeout)
+    
+    // If there's no active promise, execute immediately
+    if (!lastPromise) {
+      lastPromise = fn(...args).finally(() => {
+        lastPromise = null
+      })
+      return lastPromise
     }
-    timeout = setTimeout(later, wait)
-  }
+    
+    // Otherwise, debounce the call
+    return new Promise((resolve, reject) => {
+      timeoutId = setTimeout(() => {
+        timeoutId = null
+        fn(...args).then(resolve).catch(reject)
+      }, delay)
+    })
+  }) as T
 }

@@ -24,18 +24,6 @@ export const useTypingAnimation = (options?: TypingAnimationOptions) => {
   const animationFrameRef = useRef<number>()
   const lastUpdateRef = useRef<number>(0)
 
-  // Add text to buffer (called when chunks arrive)
-  const addToBuffer = useCallback(
-    (text: string) => {
-      bufferRef.current += text
-      if (!isTyping) {
-        setIsTyping(true)
-        startAnimation()
-      }
-    },
-    [isTyping, startAnimation]
-  )
-
   // Calculate adaptive speed based on content
   const calculateSpeed = useCallback(
     (text: string, index: number) => {
@@ -102,6 +90,18 @@ export const useTypingAnimation = (options?: TypingAnimationOptions) => {
 
     animationFrameRef.current = requestAnimationFrame(animate)
   }, [calculateSpeed, shouldPause, getPauseDelay])
+
+  // Add text to buffer (called when chunks arrive)
+  const addToBuffer = useCallback(
+    (text: string) => {
+      bufferRef.current += text
+      if (!isTyping) {
+        setIsTyping(true)
+        startAnimation()
+      }
+    },
+    [isTyping, startAnimation]
+  )
 
   // Complete animation immediately (skip to end)
   const complete = useCallback(() => {

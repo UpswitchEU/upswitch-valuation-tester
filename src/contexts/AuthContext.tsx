@@ -5,8 +5,10 @@
  * Integrates with main platform (upswitch.biz) authentication
  */
 
+'use client'
+
 import React, { useCallback, useEffect, useState } from 'react'
-import { backendAPI } from '../services/BackendAPI'
+import { backendAPI } from '../services/backendApi'
 import { guestSessionService } from '../services/guestSessionService'
 import { authLogger } from '../utils/logger'
 import { AuthContext, AuthContextType, User } from './AuthContextTypes'
@@ -181,24 +183,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, [user, getIndustry])
 
   /**
-   * Helper function to check if authentication cookie exists
-   */
-  const hasAuthCookie = (): boolean => {
-    return document.cookie
-      .split(';')
-      .some((cookie) => cookie.trim().startsWith('upswitch_session='))
-  }
-
-  /**
-   * Check for existing session
+   * Check for existing session (simplified for subdomain integration)
    */
   const checkSession = useCallback(async () => {
-    // Check if we have an auth cookie before making API call
-    if (!hasAuthCookie()) {
-      authLogger.info('No business card cookie found - continuing as guest user')
-      setUser(null)
-      return
-    }
 
     try {
       const response = await fetch(`${API_URL}/api/auth/me`, {

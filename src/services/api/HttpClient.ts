@@ -8,6 +8,7 @@
  */
 
 import axios, { AxiosInstance, AxiosResponse, InternalAxiosRequestConfig } from 'axios'
+import { env } from '../../utils/env'
 import { apiLogger, extractCorrelationId, setCorrelationFromResponse } from '../../utils/logger'
 import { guestSessionService } from '../guestSessionService'
 
@@ -35,8 +36,8 @@ export class HttpClient {
     this.client = axios.create({
       baseURL:
         baseURL ||
-        import.meta.env.VITE_BACKEND_URL ||
-        import.meta.env.VITE_API_BASE_URL ||
+        env.VITE_BACKEND_URL ||
+        env.VITE_API_BASE_URL ||
         'https://web-production-8d00b.up.railway.app',
       timeout: defaultTimeout,
       headers: {
@@ -175,7 +176,7 @@ export class HttpClient {
           maxRetries,
           delay,
           url: config.url,
-          error: error.message,
+          error: error instanceof Error ? error.message : String(error),
         })
 
         // Wait before retrying

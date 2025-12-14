@@ -14,10 +14,10 @@
  */
 
 import type {
-    BusinessModel,
-    BusinessTypeAnalysis,
-    ConversationStartRequest,
-    ValuationRequest,
+  BusinessModel,
+  BusinessTypeAnalysis,
+  ConversationStartRequest,
+  ValuationRequest,
 } from '../types/valuation'
 import {
     businessDataFetchingService,

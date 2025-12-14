@@ -175,6 +175,7 @@ export const useValuationAnalytics = () => {
  */
 export const usePerformanceAnalytics = () => {
   const analytics = useAnalytics()
+  const location = usePathname()
 
   // Track page load performance
   useEffect(() => {
@@ -183,7 +184,7 @@ export const usePerformanceAnalytics = () => {
     const trackLoadTime = () => {
       const loadTime = performance.now() - startTime
       analytics.trackPerformanceMetric('page_load_time', loadTime, {
-        page: window.location.pathname,
+        page: location,
       })
     }
 
@@ -193,7 +194,7 @@ export const usePerformanceAnalytics = () => {
       window.addEventListener('load', trackLoadTime)
       return () => window.removeEventListener('load', trackLoadTime)
     }
-  }, [analytics])
+  }, [analytics, location])
 
   // Track Core Web Vitals
   useEffect(() => {

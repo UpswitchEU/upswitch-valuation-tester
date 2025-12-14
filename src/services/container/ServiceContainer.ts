@@ -11,15 +11,16 @@
  */
 
 // Concrete implementations
-import { AnalyticsService } from '../analytics/AnalyticsService'
-import { CacheService } from '../cache/CacheService'
-import { CreditService } from '../credit/CreditService'
-import { Logger } from '../logger/Logger'
-import { SessionService } from '../session/SessionService'
-import { ValuationService } from '../valuation/ValuationService'
-import { IAnalyticsService } from './interfaces/IAnalyticsService'
-import { ICacheService } from './interfaces/ICacheService'
-import { ILogger } from './interfaces/ILogger'
+// NOTE: These services are not yet implemented - ServiceContainer is legacy/unused code
+// import { AnalyticsService } from '../analytics/AnalyticsService' // Not implemented yet
+// import { CacheService } from '../cache/CacheService' // Not implemented yet
+// import { CreditService } from '../credit/CreditService' // Not implemented yet
+// import { Logger } from '../logger/Logger' // Not implemented yet
+// import { SessionService } from '../session/SessionService' // Not implemented yet
+// import { ValuationService } from '../valuation/ValuationService' // Not implemented yet
+// import { IAnalyticsService } from './interfaces/IAnalyticsService' // Not implemented yet
+// import { ICacheService } from './interfaces/ICacheService' // Not implemented yet
+// import { ILogger } from './interfaces/ILogger' // Not implemented yet
 
 /**
  * Service Container - Singleton pattern for dependency injection
@@ -47,19 +48,21 @@ export class ServiceContainer {
    * Called once during container initialization
    */
   private registerServices(): void {
+    // NOTE: ServiceContainer is legacy/unused code - services are not implemented
+    // This is kept for potential future use but currently disabled
     // Core infrastructure services
-    this.register('ILogger', new Logger())
-    this.register('ICacheService', new CacheService())
-    this.register('IAnalyticsService', new AnalyticsService())
+    // this.register('ILogger', new Logger())
+    // this.register('ICacheService', new CacheService())
+    // this.register('IAnalyticsService', new AnalyticsService()) // Not implemented yet
 
     // Business services - depend on infrastructure
-    const logger = this.resolve<ILogger>('ILogger')
-    const cache = this.resolve<ICacheService>('ICacheService')
-    const analytics = this.resolve<IAnalyticsService>('IAnalyticsService')
+    // const logger = this.resolve<ILogger>('ILogger')
+    // const cache = this.resolve<ICacheService>('ICacheService')
+    // const analytics = this.resolve<IAnalyticsService>('IAnalyticsService') // Not implemented yet
 
-    this.register('IValuationService', new ValuationService(logger, cache))
-    this.register('ISessionService', new SessionService(logger, cache, analytics))
-    this.register('ICreditService', new CreditService(logger))
+    // this.register('IValuationService', new ValuationService(logger, cache))
+    // this.register('ISessionService', new SessionService(logger, cache, null as any)) // TODO: Add analytics when implemented
+    // this.register('ICreditService', new CreditService(logger))
   }
 
   /**

@@ -13,6 +13,11 @@ import { useValuationFormStore } from '../../../store/useValuationFormStore'
 import { useValuationResultsStore } from '../../../store/useValuationResultsStore'
 import type { Message } from '../../../types/message'
 import type { ValuationResponse } from '../../../types/valuation'
+import {
+    convertDataPointToDataResponse,
+    mergeDataResponse,
+} from '../../../utils/dataCollectionAdapter'
+import { convertDataResponsesToFormData } from '../../../utils/dataCollectionUtils'
 import { chatLogger } from '../../../utils/logger'
 import { ComponentErrorBoundary } from '../../shared/components/ErrorBoundary'
 import { useConversationActions, useConversationState } from '../context/ConversationContext'
@@ -93,28 +98,57 @@ export const ConversationPanel: React.FC<ConversationPanelProps> = ({
 }) => {
   const state = useConversationState()
   const actions = useConversationActions()
-  const { setCollectedData } = useValuationFormStore()
+  const { setCollectedData, updateFormData } = useValuationFormStore()
 
   // Handle data collection - sync to form store
   const handleDataCollected = useCallback(
-    (data: { field: string; value: unknown }) => {
+    (data: { field: string; value: unknown; confidence?: number; source?: string }) => {
       chatLogger.debug('ConversationPanel: Data collected', {
         field: data.field,
         value: data.value,
+        confidence: data.confidence,
+        source: data.source,
       })
 
-      // Sync to form store if field and value are present
-      // Note: StreamingChat manages its own collectedData state internally
-      // This callback is for external notification, but we can also sync here if needed
+      // Convert to DataResponse format and sync to form store (same as manual flow)
       if (data.field && data.value !== undefined) {
+        // Convert single data point to DataResponse format
+        const dataResponse = convertDataPointToDataResponse(
+          {
+            field: data.field,
+            value: data.value,
+            confidence: data.confidence,
+            source: data.source,
+          },
+          'conversational'
+        )
+
+        // Get current collected data from form store
+        const currentData = useValuationFormStore.getState().collectedData
+
+        // Merge new response into existing data (updates if fieldId exists, adds if new)
+        const updatedData = mergeDataResponse(currentData, dataResponse)
+
+        // Sync collectedData to form store (same as manual flow)
+        setCollectedData(updatedData)
+
+        // Also update formData for consistency (calculateValuation uses formData)
+        const formDataUpdate = convertDataResponsesToFormData([dataResponse])
+        if (Object.keys(formDataUpdate).length > 0) {
+          updateFormData(formDataUpdate)
+        }
+
+        chatLogger.debug('ConversationPanel: Data synced to form store', {
+          field: data.field,
+          totalResponses: updatedData.length,
+          formDataFields: Object.keys(formDataUpdate),
+        })
+
         // Call parent callback (used by ConversationalLayout for logging)
         onDataCollected?.(data)
-        
-        // Data will be synced to session store through StreamingChat's internal mechanisms
-        // When valuation is triggered, the collected data will be used
       }
     },
-    [onDataCollected]
+    [setCollectedData, updateFormData, onDataCollected]
   )
 
   // Handle valuation complete - sync to context and results store

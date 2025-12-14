@@ -22,8 +22,8 @@ export const MinimalHeader: React.FC = () => {
 
       // Get backend URL from environment
       const backendUrl =
-        import.meta.env.VITE_BACKEND_URL ||
-        import.meta.env.VITE_API_BASE_URL ||
+        process.env.NEXT_PUBLIC_BACKEND_URL ||
+        process.env.NEXT_PUBLIC_API_BASE_URL ||
         'https://web-production-8d00b.up.railway.app'
 
       // Call backend logout endpoint

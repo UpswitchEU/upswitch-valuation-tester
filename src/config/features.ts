@@ -4,23 +4,24 @@
  * Centralized feature flag management for the valuation tester frontend
  */
 
+import { env } from '../utils/env'
 import { generalLogger } from '../utils/logger'
 
 export const FEATURE_FLAGS = {
   // Credit System Flags
-  UNLIMITED_CREDITS_MODE: import.meta.env.VITE_UNLIMITED_CREDITS_MODE !== 'false',
-  SHOW_CREDIT_BADGE: import.meta.env.VITE_SHOW_CREDIT_BADGE !== 'false',
-  SHOW_USAGE_STATS: import.meta.env.VITE_SHOW_USAGE_STATS === 'true',
-  ENABLE_PREMIUM_UPSELL: import.meta.env.VITE_ENABLE_PREMIUM_UPSELL === 'true',
+  UNLIMITED_CREDITS_MODE: env.VITE_UNLIMITED_CREDITS_MODE !== 'false',
+  SHOW_CREDIT_BADGE: process.env.NEXT_PUBLIC_SHOW_CREDIT_BADGE !== 'false',
+  SHOW_USAGE_STATS: process.env.NEXT_PUBLIC_SHOW_USAGE_STATS === 'true',
+  ENABLE_PREMIUM_UPSELL: process.env.NEXT_PUBLIC_ENABLE_PREMIUM_UPSELL === 'true',
 
   // UI/UX Flags
-  SHOW_ONBOARDING_TOOLTIPS: import.meta.env.VITE_SHOW_ONBOARDING_TOOLTIPS !== 'false',
-  ENABLE_ANIMATIONS: import.meta.env.VITE_ENABLE_ANIMATIONS !== 'false',
-  SHOW_CREDIT_ANALYTICS: import.meta.env.VITE_SHOW_CREDIT_ANALYTICS === 'true',
+  SHOW_ONBOARDING_TOOLTIPS: process.env.NEXT_PUBLIC_SHOW_ONBOARDING_TOOLTIPS !== 'false',
+  ENABLE_ANIMATIONS: process.env.NEXT_PUBLIC_ENABLE_ANIMATIONS !== 'false',
+  SHOW_CREDIT_ANALYTICS: process.env.NEXT_PUBLIC_SHOW_CREDIT_ANALYTICS === 'true',
 
   // Development Flags
-  DEBUG_CREDIT_SYSTEM: import.meta.env.VITE_DEBUG_CREDIT_SYSTEM === 'true',
-  MOCK_CREDIT_DATA: import.meta.env.VITE_MOCK_CREDIT_DATA === 'true',
+  DEBUG_CREDIT_SYSTEM: process.env.NEXT_PUBLIC_DEBUG_CREDIT_SYSTEM === 'true',
+  MOCK_CREDIT_DATA: process.env.NEXT_PUBLIC_MOCK_CREDIT_DATA === 'true',
 }
 
 // Helper functions for feature flag checks
@@ -36,14 +37,14 @@ export const shouldMockCreditData = (): boolean => FEATURE_FLAGS.MOCK_CREDIT_DAT
 
 // Environment-specific configurations
 export const getEnvironmentConfig = () => {
-  const isDevelopment = import.meta.env.DEV
-  const isProduction = import.meta.env.PROD
+  const isDevelopment = process.env.NODE_ENV === 'development'
+  const isProduction = process.env.NODE_ENV === 'production'
 
   return {
     isDevelopment,
     isProduction,
-    apiUrl: import.meta.env.VITE_API_URL || 'http://localhost:3001',
-    creditApiUrl: import.meta.env.VITE_CREDIT_API_URL || 'http://localhost:3001/api/credits',
+    apiUrl: process.env.NEXT_PUBLIC_API_URL || process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3001',
+    creditApiUrl: process.env.NEXT_PUBLIC_CREDIT_API_URL || 'http://localhost:3001/api/credits',
   }
 }
 
@@ -63,7 +64,7 @@ export const validateFeatureFlags = () => {
     )
   }
 
-  if (FEATURE_FLAGS.DEBUG_CREDIT_SYSTEM && import.meta.env.PROD) {
+  if (FEATURE_FLAGS.DEBUG_CREDIT_SYSTEM && process.env.NODE_ENV === 'production') {
     warnings.push('Debug mode is enabled in production. This should be disabled.')
   }
 
@@ -71,7 +72,7 @@ export const validateFeatureFlags = () => {
 }
 
 // Log feature flags on startup (development only)
-if (import.meta.env.DEV) {
+if (process.env.NODE_ENV === 'development') {
   generalLogger.info('Valuation Tester Feature Flags loaded', FEATURE_FLAGS)
   const warnings = validateFeatureFlags()
   if (warnings.length > 0) {

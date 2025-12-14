@@ -10,7 +10,7 @@
 
 import { useCallback, useEffect, useState } from 'react'
 import { businessTypesApiService } from '../services/businessTypesApi'
-import { logger as generalLogger } from '../utils/loggers'
+import { generalLogger } from '../utils/logger'
 
 // ============================================================================
 // TYPES
@@ -94,7 +94,24 @@ export function useBusinessTypeQuestions(
       const result = await businessTypesApiService.getBusinessTypeQuestions(businessTypeId, options)
 
       if (result) {
-        setMetadata(result)
+        // Ensure questions array exists and matches expected type
+        const metadata: QuestionsMetadata = {
+          questions: result.questions?.map(q => ({
+            id: q.id,
+            business_type_id: businessTypeId,
+            question_id: q.id,
+            question_text: q.text,
+            question_type: 'text',
+            priority: 0,
+            phase: 'initial',
+            required: q.required,
+            impacts_valuation: false,
+            status: 'active',
+          })) || [],
+          total_required: result.total_required || 0,
+          estimated_time: result.estimated_time?.toString() || '0',
+        }
+        setMetadata(metadata)
         generalLogger.info('[useBusinessTypeQuestions] Questions loaded', {
           businessTypeId,
           totalQuestions: result.questions?.length || 0,

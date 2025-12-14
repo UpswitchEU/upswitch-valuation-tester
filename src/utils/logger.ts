@@ -14,12 +14,12 @@
 import pino from 'pino'
 
 const logger = pino({
-  level: import.meta.env.MODE === 'production' ? 'info' : 'debug',
+  level: (process.env.NODE_ENV === 'production' ? 'info' : 'debug') as 'info' | 'debug',
   browser: {
     asObject: true,
   },
   transport:
-    import.meta.env.MODE !== 'production'
+    process.env.NODE_ENV !== 'production'
       ? {
           target: 'pino-pretty',
           options: {

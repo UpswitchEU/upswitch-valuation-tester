@@ -130,7 +130,7 @@ export class EnhancedErrorBoundary extends Component<Props, State> {
             )}
 
             {/* Context Info (in development mode) */}
-            {import.meta.env.DEV && context && (
+            {process.env.NODE_ENV === 'development' && context && (
               <details className="bg-zinc-800 border border-zinc-700 rounded p-3 mb-6">
                 <summary className="text-xs text-zinc-400 cursor-pointer">
                   Technical Details (Dev Mode)
@@ -162,7 +162,7 @@ export class EnhancedErrorBoundary extends Component<Props, State> {
             </div>
 
             {/* Stack Trace (development only) */}
-            {import.meta.env.DEV && this.state.error.stack && (
+            {process.env.NODE_ENV === 'development' && this.state.error.stack && (
               <details className="mt-6 bg-zinc-950 border border-zinc-800 rounded p-4">
                 <summary className="text-xs text-zinc-500 cursor-pointer">
                   Stack Trace (Dev Mode)

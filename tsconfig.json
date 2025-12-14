@@ -52,6 +52,8 @@
     "node_modules",
     "cypress",
     "**/*.cy.ts",
-    "**/*.cy.tsx"
+    "**/*.cy.tsx",
+    ".next",
+    "vitest.config.ts"
   ]
 }

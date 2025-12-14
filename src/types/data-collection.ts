@@ -186,7 +186,7 @@ export const BUSINESS_DATA_FIELDS: Record<string, DataField> = {
       },
       {
         type: 'custom',
-        value: (val: string) => val.length >= 2 && val.length <= 100,
+        value: (val: unknown) => typeof val === 'string' && val.length >= 2 && val.length <= 100,
         message: 'Company name must be between 2 and 100 characters',
         severity: 'error',
       },

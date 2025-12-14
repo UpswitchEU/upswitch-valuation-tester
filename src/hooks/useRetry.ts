@@ -203,6 +203,6 @@ export function withRetry<T extends (...args: any[]) => Promise<any>>(
       }
 
       throw lastError!
-    })() as ReturnType<T>
-  }) as T
+    })()
+  }) as unknown as T
 }

@@ -25,7 +25,9 @@ interface CreditContextValue {
 }
 
 // SOFT DISABLE: Feature flag for unlimited credits mode
-const UNLIMITED_CREDITS_MODE = import.meta.env.VITE_UNLIMITED_CREDITS_MODE !== 'false'
+import { env } from '../utils/env'
+
+const UNLIMITED_CREDITS_MODE = env.VITE_UNLIMITED_CREDITS_MODE !== 'false'
 
 export const useCredits = (): CreditContextValue => {
   const [plan, setPlan] = useState<UserPlan | null>(null)
