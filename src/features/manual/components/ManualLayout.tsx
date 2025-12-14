@@ -8,8 +8,8 @@
  */
 
 import React, { useCallback, useEffect, useState } from 'react'
-import { DataCollection } from '../../../components/data-collection/DataCollection'
 import { ResizableDivider } from '../../../components/ResizableDivider'
+import { ValuationForm } from '../../../components/ValuationForm'
 import { ValuationToolbar } from '../../../components/ValuationToolbar'
 import { MOBILE_BREAKPOINT, PANEL_CONSTRAINTS } from '../../../constants/panelConstants'
 import { useAuth } from '../../../hooks/useAuth'
@@ -119,14 +119,12 @@ export const ManualLayout: React.FC<ManualLayoutProps> = ({
     }
   }, [result, handleHookDownload])
 
-  // Handle valuation completion
-  const handleValuationComplete = useCallback(
-    async (result: ValuationResponse) => {
-      setResult(result)
+  // Handle valuation completion when result changes
+  useEffect(() => {
+    if (result) {
       onComplete(result)
-    },
-    [onComplete, setResult]
-  )
+    }
+  }, [result, onComplete])
 
   return (
     <div className="flex flex-col h-full overflow-hidden">
@@ -159,11 +157,8 @@ export const ManualLayout: React.FC<ManualLayoutProps> = ({
           }}
         >
           <div className="flex-1 p-6">
-            <DataCollection
-              method="manual_form"
-              onDataCollected={() => {}}
-              onComplete={() => {}}
-            />
+            {/* ValuationForm - Main form inputs */}
+            <ValuationForm />
           </div>
         </div>
 

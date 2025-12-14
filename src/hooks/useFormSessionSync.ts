@@ -80,7 +80,7 @@ export const useFormSessionSync = ({
             generalLogger.info('Prefilled business type from homepage query', {
               query: prefilledQuery,
               businessTypeId: matchedBusinessTypeId,
-              businessTypeTitle: matchedBusinessType.label,
+              businessTypeTitle: matchedBusinessType.title || matchedBusinessType.id,
             })
           }
         }
