@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation'
 import React, { useEffect, useRef, useState } from 'react'
 import { RecentReportsSection } from '../../features/reports'
 import { businessCardService, type BusinessCardData } from '../../services/businessCard'
+import UrlGeneratorService from '../../services/urlGenerator'
 import { useReportsStore } from '../../store/useReportsStore'
 import { ScrollToTop } from '../../utils'
 import { generalLogger } from '../../utils/logger'
@@ -59,7 +60,7 @@ export const HomePage: React.FC = () => {
       // Legacy behavior: auto-redirect for instant valuations
       generalLogger.info('Token detected on homepage - redirecting to new report')
       const newReportId = generateReportId()
-      router.push(`/reports/${newReportId}?token=${token}`)
+      router.push(UrlGeneratorService.reportById(newReportId, { token }))
     }
   }, [router])
   
@@ -92,19 +93,13 @@ export const HomePage: React.FC = () => {
       // Generate new report ID
       const newReportId = generateReportId()
 
-      // Build URL with query params
-      const params = new URLSearchParams({
+      // Build URL with query params using centralized URL generator
+      const url = UrlGeneratorService.reportById(newReportId, {
         flow: mode,
         prefilledQuery: query.trim(),
         autoSend: 'true',
+        token: businessCardToken || undefined,
       })
-      
-      // Add business card token if available
-      if (businessCardToken) {
-        params.set('token', businessCardToken)
-      }
-
-      const url = `/reports/${newReportId}?${params.toString()}`
 
       generalLogger.info('Starting new valuation', { 
         reportId: newReportId,
@@ -120,7 +115,7 @@ export const HomePage: React.FC = () => {
   
   const handleReportClick = (reportId: string) => {
     generalLogger.info('Opening existing report', { reportId })
-    router.push(`/reports/${reportId}`)
+    router.push(UrlGeneratorService.reportById(reportId))
   }
   
   const handleReportDelete = async (reportId: string) => {

@@ -2,9 +2,12 @@
  * useCredits Hook for Valuation Tester
  *
  * Hook for managing credit state and operations
+ * Connects to Node.js backend via backendAPI
  */
 
 import { useCallback, useEffect, useState } from 'react'
+import { backendAPI } from '../services/backendApi'
+import { generalLogger } from '../utils/logger'
 
 interface UserPlan {
   id: string
@@ -51,21 +54,26 @@ export const useCredits = (): CreditContextValue => {
         return
       }
 
-      // TODO: Implement real API call when credit enforcement is enabled
-      // const response = await fetch('/api/credits/plan');
-      // const data = await response.json();
-      // setPlan(data);
-
-      // Mock data for now
-      setPlan({
-        id: 'mock-plan',
-        user_id: 'current-user',
-        plan_type: 'free',
-        credits_per_period: 3,
-        credits_used: 0,
-        credits_remaining: 3,
-        created_at: new Date().toISOString(),
-      })
+      // Call backend API to get user plan
+      try {
+        const planData = await backendAPI.getUserPlan()
+        setPlan(planData)
+        generalLogger.debug('User plan loaded', { planType: planData.plan_type, creditsRemaining: planData.credits_remaining })
+      } catch (error) {
+        generalLogger.error('Failed to load user plan', { 
+          error: error instanceof Error ? error.message : 'Unknown error' 
+        })
+        // Fallback to free plan if API call fails
+        setPlan({
+          id: 'fallback-plan',
+          user_id: 'current-user',
+          plan_type: 'free',
+          credits_per_period: 3,
+          credits_used: 0,
+          credits_remaining: 3,
+          created_at: new Date().toISOString(),
+        })
+      }
     } catch (err) {
       console.error('Failed to load credits:', err)
     } finally {

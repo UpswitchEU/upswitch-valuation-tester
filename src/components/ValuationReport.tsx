@@ -3,6 +3,7 @@
 import { useRouter } from 'next/navigation'
 import React, { Suspense } from 'react'
 import { reportApiService } from '../services/reportApi'
+import UrlGeneratorService from '../services/urlGenerator'
 import type { ValuationResponse } from '../types/valuation'
 import { generalLogger } from '../utils/logger'
 import { generateReportId, isValidReportId } from '../utils/reportIdGenerator'
@@ -38,7 +39,7 @@ export const ValuationReport: React.FC<ValuationReportProps> = React.memo(({ rep
     if (!reportId || !isValidReportId(reportId)) {
       // Invalid or missing report ID - generate new one
       const newReportId = generateReportId()
-      router.replace(`/reports/${newReportId}`)
+      router.replace(UrlGeneratorService.reportById(newReportId))
     }
   }, [reportId, router])
 

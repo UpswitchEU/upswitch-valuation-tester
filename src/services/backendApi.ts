@@ -32,6 +32,7 @@ import type { ValuationSession } from '../types/valuation'
 import { ValuationRequest, ValuationResponse } from '../types/valuation'
 import { CreditAPI } from './api/credit'
 import { APIRequestConfig } from './api/HttpClient'
+import { ProfileAPI } from './api/profile/ProfileAPI'
 import { ReportAPI } from './api/report'
 import { SessionAPI } from './api/session'
 import { UtilityAPI } from './api/utility'
@@ -49,6 +50,7 @@ class BackendAPI {
   private reportAPI: ReportAPI
   private sessionAPI: SessionAPI
   private creditAPI: CreditAPI
+  private profileAPI: ProfileAPI
   private utilityAPI: UtilityAPI
 
   constructor() {
@@ -57,6 +59,7 @@ class BackendAPI {
     this.reportAPI = new ReportAPI()
     this.sessionAPI = new SessionAPI()
     this.creditAPI = new CreditAPI()
+    this.profileAPI = new ProfileAPI()
     this.utilityAPI = new UtilityAPI()
   }
 
@@ -164,6 +167,18 @@ class BackendAPI {
     return this.creditAPI.getCreditStatus()
   }
 
+  async getUserPlan(): Promise<{
+    id: string
+    user_id: string
+    plan_type: 'free' | 'premium'
+    credits_per_period: number
+    credits_used: number
+    credits_remaining: number
+    created_at: string
+  }> {
+    return this.creditAPI.getUserPlan()
+  }
+
   async saveValuation(data: ValuationResponse, reportId?: string, sessionId?: string): Promise<SaveValuationResponse> {
     const request: SaveValuationRequest = {
       valuation_id: data.valuation_id || '',
@@ -172,6 +187,18 @@ class BackendAPI {
       sessionId,
     }
     return this.creditAPI.saveValuation(request)
+  }
+
+  // ===== PROFILE OPERATIONS =====
+
+  async getProfile(): Promise<import('./api/profile/ProfileAPI').ProfileData> {
+    return this.profileAPI.getProfile()
+  }
+
+  async updateProfile(
+    data: Partial<import('./api/profile/ProfileAPI').ProfileData>
+  ): Promise<import('./api/profile/ProfileAPI').ProfileData> {
+    return this.profileAPI.updateProfile(data)
   }
 
   // ===== UTILITY OPERATIONS =====

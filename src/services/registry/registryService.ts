@@ -331,7 +331,11 @@ export class RegistryService {
   }
 
   /**
-   * Get search suggestions (mock implementation)
+   * Get search suggestions
+   * 
+   * Note: Backend doesn't currently provide a dedicated suggestions endpoint.
+   * This returns empty array - suggestions can be generated client-side from
+   * search results if needed in the future.
    */
   async getSearchSuggestions(
     query: string,
@@ -339,13 +343,10 @@ export class RegistryService {
   ): Promise<{ suggestions: SearchSuggestion[] }> {
     serviceLogger.debug('Getting search suggestions', { query, country })
 
-    // Mock implementation - in real app this would call the backend
+    // No backend endpoint available - return empty array
+    // Future: Could use searchCompanies() results to generate suggestions
     return {
-      suggestions: [
-        { text: `${query} NV`, type: 'company', reason: 'Belgian company', confidence: 0.9 },
-        { text: `${query} BV`, type: 'company', reason: 'Belgian company', confidence: 0.8 },
-        { text: `${query} SA`, type: 'company', reason: 'Belgian company', confidence: 0.7 },
-      ],
+      suggestions: [],
     }
   }
 

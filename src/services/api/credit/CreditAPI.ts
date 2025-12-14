@@ -35,6 +35,46 @@ export class CreditAPI extends HttpClient {
   }
 
   /**
+   * Get user's plan and credit information
+   */
+  async getUserPlan(
+    options?: APIRequestConfig
+  ): Promise<{
+    id: string
+    user_id: string
+    plan_type: 'free' | 'premium'
+    credits_per_period: number
+    credits_used: number
+    credits_remaining: number
+    created_at: string
+  }> {
+    try {
+      const response = await this.executeRequest<{
+        success: boolean
+        data: {
+          id: string
+          user_id: string
+          plan_type: 'free' | 'premium'
+          credits_per_period: number
+          credits_used: number
+          credits_remaining: number
+          created_at: string
+        }
+      }>(
+        {
+          method: 'GET',
+          url: '/api/credits/plan',
+          headers: {},
+        } as any,
+        options
+      )
+      return response.data
+    } catch (error) {
+      this.handleCreditError(error, 'get user plan')
+    }
+  }
+
+  /**
    * Save valuation (deducts credits)
    */
   async saveValuation(

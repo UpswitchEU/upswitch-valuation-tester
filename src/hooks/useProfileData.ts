@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { backendAPI } from '../services/backendApi'
 import { generalLogger } from '../utils/logger'
 
 // Note: Owner Dependency UI has been removed. This hook is kept for backward compatibility
@@ -37,17 +38,34 @@ export const useProfileData = (): UseProfileDataReturn => {
       setLoading(true)
       setError(null)
 
-      // TODO: Replace with actual API endpoint once backend is ready
-      // Example: const response = await fetch('/api/profile/owner-dependency');
-      // const data = await response.json();
-      // setProfileData(data);
-
-      // For now, return null (no profile data available)
-      // This allows the tester to work standalone without backend integration
-      generalLogger.debug('[useProfileData] Profile data fetch not yet implemented')
-      setProfileData(null)
+      // Call backend API to get user profile
+      try {
+        const profileData = await backendAPI.getProfile()
+        // Map backend profile data to our interface
+        const mappedData: ProfileData = {
+          owner_dependency_assessment: profileData.owner_dependency_assessment,
+          company_name: profileData.company_name,
+          industry: profileData.industry,
+          country: profileData.country,
+        }
+        setProfileData(mappedData)
+        generalLogger.debug('[useProfileData] Profile data loaded', { 
+          hasCompanyName: !!mappedData.company_name,
+          hasIndustry: !!mappedData.industry 
+        })
+      } catch (err: any) {
+        // If profile doesn't exist (404), that's OK - user hasn't created profile yet
+        if (err?.status === 404 || err?.response?.status === 404) {
+          generalLogger.debug('[useProfileData] Profile not found - user may not have created profile yet')
+          setProfileData(null)
+        } else {
+          throw err
+        }
+      }
     } catch (err) {
-      generalLogger.error('[useProfileData] Error fetching profile', { error: err })
+      generalLogger.error('[useProfileData] Error fetching profile', { 
+        error: err instanceof Error ? err.message : 'Unknown error' 
+      })
       setError(err as Error)
       setProfileData(null)
     } finally {

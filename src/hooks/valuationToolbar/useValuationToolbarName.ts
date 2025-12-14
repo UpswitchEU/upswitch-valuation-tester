@@ -8,6 +8,8 @@
  */
 
 import { useEffect, useRef, useState } from 'react'
+import { backendAPI } from '../../services/backendApi'
+import { useValuationSessionStore } from '../../store/useValuationSessionStore'
 import { generalLogger } from '../../utils/logger'
 import { NameGenerator } from '../../utils/nameGenerator'
 
@@ -26,6 +28,7 @@ export interface UseValuationToolbarNameReturn {
 export interface UseValuationToolbarNameOptions {
   initialName?: string
   companyName?: string
+  reportId?: string
 }
 
 /**
@@ -34,7 +37,9 @@ export interface UseValuationToolbarNameOptions {
 export const useValuationToolbarName = (
   options: UseValuationToolbarNameOptions = {}
 ): UseValuationToolbarNameReturn => {
-  const { initialName = 'Valuation test123', companyName } = options
+  const { initialName = 'Valuation test123', companyName, reportId } = options
+  const { session } = useValuationSessionStore()
+  const actualReportId = reportId || session?.reportId
 
   const [isEditingName, setIsEditingName] = useState(false)
   const [editedName, setEditedName] = useState(initialName)
@@ -80,11 +85,26 @@ export const useValuationToolbarName = (
     setIsEditingName(false)
 
     try {
-      // Log the save for debugging
-      generalLogger.info('Valuation name saved', { name: editedName.trim() })
+      const nameToSave = editedName.trim()
+      generalLogger.info('Valuation name saved', { name: nameToSave, reportId: actualReportId })
 
-      // TODO: In future, persist to backend
-      // await saveValuationName(editedName.trim());
+      // Persist to backend via session update if reportId is available
+      if (actualReportId) {
+        try {
+          await backendAPI.updateValuationSession(actualReportId, {
+            name: nameToSave,
+          } as any)
+          generalLogger.debug('Valuation name persisted to backend', { reportId: actualReportId })
+        } catch (error) {
+          generalLogger.warn('Failed to persist valuation name to backend', { 
+            error: error instanceof Error ? error.message : 'Unknown error',
+            reportId: actualReportId 
+          })
+          // Don't throw - name is already updated in UI
+        }
+      } else {
+        generalLogger.debug('No reportId available - name saved locally only')
+      }
     } catch (error) {
       generalLogger.error('Failed to save valuation name', { error })
       // Note: We don't revert here since the UI update is already done

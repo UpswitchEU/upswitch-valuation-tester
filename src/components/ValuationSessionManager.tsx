@@ -13,6 +13,7 @@ import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import React, { useCallback, useEffect, useRef, useState } from 'react'
 import { useAuth } from '../hooks/useAuth'
 import { guestCreditService } from '../services/guestCreditService'
+import UrlGeneratorService from '../services/urlGenerator'
 import { useValuationSessionStore } from '../store/useValuationSessionStore'
 import type { ValuationSession } from '../types/valuation'
 import { generalLogger } from '../utils/logger'
@@ -201,10 +202,17 @@ export const ValuationSessionManager: React.FC<ValuationSessionManagerProps> = R
       const currentFlow = searchParams.get('flow')
 
       // Only update URL if it's different - this prevents infinite loops
-      if (currentFlow !== session.currentView) {
-        const params = new URLSearchParams(searchParams.toString())
-        params.set('flow', session.currentView)
-        router.replace(`${pathname}?${params.toString()}`)
+      if (currentFlow !== session.currentView && session.reportId) {
+        // Extract existing query params and update flow
+        const existingParams: Record<string, string> = {}
+        searchParams.forEach((value, key) => {
+          existingParams[key] = value
+        })
+        existingParams.flow = session.currentView
+        
+        // Use centralized URL generator for consistency
+        const newUrl = UrlGeneratorService.reportById(session.reportId, existingParams)
+        router.replace(newUrl)
       }
     }, [
       session?.currentView,
@@ -232,8 +240,12 @@ export const ValuationSessionManager: React.FC<ValuationSessionManagerProps> = R
           onClose={() => setShowOutOfCreditsModal(false)}
           onSignUp={() => {
             setShowOutOfCreditsModal(false)
-            // TODO: Implement actual sign-up flow
-            generalLogger.info('Sign up clicked from out of credits modal', { reportId })
+            // Sign-up is handled by main platform - redirect to main app
+            generalLogger.info('Sign up clicked from out of credits modal - redirecting to main platform', { reportId })
+            // In production, this would redirect to main platform sign-up page
+            if (typeof window !== 'undefined') {
+              window.location.href = '/signup'
+            }
           }}
           onTryManual={async () => {
             setShowOutOfCreditsModal(false)

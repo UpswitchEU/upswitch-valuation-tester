@@ -60,6 +60,7 @@ export const ValuationToolbar: React.FC<ValuationToolbarProps> = ({
   } = useValuationToolbarName({
     initialName: valuationName,
     companyName,
+    reportId: session?.reportId,
   })
 
   const { handleLogout } = useValuationToolbarAuth()

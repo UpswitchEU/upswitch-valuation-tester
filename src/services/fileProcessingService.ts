@@ -61,83 +61,31 @@ export class FileProcessingService {
   }
 
   private async processFile(processedFile: ProcessedFile): Promise<void> {
-    // Simulate upload progress
-    for (let progress = 0; progress <= 100; progress += 20) {
-      await this.sleep(200)
-      processedFile.progress = progress
-      processedFile.status = progress === 100 ? 'processing' : 'uploading'
-    }
-
-    // TODO: Call backend /api/v1/documents/parse (PRIVATE - NO LLM)
-    // This happens on YOUR server, never sent to OpenAI/external LLM
-    await this.sleep(2000)
-
-    // Mock extracted data (from YOUR engine, not LLM)
-    const extractedData = {
-      revenue: 2500000,
-      ebitda: 450000,
-      company_name: 'Acme Trading NV',
-      confidence: 0.92,
-    }
-
-    processedFile.status = 'completed'
-    processedFile.progress = 100
-    processedFile.extractedData = extractedData
-
-    serviceLogger.info('File processed successfully', {
+    // Document parsing endpoint not available in backend yet
+    // This is a Phase 2 feature - mark as error for now
+    serviceLogger.warn('Document parsing not yet implemented in backend', {
       fileId: processedFile.id,
       fileName: processedFile.file.name,
-      extractedData,
     })
+
+    processedFile.status = 'error'
+    processedFile.progress = 0
+    processedFile.error = 'Document parsing is not yet available. Please enter data manually.'
   }
 
   async uploadFile(file: File, onProgress: (progress: number) => void): Promise<UploadResult> {
     serviceLogger.info('Starting file upload', { fileName: file.name, fileSize: file.size })
 
-    try {
-      // Simulate upload progress
-      for (let progress = 0; progress <= 100; progress += 10) {
-        await this.sleep(100)
-        onProgress(progress)
-      }
+    // Document upload endpoint not available in backend yet
+    // This is a Phase 2 feature
+    serviceLogger.warn('Document upload not yet implemented in backend', {
+      fileName: file.name,
+    })
 
-      // TODO: Implement actual file upload to backend
-      // const formData = new FormData();
-      // formData.append('file', file);
-      // const response = await fetch('/api/v1/documents/upload', {
-      //   method: 'POST',
-      //   body: formData
-      // });
-
-      // Mock response
-      const extractedData = {
-        revenue: 2500000,
-        ebitda: 450000,
-        company_name: 'Acme Trading NV',
-        confidence: 0.92,
-      }
-
-      serviceLogger.info('File upload completed', { fileName: file.name, extractedData })
-
-      return {
-        success: true,
-        extractedData,
-      }
-    } catch (error) {
-      serviceLogger.error('File upload failed', {
-        fileName: file.name,
-        error: error instanceof Error ? error.message : 'Unknown error',
-      })
-
-      return {
-        success: false,
-        error: 'Failed to upload file',
-      }
+    return {
+      success: false,
+      error: 'Document upload is not yet available. Please enter data manually.',
     }
-  }
-
-  private sleep(ms: number): Promise<void> {
-    return new Promise((resolve) => setTimeout(resolve, ms))
   }
 }
 

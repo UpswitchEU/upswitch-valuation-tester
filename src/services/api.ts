@@ -7,13 +7,12 @@ import type {
     ConversationStartResponse,
     ConversationStepRequest,
     ConversationStepResponse,
-    DocumentParseResult,
     MethodologyRecommendation,
     OwnerProfileRequest,
     OwnerProfileResponse,
     QuickValuationRequest,
     ValuationRequest,
-    ValuationResponse,
+    ValuationResponse
 } from '../types/valuation'
 import { apiLogger } from '../utils/logger'
 
@@ -69,30 +68,79 @@ class ValuationAPI {
     return response.data
   }
 
-  // Phase 2: Company lookup (to be implemented in backend)
-  async lookupCompany(_name: string, _country: string): Promise<CompanyLookupResult> {
-    // TODO: Implement in backend
-    // const response = await this.client.get('/api/v1/companies/lookup', {
-    //   params: { name, country },
-    // });
-    // return response.data;
-
-    // Placeholder
-    throw new Error('Company lookup not yet implemented in backend')
-  }
-
-  // Phase 2: Document parsing (to be implemented in backend)
-  async parseDocument(_file: File): Promise<DocumentParseResult> {
-    // TODO: Implement in backend
-    // const formData = new FormData();
-    // formData.append('file', file);
-    // const response = await this.client.post('/api/v1/documents/parse', formData, {
-    //   headers: { 'Content-Type': 'multipart/form-data' },
-    // });
-    // return response.data;
-
-    // Placeholder
-    throw new Error('Document parsing not yet implemented in backend')
+  /**
+   * Lookup company by name using registry service
+   * 
+   * This uses the registry service to search for companies and optionally
+   * fetch financial data. Connects to Node.js backend which proxies to Python registry.
+   * 
+   * KBO (Belgian Company Registry) check is performed automatically for BE companies.
+   * 
+   * @param name - Company name to lookup
+   * @param country - Country code (default: 'BE' for KBO)
+   * @returns CompanyLookupResult with company information
+   */
+  async lookupCompany(name: string, country: string = 'BE'): Promise<CompanyLookupResult> {
+    try {
+      // Import registry service dynamically to avoid circular dependencies
+      const { registryService } = await import('./registry/registryService')
+      
+      // Search for companies using registry service (KBO for Belgium)
+      const searchResponse = await registryService.searchCompanies(name, country, 1)
+      
+      if (!searchResponse.success || searchResponse.results.length === 0) {
+        // Return basic result even if not found
+        return {
+          name,
+          industry: '',
+          country,
+        }
+      }
+      
+      // Get best match
+      const bestMatch = searchResponse.results[0]
+      
+      // Optionally fetch financial data if company ID is available
+      let financialData = null
+      if (bestMatch.company_id && bestMatch.company_id.length > 3) {
+        try {
+          financialData = await registryService.getCompanyFinancials(bestMatch.company_id, country)
+        } catch (error) {
+          apiLogger.debug('Financial data not available for company', {
+            companyId: bestMatch.company_id,
+            error: error instanceof Error ? error.message : 'Unknown error',
+          })
+          // Continue without financial data
+        }
+      }
+      
+      // Map registry data to CompanyLookupResult format
+      const latestFinancials = financialData?.filing_history?.[0]
+      
+      return {
+        name: bestMatch.company_name,
+        industry: financialData?.industry_description || bestMatch.legal_form || '',
+        country: bestMatch.country_code || country,
+        founding_year: financialData?.founding_year,
+        employees: financialData?.employees,
+        business_model: undefined, // Not available from registry
+        revenue: latestFinancials?.revenue,
+        description: financialData?.industry_description,
+      }
+    } catch (error) {
+      apiLogger.error('Company lookup failed', {
+        error: error instanceof Error ? error.message : 'Unknown error',
+        name,
+        country,
+      })
+      
+      // Return basic result on error
+      return {
+        name,
+        industry: '',
+        country,
+      }
+    }
   }
 
   // =============================================================================

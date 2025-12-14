@@ -200,7 +200,6 @@ export const CreditBadge: React.FC<CreditBadgeProps> = ({
         <div className="block cursor-pointer hover:opacity-80 transition-opacity" onClick={onClick}>
           {badgeContent}
         </div>
-        {/* TODO: Add UpgradeModal component */}
       </>
     )
   }

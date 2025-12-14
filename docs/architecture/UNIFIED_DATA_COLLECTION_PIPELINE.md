@@ -2,7 +2,8 @@
 
 **Purpose**: Document the unified data collection pipeline that both manual and conversational flows converge to use.
 
-**Last Updated**: December 14, 2025
+**Last Updated**: December 14, 2025  
+**Related**: See [COMPLETE_FLOW_DOCUMENTATION.md](./COMPLETE_FLOW_DOCUMENTATION.md) for detailed flow sequences
 
 ---
 
