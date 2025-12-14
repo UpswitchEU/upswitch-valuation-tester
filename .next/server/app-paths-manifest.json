@@ -1,8 +1,0 @@
-{
-  "/home/page": "app/home/page.js",
-  "/reports/new/page": "app/reports/new/page.js",
-  "/page": "app/page.js",
-  "/api/valuation/calculate-unified/route": "app/api/valuation/calculate-unified/route.js",
-  "/_not-found/page": "app/_not-found/page.js",
-  "/reports/[id]/page": "app/reports/[id]/page.js"
-}
