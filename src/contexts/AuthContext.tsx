@@ -23,8 +23,8 @@ import { AuthContext, AuthContextType, User } from './AuthContextTypes'
 
 // Backend URL for authentication (Node.js backend, not the valuation tester itself)
 const API_URL =
-  import.meta.env.VITE_BACKEND_URL ||
-  import.meta.env.VITE_API_BASE_URL ||
+  process.env.NEXT_PUBLIC_BACKEND_URL ||
+  process.env.NEXT_PUBLIC_API_BASE_URL ||
   'https://web-production-8d00b.up.railway.app'
 
 // =============================================================================

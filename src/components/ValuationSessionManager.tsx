@@ -63,61 +63,112 @@ export const ValuationSessionManager: React.FC<ValuationSessionManagerProps> = R
       Map<string, { initialized: boolean; isInitializing: boolean }>
     >(new Map())
 
-    // Initialize session on mount - only once per reportId
-    const initializeSessionForReport = useCallback(
-      async (reportId: string) => {
-        const state = initializationState.current.get(reportId)
+  // Initialize session on mount - only once per reportId
+  const initializeSessionForReport = useCallback(
+    async (reportId: string) => {
+      const state = initializationState.current.get(reportId)
 
-        // Prevent concurrent initialization attempts
-        if (state?.isInitializing) {
-          return // Already initializing, wait for completion
+      // Prevent concurrent initialization attempts
+      if (state?.isInitializing) {
+        return // Already initializing, wait for completion
+      }
+
+      // Prevent re-initialization if already initialized
+      if (state?.initialized) {
+        return // Already initialized, don't re-initialize
+      }
+
+      // Mark as initializing to prevent concurrent calls
+      initializationState.current.set(reportId, { initialized: false, isInitializing: true })
+
+      try {
+        if (!searchParams) {
+          initializationState.current.set(reportId, { initialized: false, isInitializing: false })
+          return
         }
-
-        // Prevent re-initialization if already initialized
-        if (state?.initialized) {
-          return // Already initialized, don't re-initialize
-        }
-
-        // Mark as initializing to prevent concurrent calls
-        initializationState.current.set(reportId, { initialized: false, isInitializing: true })
-
+        
+        // Try to restore existing session first (for continuing existing reports)
+        const { restoreSession } = useValuationSessionStore.getState()
+        
         try {
-          // Check for flow parameter in URL to set initial view
-          // searchParams is already available from Next.js hook
-          if (!searchParams) return
-          const flowParam = searchParams.get('flow')
-          const initialView =
-            flowParam === 'manual' || flowParam === 'conversational' ? flowParam : 'manual' // Default to manual
-
-          // Validate credits for Conversational (guests only)
-          if (initialView === 'conversational' && !isAuthenticated) {
-            const hasCredits = guestCreditService.hasCredits()
-            if (!hasCredits) {
-              setShowOutOfCreditsModal(true)
-              // Still initialize session but with manual view
-              await initializeSession(reportId, 'manual')
-              setStage('data-entry')
-              initializationState.current.set(reportId, {
-                initialized: true,
-                isInitializing: false,
-              })
-              return
-            }
-          }
-
-          // Initialize or load session with prefilled query from homepage
-          await initializeSession(reportId, initialView, prefilledQuery)
+          generalLogger.info('Attempting to restore existing session', { reportId })
+          
+          await restoreSession(reportId)
+          
+          // Session restored successfully
           setStage('data-entry')
           initializationState.current.set(reportId, { initialized: true, isInitializing: false })
-        } catch (error) {
-          // On error, allow retry by not marking as initialized
-          initializationState.current.set(reportId, { initialized: false, isInitializing: false })
-          generalLogger.error('Failed to initialize session', { error, reportId })
-          setError('Failed to initialize valuation session')
+          
+          generalLogger.info('Existing session restored successfully', { reportId })
+          return
+        } catch (restoreError) {
+          // Session doesn't exist on backend - create new one
+          generalLogger.info('Session not found on backend, creating new session', { 
+            reportId,
+            error: restoreError instanceof Error ? restoreError.message : 'Unknown error',
+          })
         }
-      },
-      [isAuthenticated, initializeSession, prefilledQuery, searchParams]
-    )
+        
+        // Create new session
+        const flowParam = searchParams.get('flow')
+        const initialView =
+          flowParam === 'manual' || flowParam === 'conversational' ? flowParam : 'manual'
+        const tokenParam = searchParams.get('token')
+
+        // Validate credits for Conversational (guests only)
+        if (initialView === 'conversational' && !isAuthenticated) {
+          const hasCredits = guestCreditService.hasCredits()
+          if (!hasCredits) {
+            setShowOutOfCreditsModal(true)
+            // Still initialize session but with manual view
+            await initializeSession(reportId, 'manual', prefilledQuery)
+            setStage('data-entry')
+            initializationState.current.set(reportId, {
+              initialized: true,
+              isInitializing: false,
+            })
+            return
+          }
+        }
+
+        // Initialize new session with prefilled query from homepage
+        await initializeSession(reportId, initialView, prefilledQuery)
+        
+        // Handle business card prefill if token present
+        if (tokenParam) {
+          try {
+            const { businessCardService } = await import('../services/businessCard')
+            const businessCard = await businessCardService.fetchBusinessCard(tokenParam)
+            const prefilledData = businessCardService.transformToValuationRequest(businessCard)
+            
+            // Update session with prefilled data
+            const { updateSessionData } = useValuationSessionStore.getState()
+            await updateSessionData(prefilledData)
+            
+            generalLogger.info('Business card data prefilled', { 
+              reportId,
+              fieldCount: Object.keys(prefilledData).length,
+            })
+          } catch (businessCardError) {
+            generalLogger.error('Failed to prefill business card data', { 
+              error: businessCardError instanceof Error ? businessCardError.message : 'Unknown error',
+              reportId,
+            })
+            // Continue without prefill - don't block the user
+          }
+        }
+        
+        setStage('data-entry')
+        initializationState.current.set(reportId, { initialized: true, isInitializing: false })
+      } catch (error) {
+        // On error, allow retry by not marking as initialized
+        initializationState.current.set(reportId, { initialized: false, isInitializing: false })
+        generalLogger.error('Failed to initialize session', { error, reportId })
+        setError('Failed to initialize valuation session')
+      }
+    },
+    [isAuthenticated, initializeSession, prefilledQuery, searchParams]
+  )
 
     // Validate and set report ID, then initialize session
     useEffect(() => {

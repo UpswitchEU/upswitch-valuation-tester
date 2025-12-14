@@ -70,21 +70,32 @@ export class SessionAPI extends HttpClient {
         currentView: session.currentView === 'conversational' ? 'ai-guided' : session.currentView,
       }
 
-      const response = await this.executeRequest<CreateValuationSessionResponse>(
+      // Backend endpoint: /api/valuation-sessions (POST)
+      const response = await this.executeRequest<{ success: boolean; data: any }>(
         {
           method: 'POST',
-          url: '/api/sessions',
+          url: '/api/valuation-sessions',
           data: backendSession,
           headers: {},
         } as any,
         options
       )
 
-      // Map response back - currentView is on session, not response
-      if (response.session && (response.session.currentView as string) === 'ai-guided') {
-        response.session.currentView = 'conversational'
+      // Backend returns { success: true, data: {...} }
+      // Transform to { success: true, session: {...}, sessionId, reportId }
+      const sessionData = response.data
+
+      // Map backend 'ai-guided' to frontend 'conversational'
+      if (sessionData && (sessionData.currentView as string) === 'ai-guided') {
+        sessionData.currentView = 'conversational'
       }
-      return response
+
+      return {
+        success: response.success,
+        session: sessionData,
+        sessionId: sessionData.sessionId,
+        reportId: sessionData.reportId,
+      }
     } catch (error) {
       this.handleSessionError(error, 'create session')
     }
@@ -108,21 +119,31 @@ export class SessionAPI extends HttpClient {
         },
       }
 
-      const response = await this.executeRequest<UpdateValuationSessionResponse>(
+      // Backend endpoint: /api/valuation-sessions/:reportId (PATCH, not PUT)
+      const response = await this.executeRequest<{ success: boolean; data: any }>(
         {
-          method: 'PUT',
-          url: `/api/sessions/${reportId}`,
-          data: backendUpdates,
+          method: 'PATCH',
+          url: `/api/valuation-sessions/${reportId}`,
+          data: backendUpdates.updates, // Backend expects updates directly, not wrapped
           headers: {},
         } as any,
         options
       )
 
-      // Map response back - currentView is on session, not response
-      if (response.session && (response.session.currentView as string) === 'ai-guided') {
-        response.session.currentView = 'conversational'
+      // Backend returns { success: true, data: {...} }
+      // Transform to { success: true, session: {...}, updated: true }
+      const sessionData = response.data
+
+      // Map backend 'ai-guided' to frontend 'conversational'
+      if (sessionData && (sessionData.currentView as string) === 'ai-guided') {
+        sessionData.currentView = 'conversational'
       }
-      return response
+
+      return {
+        success: response.success,
+        session: sessionData,
+        updated: true,
+      }
     } catch (error) {
       this.handleSessionError(error, 'update session')
     }
@@ -140,20 +161,25 @@ export class SessionAPI extends HttpClient {
       // Map frontend 'conversational' to backend 'ai-guided'
       const backendView = view === 'conversational' ? 'ai-guided' : view
 
-      const response = await this.executeRequest<SwitchViewResponse>(
+      // Backend endpoint: /api/valuation-sessions/:reportId/switch-view (POST, not PUT)
+      const response = await this.executeRequest<{ success: boolean; data: any }>(
         {
-          method: 'PUT',
-          url: `/api/sessions/${reportId}/switch-view`,
+          method: 'POST',
+          url: `/api/valuation-sessions/${reportId}/switch-view`,
           data: { view: backendView },
           headers: {},
         } as any,
         options
       )
 
-      // Map response back - currentView is directly on SwitchViewResponse
+      // Backend returns { success: true, data: {...} }
+      const sessionData = response.data
+
+      // Map response back
       return {
-        ...response,
-        currentView: (response.currentView as string) === 'ai-guided' ? 'conversational' : response.currentView,
+        success: response.success,
+        currentView: (sessionData.currentView as string) === 'ai-guided' ? 'conversational' : sessionData.currentView,
+        previousView: sessionData.previousView,
       }
     } catch (error) {
       this.handleSessionError(error, 'switch view')

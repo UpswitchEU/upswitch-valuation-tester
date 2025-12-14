@@ -3,10 +3,13 @@
  *
  * Single Responsibility: Render data fields as conversational questions
  * SOLID Principles: SRP, OCP, LSP, ISP, DIP
+ *
+ * Uses DataCollectorBase for shared validation and normalization logic
  */
 
 import { Bot, HelpCircle } from 'lucide-react'
 import React, { useState } from 'react'
+import { chatCollector } from '../../../features/shared/dataCollection'
 import { DataField, FieldRendererProps, ParsedFieldValue } from '../../../types/data-collection'
 
 export const ConversationalFieldRenderer: React.FC<FieldRendererProps> = ({
@@ -20,8 +23,10 @@ export const ConversationalFieldRenderer: React.FC<FieldRendererProps> = ({
   const [showHelp, setShowHelp] = useState(false)
   const hasErrors = errors.length > 0
 
-  const handleResponse = (responseValue: ParsedFieldValue) => {
-    onChange(responseValue, 'conversational')
+  const handleResponse = (rawValue: ParsedFieldValue) => {
+    // Use shared normalization logic from DataCollectorBase
+    const normalizedValue = chatCollector.normalizeValue(field, rawValue)
+    onChange(normalizedValue, chatCollector.getCollectionMethod())
   }
 
   // Get question from FIELD_QUESTIONS or generate one
@@ -147,54 +152,12 @@ function getExamplesForField(field: DataField): string[] {
 }
 
 function parseExample(example: string, field: DataField): ParsedFieldValue {
-  switch (field.type) {
-    case 'currency': {
-      // Remove currency symbols and parse
-      const cleaned = example.replace(/[€£$]/g, '').replace(/,/g, '').trim()
-      let numericValue: number
-
-      if (cleaned.includes('million') || cleaned.includes('M')) {
-        const baseValue = parseFloat(cleaned.replace(/million|M/g, ''))
-        if (isNaN(baseValue)) return example // Return original string if parsing fails
-        numericValue = baseValue * 1000000
-      } else if (cleaned.includes('K')) {
-        const baseValue = parseFloat(cleaned.replace('K', ''))
-        if (isNaN(baseValue)) return example
-        numericValue = baseValue * 1000
-      } else {
-        numericValue = parseFloat(cleaned)
-        if (isNaN(numericValue)) return example
-      }
-
-      return numericValue
-    }
-
-    case 'number': {
-      if (example.includes('-')) {
-        const parts = example.split('-').map((s) => parseInt(s.trim(), 10))
-        if (parts.some(isNaN)) return example
-
-        const [min, max] = parts
-        return Math.round((min + max) / 2)
-      }
-
-      const parsed = parseInt(example, 10)
-      return isNaN(parsed) ? example : parsed
-    }
-
-    case 'boolean': {
-      const lowerExample = example.toLowerCase().trim()
-      if (lowerExample === 'yes' || lowerExample === 'true' || lowerExample === '1') return true
-      if (lowerExample === 'no' || lowerExample === 'false' || lowerExample === '0') return false
-      return example // Return original if not a clear boolean
-    }
-
-    default:
-      return example
-  }
+  // Use shared normalization from DataCollectorBase
+  // This handles currency symbols, number parsing, boolean parsing, etc.
+  return chatCollector.normalizeValue(field, example)
 }
 
 function parseSuggestion(suggestion: string, field: DataField): ParsedFieldValue {
-  // Similar to parseExample but for suggestions
-  return parseExample(suggestion, field)
+  // Use shared normalization from DataCollectorBase
+  return chatCollector.normalizeValue(field, suggestion)
 }

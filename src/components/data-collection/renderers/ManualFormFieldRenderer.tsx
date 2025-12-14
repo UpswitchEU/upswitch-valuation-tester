@@ -3,9 +3,12 @@
  *
  * Single Responsibility: Render data fields using traditional form input patterns
  * SOLID Principles: SRP, OCP, LSP, ISP, DIP
+ *
+ * Uses DataCollectorBase for shared validation and normalization logic
  */
 
 import React from 'react'
+import { formCollector } from '../../../features/shared/dataCollection'
 import { DataField, FieldRendererProps, ParsedFieldValue } from '../../../types/data-collection'
 
 export const ManualFormFieldRenderer: React.FC<FieldRendererProps> = ({
@@ -19,8 +22,10 @@ export const ManualFormFieldRenderer: React.FC<FieldRendererProps> = ({
   const hasErrors = errors.length > 0
   const errorMessage = errors.find((e) => e.severity === 'error')?.message
 
-  const handleChange = (newValue: ParsedFieldValue) => {
-    onChange(newValue, 'manual_form')
+  const handleChange = (rawValue: ParsedFieldValue) => {
+    // Use shared normalization logic from DataCollectorBase
+    const normalizedValue = formCollector.normalizeValue(field, rawValue)
+    onChange(normalizedValue, formCollector.getCollectionMethod())
   }
 
   return (
@@ -107,13 +112,7 @@ const FieldInput: React.FC<FieldInputProps> = ({
         <input
           type="number"
           value={numericValue}
-          onChange={(e) =>
-            onChange(
-              field.type === 'currency'
-                ? parseFloat(e.target.value) || 0
-                : parseInt(e.target.value) || 0
-            )
-          }
+          onChange={(e) => onChange(e.target.value)} // Raw value, normalized by handleChange
           placeholder={field.placeholder}
           disabled={disabled}
           autoFocus={autoFocus}
@@ -168,7 +167,7 @@ const FieldInput: React.FC<FieldInputProps> = ({
           <input
             type="number"
             value={percentageValue}
-            onChange={(e) => onChange((parseFloat(e.target.value) || 0) / 100)} // Store as decimal
+            onChange={(e) => onChange(e.target.value)} // Raw value, normalized by handleChange
             placeholder={field.placeholder}
             disabled={disabled}
             autoFocus={autoFocus}

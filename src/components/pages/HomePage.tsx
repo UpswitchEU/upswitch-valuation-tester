@@ -2,6 +2,9 @@
 
 import { useRouter } from 'next/navigation'
 import React, { useEffect, useRef, useState } from 'react'
+import { RecentReportsSection } from '../../features/reports'
+import { businessCardService, type BusinessCardData } from '../../services/businessCard'
+import { useReportsStore } from '../../store/useReportsStore'
 import { ScrollToTop } from '../../utils'
 import { generalLogger } from '../../utils/logger'
 import { generateReportId } from '../../utils/reportIdGenerator'
@@ -12,25 +15,58 @@ export const HomePage: React.FC = () => {
   const router = useRouter()
   const [query, setQuery] = useState('')
   const [mode, setMode] = useState<'manual' | 'conversational'>('manual')
+  const [businessCardData, setBusinessCardData] = useState<BusinessCardData | null>(null)
+  const [businessCardToken, setBusinessCardToken] = useState<string | null>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
+  
+  // Reports store
+  const { reports, loading: reportsLoading, fetchReports, deleteReport } = useReportsStore()
 
-  // Auto-redirect to instant valuation if token is present
-  // BUT NOT if coming from main platform (upswitch.biz) - let user choose
+  // Fetch business card if token is present from main platform
   useEffect(() => {
     if (typeof window === 'undefined') return
     const params = new URLSearchParams(window.location.search)
     const token = params.get('token')
     const fromMainPlatform = params.get('from') === 'upswitch'
 
-    if (token && !fromMainPlatform) {
+    if (token && fromMainPlatform) {
+      generalLogger.info('Business card token detected from main platform', { 
+        token: token.substring(0, 8) + '...',
+      })
+      
+      // Store token for later use
+      setBusinessCardToken(token)
+      
+      // Fetch business card data to prefill query
+      businessCardService.fetchBusinessCard(token)
+        .then(data => {
+          setBusinessCardData(data)
+          
+          // Prefill query with company name
+          if (data.company_name) {
+            setQuery(data.company_name)
+            generalLogger.info('Query prefilled from business card', { 
+              companyName: data.company_name,
+            })
+          }
+        })
+        .catch(error => {
+          generalLogger.error('Failed to fetch business card', { 
+            error: error instanceof Error ? error.message : 'Unknown error',
+          })
+        })
+    } else if (token && !fromMainPlatform) {
+      // Legacy behavior: auto-redirect for instant valuations
       generalLogger.info('Token detected on homepage - redirecting to new report')
-      // Generate new report ID and redirect
       const newReportId = generateReportId()
       router.push(`/reports/${newReportId}?token=${token}`)
-    } else if (token && fromMainPlatform) {
-      generalLogger.info('Token detected from main platform - staying on homepage for user choice')
     }
   }, [router])
+  
+  // Fetch recent reports on mount
+  useEffect(() => {
+    fetchReports()
+  }, [fetchReports])
 
   // Auto-focus the textarea when component mounts
   useEffect(() => {
@@ -56,12 +92,47 @@ export const HomePage: React.FC = () => {
       // Generate new report ID
       const newReportId = generateReportId()
 
-      // Navigate to selected flow with query context
-      const url = `/reports/${newReportId}?flow=${mode}&prefilledQuery=${encodeURIComponent(query.trim())}&autoSend=true`
+      // Build URL with query params
+      const params = new URLSearchParams({
+        flow: mode,
+        prefilledQuery: query.trim(),
+        autoSend: 'true',
+      })
+      
+      // Add business card token if available
+      if (businessCardToken) {
+        params.set('token', businessCardToken)
+      }
+
+      const url = `/reports/${newReportId}?${params.toString()}`
+
+      generalLogger.info('Starting new valuation', { 
+        reportId: newReportId,
+        mode,
+        hasBusinessCard: !!businessCardToken,
+      })
 
       router.push(url)
     } catch (error) {
       generalLogger.error('Error submitting query', { error })
+    }
+  }
+  
+  const handleReportClick = (reportId: string) => {
+    generalLogger.info('Opening existing report', { reportId })
+    router.push(`/reports/${reportId}`)
+  }
+  
+  const handleReportDelete = async (reportId: string) => {
+    try {
+      await deleteReport(reportId)
+      generalLogger.info('Report deleted successfully', { reportId })
+    } catch (error) {
+      generalLogger.error('Failed to delete report', { 
+        error: error instanceof Error ? error.message : 'Unknown error',
+        reportId,
+      })
+      alert('Failed to delete report. Please try again.')
     }
   }
 
@@ -261,6 +332,14 @@ export const HomePage: React.FC = () => {
             </div>
           </div>
         </section>
+        
+        {/* Recent Reports Section - Lovable Style */}
+        <RecentReportsSection
+          reports={reports}
+          loading={reportsLoading}
+          onReportClick={handleReportClick}
+          onReportDelete={handleReportDelete}
+        />
       </div>
     </>
   )

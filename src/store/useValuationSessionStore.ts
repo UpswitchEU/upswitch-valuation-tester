@@ -16,6 +16,7 @@ export interface ValuationSessionStore {
     prefilledQuery?: string | null
   ) => Promise<void>
   loadSession: (reportId: string) => Promise<void>
+  restoreSession: (reportId: string) => Promise<void>
   updateSessionData: (data: Partial<ValuationRequest>) => Promise<void>
   switchView: (
     view: 'manual' | 'conversational',
@@ -52,6 +53,14 @@ export const useValuationSessionStore = create<ValuationSessionStore>((set, get)
     }
     return output
   }
+
+  // Debounced update function (2 second delay)
+  const debouncedBackendUpdate = debounce(
+    async (reportId: string, updatePayload: any) => {
+      await backendAPI.updateValuationSession(reportId, updatePayload)
+    },
+    2000
+  )
 
   return {
     // Initial state
@@ -201,24 +210,107 @@ export const useValuationSessionStore = create<ValuationSessionStore>((set, get)
               updatedAt: sessionData.updatedAt ? new Date(sessionData.updatedAt) : new Date(),
               completedAt: sessionData.completedAt ? new Date(sessionData.completedAt) : undefined,
             },
-            // Note: Sync state is managed by useValuationSyncStore
+            isSyncing: false,
+            syncError: null,
           })
           storeLogger.info('Session loaded', { reportId })
         } else {
-          // Note: Sync state is managed by useValuationSyncStore
+          set({ isSyncing: false })
         }
       } catch (error) {
         storeLogger.error('Failed to load session', {
           error: error instanceof Error ? error.message : 'Unknown error',
           reportId,
         })
-        // Note: Sync state is managed by useValuationSyncStore
+        set({ 
+          isSyncing: false,
+          syncError: error instanceof Error ? error.message : 'Failed to load session',
+        })
+      }
+    },
+
+    /**
+     * Restore session from backend and sync to all stores
+     * This is the main method for continuing existing sessions
+     */
+    restoreSession: async (reportId: string) => {
+      set({ isSyncing: true, syncError: null })
+      
+      try {
+        storeLogger.info('Restoring session', { reportId })
+        
+        // Load session from backend
+        const sessionResponse = await backendAPI.getValuationSession(reportId)
+        
+        if (!sessionResponse || !sessionResponse.session) {
+          throw new Error('Session not found')
+        }
+        
+        const sessionData = sessionResponse.session as ValuationSession
+        
+        // Restore session state
+        set({
+          session: {
+            ...sessionData,
+            createdAt: sessionData.createdAt ? new Date(sessionData.createdAt) : new Date(),
+            updatedAt: sessionData.updatedAt ? new Date(sessionData.updatedAt) : new Date(),
+            completedAt: sessionData.completedAt ? new Date(sessionData.completedAt) : undefined,
+          },
+          isSyncing: false,
+          syncError: null,
+        })
+        
+        // Sync to form store if form data exists
+        if (sessionData.partialData) {
+          const formStore = useValuationFormStore.getState()
+          formStore.updateFormData(sessionData.partialData as Partial<ValuationFormData>)
+          
+          storeLogger.info('Form data restored', { 
+            reportId,
+            fieldCount: Object.keys(sessionData.partialData).length,
+          })
+        }
+        
+        // Restore results if completed and available
+        const sessionDataWithResult = sessionData.sessionData as any
+        if (sessionDataWithResult?.valuation_result) {
+          const { useValuationResultsStore } = await import('./useValuationResultsStore')
+          const resultsStore = useValuationResultsStore.getState()
+          resultsStore.setResult(sessionDataWithResult.valuation_result)
+          
+          storeLogger.info('Valuation result restored', { 
+            reportId,
+            hasResult: true,
+          })
+        }
+        
+        storeLogger.info('Session restored successfully', { 
+          reportId,
+          currentView: sessionData.currentView,
+          hasFormData: !!sessionData.partialData,
+          hasResult: !!sessionDataWithResult?.valuation_result,
+          completeness: sessionData.completeness,
+        })
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+        
+        set({
+          syncError: errorMessage,
+          isSyncing: false,
+        })
+        
+        storeLogger.error('Failed to restore session', { 
+          error: errorMessage,
+          reportId,
+        })
+        
+        throw error
       }
     },
 
     /**
      * Update session data (merge partial data with deep merging for nested objects)
-     * Throttled to prevent excessive API calls
+     * Debounced to prevent excessive API calls (2 second delay)
      */
     updateSessionData: async (data: Partial<ValuationRequest>) => {
       const { session } = get()
@@ -255,23 +347,23 @@ export const useValuationSessionStore = create<ValuationSessionStore>((set, get)
         const completeness = get().getCompleteness()
         updatedSession.completeness = completeness
 
-        // Update backend
-        await backendAPI.updateValuationSession(session.reportId, {
-          partialData: updatedPartialData,
-          sessionData: updatedSessionData,
-          dataSource,
-          currentView: session.currentView,
-        })
-
+        // Update local state immediately
         set({
           session: updatedSession,
           isSyncing: false,
           syncError: null,
         })
 
-        storeLogger.debug('Session data updated', {
+        // Update backend with debounce (batches rapid updates)
+        await debouncedBackendUpdate(session.reportId, {
+          partialData: updatedPartialData,
+          sessionData: updatedSessionData,
+          dataSource,
+          currentView: session.currentView,
+        })
+
+        storeLogger.info('Session data updated', {
           reportId: session.reportId,
-          fieldsUpdated: Object.keys(data),
           completeness,
         })
       } catch (error) {
@@ -350,7 +442,7 @@ export const useValuationSessionStore = create<ValuationSessionStore>((set, get)
 
       // Idempotency check: if already in target view, no-op
       if (session.currentView === view) {
-        storeLogger.debug('Already in target view', { reportId: session.reportId, view })
+        storeLogger.info('Already in target view', { reportId: session.reportId, view })
         return
       }
 
@@ -425,7 +517,7 @@ export const useValuationSessionStore = create<ValuationSessionStore>((set, get)
 
       // Double-check we're not already in the target view (race condition protection)
       if (currentSession.currentView === view) {
-        storeLogger.debug('Already in target view (race condition check)', {
+        storeLogger.info('Already in target view (race condition check)', {
           reportId: currentSession.reportId,
           view,
         })
