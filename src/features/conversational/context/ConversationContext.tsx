@@ -1,18 +1,4 @@
 /**
-<<<<<<< HEAD
- * Conversation Context
- *
- * React Context for conversational valuation state management.
- * Provides unified state access throughout the conversational valuation feature.
- */
-
-import React, { createContext, useContext, useReducer } from 'react'
-import { ConversationContextValue, ConversationProviderProps } from '../types/conversation'
-import { conversationReducer, initialConversationState } from './conversationReducer'
-
-// Create the context
-const ConversationContext = createContext<ConversationContextValue | undefined>(undefined)
-=======
  * Conversation Context - State Management for Conversational Flow
  *
  * Single Responsibility: Manage conversation state (messages, session, valuation results)
@@ -104,33 +90,10 @@ interface ConversationProviderProps {
   children: React.ReactNode
   initialSessionId: string
 }
->>>>>>> refactor-gtm
 
 /**
  * Conversation Provider Component
  *
-<<<<<<< HEAD
- * Wraps the conversational valuation feature with unified state management.
- * Provides single source of truth for all conversational valuation state.
- */
-export const ConversationProvider: React.FC<ConversationProviderProps> = ({
-  children,
-  initialState = {},
-}) => {
-  // Initialize state with any provided initial values
-  const [state, dispatch] = useReducer(conversationReducer, {
-    ...initialConversationState,
-    ...initialState,
-  })
-
-  const contextValue: ConversationContextValue = {
-    state,
-    dispatch,
-  }
-
-  return (
-    <ConversationContext.Provider value={contextValue}>{children}</ConversationContext.Provider>
-=======
  * Provides conversation state and actions to child components.
  */
 export const ConversationProvider: React.FC<ConversationProviderProps> = ({
@@ -260,50 +223,10 @@ export const ConversationProvider: React.FC<ConversationProviderProps> = ({
     <ConversationContext.Provider value={{ state, actions }}>
       {children}
     </ConversationContext.Provider>
->>>>>>> refactor-gtm
   )
 }
 
 /**
-<<<<<<< HEAD
- * Hook to access conversation context
- *
- * Must be used within ConversationProvider.
- * Provides access to unified conversational valuation state.
- */
-export function useConversationContext(): ConversationContextValue {
-  const context = useContext(ConversationContext)
-
-  if (context === undefined) {
-    throw new Error('useConversationContext must be used within a ConversationProvider')
-  }
-
-  return context
-}
-
-/**
- * Hook for conversation state (convenience wrapper)
- *
- * Returns just the state portion of the context.
- */
-export function useConversationState() {
-  const { state } = useConversationContext()
-  return state
-}
-
-/**
- * Hook for conversation dispatch (convenience wrapper)
- *
- * Returns just the dispatch function of the context.
- */
-export function useConversationDispatch() {
-  const { dispatch } = useConversationContext()
-  return dispatch
-}
-
-// Re-export the actions hook for convenience
-export { useConversationActions } from '../hooks/useConversationActions'
-=======
  * Hook to access conversation state
  */
 export const useConversationState = (): ConversationState => {
@@ -335,4 +258,3 @@ export const useConversationContext = (): ConversationContextType => {
   }
   return context
 }
->>>>>>> refactor-gtm

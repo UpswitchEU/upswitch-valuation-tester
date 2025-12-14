@@ -1,67 +1,10 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-<<<<<<< HEAD
-=======
   // Enable experimental features for better performance
->>>>>>> refactor-gtm
   experimental: {
     optimizeCss: true,
     scrollRestoration: true,
   },
-<<<<<<< HEAD
-  images: {
-    domains: ['localhost'],
-    unoptimized: true,
-  },
-  webpack: (config, { isServer }) => {
-    // Bundle splitting optimizations
-    if (!isServer) {
-      config.optimization.splitChunks.cacheGroups = {
-        ...config.optimization.splitChunks.cacheGroups,
-        vendor: {
-          test: /[\\/]node_modules[\\/]/,
-          name: 'vendors',
-          chunks: 'all',
-          priority: 10,
-        },
-        react: {
-          test: /[\\/]node_modules[\\/](react|react-dom)[\\/]/,
-          name: 'react',
-          chunks: 'all',
-          priority: 20,
-        },
-        ui: {
-          test: /[\\/]node_modules[\\/](@heroui|@tailwindcss|framer-motion|lucide-react)[\\/]/,
-          name: 'ui',
-          chunks: 'all',
-          priority: 15,
-        },
-        conversational: {
-          test: /[\\/]src[\\/]features[\\/]conversational[\\/]/,
-          name: 'conversational',
-          chunks: 'all',
-          priority: 5,
-        },
-        manual: {
-          test: /[\\/]src[\\/]features[\\/]manual[\\/]/,
-          name: 'manual',
-          chunks: 'all',
-          priority: 5,
-        },
-        utils: {
-          test: /[\\/]src[\\/](utils|hooks|services)[\\/]/,
-          name: 'utils',
-          chunks: 'all',
-          priority: 5,
-        },
-      }
-    }
-
-    config.optimization.minimize = true
-
-    return config
-  },
-=======
 
   // Optimize bundle splitting and tree-shaking
   webpack: (config, { dev, isServer }) => {
@@ -131,7 +74,6 @@ const nextConfig = {
   },
 
   // Configure headers for security
->>>>>>> refactor-gtm
   async headers() {
     return [
       {
@@ -153,24 +95,12 @@ const nextConfig = {
       },
     ]
   },
-<<<<<<< HEAD
-=======
 
   // Configure rewrites for API routes
->>>>>>> refactor-gtm
   async rewrites() {
     return [
       {
         source: '/api/:path*',
-<<<<<<< HEAD
-        destination: 'https://web-production-8d00b.up.railway.app/api/:path*',
-      },
-    ]
-  },
-}
-
-module.exports = nextConfig
-=======
         destination: '/api/:path*',
       },
     ]
@@ -192,4 +122,3 @@ module.exports = nextConfig
 }
 
 export default nextConfig
->>>>>>> refactor-gtm
