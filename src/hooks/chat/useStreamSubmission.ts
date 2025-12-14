@@ -11,7 +11,7 @@ import { useCallback } from 'react'
 import { StreamEventHandler } from '../../services/chat/StreamEventHandler'
 import { StreamingManager } from '../../services/chat/StreamingManager'
 import { MessageManager } from '../../utils/chat/MessageManager'
-import { chatLogger, debugLogger } from '../../utils/logger'
+import { chatLogger } from '../../utils/logger'
 import { InputValidator } from '../../utils/validation/InputValidator'
 import { Message } from '../useStreamingChatState'
 
@@ -84,7 +84,7 @@ export const useStreamSubmission = ({
       const userInput = input.trim()
 
       // CRITICAL DEBUG: Log ALL state BEFORE any checks to diagnose blocking
-      debugLogger.log('[DEBUG]', 'handleSubmit ENTRY - Lock State Check', {
+      chatLogger.debug('handleSubmit ENTRY - Lock State Check', {
         isRequestInProgress: isRequestInProgressRef.current,
         isStreaming: false, // Will be set below
         hasInput: !!userInput,
@@ -95,7 +95,7 @@ export const useStreamSubmission = ({
       })
 
       // CRITICAL DEBUG: Log ALL state BEFORE any checks to diagnose blocking
-      debugLogger.log('[DEBUG]', 'handleSubmit ENTRY - Lock State Check', {
+      chatLogger.debug('handleSubmit ENTRY - Lock State Check', {
         isRequestInProgress: isRequestInProgressRef.current,
         hasInput: !!userInput,
         disabled,
@@ -104,7 +104,7 @@ export const useStreamSubmission = ({
         timestamp: new Date().toISOString(),
       })
 
-      debugLogger.log('[StreamingChat]', 'handleSubmit called', {
+      chatLogger.debug('handleSubmit called', {
         input: userInput,
         sessionId,
         pythonSessionId,
@@ -114,7 +114,7 @@ export const useStreamSubmission = ({
       // CRITICAL FIX: Enhanced lock check with detailed logging
       // Check both state and ref to prevent duplicate requests
       if (isRequestInProgressRef.current || !userInput || disabled) {
-        debugLogger.warn('[StreamingChat]', 'Submit blocked', {
+        chatLogger.warn('Submit blocked', {
           reason: !userInput
             ? 'empty input'
             : isRequestInProgressRef.current

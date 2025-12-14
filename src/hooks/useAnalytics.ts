@@ -5,24 +5,24 @@
  * and user journey monitoring on the tester subdomain.
  */
 
+import { usePathname } from 'next/navigation'
 import { useCallback, useEffect } from 'react'
-import { useLocation } from 'react-router-dom'
 import {
-  analyticsConfig,
-  trackError,
-  trackEvent,
-  trackPerformance,
-  trackValuationJourney,
-  ValuationEvents,
+    analyticsConfig,
+    trackError,
+    trackEvent,
+    trackPerformance,
+    trackValuationJourney,
+    ValuationEvents,
 } from '../config/analytics'
 
 export const useAnalytics = () => {
-  const location = useLocation()
+  const location = usePathname()
 
   // Track page views
   useEffect(() => {
     trackEvent(ValuationEvents.PAGE_VIEW, {
-      page_path: location.pathname,
+      page_path: location,
       page_title: document.title,
       timestamp: new Date().toISOString(),
     })
@@ -60,13 +60,13 @@ export const useAnalytics = () => {
           trackPerformance.calculationTime(value, context?.method || 'unknown')
           break
         case 'page_load_time':
-          trackPerformance.pageLoadTime(value, context?.page || location.pathname)
+          trackPerformance.pageLoadTime(value, context?.page || location)
           break
         default:
           trackEvent(metric, { value, ...context })
       }
     },
-    [location.pathname]
+    [location]
   )
 
   // Track errors

@@ -2,7 +2,7 @@
   "../node_modules/jspdf/dist/jspdf.es.min.js -> canvg": {
     "id": 93803,
     "files": [
-      "static/chunks/vendors-7f9c3f0720666b1a.js"
+      "static/chunks/vendors-f18a6ed7cc28610d.js"
     ]
   },
   "../node_modules/jspdf/dist/jspdf.es.min.js -> dompurify": {
@@ -14,59 +14,61 @@
     "files": []
   },
   "components/ValuationFlowSelector.tsx -> ../features/valuation/components/ValuationFlow": {
-    "id": 67724,
+    "id": 65892,
     "files": [
-      "static/chunks/724.2bfe9ec23c87e985.js"
+      "static/chunks/ui-vendor-ff6e0bb97e04d151.js",
+      "static/chunks/utils-e0035101c761b1ab.js",
+      "static/chunks/892.fcb4b3eb4104cb3f.js"
     ]
   },
   "features/valuation/components/ValuationFlow.tsx -> ../../../components/Results": {
     "id": 31134,
     "files": [
-      "static/chunks/134.b1015926ce88f15a.js"
-    ]
-  },
-  "features/valuation/components/ValuationFlow.tsx -> ../../../components/StreamingChat": {
-    "id": 96629,
-    "files": [
-      "static/chunks/ui-vendor-b187c74dfe001036.js",
-      "static/chunks/vendors-7f9c3f0720666b1a.js",
-      "static/chunks/utils-3702530f699af44b.js",
-      "static/chunks/404.64d78d3e3aa4b60e.js"
+      "static/chunks/134.a5439de7a745123e.js"
     ]
   },
   "features/valuation/components/ValuationFlow.tsx -> ../../../components/ValuationToolbar": {
-    "id": 51545,
+    "id": 519,
     "files": [
-      "static/chunks/ui-vendor-b187c74dfe001036.js",
-      "static/chunks/utils-3702530f699af44b.js",
-      "static/chunks/545.05fecf12392849d2.js"
+      "static/chunks/ui-vendor-ff6e0bb97e04d151.js",
+      "static/chunks/519.2807ea92c2daba30.js"
     ]
   },
   "features/valuation/components/ValuationFlow.tsx -> ../../../components/data-collection": {
     "id": 9985,
     "files": [
-      "static/chunks/ui-vendor-b187c74dfe001036.js",
+      "static/chunks/ui-vendor-ff6e0bb97e04d151.js",
       "static/chunks/985.d3e36f720d0e8ecf.js"
     ]
   },
-  "features/valuation/components/ValuationFlow.tsx -> ../../../services/downloadService": {
+  "features/valuation/components/ValuationFlow.tsx -> ../../conversational/components/ConversationalLayout": {
+    "id": 70024,
+    "files": [
+      "static/chunks/ui-vendor-ff6e0bb97e04d151.js",
+      "static/chunks/vendors-f18a6ed7cc28610d.js",
+      "static/chunks/utils-e0035101c761b1ab.js",
+      "static/chunks/519.2807ea92c2daba30.js",
+      "static/chunks/743.ab2ffea541ce1980.js"
+    ]
+  },
+  "hooks/valuationToolbar/useValuationToolbarDownload.ts -> ../../services/downloadService": {
     "id": 55673,
     "files": [
-      "static/chunks/vendors-7f9c3f0720666b1a.js",
-      "static/chunks/utils-3702530f699af44b.js",
-      "static/chunks/673.0b23d28bbd5c35c1.js"
+      "static/chunks/vendors-f18a6ed7cc28610d.js",
+      "static/chunks/utils-e0035101c761b1ab.js",
+      "static/chunks/673.d9213814ae66190d.js"
     ]
   },
   "services/downloadService.ts -> html2pdf.js": {
     "id": 57127,
     "files": [
-      "static/chunks/vendors-7f9c3f0720666b1a.js"
+      "static/chunks/vendors-f18a6ed7cc28610d.js"
     ]
   },
-  "store/useValuationSessionStore.ts -> ./useValuationStore": {
-    "id": 38691,
+  "store/useValuationSessionStore.ts -> ./useValuationResultsStore": {
+    "id": 16343,
     "files": [
-      "static/chunks/691.3ac2d25828197ca5.js"
+      "static/chunks/343.a7f155956056bb07.js"
     ]
   }
 }
