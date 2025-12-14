@@ -81,7 +81,7 @@ interface ConversationContextType {
 /**
  * Conversation Context
  */
-const ConversationContext = createContext<ConversationContextType | undefined>(undefined)
+export const ConversationContext = createContext<ConversationContextType | undefined>(undefined)
 
 /**
  * Conversation Provider Props

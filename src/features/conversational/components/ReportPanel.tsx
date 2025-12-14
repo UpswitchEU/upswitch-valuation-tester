@@ -8,7 +8,7 @@
  */
 
 import { Edit3 } from 'lucide-react'
-import React, { Suspense, useState } from 'react'
+import React, { Suspense, useContext, useState } from 'react'
 import { HTMLView } from '../../../components/HTMLView'
 import { LoadingState } from '../../../components/LoadingState'
 import { GENERATION_STEPS } from '../../../components/LoadingState.constants'
@@ -16,7 +16,19 @@ import { Results } from '../../../components/results'
 import { ValuationInfoPanel } from '../../../components/ValuationInfoPanel'
 import { useValuationApiStore } from '../../../store/useValuationApiStore'
 import { useValuationResultsStore } from '../../../store/useValuationResultsStore'
-import { useConversationState } from '../context/ConversationContext'
+import { ConversationContext } from '../context/ConversationContext'
+
+/**
+ * Safe hook to get conversation state (works with or without ConversationProvider)
+ */
+const useOptionalConversationState = () => {
+  const context = useContext(ConversationContext)
+  // Return default state if ConversationProvider is not available (manual flow)
+  if (!context) {
+    return { isGenerating: false }
+  }
+  return context.state
+}
 
 /**
  * ReportPanel Props
@@ -102,7 +114,7 @@ export const ReportPanel: React.FC<ReportPanelProps> = ({
   // Get result from results store (same as manual flow)
   const { result } = useValuationResultsStore()
   const { isCalculating } = useValuationApiStore()
-  const conversationState = useConversationState()
+  const conversationState = useOptionalConversationState()
 
   // Determine if generating (from API store or conversation context)
   const isGenerating = isCalculating || conversationState.isGenerating
