@@ -77,11 +77,21 @@ export const ValuationForm: React.FC<ValuationFormProps> = ({
           updateFormData(version.formData as any)
         }
       } catch (error) {
-        generalLogger.warn('Failed to load version data', {
-          reportId: session.reportId,
-          versionNumber: initialVersion,
-          error,
-        })
+        // BANK-GRADE: Specific error handling - version load failure
+        if (error instanceof Error) {
+          generalLogger.warn('Failed to load version data', {
+            reportId: session.reportId,
+            versionNumber: initialVersion,
+            error: error.message,
+            stack: error.stack,
+          })
+        } else {
+          generalLogger.warn('Failed to load version data', {
+            reportId: session.reportId,
+            versionNumber: initialVersion,
+            error: String(error),
+          })
+        }
       }
     }
   }, [initialVersion, session?.reportId, getVersion, updateFormData])
@@ -203,7 +213,17 @@ export const ValuationForm: React.FC<ValuationFormProps> = ({
           responseCount: dataResponses.length,
         })
       } catch (err) {
-        generalLogger.warn('Failed to sync formData to DataResponse[]', { error: err })
+        // BANK-GRADE: Specific error handling - form sync failure
+        if (err instanceof Error) {
+          generalLogger.warn('Failed to sync formData to DataResponse[]', {
+            error: err.message,
+            stack: err.stack,
+          })
+        } else {
+          generalLogger.warn('Failed to sync formData to DataResponse[]', {
+            error: String(err),
+          })
+        }
       }
     }, 500),
     [setCollectedData]

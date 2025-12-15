@@ -33,7 +33,19 @@ export const HTMLView: React.FC<HTMLViewProps> = ({ result }) => {
       generalLogger.debug('HTML report copied to clipboard', { valuationId: result.valuation_id })
       // You could add a toast notification here
     } catch (err) {
-      generalLogger.error('Failed to copy HTML', { error: err, valuationId: result.valuation_id })
+      // BANK-GRADE: Specific error handling - clipboard copy failure
+      if (err instanceof Error) {
+        generalLogger.error('Failed to copy HTML', {
+          error: err.message,
+          stack: err.stack,
+          valuationId: result.valuation_id,
+        })
+      } else {
+        generalLogger.error('Failed to copy HTML', {
+          error: String(err),
+          valuationId: result.valuation_id,
+        })
+      }
     }
   }
 

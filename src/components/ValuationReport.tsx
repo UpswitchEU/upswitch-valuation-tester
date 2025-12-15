@@ -42,9 +42,27 @@ export const ValuationReport: React.FC<ValuationReportProps> = React.memo(
       // Save completed valuation to backend
       try {
         await reportApiService.completeReport(reportId, result)
+        generalLogger.info('Valuation report saved successfully', {
+          reportId,
+          valuationId: result.valuation_id,
+        })
       } catch (error) {
-        generalLogger.error('Failed to save completed valuation', { error, reportId })
+        // BANK-GRADE: Specific error handling - report save failure
         // Don't show error to user as the valuation is already complete locally
+        if (error instanceof Error) {
+          generalLogger.error('Failed to save completed valuation', {
+            error: error.message,
+            stack: error.stack,
+            reportId,
+            valuationId: result.valuation_id,
+          })
+        } else {
+          generalLogger.error('Failed to save completed valuation', {
+            error: String(error),
+            reportId,
+            valuationId: result.valuation_id,
+          })
+        }
       }
     }
 

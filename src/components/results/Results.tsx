@@ -1,5 +1,6 @@
 import React, { memo } from 'react'
 import { useValuationResultsStore } from '../../store/useValuationResultsStore'
+import { HTMLProcessor } from '../../utils/htmlProcessor'
 
 /**
  * Results Component - Displays Accountant View HTML Report (Preview Tab)
@@ -16,7 +17,7 @@ import { useValuationResultsStore } from '../../store/useValuationResultsStore'
  *
  * PERFORMANCE: Memoized to prevent unnecessary re-renders
  */
-export const Results: React.FC = memo(() => {
+const ResultsComponent: React.FC = () => {
   const { result } = useValuationResultsStore()
 
   // Note: Result state logging removed - HTML report rendering is handled by dangerouslySetInnerHTML
@@ -75,15 +76,26 @@ export const Results: React.FC = memo(() => {
     )
   }
 
+  // BANK-GRADE: Sanitize HTML before rendering to prevent XSS attacks
+  // HTML is server-generated from templates (not user input), but we sanitize for defense-in-depth
+  const sanitizedHtml = HTMLProcessor.sanitize(result.html_report)
+
   return (
     <div className="h-full overflow-y-auto valuation-report-preview">
       <div
         className="accountant-view-report"
-        dangerouslySetInnerHTML={{ __html: result.html_report }}
+        dangerouslySetInnerHTML={{ __html: sanitizedHtml }}
       />
     </div>
   )
-})
+}
+
+// BANK-GRADE: Memoized component to prevent unnecessary re-renders
+// Zustand's selector optimization handles store-based re-renders efficiently
+// This memo prevents re-renders from parent component updates
+export const Results = memo(ResultsComponent)
+
+Results.displayName = 'Results'
 
 // Frontend is minimal - only displays final HTML report from backend
 // All complex analysis components removed - calculations happen in Python

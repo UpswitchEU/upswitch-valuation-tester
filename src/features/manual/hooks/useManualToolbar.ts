@@ -6,15 +6,17 @@
  * @module features/manual/hooks/useManualToolbar
  */
 
-import { useCallback } from 'react'
+import { useCallback, useState } from 'react'
 import {
-  useValuationToolbarDownload,
   useValuationToolbarRefresh,
 } from '../../../hooks/valuationToolbar'
+import { backendAPI } from '../../../services/backendApi'
 import { RefreshService } from '../../../services/toolbar/refreshService'
 import UrlGeneratorService from '../../../services/urlGenerator'
 import { useValuationResultsStore } from '../../../store/useValuationResultsStore'
+import { useValuationSessionStore } from '../../../store/useValuationSessionStore'
 import type { ValuationResponse } from '../../../types/valuation'
+import { generalLogger } from '../../../utils/logger'
 import { generateReportId } from '../../../utils/reportIdGenerator'
 
 /**
@@ -44,7 +46,8 @@ interface UseManualToolbarOptions {
  */
 export const useManualToolbar = ({ result }: UseManualToolbarOptions): UseManualToolbarReturn => {
   const { handleRefresh: handleHookRefresh } = useValuationToolbarRefresh()
-  const { handleDownload: handleHookDownload, isDownloading } = useValuationToolbarDownload()
+  const { session } = useValuationSessionStore()
+  const [isDownloading, setIsDownloading] = useState(false)
 
   const handleRefresh = useCallback(() => {
     const newReportId = generateReportId()
@@ -54,17 +57,75 @@ export const useManualToolbar = ({ result }: UseManualToolbarOptions): UseManual
 
   const handleDownload = useCallback(async () => {
     const currentResult = result || useValuationResultsStore.getState().result
-    if (currentResult && currentResult.html_report) {
-      await handleHookDownload({
-        companyName: currentResult.company_name || 'Company',
-        valuationAmount: currentResult.equity_value_mid,
-        valuationDate: new Date(),
-        method: currentResult.methodology || 'DCF Analysis',
-        confidenceScore: currentResult.confidence_score,
-        htmlContent: currentResult.html_report || '',
+    const reportId = session?.reportId
+
+    if (!currentResult || !currentResult.html_report) {
+      generalLogger.warn('Cannot download PDF: No valuation result or HTML report available', {
+        hasResult: !!currentResult,
+        hasHtmlReport: !!currentResult?.html_report,
       })
+      return
     }
-  }, [result, handleHookDownload])
+
+    if (!reportId) {
+      generalLogger.error('Cannot download PDF: Report ID not available', {
+        hasSession: !!session,
+        reportId: session?.reportId,
+      })
+      return
+    }
+
+    setIsDownloading(true)
+    try {
+      generalLogger.info('Initiating backend PDF download', {
+        reportId,
+        valuationId: currentResult.valuation_id,
+        companyName: currentResult.company_name,
+      })
+
+      // Use backend PDF generation endpoint
+      const pdfBlob = await backendAPI.downloadAccountantViewPDF(reportId)
+
+      // Generate filename
+      const companyName = currentResult.company_name || 'Company'
+      const filename = `valuation-${companyName.replace(/[^a-z0-9]/gi, '-').toLowerCase()}-${Date.now()}.pdf`
+
+      // Trigger browser download
+      const url = URL.createObjectURL(pdfBlob)
+      const link = document.createElement('a')
+      link.href = url
+      link.download = filename
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+      URL.revokeObjectURL(url)
+
+      generalLogger.info('PDF download completed successfully', {
+        reportId,
+        filename,
+        pdfSize: pdfBlob.size,
+      })
+    } catch (error) {
+      // BANK-GRADE: Specific error handling - PDF download failure
+      if (error instanceof Error) {
+        generalLogger.error('PDF download failed', {
+          error: error.message,
+          stack: error.stack,
+          reportId,
+          valuationId: currentResult.valuation_id,
+        })
+      } else {
+        generalLogger.error('PDF download failed', {
+          error: String(error),
+          reportId,
+          valuationId: currentResult.valuation_id,
+        })
+      }
+      // TODO: Show user-friendly error message with retry option
+    } finally {
+      setIsDownloading(false)
+    }
+  }, [result, session])
 
   return {
     handleRefresh,

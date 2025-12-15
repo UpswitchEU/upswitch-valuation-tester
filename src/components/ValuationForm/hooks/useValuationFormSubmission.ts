@@ -83,6 +83,10 @@ export const useValuationFormSubmission = (
 
       // Build ValuationRequest using unified function
       const request = buildValuationRequest(formData)
+      
+      // Explicitly set dataSource for manual flow
+      // This ensures backend knows this is a manual (FREE) calculation
+      ;(request as any).dataSource = 'manual'
 
       // M&A Workflow: Check if this is a regeneration
       const reportId = session?.reportId
@@ -140,10 +144,19 @@ export const useValuationFormSubmission = (
             )
           } catch (versionError) {
             // Don't fail the valuation if versioning fails
-            generalLogger.error('Failed to create version on regeneration', {
-              reportId,
-              error: versionError instanceof Error ? versionError.message : 'Unknown error',
-            })
+            // BANK-GRADE: Specific error handling - version creation failure
+            if (versionError instanceof Error) {
+              generalLogger.error('Failed to create version on regeneration', {
+                reportId,
+                error: versionError.message,
+                stack: versionError.stack,
+              })
+            } else {
+              generalLogger.error('Failed to create version on regeneration', {
+                reportId,
+                error: String(versionError),
+              })
+            }
           }
         }
 

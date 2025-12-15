@@ -117,7 +117,17 @@ export const BasicInformationSection: React.FC<BasicInformationSectionProps> = (
 
                 generalLogger.info('Business type suggestion submitted', { suggestion })
               } catch (error) {
-                generalLogger.error('Failed to submit suggestion', { error })
+                // BANK-GRADE: Specific error handling - suggestion submission failure
+                if (error instanceof Error) {
+                  generalLogger.error('Failed to submit suggestion', {
+                    error: error.message,
+                    stack: error.stack,
+                  })
+                } else {
+                  generalLogger.error('Failed to submit suggestion', {
+                    error: String(error),
+                  })
+                }
               }
             }}
             placeholder="Search for your business type..."
