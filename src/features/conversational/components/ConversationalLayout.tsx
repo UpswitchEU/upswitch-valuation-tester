@@ -16,6 +16,7 @@ import { useAuth } from '../../../hooks/useAuth'
 import { useConversationalToolbar } from '../../../hooks/useConversationalToolbar'
 import { usePanelResize } from '../../../hooks/usePanelResize'
 import { useReportIdTracking } from '../../../hooks/useReportIdTracking'
+import { conversationAPI } from '../../../services/api/conversation/ConversationAPI'
 import { guestCreditService } from '../../../services/guestCreditService'
 import { useValuationApiStore } from '../../../store/useValuationApiStore'
 import { useValuationFormStore } from '../../../store/useValuationFormStore'
@@ -23,6 +24,7 @@ import { useValuationResultsStore } from '../../../store/useValuationResultsStor
 import { useValuationSessionStore } from '../../../store/useValuationSessionStore'
 import type { ValuationResponse } from '../../../types/valuation'
 import { chatLogger } from '../../../utils/logger'
+import { generateImportSummaryMessage, shouldGenerateImportSummary } from '../utils/generateImportSummary'
 import { CreditGuard } from '../../auth/components/CreditGuard'
 import {
   ConversationProvider,
@@ -73,7 +75,7 @@ const ConversationalLayoutInner: React.FC<ConversationalLayoutProps> = ({
   const { setCollectedData } = useValuationFormStore()
   const { isCalculating, error } = useValuationApiStore()
   const { result, setResult } = useValuationResultsStore()
-  const { isSaving, lastSaved, hasUnsavedChanges, syncError, updateSessionData } = useValuationSessionStore()
+  const { isSaving, lastSaved, hasUnsavedChanges, syncError, updateSessionData, session } = useValuationSessionStore()
 
   // Mark conversation changes as unsaved (for save status indicator)
   useEffect(() => {
@@ -182,7 +184,7 @@ const ConversationalLayoutInner: React.FC<ConversationalLayoutProps> = ({
 
     // Check if we should generate an import summary
     const sessionData = session?.sessionData
-    if (shouldGenerateImportSummary(sessionData, state.messages)) {
+    if (sessionData && shouldGenerateImportSummary(sessionData, state.messages)) {
       chatLogger.info('Generating import summary for manual → conversational switch', {
         reportId,
         hasCompanyName: !!sessionData?.company_name,
@@ -190,7 +192,12 @@ const ConversationalLayoutInner: React.FC<ConversationalLayoutProps> = ({
       })
 
       // Generate summary message
-      const summaryMessage = generateImportSummaryMessage(sessionData)
+      const summaryMessagePartial = generateImportSummaryMessage(sessionData)
+      const summaryMessage = {
+        ...summaryMessagePartial,
+        id: `import_summary_${Date.now()}`,
+        timestamp: new Date(),
+      }
       
       // Add to conversation
       actions.addMessage(summaryMessage)
