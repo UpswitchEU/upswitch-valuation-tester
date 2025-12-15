@@ -26,6 +26,7 @@ import type { Message } from '../useStreamingChatState'
 
 export interface UseStreamingCoordinatorOptions {
   sessionId: string
+  pythonSessionId?: string | null // CRITICAL: Python backend session ID (preferred over client sessionId)
   userId?: string
   messages: Message[]
   setMessages: (messages: Message[] | ((prev: Message[]) => Message[])) => void
@@ -83,6 +84,7 @@ export interface UseStreamingCoordinatorReturn {
  */
 export function useStreamingCoordinator({
   sessionId,
+  pythonSessionId,
   userId,
   messages,
   setMessages,
@@ -108,6 +110,8 @@ export function useStreamingCoordinator({
   trackModelPerformance,
   trackConversationCompletion,
 }: UseStreamingCoordinatorOptions): UseStreamingCoordinatorReturn {
+  // CRITICAL: Use Python session ID if available, otherwise fall back to client session ID
+  const effectiveSessionId = pythonSessionId || sessionId
   // Refs for streaming state
   const streamingManagerRef = useRef<StreamingManager | null>(null)
   const eventHandlerRef = useRef<StreamEventHandler | null>(null)
@@ -123,7 +127,7 @@ export function useStreamingCoordinator({
     streamingManagerRef.current = new StreamingManager(requestIdRef, currentStreamingMessageRef)
 
     // Create event handler with all callbacks
-    eventHandlerRef.current = new StreamEventHandler(sessionId, {
+    eventHandlerRef.current = new StreamEventHandler(effectiveSessionId, {
       updateStreamingMessage,
       setIsStreaming,
       setIsTyping,
@@ -170,6 +174,8 @@ export function useStreamingCoordinator({
     }
   }, [
     sessionId,
+    pythonSessionId,
+    // effectiveSessionId is derived from pythonSessionId and sessionId, so we don't need it in deps
     setMessages,
     setIsStreaming,
     setIsTyping,
@@ -201,7 +207,11 @@ export function useStreamingCoordinator({
 
       // Validate input before starting stream
       if (!userInput || !userInput.trim()) {
-        chatLogger.warn('Attempted to start streaming with empty input', { sessionId })
+        chatLogger.warn('Attempted to start streaming with empty input', { 
+          sessionId,
+          pythonSessionId,
+          effectiveSessionId,
+        })
         return
       }
 
@@ -237,6 +247,8 @@ export function useStreamingCoordinator({
           chatLogger.error('Error handling streaming event', {
             error: error instanceof Error ? error.message : String(error),
             sessionId,
+            pythonSessionId,
+            effectiveSessionId,
           })
         }
       }
@@ -246,6 +258,8 @@ export function useStreamingCoordinator({
         chatLogger.error('Streaming error', {
           error: error.message,
           sessionId,
+          pythonSessionId,
+          effectiveSessionId,
           stack: error.stack,
         })
         setIsStreaming(false)
@@ -266,9 +280,16 @@ export function useStreamingCoordinator({
         // Reset event handler state before starting new stream
         eventHandlerRef.current.reset()
 
+        // CRITICAL: Use Python session ID if available, otherwise fall back to client session ID
+        chatLogger.info('Starting stream with session ID', {
+          clientSessionId: sessionId,
+          pythonSessionId,
+          effectiveSessionId,
+        })
+        
         // Call startStreaming with all 6 required parameters
         await streamingManagerRef.current.startStreaming(
-          sessionId,
+          effectiveSessionId,
           userInput,
           userId,
           callbacks,
@@ -284,7 +305,8 @@ export function useStreamingCoordinator({
         throw error
       }
     },
-    [sessionId, userId, setIsStreaming, setMessages, updateStreamingMessage]
+    [sessionId, pythonSessionId, userId, setIsStreaming, setMessages, updateStreamingMessage]
+    // effectiveSessionId is derived from pythonSessionId and sessionId, so we don't need it in deps
   )
 
   // Stop streaming session

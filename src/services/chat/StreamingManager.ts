@@ -139,6 +139,7 @@ export class StreamingManager {
     chatLogger.info('Stream request', {
       sessionId,
       userInput: userInput.substring(0, 30),
+      note: 'Using this sessionId for backend communication',
     })
 
     // Extract business information from user input

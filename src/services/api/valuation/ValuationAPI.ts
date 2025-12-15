@@ -22,6 +22,7 @@ import { APIRequestConfig, HttpClient } from '../HttpClient'
 export class ValuationAPI extends HttpClient {
   /**
    * Calculate manual valuation (traditional form-based)
+   * Uses unified /api/valuations/calculate endpoint with dataSource='manual'
    */
   async calculateManualValuation(
     data: ValuationRequest,
@@ -31,7 +32,7 @@ export class ValuationAPI extends HttpClient {
       return await this.executeRequest<ValuationResponse>(
         {
           method: 'POST',
-          url: '/api/valuation/calculate-manual',
+          url: '/api/valuations/calculate',
           data: {
             ...data,
             dataSource: 'manual',
@@ -54,6 +55,7 @@ export class ValuationAPI extends HttpClient {
 
   /**
    * Calculate AI-guided valuation (conversational flow)
+   * Uses unified /api/valuations/calculate endpoint with dataSource='ai-guided'
    */
   async calculateAIGuidedValuation(
     data: ValuationRequest,
@@ -63,7 +65,7 @@ export class ValuationAPI extends HttpClient {
       return await this.executeRequest<ValuationResponse>(
         {
           method: 'POST',
-          url: '/api/valuation/calculate-ai-guided',
+          url: '/api/valuations/calculate',
           data: {
             ...data,
             dataSource: 'ai-guided',
@@ -79,6 +81,7 @@ export class ValuationAPI extends HttpClient {
 
   /**
    * Calculate instant valuation (quick preview)
+   * Uses unified /api/valuations/calculate endpoint with dataSource='instant'
    */
   async calculateInstantValuation(
     data: ValuationRequest,
@@ -88,7 +91,7 @@ export class ValuationAPI extends HttpClient {
       return await this.executeRequest<ValuationResponse>(
         {
           method: 'POST',
-          url: '/api/valuation/calculate-instant',
+          url: '/api/valuations/calculate',
           data: {
             ...data,
             dataSource: 'instant',
@@ -125,7 +128,7 @@ export class ValuationAPI extends HttpClient {
       return await this.executeRequest<ValuationResponse>(
         {
           method: 'POST',
-          url: '/api/valuation/calculate-unified',
+          url: '/api/valuations/calculate',
           data: backendData,
           headers: {},
         } as any,

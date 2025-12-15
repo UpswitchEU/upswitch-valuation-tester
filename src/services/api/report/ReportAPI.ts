@@ -110,8 +110,9 @@ export class ReportAPI extends HttpClient {
 
       // Call Node.js backend endpoint which proxies to Python engine
       const response = await this.client.request({
-        method: 'GET',
-        url: `/api/reports/${reportId}/accountant-pdf`,
+        method: 'POST',
+        url: `/api/valuations/pdf/accountant-view`,
+        data: { reportId },
         responseType: 'blob', // Important: request as blob for PDF
         signal,
         timeout,

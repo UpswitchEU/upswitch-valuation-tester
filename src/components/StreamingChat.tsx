@@ -121,6 +121,7 @@ export const StreamingChat: React.FC<import('./StreamingChat.types').StreamingCh
   // Extract streaming coordination logic
   const streamingCoordinator = useStreamingCoordinator({
     sessionId,
+    pythonSessionId, // CRITICAL: Pass Python session ID for backend communication
     userId: userId ?? user?.id,
     messages: state.messages,
     setMessages: state.setMessages,
@@ -266,11 +267,13 @@ export const StreamingChat: React.FC<import('./StreamingChat.types').StreamingCh
   // CRITICAL: Auto-send initial message when autoSend is true
   const hasAutoSentRef = useRef(false)
   const lastSessionIdRef = useRef<string | null>(null)
+  const lastCheckedMessagesLengthRef = useRef(0)
 
   // Reset auto-send flag when sessionId changes
   useEffect(() => {
     if (lastSessionIdRef.current !== null && lastSessionIdRef.current !== sessionId) {
       hasAutoSentRef.current = false
+      lastCheckedMessagesLengthRef.current = 0
       chatLogger.debug('Session ID changed, resetting auto-send flag', {
         previousSessionId: lastSessionIdRef.current,
         newSessionId: sessionId,
@@ -297,21 +300,13 @@ export const StreamingChat: React.FC<import('./StreamingChat.types').StreamingCh
   })
 
   useEffect(() => {
-    // Only auto-send if:
-    // 1. autoSend is true
-    // 2. initialMessage is provided
-    // 3. We haven't already sent it
-    // 4. Not currently streaming
-    // 5. Initialization is complete (not initializing)
-    // 6. Session is initialized (or restoration is complete if restoration was needed)
-    // 7. There are no restored messages (conversation doesn't exist yet)
-    // 8. There are no existing user messages matching the initial message (to avoid duplicate sends)
-    const hasRestoredMessages = initialMessages && initialMessages.length > 0
-    const hasMatchingUserMessage = state.messages.some(
-      (m) => m.type === 'user' && m.content === initialMessage?.trim()
-    )
+    // Early return if already sent or conditions not met
+    if (hasAutoSentRef.current || !autoSend || !initialMessage?.trim()) {
+      return
+    }
 
     // Don't auto-send if conversation already exists (has restored messages)
+    const hasRestoredMessages = initialMessages && initialMessages.length > 0
     if (hasRestoredMessages) {
       return
     }
@@ -322,20 +317,39 @@ export const StreamingChat: React.FC<import('./StreamingChat.types').StreamingCh
     const sessionReady =
       isSessionInitialized || (isRestorationComplete && !isRestoring)
 
+    // CRITICAL: Wait for pythonSessionId to be available if initialization is complete
+    // This ensures we use the correct backend session ID for streaming
+    // If initialization is still in progress, pythonSessionId will be set when /start completes
+    // If initialization is complete but pythonSessionId is null, it means no conversation exists yet
+    // In that case, we can proceed with client sessionId (it will be mapped by backend)
+    // However, if initialization just completed, give it a moment for pythonSessionId to be set
+    const pythonSessionIdReady = 
+      pythonSessionId !== null || // Python session ID is available
+      (!isInitializing && isRestorationComplete) // Or initialization is done and restoration is complete
+
+    // Only check for matching messages if messages length changed (optimization)
+    const messagesLengthChanged = state.messages.length !== lastCheckedMessagesLengthRef.current
+    if (messagesLengthChanged) {
+      lastCheckedMessagesLengthRef.current = state.messages.length
+    }
+
+    // Check if we should auto-send
+    const hasMatchingUserMessage = state.messages.some(
+      (m) => m.type === 'user' && m.content === initialMessage.trim()
+    )
+
     const shouldAutoSend =
-      autoSend &&
-      initialMessage &&
-      initialMessage.trim() &&
-      !hasAutoSentRef.current &&
+      sessionReady &&
+      pythonSessionIdReady &&
       !state.isStreaming &&
       !isInitializing &&
-      !hasMatchingUserMessage &&
-      sessionReady
+      !hasMatchingUserMessage
 
     if (shouldAutoSend) {
       hasAutoSentRef.current = true
       chatLogger.info('🚀 Auto-sending initial message', {
         sessionId,
+        pythonSessionId,
         initialMessage: initialMessage.substring(0, 50),
         isRestorationComplete,
         isSessionInitialized,
@@ -346,6 +360,13 @@ export const StreamingChat: React.FC<import('./StreamingChat.types').StreamingCh
       setTimeout(() => {
         submitStream(initialMessage.trim())
       }, 100)
+    } else if (sessionReady && !pythonSessionIdReady && !isInitializing) {
+      // Log when we're waiting for pythonSessionId
+      chatLogger.debug('⏳ Waiting for pythonSessionId before auto-send', {
+        sessionId,
+        pythonSessionId,
+        isInitializing,
+      })
     }
   }, [
     autoSend,
@@ -354,9 +375,11 @@ export const StreamingChat: React.FC<import('./StreamingChat.types').StreamingCh
     isRestorationComplete,
     isRestoring,
     isInitializing,
+    pythonSessionId, // CRITICAL: Wait for pythonSessionId to be available
     state.isStreaming,
-    state.messages,
-    initialMessages,
+    state.messages.length, // Only depend on length, not full messages array
+    state.messages, // Still need full array for .some() check, but only when length changes
+    initialMessages?.length, // Only depend on length
     submitStream,
     sessionId,
   ])
