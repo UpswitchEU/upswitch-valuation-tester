@@ -76,20 +76,21 @@ export const FormSubmitSection: React.FC<FormSubmitSectionProps> = ({
         <button
           type="submit"
           disabled={isSubmitting || !isFormValid}
-          onClick={(e) => {
-            // Log button click for debugging
+          onClick={() => {
+            // Debug logging (development only)
             if (process.env.NODE_ENV !== 'production') {
               console.log('[FormSubmitSection] Button clicked', {
                 isSubmitting,
                 isFormValid,
-                disabled: isSubmitting || !isFormValid,
-                revenue: formData.revenue,
-                ebitda: formData.ebitda,
-                industry: formData.industry,
-                country_code: formData.country_code,
+                formData: {
+                  revenue: formData.revenue,
+                  ebitda: formData.ebitda,
+                  industry: formData.industry,
+                  country_code: formData.country_code,
+                },
               })
             }
-            // Don't prevent default - let form handle submission
+            // Don't preventDefault - let form handle submission
           }}
           className={`
             w-full justify-center px-8 py-4 rounded-xl font-semibold text-lg shadow-lg
