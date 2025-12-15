@@ -7,6 +7,7 @@
 
 import { BUSINESS_TYPES_FALLBACK, BusinessTypeOption } from '../../config/businessTypes'
 import { useConversationStore } from '../../store/useConversationStore'
+import { useValuationResultsStore } from '../../store/useValuationResultsStore'
 import type { Message, MessageMetadata } from '../../types/message'
 import { chatLogger } from '../../utils/logger'
 import { ReportHandlers, UIHandlers, ValuationHandlers } from './handlers'
@@ -358,6 +359,96 @@ export class StreamEventHandler {
           return this.valuationHandlers.handleValuationConfirmed(data)
         case 'valuation_complete':
           return this.valuationHandlers.handleValuationComplete(data)
+
+        // HTML Report events (sent separately from Python backend)
+        case 'html_report': {
+          const htmlReport = data.html_report || data.html || data.content || ''
+          const valuationId = data.valuation_id || ''
+          
+          chatLogger.info('HTML report event received', {
+            valuationId,
+            htmlReportLength: htmlReport.length,
+            hasValuationId: !!valuationId,
+          })
+          
+          // Update valuation results store with html_report
+          const resultsStore = useValuationResultsStore.getState()
+          const currentResult = resultsStore.result
+          
+          if (currentResult && valuationId && currentResult.valuation_id === valuationId) {
+            // Update existing result
+            resultsStore.setResult({
+              ...currentResult,
+              html_report: htmlReport,
+            })
+            chatLogger.info('Updated existing result with html_report', {
+              valuationId,
+              htmlReportLength: htmlReport.length,
+            })
+          } else if (valuationId) {
+            // Create new result with html_report
+            resultsStore.setResult({
+              valuation_id: valuationId,
+              html_report: htmlReport,
+            } as any)
+            chatLogger.info('Created new result with html_report', {
+              valuationId,
+              htmlReportLength: htmlReport.length,
+            })
+          } else {
+            chatLogger.warn('html_report event missing valuation_id', {
+              hasHtmlReport: !!htmlReport,
+              htmlReportLength: htmlReport.length,
+            })
+          }
+          
+          // Also call report update callback if available
+          this.callbacks.onReportUpdate?.(htmlReport, 100)
+          return
+        }
+        
+        case 'info_tab_html': {
+          const infoTabHtml = data.info_tab_html || data.html || data.content || ''
+          const valuationId = data.valuation_id || ''
+          
+          chatLogger.info('Info tab HTML event received', {
+            valuationId,
+            infoTabHtmlLength: infoTabHtml.length,
+            hasValuationId: !!valuationId,
+          })
+          
+          // Update valuation results store with info_tab_html
+          const resultsStore = useValuationResultsStore.getState()
+          const currentResult = resultsStore.result
+          
+          if (currentResult && valuationId && currentResult.valuation_id === valuationId) {
+            // Update existing result
+            resultsStore.setResult({
+              ...currentResult,
+              info_tab_html: infoTabHtml,
+            })
+            chatLogger.info('Updated existing result with info_tab_html', {
+              valuationId,
+              infoTabHtmlLength: infoTabHtml.length,
+            })
+          } else if (valuationId) {
+            // Create new result with info_tab_html
+            resultsStore.setResult({
+              valuation_id: valuationId,
+              info_tab_html: infoTabHtml,
+            } as any)
+            chatLogger.info('Created new result with info_tab_html', {
+              valuationId,
+              infoTabHtmlLength: infoTabHtml.length,
+            })
+          } else {
+            chatLogger.warn('info_tab_html event missing valuation_id', {
+              hasInfoTabHtml: !!infoTabHtml,
+              infoTabHtmlLength: infoTabHtml.length,
+            })
+          }
+          return
+        }
 
         // UI and data events
         case 'progress_summary':

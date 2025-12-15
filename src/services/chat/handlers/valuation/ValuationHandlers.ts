@@ -8,6 +8,7 @@
  */
 
 import { chatLogger } from '../../../../utils/logger'
+import { useValuationResultsStore } from '../../../../store/useValuationResultsStore'
 import { StreamEventHandlerCallbacks } from '../../StreamEventHandler'
 
 export class ValuationHandlers {
@@ -74,17 +75,47 @@ export class ValuationHandlers {
    * Handle valuation complete events
    */
   handleValuationComplete(data: any): void {
+    const result = data.result || data
+    const valuationId = data.valuation_id || result?.valuation_id
+    
     chatLogger.info('Valuation completed', {
-      hasResult: !!data.result,
-      resultKeys: data.result ? Object.keys(data.result) : [],
-      hasValuationId: !!data.valuation_id,
-      valuationId: data.valuation_id,
+      hasResult: !!result,
+      resultKeys: result ? Object.keys(result) : [],
+      hasValuationId: !!valuationId,
+      valuationId,
+      hasHtmlReport: !!(result?.html_report || data.html_report),
+      htmlReportLength: (result?.html_report || data.html_report)?.length || 0,
+      hasInfoTabHtml: !!(result?.info_tab_html || data.info_tab_html),
+      infoTabHtmlLength: (result?.info_tab_html || data.info_tab_html)?.length || 0,
     })
+
+    // CRITICAL: Update valuation results store with complete result including HTML reports
+    if (result || valuationId) {
+      const resultsStore = useValuationResultsStore.getState()
+      
+      // Merge html_report and info_tab_html from data if they exist separately
+      const completeResult = {
+        ...result,
+        ...(data.html_report && { html_report: data.html_report }),
+        ...(data.info_tab_html && { info_tab_html: data.info_tab_html }),
+        ...(valuationId && { valuation_id: valuationId }),
+      }
+      
+      resultsStore.setResult(completeResult)
+      
+      chatLogger.info('Valuation result stored in results store', {
+        valuationId,
+        hasHtmlReport: !!completeResult.html_report,
+        htmlReportLength: completeResult.html_report?.length || 0,
+        hasInfoTabHtml: !!completeResult.info_tab_html,
+        infoTabHtmlLength: completeResult.info_tab_html?.length || 0,
+      })
+    }
 
     // Track conversation completion with valuation
     this.callbacks.trackConversationCompletion?.(true, true)
 
     // Call valuation complete callback
-    this.callbacks.onValuationComplete?.(data.result || data)
+    this.callbacks.onValuationComplete?.(result || data)
   }
 }

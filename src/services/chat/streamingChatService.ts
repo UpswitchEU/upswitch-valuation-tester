@@ -32,6 +32,8 @@ export interface StreamEvent {
     | 'valuation_ready'
     | 'valuation_confirmed'
     | 'valuation_complete'
+    | 'html_report'
+    | 'info_tab_html'
     | 'unknown'
   content?: string
   html?: string
@@ -40,6 +42,9 @@ export interface StreamEvent {
   session_id?: string
   message?: string
   error_type?: string
+  valuation_id?: string
+  html_report?: string
+  info_tab_html?: string
   [key: string]: unknown // Index signature for additional properties
 }
 
