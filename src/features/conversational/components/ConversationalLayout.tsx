@@ -422,8 +422,8 @@ const ConversationalLayoutInner: React.FC<ConversationalLayoutProps> = ({
           companyName={state.businessProfile?.company_name || result?.company_name}
         />
 
-        {/* Error Display */}
-        <ErrorDisplay error={state.error} />
+        {/* Error Display - Show both conversation context errors and API errors */}
+        <ErrorDisplay error={state.error || error || null} />
 
         {/* Business Profile Section */}
         <BusinessProfileSection
