@@ -220,8 +220,10 @@ const ConversationalLayoutInner: React.FC<ConversationalLayoutProps> = ({
   // Handle valuation completion
   const handleValuationComplete = useCallback(
     async (result: ValuationResponse) => {
+      const { markReportSaving, markReportSaved, markReportSaveFailed } = useValuationSessionStore.getState()
+
       // Mark as saving during completion process
-      useValuationSessionStore.setState({ isSaving: true })
+      markReportSaving()
 
       try {
         actions.setValuationResult(result)
@@ -233,12 +235,8 @@ const ConversationalLayoutInner: React.FC<ConversationalLayoutProps> = ({
         // Call parent completion handler (may be async)
         await onComplete(result)
 
-        // Mark save as completed
-        useValuationSessionStore.setState({
-          hasUnsavedChanges: false,
-          lastSaved: new Date(),
-          isSaving: false,
-        })
+        // Mark save as completed - report is automatically saved after generation
+        markReportSaved()
 
         // Update frontend credit count for guests
         if (!user && (result as any).creditsRemaining !== undefined) {
@@ -246,10 +244,7 @@ const ConversationalLayoutInner: React.FC<ConversationalLayoutProps> = ({
         }
       } catch (error) {
         // Mark save as failed
-        useValuationSessionStore.setState({
-          isSaving: false,
-          syncError: error instanceof Error ? error.message : 'Save failed',
-        })
+        markReportSaveFailed(error instanceof Error ? error.message : 'Save failed')
         throw error
       }
     },

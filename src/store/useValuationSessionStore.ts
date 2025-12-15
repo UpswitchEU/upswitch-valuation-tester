@@ -59,6 +59,9 @@ export interface ValuationSessionStore {
   isSaving: boolean
   lastSaved: Date | null
   hasUnsavedChanges: boolean
+  markReportSaved: () => void
+  markReportSaving: () => void
+  markReportSaveFailed: (error: string) => void
 
   // Flow switch confirmation
   pendingFlowSwitch: 'manual' | 'conversational' | null
@@ -1306,5 +1309,23 @@ export const useValuationSessionStore = create<ValuationSessionStore>((set, get)
       set({ pendingFlowSwitch: view })
     },
 
+    // Save status actions (simple and robust)
+    markReportSaved: () => {
+      set({
+        hasUnsavedChanges: false,
+        lastSaved: new Date(),
+        isSaving: false,
+        syncError: null,
+      })
+    },
+    markReportSaving: () => {
+      set({ isSaving: true, syncError: null })
+    },
+    markReportSaveFailed: (error: string) => {
+      set({
+        isSaving: false,
+        syncError: error,
+      })
+    },
   }
 })

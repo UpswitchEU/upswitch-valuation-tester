@@ -216,12 +216,7 @@ export const useValuationFormSubmission = (
 
         // Mark report as saved after generation
         // Report is automatically saved by backend when calculation completes
-        useValuationSessionStore.setState({
-          hasUnsavedChanges: false,
-          lastSaved: new Date(),
-          isSaving: false,
-          syncError: null,
-        })
+        useValuationSessionStore.getState().markReportSaved()
       }
     },
     [

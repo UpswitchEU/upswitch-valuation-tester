@@ -40,8 +40,10 @@ export const ValuationReport: React.FC<ValuationReportProps> = React.memo(
 
     // Handle valuation completion
     const handleValuationComplete = async (result: ValuationResponse) => {
+      const { markReportSaving, markReportSaved, markReportSaveFailed } = useValuationSessionStore.getState()
+
       // Mark as saving during completion process
-      useValuationSessionStore.setState({ isSaving: true })
+      markReportSaving()
 
       // Save completed valuation to backend
       try {
@@ -52,18 +54,10 @@ export const ValuationReport: React.FC<ValuationReportProps> = React.memo(
         })
 
         // Mark save as completed - report is automatically saved after generation
-        useValuationSessionStore.setState({
-          hasUnsavedChanges: false,
-          lastSaved: new Date(),
-          isSaving: false,
-          syncError: null,
-        })
+        markReportSaved()
       } catch (error) {
         // Mark save as failed
-        useValuationSessionStore.setState({
-          isSaving: false,
-          syncError: error instanceof Error ? error.message : 'Save failed',
-        })
+        markReportSaveFailed(error instanceof Error ? error.message : 'Save failed')
         // BANK-GRADE: Specific error handling - report save failure
         // Don't show error to user as the valuation is already complete locally
         if (error instanceof Error) {

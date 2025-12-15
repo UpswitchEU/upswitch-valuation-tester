@@ -293,6 +293,7 @@ export const ValuationToolbar: React.FC<ValuationToolbarProps> = ({
                     )}
                   </button>
                 </Tooltip>
+                <div className="mx-2 h-6 w-px bg-zinc-700"></div>
                 <Tooltip content="Preview" position="bottom" className="">
                   <button
                     onClick={() => handleTabClick('preview')}
