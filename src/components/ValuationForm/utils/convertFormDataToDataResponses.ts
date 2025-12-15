@@ -19,17 +19,11 @@ import type { ValuationFormData } from '../../../types/valuation'
  * @param formData - Form data from ValuationForm
  * @returns Array of DataResponse objects ready for setCollectedData()
  */
-export function convertFormDataToDataResponses(
-  formData: ValuationFormData
-): DataResponse[] {
+export function convertFormDataToDataResponses(formData: ValuationFormData): DataResponse[] {
   const responses: DataResponse[] = []
 
   // Helper to add response if value exists
-  const addResponse = (
-    fieldId: string,
-    value: unknown,
-    metadata?: Record<string, unknown>
-  ) => {
+  const addResponse = (fieldId: string, value: unknown, metadata?: Record<string, unknown>) => {
     if (value !== undefined && value !== null && value !== '') {
       responses.push({
         fieldId,
@@ -57,7 +51,7 @@ export function convertFormDataToDataResponses(
   // Financial Data
   addResponse('revenue', formData.revenue)
   addResponse('ebitda', formData.ebitda)
-  
+
   // Current Year Data (if structured)
   if (formData.current_year_data) {
     addResponse('current_year', formData.current_year_data.year)

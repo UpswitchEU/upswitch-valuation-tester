@@ -43,7 +43,10 @@ export const getEnvironmentConfig = () => {
   return {
     isDevelopment,
     isProduction,
-    apiUrl: process.env.NEXT_PUBLIC_API_URL || process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3001',
+    apiUrl:
+      process.env.NEXT_PUBLIC_API_URL ||
+      process.env.NEXT_PUBLIC_BACKEND_URL ||
+      'http://localhost:3001',
     creditApiUrl: process.env.NEXT_PUBLIC_CREDIT_API_URL || 'http://localhost:3001/api/credits',
   }
 }

@@ -1,8 +1,8 @@
 /**
  * useConversationRestoration Hook Tests
- * 
+ *
  * Test conversation restoration logic with fail-proof features.
- * 
+ *
  * @module hooks/__tests__/useConversationRestoration.test
  */
 
@@ -55,7 +55,7 @@ describe('useConversationRestoration', () => {
     it('should call restore on mount when enabled', async () => {
       const { UtilityAPI } = await import('../../services/api/utility/UtilityAPI')
       const mockStatus = vi.fn().mockResolvedValue({ exists: false })
-      
+
       vi.mocked(UtilityAPI).mockImplementation(
         () =>
           ({
@@ -78,7 +78,7 @@ describe('useConversationRestoration', () => {
     it('should not call restore twice', async () => {
       const { UtilityAPI } = await import('../../services/api/utility/UtilityAPI')
       const mockStatus = vi.fn().mockResolvedValue({ exists: false })
-      
+
       vi.mocked(UtilityAPI).mockImplementation(
         () =>
           ({
@@ -129,12 +129,12 @@ describe('useConversationRestoration', () => {
       const mockMessages = [
         { id: '1', role: 'user', content: 'Hello', timestamp: new Date().toISOString() },
       ]
-      
+
       const mockStatus = vi.fn().mockResolvedValue({
         exists: true,
         session_id: 'python_123',
       })
-      
+
       const mockHistory = vi.fn().mockResolvedValue({
         exists: true,
         messages: mockMessages,
@@ -163,9 +163,7 @@ describe('useConversationRestoration', () => {
       })
 
       expect(onRestored).toHaveBeenCalledWith(
-        expect.arrayContaining([
-          expect.objectContaining({ content: 'Hello' }),
-        ]),
+        expect.arrayContaining([expect.objectContaining({ content: 'Hello' })]),
         'python_123'
       )
     })
@@ -239,9 +237,9 @@ describe('useConversationRestoration', () => {
 
 /**
  * useConversationRestoration Hook Tests
- * 
+ *
  * Test conversation restoration logic with fail-proof features.
- * 
+ *
  * @module hooks/__tests__/useConversationRestoration.test
  */
 
@@ -294,7 +292,7 @@ describe('useConversationRestoration', () => {
     it('should call restore on mount when enabled', async () => {
       const { UtilityAPI } = await import('../../services/api/utility/UtilityAPI')
       const mockStatus = vi.fn().mockResolvedValue({ exists: false })
-      
+
       vi.mocked(UtilityAPI).mockImplementation(
         () =>
           ({
@@ -317,7 +315,7 @@ describe('useConversationRestoration', () => {
     it('should not call restore twice', async () => {
       const { UtilityAPI } = await import('../../services/api/utility/UtilityAPI')
       const mockStatus = vi.fn().mockResolvedValue({ exists: false })
-      
+
       vi.mocked(UtilityAPI).mockImplementation(
         () =>
           ({
@@ -368,12 +366,12 @@ describe('useConversationRestoration', () => {
       const mockMessages = [
         { id: '1', role: 'user', content: 'Hello', timestamp: new Date().toISOString() },
       ]
-      
+
       const mockStatus = vi.fn().mockResolvedValue({
         exists: true,
         session_id: 'python_123',
       })
-      
+
       const mockHistory = vi.fn().mockResolvedValue({
         exists: true,
         messages: mockMessages,
@@ -402,9 +400,7 @@ describe('useConversationRestoration', () => {
       })
 
       expect(onRestored).toHaveBeenCalledWith(
-        expect.arrayContaining([
-          expect.objectContaining({ content: 'Hello' }),
-        ]),
+        expect.arrayContaining([expect.objectContaining({ content: 'Hello' })]),
         'python_123'
       )
     })
@@ -475,5 +471,3 @@ describe('useConversationRestoration', () => {
     })
   })
 })
-
-

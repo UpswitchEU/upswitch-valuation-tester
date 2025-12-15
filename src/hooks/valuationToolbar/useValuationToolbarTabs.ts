@@ -54,10 +54,3 @@ export const useValuationToolbarTabs = (
     handleTabChange,
   }
 }
-
-
-  return {
-    activeTab,
-    handleTabChange,
-  }
-}

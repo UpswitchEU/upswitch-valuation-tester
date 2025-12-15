@@ -1,1 +1,1 @@
-export { ManualLayout } from './components';
+export { ManualLayout } from './components'

@@ -6,7 +6,6 @@
  * @module services/businessData/businessDataTypes
  */
 
-
 export interface BusinessProfileData {
   user_id: string
   company_name?: string

@@ -1,18 +1,18 @@
 /**
  * Version Diff Detection Tests
- * 
+ *
  * Test change detection between valuation versions.
- * 
+ *
  * @module utils/__tests__/versionDiffDetection.test
  */
 
 import { describe, expect, it } from 'vitest'
 import type { ValuationRequest } from '../../types/valuation'
 import {
-    areChangesSignificant,
-    detectVersionChanges,
-    formatChangesSummary,
-    generateAutoLabel,
+  areChangesSignificant,
+  detectVersionChanges,
+  formatChangesSummary,
+  generateAutoLabel,
 } from '../versionDiffDetection'
 
 describe('versionDiffDetection', () => {
@@ -35,7 +35,7 @@ describe('versionDiffDetection', () => {
   describe('detectVersionChanges', () => {
     it('should detect no changes when data is identical', () => {
       const changes = detectVersionChanges(baseData, baseData)
-      
+
       expect(changes.totalChanges).toBe(0)
       expect(changes.significantChanges).toHaveLength(0)
     })
@@ -50,7 +50,7 @@ describe('versionDiffDetection', () => {
       }
 
       const changes = detectVersionChanges(baseData, newData)
-      
+
       expect(changes.revenue).toBeDefined()
       expect(changes.revenue?.from).toBe(2000000)
       expect(changes.revenue?.to).toBe(2500000)
@@ -68,7 +68,7 @@ describe('versionDiffDetection', () => {
       }
 
       const changes = detectVersionChanges(baseData, newData)
-      
+
       expect(changes.ebitda).toBeDefined()
       expect(changes.ebitda?.from).toBe(500000)
       expect(changes.ebitda?.to).toBe(750000)
@@ -87,7 +87,7 @@ describe('versionDiffDetection', () => {
       }
 
       const changes = detectVersionChanges(baseData, newData)
-      
+
       expect(changes.totalChanges).toBe(3)
       expect(changes.revenue).toBeDefined()
       expect(changes.ebitda).toBeDefined()
@@ -105,7 +105,7 @@ describe('versionDiffDetection', () => {
       }
 
       const changes = detectVersionChanges(baseData, newData)
-      
+
       expect(changes.significantChanges).toContain('revenue')
       expect(changes.significantChanges).not.toContain('ebitda')
     })
@@ -117,7 +117,7 @@ describe('versionDiffDetection', () => {
       }
 
       const changes = detectVersionChanges(baseData, newData)
-      
+
       expect(changes.companyName).toBeDefined()
       expect(changes.companyName?.from).toBe('Test Company')
       expect(changes.companyName?.to).toBe('Updated Company Name')
@@ -138,7 +138,7 @@ describe('versionDiffDetection', () => {
       }
 
       const summaries = formatChangesSummary(changes, 'BE')
-      
+
       expect(summaries).toHaveLength(1)
       expect(summaries[0]).toContain('Revenue')
       expect(summaries[0]).toContain('+25')
@@ -163,7 +163,7 @@ describe('versionDiffDetection', () => {
       }
 
       const summaries = formatChangesSummary(changes, 'BE')
-      
+
       expect(summaries).toHaveLength(2)
       expect(summaries[0]).toContain('Revenue')
       expect(summaries[1]).toContain('EBITDA')
@@ -182,7 +182,7 @@ describe('versionDiffDetection', () => {
       }
 
       const summaries = formatChangesSummary(changes, 'BE')
-      
+
       expect(summaries[0]).toContain('-20')
     })
   })
@@ -250,7 +250,7 @@ describe('versionDiffDetection', () => {
       }
 
       const label = generateAutoLabel(3, changes)
-      
+
       expect(label).toContain('v3')
       expect(label).toContain('revenue')
       expect(label).toContain('ebitda')
@@ -269,7 +269,7 @@ describe('versionDiffDetection', () => {
       }
 
       const label = generateAutoLabel(2, changes)
-      
+
       expect(label).toContain('v2')
       expect(label).toContain('revenue')
     })
@@ -281,7 +281,7 @@ describe('versionDiffDetection', () => {
       }
 
       const label = generateAutoLabel(1, changes)
-      
+
       expect(label).toBe('Version 1')
     })
   })
@@ -289,19 +289,19 @@ describe('versionDiffDetection', () => {
 
 /**
  * Version Diff Detection Tests
- * 
+ *
  * Test change detection between valuation versions.
- * 
+ *
  * @module utils/__tests__/versionDiffDetection.test
  */
 
 import { describe, expect, it } from 'vitest'
 import type { ValuationRequest } from '../../types/valuation'
 import {
-    areChangesSignificant,
-    detectVersionChanges,
-    formatChangesSummary,
-    generateAutoLabel,
+  areChangesSignificant,
+  detectVersionChanges,
+  formatChangesSummary,
+  generateAutoLabel,
 } from '../versionDiffDetection'
 
 describe('versionDiffDetection', () => {
@@ -324,7 +324,7 @@ describe('versionDiffDetection', () => {
   describe('detectVersionChanges', () => {
     it('should detect no changes when data is identical', () => {
       const changes = detectVersionChanges(baseData, baseData)
-      
+
       expect(changes.totalChanges).toBe(0)
       expect(changes.significantChanges).toHaveLength(0)
     })
@@ -339,7 +339,7 @@ describe('versionDiffDetection', () => {
       }
 
       const changes = detectVersionChanges(baseData, newData)
-      
+
       expect(changes.revenue).toBeDefined()
       expect(changes.revenue?.from).toBe(2000000)
       expect(changes.revenue?.to).toBe(2500000)
@@ -357,7 +357,7 @@ describe('versionDiffDetection', () => {
       }
 
       const changes = detectVersionChanges(baseData, newData)
-      
+
       expect(changes.ebitda).toBeDefined()
       expect(changes.ebitda?.from).toBe(500000)
       expect(changes.ebitda?.to).toBe(750000)
@@ -376,7 +376,7 @@ describe('versionDiffDetection', () => {
       }
 
       const changes = detectVersionChanges(baseData, newData)
-      
+
       expect(changes.totalChanges).toBe(3)
       expect(changes.revenue).toBeDefined()
       expect(changes.ebitda).toBeDefined()
@@ -394,7 +394,7 @@ describe('versionDiffDetection', () => {
       }
 
       const changes = detectVersionChanges(baseData, newData)
-      
+
       expect(changes.significantChanges).toContain('revenue')
       expect(changes.significantChanges).not.toContain('ebitda')
     })
@@ -406,7 +406,7 @@ describe('versionDiffDetection', () => {
       }
 
       const changes = detectVersionChanges(baseData, newData)
-      
+
       expect(changes.companyName).toBeDefined()
       expect(changes.companyName?.from).toBe('Test Company')
       expect(changes.companyName?.to).toBe('Updated Company Name')
@@ -427,7 +427,7 @@ describe('versionDiffDetection', () => {
       }
 
       const summaries = formatChangesSummary(changes, 'BE')
-      
+
       expect(summaries).toHaveLength(1)
       expect(summaries[0]).toContain('Revenue')
       expect(summaries[0]).toContain('+25')
@@ -452,7 +452,7 @@ describe('versionDiffDetection', () => {
       }
 
       const summaries = formatChangesSummary(changes, 'BE')
-      
+
       expect(summaries).toHaveLength(2)
       expect(summaries[0]).toContain('Revenue')
       expect(summaries[1]).toContain('EBITDA')
@@ -471,7 +471,7 @@ describe('versionDiffDetection', () => {
       }
 
       const summaries = formatChangesSummary(changes, 'BE')
-      
+
       expect(summaries[0]).toContain('-20')
     })
   })
@@ -539,7 +539,7 @@ describe('versionDiffDetection', () => {
       }
 
       const label = generateAutoLabel(3, changes)
-      
+
       expect(label).toContain('v3')
       expect(label).toContain('revenue')
       expect(label).toContain('ebitda')
@@ -558,7 +558,7 @@ describe('versionDiffDetection', () => {
       }
 
       const label = generateAutoLabel(2, changes)
-      
+
       expect(label).toContain('v2')
       expect(label).toContain('revenue')
     })
@@ -570,10 +570,8 @@ describe('versionDiffDetection', () => {
       }
 
       const label = generateAutoLabel(1, changes)
-      
+
       expect(label).toBe('Version 1')
     })
   })
 })
-
-

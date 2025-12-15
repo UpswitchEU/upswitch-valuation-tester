@@ -1,8 +1,8 @@
 /**
  * Version History Store Tests
- * 
+ *
  * Test version lifecycle and state management.
- * 
+ *
  * @module store/__tests__/useVersionHistoryStore.test
  */
 
@@ -40,7 +40,7 @@ describe('useVersionHistoryStore', () => {
       expect(version.versionNumber).toBe(1)
       expect(version.versionLabel).toBe('Initial')
       expect(version.isActive).toBe(true)
-      
+
       const latest = getLatestVersion('val_test_123')
       expect(latest?.versionNumber).toBe(1)
     })
@@ -88,7 +88,8 @@ describe('useVersionHistoryStore', () => {
 
   describe('getActiveVersion', () => {
     it('should return latest version as active', async () => {
-      const { createVersion, getActiveVersion, setActiveVersion } = useVersionHistoryStore.getState()
+      const { createVersion, getActiveVersion, setActiveVersion } =
+        useVersionHistoryStore.getState()
 
       await createVersion({
         reportId: 'val_test_123',
@@ -101,7 +102,7 @@ describe('useVersionHistoryStore', () => {
       })
 
       setActiveVersion('val_test_123', 2)
-      
+
       const active = getActiveVersion('val_test_123')
       expect(active?.versionNumber).toBe(2)
     })
@@ -176,9 +177,9 @@ describe('useVersionHistoryStore', () => {
 
 /**
  * Version History Store Tests
- * 
+ *
  * Test version lifecycle and state management.
- * 
+ *
  * @module store/__tests__/useVersionHistoryStore.test
  */
 
@@ -216,7 +217,7 @@ describe('useVersionHistoryStore', () => {
       expect(version.versionNumber).toBe(1)
       expect(version.versionLabel).toBe('Initial')
       expect(version.isActive).toBe(true)
-      
+
       const latest = getLatestVersion('val_test_123')
       expect(latest?.versionNumber).toBe(1)
     })
@@ -264,7 +265,8 @@ describe('useVersionHistoryStore', () => {
 
   describe('getActiveVersion', () => {
     it('should return latest version as active', async () => {
-      const { createVersion, getActiveVersion, setActiveVersion } = useVersionHistoryStore.getState()
+      const { createVersion, getActiveVersion, setActiveVersion } =
+        useVersionHistoryStore.getState()
 
       await createVersion({
         reportId: 'val_test_123',
@@ -277,7 +279,7 @@ describe('useVersionHistoryStore', () => {
       })
 
       setActiveVersion('val_test_123', 2)
-      
+
       const active = getActiveVersion('val_test_123')
       expect(active?.versionNumber).toBe(2)
     })
@@ -349,5 +351,3 @@ describe('useVersionHistoryStore', () => {
     })
   })
 })
-
-

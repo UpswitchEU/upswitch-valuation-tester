@@ -20,7 +20,8 @@ export const analyticsConfig: AnalyticsConfig = {
   googleAnalyticsId: process.env.NEXT_PUBLIC_ANALYTICS_ID,
   hotjarId: process.env.NEXT_PUBLIC_HOTJAR_ID,
   mixpanelToken: process.env.NEXT_PUBLIC_MIXPANEL_TOKEN,
-  environment: (process.env.NEXT_PUBLIC_ENVIRONMENT as any) || (process.env.NODE_ENV as any) || 'development',
+  environment:
+    (process.env.NEXT_PUBLIC_ENVIRONMENT as any) || (process.env.NODE_ENV as any) || 'development',
   appName: 'Upswitch Valuation Tester',
   version: process.env.NEXT_PUBLIC_APP_VERSION || '1.0.0',
 }

@@ -156,13 +156,13 @@ class GuestSessionService {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
       })
-      
+
       // If rate limited (429), just skip - don't retry
       if (response.status === 429) {
         generalLogger.debug('Activity update rate limited, skipping', { sessionId })
         return
       }
-      
+
       if (!response.ok) {
         throw new Error(`Activity update failed: ${response.status}`)
       }

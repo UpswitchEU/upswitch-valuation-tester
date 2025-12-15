@@ -1,9 +1,9 @@
 /**
  * Session Cache Manager
- * 
+ *
  * Single Responsibility: Manage localStorage cache for session resilience
  * Provides safety net when backend unavailable
- * 
+ *
  * @module utils/sessionCacheManager
  */
 
@@ -25,28 +25,28 @@ interface CachedSession {
 
 /**
  * Session Cache Manager
- * 
+ *
  * Provides localStorage-based caching for session resilience.
- * 
+ *
  * Features:
  * - 24-hour TTL
  * - Automatic expiry cleanup
  * - Size limits (max 50 sessions)
  * - Validation before storage/retrieval
- * 
+ *
  * Use Cases:
  * - Offline resilience
  * - Backend unavailable fallback
  * - Network error recovery
  * - Instant load (no API call)
- * 
+ *
  * @example
  * ```typescript
  * const cache = SessionCacheManager.getInstance()
- * 
+ *
  * // Save after successful load
  * cache.set('val_123', session)
- * 
+ *
  * // Retrieve on load failure
  * const cached = cache.get('val_123')
  * if (cached) {
@@ -81,7 +81,7 @@ export class SessionCacheManager {
 
   /**
    * Cache session to localStorage
-   * 
+   *
    * @param reportId - Report identifier
    * @param session - Session to cache
    */
@@ -117,7 +117,7 @@ export class SessionCacheManager {
 
   /**
    * Get cached session from localStorage
-   * 
+   *
    * @param reportId - Report identifier
    * @returns Cached session or null if not found/expired
    */
@@ -161,7 +161,7 @@ export class SessionCacheManager {
 
   /**
    * Delete cached session
-   * 
+   *
    * @param reportId - Report identifier
    */
   delete(reportId: string): void {
@@ -176,7 +176,7 @@ export class SessionCacheManager {
 
   /**
    * Check if session is cached and valid
-   * 
+   *
    * @param reportId - Report identifier
    * @returns true if cached and not expired
    */
@@ -223,7 +223,7 @@ export class SessionCacheManager {
 
   /**
    * Enforce maximum cache size
-   * 
+   *
    * Removes oldest caches if limit exceeded.
    */
   private enforceSizeLimit(): void {
@@ -272,7 +272,7 @@ export class SessionCacheManager {
 
   /**
    * Clear all session caches
-   * 
+   *
    * @param confirmationKey - Safety key to prevent accidental clear
    */
   clearAll(confirmationKey: string): void {
@@ -296,7 +296,7 @@ export class SessionCacheManager {
 
   /**
    * Get cache statistics
-   * 
+   *
    * @returns Cache stats
    */
   getStats(): {
@@ -355,5 +355,3 @@ export class SessionCacheManager {
 
 // Singleton instance
 export const globalSessionCache = SessionCacheManager.getInstance()
-
-

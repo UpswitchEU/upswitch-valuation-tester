@@ -1,8 +1,8 @@
 /**
  * Circuit Breaker Tests
- * 
+ *
  * Test circuit breaker state machine and failure protection.
- * 
+ *
  * @module utils/__tests__/circuitBreaker.test
  */
 
@@ -29,9 +29,9 @@ describe('CircuitBreaker', () => {
 
     it('should execute function successfully', async () => {
       const fn = vi.fn().mockResolvedValue('success')
-      
+
       const result = await breaker.execute(fn)
-      
+
       expect(result).toBe('success')
       expect(fn).toHaveBeenCalledTimes(1)
       expect(breaker.getState()).toBe('CLOSED')
@@ -61,9 +61,9 @@ describe('CircuitBreaker', () => {
 
     it('should fast-fail without executing function', async () => {
       const fn = vi.fn().mockResolvedValue('success')
-      
+
       await expect(breaker.execute(fn)).rejects.toThrow(/Circuit breaker is OPEN/)
-      
+
       // Function should NOT be called (fast-fail)
       expect(fn).not.toHaveBeenCalled()
     })
@@ -107,9 +107,7 @@ describe('CircuitBreaker', () => {
     })
 
     it('should transition back to OPEN on any failure', async () => {
-      const fn = vi.fn()
-        .mockResolvedValueOnce('success')
-        .mockRejectedValueOnce(new NetworkError())
+      const fn = vi.fn().mockResolvedValueOnce('success').mockRejectedValueOnce(new NetworkError())
 
       // First success
       await breaker.execute(fn)
@@ -123,9 +121,7 @@ describe('CircuitBreaker', () => {
 
   describe('getStats', () => {
     it('should return current statistics', async () => {
-      const fn = vi.fn()
-        .mockResolvedValueOnce('success')
-        .mockRejectedValueOnce(new NetworkError())
+      const fn = vi.fn().mockResolvedValueOnce('success').mockRejectedValueOnce(new NetworkError())
 
       await breaker.execute(fn)
       await expect(breaker.execute(fn)).rejects.toThrow()
@@ -168,9 +164,9 @@ describe('CircuitBreaker', () => {
 
 /**
  * Circuit Breaker Tests
- * 
+ *
  * Test circuit breaker state machine and failure protection.
- * 
+ *
  * @module utils/__tests__/circuitBreaker.test
  */
 
@@ -197,9 +193,9 @@ describe('CircuitBreaker', () => {
 
     it('should execute function successfully', async () => {
       const fn = vi.fn().mockResolvedValue('success')
-      
+
       const result = await breaker.execute(fn)
-      
+
       expect(result).toBe('success')
       expect(fn).toHaveBeenCalledTimes(1)
       expect(breaker.getState()).toBe('CLOSED')
@@ -229,9 +225,9 @@ describe('CircuitBreaker', () => {
 
     it('should fast-fail without executing function', async () => {
       const fn = vi.fn().mockResolvedValue('success')
-      
+
       await expect(breaker.execute(fn)).rejects.toThrow(/Circuit breaker is OPEN/)
-      
+
       // Function should NOT be called (fast-fail)
       expect(fn).not.toHaveBeenCalled()
     })
@@ -275,9 +271,7 @@ describe('CircuitBreaker', () => {
     })
 
     it('should transition back to OPEN on any failure', async () => {
-      const fn = vi.fn()
-        .mockResolvedValueOnce('success')
-        .mockRejectedValueOnce(new NetworkError())
+      const fn = vi.fn().mockResolvedValueOnce('success').mockRejectedValueOnce(new NetworkError())
 
       // First success
       await breaker.execute(fn)
@@ -291,9 +285,7 @@ describe('CircuitBreaker', () => {
 
   describe('getStats', () => {
     it('should return current statistics', async () => {
-      const fn = vi.fn()
-        .mockResolvedValueOnce('success')
-        .mockRejectedValueOnce(new NetworkError())
+      const fn = vi.fn().mockResolvedValueOnce('success').mockRejectedValueOnce(new NetworkError())
 
       await breaker.execute(fn)
       await expect(breaker.execute(fn)).rejects.toThrow()
@@ -333,5 +325,3 @@ describe('CircuitBreaker', () => {
     })
   })
 })
-
-

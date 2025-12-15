@@ -87,6 +87,8 @@ export class ProfileAPI extends HttpClient {
     }
 
     const statusCode = axiosError?.response?.status
-    throw new APIError(`Failed to ${operation}`, statusCode, undefined, true, { originalError: error })
+    throw new APIError(`Failed to ${operation}`, statusCode, undefined, true, {
+      originalError: error,
+    })
   }
 }

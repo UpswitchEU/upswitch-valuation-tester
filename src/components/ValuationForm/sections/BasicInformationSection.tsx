@@ -9,15 +9,11 @@
 
 import React, { useState } from 'react'
 import { TARGET_COUNTRIES } from '../../../config/countries'
-import type { BusinessType } from '../../../services/businessTypesApi'
 import { suggestionService } from '../../../services/businessTypeSuggestionApi'
+import type { BusinessType } from '../../../services/businessTypesApi'
 import type { ValuationFormData } from '../../../types/valuation'
 import { generalLogger } from '../../../utils/logger'
-import {
-    CustomBusinessTypeSearch,
-    CustomDropdown,
-    CustomNumberInputField,
-} from '../../forms'
+import { CustomBusinessTypeSearch, CustomDropdown, CustomNumberInputField } from '../../forms'
 import CompanyNameInput from '../../forms/CompanyNameInput'
 
 interface BasicInformationSectionProps {
@@ -69,11 +65,10 @@ export const BasicInformationSection: React.FC<BasicInformationSectionProps> = (
                 multiplesPreference: businessType.multiplesPreference,
                 ownerDependencyImpact: businessType.ownerDependencyImpact,
                 keyMetrics: businessType.keyMetrics,
-                hasPreferences:
-                  !!(
-                    businessType.dcfPreference !== undefined &&
-                    businessType.multiplesPreference !== undefined
-                  ),
+                hasPreferences: !!(
+                  businessType.dcfPreference !== undefined &&
+                  businessType.multiplesPreference !== undefined
+                ),
                 allKeys: Object.keys(businessType),
               })
 
@@ -155,49 +150,55 @@ export const BasicInformationSection: React.FC<BasicInformationSectionProps> = (
               registration_number: company.registration_number,
               company_id: company.company_id,
             })
-            
+
             // Update company name immediately
             const updates: Partial<ValuationFormData> = {
               company_name: company.company_name,
             }
-            
+
             // Fetch financial data if company_id is available
             if (company.company_id && company.company_id.length > 3) {
               try {
-                const { registryService } = await import('../../../services/registry/registryService')
+                const { registryService } = await import(
+                  '../../../services/registry/registryService'
+                )
                 const financialData = await registryService.getCompanyFinancials(
                   company.company_id,
                   formData.country_code || 'BE'
                 )
-                
+
                 // Auto-fill founding_year if available and not already set
                 if (financialData.founding_year && !formData.founding_year) {
                   updates.founding_year = financialData.founding_year
                 }
-                
+
                 // Auto-fill industry if available and not already set
                 // Only auto-fill if business type hasn't been selected (to avoid overwriting user choice)
-                if (financialData.industry_description && !formData.industry && !formData.business_type_id) {
+                if (
+                  financialData.industry_description &&
+                  !formData.industry &&
+                  !formData.business_type_id
+                ) {
                   updates.industry = financialData.industry_description
                 }
-                
+
                 // Auto-fill number_of_employees if available
                 if (financialData.employees && !formData.number_of_employees) {
                   updates.number_of_employees = financialData.employees
                 }
-                
+
                 // Track which fields were auto-filled
                 const filledFields: string[] = []
                 if (updates.founding_year) filledFields.push('Founding year')
                 if (updates.industry) filledFields.push('Industry')
                 if (updates.number_of_employees) filledFields.push('Employees')
-                
+
                 if (filledFields.length > 0) {
                   setAutoFilledFields(filledFields)
                   // Clear after 5 seconds
                   setTimeout(() => setAutoFilledFields([]), 5000)
                 }
-                
+
                 generalLogger.info('Auto-filled fields from KBO registry', {
                   founding_year: updates.founding_year,
                   industry: updates.industry,
@@ -213,11 +214,11 @@ export const BasicInformationSection: React.FC<BasicInformationSectionProps> = (
                 // Continue without financial data - not critical
               }
             }
-            
+
             updateFormData(updates)
           }}
         />
-        
+
         {/* Registry Data Preview - Show auto-filled fields */}
         {autoFilledFields.length > 0 && (
           <div className="@4xl:col-span-2 mt-2 p-3 bg-primary-50/50 border border-primary-200/50 rounded-lg text-sm text-gray-700">

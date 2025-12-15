@@ -8,12 +8,12 @@
  */
 
 import {
-    APIError,
-    AuthenticationError,
-    CreditError,
-    NetworkError,
-    RateLimitError,
-    ValidationError,
+  APIError,
+  AuthenticationError,
+  CreditError,
+  NetworkError,
+  RateLimitError,
+  ValidationError,
 } from '../../../types/errors'
 import { ValuationRequest, ValuationResponse } from '../../../types/valuation'
 import { apiLogger } from '../../../utils/logger'
@@ -112,7 +112,10 @@ export class ValuationAPI extends HttpClient {
     try {
       // Map frontend 'conversational' to backend 'ai-guided'
       // Note: dataSource is not part of ValuationRequest type, so we add it to the request data
-      const dataSource = (data as any).dataSource === 'conversational' ? 'ai-guided' : ((data as any).dataSource || 'manual')
+      const dataSource =
+        (data as any).dataSource === 'conversational'
+          ? 'ai-guided'
+          : (data as any).dataSource || 'manual'
       const backendData = {
         ...data,
         dataSource,
@@ -161,7 +164,9 @@ export class ValuationAPI extends HttpClient {
       apiLogger.error('Failed to generate preview HTML', { error })
       const axiosError = error as any
       const statusCode = axiosError?.response?.status
-      throw new APIError('Failed to generate valuation preview', statusCode, undefined, true, { originalError: error })
+      throw new APIError('Failed to generate valuation preview', statusCode, undefined, true, {
+        originalError: error,
+      })
     }
   }
 
@@ -197,6 +202,8 @@ export class ValuationAPI extends HttpClient {
       )
     }
 
-    throw new APIError(`Failed to complete ${operation}`, status, undefined, true, { originalError: error })
+    throw new APIError(`Failed to complete ${operation}`, status, undefined, true, {
+      originalError: error,
+    })
   }
 }

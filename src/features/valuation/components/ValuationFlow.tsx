@@ -1,6 +1,6 @@
 /**
  * ValuationFlow Component
- * 
+ *
  * Unified flow component that handles both manual and conversational flows.
  * Single Responsibility: Flow routing and orchestration.
  */
@@ -47,7 +47,7 @@ const ManualLayout = lazy(() =>
 
 /**
  * ValuationFlow Component
- * 
+ *
  * Routes to appropriate flow component based on flowType prop.
  */
 export const ValuationFlow: React.FC<ValuationFlowProps> = ({
@@ -77,16 +77,6 @@ export const ValuationFlow: React.FC<ValuationFlowProps> = ({
   // Manual flow - render 2-panel layout with form and report preview
   return (
     <Suspense fallback={<LoadingState steps={GENERATION_STEPS} variant="dark" />}>
-      <ManualLayout
-        reportId={reportId}
-        onComplete={onComplete}
-        initialVersion={initialVersion}
-        initialMode={initialMode}
-      />
-    </Suspense>
-  )
-}
-
       <ManualLayout
         reportId={reportId}
         onComplete={onComplete}

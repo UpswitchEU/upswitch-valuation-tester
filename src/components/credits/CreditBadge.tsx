@@ -4,11 +4,11 @@
  * Displays user's current credit status with upgrade prompts
  */
 
+import { Tooltip } from '@heroui/react'
+import React from 'react'
 import { useAuth } from '@/hooks/useAuth'
 import { useCredits } from '@/hooks/useCredits'
 import { guestCreditService } from '@/services/guestCreditService'
-import { Tooltip } from '@heroui/react'
-import React from 'react'
 
 interface CreditBadgeProps {
   className?: string

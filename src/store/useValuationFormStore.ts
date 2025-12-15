@@ -1,9 +1,9 @@
 /**
  * Valuation Form Store
- * 
+ *
  * Manages form data state for valuation inputs.
  * Single Responsibility: Form data management and validation.
- * 
+ *
  * Split from monolithic useValuationStore to follow SRP.
  * Used by manual forms, conversational flows, and data collection components.
  */
@@ -17,7 +17,7 @@ interface ValuationFormStore {
   // Form data state
   formData: ValuationFormData
   collectedData: DataResponse[]
-  
+
   // Actions
   updateFormData: (data: Partial<ValuationFormData>) => void
   setCollectedData: (data: DataResponse[]) => void
@@ -57,7 +57,7 @@ export const useValuationFormStore = create<ValuationFormStore>((set, get) => ({
   // Initial state
   formData: defaultFormData,
   collectedData: [],
-  
+
   // Update form data (merge with existing)
   updateFormData: (data: Partial<ValuationFormData>) => {
     set((state) => ({
@@ -67,7 +67,7 @@ export const useValuationFormStore = create<ValuationFormStore>((set, get) => ({
       fieldsUpdated: Object.keys(data),
     })
   },
-  
+
   // Set collected data (for conversational flow)
   setCollectedData: (data: DataResponse[]) => {
     set({ collectedData: data })
@@ -75,7 +75,7 @@ export const useValuationFormStore = create<ValuationFormStore>((set, get) => ({
       responseCount: data.length,
     })
   },
-  
+
   // Reset form data to defaults
   resetFormData: () => {
     set({
@@ -84,7 +84,7 @@ export const useValuationFormStore = create<ValuationFormStore>((set, get) => ({
     })
     storeLogger.debug('Form data reset')
   },
-  
+
   // Pre-fill form data with business card data
   prefillFromBusinessCard: (businessCard: {
     company_name: string
@@ -110,4 +110,3 @@ export const useValuationFormStore = create<ValuationFormStore>((set, get) => ({
     })
   },
 }))
-

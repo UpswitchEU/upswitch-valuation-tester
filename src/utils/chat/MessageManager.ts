@@ -5,8 +5,8 @@
  * Centralizes all message-related operations in a single, testable class.
  */
 
-import { Message } from '../../hooks/useStreamingChatState';
-import { chatLogger } from '../logger';
+import { Message } from '../../hooks/useStreamingChatState'
+import { chatLogger } from '../logger'
 
 /**
  * Centralized message manager for streaming chat

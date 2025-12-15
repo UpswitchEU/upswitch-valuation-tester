@@ -4,10 +4,10 @@
  * @module features/conversational/components
  */
 
-export { ConversationalLayout } from './ConversationalLayout'
-export { ConversationPanel } from './ConversationPanel'
-export { ReportPanel } from './ReportPanel'
 export { BusinessProfileSection } from './BusinessProfileSection'
-
+export { ConversationalLayout } from './ConversationalLayout'
 export type { ConversationPanelProps } from './ConversationPanel'
-export type { ReportPanelProps } from './ReportPanel'
+export { ConversationPanel } from './ConversationPanel'
+export { ErrorDisplay } from './ErrorDisplay'
+export { MobilePanelSwitcher } from './MobilePanelSwitcher'
+export { ReportPanel } from './ReportPanel'

@@ -16,7 +16,11 @@ import { useValuationSessionStore } from '../../../store/useValuationSessionStor
 import { useVersionHistoryStore } from '../../../store/useVersionHistoryStore'
 import { buildValuationRequest } from '../../../utils/buildValuationRequest'
 import { generalLogger } from '../../../utils/logger'
-import { areChangesSignificant, detectVersionChanges, generateAutoLabel } from '../../../utils/versionDiffDetection'
+import {
+  areChangesSignificant,
+  detectVersionChanges,
+  generateAutoLabel,
+} from '../../../utils/versionDiffDetection'
 import { convertFormDataToDataResponses } from '../utils/convertFormDataToDataResponses'
 
 interface UseValuationFormSubmissionReturn {
@@ -68,10 +72,10 @@ export const useValuationFormSubmission = (
 
       // Convert formData to DataResponse[] for unified pipeline
       const dataResponses = convertFormDataToDataResponses(formData)
-      
+
       // Sync to store (unified pipeline - both flows use this)
       setCollectedData(dataResponses)
-      
+
       generalLogger.info('Form data converted to DataResponse[] and synced to store', {
         responseCount: dataResponses.length,
         fields: dataResponses.map((r) => r.fieldId),
@@ -90,7 +94,7 @@ export const useValuationFormSubmission = (
         if (previousVersion) {
           // Detect changes from previous version
           changes = detectVersionChanges(previousVersion.formData, request)
-          
+
           generalLogger.info('Regeneration detected', {
             reportId,
             previousVersion: previousVersion.versionNumber,
@@ -108,7 +112,7 @@ export const useValuationFormSubmission = (
       if (result) {
         // Store result in results store
         setResult(result)
-        
+
         // M&A Workflow: Create new version if this is a regeneration
         if (reportId && previousVersion && changes && areChangesSignificant(changes)) {
           try {
@@ -142,80 +146,23 @@ export const useValuationFormSubmission = (
             })
           }
         }
-        
+
         generalLogger.info('Valuation calculated successfully', {
           valuationId: result.valuation_id,
           calculationDuration_ms: calculationDuration.toFixed(2),
         })
       }
     },
-    [formData, calculateValuation, setResult, setEmployeeCountError, setCollectedData, session, getLatestVersion, createVersion]
-  )
-
-  return {
-    handleSubmit,
-    isSubmitting: isCalculating,
-    validationError: null, // Validation errors are handled via setEmployeeCountError
-  }
-}
-
-            previousVersion: previousVersion.versionNumber,
-            totalChanges: changes.totalChanges,
-            significantChanges: changes.significantChanges,
-          })
-        }
-      }
-
-      // Calculate valuation
-      const calculationStart = performance.now()
-      const result = await calculateValuation(request)
-      const calculationDuration = performance.now() - calculationStart
-
-      if (result) {
-        // Store result in results store
-        setResult(result)
-        
-        // M&A Workflow: Create new version if this is a regeneration
-        if (reportId && previousVersion && changes && areChangesSignificant(changes)) {
-          try {
-            const newVersion = await createVersion({
-              reportId,
-              formData: request,
-              valuationResult: result,
-              htmlReport: result.html_report || undefined,
-              changesSummary: changes,
-              versionLabel: generateAutoLabel(previousVersion.versionNumber + 1, changes),
-            })
-
-            generalLogger.info('New version created on regeneration', {
-              reportId,
-              versionNumber: newVersion.versionNumber,
-              versionLabel: newVersion.versionLabel,
-            })
-
-            // Log regeneration to audit trail
-            valuationAuditService.logRegeneration(
-              reportId,
-              newVersion.versionNumber,
-              changes,
-              calculationDuration
-            )
-          } catch (versionError) {
-            // Don't fail the valuation if versioning fails
-            generalLogger.error('Failed to create version on regeneration', {
-              reportId,
-              error: versionError instanceof Error ? versionError.message : 'Unknown error',
-            })
-          }
-        }
-        
-        generalLogger.info('Valuation calculated successfully', {
-          valuationId: result.valuation_id,
-          calculationDuration_ms: calculationDuration.toFixed(2),
-        })
-      }
-    },
-    [formData, calculateValuation, setResult, setEmployeeCountError, setCollectedData, session, getLatestVersion, createVersion]
+    [
+      formData,
+      calculateValuation,
+      setResult,
+      setEmployeeCountError,
+      setCollectedData,
+      session,
+      getLatestVersion,
+      createVersion,
+    ]
   )
 
   return {

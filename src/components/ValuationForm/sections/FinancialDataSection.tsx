@@ -9,9 +9,9 @@
 
 import React from 'react'
 import {
-    getIndustryGuidance,
-    validateEbitdaMargin,
-    validateRevenue,
+  getIndustryGuidance,
+  validateEbitdaMargin,
+  validateRevenue,
 } from '../../../config/industryGuidance'
 import type { ValuationFormData } from '../../../types/valuation'
 import { CustomNumberInputField } from '../../forms'
@@ -118,9 +118,7 @@ export const FinancialDataSection: React.FC<FinancialDataSectionProps> = ({
                 label="EBITDA (Required)"
                 placeholder="e.g., 500,000"
                 value={
-                  formData.ebitda !== undefined && formData.ebitda !== null
-                    ? formData.ebitda
-                    : ''
+                  formData.ebitda !== undefined && formData.ebitda !== null ? formData.ebitda : ''
                 }
                 onChange={(e) => {
                   const cleanedValue = e.target.value.replace(/,/g, '')

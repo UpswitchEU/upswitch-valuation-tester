@@ -1,31 +1,31 @@
 /**
  * Type-Safe Error Guards
- * 
+ *
  * Single Responsibility: Type guards for instanceof error checking.
  * Enables specific error handling without generic catch blocks.
- * 
+ *
  * @module utils/errors/errorGuards
  */
 
 import {
-    ApplicationError,
-    CalculationError,
-    DatabaseError,
-    DataQualityError,
-    IntegrationError,
-    NetworkError,
-    NotFoundError,
-    RateLimitError,
-    RestorationError,
-    SessionConflictError,
-    TimeoutError,
-    UnauthorizedError,
-    ValidationError,
+  ApplicationError,
+  CalculationError,
+  DatabaseError,
+  DataQualityError,
+  IntegrationError,
+  NetworkError,
+  NotFoundError,
+  RateLimitError,
+  RestorationError,
+  SessionConflictError,
+  TimeoutError,
+  UnauthorizedError,
+  ValidationError,
 } from './ApplicationErrors'
 
 /**
  * Type guard for ValidationError
- * 
+ *
  * @example
  * ```typescript
  * catch (error) {
@@ -125,13 +125,13 @@ export function isApplicationError(error: unknown): error is ApplicationError {
 
 /**
  * Check if error is retryable (transient failure)
- * 
+ *
  * Retryable errors:
  * - NetworkError (network glitch)
  * - RateLimitError (temporary throttle)
  * - TimeoutError (slow response)
  * - IntegrationError (external service down)
- * 
+ *
  * @example
  * ```typescript
  * catch (error) {
@@ -154,13 +154,13 @@ export function isRetryable(error: unknown): boolean {
 
 /**
  * Check if error is recoverable (user can fix or system can handle)
- * 
+ *
  * Recoverable errors:
  * - ValidationError (user can correct input)
  * - SessionConflictError (load existing session)
  * - NetworkError (retry)
  * - RateLimitError (wait and retry)
- * 
+ *
  * Non-recoverable errors:
  * - CalculationError (logic bug)
  * - DataQualityError (data corruption)
@@ -176,5 +176,3 @@ export function isRecoverable(error: unknown): boolean {
     isIntegrationError(error)
   )
 }
-
-

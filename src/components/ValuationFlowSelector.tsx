@@ -96,7 +96,16 @@ const ValuationFlow = lazy(() =>
  * @author UpSwitch UI Team
  */
 export const ValuationFlowSelector: React.FC<ValuationFlowSelectorProps> = React.memo(
-  ({ session, stage, error, prefilledQuery, autoSend, onComplete, initialMode, initialVersion }) => {
+  ({
+    session,
+    stage,
+    error,
+    prefilledQuery,
+    autoSend,
+    onComplete,
+    initialMode,
+    initialVersion,
+  }) => {
     // Memoize flow type calculation
     const flowType = useMemo(() => {
       return session?.currentView === 'manual' ? 'manual' : 'conversational'
@@ -139,7 +148,9 @@ export const ValuationFlowSelector: React.FC<ValuationFlowSelectorProps> = React
             <div className="max-w-md mx-auto text-center">
               <div className="bg-rust-500/20 border border-rust-500/30 rounded-lg p-6">
                 <h3 className="text-lg font-semibold text-rust-400 mb-2">Session Error</h3>
-                <p className="text-rust-300 mb-4">Failed to initialize session. Please try again.</p>
+                <p className="text-rust-300 mb-4">
+                  Failed to initialize session. Please try again.
+                </p>
                 <button
                   onClick={() => window.location.reload()}
                   className="px-4 py-2 bg-rust-600 hover:bg-rust-700 text-white rounded-lg transition-colors"

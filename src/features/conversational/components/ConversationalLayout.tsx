@@ -24,10 +24,16 @@ import { useValuationSessionStore } from '../../../store/useValuationSessionStor
 import type { ValuationResponse } from '../../../types/valuation'
 import { chatLogger } from '../../../utils/logger'
 import { CreditGuard } from '../../auth/components/CreditGuard'
-import { ConversationProvider, useConversationActions, useConversationState } from '../context/ConversationContext'
+import {
+  ConversationProvider,
+  useConversationActions,
+  useConversationState,
+} from '../context/ConversationContext'
 import { useConversationRestoration } from '../hooks'
 import { BusinessProfileSection } from './BusinessProfileSection'
 import { ConversationPanel } from './ConversationPanel'
+import { ErrorDisplay } from './ErrorDisplay'
+import { MobilePanelSwitcher } from './MobilePanelSwitcher'
 import { ReportPanel } from './ReportPanel'
 
 /**
@@ -73,10 +79,10 @@ const ConversationalLayoutInner: React.FC<ConversationalLayoutProps> = ({
   // FIX: Use refs to stabilize callbacks and prevent infinite loops
   const actionsRef = useRef(actions)
   actionsRef.current = actions // Always keep ref up to date
-  
+
   const reportIdRef = useRef(reportId)
   reportIdRef.current = reportId // Always keep ref up to date
-  
+
   const restoration = useConversationRestoration({
     sessionId: reportId,
     enabled: true,
@@ -145,7 +151,13 @@ const ConversationalLayoutInner: React.FC<ConversationalLayoutProps> = ({
     if (restoration.state.pythonSessionId && !state.pythonSessionId) {
       actions.setPythonSessionId(restoration.state.pythonSessionId)
     }
-  }, [restoration.state.messages.length, restoration.state.pythonSessionId, state.messages.length, state.pythonSessionId, actions])
+  }, [
+    restoration.state.messages.length,
+    restoration.state.pythonSessionId,
+    state.messages.length,
+    state.pythonSessionId,
+    actions,
+  ])
 
   // Track reportId changes and reset when needed
   useReportIdTracking({
@@ -185,7 +197,6 @@ const ConversationalLayoutInner: React.FC<ConversationalLayoutProps> = ({
     ),
   })
 
-
   // Handle Python session ID updates from conversation
   const handlePythonSessionIdReceived = useCallback(
     (sessionId: string) => {
@@ -203,10 +214,10 @@ const ConversationalLayoutInner: React.FC<ConversationalLayoutProps> = ({
     async (result: ValuationResponse) => {
       actions.setValuationResult(result)
       actions.setGenerating(false)
-      
+
       // Store in results store (same as manual flow)
       setResult(result)
-      
+
       onComplete(result)
 
       // Update frontend credit count for guests
@@ -256,17 +267,7 @@ const ConversationalLayoutInner: React.FC<ConversationalLayoutProps> = ({
         />
 
         {/* Error Display */}
-        {state.error && (
-          <div className="mx-4 mb-4">
-            <div className="bg-rust-500/20 border border-rust-600/30 rounded-lg p-4">
-              <div className="flex items-center gap-2 text-rust-300">
-                <span className="text-rust-400">⚠️</span>
-                <span className="font-medium">Error</span>
-              </div>
-              <p className="text-rust-200 text-sm mt-1">{state.error}</p>
-            </div>
-          </div>
-        )}
+        <ErrorDisplay error={state.error} />
 
         {/* Business Profile Section */}
         <BusinessProfileSection
@@ -294,8 +295,12 @@ const ConversationalLayoutInner: React.FC<ConversationalLayoutProps> = ({
                 userId={user?.id}
                 restoredMessages={
                   restoration.state.messages.length > 0
-                    ? restoration.state.messages.filter((m: import('../../../types/message').Message) => m.isComplete)
-                    : state.messages.filter((m: import('../../../types/message').Message) => m.isComplete)
+                    ? restoration.state.messages.filter(
+                        (m: import('../../../types/message').Message) => m.isComplete
+                      )
+                    : state.messages.filter(
+                        (m: import('../../../types/message').Message) => m.isComplete
+                      )
                 }
                 isRestoring={restoration.state.isRestoring}
                 isRestorationComplete={restoration.state.isRestored && state.isRestored}
@@ -350,28 +355,10 @@ const ConversationalLayoutInner: React.FC<ConversationalLayoutProps> = ({
 
         {/* Mobile Panel Switcher */}
         {isMobile && (
-          <div className="fixed bottom-4 left-1/2 transform -translate-x-1/2 flex gap-2 bg-zinc-800 p-1 rounded-full shadow-lg">
-            <button
-              onClick={() => setMobileActivePanel('chat')}
-              className={`px-4 py-2 rounded-full transition-colors ${
-                mobileActivePanel === 'chat'
-                  ? 'bg-accent-600 text-white'
-                  : 'text-zinc-400 hover:text-white'
-              }`}
-            >
-              Chat
-            </button>
-            <button
-              onClick={() => setMobileActivePanel('preview')}
-              className={`px-4 py-2 rounded-full transition-colors ${
-                mobileActivePanel === 'preview'
-                  ? 'bg-accent-600 text-white'
-                  : 'text-zinc-400 hover:text-white'
-              }`}
-            >
-              Preview
-            </button>
-          </div>
+          <MobilePanelSwitcher
+            activePanel={mobileActivePanel}
+            onPanelChange={setMobileActivePanel}
+          />
         )}
 
         {/* Full Screen Modal */}
@@ -380,7 +367,11 @@ const ConversationalLayoutInner: React.FC<ConversationalLayoutProps> = ({
           onClose={toolbar.handleCloseFullscreen}
           title="Valuation - Full Screen"
         >
-          <ReportPanel className="h-full" activeTab={toolbar.activeTab} onTabChange={toolbar.handleTabChange} />
+          <ReportPanel
+            className="h-full"
+            activeTab={toolbar.activeTab}
+            onTabChange={toolbar.handleTabChange}
+          />
         </FullScreenModal>
       </div>
     </CreditGuard>

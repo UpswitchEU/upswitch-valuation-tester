@@ -61,9 +61,7 @@ export const OwnershipStructureSection: React.FC<OwnershipStructureSectionProps>
             label="Equity Stake for Sale (%)"
             placeholder="e.g., 51 (majority control) or 25 (minority stake)"
             value={formData.shares_for_sale || 100}
-            onChange={(e) =>
-              updateFormData({ shares_for_sale: parseFloat(e.target.value) || 100 })
-            }
+            onChange={(e) => updateFormData({ shares_for_sale: parseFloat(e.target.value) || 100 })}
             onBlur={() => {}}
             name="shares_for_sale"
             min={0}
@@ -112,7 +110,11 @@ export const OwnershipStructureSection: React.FC<OwnershipStructureSectionProps>
           <CustomNumberInputField
             label="Full-Time Equivalent (FTE) Employees"
             placeholder="e.g., 12 (include part-time as FTE)"
-            value={formData.number_of_employees !== undefined ? formData.number_of_employees.toString() : ''}
+            value={
+              formData.number_of_employees !== undefined
+                ? formData.number_of_employees.toString()
+                : ''
+            }
             onChange={(e) => {
               const inputValue = e.target.value
               // Allow empty string, 0, or positive numbers
@@ -206,8 +208,8 @@ export const OwnershipStructureSection: React.FC<OwnershipStructureSectionProps>
                           ) : (
                             <>
                               Owner ratio of <strong>{(ownerRatio * 100).toFixed(0)}%</strong>{' '}
-                              indicates high key person dependency. This will reduce your
-                              valuation multiple by <strong>{discount}</strong>.
+                              indicates high key person dependency. This will reduce your valuation
+                              multiple by <strong>{discount}</strong>.
                             </>
                           )}
                         </p>

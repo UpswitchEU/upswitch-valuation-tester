@@ -17,7 +17,11 @@ import { useVersionHistoryStore } from '../../../store/useVersionHistoryStore'
 import type { Message } from '../../../types/message'
 import type { ValuationResponse } from '../../../types/valuation'
 import { chatLogger } from '../../../utils/logger'
-import { areChangesSignificant, detectVersionChanges, generateAutoLabel } from '../../../utils/versionDiffDetection'
+import {
+  areChangesSignificant,
+  detectVersionChanges,
+  generateAutoLabel,
+} from '../../../utils/versionDiffDetection'
 import { ComponentErrorBoundary } from '../../shared/components/ErrorBoundary'
 import { useConversationActions, useConversationState } from '../context/ConversationContext'
 
@@ -113,7 +117,7 @@ export const ConversationPanel: React.FC<ConversationPanelProps> = ({
       if (data.field && data.value !== undefined) {
         // Call parent callback (used by ConversationalLayout for logging)
         onDataCollected?.(data)
-        
+
         // Data will be synced to session store through StreamingChat's internal mechanisms
         // When valuation is triggered, the collected data will be used
       }
@@ -125,7 +129,7 @@ export const ConversationPanel: React.FC<ConversationPanelProps> = ({
   const { setResult } = useValuationResultsStore()
   const { session } = useValuationSessionStore()
   const { createVersion, getLatestVersion } = useVersionHistoryStore()
-  
+
   const handleValuationComplete = useCallback(
     async (result: ValuationResponse) => {
       chatLogger.info('ConversationPanel: Valuation complete', {
@@ -144,7 +148,7 @@ export const ConversationPanel: React.FC<ConversationPanelProps> = ({
       if (reportId) {
         try {
           const previousVersion = getLatestVersion(reportId)
-          
+
           // Convert result to ValuationRequest format for comparison
           // Note: ValuationResponse doesn't include form fields, so we use empty defaults
           const newFormData = {
@@ -155,10 +159,10 @@ export const ConversationPanel: React.FC<ConversationPanelProps> = ({
             country_code: (result as any).country_code || '',
             // Map other fields from result to formData structure
           } as any
-          
+
           if (previousVersion) {
             const changes = detectVersionChanges(previousVersion.formData, newFormData)
-            
+
             if (areChangesSignificant(changes)) {
               const newVersion = await createVersion({
                 reportId,
@@ -229,88 +233,14 @@ export const ConversationPanel: React.FC<ConversationPanelProps> = ({
   )
 
   // Handle message complete - sync to context
-  const handleMessageComplete = useCallback(
-    (message: Message) => {
-      chatLogger.debug('ConversationPanel: Message complete', {
-        messageId: message.id,
-        type: message.type,
-      })
-      // Messages are managed by StreamingChat internally
-      // We can add to context if needed for cross-component access
-    },
-    []
-  )
-
-  return (
-    <ComponentErrorBoundary component="ConversationPanel">
-      <StreamingChat
-        sessionId={sessionId}
-        userId={userId}
-        initialMessages={restoredMessages}
-        isRestoring={isRestoring}
-        isRestorationComplete={isRestorationComplete}
-        isSessionInitialized={isSessionInitialized}
-        pythonSessionId={pythonSessionId ?? state.pythonSessionId}
-        onPythonSessionIdReceived={handlePythonSessionIdReceived}
-        onValuationComplete={handleValuationComplete}
-        onValuationStart={handleValuationStart}
-        onMessageComplete={handleMessageComplete}
-        onReportUpdate={onReportUpdate}
-        onDataCollected={handleDataCollected}
-        onValuationPreview={onValuationPreview}
-        onCalculateOptionAvailable={onCalculateOptionAvailable}
-        onProgressUpdate={onProgressUpdate}
-        onReportSectionUpdate={onReportSectionUpdate}
-        onSectionLoading={onSectionLoading}
-        onSectionComplete={onSectionComplete}
-        onReportComplete={onReportComplete}
-        onContextUpdate={onContextUpdate}
-        onHtmlPreviewUpdate={onHtmlPreviewUpdate}
-        initialMessage={initialMessage}
-        autoSend={autoSend}
-      />
-    </ComponentErrorBoundary>
-  )
-}
-
-
-      // Call parent callback
-      onValuationComplete?.(result)
-    },
-    [actions, onValuationComplete, setResult, session, getLatestVersion, createVersion]
-  )
-
-  // Handle valuation start
-  const handleValuationStart = useCallback(() => {
-    chatLogger.info('ConversationPanel: Valuation started')
-    actions.setGenerating(true)
-    onValuationStart?.()
-  }, [actions, onValuationStart])
-
-  // Handle Python session ID
-  const handlePythonSessionIdReceived = useCallback(
-    (newPythonSessionId: string) => {
-      chatLogger.info('ConversationPanel: Python session ID received', {
-        pythonSessionId: newPythonSessionId,
-      })
-      actions.setPythonSessionId(newPythonSessionId)
-      onPythonSessionIdReceived?.(newPythonSessionId)
-    },
-    [actions, onPythonSessionIdReceived]
-  )
-
-  // Handle message complete - sync to context
-  const handleMessageComplete = useCallback(
-    (message: Message) => {
-      chatLogger.debug('ConversationPanel: Message complete', {
-        messageId: message.id,
-        type: message.type,
-      })
-      // Messages are managed by StreamingChat internally
-      // We can add to context if needed for cross-component access
-    },
-    []
-  )
+  const handleMessageComplete = useCallback((message: Message) => {
+    chatLogger.debug('ConversationPanel: Message complete', {
+      messageId: message.id,
+      type: message.type,
+    })
+    // Messages are managed by StreamingChat internally
+    // We can add to context if needed for cross-component access
+  }, [])
 
   return (
     <ComponentErrorBoundary component="ConversationPanel">

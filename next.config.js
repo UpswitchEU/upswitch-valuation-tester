@@ -21,34 +21,65 @@ const nextConfig = {
         ...config.optimization,
         splitChunks: {
           chunks: 'all',
+          minSize: 20000, // Minimum chunk size (20KB)
+          maxSize: 244000, // Maximum chunk size (244KB) - helps with code splitting
           cacheGroups: {
+            // Default vendor chunk
+            default: {
+              minChunks: 2,
+              priority: -20,
+              reuseExistingChunk: true,
+            },
             // Vendor libraries
             vendor: {
               test: /[\\/]node_modules[\\/]/,
               name: 'vendors',
               chunks: 'all',
               priority: 10,
+              minChunks: 1,
             },
-            // React ecosystem
+            // React ecosystem (large, frequently used)
             react: {
-              test: /[\\/]node_modules[\\/](react|react-dom|@heroui)[\\/]/,
+              test: /[\\/]node_modules[\\/](react|react-dom|scheduler)[\\/]/,
               name: 'react-vendor',
               chunks: 'all',
               priority: 20,
+              enforce: true,
             },
-            // UI components
+            // UI libraries (can be lazy loaded)
             ui: {
-              test: /[\\/]node_modules[\\/](lucide-react|framer-motion)[\\/]/,
+              test: /[\\/]node_modules[\\/](lucide-react|framer-motion|@heroui)[\\/]/,
               name: 'ui-vendor',
-              chunks: 'all',
+              chunks: 'async', // Load on demand
               priority: 15,
             },
-            // Feature modules - using streaming chat for conversational flow
+            // Heavy libraries (lazy load)
+            heavy: {
+              test: /[\\/]node_modules[\\/](recharts|html2pdf|dompurify|axios)[\\/]/,
+              name: 'heavy-vendor',
+              chunks: 'async', // Load on demand
+              priority: 12,
+            },
+            // Feature modules - conversational flow
+            conversational: {
+              test: /src[\\/]features[\\/]conversational[\\/]/,
+              name: 'conversational-feature',
+              chunks: 'async',
+              priority: 8,
+            },
+            // Feature modules - manual flow
+            manual: {
+              test: /src[\\/]features[\\/]manual[\\/]/,
+              name: 'manual-feature',
+              chunks: 'async',
+              priority: 8,
+            },
+            // Streaming chat feature
             streaming: {
               test: /src[\\/]components[\\/]StreamingChat/,
               name: 'streaming-feature',
-              chunks: 'all',
-              priority: 5,
+              chunks: 'async',
+              priority: 7,
             },
             // Utility modules
             utils: {
@@ -56,11 +87,23 @@ const nextConfig = {
               name: 'utils',
               chunks: 'all',
               priority: 5,
+              minChunks: 2,
+            },
+            // Store modules
+            store: {
+              test: /src[\\/]store[\\/]/,
+              name: 'store',
+              chunks: 'all',
+              priority: 6,
             },
           },
         },
         // Enable more aggressive minification
         minimize: true,
+        // Enable module concatenation for better tree-shaking
+        concatenateModules: true,
+        // Enable side effects optimization
+        sideEffects: false,
       }
     }
 

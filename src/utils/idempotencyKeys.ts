@@ -1,9 +1,9 @@
 /**
  * Idempotency Key Generator
- * 
+ *
  * Single Responsibility: Generate unique idempotency keys for preventing duplicate operations.
  * Enables safe retries without creating duplicate resources.
- * 
+ *
  * @module utils/idempotencyKeys
  */
 
@@ -11,28 +11,28 @@ import { storeLogger } from './logger'
 
 /**
  * Generate idempotency key for operation
- * 
+ *
  * Format: {reportId}-{operation}-{timestamp}
- * 
+ *
  * Idempotency keys allow:
  * - Safe retries after network failures
  * - Backend recognizes duplicate requests
  * - Prevents duplicate resource creation
- * 
+ *
  * Backend should:
  * - Store idempotency key with resource
  * - Return existing resource if key matches
  * - Keys expire after 24 hours
- * 
+ *
  * @param reportId - Report identifier
  * @param operation - Operation type ('create', 'update', 'switch-view', etc.)
  * @returns Idempotency key string
- * 
+ *
  * @example
  * ```typescript
  * const key = generateIdempotencyKey('val_123', 'create')
  * // Returns: "val_123-create-1765751234567"
- * 
+ *
  * await fetch('/api/sessions', {
  *   method: 'POST',
  *   headers: {
@@ -40,7 +40,7 @@ import { storeLogger } from './logger'
  *   },
  *   body: JSON.stringify(session)
  * })
- * 
+ *
  * // If retry needed, use same key:
  * await fetch('/api/sessions', {
  *   method: 'POST',
@@ -58,10 +58,10 @@ export function generateIdempotencyKey(reportId: string, operation: string): str
 
 /**
  * Parse idempotency key into components
- * 
+ *
  * @param key - Idempotency key to parse
  * @returns Parsed components or null if invalid format
- * 
+ *
  * @example
  * ```typescript
  * const parsed = parseIdempotencyKey('val_123-create-1765751234567')
@@ -74,7 +74,7 @@ export function parseIdempotencyKey(key: string): {
   timestamp: number
 } | null {
   const parts = key.split('-')
-  
+
   if (parts.length < 3) {
     return null
   }
@@ -96,17 +96,17 @@ export function parseIdempotencyKey(key: string): {
 
 /**
  * Check if idempotency key is expired
- * 
+ *
  * Keys expire after 24 hours (standard practice).
- * 
+ *
  * @param key - Idempotency key to check
  * @param expiryHours - Hours until expiry (default: 24)
  * @returns true if key is expired
- * 
+ *
  * @example
  * ```typescript
  * const key = generateIdempotencyKey('val_123', 'create')
- * 
+ *
  * // Check if expired after 24 hours
  * if (isIdempotencyKeyExpired(key)) {
  *   // Generate new key
@@ -128,7 +128,7 @@ export function isIdempotencyKeyExpired(key: string, expiryHours: number = 24): 
 
 /**
  * Idempotency key manager
- * 
+ *
  * Manages active idempotency keys for operations.
  * Stores keys in memory for deduplication within same session.
  */
@@ -137,10 +137,10 @@ export class IdempotencyKeyManager {
 
   /**
    * Get or create idempotency key for operation
-   * 
+   *
    * Returns existing key if operation is pending.
    * Creates new key if operation is not pending or key expired.
-   * 
+   *
    * @param reportId - Report identifier
    * @param operation - Operation type
    * @returns Idempotency key
@@ -162,7 +162,7 @@ export class IdempotencyKeyManager {
 
   /**
    * Clear key after operation completes
-   * 
+   *
    * @param reportId - Report identifier
    * @param operation - Operation type
    */
@@ -225,9 +225,10 @@ export const globalIdempotencyManager = new IdempotencyKeyManager()
 
 // Cleanup expired keys every hour
 if (typeof window !== 'undefined') {
-  setInterval(() => {
-    globalIdempotencyManager.cleanupExpired()
-  }, 60 * 60 * 1000) // 1 hour
+  setInterval(
+    () => {
+      globalIdempotencyManager.cleanupExpired()
+    },
+    60 * 60 * 1000
+  ) // 1 hour
 }
-
-

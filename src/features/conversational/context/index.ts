@@ -4,11 +4,10 @@
  * @module features/conversational/context
  */
 
+export type { BusinessProfile } from './ConversationContext'
 export {
   ConversationProvider,
-  useConversationState,
   useConversationActions,
   useConversationContext,
+  useConversationState,
 } from './ConversationContext'
-
-export type { BusinessProfile } from './ConversationContext'

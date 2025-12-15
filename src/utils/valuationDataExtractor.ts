@@ -174,4 +174,3 @@ export function getAdjustmentsApplied(result: ValuationResponse) {
   })
   return adjustments
 }
-

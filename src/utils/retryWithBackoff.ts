@@ -1,11 +1,11 @@
 /**
  * Exponential Backoff Retry Utility
- * 
+ *
  * Single Responsibility: Retry failed operations with exponential delay.
  * Handles transient failures (network glitches, rate limits) automatically.
- * 
+ *
  * Framework compliance: <2s performance target enforced.
- * 
+ *
  * @module utils/retryWithBackoff
  */
 
@@ -41,24 +41,24 @@ export interface RetryResult<T> {
 
 /**
  * Retry function with exponential backoff
- * 
+ *
  * Strategy:
  * - Attempt 1: Execute immediately
  * - Attempt 2: Wait 100ms (initial delay)
  * - Attempt 3: Wait 200ms (2x)
  * - Attempt 4: Wait 400ms (2x)
  * - Max delay: 2000ms (framework limit)
- * 
+ *
  * Framework compliance:
  * - Total retry time <2s (enforced)
  * - Only retries transient errors (network, rate limit, timeout)
  * - Logs all retry attempts for audit trail
- * 
+ *
  * @param fn - Function to execute
  * @param options - Retry configuration
  * @returns Result from successful execution
  * @throws Last error if all retries exhausted
- * 
+ *
  * @example
  * ```typescript
  * try {
@@ -98,7 +98,7 @@ export async function retryWithBackoff<T>(
     try {
       // Execute function
       const result = await fn()
-      
+
       // Success - log if retried
       if (attempt > 1) {
         const totalTime = performance.now() - startTime
@@ -107,11 +107,11 @@ export async function retryWithBackoff<T>(
           totalTime_ms: totalTime.toFixed(2),
         })
       }
-      
+
       return result
     } catch (error) {
       lastError = error as Error
-      
+
       // Check if error is retryable
       const shouldRetry = retryableErrors
         ? retryableErrors.some((ErrorClass) => error instanceof ErrorClass)
@@ -133,14 +133,14 @@ export async function retryWithBackoff<T>(
           totalTime_ms: totalTime.toFixed(2),
           error: extractErrorMessage(error),
         })
-        
+
         onFailure?.(error as Error, attempt)
         throw error
       }
 
       // Calculate delay with exponential backoff
       const delay = Math.min(currentDelay, maxDelay)
-      
+
       storeLogger.warn('Retry attempt', {
         attempt,
         maxRetries,
@@ -165,7 +165,7 @@ export async function retryWithBackoff<T>(
 
 /**
  * Sleep for specified milliseconds
- * 
+ *
  * @param ms - Milliseconds to sleep
  */
 function sleep(ms: number): Promise<void> {
@@ -174,9 +174,9 @@ function sleep(ms: number): Promise<void> {
 
 /**
  * Retry with backoff and return result with metadata
- * 
+ *
  * Same as retryWithBackoff but returns additional metadata about retries.
- * 
+ *
  * @param fn - Function to execute
  * @param options - Retry configuration
  * @returns Result with retry metadata
@@ -254,7 +254,7 @@ export const retryPresets = {
 
 /**
  * Retry session operation with preset configuration
- * 
+ *
  * @param fn - Session operation to retry
  * @param options - Additional options (merged with preset)
  * @returns Result from operation
@@ -271,7 +271,7 @@ export async function retrySessionOperation<T>(
 
 /**
  * Retry restoration operation with preset configuration
- * 
+ *
  * @param fn - Restoration operation to retry
  * @param options - Additional options (merged with preset)
  * @returns Result from operation
@@ -285,5 +285,3 @@ export async function retryRestorationOperation<T>(
     ...options,
   })
 }
-
-

@@ -9,10 +9,11 @@
  * @module services/businessData
  */
 
-export { businessDataFetchingService } from './businessDataFetchingService'
+// Re-export for backward compatibility
+export {
+  businessDataFetchingService,
+  businessDataFetchingService as businessDataService,
+} from './businessDataFetchingService'
 export { businessDataTransformationService } from './businessDataTransformationService'
 export type { BusinessCardData, BusinessProfileData } from './businessDataTypes'
 export { businessDataValidationService } from './businessDataValidationService'
-
-// Re-export for backward compatibility
-export { businessDataFetchingService as businessDataService } from './businessDataFetchingService'

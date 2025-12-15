@@ -1,8 +1,8 @@
 /**
  * Request Deduplication Tests
- * 
+ *
  * Test concurrent request deduplication logic.
- * 
+ *
  * @module utils/__tests__/requestDeduplication.test
  */
 
@@ -19,9 +19,9 @@ describe('RequestDeduplicator', () => {
   describe('deduplicate', () => {
     it('should execute function on first call', async () => {
       const fn = vi.fn().mockResolvedValue('result')
-      
+
       const result = await deduplicator.deduplicate('key1', fn)
-      
+
       expect(fn).toHaveBeenCalledTimes(1)
       expect(result).toBe('result')
     })
@@ -48,16 +48,14 @@ describe('RequestDeduplicator', () => {
 
       // Function called only once
       expect(fn).toHaveBeenCalledTimes(1)
-      
+
       // Both get same result
       expect(result1).toBe(result2)
       expect(result1).toBe('result-1')
     })
 
     it('should allow new call after first completes', async () => {
-      const fn = vi.fn()
-        .mockResolvedValueOnce('first')
-        .mockResolvedValueOnce('second')
+      const fn = vi.fn().mockResolvedValueOnce('first').mockResolvedValueOnce('second')
 
       const result1 = await deduplicator.deduplicate('key1', fn)
       const result2 = await deduplicator.deduplicate('key1', fn)
@@ -83,18 +81,17 @@ describe('RequestDeduplicator', () => {
     })
 
     it('should remove from pending after error', async () => {
-      const fn = vi.fn()
+      const fn = vi
+        .fn()
         .mockRejectedValueOnce(new Error('First call fails'))
         .mockResolvedValueOnce('Second call succeeds')
 
       // First call fails
-      await expect(deduplicator.deduplicate('key1', fn)).rejects.toThrow(
-        'First call fails'
-      )
+      await expect(deduplicator.deduplicate('key1', fn)).rejects.toThrow('First call fails')
 
       // Second call should execute (not deduplicated)
       const result = await deduplicator.deduplicate('key1', fn)
-      
+
       expect(fn).toHaveBeenCalledTimes(2)
       expect(result).toBe('Second call succeeds')
     })
@@ -116,9 +113,9 @@ describe('RequestDeduplicator', () => {
 
   describe('clear', () => {
     it('should clear all pending requests', () => {
-      const fn = vi.fn().mockImplementation(
-        () => new Promise((resolve) => setTimeout(resolve, 1000))
-      )
+      const fn = vi
+        .fn()
+        .mockImplementation(() => new Promise((resolve) => setTimeout(resolve, 1000)))
 
       deduplicator.deduplicate('key1', fn)
       deduplicator.deduplicate('key2', fn)
@@ -133,9 +130,9 @@ describe('RequestDeduplicator', () => {
 
   describe('clearKey', () => {
     it('should clear specific key', () => {
-      const fn = vi.fn().mockImplementation(
-        () => new Promise((resolve) => setTimeout(resolve, 1000))
-      )
+      const fn = vi
+        .fn()
+        .mockImplementation(() => new Promise((resolve) => setTimeout(resolve, 1000)))
 
       deduplicator.deduplicate('key1', fn)
       deduplicator.deduplicate('key2', fn)
@@ -201,9 +198,9 @@ describe('RequestDeduplicator', () => {
 
 /**
  * Request Deduplication Tests
- * 
+ *
  * Test concurrent request deduplication logic.
- * 
+ *
  * @module utils/__tests__/requestDeduplication.test
  */
 
@@ -220,9 +217,9 @@ describe('RequestDeduplicator', () => {
   describe('deduplicate', () => {
     it('should execute function on first call', async () => {
       const fn = vi.fn().mockResolvedValue('result')
-      
+
       const result = await deduplicator.deduplicate('key1', fn)
-      
+
       expect(fn).toHaveBeenCalledTimes(1)
       expect(result).toBe('result')
     })
@@ -249,16 +246,14 @@ describe('RequestDeduplicator', () => {
 
       // Function called only once
       expect(fn).toHaveBeenCalledTimes(1)
-      
+
       // Both get same result
       expect(result1).toBe(result2)
       expect(result1).toBe('result-1')
     })
 
     it('should allow new call after first completes', async () => {
-      const fn = vi.fn()
-        .mockResolvedValueOnce('first')
-        .mockResolvedValueOnce('second')
+      const fn = vi.fn().mockResolvedValueOnce('first').mockResolvedValueOnce('second')
 
       const result1 = await deduplicator.deduplicate('key1', fn)
       const result2 = await deduplicator.deduplicate('key1', fn)
@@ -284,18 +279,17 @@ describe('RequestDeduplicator', () => {
     })
 
     it('should remove from pending after error', async () => {
-      const fn = vi.fn()
+      const fn = vi
+        .fn()
         .mockRejectedValueOnce(new Error('First call fails'))
         .mockResolvedValueOnce('Second call succeeds')
 
       // First call fails
-      await expect(deduplicator.deduplicate('key1', fn)).rejects.toThrow(
-        'First call fails'
-      )
+      await expect(deduplicator.deduplicate('key1', fn)).rejects.toThrow('First call fails')
 
       // Second call should execute (not deduplicated)
       const result = await deduplicator.deduplicate('key1', fn)
-      
+
       expect(fn).toHaveBeenCalledTimes(2)
       expect(result).toBe('Second call succeeds')
     })
@@ -317,9 +311,9 @@ describe('RequestDeduplicator', () => {
 
   describe('clear', () => {
     it('should clear all pending requests', () => {
-      const fn = vi.fn().mockImplementation(
-        () => new Promise((resolve) => setTimeout(resolve, 1000))
-      )
+      const fn = vi
+        .fn()
+        .mockImplementation(() => new Promise((resolve) => setTimeout(resolve, 1000)))
 
       deduplicator.deduplicate('key1', fn)
       deduplicator.deduplicate('key2', fn)
@@ -334,9 +328,9 @@ describe('RequestDeduplicator', () => {
 
   describe('clearKey', () => {
     it('should clear specific key', () => {
-      const fn = vi.fn().mockImplementation(
-        () => new Promise((resolve) => setTimeout(resolve, 1000))
-      )
+      const fn = vi
+        .fn()
+        .mockImplementation(() => new Promise((resolve) => setTimeout(resolve, 1000)))
 
       deduplicator.deduplicate('key1', fn)
       deduplicator.deduplicate('key2', fn)
@@ -399,5 +393,3 @@ describe('RequestDeduplicator', () => {
     })
   })
 })
-
-

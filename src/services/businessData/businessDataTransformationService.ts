@@ -8,15 +8,15 @@
  */
 
 import type {
-    BusinessModel,
-    ConversationStartRequest,
-    ValuationRequest,
+  BusinessModel,
+  ConversationStartRequest,
+  ValuationRequest,
 } from '../../types/valuation'
 import {
-    inferBusinessModelFromIndustry,
-    inferBusinessModelFromType,
-    isValidYear,
-    mapToBusinessModel,
+  inferBusinessModelFromIndustry,
+  inferBusinessModelFromType,
+  isValidYear,
+  mapToBusinessModel,
 } from '../../utils/businessExtractionUtils'
 import { serviceLogger } from '../../utils/logger'
 import type { BusinessProfileData } from './businessDataTypes'

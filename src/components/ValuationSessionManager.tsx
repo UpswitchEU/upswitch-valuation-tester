@@ -63,131 +63,132 @@ export const ValuationSessionManager: React.FC<ValuationSessionManagerProps> = R
     const initializationState = useRef<
       Map<string, { initialized: boolean; isInitializing: boolean }>
     >(new Map())
-    
+
     // Track if we're updating URL ourselves to prevent re-initialization
     const isUpdatingUrlRef = useRef(false)
 
-  // Initialize session on mount - only once per reportId
-  const initializeSessionForReport = useCallback(
-    async (reportId: string) => {
-      const state = initializationState.current.get(reportId)
+    // Initialize session on mount - only once per reportId
+    const initializeSessionForReport = useCallback(
+      async (reportId: string) => {
+        const state = initializationState.current.get(reportId)
 
-      // CRITICAL FIX: Don't re-initialize if we're updating URL ourselves
-      // This prevents re-initialization when URL changes due to flow switch
-      if (isUpdatingUrlRef.current) {
-        return // URL update in progress, don't re-initialize
-      }
-
-      // Prevent concurrent initialization attempts
-      if (state?.isInitializing) {
-        return // Already initializing, wait for completion
-      }
-
-      // Prevent re-initialization if already initialized
-      if (state?.initialized) {
-        return // Already initialized, don't re-initialize
-      }
-
-      // Mark as initializing to prevent concurrent calls
-      initializationState.current.set(reportId, { initialized: false, isInitializing: true })
-
-      try {
-        if (!searchParams) {
-          initializationState.current.set(reportId, { initialized: false, isInitializing: false })
-          return
-        }
-        
-        // Try to restore existing session first (for continuing existing reports)
-        const { loadSession } = useValuationSessionStore.getState()
-        
-        try {
-          generalLogger.info('Attempting to restore existing session', { reportId })
-          
-          await loadSession(reportId)
-          
-          // Session restored successfully
-          setStage('data-entry')
-          initializationState.current.set(reportId, { initialized: true, isInitializing: false })
-          
-          generalLogger.info('Existing session restored successfully', { reportId })
-          return
-        } catch (restoreError) {
-          // Session doesn't exist on backend - create new one
-          generalLogger.info('Session not found on backend, creating new session', { 
-            reportId,
-            error: restoreError instanceof Error ? restoreError.message : 'Unknown error',
-          })
-        }
-        
-        // Create new session
-        // CRITICAL FIX: If we're updating URL ourselves (flow switch), use session's currentView
-        // Otherwise, read from URL params (initial load)
-        let flowParam = searchParams.get('flow')
+        // CRITICAL FIX: Don't re-initialize if we're updating URL ourselves
+        // This prevents re-initialization when URL changes due to flow switch
         if (isUpdatingUrlRef.current) {
-          // We're updating URL ourselves - use session's currentView as source of truth
-          const currentSession = useValuationSessionStore.getState().session
-          if (currentSession?.currentView) {
-            flowParam = currentSession.currentView
-          }
+          return // URL update in progress, don't re-initialize
         }
-        const initialView =
-          flowParam === 'manual' || flowParam === 'conversational' ? flowParam : 'manual'
-        const tokenParam = searchParams.get('token')
 
-        // Validate credits for Conversational (guests only)
-        if (initialView === 'conversational' && !isAuthenticated) {
-          const hasCredits = guestCreditService.hasCredits()
-          if (!hasCredits) {
-            setShowOutOfCreditsModal(true)
-            // Still initialize session but with manual view
-            await initializeSession(reportId, 'manual', prefilledQuery)
-            setStage('data-entry')
-            initializationState.current.set(reportId, {
-              initialized: true,
-              isInitializing: false,
-            })
+        // Prevent concurrent initialization attempts
+        if (state?.isInitializing) {
+          return // Already initializing, wait for completion
+        }
+
+        // Prevent re-initialization if already initialized
+        if (state?.initialized) {
+          return // Already initialized, don't re-initialize
+        }
+
+        // Mark as initializing to prevent concurrent calls
+        initializationState.current.set(reportId, { initialized: false, isInitializing: true })
+
+        try {
+          if (!searchParams) {
+            initializationState.current.set(reportId, { initialized: false, isInitializing: false })
             return
           }
-        }
 
-        // Initialize new session with prefilled query from homepage
-        await initializeSession(reportId, initialView, prefilledQuery)
-        
-        // Handle business card prefill if token present
-        if (tokenParam) {
+          // Try to restore existing session first (for continuing existing reports)
+          const { loadSession } = useValuationSessionStore.getState()
+
           try {
-            const { businessCardService } = await import('../services/businessCard')
-            const businessCard = await businessCardService.fetchBusinessCard(tokenParam)
-            const prefilledData = businessCardService.transformToValuationRequest(businessCard)
-            
-            // Update session with prefilled data
-            const { updateSessionData } = useValuationSessionStore.getState()
-            await updateSessionData(prefilledData)
-            
-            generalLogger.info('Business card data prefilled', { 
+            generalLogger.info('Attempting to restore existing session', { reportId })
+
+            await loadSession(reportId)
+
+            // Session restored successfully
+            setStage('data-entry')
+            initializationState.current.set(reportId, { initialized: true, isInitializing: false })
+
+            generalLogger.info('Existing session restored successfully', { reportId })
+            return
+          } catch (restoreError) {
+            // Session doesn't exist on backend - create new one
+            generalLogger.info('Session not found on backend, creating new session', {
               reportId,
-              fieldCount: Object.keys(prefilledData).length,
+              error: restoreError instanceof Error ? restoreError.message : 'Unknown error',
             })
-          } catch (businessCardError) {
-            generalLogger.error('Failed to prefill business card data', { 
-              error: businessCardError instanceof Error ? businessCardError.message : 'Unknown error',
-              reportId,
-            })
-            // Continue without prefill - don't block the user
           }
+
+          // Create new session
+          // CRITICAL FIX: If we're updating URL ourselves (flow switch), use session's currentView
+          // Otherwise, read from URL params (initial load)
+          let flowParam = searchParams.get('flow')
+          if (isUpdatingUrlRef.current) {
+            // We're updating URL ourselves - use session's currentView as source of truth
+            const currentSession = useValuationSessionStore.getState().session
+            if (currentSession?.currentView) {
+              flowParam = currentSession.currentView
+            }
+          }
+          const initialView =
+            flowParam === 'manual' || flowParam === 'conversational' ? flowParam : 'manual'
+          const tokenParam = searchParams.get('token')
+
+          // Validate credits for Conversational (guests only)
+          if (initialView === 'conversational' && !isAuthenticated) {
+            const hasCredits = guestCreditService.hasCredits()
+            if (!hasCredits) {
+              setShowOutOfCreditsModal(true)
+              // Still initialize session but with manual view
+              await initializeSession(reportId, 'manual', prefilledQuery)
+              setStage('data-entry')
+              initializationState.current.set(reportId, {
+                initialized: true,
+                isInitializing: false,
+              })
+              return
+            }
+          }
+
+          // Initialize new session with prefilled query from homepage
+          await initializeSession(reportId, initialView, prefilledQuery)
+
+          // Handle business card prefill if token present
+          if (tokenParam) {
+            try {
+              const { businessCardService } = await import('../services/businessCard')
+              const businessCard = await businessCardService.fetchBusinessCard(tokenParam)
+              const prefilledData = businessCardService.transformToValuationRequest(businessCard)
+
+              // Update session with prefilled data
+              const { updateSessionData } = useValuationSessionStore.getState()
+              await updateSessionData(prefilledData)
+
+              generalLogger.info('Business card data prefilled', {
+                reportId,
+                fieldCount: Object.keys(prefilledData).length,
+              })
+            } catch (businessCardError) {
+              generalLogger.error('Failed to prefill business card data', {
+                error:
+                  businessCardError instanceof Error ? businessCardError.message : 'Unknown error',
+                reportId,
+              })
+              // Continue without prefill - don't block the user
+            }
+          }
+
+          setStage('data-entry')
+          initializationState.current.set(reportId, { initialized: true, isInitializing: false })
+        } catch (error) {
+          // On error, allow retry by not marking as initialized
+          initializationState.current.set(reportId, { initialized: false, isInitializing: false })
+          generalLogger.error('Failed to initialize session', { error, reportId })
+          setError('Failed to initialize valuation session')
         }
-        
-        setStage('data-entry')
-        initializationState.current.set(reportId, { initialized: true, isInitializing: false })
-      } catch (error) {
-        // On error, allow retry by not marking as initialized
-        initializationState.current.set(reportId, { initialized: false, isInitializing: false })
-        generalLogger.error('Failed to initialize session', { error, reportId })
-        setError('Failed to initialize valuation session')
-      }
-    },
-    [isAuthenticated, initializeSession, prefilledQuery, searchParams]
-  )
+      },
+      [isAuthenticated, initializeSession, prefilledQuery, searchParams]
+    )
 
     // Validate and set report ID, then initialize session
     useEffect(() => {
@@ -227,20 +228,20 @@ export const ValuationSessionManager: React.FC<ValuationSessionManagerProps> = R
       if (currentFlow !== session.currentView && session.reportId) {
         // Mark that we're updating URL ourselves BEFORE updating
         isUpdatingUrlRef.current = true
-        
+
         // Extract existing query params and update flow
         const existingParams: Record<string, string> = {}
         searchParams.forEach((value, key) => {
           existingParams[key] = value
         })
         existingParams.flow = session.currentView
-        
+
         // Use centralized URL generator for consistency
         const newUrl = UrlGeneratorService.reportById(session.reportId, existingParams)
-        
+
         // Use router.replace with shallow routing to prevent full page reload
         router.replace(newUrl, { scroll: false })
-        
+
         // Reset flag after URL update completes (Next.js updates URL asynchronously)
         // Use a longer delay to ensure searchParams has updated
         setTimeout(() => {
@@ -250,13 +251,7 @@ export const ValuationSessionManager: React.FC<ValuationSessionManagerProps> = R
         // URL is already in sync - ensure flag is cleared
         isUpdatingUrlRef.current = false
       }
-    }, [
-      session?.currentView,
-      session?.reportId,
-      pathname,
-      searchParams,
-      router,
-    ])
+    }, [session?.currentView, session?.reportId, pathname, searchParams, router])
 
     return (
       <>
@@ -277,7 +272,10 @@ export const ValuationSessionManager: React.FC<ValuationSessionManagerProps> = R
           onSignUp={() => {
             setShowOutOfCreditsModal(false)
             // Sign-up is handled by main platform - redirect to main app
-            generalLogger.info('Sign up clicked from out of credits modal - redirecting to main platform', { reportId })
+            generalLogger.info(
+              'Sign up clicked from out of credits modal - redirecting to main platform',
+              { reportId }
+            )
             // In production, this would redirect to main platform sign-up page
             if (typeof window !== 'undefined') {
               window.location.href = '/signup'

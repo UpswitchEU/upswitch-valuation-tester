@@ -29,7 +29,7 @@ describe('NameGenerator', () => {
 
       const name1 = NameGenerator.generateValuationName()
       const name2 = NameGenerator.generateValuationName()
-      
+
       expect(name1).toMatch(/Valuation Report #1/)
       expect(name2).toMatch(/Valuation Report #2/)
     })
@@ -75,4 +75,3 @@ describe('NameGenerator', () => {
     })
   })
 })
-

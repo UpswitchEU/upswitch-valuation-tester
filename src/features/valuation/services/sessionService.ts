@@ -29,9 +29,7 @@ export class SessionService implements ISessionService {
       generalLogger.info('Creating new valuation session', { reportId, flow })
 
       // Use existing store to create session
-      await useValuationSessionStore
-        .getState()
-        .initializeSession(reportId, flow, initialData)
+      await useValuationSessionStore.getState().initializeSession(reportId, flow, initialData)
 
       // Get the created session from the store
       const session = useValuationSessionStore.getState().session

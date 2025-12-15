@@ -1,9 +1,9 @@
 /**
  * Retry Utility
- * 
+ *
  * Retries an async function with exponential backoff
  * Useful for handling transient network failures
- * 
+ *
  * @param fn - The async function to retry
  * @param maxAttempts - Maximum number of attempts (default: 3)
  * @param baseDelay - Base delay in milliseconds (default: 1000)
@@ -22,13 +22,13 @@ export async function retry<T>(
       if (attempt === maxAttempts - 1) {
         throw error
       }
-      
+
       // Exponential backoff: baseDelay * 2^attempt
       const delay = baseDelay * Math.pow(2, attempt)
-      await new Promise(resolve => setTimeout(resolve, delay))
+      await new Promise((resolve) => setTimeout(resolve, delay))
     }
   }
-  
+
   // This should never be reached, but TypeScript requires it
   throw new Error('Retry failed after all attempts')
 }

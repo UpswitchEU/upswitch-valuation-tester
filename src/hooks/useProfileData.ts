@@ -49,24 +49,50 @@ export const useProfileData = (): UseProfileDataReturn => {
           country: profileData.country,
         }
         setProfileData(mappedData)
-        generalLogger.debug('[useProfileData] Profile data loaded', { 
+        generalLogger.debug('[useProfileData] Profile data loaded', {
           hasCompanyName: !!mappedData.company_name,
-          hasIndustry: !!mappedData.industry 
+          hasIndustry: !!mappedData.industry,
         })
-      } catch (err: any) {
+      } catch (error) {
+        const appError = convertToApplicationError(error)
+
         // If profile doesn't exist (404), that's OK - user hasn't created profile yet
-        if (err?.status === 404 || err?.response?.status === 404) {
-          generalLogger.debug('[useProfileData] Profile not found - user may not have created profile yet')
+        if (isNotFoundError(appError)) {
+          generalLogger.debug(
+            '[useProfileData] Profile not found - user may not have created profile yet',
+            {
+              code: appError.code,
+            }
+          )
           setProfileData(null)
         } else {
-          throw err
+          throw appError
         }
       }
-    } catch (err) {
-      generalLogger.error('[useProfileData] Error fetching profile', { 
-        error: err instanceof Error ? err.message : 'Unknown error' 
-      })
-      setError(err as Error)
+    } catch (error) {
+      const appError = convertToApplicationError(error)
+
+      // Log with specific error type
+      if (isNetworkError(appError)) {
+        generalLogger.error('[useProfileData] Error fetching profile - network error', {
+          error: appError.message,
+          code: appError.code,
+          context: appError.context,
+        })
+      } else if (isNotFoundError(appError)) {
+        generalLogger.debug('[useProfileData] Profile not found', {
+          error: appError.message,
+          code: appError.code,
+        })
+      } else {
+        generalLogger.error('[useProfileData] Error fetching profile', {
+          error: appError.message,
+          code: appError.code,
+          context: appError.context,
+        })
+      }
+
+      setError(appError as Error)
       setProfileData(null)
     } finally {
       setLoading(false)

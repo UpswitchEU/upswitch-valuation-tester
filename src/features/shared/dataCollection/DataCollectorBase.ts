@@ -13,11 +13,11 @@
  */
 
 import type {
-    DataCollectionMethod,
-    DataField,
-    ParsedFieldValue,
-    ValidationRule,
-    ValidationSeverity,
+  DataCollectionMethod,
+  DataField,
+  ParsedFieldValue,
+  ValidationRule,
+  ValidationSeverity,
 } from '../../../types/data-collection'
 
 /**
@@ -155,10 +155,7 @@ export abstract class DataCollectorBase {
   /**
    * Validate field type constraints
    */
-  private validateFieldType(
-    field: DataField,
-    value: ParsedFieldValue
-  ): ValidationError | null {
+  private validateFieldType(field: DataField, value: ParsedFieldValue): ValidationError | null {
     switch (field.type) {
       case 'number':
       case 'currency':

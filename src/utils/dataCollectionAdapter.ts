@@ -10,11 +10,7 @@
  * @module utils/dataCollectionAdapter
  */
 
-import type {
-    DataCollectionMethod,
-    DataResponse,
-    FieldValue,
-} from '../types/data-collection'
+import type { DataCollectionMethod, DataResponse, FieldValue } from '../types/data-collection'
 
 /**
  * Convert StreamingChat collected data (Record<string, any>) to DataResponse[] format
@@ -168,13 +164,7 @@ function normalizeFieldValue(fieldId: string, value: FieldValue): FieldValue {
   }
 
   // String fields - ensure string type
-  const stringFields = [
-    'company_name',
-    'country_code',
-    'industry',
-    'business_model',
-    'legal_form',
-  ]
+  const stringFields = ['company_name', 'country_code', 'industry', 'business_model', 'legal_form']
 
   if (stringFields.includes(fieldId)) {
     return String(value)

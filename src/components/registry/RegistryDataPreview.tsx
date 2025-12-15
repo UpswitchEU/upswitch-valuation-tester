@@ -1,12 +1,12 @@
 import {
-    Building2,
-    Calculator,
-    Calendar,
-    Check,
-    Edit2,
-    ExternalLink,
-    TrendingUp,
-    X,
+  Building2,
+  Calculator,
+  Calendar,
+  Check,
+  Edit2,
+  ExternalLink,
+  TrendingUp,
+  X,
 } from 'lucide-react'
 import React, { useState } from 'react'
 import { useValuationFormStore } from '../../store/useValuationFormStore'

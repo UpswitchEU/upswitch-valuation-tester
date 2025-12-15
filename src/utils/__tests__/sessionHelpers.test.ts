@@ -1,15 +1,15 @@
 /**
  * Session Helper Utilities Tests
- * 
+ *
  * @module utils/__tests__/sessionHelpers.test
  */
 
 import { describe, expect, it } from 'vitest'
 import {
-    createBaseSession,
-    generateSessionId,
-    mergePrefilledQuery,
-    normalizeSessionDates,
+  createBaseSession,
+  generateSessionId,
+  mergePrefilledQuery,
+  normalizeSessionDates,
 } from '../sessionHelpers'
 
 describe('sessionHelpers', () => {
@@ -17,7 +17,7 @@ describe('sessionHelpers', () => {
     it('should generate unique session IDs', () => {
       const id1 = generateSessionId()
       const id2 = generateSessionId()
-      
+
       expect(id1).toMatch(/^session_\d+_[a-z0-9]+$/)
       expect(id2).toMatch(/^session_\d+_[a-z0-9]+$/)
       expect(id1).not.toBe(id2)
@@ -26,7 +26,7 @@ describe('sessionHelpers', () => {
     it('should have correct format', () => {
       const id = generateSessionId()
       const parts = id.split('_')
-      
+
       expect(parts[0]).toBe('session')
       expect(parts[1]).toMatch(/^\d+$/) // timestamp
       expect(parts[2]).toMatch(/^[a-z0-9]+$/) // random string
@@ -36,7 +36,7 @@ describe('sessionHelpers', () => {
   describe('createBaseSession', () => {
     it('should create session with all required fields', () => {
       const session = createBaseSession('val_123', 'session_456', 'manual')
-      
+
       expect(session.reportId).toBe('val_123')
       expect(session.sessionId).toBe('session_456')
       expect(session.currentView).toBe('manual')
@@ -49,13 +49,13 @@ describe('sessionHelpers', () => {
 
     it('should include prefilled query when provided', () => {
       const session = createBaseSession('val_123', 'session_456', 'conversational', 'Restaurant')
-      
+
       expect(session.partialData).toEqual({ _prefilledQuery: 'Restaurant' })
     })
 
     it('should handle null prefilled query', () => {
       const session = createBaseSession('val_123', 'session_456', 'manual', null)
-      
+
       expect(session.partialData).toEqual({})
     })
   })
@@ -98,9 +98,9 @@ describe('sessionHelpers', () => {
         updatedAt: '2025-12-13T11:00:00Z',
         completedAt: '2025-12-13T12:00:00Z',
       }
-      
+
       const result = normalizeSessionDates(session)
-      
+
       expect(result.createdAt).toBeInstanceOf(Date)
       expect(result.updatedAt).toBeInstanceOf(Date)
       expect(result.completedAt).toBeInstanceOf(Date)
@@ -114,9 +114,9 @@ describe('sessionHelpers', () => {
         updatedAt: '2025-12-13T11:00:00Z',
         completedAt: undefined,
       }
-      
+
       const result = normalizeSessionDates(session)
-      
+
       expect(result.completedAt).toBeUndefined()
     })
   })

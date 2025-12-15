@@ -24,9 +24,7 @@ export interface ValidationError {
  * @param data - Partial valuation form data to validate
  * @returns Array of validation errors (empty if all valid)
  */
-export function validateBusinessRules(
-  data: Partial<ValuationFormData>
-): ValidationError[] {
+export function validateBusinessRules(data: Partial<ValuationFormData>): ValidationError[] {
   const errors: ValidationError[] = []
 
   // EBITDA <= Revenue validation
@@ -139,9 +137,7 @@ export function validateBusinessRules(
  * @param data - Valuation form data
  * @returns Array of validation errors
  */
-export function validateRequiredFields(
-  data: Partial<ValuationFormData>
-): ValidationError[] {
+export function validateRequiredFields(data: Partial<ValuationFormData>): ValidationError[] {
   const errors: ValidationError[] = []
 
   if (!data.company_name || data.company_name.trim() === '') {

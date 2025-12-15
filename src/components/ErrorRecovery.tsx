@@ -12,7 +12,7 @@ interface ErrorRecoveryProps {
   onRetry?: () => void
   onDismiss?: () => void
   showPartialResults?: boolean
-  partialResults?: any
+  partialResults?: Record<string, unknown>
 }
 
 export const ErrorRecovery: React.FC<ErrorRecoveryProps> = ({

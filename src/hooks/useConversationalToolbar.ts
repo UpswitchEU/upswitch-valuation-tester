@@ -1,9 +1,9 @@
 /**
  * useConversationalToolbar Hook
- * 
+ *
  * Single Responsibility: Consolidate all toolbar handlers for conversational flow.
  * Provides unified interface for toolbar actions (refresh, download, tabs, fullscreen).
- * 
+ *
  * @module hooks/useConversationalToolbar
  */
 
@@ -13,10 +13,10 @@ import UrlGeneratorService from '../services/urlGenerator'
 import { useValuationResultsStore } from '../store/useValuationResultsStore'
 import { generateReportId } from '../utils/reportIdGenerator'
 import {
-    useValuationToolbarDownload,
-    useValuationToolbarFullscreen,
-    useValuationToolbarRefresh,
-    useValuationToolbarTabs,
+  useValuationToolbarDownload,
+  useValuationToolbarFullscreen,
+  useValuationToolbarRefresh,
+  useValuationToolbarTabs,
 } from './valuationToolbar'
 
 export interface UseConversationalToolbarOptions {
@@ -50,7 +50,7 @@ export interface UseConversationalToolbarReturn {
   activeTab: 'source' | 'preview' | 'info'
   isFullScreen: boolean
   isDownloading: boolean
-  
+
   // Toolbar actions
   handleRefresh: () => void
   handleDownload: () => Promise<void>
@@ -61,16 +61,16 @@ export interface UseConversationalToolbarReturn {
 
 /**
  * Consolidated toolbar handlers for conversational flow
- * 
+ *
  * Provides:
  * - Refresh: Resets conversation and navigates to new report
  * - Download: Generates PDF from current valuation
  * - Tabs: Switches between preview/info views
  * - Fullscreen: Opens/closes fullscreen mode
- * 
+ *
  * @param options - Configuration options
  * @returns Toolbar state and handlers
- * 
+ *
  * @example
  * ```typescript
  * const toolbar = useConversationalToolbar({
@@ -80,7 +80,7 @@ export interface UseConversationalToolbarReturn {
  *   state,
  *   result
  * })
- * 
+ *
  * return (
  *   <ValuationToolbar
  *     onRefresh={toolbar.handleRefresh}
@@ -112,7 +112,7 @@ export function useConversationalToolbar({
 
   /**
    * Refresh handler - resets conversation and navigates to new report
-   * 
+   *
    * Actions:
    * 1. Reset restoration state
    * 2. Clear all conversation data
@@ -128,7 +128,7 @@ export function useConversationalToolbar({
     actions.setError(null)
     actions.setRestored(false)
     actions.setInitialized(false)
-    
+
     // Generate new report ID and navigate
     const newReportId = generateReportId()
     RefreshService.navigateTo(UrlGeneratorService.reportById(newReportId))
@@ -137,10 +137,10 @@ export function useConversationalToolbar({
 
   /**
    * Download handler - generates PDF from current valuation
-   * 
+   *
    * Requires:
    * - Valid valuation result with html_report
-   * 
+   *
    * Extracts:
    * - Company name from business profile or result
    * - Valuation amount (mid-point equity value)
@@ -165,7 +165,7 @@ export function useConversationalToolbar({
     activeTab: activeTab as 'preview' | 'source' | 'info',
     isFullScreen,
     isDownloading,
-    
+
     // Toolbar actions
     handleRefresh,
     handleDownload,

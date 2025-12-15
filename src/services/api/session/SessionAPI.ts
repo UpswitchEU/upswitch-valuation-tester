@@ -7,17 +7,20 @@
  * @module services/api/session/SessionAPI
  */
 
-import {
-    CreateValuationSessionRequest,
-    UpdateValuationSessionRequest,
-} from '../../../types/api'
+import { CreateValuationSessionRequest, UpdateValuationSessionRequest } from '../../../types/api'
 import type {
-    CreateValuationSessionResponse,
-    SwitchViewResponse,
-    UpdateValuationSessionResponse,
-    ValuationSessionResponse,
+  CreateValuationSessionResponse,
+  SwitchViewResponse,
+  UpdateValuationSessionResponse,
+  ValuationSessionResponse,
 } from '../../../types/api-responses'
 import { APIError, AuthenticationError } from '../../../types/errors'
+import { convertToApplicationError } from '../../../utils/errors/errorConverter'
+import {
+  isNetworkError,
+  isSessionConflictError,
+  isValidationError,
+} from '../../../utils/errors/errorGuards'
 import { apiLogger } from '../../../utils/logger'
 import { APIRequestConfig, HttpClient } from '../HttpClient'
 
@@ -75,7 +78,7 @@ export class SessionAPI extends HttpClient {
 
   /**
    * Create new valuation session
-   * 
+   *
    * Handles both CreateValuationSessionRequest and ValuationSession types.
    * Maps frontend 'conversational' to backend 'ai-guided' for both currentView and dataSource.
    */
@@ -86,16 +89,19 @@ export class SessionAPI extends HttpClient {
     try {
       // Handle both CreateValuationSessionRequest and ValuationSession types
       const sessionAny = session as any
-      
+
       // Map frontend 'conversational' to backend 'ai-guided'
-      const mappedCurrentView = session.currentView === 'conversational' ? 'ai-guided' : session.currentView
-      
+      const mappedCurrentView =
+        session.currentView === 'conversational' ? 'ai-guided' : session.currentView
+
       // Map dataSource: 'conversational' → 'ai-guided'
       // If dataSource exists, map it; otherwise derive from currentView
-      const mappedDataSource = sessionAny.dataSource === 'conversational' 
-        ? 'ai-guided' 
-        : (sessionAny.dataSource || (session.currentView === 'conversational' ? 'ai-guided' : 'manual'))
-      
+      const mappedDataSource =
+        sessionAny.dataSource === 'conversational'
+          ? 'ai-guided'
+          : sessionAny.dataSource ||
+            (session.currentView === 'conversational' ? 'ai-guided' : 'manual')
+
       const backendSession = {
         // Include sessionId if present (required by backend)
         ...(sessionAny.sessionId && { sessionId: sessionAny.sessionId }),
@@ -155,13 +161,15 @@ export class SessionAPI extends HttpClient {
     try {
       // Map frontend 'conversational' to backend 'ai-guided'
       const updatesAny = updates.updates as any
-      const mappedCurrentView = updates.updates?.currentView === 'conversational' ? 'ai-guided' : updates.updates?.currentView
-      
+      const mappedCurrentView =
+        updates.updates?.currentView === 'conversational'
+          ? 'ai-guided'
+          : updates.updates?.currentView
+
       // Map dataSource: 'conversational' → 'ai-guided' (if present in updates)
-      const mappedDataSource = updatesAny?.dataSource === 'conversational'
-        ? 'ai-guided'
-        : updatesAny?.dataSource
-      
+      const mappedDataSource =
+        updatesAny?.dataSource === 'conversational' ? 'ai-guided' : updatesAny?.dataSource
+
       const backendUpdates = {
         ...updates,
         updates: {
@@ -235,12 +243,7 @@ export class SessionAPI extends HttpClient {
       // FIX: Add null checks to prevent "Cannot read properties of undefined" errors
       if (!response || !response.success) {
         const errorMessage = (response as any)?.error || 'Failed to switch view'
-        throw new APIError(
-          errorMessage,
-          400,
-          undefined,
-          false
-        )
+        throw new APIError(errorMessage, 400, undefined, false)
       }
 
       const sessionData = response.data
@@ -264,28 +267,28 @@ export class SessionAPI extends HttpClient {
         sessionData.currentView === 'ai-guided'
           ? 'conversational'
           : sessionData.currentView === 'conversational'
-          ? 'conversational'
-          : 'manual'
+            ? 'conversational'
+            : 'manual'
 
       // Map response back - previousView is optional and not always returned
       return {
         success: true,
         currentView: currentView as 'manual' | 'conversational',
         previousView: sessionData.previousView
-          ? (sessionData.previousView === 'ai-guided'
-              ? 'conversational'
-              : sessionData.previousView)
+          ? sessionData.previousView === 'ai-guided'
+            ? 'conversational'
+            : sessionData.previousView
           : undefined,
       }
-    } catch (error: any) {
-      // FIX: Handle 429 rate limiting gracefully
-      const axiosError = error as any
-      const status = axiosError?.response?.status || axiosError?.status
-      
-      if (status === 429) {
+    } catch (error) {
+      const appError = convertToApplicationError(error, { reportId, view })
+
+      // Handle rate limiting gracefully (429)
+      if (appError.code === 'RATE_LIMIT_ERROR' || appError.code === 'TOO_MANY_REQUESTS_ERROR') {
         apiLogger.warn('Rate limited on switch view - keeping optimistic update', {
           reportId,
           view,
+          code: appError.code,
         })
         // Return success with requested view - optimistic update already happened
         // Don't throw error, just log it
@@ -294,7 +297,7 @@ export class SessionAPI extends HttpClient {
           currentView: view,
         }
       }
-      
+
       this.handleSessionError(error, 'switch view')
     }
   }
@@ -303,23 +306,53 @@ export class SessionAPI extends HttpClient {
    * Handle session-specific errors
    */
   private handleSessionError(error: unknown, operation: string): never {
-    apiLogger.error(`Session ${operation} failed`, { error })
+    const appError = convertToApplicationError(error, { operation })
 
-    const axiosError = error as any
-    const status = axiosError?.response?.status
-
-    if (status === 404) {
-      throw new APIError('Session not found', status, undefined, true)
+    // Log with specific error type
+    if (isNetworkError(appError)) {
+      apiLogger.error(`Session ${operation} failed - network error`, {
+        error: appError.message,
+        code: appError.code,
+        operation,
+        context: appError.context,
+      })
+    } else if (isSessionConflictError(appError)) {
+      apiLogger.warn(`Session ${operation} failed - conflict`, {
+        error: appError.message,
+        code: appError.code,
+        operation,
+        context: appError.context,
+      })
+    } else if (isValidationError(appError)) {
+      apiLogger.error(`Session ${operation} failed - validation error`, {
+        error: appError.message,
+        code: appError.code,
+        operation,
+        context: appError.context,
+      })
+    } else {
+      apiLogger.error(`Session ${operation} failed`, {
+        error: appError.message,
+        code: appError.code,
+        operation,
+        context: appError.context,
+      })
     }
 
-    if (status === 401 || status === 403) {
+    // Re-throw as appropriate error type
+    if (appError.code === 'NOT_FOUND_ERROR') {
+      throw new APIError('Session not found', 404, undefined, true)
+    }
+
+    if (appError.code === 'AUTH_ERROR' || appError.code === 'PERMISSION_ERROR') {
       throw new AuthenticationError('Authentication required for session operation')
     }
 
-    if (status === 409) {
-      throw new APIError('Session conflict - please refresh and try again', status, undefined, true)
+    if (appError.code === 'SESSION_CONFLICT') {
+      throw new APIError('Session conflict - please refresh and try again', 409, undefined, true)
     }
 
-    throw new APIError(`Failed to ${operation}`, status, undefined, true, { originalError: error })
+    // Re-throw the converted error
+    throw appError
   }
 }

@@ -76,9 +76,7 @@ export const useBusinessTypeMatching = () => {
       for (const [key, variants] of Object.entries(variations)) {
         if (variants.some((v) => queryLower.includes(v))) {
           const variationMatch = businessTypes.find(
-            (bt) =>
-              bt.label.toLowerCase().includes(key) ||
-              bt.value.toLowerCase().includes(key)
+            (bt) => bt.label.toLowerCase().includes(key) || bt.value.toLowerCase().includes(key)
           )
           if (variationMatch) {
             generalLogger.info('Matched business type (variation)', {

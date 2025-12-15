@@ -3,7 +3,7 @@
 import { useRouter } from 'next/navigation'
 import React, { useEffect, useRef, useState } from 'react'
 import { RecentReportsSection } from '../../features/reports'
-import { businessCardService, type BusinessCardData } from '../../services/businessCard'
+import { type BusinessCardData, businessCardService } from '../../services/businessCard'
 import UrlGeneratorService from '../../services/urlGenerator'
 import { useReportsStore } from '../../store/useReportsStore'
 import { ScrollToTop } from '../../utils'
@@ -19,7 +19,7 @@ export const HomePage: React.FC = () => {
   const [businessCardData, setBusinessCardData] = useState<BusinessCardData | null>(null)
   const [businessCardToken, setBusinessCardToken] = useState<string | null>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
-  
+
   // Reports store
   const { reports, loading: reportsLoading, fetchReports, deleteReport } = useReportsStore()
 
@@ -31,28 +31,29 @@ export const HomePage: React.FC = () => {
     const fromMainPlatform = params.get('from') === 'upswitch'
 
     if (token && fromMainPlatform) {
-      generalLogger.info('Business card token detected from main platform', { 
+      generalLogger.info('Business card token detected from main platform', {
         token: token.substring(0, 8) + '...',
       })
-      
+
       // Store token for later use
       setBusinessCardToken(token)
-      
+
       // Fetch business card data to prefill query
-      businessCardService.fetchBusinessCard(token)
-        .then(data => {
+      businessCardService
+        .fetchBusinessCard(token)
+        .then((data) => {
           setBusinessCardData(data)
-          
+
           // Prefill query with company name
           if (data.company_name) {
             setQuery(data.company_name)
-            generalLogger.info('Query prefilled from business card', { 
+            generalLogger.info('Query prefilled from business card', {
               companyName: data.company_name,
             })
           }
         })
-        .catch(error => {
-          generalLogger.error('Failed to fetch business card', { 
+        .catch((error) => {
+          generalLogger.error('Failed to fetch business card', {
             error: error instanceof Error ? error.message : 'Unknown error',
           })
         })
@@ -63,7 +64,7 @@ export const HomePage: React.FC = () => {
       router.push(UrlGeneratorService.reportById(newReportId, { token }))
     }
   }, [router])
-  
+
   // Fetch recent reports on mount
   useEffect(() => {
     fetchReports()
@@ -101,7 +102,7 @@ export const HomePage: React.FC = () => {
         token: businessCardToken || undefined,
       })
 
-      generalLogger.info('Starting new valuation', { 
+      generalLogger.info('Starting new valuation', {
         reportId: newReportId,
         mode,
         hasBusinessCard: !!businessCardToken,
@@ -112,18 +113,18 @@ export const HomePage: React.FC = () => {
       generalLogger.error('Error submitting query', { error })
     }
   }
-  
+
   const handleReportClick = (reportId: string) => {
     generalLogger.info('Opening existing report', { reportId })
     router.push(UrlGeneratorService.reportById(reportId))
   }
-  
+
   const handleReportDelete = async (reportId: string) => {
     try {
       await deleteReport(reportId)
       generalLogger.info('Report deleted successfully', { reportId })
     } catch (error) {
-      generalLogger.error('Failed to delete report', { 
+      generalLogger.error('Failed to delete report', {
         error: error instanceof Error ? error.message : 'Unknown error',
         reportId,
       })
@@ -327,7 +328,7 @@ export const HomePage: React.FC = () => {
             </div>
           </div>
         </section>
-        
+
         {/* Recent Reports Section - Lovable Style */}
         <RecentReportsSection
           reports={reports}

@@ -7,11 +7,11 @@
  * @module services/api/credit/CreditAPI
  */
 
-import { SaveValuationRequest } from '../../../types/api';
-import type { SaveValuationResponse } from '../../../types/api-responses';
-import { APIError, AuthenticationError, CreditError } from '../../../types/errors';
-import { apiLogger } from '../../../utils/logger';
-import { APIRequestConfig, HttpClient } from '../HttpClient';
+import { SaveValuationRequest } from '../../../types/api'
+import type { SaveValuationResponse } from '../../../types/api-responses'
+import { APIError, AuthenticationError, CreditError } from '../../../types/errors'
+import { apiLogger } from '../../../utils/logger'
+import { APIRequestConfig, HttpClient } from '../HttpClient'
 
 export class CreditAPI extends HttpClient {
   /**
@@ -37,9 +37,7 @@ export class CreditAPI extends HttpClient {
   /**
    * Get user's plan and credit information
    */
-  async getUserPlan(
-    options?: APIRequestConfig
-  ): Promise<{
+  async getUserPlan(options?: APIRequestConfig): Promise<{
     id: string
     user_id: string
     plan_type: 'free' | 'premium'
@@ -118,6 +116,8 @@ export class CreditAPI extends HttpClient {
     }
 
     const statusCode = axiosError?.response?.status
-    throw new APIError(`Failed to ${operation}`, statusCode, undefined, true, { originalError: error })
+    throw new APIError(`Failed to ${operation}`, statusCode, undefined, true, {
+      originalError: error,
+    })
   }
 }

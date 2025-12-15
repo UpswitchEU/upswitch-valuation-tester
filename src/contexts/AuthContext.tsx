@@ -184,13 +184,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   /**
    * Check for existing session (simplified for subdomain integration)
-   * 
+   *
    * SILENT BY DEFAULT: This function is called optimistically to check if
    * there's an existing auth session. 401/404 responses are EXPECTED for guest
    * users and should not be treated as errors.
    */
   const checkSession = useCallback(async () => {
-
     try {
       const response = await fetch(`${API_URL}/api/auth/me`, {
         method: 'GET',
@@ -268,7 +267,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   /**
    * Initialize authentication flow
    * Checks for token in URL or existing session
-   * 
+   *
    * GUEST-FIRST APPROACH:
    * - Only check auth if there's a token in URL (user coming from upswitch.biz)
    * - Otherwise, proceed directly as guest (no unnecessary 401 errors)
@@ -312,13 +311,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       // 2. This is the first load
       // This avoids unnecessary 401 errors for established guest users
       const existingGuestSession = guestSessionService.getCurrentSessionId()
-      
+
       if (!existingGuestSession) {
         // No guest session yet - check if there's an auth session (silent check)
         authLogger.debug('No guest session - checking for existing auth cookie')
         try {
           await checkSession()
-          
+
           if (user) {
             authLogger.info('Existing auth session found via cookie')
             setIsLoading(false)
@@ -330,7 +329,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
       } else {
         authLogger.info('Existing guest session found - skipping auth check', {
-          guestSessionId: existingGuestSession.substring(0, 15) + '...'
+          guestSessionId: existingGuestSession.substring(0, 15) + '...',
         })
       }
 

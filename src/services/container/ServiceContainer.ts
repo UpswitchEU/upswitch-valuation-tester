@@ -54,12 +54,10 @@ export class ServiceContainer {
     // this.register('ILogger', new Logger())
     // this.register('ICacheService', new CacheService())
     // this.register('IAnalyticsService', new AnalyticsService()) // Not implemented yet
-
     // Business services - depend on infrastructure
     // const logger = this.resolve<ILogger>('ILogger')
     // const cache = this.resolve<ICacheService>('ICacheService')
     // const analytics = this.resolve<IAnalyticsService>('IAnalyticsService') // Not implemented yet
-
     // this.register('IValuationService', new ValuationService(logger, cache))
     // this.register('ISessionService', new SessionService(logger, cache, null as any)) // TODO: Add analytics when implemented
     // this.register('ICreditService', new CreditService(logger))

@@ -8,12 +8,12 @@
 import { usePathname } from 'next/navigation'
 import { useCallback, useEffect } from 'react'
 import {
-    analyticsConfig,
-    trackError,
-    trackEvent,
-    trackPerformance,
-    trackValuationJourney,
-    ValuationEvents,
+  analyticsConfig,
+  trackError,
+  trackEvent,
+  trackPerformance,
+  trackValuationJourney,
+  ValuationEvents,
 } from '../config/analytics'
 
 export const useAnalytics = () => {

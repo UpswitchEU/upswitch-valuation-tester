@@ -5,6 +5,13 @@
  */
 
 export {
-    ChatDataCollector, DataCollectorBase, FileDataCollector, FormDataCollector, SuggestionDataCollector, chatCollector, fileCollector, formCollector, suggestionCollector
-} from './DataCollectorBase';
-
+  ChatDataCollector,
+  chatCollector,
+  DataCollectorBase,
+  FileDataCollector,
+  FormDataCollector,
+  fileCollector,
+  formCollector,
+  SuggestionDataCollector,
+  suggestionCollector,
+} from './DataCollectorBase'

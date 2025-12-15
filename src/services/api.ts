@@ -1,18 +1,18 @@
 import axios, { AxiosInstance } from 'axios'
 import type {
-    BusinessTypeAnalysis,
-    CompanyLookupResult,
-    ConversationContext,
-    ConversationStartRequest,
-    ConversationStartResponse,
-    ConversationStepRequest,
-    ConversationStepResponse,
-    MethodologyRecommendation,
-    OwnerProfileRequest,
-    OwnerProfileResponse,
-    QuickValuationRequest,
-    ValuationRequest,
-    ValuationResponse
+  BusinessTypeAnalysis,
+  CompanyLookupResult,
+  ConversationContext,
+  ConversationStartRequest,
+  ConversationStartResponse,
+  ConversationStepRequest,
+  ConversationStepResponse,
+  MethodologyRecommendation,
+  OwnerProfileRequest,
+  OwnerProfileResponse,
+  QuickValuationRequest,
+  ValuationRequest,
+  ValuationResponse,
 } from '../types/valuation'
 import { apiLogger } from '../utils/logger'
 
@@ -70,12 +70,12 @@ class ValuationAPI {
 
   /**
    * Lookup company by name using registry service
-   * 
+   *
    * This uses the registry service to search for companies and optionally
    * fetch financial data. Connects to Node.js backend which proxies to Python registry.
-   * 
+   *
    * KBO (Belgian Company Registry) check is performed automatically for BE companies.
-   * 
+   *
    * @param name - Company name to lookup
    * @param country - Country code (default: 'BE' for KBO)
    * @returns CompanyLookupResult with company information
@@ -84,10 +84,10 @@ class ValuationAPI {
     try {
       // Import registry service dynamically to avoid circular dependencies
       const { registryService } = await import('./registry/registryService')
-      
+
       // Search for companies using registry service (KBO for Belgium)
       const searchResponse = await registryService.searchCompanies(name, country, 1)
-      
+
       if (!searchResponse.success || searchResponse.results.length === 0) {
         // Return basic result even if not found
         return {
@@ -96,10 +96,10 @@ class ValuationAPI {
           country,
         }
       }
-      
+
       // Get best match
       const bestMatch = searchResponse.results[0]
-      
+
       // Optionally fetch financial data if company ID is available
       let financialData = null
       if (bestMatch.company_id && bestMatch.company_id.length > 3) {
@@ -113,10 +113,10 @@ class ValuationAPI {
           // Continue without financial data
         }
       }
-      
+
       // Map registry data to CompanyLookupResult format
       const latestFinancials = financialData?.filing_history?.[0]
-      
+
       return {
         name: bestMatch.company_name,
         industry: financialData?.industry_description || bestMatch.legal_form || '',
@@ -133,7 +133,7 @@ class ValuationAPI {
         name,
         country,
       })
-      
+
       // Return basic result on error
       return {
         name,

@@ -1,35 +1,35 @@
 /**
  * Application Errors Tests
- * 
+ *
  * Comprehensive test coverage for custom error classes.
- * 
+ *
  * @module utils/__tests__/ApplicationErrors.test
  */
 
 import { describe, expect, it } from 'vitest'
 import {
-    ApplicationError,
-    CalculationError,
-    DataQualityError,
-    DatabaseError,
-    IntegrationError,
-    NetworkError,
-    NotFoundError,
-    RateLimitError,
-    RestorationError,
-    SessionConflictError,
-    TimeoutError,
-    UnauthorizedError,
-    ValidationError,
-    createErrorFromStatus,
-    isRetryableError,
+  ApplicationError,
+  CalculationError,
+  createErrorFromStatus,
+  DatabaseError,
+  DataQualityError,
+  IntegrationError,
+  isRetryableError,
+  NetworkError,
+  NotFoundError,
+  RateLimitError,
+  RestorationError,
+  SessionConflictError,
+  TimeoutError,
+  UnauthorizedError,
+  ValidationError,
 } from '../errors/ApplicationErrors'
 
 describe('ApplicationErrors', () => {
   describe('ApplicationError', () => {
     it('should create error with all properties', () => {
       const error = new ApplicationError('Test error', 'TEST_CODE', { foo: 'bar' })
-      
+
       expect(error).toBeInstanceOf(Error)
       expect(error.message).toBe('Test error')
       expect(error.code).toBe('TEST_CODE')
@@ -41,7 +41,7 @@ describe('ApplicationErrors', () => {
     it('should serialize to JSON', () => {
       const error = new ApplicationError('Test', 'TEST', { id: '123' })
       const json = error.toJSON()
-      
+
       expect(json.name).toBe('ApplicationError')
       expect(json.message).toBe('Test')
       expect(json.code).toBe('TEST')
@@ -60,7 +60,7 @@ describe('ApplicationErrors', () => {
   describe('ValidationError', () => {
     it('should extend ApplicationError', () => {
       const error = new ValidationError('Invalid email')
-      
+
       expect(error).toBeInstanceOf(ApplicationError)
       expect(error).toBeInstanceOf(ValidationError)
       expect(error.code).toBe('VALIDATION_ERROR')
@@ -75,7 +75,7 @@ describe('ApplicationErrors', () => {
   describe('SessionConflictError', () => {
     it('should include reportId', () => {
       const error = new SessionConflictError('Session exists', 'val_123')
-      
+
       expect(error.reportId).toBe('val_123')
       expect(error.code).toBe('SESSION_CONFLICT')
       expect(error.context?.reportId).toBe('val_123')
@@ -83,7 +83,7 @@ describe('ApplicationErrors', () => {
 
     it('should merge context with reportId', () => {
       const error = new SessionConflictError('Session exists', 'val_123', { user: 'test' })
-      
+
       expect(error.context).toEqual({
         reportId: 'val_123',
         user: 'test',
@@ -107,7 +107,7 @@ describe('ApplicationErrors', () => {
   describe('RestorationError', () => {
     it('should include sessionId', () => {
       const error = new RestorationError('Restoration failed', 'val_123')
-      
+
       expect(error.sessionId).toBe('val_123')
       expect(error.code).toBe('RESTORATION_ERROR')
       expect(error.context?.sessionId).toBe('val_123')
@@ -130,7 +130,7 @@ describe('ApplicationErrors', () => {
   describe('NotFoundError', () => {
     it('should format message correctly', () => {
       const error = new NotFoundError('Session', 'val_123')
-      
+
       expect(error.message).toBe('Session not found: val_123')
       expect(error.resourceType).toBe('Session')
       expect(error.resourceId).toBe('val_123')
@@ -139,7 +139,7 @@ describe('ApplicationErrors', () => {
 
     it('should include resource info in context', () => {
       const error = new NotFoundError('Report', 'report_456')
-      
+
       expect(error.context?.resourceType).toBe('Report')
       expect(error.context?.resourceId).toBe('report_456')
     })
@@ -156,7 +156,7 @@ describe('ApplicationErrors', () => {
   describe('TimeoutError', () => {
     it('should include timeout duration', () => {
       const error = new TimeoutError('Request timed out', 30000)
-      
+
       expect(error.timeout_ms).toBe(30000)
       expect(error.context?.timeout_ms).toBe(30000)
       expect(error.code).toBe('TIMEOUT_ERROR')
@@ -182,14 +182,14 @@ describe('ApplicationErrors', () => {
   describe('createErrorFromStatus', () => {
     it('should create ValidationError for 400', () => {
       const error = createErrorFromStatus(400, 'Invalid input')
-      
+
       expect(error).toBeInstanceOf(ValidationError)
       expect(error.message).toBe('Invalid input')
     })
 
     it('should create UnauthorizedError for 401', () => {
       const error = createErrorFromStatus(401, 'Auth required')
-      
+
       expect(error).toBeInstanceOf(UnauthorizedError)
     })
 
@@ -198,7 +198,7 @@ describe('ApplicationErrors', () => {
         resourceType: 'Session',
         resourceId: 'val_123',
       })
-      
+
       expect(error).toBeInstanceOf(NotFoundError)
       expect(error.resourceType).toBe('Session')
       expect(error.resourceId).toBe('val_123')
@@ -208,20 +208,20 @@ describe('ApplicationErrors', () => {
       const error = createErrorFromStatus(409, 'Conflict', {
         reportId: 'val_123',
       })
-      
+
       expect(error).toBeInstanceOf(SessionConflictError)
       expect(error.reportId).toBe('val_123')
     })
 
     it('should create RateLimitError for 429', () => {
       const error = createErrorFromStatus(429, 'Too many requests')
-      
+
       expect(error).toBeInstanceOf(RateLimitError)
     })
 
     it('should create CalculationError for 500', () => {
       const error = createErrorFromStatus(500, 'Server error')
-      
+
       expect(error).toBeInstanceOf(CalculationError)
     })
 
@@ -229,14 +229,14 @@ describe('ApplicationErrors', () => {
       const error = createErrorFromStatus(502, 'Gateway error', {
         service: 'KBO',
       })
-      
+
       expect(error).toBeInstanceOf(IntegrationError)
       expect(error.service).toBe('KBO')
     })
 
     it('should create DatabaseError for 503', () => {
       const error = createErrorFromStatus(503, 'Service unavailable')
-      
+
       expect(error).toBeInstanceOf(DatabaseError)
     })
 
@@ -244,14 +244,14 @@ describe('ApplicationErrors', () => {
       const error = createErrorFromStatus(504, 'Gateway timeout', {
         timeout_ms: 30000,
       })
-      
+
       expect(error).toBeInstanceOf(TimeoutError)
       expect(error.timeout_ms).toBe(30000)
     })
 
     it('should create ApplicationError for unknown status', () => {
       const error = createErrorFromStatus(418, "I'm a teapot")
-      
+
       expect(error).toBeInstanceOf(ApplicationError)
       expect(error.code).toBe('UNKNOWN_ERROR')
     })
@@ -259,7 +259,7 @@ describe('ApplicationErrors', () => {
     it('should preserve context in all error types', () => {
       const context = { userId: '123', attempt: 2 }
       const error = createErrorFromStatus(400, 'Test', context)
-      
+
       expect(error.context).toMatchObject(context)
     })
   })
@@ -269,12 +269,12 @@ describe('ApplicationErrors', () => {
       const validation = new ValidationError('test')
       const network = new NetworkError()
       const conflict = new SessionConflictError('test', 'val_123')
-      
+
       // All should be ApplicationError
       expect(validation).toBeInstanceOf(ApplicationError)
       expect(network).toBeInstanceOf(ApplicationError)
       expect(conflict).toBeInstanceOf(ApplicationError)
-      
+
       // But maintain specific types
       expect(validation).toBeInstanceOf(ValidationError)
       expect(network).toBeInstanceOf(NetworkError)
@@ -300,36 +300,36 @@ describe('ApplicationErrors', () => {
 
 /**
  * Application Errors Tests
- * 
+ *
  * Comprehensive test coverage for custom error classes.
- * 
+ *
  * @module utils/__tests__/ApplicationErrors.test
  */
 
 import { describe, expect, it } from 'vitest'
 import {
-    ApplicationError,
-    CalculationError,
-    DataQualityError,
-    DatabaseError,
-    IntegrationError,
-    NetworkError,
-    NotFoundError,
-    RateLimitError,
-    RestorationError,
-    SessionConflictError,
-    TimeoutError,
-    UnauthorizedError,
-    ValidationError,
-    createErrorFromStatus,
-    isRetryableError,
+  ApplicationError,
+  CalculationError,
+  createErrorFromStatus,
+  DatabaseError,
+  DataQualityError,
+  IntegrationError,
+  isRetryableError,
+  NetworkError,
+  NotFoundError,
+  RateLimitError,
+  RestorationError,
+  SessionConflictError,
+  TimeoutError,
+  UnauthorizedError,
+  ValidationError,
 } from '../errors/ApplicationErrors'
 
 describe('ApplicationErrors', () => {
   describe('ApplicationError', () => {
     it('should create error with all properties', () => {
       const error = new ApplicationError('Test error', 'TEST_CODE', { foo: 'bar' })
-      
+
       expect(error).toBeInstanceOf(Error)
       expect(error.message).toBe('Test error')
       expect(error.code).toBe('TEST_CODE')
@@ -341,7 +341,7 @@ describe('ApplicationErrors', () => {
     it('should serialize to JSON', () => {
       const error = new ApplicationError('Test', 'TEST', { id: '123' })
       const json = error.toJSON()
-      
+
       expect(json.name).toBe('ApplicationError')
       expect(json.message).toBe('Test')
       expect(json.code).toBe('TEST')
@@ -360,7 +360,7 @@ describe('ApplicationErrors', () => {
   describe('ValidationError', () => {
     it('should extend ApplicationError', () => {
       const error = new ValidationError('Invalid email')
-      
+
       expect(error).toBeInstanceOf(ApplicationError)
       expect(error).toBeInstanceOf(ValidationError)
       expect(error.code).toBe('VALIDATION_ERROR')
@@ -375,7 +375,7 @@ describe('ApplicationErrors', () => {
   describe('SessionConflictError', () => {
     it('should include reportId', () => {
       const error = new SessionConflictError('Session exists', 'val_123')
-      
+
       expect(error.reportId).toBe('val_123')
       expect(error.code).toBe('SESSION_CONFLICT')
       expect(error.context?.reportId).toBe('val_123')
@@ -383,7 +383,7 @@ describe('ApplicationErrors', () => {
 
     it('should merge context with reportId', () => {
       const error = new SessionConflictError('Session exists', 'val_123', { user: 'test' })
-      
+
       expect(error.context).toEqual({
         reportId: 'val_123',
         user: 'test',
@@ -407,7 +407,7 @@ describe('ApplicationErrors', () => {
   describe('RestorationError', () => {
     it('should include sessionId', () => {
       const error = new RestorationError('Restoration failed', 'val_123')
-      
+
       expect(error.sessionId).toBe('val_123')
       expect(error.code).toBe('RESTORATION_ERROR')
       expect(error.context?.sessionId).toBe('val_123')
@@ -430,7 +430,7 @@ describe('ApplicationErrors', () => {
   describe('NotFoundError', () => {
     it('should format message correctly', () => {
       const error = new NotFoundError('Session', 'val_123')
-      
+
       expect(error.message).toBe('Session not found: val_123')
       expect(error.resourceType).toBe('Session')
       expect(error.resourceId).toBe('val_123')
@@ -439,7 +439,7 @@ describe('ApplicationErrors', () => {
 
     it('should include resource info in context', () => {
       const error = new NotFoundError('Report', 'report_456')
-      
+
       expect(error.context?.resourceType).toBe('Report')
       expect(error.context?.resourceId).toBe('report_456')
     })
@@ -456,7 +456,7 @@ describe('ApplicationErrors', () => {
   describe('TimeoutError', () => {
     it('should include timeout duration', () => {
       const error = new TimeoutError('Request timed out', 30000)
-      
+
       expect(error.timeout_ms).toBe(30000)
       expect(error.context?.timeout_ms).toBe(30000)
       expect(error.code).toBe('TIMEOUT_ERROR')
@@ -482,14 +482,14 @@ describe('ApplicationErrors', () => {
   describe('createErrorFromStatus', () => {
     it('should create ValidationError for 400', () => {
       const error = createErrorFromStatus(400, 'Invalid input')
-      
+
       expect(error).toBeInstanceOf(ValidationError)
       expect(error.message).toBe('Invalid input')
     })
 
     it('should create UnauthorizedError for 401', () => {
       const error = createErrorFromStatus(401, 'Auth required')
-      
+
       expect(error).toBeInstanceOf(UnauthorizedError)
     })
 
@@ -498,7 +498,7 @@ describe('ApplicationErrors', () => {
         resourceType: 'Session',
         resourceId: 'val_123',
       })
-      
+
       expect(error).toBeInstanceOf(NotFoundError)
       expect(error.resourceType).toBe('Session')
       expect(error.resourceId).toBe('val_123')
@@ -508,20 +508,20 @@ describe('ApplicationErrors', () => {
       const error = createErrorFromStatus(409, 'Conflict', {
         reportId: 'val_123',
       })
-      
+
       expect(error).toBeInstanceOf(SessionConflictError)
       expect(error.reportId).toBe('val_123')
     })
 
     it('should create RateLimitError for 429', () => {
       const error = createErrorFromStatus(429, 'Too many requests')
-      
+
       expect(error).toBeInstanceOf(RateLimitError)
     })
 
     it('should create CalculationError for 500', () => {
       const error = createErrorFromStatus(500, 'Server error')
-      
+
       expect(error).toBeInstanceOf(CalculationError)
     })
 
@@ -529,14 +529,14 @@ describe('ApplicationErrors', () => {
       const error = createErrorFromStatus(502, 'Gateway error', {
         service: 'KBO',
       })
-      
+
       expect(error).toBeInstanceOf(IntegrationError)
       expect(error.service).toBe('KBO')
     })
 
     it('should create DatabaseError for 503', () => {
       const error = createErrorFromStatus(503, 'Service unavailable')
-      
+
       expect(error).toBeInstanceOf(DatabaseError)
     })
 
@@ -544,14 +544,14 @@ describe('ApplicationErrors', () => {
       const error = createErrorFromStatus(504, 'Gateway timeout', {
         timeout_ms: 30000,
       })
-      
+
       expect(error).toBeInstanceOf(TimeoutError)
       expect(error.timeout_ms).toBe(30000)
     })
 
     it('should create ApplicationError for unknown status', () => {
       const error = createErrorFromStatus(418, "I'm a teapot")
-      
+
       expect(error).toBeInstanceOf(ApplicationError)
       expect(error.code).toBe('UNKNOWN_ERROR')
     })
@@ -559,7 +559,7 @@ describe('ApplicationErrors', () => {
     it('should preserve context in all error types', () => {
       const context = { userId: '123', attempt: 2 }
       const error = createErrorFromStatus(400, 'Test', context)
-      
+
       expect(error.context).toMatchObject(context)
     })
   })
@@ -569,12 +569,12 @@ describe('ApplicationErrors', () => {
       const validation = new ValidationError('test')
       const network = new NetworkError()
       const conflict = new SessionConflictError('test', 'val_123')
-      
+
       // All should be ApplicationError
       expect(validation).toBeInstanceOf(ApplicationError)
       expect(network).toBeInstanceOf(ApplicationError)
       expect(conflict).toBeInstanceOf(ApplicationError)
-      
+
       // But maintain specific types
       expect(validation).toBeInstanceOf(ValidationError)
       expect(network).toBeInstanceOf(NetworkError)
@@ -597,5 +597,3 @@ describe('ApplicationErrors', () => {
     })
   })
 })
-
-

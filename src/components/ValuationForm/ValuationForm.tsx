@@ -44,23 +44,24 @@ export interface ValuationFormProps {
  *
  * Main form for entering business valuation data.
  * Orchestrates all form sections and manages form-level state.
- * 
+ *
  * Enhanced for M&A workflow:
  * - Load specific version data for editing
  * - Show regeneration mode when editing completed reports
  * - Track changes for version diff
  */
-export const ValuationForm: React.FC<ValuationFormProps> = ({ 
+export const ValuationForm: React.FC<ValuationFormProps> = ({
   initialVersion,
   isRegenerationMode = false,
 }) => {
-  const { formData, updateFormData, prefillFromBusinessCard, setCollectedData } = useValuationFormStore()
+  const { formData, updateFormData, prefillFromBusinessCard, setCollectedData } =
+    useValuationFormStore()
   const { session, updateSessionData, getSessionData } = useValuationSessionStore()
   const { error, clearError } = useValuationApiStore()
   const { businessTypes } = useBusinessTypes()
   const { businessCard, isAuthenticated } = useAuth()
   const { getVersion } = useVersionHistoryStore()
-  
+
   // Load version data if initialVersion is provided (M&A workflow)
   useEffect(() => {
     if (initialVersion && session?.reportId) {
@@ -109,14 +110,15 @@ export const ValuationForm: React.FC<ValuationFormProps> = ({
       }
 
       // 2. Match on keywords
-      const keywordMatch = businessTypes.find((bt) =>
-        bt.keywords &&
-        bt.keywords.some(
-          (keyword: string) =>
-            keyword.toLowerCase() === queryLower ||
-            queryLower.includes(keyword.toLowerCase()) ||
-            keyword.toLowerCase().includes(queryLower)
-        )
+      const keywordMatch = businessTypes.find(
+        (bt) =>
+          bt.keywords &&
+          bt.keywords.some(
+            (keyword: string) =>
+              keyword.toLowerCase() === queryLower ||
+              queryLower.includes(keyword.toLowerCase()) ||
+              keyword.toLowerCase().includes(queryLower)
+          )
       )
       if (keywordMatch) {
         generalLogger.info('Matched business type (keyword)', {
@@ -130,8 +132,7 @@ export const ValuationForm: React.FC<ValuationFormProps> = ({
       // 3. Partial match on title (contains)
       const partialMatch = businessTypes.find(
         (bt) =>
-          bt.title.toLowerCase().includes(queryLower) ||
-          queryLower.includes(bt.title.toLowerCase())
+          bt.title.toLowerCase().includes(queryLower) || queryLower.includes(bt.title.toLowerCase())
       )
       if (partialMatch) {
         generalLogger.info('Matched business type (partial)', {
@@ -319,14 +320,16 @@ export const ValuationForm: React.FC<ValuationFormProps> = ({
           updateFormData({
             business_type_id: matchingType.id,
             business_model: matchingType.id,
-            industry: matchingType.industry || matchingType.industryMapping || businessCard.industry,
+            industry:
+              matchingType.industry || matchingType.industryMapping || businessCard.industry,
             subIndustry: matchingType.category,
           })
         }
       } else if (businessCard.industry) {
         // Fallback: Try to find matching business type by industry
         const matchingType = businessTypes.find(
-          (bt) => bt.industry === businessCard.industry || bt.industryMapping === businessCard.industry
+          (bt) =>
+            bt.industry === businessCard.industry || bt.industryMapping === businessCard.industry
         )
 
         if (matchingType) {
@@ -361,49 +364,13 @@ export const ValuationForm: React.FC<ValuationFormProps> = ({
   const { loading: businessTypesLoading, error: businessTypesError } = useBusinessTypes()
 
   return (
-    <form onSubmit={(e) => { e.preventDefault(); handleSubmit(e); }} className="space-y-12 @container">
-      <BasicInformationSection
-        formData={formData}
-        updateFormData={updateFormData}
-        businessTypes={businessTypes}
-        businessTypesLoading={businessTypesLoading}
-        businessTypesError={businessTypesError}
-      />
-
-      <OwnershipStructureSection
-        formData={formData}
-        updateFormData={updateFormData}
-        employeeCountError={employeeCountError}
-        setEmployeeCountError={setEmployeeCountError}
-      />
-
-      <FinancialDataSection formData={formData} updateFormData={updateFormData} />
-
-      <HistoricalDataSection
-        historicalInputs={historicalInputs}
-        setHistoricalInputs={setHistoricalInputs}
-        foundingYear={formData.founding_year}
-      />
-
-      <FormSubmitSection
-        isSubmitting={isSubmitting}
-        error={error}
-        clearError={clearError}
-        formData={formData}
-        isRegenerationMode={isRegenerationMode}
-      />
-    </form>
-  )
-}
-
-  // Use form submission hook
-  const { handleSubmit, isSubmitting } = useValuationFormSubmission(setEmployeeCountError)
-
-  // Get business types loading/error state
-  const { loading: businessTypesLoading, error: businessTypesError } = useBusinessTypes()
-
-  return (
-    <form onSubmit={(e) => { e.preventDefault(); handleSubmit(e); }} className="space-y-12 @container">
+    <form
+      onSubmit={(e) => {
+        e.preventDefault()
+        handleSubmit(e)
+      }}
+      className="space-y-12 @container"
+    >
       <BasicInformationSection
         formData={formData}
         updateFormData={updateFormData}

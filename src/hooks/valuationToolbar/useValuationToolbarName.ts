@@ -96,9 +96,9 @@ export const useValuationToolbarName = (
           } as any)
           generalLogger.debug('Valuation name persisted to backend', { reportId: actualReportId })
         } catch (error) {
-          generalLogger.warn('Failed to persist valuation name to backend', { 
+          generalLogger.warn('Failed to persist valuation name to backend', {
             error: error instanceof Error ? error.message : 'Unknown error',
-            reportId: actualReportId 
+            reportId: actualReportId,
           })
           // Don't throw - name is already updated in UI
         }
@@ -136,4 +136,3 @@ export const useValuationToolbarName = (
     handleKeyDown,
   }
 }
-

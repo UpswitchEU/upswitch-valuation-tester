@@ -1,11 +1,11 @@
 /**
  * Session Audit Trail
- * 
+ *
  * Single Responsibility: Immutable audit logging for all session operations.
  * Provides complete audit trail for compliance and debugging.
- * 
+ *
  * Framework requirement: Lines 1533-1551 (Audit Trail & Transparency)
- * 
+ *
  * @module utils/sessionAuditTrail
  */
 
@@ -50,24 +50,24 @@ export interface SessionAuditEntry {
 
 /**
  * Immutable Audit Trail
- * 
+ *
  * Stores all session operations for:
  * - Compliance/regulatory requirements
  * - Debugging and troubleshooting
  * - Performance analysis
  * - Security audits
- * 
+ *
  * Features:
  * - Immutable entries (cannot be modified after creation)
  * - Automatic ID generation
  * - Timestamp capture
  * - Searchable by reportId, operation, time range
  * - Export for external audit systems
- * 
+ *
  * @example
  * ```typescript
  * const auditTrail = new SessionAuditTrail()
- * 
+ *
  * // Log session creation
  * auditTrail.log({
  *   operation: 'CREATE',
@@ -77,7 +77,7 @@ export interface SessionAuditEntry {
  *   correlationId: 'session-create-a7f3e2c1-1765751234',
  *   metadata: { view: 'manual' }
  * })
- * 
+ *
  * // Query audit trail
  * const entries = auditTrail.getByReportId('val_123')
  * ```
@@ -88,15 +88,13 @@ export class SessionAuditTrail {
 
   /**
    * Log audit entry (immutable)
-   * 
+   *
    * Once logged, entries cannot be modified (immutability requirement).
-   * 
+   *
    * @param entry - Audit entry data (id and timestamp auto-generated)
    * @returns Generated audit entry
    */
-  log(
-    entry: Omit<SessionAuditEntry, 'id' | 'timestamp'>
-  ): SessionAuditEntry {
+  log(entry: Omit<SessionAuditEntry, 'id' | 'timestamp'>): SessionAuditEntry {
     const auditEntry: SessionAuditEntry = {
       id: this.generateAuditId(),
       timestamp: new Date(),
@@ -144,7 +142,7 @@ export class SessionAuditTrail {
 
   /**
    * Get all audit entries
-   * 
+   *
    * @returns Array of all entries (cloned to prevent modification)
    */
   getAll(): SessionAuditEntry[] {
@@ -153,7 +151,7 @@ export class SessionAuditTrail {
 
   /**
    * Get entries by report ID
-   * 
+   *
    * @param reportId - Report identifier
    * @returns Array of matching entries
    */
@@ -163,7 +161,7 @@ export class SessionAuditTrail {
 
   /**
    * Get entries by operation type
-   * 
+   *
    * @param operation - Operation type
    * @returns Array of matching entries
    */
@@ -173,7 +171,7 @@ export class SessionAuditTrail {
 
   /**
    * Get entries by correlation ID
-   * 
+   *
    * @param correlationId - Correlation ID
    * @returns Array of matching entries
    */
@@ -183,20 +181,18 @@ export class SessionAuditTrail {
 
   /**
    * Get entries in time range
-   * 
+   *
    * @param start - Start date
    * @param end - End date
    * @returns Array of entries in range
    */
   getByTimeRange(start: Date, end: Date): SessionAuditEntry[] {
-    return this.entries.filter(
-      (entry) => entry.timestamp >= start && entry.timestamp <= end
-    )
+    return this.entries.filter((entry) => entry.timestamp >= start && entry.timestamp <= end)
   }
 
   /**
    * Get failed operations only
-   * 
+   *
    * @returns Array of failed entries
    */
   getFailures(): SessionAuditEntry[] {
@@ -205,7 +201,7 @@ export class SessionAuditTrail {
 
   /**
    * Get performance statistics
-   * 
+   *
    * @param operation - Optional operation to filter by
    * @returns Statistics object
    */
@@ -249,7 +245,7 @@ export class SessionAuditTrail {
 
   /**
    * Export audit trail for external systems
-   * 
+   *
    * @param format - Export format
    * @returns Serialized audit trail
    */
@@ -290,7 +286,7 @@ export class SessionAuditTrail {
 
   /**
    * Clear audit trail
-   * 
+   *
    * Use with caution - audit trails should be preserved.
    */
   clear(): void {
@@ -305,12 +301,12 @@ export const globalAuditTrail = new SessionAuditTrail()
 
 /**
  * Log session operation to audit trail
- * 
+ *
  * Convenience function for one-off audit logging.
- * 
+ *
  * @param entry - Audit entry data
  * @returns Generated audit entry
- * 
+ *
  * @example
  * ```typescript
  * logSessionOperation({
@@ -327,4 +323,3 @@ export function logSessionOperation(
 ): SessionAuditEntry {
   return globalAuditTrail.log(entry)
 }
-

@@ -179,7 +179,9 @@ export class ReportAPI extends HttpClient {
       })
 
       const statusCode = axiosError?.response?.status
-      throw new APIError('Failed to download PDF. Please try again.', statusCode, undefined, true, { originalError: error })
+      throw new APIError('Failed to download PDF. Please try again.', statusCode, undefined, true, {
+        originalError: error,
+      })
     } finally {
       // Cleanup
       this.activeRequests.delete(correlationId)

@@ -11,7 +11,7 @@ import type {
   CollectedData,
   ValuationPreviewData,
 } from '../../components/StreamingChat.types'
-import { StreamEventHandler, ModelPerformanceMetrics } from '../../services/chat/StreamEventHandler'
+import { ModelPerformanceMetrics, StreamEventHandler } from '../../services/chat/StreamEventHandler'
 import {
   StreamingManager,
   type StreamingManagerCallbacks,

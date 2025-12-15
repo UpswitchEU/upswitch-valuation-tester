@@ -1,17 +1,17 @@
 /**
  * Error Detection Utilities Tests
- * 
+ *
  * @module utils/__tests__/errorDetection.test
  */
 
 import { describe, expect, it } from 'vitest'
 import {
-    extractErrorMessage,
-    extractStatusCode,
-    is401Unauthorized,
-    is404NotFound,
-    is409Conflict,
-    is429RateLimit,
+  extractErrorMessage,
+  extractStatusCode,
+  is401Unauthorized,
+  is404NotFound,
+  is409Conflict,
+  is429RateLimit,
 } from '../errorDetection'
 
 describe('errorDetection', () => {

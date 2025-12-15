@@ -34,9 +34,7 @@ export class RefreshService {
       return true
     }
 
-    const confirmed = window.confirm(
-      'You have unsaved changes. Are you sure you want to refresh?'
-    )
+    const confirmed = window.confirm('You have unsaved changes. Are you sure you want to refresh?')
 
     if (confirmed) {
       generalLogger.info('Page refresh confirmed by user')

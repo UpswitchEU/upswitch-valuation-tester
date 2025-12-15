@@ -32,10 +32,7 @@ export const FormSubmitSection: React.FC<FormSubmitSectionProps> = ({
   isRegenerationMode = false,
 }) => {
   const isFormValid =
-    formData.revenue &&
-    formData.ebitda &&
-    formData.industry &&
-    formData.country_code
+    formData.revenue && formData.ebitda && formData.industry && formData.country_code
 
   return (
     <>
@@ -106,8 +103,5 @@ export const FormSubmitSection: React.FC<FormSubmitSectionProps> = ({
         </div>
       )}
     </>
-  )
-}
-
   )
 }

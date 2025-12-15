@@ -1,9 +1,9 @@
 /**
  * Session Validation Utilities
- * 
+ *
  * Single Responsibility: Validate session data integrity
  * Prevents crashes from corrupted or incomplete session data
- * 
+ *
  * @module utils/sessionValidation
  */
 
@@ -15,16 +15,16 @@ const validationLogger = createContextLogger('SessionValidation')
 
 /**
  * Validate session data structure and required fields
- * 
+ *
  * Ensures loaded session has:
  * - Required IDs (reportId, sessionId)
  * - Valid currentView
  * - Initialized data objects
  * - Valid timestamps
- * 
+ *
  * @param session - Session to validate
  * @throws ValidationError if session data is invalid
- * 
+ *
  * @example
  * ```typescript
  * const session = await backendAPI.getValuationSession(reportId)
@@ -101,7 +101,7 @@ export function validateSessionData(session: any): asserts session is ValuationS
 
 /**
  * Validate version data structure
- * 
+ *
  * @param version - Version to validate
  * @throws ValidationError if version data is invalid
  */
@@ -135,7 +135,7 @@ export function validateVersionData(version: any): void {
 
 /**
  * Check if session is restorable (has minimum required data)
- * 
+ *
  * @param session - Session to check
  * @returns true if session can be restored
  */
@@ -150,7 +150,7 @@ export function isSessionRestorable(session: ValuationSession): boolean {
 
 /**
  * Sanitize session data (remove invalid fields, normalize structure)
- * 
+ *
  * @param session - Session to sanitize
  * @returns Sanitized session
  */
@@ -172,5 +172,3 @@ export function sanitizeSessionData(session: any): ValuationSession {
 
   return sanitized
 }
-
-

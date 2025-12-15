@@ -167,16 +167,13 @@ export const ConversationProvider: React.FC<ConversationProviderProps> = ({
       setMessages(newMessages)
     }, []),
 
-    addMessage: useCallback(
-      (message: Message) => {
-        chatLogger.debug('ConversationContext: Adding message', {
-          messageId: message.id,
-          type: message.type,
-        })
-        setMessages((prev) => [...prev, message])
-      },
-      []
-    ),
+    addMessage: useCallback((message: Message) => {
+      chatLogger.debug('ConversationContext: Adding message', {
+        messageId: message.id,
+        type: message.type,
+      })
+      setMessages((prev) => [...prev, message])
+    }, []),
 
     setValuationResult: useCallback((result: ValuationResponse | null) => {
       chatLogger.info('ConversationContext: Setting valuation result', {

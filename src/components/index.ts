@@ -2,5 +2,4 @@
  * Component exports
  */
 
-export { Results } from './results/index';
-
+export { Results } from './results/index'

@@ -1,9 +1,9 @@
 /**
  * Session Error Handlers (Enhanced with Fail-Proof Features)
- * 
+ *
  * Single Responsibility: Handle specific session-related errors (409 conflicts, backend failures).
  * Encapsulates recovery strategies for common session error scenarios.
- * 
+ *
  * Enhanced with:
  * - Request deduplication (prevents concurrent 409 conflicts)
  * - Exponential backoff retry (handles transient failures)
@@ -12,7 +12,7 @@
  * - Correlation IDs (request tracing)
  * - Performance monitoring (<2s framework requirement)
  * - Audit trail (immutable logging)
- * 
+ *
  * @module utils/sessionErrorHandlers
  */
 
@@ -28,11 +28,16 @@ import { globalPerformanceMonitor, performanceThresholds } from './performanceMo
 import { globalRequestDeduplicator } from './requestDeduplication'
 import { retrySessionOperation } from './retryWithBackoff'
 import { globalAuditTrail } from './sessionAuditTrail'
-import { createBaseSession, generateSessionId, mergePrefilledQuery, normalizeSessionDates } from './sessionHelpers'
+import {
+  createBaseSession,
+  generateSessionId,
+  mergePrefilledQuery,
+  normalizeSessionDates,
+} from './sessionHelpers'
 
 /**
  * Handles 409 Conflict error by loading the existing session
- * 
+ *
  * Recovery Strategy:
  * 1. Log conflict detection
  * 2. Attempt to load existing session from backend with retry logic
@@ -41,13 +46,13 @@ import { createBaseSession, generateSessionId, mergePrefilledQuery, normalizeSes
  * 3. Merge prefilled query if provided
  * 4. Normalize dates
  * 5. Return loaded session or null if load fails after retries
- * 
+ *
  * Use Case: Multiple tabs/requests trying to create same session concurrently.
- * 
+ *
  * @param reportId - Report identifier for the session
  * @param prefilledQuery - Optional prefilled query to merge
  * @returns Loaded session or null if not found/failed after retries
- * 
+ *
  * @example
  * ```typescript
  * try {
@@ -67,12 +72,12 @@ export async function handle409Conflict(
   prefilledQuery?: string | null
 ): Promise<ValuationSession | null> {
   storeLogger.info('Session creation conflict (409) - loading existing session', { reportId })
-  
+
   // Retry logic to handle race condition where session was just created
   // but might not be immediately readable due to database replication lag
   const maxRetries = 3
   const baseDelayMs = 100
-  
+
   for (let attempt = 0; attempt < maxRetries; attempt++) {
     try {
       // Wait before retry (except first attempt)
@@ -83,21 +88,18 @@ export async function handle409Conflict(
           attempt: attempt + 1,
           delayMs,
         })
-        await new Promise(resolve => setTimeout(resolve, delayMs))
+        await new Promise((resolve) => setTimeout(resolve, delayMs))
       }
-      
+
       const existingSessionResponse = await backendAPI.getValuationSession(reportId)
       if (existingSessionResponse?.session) {
         const existingSession = existingSessionResponse.session
-        
-        // Merge prefilled query if provided
-        const updatedPartialData = mergePrefilledQuery(
-          existingSession.partialData,
-          prefilledQuery
-        )
 
-        storeLogger.info('Loaded existing session after conflict', { 
-          reportId, 
+        // Merge prefilled query if provided
+        const updatedPartialData = mergePrefilledQuery(existingSession.partialData, prefilledQuery)
+
+        storeLogger.info('Loaded existing session after conflict', {
+          reportId,
           currentView: existingSession.currentView,
           attempt: attempt + 1,
         })
@@ -108,7 +110,7 @@ export async function handle409Conflict(
           partialData: updatedPartialData,
         })
       }
-      
+
       // Session not found, will retry if attempts remain
       if (attempt < maxRetries - 1) {
         storeLogger.debug('Session not found after 409 conflict, will retry', {
@@ -130,8 +132,8 @@ export async function handle409Conflict(
         })
       } else {
         // Last attempt failed
-        storeLogger.error('Failed to load session after conflict (all retries exhausted)', { 
-          reportId, 
+        storeLogger.error('Failed to load session after conflict (all retries exhausted)', {
+          reportId,
           error: extractErrorMessage(loadError),
           attempts: maxRetries,
         })
@@ -139,9 +141,9 @@ export async function handle409Conflict(
       }
     }
   }
-  
+
   // All retries exhausted
-  storeLogger.error('No session found after 409 conflict (all retries exhausted)', { 
+  storeLogger.error('No session found after 409 conflict (all retries exhausted)', {
     reportId,
     attempts: maxRetries,
   })
@@ -150,20 +152,20 @@ export async function handle409Conflict(
 
 /**
  * Creates a fallback local session when backend fails
- * 
+ *
  * Fallback Strategy:
  * - Creates local-only session (not synced to backend)
  * - Logs warning with error details
  * - Allows offline/degraded mode operation
- * 
+ *
  * Use Case: Backend unavailable, network issues, or non-409 errors.
- * 
+ *
  * @param reportId - Report identifier
  * @param currentView - Current flow view
  * @param prefilledQuery - Optional prefilled query
  * @param error - Original error that triggered fallback
  * @returns Local ValuationSession
- * 
+ *
  * @example
  * ```typescript
  * try {
@@ -183,19 +185,19 @@ export function createFallbackSession(
   error?: unknown
 ): ValuationSession {
   const sessionId = generateSessionId()
-  
-  storeLogger.warn('Created local session (backend sync failed)', { 
-    reportId, 
+
+  storeLogger.warn('Created local session (backend sync failed)', {
+    reportId,
     sessionId,
-    error: extractErrorMessage(error)
+    error: extractErrorMessage(error),
   })
-  
+
   return createBaseSession(reportId, sessionId, currentView, prefilledQuery)
 }
 
 /**
  * Attempts to create session with automatic 409 conflict resolution
- * 
+ *
  * ENHANCED with Fail-Proof Features:
  * - Request deduplication (prevents concurrent 409 conflicts)
  * - Exponential backoff retry (handles transient failures)
@@ -204,14 +206,14 @@ export function createFallbackSession(
  * - Correlation IDs (end-to-end request tracing)
  * - Performance monitoring (<2s framework requirement)
  * - Audit trail (immutable logging for compliance)
- * 
+ *
  * Smart Creation Strategy:
  * 1. Deduplicate concurrent requests (share same promise)
  * 2. Try to create new session via circuit breaker
  * 3. If 409 conflict → load existing session
  * 4. If transient error → retry with exponential backoff
  * 5. If persistent error → create fallback local session
- * 
+ *
  * @param reportId - Report identifier
  * @param currentView - Current flow view
  * @param prefilledQuery - Optional prefilled query
@@ -224,10 +226,10 @@ export async function createOrLoadSession(
 ): Promise<ValuationSession> {
   // Generate correlation ID for request tracing
   const correlationId = createCorrelationId(CorrelationPrefixes.SESSION_CREATE)
-  
+
   // Generate idempotency key for safe retries
   const idempotencyKey = generateIdempotencyKey(reportId, 'create')
-  
+
   const startTime = performance.now()
 
   try {

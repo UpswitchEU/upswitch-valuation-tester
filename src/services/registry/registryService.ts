@@ -6,19 +6,19 @@
  */
 
 import {
-    ErrorHandler,
-    NetworkError,
-    RegistryError,
-    TimeoutError,
-    ValidationError,
+  ErrorHandler,
+  NetworkError,
+  RegistryError,
+  TimeoutError,
+  ValidationError,
 } from '../../utils/errors'
 import { serviceLogger } from '../../utils/logger'
 import { RegistryCache } from './cache'
 import type {
-    CompanyFinancialData,
-    CompanySearchResponse,
-    RegistryServiceConfig,
-    SearchSuggestion,
+  CompanyFinancialData,
+  CompanySearchResponse,
+  RegistryServiceConfig,
+  SearchSuggestion,
 } from './types'
 
 export class RegistryService {
@@ -332,7 +332,7 @@ export class RegistryService {
 
   /**
    * Get search suggestions
-   * 
+   *
    * Note: Backend doesn't currently provide a dedicated suggestions endpoint.
    * This returns empty array - suggestions can be generated client-side from
    * search results if needed in the future.

@@ -3,7 +3,7 @@
  *
  * Single Responsibility: Handle conversation restoration from Python backend
  * SOLID Principles: SRP - Only handles restoration logic
- * 
+ *
  * ENHANCED with:
  * - Exponential backoff retry (handles transient API failures)
  * - Circuit breaker integration (fast-fail when backend down)
@@ -20,7 +20,13 @@ import { UtilityAPI } from '../../../services/api/utility/UtilityAPI'
 import type { Message } from '../../../types/message'
 import { CorrelationPrefixes, createCorrelationId } from '../../../utils/correlationId'
 import { extractErrorMessage } from '../../../utils/errorDetection'
-import { isRetryable } from '../../../utils/errors/errorGuards'
+import { convertToApplicationError, getErrorMessage } from '../../../utils/errors/errorConverter'
+import {
+  isNetworkError,
+  isRestorationError,
+  isRetryable,
+  isTimeoutError,
+} from '../../../utils/errors/errorGuards'
 import { chatLogger } from '../../../utils/logger'
 import { globalSessionMetrics } from '../../../utils/metrics/sessionMetrics'
 import { globalAuditTrail } from '../../../utils/sessionAuditTrail'
@@ -71,7 +77,7 @@ export const useConversationRestoration = (
 
   /**
    * Restore conversation from Python backend
-   * 
+   *
    * ENHANCED with fail-proof features:
    * - Request deduplication (concurrent restoration attempts share same promise)
    * - Exponential backoff retry (auto-retry on transient failures)
@@ -119,9 +125,9 @@ export const useConversationRestoration = (
     const startTime = performance.now()
 
     try {
-      chatLogger.info('🔄 Restoring conversation from Python backend', { 
+      chatLogger.info('🔄 Restoring conversation from Python backend', {
         sessionId,
-        correlationId 
+        correlationId,
       })
 
       // Get conversation status (does NOT include messages or metadata)
@@ -131,7 +137,7 @@ export const useConversationRestoration = (
       //   - message_count?: number (count only, not the actual messages)
       //   - last_activity?: string
       //   - session_id?: string
-      // 
+      //
       // NOTE: status.messages and status.metadata do NOT exist!
       // To get messages, call getConversationHistory() separately.
       const status = await utilityAPI.getConversationStatus(sessionId, {
@@ -153,7 +159,7 @@ export const useConversationRestoration = (
           sessionId,
           abortControllerRef.current.signal
         )
-        
+
         // Verify history object structure (type guard)
         if (!history || typeof history !== 'object' || !('exists' in history)) {
           chatLogger.warn('Invalid conversation history response', { sessionId, history })
@@ -161,7 +167,7 @@ export const useConversationRestoration = (
           hasRestoredRef.current = true
           return
         }
-        
+
         if (history.exists && Array.isArray(history.messages) && history.messages.length > 0) {
           // Convert backend messages to frontend Message format
           const restoredMessages: Message[] = history.messages.map((msg: any) => ({
@@ -200,26 +206,70 @@ export const useConversationRestoration = (
         setIsRestored(true) // Mark as restored even if no messages (new conversation)
         hasRestoredRef.current = true
       }
-    } catch (err: any) {
+    } catch (error) {
       const duration = performance.now() - startTime
+      const appError = convertToApplicationError(error, {
+        sessionId,
+        correlationId,
+        duration_ms: duration,
+      })
 
       // Handle abort gracefully
-      if (err.name === 'AbortError') {
-        chatLogger.debug('Conversation restoration was cancelled', { 
+      if (error instanceof Error && error.name === 'AbortError') {
+        chatLogger.debug('Conversation restoration was cancelled', {
           sessionId,
-          correlationId 
+          correlationId,
         })
         return
       }
 
-      const errorMessage = extractErrorMessage(err)
-      chatLogger.error('❌ Failed to restore conversation', {
-        sessionId,
-        error: errorMessage,
-        duration_ms: duration.toFixed(2),
-        correlationId,
-        retryable: isRetryable(err),
-      })
+      // Log with specific error type
+      if (isNetworkError(appError)) {
+        chatLogger.error('❌ Failed to restore conversation - network error', {
+          sessionId,
+          error: (appError as any).message,
+          code: (appError as any).code,
+          duration_ms: duration.toFixed(2),
+          correlationId,
+          retryable: isRetryable(appError),
+          context: (appError as any).context,
+        })
+      } else if (isTimeoutError(appError)) {
+        chatLogger.error('❌ Failed to restore conversation - timeout', {
+          sessionId,
+          error: (appError as any).message,
+          code: (appError as any).code,
+          duration_ms: duration.toFixed(2),
+          correlationId,
+          retryable: isRetryable(appError),
+          context: (appError as any).context,
+        })
+      } else if (isRestorationError(appError)) {
+        chatLogger.error('❌ Failed to restore conversation - restoration error', {
+          sessionId,
+          error: (appError as any).message,
+          code: (appError as any).code,
+          duration_ms: duration.toFixed(2),
+          correlationId,
+          retryable: isRetryable(appError),
+          context: (appError as any).context,
+        })
+      } else {
+        // Handle any other error types
+        chatLogger.error('❌ Failed to restore conversation', {
+          sessionId,
+          error: appError instanceof Error ? appError.message : String(appError),
+          code: 'code' in appError ? String(appError.code) : 'UNKNOWN',
+          error: (appError as any).message,
+          code: (appError as any).code,
+          duration_ms: duration.toFixed(2),
+          correlationId,
+          retryable: isRetryable(appError),
+          context: (appError as any).context,
+        })
+      }
+
+      const errorMessage = getErrorMessage(appError)
 
       // Record failure in audit trail
       globalAuditTrail.log({
@@ -230,8 +280,9 @@ export const useConversationRestoration = (
         correlationId,
         error: errorMessage,
         metadata: {
-          errorType: err?.constructor?.name,
-          retryable: isRetryable(err),
+          errorType: appError.constructor.name,
+          errorCode: appError.code,
+          retryable: isRetryable(appError),
         },
       })
 
@@ -295,60 +346,3 @@ export const useConversationRestoration = (
     reset,
   }
 }
-
-
-
-      onError?.(errorMessage)
-    } finally {
-      setIsRestoring(false)
-      abortControllerRef.current = null
-    }
-  }, [sessionId, enabled, onRestored, onError])
-
-  /**
-   * Reset restoration state (for starting new conversation)
-   */
-  const reset = useCallback(() => {
-    chatLogger.info('🔄 Resetting conversation restoration state', { sessionId })
-    hasRestoredRef.current = false
-    lastSessionIdRef.current = null
-    setIsRestoring(false)
-    setIsRestored(false)
-    setMessages([])
-    setPythonSessionId(null)
-    setError(null)
-
-    // Abort any pending restoration
-    if (abortControllerRef.current) {
-      abortControllerRef.current.abort()
-      abortControllerRef.current = null
-    }
-  }, [sessionId])
-
-  // Auto-restore on mount if enabled
-  useEffect(() => {
-    if (enabled && sessionId && !hasRestoredRef.current) {
-      restore()
-    }
-
-    return () => {
-      // Cleanup on unmount
-      if (abortControllerRef.current) {
-        abortControllerRef.current.abort()
-      }
-    }
-  }, [enabled, sessionId, restore])
-
-  return {
-    state: {
-      isRestoring,
-      isRestored,
-      messages,
-      pythonSessionId,
-      error,
-    },
-    restore,
-    reset,
-  }
-}
-

@@ -1,8 +1,8 @@
 /**
  * Session Error Handlers Tests
- * 
+ *
  * Test session creation, conflict resolution, and fallback strategies.
- * 
+ *
  * @module utils/__tests__/sessionErrorHandlers.test
  */
 
@@ -120,9 +120,9 @@ describe('sessionErrorHandlers', () => {
 
 /**
  * Session Error Handlers Tests
- * 
+ *
  * Test session creation, conflict resolution, and fallback strategies.
- * 
+ *
  * @module utils/__tests__/sessionErrorHandlers.test
  */
 
@@ -237,5 +237,3 @@ describe('sessionErrorHandlers', () => {
     })
   })
 })
-
-

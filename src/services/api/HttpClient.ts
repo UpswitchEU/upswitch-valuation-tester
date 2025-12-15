@@ -72,7 +72,7 @@ export class HttpClient {
                   guest_session_id: sessionId,
                 }
               }
-              
+
               // Also add to headers for backward compatibility (if backend supports it)
               config.headers = config.headers || {}
               config.headers['x-guest-session-id'] = sessionId
@@ -124,18 +124,35 @@ export class HttpClient {
 
   /**
    * Execute request with timeout, abort management, and retry logic
+   *
+   * By default, network errors and 5xx server errors are automatically retried.
+   * To disable retry, pass `retry: { maxRetries: 0 }` in options.
    */
   protected async executeRequest<T>(
     config: InternalAxiosRequestConfig,
     options?: APIRequestConfig
   ): Promise<T> {
     const retryConfig = options?.retry
-    if (!retryConfig) {
+
+    // Default retry behavior: retry network errors and 5xx server errors
+    // Only skip retry if explicitly disabled (maxRetries: 0)
+    if (retryConfig?.maxRetries === 0) {
       return this.executeSingleRequest<T>(config, options)
     }
 
-    // Use retry logic
-    return this.executeRequestWithRetry<T>(config, options)
+    // Use retry logic with default config if not provided
+    const effectiveRetryConfig = retryConfig || {
+      maxRetries: 3,
+      initialDelay: 1000,
+      maxDelay: 10000,
+      backoffMultiplier: 2,
+      shouldRetry: this.shouldRetryError.bind(this),
+    }
+
+    return this.executeRequestWithRetry<T>(config, {
+      ...options,
+      retry: effectiveRetryConfig,
+    })
   }
 
   /**
@@ -199,16 +216,42 @@ export class HttpClient {
 
   /**
    * Default retry predicate - retry on network errors and 5xx server errors
+   *
+   * Retries:
+   * - Network errors (no response)
+   * - 5xx server errors
+   * - 408 timeout errors
+   * - 429 rate limit errors (with longer backoff)
+   *
+   * Does NOT retry:
+   * - 4xx client errors (except 408, 429)
+   * - Authentication errors (401, 403)
    */
   private shouldRetryError(error: any): boolean {
-    // Retry on network errors
+    // Retry on network errors (no response)
     if (!error.response) {
       return true
     }
 
-    // Retry on 5xx server errors
     const status = error.response?.status
-    return status >= 500 && status < 600
+
+    // Retry on 5xx server errors
+    if (status >= 500 && status < 600) {
+      return true
+    }
+
+    // Retry on timeout errors
+    if (status === 408) {
+      return true
+    }
+
+    // Retry on rate limit errors (will use longer backoff)
+    if (status === 429) {
+      return true
+    }
+
+    // Don't retry on client errors (4xx) except 408, 429
+    return false
   }
 
   /**

@@ -49,10 +49,7 @@ export function buildValuationRequest(
   )
 
   // Normalize founding year (1900-2100)
-  const foundingYear = Math.min(
-    Math.max(formData.founding_year || currentYear - 5, 1900),
-    2100
-  )
+  const foundingYear = Math.min(Math.max(formData.founding_year || currentYear - 5, 1900), 2100)
 
   // Normalize company name
   const companyName = formData.company_name?.trim() || 'Unknown Company'
@@ -66,9 +63,7 @@ export function buildValuationRequest(
 
   // Normalize financial data
   const revenue = Math.max(
-    Number(formData.revenue) ||
-      formData.current_year_data?.revenue ||
-      100000,
+    Number(formData.revenue) || formData.current_year_data?.revenue || 100000,
     1
   )
   const ebitda =
@@ -123,13 +118,9 @@ export function buildValuationRequest(
 
   // Handle sole trader vs company
   const numberOfEmployees =
-    formData.business_type === 'sole-trader'
-      ? undefined
-      : formData.number_of_employees
+    formData.business_type === 'sole-trader' ? undefined : formData.number_of_employees
   const numberOfOwners =
-    formData.business_type === 'sole-trader'
-      ? undefined
-      : formData.number_of_owners || 1
+    formData.business_type === 'sole-trader' ? undefined : formData.number_of_owners || 1
 
   // Build business context from internal metadata
   const businessContext = formData.business_type_id

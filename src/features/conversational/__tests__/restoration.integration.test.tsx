@@ -1,8 +1,8 @@
 /**
  * Restoration Integration Tests
- * 
+ *
  * End-to-end tests for session restoration and flow switching.
- * 
+ *
  * @module features/conversational/__tests__/restoration.integration.test
  */
 
@@ -69,14 +69,14 @@ describe('Restoration Integration Tests', () => {
   describe('Existing Session Flow', () => {
     it('should restore conversation with existing messages', async () => {
       const { UtilityAPI } = await import('../../../services/api/utility/UtilityAPI')
-      
+
       const mockStatus = vi.fn().mockResolvedValue({
         exists: true,
         session_id: 'python_123',
         status: 'active',
         message_count: 2,
       })
-      
+
       const mockHistory = vi.fn().mockResolvedValue({
         exists: true,
         messages: [
@@ -124,7 +124,7 @@ describe('Restoration Integration Tests', () => {
   describe('Error Recovery Flow', () => {
     it('should handle restoration failure gracefully', async () => {
       const { UtilityAPI } = await import('../../../services/api/utility/UtilityAPI')
-      
+
       const mockStatus = vi.fn().mockRejectedValue(new Error('API unavailable'))
 
       vi.mocked(UtilityAPI).mockImplementation(
@@ -146,17 +146,20 @@ describe('Restoration Integration Tests', () => {
         />
       )
 
-      await waitFor(() => {
-        // Should still render (graceful degradation)
-        expect(screen.queryByText(/conversation/i)).toBeInTheDocument()
-      }, { timeout: 3000 })
+      await waitFor(
+        () => {
+          // Should still render (graceful degradation)
+          expect(screen.queryByText(/conversation/i)).toBeInTheDocument()
+        },
+        { timeout: 3000 }
+      )
     })
   })
 
   describe('Flow Switching', () => {
     it('should preserve session when switching flows', async () => {
       const { UtilityAPI } = await import('../../../services/api/utility/UtilityAPI')
-      
+
       const mockStatus = vi.fn().mockResolvedValue({ exists: false })
 
       vi.mocked(UtilityAPI).mockImplementation(
@@ -206,7 +209,7 @@ describe('Restoration Integration Tests', () => {
   describe('New Report Flow', () => {
     it('should reset and restore for new reportId', async () => {
       const { UtilityAPI } = await import('../../../services/api/utility/UtilityAPI')
-      
+
       const mockStatus = vi.fn().mockResolvedValue({ exists: false })
 
       vi.mocked(UtilityAPI).mockImplementation(
@@ -255,9 +258,9 @@ describe('Restoration Integration Tests', () => {
 
 /**
  * Restoration Integration Tests
- * 
+ *
  * End-to-end tests for session restoration and flow switching.
- * 
+ *
  * @module features/conversational/__tests__/restoration.integration.test
  */
 
@@ -324,14 +327,14 @@ describe('Restoration Integration Tests', () => {
   describe('Existing Session Flow', () => {
     it('should restore conversation with existing messages', async () => {
       const { UtilityAPI } = await import('../../../services/api/utility/UtilityAPI')
-      
+
       const mockStatus = vi.fn().mockResolvedValue({
         exists: true,
         session_id: 'python_123',
         status: 'active',
         message_count: 2,
       })
-      
+
       const mockHistory = vi.fn().mockResolvedValue({
         exists: true,
         messages: [
@@ -379,7 +382,7 @@ describe('Restoration Integration Tests', () => {
   describe('Error Recovery Flow', () => {
     it('should handle restoration failure gracefully', async () => {
       const { UtilityAPI } = await import('../../../services/api/utility/UtilityAPI')
-      
+
       const mockStatus = vi.fn().mockRejectedValue(new Error('API unavailable'))
 
       vi.mocked(UtilityAPI).mockImplementation(
@@ -401,17 +404,20 @@ describe('Restoration Integration Tests', () => {
         />
       )
 
-      await waitFor(() => {
-        // Should still render (graceful degradation)
-        expect(screen.queryByText(/conversation/i)).toBeInTheDocument()
-      }, { timeout: 3000 })
+      await waitFor(
+        () => {
+          // Should still render (graceful degradation)
+          expect(screen.queryByText(/conversation/i)).toBeInTheDocument()
+        },
+        { timeout: 3000 }
+      )
     })
   })
 
   describe('Flow Switching', () => {
     it('should preserve session when switching flows', async () => {
       const { UtilityAPI } = await import('../../../services/api/utility/UtilityAPI')
-      
+
       const mockStatus = vi.fn().mockResolvedValue({ exists: false })
 
       vi.mocked(UtilityAPI).mockImplementation(
@@ -461,7 +467,7 @@ describe('Restoration Integration Tests', () => {
   describe('New Report Flow', () => {
     it('should reset and restore for new reportId', async () => {
       const { UtilityAPI } = await import('../../../services/api/utility/UtilityAPI')
-      
+
       const mockStatus = vi.fn().mockResolvedValue({ exists: false })
 
       vi.mocked(UtilityAPI).mockImplementation(
@@ -507,5 +513,3 @@ describe('Restoration Integration Tests', () => {
     })
   })
 })
-
-

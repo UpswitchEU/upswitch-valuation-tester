@@ -1,7 +1,7 @@
 /**
  * Reports Feature Module
- * 
+ *
  * Barrel export for reports feature
  */
 
-export * from './components';
+export * from './components'

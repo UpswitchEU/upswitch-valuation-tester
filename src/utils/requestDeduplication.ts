@@ -1,34 +1,33 @@
 /**
  * Request Deduplication Utility
- * 
+ *
  * Single Responsibility: Prevent concurrent duplicate requests to same endpoint.
  * Solves 409 conflicts caused by multiple components initializing same session.
- * 
+ *
  * @module utils/requestDeduplication
  */
 
-
 /**
  * Request Deduplicator
- * 
+ *
  * Prevents concurrent requests with same key by caching pending promises.
  * If request is already in-flight, returns the existing promise.
- * 
+ *
  * Use Case:
  * - Multiple tabs loading same session
  * - Multiple components initializing same report
  * - Race conditions in session creation
- * 
+ *
  * @example
  * ```typescript
  * const deduplicator = new RequestDeduplicator()
- * 
+ *
  * // First call: executes function
  * const promise1 = deduplicator.deduplicate('session-123', () => createSession())
- * 
+ *
  * // Second call (before first completes): returns same promise
  * const promise2 = deduplicator.deduplicate('session-123', () => createSession())
- * 
+ *
  * // promise1 === promise2 (same instance)
  * ```
  */
@@ -42,10 +41,10 @@ export class RequestDeduplicator {
 
   /**
    * Deduplicate request by key
-   * 
+   *
    * If request with same key is pending, return existing promise.
    * Otherwise, execute function and cache promise until completion.
-   * 
+   *
    * @param key - Unique request identifier
    * @param fn - Function to execute (should return Promise)
    * @returns Result from function or cached promise
@@ -94,7 +93,7 @@ export class RequestDeduplicator {
 
   /**
    * Clear all pending requests
-   * 
+   *
    * Use when: Component unmounts or session reset
    */
   clear(): void {
@@ -105,7 +104,7 @@ export class RequestDeduplicator {
 
   /**
    * Clear specific request
-   * 
+   *
    * @param key - Request key to clear
    */
   clearKey(key: string): void {
@@ -117,9 +116,9 @@ export class RequestDeduplicator {
 
   /**
    * Get deduplication statistics
-   * 
+   *
    * Useful for monitoring and debugging.
-   * 
+   *
    * @returns Stats object with counts
    */
   getStats(): {
@@ -153,11 +152,11 @@ export const globalRequestDeduplicator = new RequestDeduplicator()
 
 /**
  * Convenience function for one-off deduplication
- * 
+ *
  * @param key - Unique request identifier
  * @param fn - Function to execute
  * @returns Result from function or cached promise
- * 
+ *
  * @example
  * ```typescript
  * const session = await deduplicateRequest('session-val_123', async () => {
@@ -165,10 +164,6 @@ export const globalRequestDeduplicator = new RequestDeduplicator()
  * })
  * ```
  */
-export async function deduplicateRequest<T>(
-  key: string,
-  fn: () => Promise<T>
-): Promise<T> {
+export async function deduplicateRequest<T>(key: string, fn: () => Promise<T>): Promise<T> {
   return globalRequestDeduplicator.deduplicate(key, fn)
 }
-

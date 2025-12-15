@@ -1,9 +1,9 @@
 /**
  * usePanelResize Hook
- * 
+ *
  * Single Responsibility: Manage resizable panel width with localStorage persistence.
  * Handles constraints, snapping, and user preferences.
- * 
+ *
  * @module hooks/usePanelResize
  */
 
@@ -22,19 +22,19 @@ export interface UsePanelResizeReturn {
 
 /**
  * Manages resizable panel width with localStorage persistence
- * 
+ *
  * Features:
  * - Persists user's preferred width across sessions
  * - Enforces min/max constraints
  * - Snaps to default if within 2% tolerance
  * - Graceful fallback on storage errors
- * 
+ *
  * @returns Panel width state and resize handler
- * 
+ *
  * @example
  * ```typescript
  * const { leftPanelWidth, handleResize } = usePanelResize()
- * 
+ *
  * return (
  *   <ResizableDivider
  *     leftPanelWidth={leftPanelWidth}
@@ -78,7 +78,7 @@ export function usePanelResize(): UsePanelResizeReturn {
       PANEL_CONSTRAINTS.MIN_WIDTH,
       Math.min(PANEL_CONSTRAINTS.MAX_WIDTH, newWidth)
     )
-    
+
     // Snap to default if within tolerance (2%)
     if (Math.abs(constrainedWidth - PANEL_CONSTRAINTS.DEFAULT_WIDTH) < 2) {
       setLeftPanelWidth(PANEL_CONSTRAINTS.DEFAULT_WIDTH)

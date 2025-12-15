@@ -7,7 +7,10 @@
  * @module services/api/utility/UtilityAPI
  */
 
-import type { ConversationStatusResponse, GuestMigrationResponse } from '../../../types/api-responses'
+import type {
+  ConversationStatusResponse,
+  GuestMigrationResponse,
+} from '../../../types/api-responses'
 import { APIError } from '../../../types/errors'
 import type { Message } from '../../../types/message'
 import { apiLogger } from '../../../utils/logger'
@@ -31,7 +34,9 @@ export class UtilityAPI extends HttpClient {
       apiLogger.error('Health check failed', { error })
       const axiosError = error as any
       const statusCode = axiosError?.response?.status
-      throw new APIError('Health check failed', statusCode, undefined, true, { originalError: error })
+      throw new APIError('Health check failed', statusCode, undefined, true, {
+        originalError: error,
+      })
     }
   }
 
@@ -56,7 +61,9 @@ export class UtilityAPI extends HttpClient {
       apiLogger.error('Guest data migration failed', { error, guestSessionId })
       const axiosError = error as any
       const statusCode = axiosError?.response?.status
-      throw new APIError('Failed to migrate guest data', statusCode, undefined, true, { originalError: error })
+      throw new APIError('Failed to migrate guest data', statusCode, undefined, true, {
+        originalError: error,
+      })
     }
   }
 

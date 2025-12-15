@@ -16,8 +16,8 @@
 
 import axios, { AxiosInstance } from 'axios'
 import {
-    BUSINESS_TYPES_FALLBACK,
-    BusinessTypeOption as ConfigBusinessTypeOption,
+  BUSINESS_TYPES_FALLBACK,
+  BusinessTypeOption as ConfigBusinessTypeOption,
 } from '../config/businessTypes'
 import { generalLogger } from '../utils/logger'
 import { businessTypesCache } from './cache/businessTypesCache'

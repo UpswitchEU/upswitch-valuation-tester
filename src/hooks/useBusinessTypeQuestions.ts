@@ -96,18 +96,19 @@ export function useBusinessTypeQuestions(
       if (result) {
         // Ensure questions array exists and matches expected type
         const metadata: QuestionsMetadata = {
-          questions: result.questions?.map(q => ({
-            id: q.id,
-            business_type_id: businessTypeId,
-            question_id: q.id,
-            question_text: q.text,
-            question_type: 'text',
-            priority: 0,
-            phase: 'initial',
-            required: q.required,
-            impacts_valuation: false,
-            status: 'active',
-          })) || [],
+          questions:
+            result.questions?.map((q) => ({
+              id: q.id,
+              business_type_id: businessTypeId,
+              question_id: q.id,
+              question_text: q.text,
+              question_type: 'text',
+              priority: 0,
+              phase: 'initial',
+              required: q.required,
+              impacts_valuation: false,
+              status: 'active',
+            })) || [],
           total_required: result.total_required || 0,
           estimated_time: result.estimated_time?.toString() || '0',
         }

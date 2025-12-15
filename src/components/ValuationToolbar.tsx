@@ -1,29 +1,29 @@
 import {
-    AlertCircle,
-    Check,
-    Code,
-    Download,
-    Edit3,
-    Eye,
-    GitBranch,
-    History,
-    Info,
-    Loader2,
-    Maximize,
-    MessageSquare,
-    Pencil,
-    RefreshCw,
-    Save,
+  AlertCircle,
+  Check,
+  Code,
+  Download,
+  Edit3,
+  Eye,
+  GitBranch,
+  History,
+  Info,
+  Loader2,
+  Maximize,
+  MessageSquare,
+  Pencil,
+  RefreshCw,
+  Save,
 } from 'lucide-react'
 import React from 'react'
 import {
-    useValuationToolbarAuth,
-    useValuationToolbarDownload,
-    useValuationToolbarFlow,
-    useValuationToolbarFullscreen,
-    useValuationToolbarName,
-    useValuationToolbarRefresh,
-    useValuationToolbarTabs,
+  useValuationToolbarAuth,
+  useValuationToolbarDownload,
+  useValuationToolbarFlow,
+  useValuationToolbarFullscreen,
+  useValuationToolbarName,
+  useValuationToolbarRefresh,
+  useValuationToolbarTabs,
 } from '../hooks/valuationToolbar'
 import { useValuationSessionStore } from '../store/useValuationSessionStore'
 import { useVersionHistoryStore } from '../store/useVersionHistoryStore'
@@ -46,20 +46,29 @@ export const ValuationToolbar: React.FC<ValuationToolbarProps> = ({
   activeVersion,
   onVersionSelect,
 }) => {
-  const { session, pendingFlowSwitch, isSaving, lastSaved, hasUnsavedChanges, syncError } = useValuationSessionStore()
-  const { versions: storeVersions, getActiveVersion, setActiveVersion, fetchVersions } = useVersionHistoryStore()
-  
+  const { session, pendingFlowSwitch, isSaving, lastSaved, hasUnsavedChanges, syncError } =
+    useValuationSessionStore()
+  const {
+    versions: storeVersions,
+    getActiveVersion,
+    setActiveVersion,
+    fetchVersions,
+  } = useVersionHistoryStore()
+
   // Use props if provided, otherwise use store
-  const displayVersions = versions || (session?.reportId ? storeVersions[session.reportId] || [] : [])
+  const displayVersions =
+    versions || (session?.reportId ? storeVersions[session.reportId] || [] : [])
   const storeActiveVersion = session?.reportId ? getActiveVersion(session.reportId) : null
   const displayActiveVersion = activeVersion ?? storeActiveVersion?.versionNumber
-  
-  const handleVersionSelect = onVersionSelect || ((versionNumber: number) => {
-    if (session?.reportId) {
-      setActiveVersion(session.reportId, versionNumber)
-    }
-  })
-  
+
+  const handleVersionSelect =
+    onVersionSelect ||
+    ((versionNumber: number) => {
+      if (session?.reportId) {
+        setActiveVersion(session.reportId, versionNumber)
+      }
+    })
+
   // Fetch versions if we have a reportId but no versions
   React.useEffect(() => {
     if (session?.reportId && !displayVersions.length) {
@@ -68,7 +77,7 @@ export const ValuationToolbar: React.FC<ValuationToolbarProps> = ({
       })
     }
   }, [session?.reportId, displayVersions.length, fetchVersions])
-  
+
   // Save status icon (minimalist - just icon with tooltip)
   const getSaveStatusIcon = () => {
     if (syncError) {
@@ -87,7 +96,7 @@ export const ValuationToolbar: React.FC<ValuationToolbarProps> = ({
     }
     return null
   }
-  
+
   const getSaveStatusTooltip = () => {
     if (syncError) return 'Save failed - click to retry'
     if (isSaving) return 'Saving...'
@@ -154,14 +163,15 @@ export const ValuationToolbar: React.FC<ValuationToolbarProps> = ({
   // Download hook - track loading state for UI feedback
   // Note: Parent components should provide onDownload handler that uses the hook
   const { isDownloading } = useValuationToolbarDownload()
-  const handleDownload = onDownload ?? (() => {
-    // If no prop handler provided, this shouldn't be called
-    // Parent components should always provide onDownload handler
-  })
+  const handleDownload =
+    onDownload ??
+    (() => {
+      // If no prop handler provided, this shouldn't be called
+      // Parent components should always provide onDownload handler
+    })
 
   // Fullscreen hook - use prop if provided, otherwise use hook
-  const { handleOpenFullscreen: handleHookFullscreen } =
-    useValuationToolbarFullscreen()
+  const { handleOpenFullscreen: handleHookFullscreen } = useValuationToolbarFullscreen()
   const handleFullScreen = onFullScreen ?? handleHookFullscreen
 
   return (
@@ -263,10 +273,17 @@ export const ValuationToolbar: React.FC<ValuationToolbarProps> = ({
 
                 {/* Version Selector (M&A Workflow) - Minimalist dropdown when versions exist */}
                 {displayVersions.length > 0 && (
-                  <Tooltip content={`Version ${displayActiveVersion || displayVersions[displayVersions.length - 1].versionNumber} of ${displayVersions.length}`} position="bottom" className="">
+                  <Tooltip
+                    content={`Version ${displayActiveVersion || displayVersions[displayVersions.length - 1].versionNumber} of ${displayVersions.length}`}
+                    position="bottom"
+                    className=""
+                  >
                     <div className="relative">
                       <select
-                        value={displayActiveVersion || displayVersions[displayVersions.length - 1].versionNumber}
+                        value={
+                          displayActiveVersion ||
+                          displayVersions[displayVersions.length - 1].versionNumber
+                        }
                         onChange={(e) => handleVersionSelect(parseInt(e.target.value))}
                         className="
                           px-2 py-1.5 pr-6 rounded-lg border border-zinc-700
@@ -280,7 +297,11 @@ export const ValuationToolbar: React.FC<ValuationToolbarProps> = ({
                         {displayVersions
                           .sort((a, b) => b.versionNumber - a.versionNumber)
                           .map((version) => (
-                            <option key={version.id} value={version.versionNumber} className="bg-zinc-800 text-gray-200">
+                            <option
+                              key={version.id}
+                              value={version.versionNumber}
+                              className="bg-zinc-800 text-gray-200"
+                            >
                               {version.versionLabel}
                             </option>
                           ))}
@@ -391,116 +412,3 @@ export const ValuationToolbar: React.FC<ValuationToolbarProps> = ({
     </>
   )
 }
-
-                              {version.versionLabel}
-                            </option>
-                          ))}
-                      </select>
-                      <GitBranch className="absolute right-1.5 top-1/2 -translate-y-1/2 w-3 h-3 text-gray-400 pointer-events-none" />
-                    </div>
-                  </Tooltip>
-                )}
-
-                <Tooltip content="Preview" position="bottom" className="">
-                  <button
-                    onClick={() => handleTabClick('preview')}
-                    className={`p-2 rounded-lg transition-all duration-200 ${
-                      currentActiveTab === 'preview'
-                        ? 'bg-zinc-700 text-white'
-                        : 'text-gray-400 hover:text-gray-300 hover:bg-zinc-800'
-                    }`}
-                  >
-                    <Eye className="w-4 h-4" />
-                  </button>
-                </Tooltip>
-                <Tooltip content="Source Code" position="bottom" className="">
-                  <button
-                    onClick={() => handleTabClick('source')}
-                    className={`p-2 rounded-lg transition-all duration-200 ${
-                      currentActiveTab === 'source'
-                        ? 'bg-zinc-700 text-white'
-                        : 'text-gray-400 hover:text-gray-300 hover:bg-zinc-800'
-                    }`}
-                  >
-                    <Code className="w-4 h-4" />
-                  </button>
-                </Tooltip>
-                <Tooltip content="Valuation Info" position="bottom" className="">
-                  <button
-                    onClick={() => handleTabClick('info')}
-                    className={`p-2 rounded-lg transition-all duration-200 ${
-                      currentActiveTab === 'info'
-                        ? 'bg-zinc-700 text-white'
-                        : 'text-gray-400 hover:text-gray-300 hover:bg-zinc-800'
-                    }`}
-                  >
-                    <Info className="w-4 h-4" />
-                  </button>
-                </Tooltip>
-                <Tooltip content="Audit Trail" position="bottom" className="">
-                  <button
-                    onClick={() => onTabChange?.('history')}
-                    className={`p-2 rounded-lg transition-all duration-200 ${
-                      currentActiveTab === 'history'
-                        ? 'bg-zinc-700 text-white'
-                        : 'text-gray-400 hover:text-gray-300 hover:bg-zinc-800'
-                    }`}
-                  >
-                    <History className="w-4 h-4" />
-                  </button>
-                </Tooltip>
-                <div className="mx-2 h-6 w-px bg-zinc-700"></div>
-                <Tooltip content="Refresh" position="bottom" className="">
-                  <button
-                    onClick={handleRefresh}
-                    className="p-2 rounded-lg transition-all duration-200 text-gray-400 hover:text-gray-300 hover:bg-zinc-800"
-                    disabled={isGenerating}
-                  >
-                    <RefreshCw className="w-4 h-4" />
-                  </button>
-                </Tooltip>
-                <Tooltip content="Download PDF" position="bottom" className="">
-                  <button
-                    onClick={handleDownload}
-                    className="p-2 rounded-lg transition-all duration-200 text-gray-400 hover:text-gray-300 hover:bg-zinc-800"
-                    disabled={isDownloading}
-                  >
-                    {isDownloading ? (
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                    ) : (
-                      <Download className="w-4 h-4" />
-                    )}
-                  </button>
-                </Tooltip>
-                <Tooltip content="Open Full Screen" position="bottom" className="">
-                  <button
-                    onClick={handleFullScreen}
-                    className="p-2 rounded-lg transition-all duration-200 text-gray-400 hover:text-gray-300 hover:bg-zinc-800"
-                  >
-                    <Maximize className="w-4 h-4" />
-                  </button>
-                </Tooltip>
-              </div>
-
-              {/* Right Section - User Info */}
-              <div className="flex items-center gap-1.5">
-                <div className="flex items-center gap-3">
-                  <UserDropdown user={user} onLogout={handleLogout} />
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </nav>
-      <FlowSwitchWarningModal
-        isOpen={showSwitchConfirmation}
-        currentFlow={session?.currentView || 'manual'}
-        targetFlow={pendingFlowSwitch || 'manual'}
-        onConfirm={handleConfirmSwitch}
-        onClose={handleCancelSwitch}
-      />
-    </>
-  )
-}
-
-

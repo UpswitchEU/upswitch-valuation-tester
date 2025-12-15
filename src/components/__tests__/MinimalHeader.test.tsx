@@ -38,4 +38,3 @@ describe('MinimalHeader', () => {
     expect(header).toBeInTheDocument()
   })
 })
-

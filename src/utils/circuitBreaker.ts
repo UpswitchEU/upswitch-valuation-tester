@@ -1,11 +1,11 @@
 /**
  * Circuit Breaker Pattern
- * 
+ *
  * Single Responsibility: Prevent cascading failures when backend is down.
  * Fast-fails after threshold reached, tests recovery periodically.
- * 
+ *
  * Framework compliance: Fail-fast is better than slow failures (reliability > latency).
- * 
+ *
  * @module utils/circuitBreaker
  */
 
@@ -36,26 +36,26 @@ export interface CircuitBreakerStats {
 
 /**
  * Circuit Breaker
- * 
+ *
  * States:
  * - CLOSED: Normal operation, requests pass through
  * - OPEN: Too many failures, requests fail immediately (fast-fail)
  * - HALF_OPEN: Testing recovery, limited requests allowed
- * 
+ *
  * State Transitions:
  * - CLOSED → OPEN: After {failureThreshold} consecutive failures
  * - OPEN → HALF_OPEN: After {resetTimeout} elapsed
  * - HALF_OPEN → CLOSED: After {successThreshold} consecutive successes
  * - HALF_OPEN → OPEN: On any failure
- * 
+ *
  * @example
  * ```typescript
- * const breaker = new CircuitBreaker({ 
+ * const breaker = new CircuitBreaker({
  *   failureThreshold: 5,
  *   resetTimeout: 30000,
  *   name: 'SessionAPI'
  * })
- * 
+ *
  * try {
  *   const result = await breaker.execute(async () => {
  *     return await backendAPI.createSession(reportId)
@@ -97,7 +97,7 @@ export class CircuitBreaker {
 
   /**
    * Execute function through circuit breaker
-   * 
+   *
    * @param fn - Function to execute
    * @returns Result from function
    * @throws Error if circuit is OPEN or function fails
@@ -253,7 +253,7 @@ export class CircuitBreaker {
    */
   private shouldAttemptReset(): boolean {
     if (!this.lastFailureTime) return false
-    
+
     const timeSinceFailure = Date.now() - this.lastFailureTime.getTime()
     return timeSinceFailure >= this.resetTimeout
   }
@@ -323,5 +323,3 @@ export const valuationCircuitBreaker = new CircuitBreaker({
   successThreshold: 2,
   name: 'ValuationAPI',
 })
-
-

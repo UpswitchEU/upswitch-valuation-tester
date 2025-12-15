@@ -1,6 +1,6 @@
 /**
  * Report Service
- * 
+ *
  * Single Responsibility: Manage report lifecycle (CRUD operations)
  * Dependency Inversion: Depends on API abstraction
  */
@@ -28,19 +28,19 @@ export interface ListReportsResponse {
 export interface ReportService {
   // List recent reports
   listRecentReports(options?: ListReportsOptions): Promise<ValuationSession[]>
-  
+
   // Get full report by ID
   getReportById(reportId: string): Promise<ValuationSession>
-  
+
   // Create new report
   createReport(initialData?: Partial<ValuationRequest>): Promise<ValuationSession>
-  
+
   // Update report data
   updateReport(reportId: string, data: Partial<ValuationRequest>): Promise<void>
-  
+
   // Delete report
   deleteReport(reportId: string): Promise<void>
-  
+
   // Duplicate report
   duplicateReport(reportId: string): Promise<ValuationSession>
 }
@@ -52,20 +52,23 @@ class ReportServiceImpl implements ReportService {
    */
   async listRecentReports(options: ListReportsOptions = {}): Promise<ValuationSession[]> {
     const { userId, limit = 20, offset = 0, status = 'all' } = options
-    
+
     try {
-      reportLogger.info('Fetching recent reports', { 
+      reportLogger.info('Fetching recent reports', {
         userId: userId ? userId.substring(0, 8) + '...' : 'guest',
         limit,
         offset,
         status,
       })
-      
+
       // Call existing backend endpoint: GET /api/reports
       // This endpoint requires auth currently, will return empty for guests until enhanced
-      const baseURL = process.env.NEXT_PUBLIC_BACKEND_URL || process.env.NEXT_PUBLIC_API_BASE_URL || 'https://web-production-8d00b.up.railway.app'
+      const baseURL =
+        process.env.NEXT_PUBLIC_BACKEND_URL ||
+        process.env.NEXT_PUBLIC_API_BASE_URL ||
+        'https://web-production-8d00b.up.railway.app'
       const url = `${baseURL}/api/reports?limit=${limit}&offset=${offset}`
-      
+
       const response = await fetch(url, {
         method: 'GET',
         headers: {
@@ -73,7 +76,7 @@ class ReportServiceImpl implements ReportService {
         },
         credentials: 'include', // Include cookies for auth
       })
-      
+
       if (!response.ok) {
         if (response.status === 401) {
           // Not authenticated - return empty array for now
@@ -82,18 +85,18 @@ class ReportServiceImpl implements ReportService {
         }
         throw new Error(`Failed to fetch reports: ${response.statusText}`)
       }
-      
+
       const json = await response.json()
-      
+
       // Backend returns: { success: true, data: [...] }
       const reports = json.data || json.sessions || []
-      
+
       // Transform backend reports to ValuationSession format
       const sessions: ValuationSession[] = reports.map((report: any) => {
         // Get valuation data if available
         const partialData = report.partial_data || {}
         const sessionData = report.valuation_data || {}
-        
+
         return {
           sessionId: report.id, // Use report ID as session ID for now
           reportId: report.id,
@@ -106,14 +109,14 @@ class ReportServiceImpl implements ReportService {
           sessionData,
         } as ValuationSession
       })
-      
-      reportLogger.info('Reports fetched successfully', { 
+
+      reportLogger.info('Reports fetched successfully', {
         count: sessions.length,
       })
-      
+
       return sessions
     } catch (error) {
-      reportLogger.error('Failed to fetch recent reports', { 
+      reportLogger.error('Failed to fetch recent reports', {
         error: error instanceof Error ? error.message : 'Unknown error',
         userId,
       })
@@ -121,51 +124,51 @@ class ReportServiceImpl implements ReportService {
       return []
     }
   }
-  
+
   /**
    * Get full report by ID
    */
   async getReportById(reportId: string): Promise<ValuationSession> {
     try {
       reportLogger.info('Fetching report by ID', { reportId })
-      
+
       const response = await backendAPI.getValuationSession(reportId)
-      
+
       if (!response || !response.session) {
         throw new Error('Session not found')
       }
-      
+
       const session = response.session
-      
-      reportLogger.info('Report fetched successfully', { 
+
+      reportLogger.info('Report fetched successfully', {
         reportId,
         hasPartialData: !!session.partialData,
         hasResult: !!(session.sessionData as any)?.valuation_result,
       })
-      
+
       return session
     } catch (error) {
-      reportLogger.error('Failed to fetch report', { 
+      reportLogger.error('Failed to fetch report', {
         error: error instanceof Error ? error.message : 'Unknown error',
         reportId,
       })
       throw error
     }
   }
-  
+
   /**
    * Create new report
    */
   async createReport(initialData?: Partial<ValuationRequest>): Promise<ValuationSession> {
     const reportId = generateReportId()
     const sessionId = `session_${Date.now()}_${Math.random().toString(36).substring(2, 15)}`
-    
+
     try {
-      reportLogger.info('Creating new report', { 
+      reportLogger.info('Creating new report', {
         reportId,
         hasInitialData: !!initialData && Object.keys(initialData).length > 0,
       })
-      
+
       // Create session object matching ValuationSession interface
       const newSession: ValuationSession = {
         sessionId,
@@ -177,49 +180,49 @@ class ReportServiceImpl implements ReportService {
         partialData: initialData || {},
         sessionData: initialData || {},
       }
-      
+
       const response = await backendAPI.createValuationSession(newSession)
-      
-      reportLogger.info('Report created successfully', { 
+
+      reportLogger.info('Report created successfully', {
         reportId,
         sessionId: response.session.sessionId,
       })
-      
+
       return response.session
     } catch (error) {
-      reportLogger.error('Failed to create report', { 
+      reportLogger.error('Failed to create report', {
         error: error instanceof Error ? error.message : 'Unknown error',
         reportId,
       })
       throw error
     }
   }
-  
+
   /**
    * Update report data
    */
   async updateReport(reportId: string, data: Partial<ValuationRequest>): Promise<void> {
     try {
-      reportLogger.info('Updating report', { 
+      reportLogger.info('Updating report', {
         reportId,
         fieldCount: Object.keys(data).length,
       })
-      
+
       await backendAPI.updateValuationSession(reportId, {
         partialData: data,
         updatedAt: new Date(),
       } as Partial<ValuationSession>)
-      
+
       reportLogger.info('Report updated successfully', { reportId })
     } catch (error) {
-      reportLogger.error('Failed to update report', { 
+      reportLogger.error('Failed to update report', {
         error: error instanceof Error ? error.message : 'Unknown error',
         reportId,
       })
       throw error
     }
   }
-  
+
   /**
    * Delete report
    * Uses existing DELETE /api/reports/:reportId endpoint
@@ -227,11 +230,14 @@ class ReportServiceImpl implements ReportService {
   async deleteReport(reportId: string): Promise<void> {
     try {
       reportLogger.info('Deleting report', { reportId })
-      
+
       // Call existing backend endpoint: DELETE /api/reports/:reportId
-      const baseURL = process.env.NEXT_PUBLIC_BACKEND_URL || process.env.NEXT_PUBLIC_API_BASE_URL || 'https://web-production-8d00b.up.railway.app'
+      const baseURL =
+        process.env.NEXT_PUBLIC_BACKEND_URL ||
+        process.env.NEXT_PUBLIC_API_BASE_URL ||
+        'https://web-production-8d00b.up.railway.app'
       const url = `${baseURL}/api/reports/${reportId}`
-      
+
       const response = await fetch(url, {
         method: 'DELETE',
         headers: {
@@ -239,7 +245,7 @@ class ReportServiceImpl implements ReportService {
         },
         credentials: 'include', // Include cookies for auth
       })
-      
+
       if (!response.ok) {
         if (response.status === 404) {
           reportLogger.warn('Report not found (already deleted?)', { reportId })
@@ -250,37 +256,37 @@ class ReportServiceImpl implements ReportService {
         }
         throw new Error(`Failed to delete report: ${response.statusText}`)
       }
-      
+
       const json = await response.json()
-      
+
       if (!json.success) {
         throw new Error(json.error || 'Failed to delete report')
       }
-      
+
       reportLogger.info('Report deleted successfully', { reportId })
     } catch (error) {
-      reportLogger.error('Failed to delete report', { 
+      reportLogger.error('Failed to delete report', {
         error: error instanceof Error ? error.message : 'Unknown error',
         reportId,
       })
       throw error
     }
   }
-  
+
   /**
    * Duplicate report (create a copy)
    */
   async duplicateReport(reportId: string): Promise<ValuationSession> {
     try {
       reportLogger.info('Duplicating report', { originalReportId: reportId })
-      
+
       // Fetch original session
       const originalSession = await this.getReportById(reportId)
-      
+
       // Create new report with copied data
       return await this.createReport(originalSession.partialData)
     } catch (error) {
-      reportLogger.error('Failed to duplicate report', { 
+      reportLogger.error('Failed to duplicate report', {
         error: error instanceof Error ? error.message : 'Unknown error',
         reportId,
       })

@@ -1,27 +1,27 @@
 /**
  * Error Guards Tests
- * 
+ *
  * Test type-safe error guards for instanceof checking.
- * 
+ *
  * @module utils/__tests__/errorGuards.test
  */
 
 import { describe, expect, it } from 'vitest'
 import {
-    NetworkError,
-    NotFoundError,
-    RateLimitError,
-    SessionConflictError,
-    ValidationError,
+  NetworkError,
+  NotFoundError,
+  RateLimitError,
+  SessionConflictError,
+  ValidationError,
 } from '../errors/ApplicationErrors'
 import {
-    isNetworkError,
-    isNotFoundError,
-    isRateLimitError,
-    isRecoverable,
-    isRetryable,
-    isSessionConflictError,
-    isValidationError,
+  isNetworkError,
+  isNotFoundError,
+  isRateLimitError,
+  isRecoverable,
+  isRetryable,
+  isSessionConflictError,
+  isValidationError,
 } from '../errors/errorGuards'
 
 describe('errorGuards', () => {
@@ -93,28 +93,28 @@ describe('errorGuards', () => {
 
 /**
  * Error Guards Tests
- * 
+ *
  * Test type-safe error guards for instanceof checking.
- * 
+ *
  * @module utils/__tests__/errorGuards.test
  */
 
 import { describe, expect, it } from 'vitest'
 import {
-    NetworkError,
-    NotFoundError,
-    RateLimitError,
-    SessionConflictError,
-    ValidationError,
+  NetworkError,
+  NotFoundError,
+  RateLimitError,
+  SessionConflictError,
+  ValidationError,
 } from '../errors/ApplicationErrors'
 import {
-    isNetworkError,
-    isNotFoundError,
-    isRateLimitError,
-    isRecoverable,
-    isRetryable,
-    isSessionConflictError,
-    isValidationError,
+  isNetworkError,
+  isNotFoundError,
+  isRateLimitError,
+  isRecoverable,
+  isRetryable,
+  isSessionConflictError,
+  isValidationError,
 } from '../errors/errorGuards'
 
 describe('errorGuards', () => {
@@ -183,5 +183,3 @@ describe('errorGuards', () => {
     })
   })
 })
-
-

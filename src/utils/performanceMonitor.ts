@@ -1,11 +1,11 @@
 /**
  * Performance Monitor
- * 
+ *
  * Single Responsibility: Monitor and enforce performance targets (<2s framework requirement).
  * Tracks operation duration, logs slow operations, provides metrics.
- * 
+ *
  * Framework compliance: Lines 1453-1468 (Performance Monitoring)
- * 
+ *
  * @module utils/performanceMonitor
  */
 
@@ -31,15 +31,15 @@ export interface PerformanceMetric {
 
 /**
  * Performance Monitor Class
- * 
+ *
  * Tracks operation performance against thresholds.
  * Logs warnings for slow operations.
  * Collects metrics for analysis.
- * 
+ *
  * @example
  * ```typescript
  * const monitor = new PerformanceMonitor()
- * 
+ *
  * const result = await monitor.measure('session-create', async () => {
  *   return await createSession(reportId)
  * }, {
@@ -55,7 +55,7 @@ export class PerformanceMonitor {
 
   /**
    * Measure operation performance
-   * 
+   *
    * @param operation - Operation name
    * @param fn - Function to measure
    * @param thresholds - Performance thresholds
@@ -149,7 +149,7 @@ export class PerformanceMonitor {
 
   /**
    * Get metrics for operation
-   * 
+   *
    * @param operation - Operation name to filter by
    * @returns Array of metrics
    */
@@ -162,7 +162,7 @@ export class PerformanceMonitor {
 
   /**
    * Get performance statistics
-   * 
+   *
    * @param operation - Optional operation to filter by
    * @returns Statistics object
    */
@@ -270,4 +270,3 @@ export const performanceThresholds: Record<string, PerformanceThresholds> = {
 
 // Global performance monitor instance
 export const globalPerformanceMonitor = new PerformanceMonitor()
-

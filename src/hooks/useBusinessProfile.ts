@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react'
 import {
-    businessDataFetchingService,
-    businessDataValidationService,
-    type BusinessProfileData,
+  type BusinessProfileData,
+  businessDataFetchingService,
+  businessDataValidationService,
 } from '../services/businessData'
 import { chatLogger } from '../utils/logger'
 
@@ -31,7 +31,8 @@ export const useBusinessProfile = (userId?: string) => {
             profileData: {
               company_name: profileData.company_name,
               industry: profileData.industry,
-              hasCompleteProfile: businessDataValidationService.hasCompleteBusinessProfile(profileData),
+              hasCompleteProfile:
+                businessDataValidationService.hasCompleteBusinessProfile(profileData),
             },
           })
         } else {

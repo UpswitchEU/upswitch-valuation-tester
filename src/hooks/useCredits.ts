@@ -58,10 +58,13 @@ export const useCredits = (): CreditContextValue => {
       try {
         const planData = await backendAPI.getUserPlan()
         setPlan(planData)
-        generalLogger.debug('User plan loaded', { planType: planData.plan_type, creditsRemaining: planData.credits_remaining })
+        generalLogger.debug('User plan loaded', {
+          planType: planData.plan_type,
+          creditsRemaining: planData.credits_remaining,
+        })
       } catch (error) {
-        generalLogger.error('Failed to load user plan', { 
-          error: error instanceof Error ? error.message : 'Unknown error' 
+        generalLogger.error('Failed to load user plan', {
+          error: error instanceof Error ? error.message : 'Unknown error',
         })
         // Fallback to free plan if API call fails
         setPlan({

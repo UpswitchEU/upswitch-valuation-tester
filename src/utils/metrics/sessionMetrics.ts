@@ -1,11 +1,11 @@
 /**
  * Session Metrics Collection
- * 
+ *
  * Single Responsibility: Collect and aggregate session-related metrics.
  * Provides insights for monitoring, debugging, and optimization.
- * 
+ *
  * Framework requirement: Lines 1453-1468 (Performance Monitoring)
- * 
+ *
  * @module utils/metrics/sessionMetrics
  */
 
@@ -17,32 +17,32 @@ export interface SessionMetrics {
   sessionLoads: number
   viewSwitches: number
   restorations: number
-  
+
   // Success/failure rates
   successfulOperations: number
   failedOperations: number
-  
+
   // Error counts by type
   conflictErrors: number
   networkErrors: number
   rateLimitErrors: number
   validationErrors: number
-  
+
   // Performance metrics
   avgCreationTime_ms: number
   avgRestorationTime_ms: number
   avgSwitchTime_ms: number
-  
+
   // Retry metrics
   totalRetries: number
   retriesSucceeded: number
   retriesFailed: number
-  
+
   // Circuit breaker metrics
   circuitOpenCount: number
   circuitHalfOpenCount: number
   fastFailCount: number
-  
+
   // Deduplication metrics
   deduplicatedRequests: number
   deduplicationRate: number
@@ -50,7 +50,7 @@ export interface SessionMetrics {
 
 /**
  * Session Metrics Collector
- * 
+ *
  * Collects metrics for session operations.
  * Provides aggregated statistics and trends.
  */
@@ -126,7 +126,7 @@ export class SessionMetricsCollector {
    */
   getMetrics(): SessionMetrics {
     const ops = this.metrics.operations
-    
+
     const creations = ops.filter((o) => o.type === 'create')
     const loads = ops.filter((o) => o.type === 'load')
     const switches = ops.filter((o) => o.type === 'switch')
@@ -168,35 +168,34 @@ export class SessionMetricsCollector {
 
     // Calculate deduplication rate (estimate from retries)
     const deduplicatedRequests = ops.filter((o) => o.retries === 0 && o.success).length
-    const deduplicationRate =
-      ops.length > 0 ? deduplicatedRequests / ops.length : 0
+    const deduplicationRate = ops.length > 0 ? deduplicatedRequests / ops.length : 0
 
     return {
       sessionCreations: creations.length,
       sessionLoads: loads.length,
       viewSwitches: switches.length,
       restorations: restorations.length,
-      
+
       successfulOperations: successful.length,
       failedOperations: failed.length,
-      
+
       conflictErrors,
       networkErrors,
       rateLimitErrors,
       validationErrors,
-      
+
       avgCreationTime_ms: avgCreationTime,
       avgRestorationTime_ms: avgRestorationTime,
       avgSwitchTime_ms: avgSwitchTime,
-      
+
       totalRetries,
       retriesSucceeded,
       retriesFailed,
-      
+
       circuitOpenCount,
       circuitHalfOpenCount,
       fastFailCount,
-      
+
       deduplicatedRequests,
       deduplicationRate,
     }
@@ -205,11 +204,9 @@ export class SessionMetricsCollector {
   /**
    * Calculate average duration for operations
    */
-  private calculateAvgDuration(
-    operations: Array<{ duration_ms: number }>
-  ): number {
+  private calculateAvgDuration(operations: Array<{ duration_ms: number }>): number {
     if (operations.length === 0) return 0
-    
+
     const sum = operations.reduce((acc, o) => acc + o.duration_ms, 0)
     return sum / operations.length
   }
@@ -219,10 +216,14 @@ export class SessionMetricsCollector {
    */
   getSummary(): string {
     const metrics = this.getMetrics()
-    
-    const successRate = 
-      (metrics.successfulOperations + metrics.failedOperations) > 0
-        ? (metrics.successfulOperations / (metrics.successfulOperations + metrics.failedOperations) * 100).toFixed(1)
+
+    const successRate =
+      metrics.successfulOperations + metrics.failedOperations > 0
+        ? (
+            (metrics.successfulOperations /
+              (metrics.successfulOperations + metrics.failedOperations)) *
+            100
+          ).toFixed(1)
         : '0'
 
     return `
@@ -302,8 +303,10 @@ export const globalSessionMetrics = new SessionMetricsCollector()
 
 // Auto-log summary every 5 minutes in development
 if (typeof window !== 'undefined' && process.env.NODE_ENV === 'development') {
-  setInterval(() => {
-    globalSessionMetrics.logSummary()
-  }, 5 * 60 * 1000) // 5 minutes
+  setInterval(
+    () => {
+      globalSessionMetrics.logSummary()
+    },
+    5 * 60 * 1000
+  ) // 5 minutes
 }
-

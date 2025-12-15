@@ -13,18 +13,27 @@
  * @module hooks/valuationToolbar
  */
 
-export { useValuationToolbarAuth } from './useValuationToolbarAuth'
-export { useValuationToolbarDownload } from './useValuationToolbarDownload'
-export { useValuationToolbarFlow } from './useValuationToolbarFlow'
-export { useValuationToolbarFullscreen } from './useValuationToolbarFullscreen'
-export { useValuationToolbarName } from './useValuationToolbarName'
-export { useValuationToolbarRefresh } from './useValuationToolbarRefresh'
-export { useValuationToolbarTabs } from './useValuationToolbarTabs'
-
 export type { UseValuationToolbarAuthReturn } from './useValuationToolbarAuth'
+export { useValuationToolbarAuth } from './useValuationToolbarAuth'
 export type { UseValuationToolbarDownloadReturn } from './useValuationToolbarDownload'
+export { useValuationToolbarDownload } from './useValuationToolbarDownload'
 export type { UseValuationToolbarFlowReturn } from './useValuationToolbarFlow'
+export { useValuationToolbarFlow } from './useValuationToolbarFlow'
 export type { UseValuationToolbarFullscreenReturn } from './useValuationToolbarFullscreen'
-export type { UseValuationToolbarNameOptions, UseValuationToolbarNameReturn } from './useValuationToolbarName'
-export type { UseValuationToolbarRefreshOptions, UseValuationToolbarRefreshReturn } from './useValuationToolbarRefresh'
-export type { UseValuationToolbarTabsOptions, UseValuationToolbarTabsReturn, ValuationTab } from './useValuationToolbarTabs'
+export { useValuationToolbarFullscreen } from './useValuationToolbarFullscreen'
+export type {
+  UseValuationToolbarNameOptions,
+  UseValuationToolbarNameReturn,
+} from './useValuationToolbarName'
+export { useValuationToolbarName } from './useValuationToolbarName'
+export type {
+  UseValuationToolbarRefreshOptions,
+  UseValuationToolbarRefreshReturn,
+} from './useValuationToolbarRefresh'
+export { useValuationToolbarRefresh } from './useValuationToolbarRefresh'
+export type {
+  UseValuationToolbarTabsOptions,
+  UseValuationToolbarTabsReturn,
+  ValuationTab,
+} from './useValuationToolbarTabs'
+export { useValuationToolbarTabs } from './useValuationToolbarTabs'

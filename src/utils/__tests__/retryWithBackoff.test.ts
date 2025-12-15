@@ -1,8 +1,8 @@
 /**
  * Retry With Backoff Tests
- * 
+ *
  * Test exponential backoff retry logic.
- * 
+ *
  * @module utils/__tests__/retryWithBackoff.test
  */
 
@@ -18,24 +18,25 @@ describe('retryWithBackoff', () => {
   describe('success scenarios', () => {
     it('should return result on first attempt', async () => {
       const fn = vi.fn().mockResolvedValue('success')
-      
+
       const result = await retryWithBackoff(fn, { maxRetries: 3 })
-      
+
       expect(result).toBe('success')
       expect(fn).toHaveBeenCalledTimes(1)
     })
 
     it('should return result after retries', async () => {
-      const fn = vi.fn()
+      const fn = vi
+        .fn()
         .mockRejectedValueOnce(new NetworkError())
         .mockRejectedValueOnce(new NetworkError())
         .mockResolvedValueOnce('success')
-      
-      const result = await retryWithBackoff(fn, { 
+
+      const result = await retryWithBackoff(fn, {
         maxRetries: 3,
         initialDelay: 10,
       })
-      
+
       expect(result).toBe('success')
       expect(fn).toHaveBeenCalledTimes(3)
     })
@@ -44,24 +45,22 @@ describe('retryWithBackoff', () => {
   describe('failure scenarios', () => {
     it('should throw after max retries exhausted', async () => {
       const fn = vi.fn().mockRejectedValue(new NetworkError('Connection failed'))
-      
+
       await expect(
-        retryWithBackoff(fn, { 
+        retryWithBackoff(fn, {
           maxRetries: 2,
           initialDelay: 10,
         })
       ).rejects.toThrow('Connection failed')
-      
+
       expect(fn).toHaveBeenCalledTimes(3) // Initial + 2 retries
     })
 
     it('should not retry non-retryable errors', async () => {
       const fn = vi.fn().mockRejectedValue(new ValidationError('Invalid input'))
-      
-      await expect(
-        retryWithBackoff(fn, { maxRetries: 3 })
-      ).rejects.toThrow('Invalid input')
-      
+
+      await expect(retryWithBackoff(fn, { maxRetries: 3 })).rejects.toThrow('Invalid input')
+
       // Should fail immediately without retries
       expect(fn).toHaveBeenCalledTimes(1)
     })
@@ -71,9 +70,9 @@ describe('retryWithBackoff', () => {
     it('should increase delay exponentially', async () => {
       const delays: number[] = []
       const fn = vi.fn().mockRejectedValue(new NetworkError())
-      
+
       const startTime = Date.now()
-      
+
       await expect(
         retryWithBackoff(fn, {
           maxRetries: 3,
@@ -85,7 +84,7 @@ describe('retryWithBackoff', () => {
           },
         })
       ).rejects.toThrow()
-      
+
       // Delays should be: 50ms, 100ms, 200ms
       expect(delays).toHaveLength(3)
       expect(delays[0]).toBe(50)
@@ -96,7 +95,7 @@ describe('retryWithBackoff', () => {
     it('should cap delay at maxDelay', async () => {
       const delays: number[] = []
       const fn = vi.fn().mockRejectedValue(new NetworkError())
-      
+
       await expect(
         retryWithBackoff(fn, {
           maxRetries: 5,
@@ -108,7 +107,7 @@ describe('retryWithBackoff', () => {
           },
         })
       ).rejects.toThrow()
-      
+
       // All delays should be capped at 1000ms
       delays.forEach((delay) => {
         expect(delay).toBeLessThanOrEqual(1000)
@@ -118,18 +117,16 @@ describe('retryWithBackoff', () => {
 
   describe('callbacks', () => {
     it('should call onRetry callback', async () => {
-      const fn = vi.fn()
-        .mockRejectedValueOnce(new NetworkError())
-        .mockResolvedValueOnce('success')
-      
+      const fn = vi.fn().mockRejectedValueOnce(new NetworkError()).mockResolvedValueOnce('success')
+
       const onRetry = vi.fn()
-      
+
       await retryWithBackoff(fn, {
         maxRetries: 2,
         initialDelay: 10,
         onRetry,
       })
-      
+
       expect(onRetry).toHaveBeenCalledTimes(1)
       expect(onRetry).toHaveBeenCalledWith(
         expect.any(Number),
@@ -141,7 +138,7 @@ describe('retryWithBackoff', () => {
     it('should call onFailure callback when exhausted', async () => {
       const fn = vi.fn().mockRejectedValue(new RateLimitError())
       const onFailure = vi.fn()
-      
+
       await expect(
         retryWithBackoff(fn, {
           maxRetries: 2,
@@ -149,7 +146,7 @@ describe('retryWithBackoff', () => {
           onFailure,
         })
       ).rejects.toThrow()
-      
+
       expect(onFailure).toHaveBeenCalledTimes(1)
       expect(onFailure).toHaveBeenCalledWith(
         expect.any(RateLimitError),
@@ -160,31 +157,32 @@ describe('retryWithBackoff', () => {
 
   describe('custom retryable errors', () => {
     it('should only retry specified error types', async () => {
-      const fn = vi.fn()
+      const fn = vi
+        .fn()
         .mockRejectedValueOnce(new RateLimitError())
         .mockResolvedValueOnce('success')
-      
+
       // Only retry RateLimitError
       const result = await retryWithBackoff(fn, {
         maxRetries: 2,
         initialDelay: 10,
         retryableErrors: [RateLimitError],
       })
-      
+
       expect(result).toBe('success')
       expect(fn).toHaveBeenCalledTimes(2)
     })
 
     it('should not retry errors not in custom list', async () => {
       const fn = vi.fn().mockRejectedValue(new NetworkError())
-      
+
       await expect(
         retryWithBackoff(fn, {
           maxRetries: 2,
           retryableErrors: [RateLimitError], // Only retry rate limits
         })
       ).rejects.toThrow()
-      
+
       // Should fail immediately
       expect(fn).toHaveBeenCalledTimes(1)
     })
@@ -211,9 +209,9 @@ describe('retryWithBackoff', () => {
 
 /**
  * Retry With Backoff Tests
- * 
+ *
  * Test exponential backoff retry logic.
- * 
+ *
  * @module utils/__tests__/retryWithBackoff.test
  */
 
@@ -229,24 +227,25 @@ describe('retryWithBackoff', () => {
   describe('success scenarios', () => {
     it('should return result on first attempt', async () => {
       const fn = vi.fn().mockResolvedValue('success')
-      
+
       const result = await retryWithBackoff(fn, { maxRetries: 3 })
-      
+
       expect(result).toBe('success')
       expect(fn).toHaveBeenCalledTimes(1)
     })
 
     it('should return result after retries', async () => {
-      const fn = vi.fn()
+      const fn = vi
+        .fn()
         .mockRejectedValueOnce(new NetworkError())
         .mockRejectedValueOnce(new NetworkError())
         .mockResolvedValueOnce('success')
-      
-      const result = await retryWithBackoff(fn, { 
+
+      const result = await retryWithBackoff(fn, {
         maxRetries: 3,
         initialDelay: 10,
       })
-      
+
       expect(result).toBe('success')
       expect(fn).toHaveBeenCalledTimes(3)
     })
@@ -255,24 +254,22 @@ describe('retryWithBackoff', () => {
   describe('failure scenarios', () => {
     it('should throw after max retries exhausted', async () => {
       const fn = vi.fn().mockRejectedValue(new NetworkError('Connection failed'))
-      
+
       await expect(
-        retryWithBackoff(fn, { 
+        retryWithBackoff(fn, {
           maxRetries: 2,
           initialDelay: 10,
         })
       ).rejects.toThrow('Connection failed')
-      
+
       expect(fn).toHaveBeenCalledTimes(3) // Initial + 2 retries
     })
 
     it('should not retry non-retryable errors', async () => {
       const fn = vi.fn().mockRejectedValue(new ValidationError('Invalid input'))
-      
-      await expect(
-        retryWithBackoff(fn, { maxRetries: 3 })
-      ).rejects.toThrow('Invalid input')
-      
+
+      await expect(retryWithBackoff(fn, { maxRetries: 3 })).rejects.toThrow('Invalid input')
+
       // Should fail immediately without retries
       expect(fn).toHaveBeenCalledTimes(1)
     })
@@ -282,9 +279,9 @@ describe('retryWithBackoff', () => {
     it('should increase delay exponentially', async () => {
       const delays: number[] = []
       const fn = vi.fn().mockRejectedValue(new NetworkError())
-      
+
       const startTime = Date.now()
-      
+
       await expect(
         retryWithBackoff(fn, {
           maxRetries: 3,
@@ -296,7 +293,7 @@ describe('retryWithBackoff', () => {
           },
         })
       ).rejects.toThrow()
-      
+
       // Delays should be: 50ms, 100ms, 200ms
       expect(delays).toHaveLength(3)
       expect(delays[0]).toBe(50)
@@ -307,7 +304,7 @@ describe('retryWithBackoff', () => {
     it('should cap delay at maxDelay', async () => {
       const delays: number[] = []
       const fn = vi.fn().mockRejectedValue(new NetworkError())
-      
+
       await expect(
         retryWithBackoff(fn, {
           maxRetries: 5,
@@ -319,7 +316,7 @@ describe('retryWithBackoff', () => {
           },
         })
       ).rejects.toThrow()
-      
+
       // All delays should be capped at 1000ms
       delays.forEach((delay) => {
         expect(delay).toBeLessThanOrEqual(1000)
@@ -329,18 +326,16 @@ describe('retryWithBackoff', () => {
 
   describe('callbacks', () => {
     it('should call onRetry callback', async () => {
-      const fn = vi.fn()
-        .mockRejectedValueOnce(new NetworkError())
-        .mockResolvedValueOnce('success')
-      
+      const fn = vi.fn().mockRejectedValueOnce(new NetworkError()).mockResolvedValueOnce('success')
+
       const onRetry = vi.fn()
-      
+
       await retryWithBackoff(fn, {
         maxRetries: 2,
         initialDelay: 10,
         onRetry,
       })
-      
+
       expect(onRetry).toHaveBeenCalledTimes(1)
       expect(onRetry).toHaveBeenCalledWith(
         expect.any(Number),
@@ -352,7 +347,7 @@ describe('retryWithBackoff', () => {
     it('should call onFailure callback when exhausted', async () => {
       const fn = vi.fn().mockRejectedValue(new RateLimitError())
       const onFailure = vi.fn()
-      
+
       await expect(
         retryWithBackoff(fn, {
           maxRetries: 2,
@@ -360,7 +355,7 @@ describe('retryWithBackoff', () => {
           onFailure,
         })
       ).rejects.toThrow()
-      
+
       expect(onFailure).toHaveBeenCalledTimes(1)
       expect(onFailure).toHaveBeenCalledWith(
         expect.any(RateLimitError),
@@ -371,31 +366,32 @@ describe('retryWithBackoff', () => {
 
   describe('custom retryable errors', () => {
     it('should only retry specified error types', async () => {
-      const fn = vi.fn()
+      const fn = vi
+        .fn()
         .mockRejectedValueOnce(new RateLimitError())
         .mockResolvedValueOnce('success')
-      
+
       // Only retry RateLimitError
       const result = await retryWithBackoff(fn, {
         maxRetries: 2,
         initialDelay: 10,
         retryableErrors: [RateLimitError],
       })
-      
+
       expect(result).toBe('success')
       expect(fn).toHaveBeenCalledTimes(2)
     })
 
     it('should not retry errors not in custom list', async () => {
       const fn = vi.fn().mockRejectedValue(new NetworkError())
-      
+
       await expect(
         retryWithBackoff(fn, {
           maxRetries: 2,
           retryableErrors: [RateLimitError], // Only retry rate limits
         })
       ).rejects.toThrow()
-      
+
       // Should fail immediately
       expect(fn).toHaveBeenCalledTimes(1)
     })
@@ -419,5 +415,3 @@ describe('retryWithBackoff', () => {
     })
   })
 })
-
-

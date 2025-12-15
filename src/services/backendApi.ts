@@ -18,6 +18,11 @@
  */
 
 import type {
+  CreateValuationSessionRequest,
+  SaveValuationRequest,
+  UpdateValuationSessionRequest,
+} from '../types/api'
+import type {
   ConversationHistoryResponse,
   ConversationStatusResponse,
   CreateValuationSessionResponse,
@@ -27,7 +32,6 @@ import type {
   UpdateValuationSessionResponse,
   ValuationSessionResponse,
 } from '../types/api-responses'
-import type { CreateValuationSessionRequest, SaveValuationRequest, UpdateValuationSessionRequest } from '../types/api'
 import type { ValuationSession } from '../types/valuation'
 import { ValuationRequest, ValuationResponse } from '../types/valuation'
 import { CreditAPI } from './api/credit'
@@ -172,7 +176,11 @@ class BackendAPI {
     return this.creditAPI.getUserPlan()
   }
 
-  async saveValuation(data: ValuationResponse, reportId?: string, sessionId?: string): Promise<SaveValuationResponse> {
+  async saveValuation(
+    data: ValuationResponse,
+    reportId?: string,
+    sessionId?: string
+  ): Promise<SaveValuationResponse> {
     const request: SaveValuationRequest = {
       valuation_id: data.valuation_id || '',
       data,
