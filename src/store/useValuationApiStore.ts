@@ -23,6 +23,7 @@ interface ValuationApiStore {
   
   // Actions
   calculateValuation: (request: ValuationRequest) => Promise<ValuationResponse | null>
+  setCalculating: (isCalculating: boolean) => void
   clearError: () => void
 }
 
@@ -92,6 +93,11 @@ export const useValuationApiStore = create<ValuationApiStore>((set, get) => ({
       
       return null
     }
+  },
+  
+  // Set calculating state (for immediate UI feedback)
+  setCalculating: (isCalculating: boolean) => {
+    set({ isCalculating })
   },
   
   // Clear error

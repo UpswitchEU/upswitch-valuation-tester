@@ -362,8 +362,18 @@ export const ConversationPanel: React.FC<ConversationPanelProps> = ({
   // Handle manual calculate action (same as manual flow)
   const handleManualCalculate = useCallback(async () => {
     if (!session?.sessionData) {
-      chatLogger.warn('Cannot calculate: no session data', { sessionId })
+      chatLogger.warn('Cannot calculate: no session data')
       return
+    }
+
+    // CRITICAL: Set loading state IMMEDIATELY
+    const { setCalculating } = useValuationApiStore.getState()
+    const currentState = useValuationApiStore.getState()
+    if (!currentState.isCalculating) {
+      setCalculating(true)
+      chatLogger.info('Loading state set to true (conversational flow)', {
+        wasCalculating: currentState.isCalculating,
+      })
     }
 
     try {
@@ -372,7 +382,7 @@ export const ConversationPanel: React.FC<ConversationPanelProps> = ({
         hasSessionData: !!session.sessionData,
       })
 
-      // Mark as generating
+      // Mark conversation as generating
       actions.setGenerating(true)
       onValuationStart?.()
 
@@ -421,6 +431,7 @@ export const ConversationPanel: React.FC<ConversationPanelProps> = ({
         chatLogger.warn('Cannot calculate: missing required fields', { missingFields })
         actions.setError(`Please provide: ${missingFields.join(', ')}`)
         actions.setGenerating(false)
+        setCalculating(false) // Reset on validation error
         return
       }
 
@@ -432,18 +443,17 @@ export const ConversationPanel: React.FC<ConversationPanelProps> = ({
         await handleValuationComplete(result)
       } else {
         chatLogger.error('Manual calculate returned no result')
-        actions.setError('Calculation failed. Please try again.')
+        actions.setError('Calculation failed')
         actions.setGenerating(false)
+        setCalculating(false) // Reset on failure
       }
     } catch (error) {
-      chatLogger.error('Manual calculate failed', {
-        error: error instanceof Error ? error.message : String(error),
-        stack: error instanceof Error ? error.stack : undefined,
-      })
+      chatLogger.error('Manual calculate failed', { error })
       actions.setError(
         error instanceof Error ? `Calculation failed: ${error.message}` : 'Calculation failed. Please try again.'
       )
       actions.setGenerating(false)
+      setCalculating(false) // Reset on error
     }
   }, [
     session,

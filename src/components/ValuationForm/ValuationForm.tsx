@@ -464,15 +464,18 @@ export const ValuationForm: React.FC<ValuationFormProps> = ({
     <form
       onSubmit={async (e) => {
         e.preventDefault()
+        generalLogger.info('Form onSubmit handler called', {
+          hasHandleSubmit: !!handleSubmit,
+          isSubmitting,
+        })
         try {
-          // Clear previous errors
           clearAllErrors()
           await handleSubmit(e)
         } catch (error) {
-          generalLogger.error('Form submission error', {
-            error: error instanceof Error ? error.message : String(error),
-            stack: error instanceof Error ? error.stack : undefined,
-          })
+          generalLogger.error('Form submission error', { error })
+          // Reset loading state on unexpected error
+          const { setCalculating } = useValuationApiStore.getState()
+          setCalculating(false)
         }
       }}
       className="space-y-12 @container"

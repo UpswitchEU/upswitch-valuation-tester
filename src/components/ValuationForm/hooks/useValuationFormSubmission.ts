@@ -44,7 +44,7 @@ export const useValuationFormSubmission = (
   setEmployeeCountError: (error: string | null) => void
 ): UseValuationFormSubmissionReturn => {
   const { formData, setCollectedData } = useValuationFormStore()
-  const { calculateValuation, isCalculating } = useValuationApiStore()
+  const { calculateValuation, isCalculating, setCalculating } = useValuationApiStore()
   const { setResult } = useValuationResultsStore()
   const { session } = useValuationSessionStore()
   const { createVersion, getLatestVersion, fetchVersions } = useVersionHistoryStore()
@@ -53,46 +53,59 @@ export const useValuationFormSubmission = (
     async (e: React.FormEvent) => {
       e.preventDefault()
 
-      try {
-        generalLogger.info('Form submit triggered', {
-        isCalculating,
-        hasFormData: !!formData,
-        formDataKeys: Object.keys(formData || {}),
-        revenue: formData?.revenue,
-        ebitda: formData?.ebitda,
-        industry: formData?.industry,
-        country_code: formData?.country_code,
-        business_type: formData?.business_type,
-        number_of_owners: formData?.number_of_owners,
-        number_of_employees: formData?.number_of_employees,
-      })
-
-      // Prevent double submission
-      if (isCalculating) {
-        generalLogger.warn('Calculation already in progress, ignoring duplicate submit')
-        return
-      }
-
-      // Validate employee count when owner count is provided
-      // NOTE: 0 employees is valid when there are only owner-managers (no other staff)
-      if (
-        formData.business_type === 'company' &&
-        formData.number_of_owners &&
-        formData.number_of_owners > 0 &&
-        formData.number_of_employees === undefined
-      ) {
-        const errorMsg = 'Employee count is required when owner count is provided to calculate owner concentration risk. Enter 0 if there are no employees besides the owner-managers.'
-        generalLogger.warn('Form validation failed: employee count required', {
-          business_type: formData.business_type,
-          number_of_owners: formData.number_of_owners,
-          number_of_employees: formData.number_of_employees,
+      // CRITICAL: Set loading state IMMEDIATELY (BEFORE any checks)
+      // This ensures the loading spinner shows up right away
+      const currentState = useValuationApiStore.getState()
+      if (!currentState.isCalculating) {
+        setCalculating(true)
+        generalLogger.info('Loading state set to true immediately', {
+          wasCalculating: currentState.isCalculating,
         })
-        setEmployeeCountError(errorMsg)
-        return
       }
 
-      // Clear validation error if validation passes
-      setEmployeeCountError(null)
+      try {
+        // Log submission
+        generalLogger.info('Form submit triggered', {
+          isCalculating: useValuationApiStore.getState().isCalculating,
+          hasFormData: !!formData,
+          formDataKeys: Object.keys(formData || {}),
+          revenue: formData?.revenue,
+          ebitda: formData?.ebitda,
+          industry: formData?.industry,
+          country_code: formData?.country_code,
+          business_type: formData?.business_type,
+          number_of_owners: formData?.number_of_owners,
+          number_of_employees: formData?.number_of_employees,
+        })
+
+        // Prevent double submission
+        const checkState = useValuationApiStore.getState()
+        if (checkState.isCalculating && isCalculating) {
+          generalLogger.warn('Calculation already in progress')
+          return // Don't reset - let existing calculation finish
+        }
+
+        // Validate employee count when owner count is provided
+        // NOTE: 0 employees is valid when there are only owner-managers (no other staff)
+        if (
+          formData.business_type === 'company' &&
+          formData.number_of_owners &&
+          formData.number_of_owners > 0 &&
+          formData.number_of_employees === undefined
+        ) {
+          const errorMsg = 'Employee count is required when owner count is provided to calculate owner concentration risk. Enter 0 if there are no employees besides the owner-managers.'
+          generalLogger.warn('Form validation failed: employee count required', {
+            business_type: formData.business_type,
+            number_of_owners: formData.number_of_owners,
+            number_of_employees: formData.number_of_employees,
+          })
+          setEmployeeCountError(errorMsg)
+          setCalculating(false) // Reset on validation error
+          return
+        }
+
+        // Clear validation error
+        setEmployeeCountError(null)
 
       // Validate required fields
       if (!formData.revenue || !formData.ebitda || !formData.industry || !formData.country_code) {
@@ -107,6 +120,7 @@ export const useValuationFormSubmission = (
           formDataKeys: Object.keys(formData),
         })
         setEmployeeCountError(`Please fill in all required fields: ${missingFields.join(', ')}`)
+        setCalculating(false) // Reset loading state on validation error
         return
       }
 
@@ -413,22 +427,14 @@ export const useValuationFormSubmission = (
         })
       }
       } catch (error) {
-        // Catch any errors during submission and log them
-        generalLogger.error('Form submission failed with error', {
-          error: error instanceof Error ? error.message : String(error),
-          stack: error instanceof Error ? error.stack : undefined,
-          formDataKeys: Object.keys(formData || {}),
-          hasSession: !!session,
-          reportId: session?.reportId,
-        })
-        // Set employee count error to display to user (this is the only error display mechanism)
+        generalLogger.error('Form submission failed', { error })
         setEmployeeCountError(
           error instanceof Error
             ? `Calculation failed: ${error.message}`
             : 'Calculation failed. Please check the console for details.'
         )
-        // Re-throw to prevent silent failures
-        throw error
+      } finally {
+        setCalculating(false) // Always reset in finally block
       }
     },
     [
@@ -441,6 +447,8 @@ export const useValuationFormSubmission = (
       getLatestVersion,
       createVersion,
       fetchVersions,
+      setCalculating,
+      isCalculating,
     ]
   )
 
