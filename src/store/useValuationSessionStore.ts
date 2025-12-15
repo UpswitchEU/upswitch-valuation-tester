@@ -54,7 +54,6 @@ export interface ValuationSessionStore {
   // Sync state
   isSyncing: boolean
   syncError: string | null
-  backgroundSyncStatus: 'idle' | 'syncing' | 'synced' | 'failed'
 
   // Save status (for M&A workflow - trust indicators)
   isSaving: boolean
@@ -64,9 +63,6 @@ export interface ValuationSessionStore {
   // Flow switch confirmation
   pendingFlowSwitch: 'manual' | 'conversational' | null
   setPendingFlowSwitch: (view: 'manual' | 'conversational' | null) => void
-
-  // Background sync status management
-  setBackgroundSyncStatus: (status: 'idle' | 'syncing' | 'synced' | 'failed') => void
 
   // Atomic initialization state (single source of truth)
   initializationState: Map<string, {
@@ -96,7 +92,6 @@ export const useValuationSessionStore = create<ValuationSessionStore>((set, get)
     session: null,
     isSyncing: false,
     syncError: null,
-    backgroundSyncStatus: 'idle',
     pendingFlowSwitch: null,
 
     // Save status (M&A workflow trust indicators)
@@ -1311,11 +1306,5 @@ export const useValuationSessionStore = create<ValuationSessionStore>((set, get)
       set({ pendingFlowSwitch: view })
     },
 
-    /**
-     * Set background sync status (for optimistic session sync)
-     */
-    setBackgroundSyncStatus: (status: 'idle' | 'syncing' | 'synced' | 'failed') => {
-      set({ backgroundSyncStatus: status })
-    },
   }
 })

@@ -1,7 +1,6 @@
 import {
   AlertCircle,
   Check,
-  Code,
   Download,
   Edit3,
   Eye,
@@ -27,7 +26,6 @@ import {
 import { useValuationSessionStore } from '../store/useValuationSessionStore'
 import { useVersionHistoryStore } from '../store/useVersionHistoryStore'
 import { ValuationToolbarProps } from '../types/valuation'
-import { BackgroundSyncIndicator } from './BackgroundSyncIndicator'
 import { FlowSwitchWarningModal } from './FlowSwitchWarningModal'
 import { UserDropdown } from './UserDropdown'
 import { Tooltip } from './ui/Tooltip'
@@ -53,7 +51,6 @@ export const ValuationToolbar: React.FC<ValuationToolbarProps> = ({
     lastSaved,
     hasUnsavedChanges,
     syncError,
-    backgroundSyncStatus,
   } = useValuationSessionStore()
   const {
     versions: storeVersions,
@@ -164,7 +161,7 @@ export const ValuationToolbar: React.FC<ValuationToolbarProps> = ({
 
   // Use prop tab if provided (parent-controlled), otherwise use hook state
   const currentActiveTab = activeTab ?? hookActiveTab
-  const handleTabClick = (tab: 'preview' | 'source' | 'info' | 'history') => {
+  const handleTabClick = (tab: 'preview' | 'info' | 'history') => {
     // If parent provides onTabChange, use it (parent-controlled)
     // Otherwise use hook handler (self-controlled)
     if (onTabChange) {
@@ -256,8 +253,6 @@ export const ValuationToolbar: React.FC<ValuationToolbarProps> = ({
                     )}
                   </Tooltip>
                 )}
-                {/* Background Sync Indicator - Shows optimistic sync status for NEW reports */}
-                <BackgroundSyncIndicator status={backgroundSyncStatus} compact={true} />
               </div>
 
               {/* Center Section - Action Buttons */}
@@ -349,18 +344,6 @@ export const ValuationToolbar: React.FC<ValuationToolbarProps> = ({
                     }`}
                   >
                     <Eye className="w-4 h-4" />
-                  </button>
-                </Tooltip>
-                <Tooltip content="Source Code" position="bottom" className="">
-                  <button
-                    onClick={() => handleTabClick('source')}
-                    className={`p-2 rounded-lg transition-all duration-200 ${
-                      currentActiveTab === 'source'
-                        ? 'bg-zinc-700 text-white'
-                        : 'text-gray-400 hover:text-gray-300 hover:bg-zinc-800'
-                    }`}
-                  >
-                    <Code className="w-4 h-4" />
                   </button>
                 </Tooltip>
                 <Tooltip content="Valuation Info" position="bottom" className="">

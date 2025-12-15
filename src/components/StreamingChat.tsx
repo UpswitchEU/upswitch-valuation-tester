@@ -476,11 +476,17 @@ export const StreamingChat: React.FC<import('./StreamingChat.types').StreamingCh
     }
   }, [messages, onMessageComplete, sessionId])
 
+  // CRITICAL: Memoize getCurrentMessages to prevent infinite loops in useConversationInitializer
+  // The function reference must be stable to avoid re-running the initialization effect
+  const getCurrentMessages = useCallback(() => {
+    return useConversationStore.getState().messages
+  }, []) // Empty deps - always get fresh messages from store
+
   // Use extracted conversation initializer
   const { isInitializing } = useConversationInitializer(sessionId, userId, {
     addMessage: addMessageWrapper,
     setMessages: setMessages as React.Dispatch<React.SetStateAction<Message[]>>,
-    getCurrentMessages: () => messages,
+    getCurrentMessages,
     user: user as UserProfile | undefined,
     initialData,
     initialMessages,

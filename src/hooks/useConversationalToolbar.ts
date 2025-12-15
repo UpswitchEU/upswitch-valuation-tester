@@ -47,14 +47,14 @@ export interface UseConversationalToolbarOptions {
 
 export interface UseConversationalToolbarReturn {
   // Toolbar state
-  activeTab: 'source' | 'preview' | 'info'
+  activeTab: 'preview' | 'info'
   isFullScreen: boolean
   isDownloading: boolean
 
   // Toolbar actions
   handleRefresh: () => void
   handleDownload: () => Promise<void>
-  handleTabChange: (tab: 'source' | 'preview' | 'info' | 'history') => void
+  handleTabChange: (tab: 'preview' | 'info' | 'history') => void
   handleOpenFullscreen: () => void
   handleCloseFullscreen: () => void
 }
@@ -162,14 +162,14 @@ export function useConversationalToolbar({
 
   return {
     // Toolbar state
-    activeTab: activeTab as 'preview' | 'source' | 'info',
+    activeTab: activeTab as 'preview' | 'info',
     isFullScreen,
     isDownloading,
 
     // Toolbar actions
     handleRefresh,
     handleDownload,
-    handleTabChange: (tab: 'source' | 'preview' | 'info' | 'history') => handleHookTabChange(tab),
+    handleTabChange: (tab: 'preview' | 'info' | 'history') => handleHookTabChange(tab),
     handleOpenFullscreen: handleHookOpenFullscreen,
     handleCloseFullscreen: handleHookCloseFullscreen,
   }

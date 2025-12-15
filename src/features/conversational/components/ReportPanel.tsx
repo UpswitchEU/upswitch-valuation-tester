@@ -9,13 +9,14 @@
 
 import React, { Suspense } from 'react'
 import { Results } from '../../../components/results/Results'
+import { ValuationInfoPanel } from '../../../components/ValuationInfoPanel'
 import { useValuationApiStore } from '../../../store/useValuationApiStore'
 import type { ValuationResponse } from '../../../types/valuation'
 
 interface ReportPanelProps {
   className?: string
-  activeTab?: 'preview' | 'source' | 'info' | 'history'
-  onTabChange?: (tab: 'preview' | 'source' | 'info' | 'history') => void
+  activeTab?: 'preview' | 'info' | 'history'
+  onTabChange?: (tab: 'preview' | 'info' | 'history') => void
   isCalculating?: boolean
   error?: string | null
   result?: ValuationResponse | null
@@ -88,33 +89,6 @@ const PreviewErrorState: React.FC<{ error: string; onRetry?: () => void }> = ({ 
     <h3 className="mt-4 text-lg font-semibold text-slate-ink">Your valuation report</h3>
     <p className="mt-2 text-sm text-gray-600 max-w-sm leading-relaxed">
       {error || 'An error occurred while generating your valuation report. Please try again.'}
-    </p>
-  </div>
-)
-
-/**
- * Empty State Component for Source Tab
- */
-const SourceEmptyState: React.FC = () => (
-  <div className="flex flex-col items-center justify-center h-full p-8 text-center bg-canvas">
-    <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-gray-200 flex items-center justify-center mb-3 sm:mb-4 transition-all duration-300 hover:scale-110">
-      <svg
-        className="w-6 h-6 sm:w-8 sm:h-8 text-primary-500"
-        fill="none"
-        stroke="currentColor"
-        viewBox="0 0 24 24"
-      >
-        <path
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          strokeWidth={2}
-          d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"
-        />
-      </svg>
-    </div>
-    <h3 className="mt-4 text-lg font-semibold text-slate-ink">Report source code</h3>
-    <p className="mt-2 text-sm text-gray-600 max-w-sm leading-relaxed">
-      View the raw HTML markup and styling of your generated report for customization or integration
     </p>
   </div>
 )
@@ -220,11 +194,20 @@ export const ReportPanel: React.FC<ReportPanelProps> = React.memo(
             </div>
           )}
 
-          {/* Source Tab */}
-          {activeTab === 'source' && <SourceEmptyState />}
-
           {/* Info Tab */}
-          {activeTab === 'info' && <InfoEmptyState />}
+          {activeTab === 'info' && (
+            <div className="h-full">
+              {isCalculating ? (
+                <PreviewLoadingState />
+              ) : error ? (
+                <PreviewErrorState error={error} onRetry={handleRetry} />
+              ) : result?.info_tab_html ? (
+                <ValuationInfoPanel result={result} />
+              ) : (
+                <InfoEmptyState />
+              )}
+            </div>
+          )}
 
           {/* History Tab */}
           {activeTab === 'history' && <HistoryEmptyState />}

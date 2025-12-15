@@ -518,6 +518,22 @@ export const useConversationInitializer = (
     const currentPythonSessionId = callbacks.pythonSessionId ?? null
     const pythonSessionIdChanged = lastPythonSessionIdRef.current !== currentPythonSessionId
 
+    // CRITICAL: Get initialization state FIRST (before checking messages)
+    // This prevents loops when messages exist but we're already initialized
+    const initState = getInitializationState(sessionId)
+
+    // RULE 0: Already initialized → skip IMMEDIATELY (prevents loops)
+    // Check this BEFORE checking messages to prevent re-running when messages exist
+    if (initState?.status === 'ready' || initState?.status === 'initializing') {
+      chatLogger.debug('Already initialized or initializing - skipping (prevents loop)', {
+        sessionId,
+        pythonSessionId: currentPythonSessionId,
+        status: initState.status,
+      })
+      setIsInitializing(false)
+      return
+    }
+
     // RULE 1: Reset state if pythonSessionId changed (session transition)
     if (pythonSessionIdChanged) {
       chatLogger.info('🔄 Python sessionId changed - resetting initialization state', {
@@ -539,9 +555,6 @@ export const useConversationInitializer = (
 
     const currentMessages = callbacks.getCurrentMessages ? callbacks.getCurrentMessages() : []
     const hasMessages = currentMessages.length > 0
-
-    // CRITICAL: Get initialization state once (prevents duplicate calls)
-    const initState = getInitializationState(sessionId)
     
     chatLogger.debug('useConversationInitializer: state check', {
       sessionId,
@@ -582,16 +595,6 @@ export const useConversationInitializer = (
       chatLogger.debug('Restoration not complete - waiting', {
         sessionId,
         pythonSessionId: currentPythonSessionId,
-      })
-      return
-    }
-
-    // RULE 5: Already initialized → skip (check Zustand store)
-    if (initState?.status === 'ready' || initState?.status === 'initializing') {
-      chatLogger.debug('Already initialized or initializing - skipping', {
-        sessionId,
-        pythonSessionId: currentPythonSessionId,
-        status: initState.status,
       })
       return
     }
@@ -638,7 +641,8 @@ export const useConversationInitializer = (
     callbacks?.isSessionInitialized,
     callbacks?.isRestorationComplete,
     callbacks?.pythonSessionId,
-    callbacks?.getCurrentMessages,
+    // CRITICAL: Don't include getCurrentMessages in deps - it changes on every render
+    // Instead, we check initialization state FIRST to prevent loops
     getInitializationState,
     setInitializationState,
     resetInitializationState,

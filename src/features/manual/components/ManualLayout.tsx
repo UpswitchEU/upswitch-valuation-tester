@@ -44,7 +44,7 @@ interface ManualLayoutProps {
  *
  * Provides 2-panel layout:
  * - Left: Form inputs for manual data entry
- * - Right: Report preview (Preview/Source/Info tabs)
+ * - Right: Report preview (Preview/Info tabs)
  */
 export const ManualLayout: React.FC<ManualLayoutProps> = ({
   reportId,
@@ -91,7 +91,7 @@ export const ManualLayout: React.FC<ManualLayoutProps> = ({
         activeTab={activeTab}
         onTabChange={(tab) => {
           if (tab !== 'history') {
-            handleHookTabChange(tab as 'preview' | 'source' | 'info')
+            handleHookTabChange(tab as 'preview' | 'info')
           }
         }}
         companyName={result?.company_name}
@@ -131,8 +131,8 @@ export const ManualLayout: React.FC<ManualLayoutProps> = ({
           style={{ width: isMobile ? '100%' : `${100 - leftPanelWidth}%` }}
         >
           <ReportPanel
-            activeTab={activeTab as 'preview' | 'source' | 'info'}
-            onTabChange={(tab: 'preview' | 'source' | 'info' | 'history') => {
+            activeTab={activeTab as 'preview' | 'info'}
+            onTabChange={(tab: 'preview' | 'info' | 'history') => {
               if (tab !== 'history') {
                 handleHookTabChange(tab as ValuationTab)
               } else {

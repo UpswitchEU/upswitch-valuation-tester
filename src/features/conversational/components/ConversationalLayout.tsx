@@ -71,7 +71,7 @@ const ConversationalLayoutInner: React.FC<ConversationalLayoutProps> = ({
 
   // Use split stores instead of monolithic useValuationStore
   const { setCollectedData } = useValuationFormStore()
-  const { isCalculating } = useValuationApiStore()
+  const { isCalculating, error } = useValuationApiStore()
   const { result, setResult } = useValuationResultsStore()
   const { isSaving, lastSaved, hasUnsavedChanges, syncError, updateSessionData } = useValuationSessionStore()
 
@@ -286,7 +286,7 @@ const ConversationalLayoutInner: React.FC<ConversationalLayoutProps> = ({
           valuationName="Valuation"
           valuationId={result?.valuation_id || state.valuationResult?.valuation_id}
           activeTab={toolbar.activeTab}
-          onTabChange={(tab: 'source' | 'preview' | 'info' | 'history') => {
+          onTabChange={(tab: 'preview' | 'info' | 'history') => {
             if (tab !== 'history') {
               toolbar.handleTabChange(tab)
             }
@@ -377,7 +377,13 @@ const ConversationalLayoutInner: React.FC<ConversationalLayoutProps> = ({
             } h-full min-h-[400px] lg:min-h-0 w-full lg:w-auto border-t lg:border-t-0 border-zinc-800`}
             style={{ width: isMobile ? '100%' : `${100 - leftPanelWidth}%` }}
           >
-            <ReportPanel activeTab={toolbar.activeTab} onTabChange={toolbar.handleTabChange} />
+            <ReportPanel
+              activeTab={toolbar.activeTab}
+              onTabChange={toolbar.handleTabChange}
+              isCalculating={isGeneratingState}
+              error={error}
+              result={result || state.valuationResult || null}
+            />
           </div>
         </div>
 
@@ -399,6 +405,9 @@ const ConversationalLayoutInner: React.FC<ConversationalLayoutProps> = ({
             className="h-full"
             activeTab={toolbar.activeTab}
             onTabChange={toolbar.handleTabChange}
+            isCalculating={isGeneratingState}
+            error={error}
+            result={result || state.valuationResult || null}
           />
         </FullScreenModal>
       </div>

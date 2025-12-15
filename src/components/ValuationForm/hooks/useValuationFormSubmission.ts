@@ -126,6 +126,9 @@ export const useValuationFormSubmission = (
           calculationDuration: `${calculationDuration.toFixed(2)}ms`,
         })
         
+        // CRITICAL: Console.log for visibility
+        console.log(`[DIAGNOSTIC-FRONTEND] Before setResult: hasHtmlReport=${!!result.html_report}, htmlReportLength=${result.html_report?.length || 0}, hasInfoTabHtml=${!!result.info_tab_html}, infoTabHtmlLength=${result.info_tab_html?.length || 0}, resultKeys=${Object.keys(result).join(',')}`)
+        
         // Warn if html_report is missing
         if (!result.html_report || result.html_report.trim().length === 0) {
           generalLogger.error('CRITICAL: html_report missing or empty in valuation result', {
@@ -136,6 +139,28 @@ export const useValuationFormSubmission = (
             resultType: typeof result,
             resultStringified: JSON.stringify(result).substring(0, 500),
           })
+        }
+        
+        // CRITICAL: Warn if info_tab_html is missing
+        if (!result.info_tab_html || result.info_tab_html.trim().length === 0) {
+          console.error('[DIAGNOSTIC-FRONTEND] CRITICAL: info_tab_html missing before setResult', {
+            valuationId: result.valuation_id,
+            hasInfoTabHtml: !!result.info_tab_html,
+            infoTabHtmlLength: result.info_tab_html?.length || 0,
+            resultKeys: Object.keys(result),
+            infoTabHtmlInKeys: 'info_tab_html' in result,
+            resultType: typeof result,
+            resultStringified: JSON.stringify(result).substring(0, 1000),
+          })
+          generalLogger.error('CRITICAL: info_tab_html missing or empty in valuation result', {
+            valuationId: result.valuation_id,
+            hasInfoTabHtml: !!result.info_tab_html,
+            infoTabHtmlLength: result.info_tab_html?.length || 0,
+            resultKeys: Object.keys(result),
+            infoTabHtmlInKeys: 'info_tab_html' in result,
+          })
+        } else {
+          console.log(`[DIAGNOSTIC-FRONTEND] info_tab_html present before setResult: length=${result.info_tab_html.length}`)
         }
         
         // Store result in results store

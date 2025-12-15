@@ -188,14 +188,7 @@ export function syncSessionToBackend(session: ValuationSession): void {
   const { reportId } = session
   const store = useValuationSessionStore.getState()
 
-  // Check store state atomically (prevents duplicate syncs)
-  if (store.backgroundSyncStatus === 'syncing') {
-    sessionHelpersLogger.debug('Sync already in progress, skipping', { reportId })
-    return
-  }
-
-  // Update sync status to 'syncing' (atomic write)
-  store.setBackgroundSyncStatus('syncing')
+  // Background sync (no status tracking needed)
 
   // Sync in background (non-blocking) with retry logic
   Promise.resolve()
@@ -236,8 +229,7 @@ export function syncSessionToBackend(session: ValuationSession): void {
           sessionId: session.sessionId,
         })
 
-        // Update sync status to 'synced'
-        useValuationSessionStore.getState().setBackgroundSyncStatus('synced')
+        // Sync completed successfully
 
         // Success - cache already updated by createSessionOptimistically
         // Backend may have additional fields, but we keep local version for now
@@ -302,8 +294,7 @@ export function syncSessionToBackend(session: ValuationSession): void {
                 currentView: backendSession.currentView,
               })
 
-              // Update sync status to 'synced' (we successfully loaded the session)
-              useValuationSessionStore.getState().setBackgroundSyncStatus('synced')
+              // Successfully loaded existing session
             }
           } catch (loadError) {
             sessionHelpersLogger.error('Failed to load existing session after 409', {
@@ -311,8 +302,6 @@ export function syncSessionToBackend(session: ValuationSession): void {
               error: loadError instanceof Error ? loadError.message : 'Unknown error',
             })
             // Keep optimistic session - it still works locally
-            // Update sync status to 'failed'
-            useValuationSessionStore.getState().setBackgroundSyncStatus('failed')
           }
         } else if (isRetryable(error)) {
           // Retryable error but retries exhausted - log warning
@@ -324,8 +313,6 @@ export function syncSessionToBackend(session: ValuationSession): void {
             }
           )
           // Session still works locally - user can retry later
-          // Update sync status to 'failed'
-          useValuationSessionStore.getState().setBackgroundSyncStatus('failed')
         } else {
           // Non-retryable error - log but don't block UI
           sessionHelpersLogger.warn(
@@ -336,8 +323,6 @@ export function syncSessionToBackend(session: ValuationSession): void {
             }
           )
           // Session still works locally - user can retry later
-          // Update sync status to 'failed'
-          useValuationSessionStore.getState().setBackgroundSyncStatus('failed')
         }
       }
     })
@@ -347,7 +332,5 @@ export function syncSessionToBackend(session: ValuationSession): void {
         reportId,
         error: error instanceof Error ? error.message : 'Unknown error',
       })
-      // Update sync status to 'failed'
-      useValuationSessionStore.getState().setBackgroundSyncStatus('failed')
     })
 }
