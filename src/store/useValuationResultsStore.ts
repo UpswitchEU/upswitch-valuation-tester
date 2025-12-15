@@ -15,6 +15,9 @@ interface ValuationResultsStore {
 
   // Actions
   setResult: (result: ValuationResponse | null) => void
+  setValuationResult: (result: ValuationResponse) => void
+  setHtmlReport: (html: string) => void
+  setInfoTabHtml: (html: string) => void
   clearResult: () => void
 }
 

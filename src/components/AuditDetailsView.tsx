@@ -283,8 +283,8 @@ interface FieldChangeRowProps {
 
 function FieldChangeRow({ field, change, countryCode, isSignificant }: FieldChangeRowProps) {
   const hasPercentChange = change.percentChange !== undefined && change.percentChange !== null
-  const isIncrease = hasPercentChange && change.percentChange > 0
-  const isDecrease = hasPercentChange && change.percentChange < 0
+  const isIncrease = hasPercentChange && change.percentChange! > 0
+  const isDecrease = hasPercentChange && change.percentChange! < 0
 
   return (
     <div
@@ -320,7 +320,7 @@ function FieldChangeRow({ field, change, countryCode, isSignificant }: FieldChan
           >
             {isIncrease && <ArrowUpRight className="w-4 h-4" />}
             {isDecrease && <ArrowDownRight className="w-4 h-4" />}
-            <span>{Math.abs(change.percentChange).toFixed(1)}%</span>
+            <span>{Math.abs(change.percentChange!).toFixed(1)}%</span>
           </div>
         )}
       </div>

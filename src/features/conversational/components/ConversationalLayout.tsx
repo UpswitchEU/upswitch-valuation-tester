@@ -502,6 +502,7 @@ const ConversationalLayoutInner: React.FC<ConversationalLayoutProps> = ({
             style={{ width: isMobile ? '100%' : `${100 - leftPanelWidth}%` }}
           >
             <ReportPanel
+              reportId={reportId}
               activeTab={toolbar.activeTab}
               onTabChange={toolbar.handleTabChange}
               isCalculating={isGeneratingState}
@@ -526,6 +527,7 @@ const ConversationalLayoutInner: React.FC<ConversationalLayoutProps> = ({
           title="Valuation - Full Screen"
         >
           <ReportPanel
+            reportId={reportId}
             className="h-full"
             activeTab={toolbar.activeTab}
             onTabChange={toolbar.handleTabChange}

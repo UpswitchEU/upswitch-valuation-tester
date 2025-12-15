@@ -253,9 +253,40 @@ export const useValuationSessionStore = create<ValuationSessionStore>((set, get)
                   session: normalizedSession,
                   syncError: null,
                 })
+
+                // CRITICAL: Restore HTML reports and valuation results if available
+                const sessionData = existingSession.sessionData as any
+                if (sessionData?.html_report || sessionData?.valuation_result) {
+                  storeLogger.info('Restoring HTML reports and valuation results', {
+                    reportId,
+                    hasHtmlReport: !!sessionData.html_report,
+                    hasInfoTabHtml: !!sessionData.info_tab_html,
+                    hasValuationResult: !!sessionData.valuation_result,
+                  })
+
+                  // Import the results store dynamically to avoid circular dependencies
+                  const { useValuationResultsStore } = await import('./useValuationResultsStore')
+                  const resultsStore = useValuationResultsStore.getState()
+
+                  // Store HTML reports
+                  if (sessionData.html_report) {
+                    resultsStore.setHtmlReport(sessionData.html_report)
+                  }
+                  if (sessionData.info_tab_html) {
+                    resultsStore.setInfoTabHtml(sessionData.info_tab_html)
+                  }
+
+                  // Store valuation result
+                  if (sessionData.valuation_result) {
+                    resultsStore.setValuationResult(sessionData.valuation_result)
+                  }
+                }
+
                 storeLogger.info('Loaded existing session from backend and cached', {
                   reportId,
                   currentView: existingSession.currentView,
+                  hasRedisContext: !!(existingSession as any).redisContext,
+                  dataSource: (existingSession as any).dataSource_info || 'db-only',
                 })
               } else {
                 // Create new session
@@ -390,6 +421,57 @@ export const useValuationSessionStore = create<ValuationSessionStore>((set, get)
             syncError: null,
           })
 
+          // CRITICAL: Restore valuation result from cache (same as backend load)
+          try {
+            const valuationResult = (cachedSession as any).valuationResult || (cachedSession as any).valuation_result
+            if (valuationResult && typeof valuationResult === 'object') {
+              const resultsStore = useValuationResultsStore.getState()
+              
+              if (resultsStore && typeof resultsStore.setResult === 'function') {
+                // Merge HTML reports from session if not in result
+                const fullResult = {
+                  ...valuationResult,
+                  html_report: valuationResult.html_report || (cachedSession as any).htmlReport || (cachedSession as any).html_report,
+                  info_tab_html: valuationResult.info_tab_html || (cachedSession as any).infoTabHtml || (cachedSession as any).info_tab_html,
+                }
+                
+                resultsStore.setResult(fullResult)
+
+                storeLogger.info('Restored valuation result from cache', {
+                  reportId,
+                  hasHtmlReport: !!fullResult.html_report,
+                  hasInfoTabHtml: !!fullResult.info_tab_html,
+                  correlationId,
+                })
+              }
+            }
+          } catch (error) {
+            // Failproof: Never let result restoration break session load
+            storeLogger.error('Failed to restore valuation result from cache', {
+              reportId,
+              correlationId,
+              error: error instanceof Error ? error.message : String(error),
+            })
+          }
+
+          // CRITICAL: Sync to manual form if current view is manual
+          try {
+            if (cachedSession.currentView === 'manual' && cachedSession.sessionData) {
+              get().syncToManualForm()
+              storeLogger.info('Synced cached session data to manual form', {
+                reportId,
+                correlationId,
+              })
+            }
+          } catch (error) {
+            // Failproof: Never let form sync break session load
+            storeLogger.error('Failed to sync cached session to manual form', {
+              reportId,
+              correlationId,
+              error: error instanceof Error ? error.message : String(error),
+            })
+          }
+
           // Record cache hit metric
           globalSessionMetrics.recordOperation('load', true, loadTime, 0, 'cache_hit')
           
@@ -480,12 +562,19 @@ export const useValuationSessionStore = create<ValuationSessionStore>((set, get)
             
             // Failproof: Validate result structure before setting
             if (resultsStore && typeof resultsStore.setResult === 'function') {
-              resultsStore.setResult(valuationResult)
+              // Merge HTML reports from session if not in result
+              const fullResult = {
+                ...valuationResult,
+                html_report: valuationResult.html_report || (session as any).htmlReport || (session as any).html_report,
+                info_tab_html: valuationResult.info_tab_html || (session as any).infoTabHtml || (session as any).info_tab_html,
+              }
+              
+              resultsStore.setResult(fullResult)
 
-              storeLogger.info('Restored valuation result from session', {
+              storeLogger.info('Restored valuation result from backend session', {
                 reportId,
-                hasHtmlReport: !!(valuationResult.html_report || (session as any).htmlReport || (session as any).html_report),
-                hasInfoTabHtml: !!(valuationResult.info_tab_html || (session as any).infoTabHtml || (session as any).info_tab_html),
+                hasHtmlReport: !!fullResult.html_report,
+                hasInfoTabHtml: !!fullResult.info_tab_html,
                 correlationId,
               })
             } else {
@@ -513,6 +602,24 @@ export const useValuationSessionStore = create<ValuationSessionStore>((set, get)
           isSyncing: false,
           syncError: null,
         })
+
+        // CRITICAL: Sync to manual form if current view is manual
+        try {
+          if (session.currentView === 'manual' && session.sessionData) {
+            get().syncToManualForm()
+            storeLogger.info('Synced backend session data to manual form', {
+              reportId,
+              correlationId,
+            })
+          }
+        } catch (error) {
+          // Failproof: Never let form sync break session load
+          storeLogger.error('Failed to sync backend session to manual form', {
+            reportId,
+            correlationId,
+            error: error instanceof Error ? error.message : String(error),
+          })
+        }
 
         // Record success in audit trail
         const duration = performance.now() - startTime

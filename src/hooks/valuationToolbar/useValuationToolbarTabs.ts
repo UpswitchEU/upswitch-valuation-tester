@@ -11,15 +11,13 @@ import { useCallback, useState } from 'react'
 
 export type ValuationTab = 'preview' | 'info' | 'history'
 
-export type ValuationTabWithoutHistory = 'preview' | 'info'
-
 export interface UseValuationToolbarTabsReturn {
   activeTab: ValuationTab
   handleTabChange: (tab: ValuationTab) => void
 }
 
 export interface UseValuationToolbarTabsOptions {
-  initialTab?: ValuationTabWithoutHistory
+  initialTab?: ValuationTab
   onTabChange?: (tab: ValuationTab) => void
 }
 

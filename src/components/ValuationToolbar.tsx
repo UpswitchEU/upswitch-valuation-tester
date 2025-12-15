@@ -156,7 +156,7 @@ export const ValuationToolbar: React.FC<ValuationToolbarProps> = ({
   // Tab management hook - use prop if provided (parent-controlled), otherwise use hook state
   const { activeTab: hookActiveTab, handleTabChange: handleHookTabChange } =
     useValuationToolbarTabs({
-      initialTab: activeTab && activeTab !== 'history' ? activeTab : undefined,
+      initialTab: activeTab || 'preview',
       onTabChange,
     })
 
@@ -320,7 +320,7 @@ export const ValuationToolbar: React.FC<ValuationToolbarProps> = ({
                 </Tooltip>
                 <Tooltip content="Audit Trail" position="bottom" className="">
                   <button
-                    onClick={() => onTabChange?.('history')}
+                    onClick={() => handleTabClick('history')}
                     className={`p-2 rounded-lg transition-all duration-200 ${
                       currentActiveTab === 'history'
                         ? 'bg-zinc-700 text-white'

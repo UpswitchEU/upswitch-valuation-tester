@@ -401,6 +401,47 @@ export class StreamEventHandler {
               htmlReportLength: htmlReport.length,
             })
           }
+
+          // CRITICAL: Save HTML report to session store for persistence (non-blocking)
+          // This ensures HTML reports are saved even if they arrive before valuation_complete
+          if (htmlReport && valuationId && this.sessionId) {
+            // Use dynamic import in background (non-blocking)
+            import('../api/session/SessionAPI').then(({ SessionAPI }) => {
+              const sessionAPI = new SessionAPI()
+              const sessionStore = useValuationSessionStore.getState()
+              const session = sessionStore.session
+
+              if (session?.reportId) {
+                // Get current result to merge with HTML report
+                const resultToSave = resultsStore.result || { valuation_id: valuationId }
+                
+                sessionAPI.saveValuationResult(session.reportId, {
+                  valuationResult: {
+                    ...resultToSave,
+                    html_report: htmlReport,
+                  },
+                  htmlReport: htmlReport,
+                  infoTabHtml: resultToSave.info_tab_html,
+                }).then(() => {
+                  chatLogger.info('HTML report saved to session store', {
+                    reportId: session.reportId,
+                    valuationId,
+                    htmlReportLength: htmlReport.length,
+                  })
+                }).catch((error) => {
+                  // Don't block - HTML report is already in results store
+                  chatLogger.warn('Failed to save HTML report to session store', {
+                    error: error instanceof Error ? error.message : String(error),
+                    valuationId,
+                  })
+                })
+              }
+            }).catch((error) => {
+              chatLogger.warn('Failed to import SessionAPI for HTML report save', {
+                error: error instanceof Error ? error.message : String(error),
+              })
+            })
+          }
           
           // Also call report update callback if available
           this.callbacks.onReportUpdate?.(htmlReport, 100)
@@ -445,6 +486,47 @@ export class StreamEventHandler {
             chatLogger.warn('info_tab_html event missing valuation_id', {
               hasInfoTabHtml: !!infoTabHtml,
               infoTabHtmlLength: infoTabHtml.length,
+            })
+          }
+
+          // CRITICAL: Save info tab HTML to session store for persistence (non-blocking)
+          // This ensures info tab HTML is saved even if it arrives before valuation_complete
+          if (infoTabHtml && valuationId && this.sessionId) {
+            // Use dynamic import in background (non-blocking)
+            import('../api/session/SessionAPI').then(({ SessionAPI }) => {
+              const sessionAPI = new SessionAPI()
+              const sessionStore = useValuationSessionStore.getState()
+              const session = sessionStore.session
+
+              if (session?.reportId) {
+                // Get current result to merge with info tab HTML
+                const resultToSave = resultsStore.result || { valuation_id: valuationId }
+                
+                sessionAPI.saveValuationResult(session.reportId, {
+                  valuationResult: {
+                    ...resultToSave,
+                    info_tab_html: infoTabHtml,
+                  },
+                  htmlReport: resultToSave.html_report,
+                  infoTabHtml: infoTabHtml,
+                }).then(() => {
+                  chatLogger.info('Info tab HTML saved to session store', {
+                    reportId: session.reportId,
+                    valuationId,
+                    infoTabHtmlLength: infoTabHtml.length,
+                  })
+                }).catch((error) => {
+                  // Don't block - info tab HTML is already in results store
+                  chatLogger.warn('Failed to save info tab HTML to session store', {
+                    error: error instanceof Error ? error.message : String(error),
+                    valuationId,
+                  })
+                })
+              }
+            }).catch((error) => {
+              chatLogger.warn('Failed to import SessionAPI for info tab HTML save', {
+                error: error instanceof Error ? error.message : String(error),
+              })
             })
           }
           return

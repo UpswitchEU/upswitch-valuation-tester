@@ -142,9 +142,9 @@ const HistoryEmptyState: React.FC = () => (
         />
       </svg>
     </div>
-    <h3 className="mt-4 text-lg font-semibold text-slate-ink">Version history</h3>
+    <h3 className="mt-4 text-lg font-semibold text-slate-ink">Version History</h3>
     <p className="mt-2 text-sm text-gray-600 max-w-sm leading-relaxed">
-      Track all changes, revisions, and iterations of your valuation report with full audit trail
+      Track changes and view previous versions of your valuation report with detailed audit trail
     </p>
   </div>
 )
@@ -185,12 +185,12 @@ export const ReportPanel: React.FC<ReportPanelProps> = React.memo(
             <div className="h-full">
               {isCalculating ? (
                 <PreviewLoadingState />
-              ) : error ? (
-                <PreviewErrorState error={error} onRetry={handleRetry} />
               ) : result?.html_report ? (
                 <Suspense fallback={<PreviewLoadingState />}>
                   <Results />
                 </Suspense>
+              ) : error ? (
+                <PreviewErrorState error={error} onRetry={handleRetry} />
               ) : (
                 <PreviewEmptyState />
               )}
@@ -202,10 +202,10 @@ export const ReportPanel: React.FC<ReportPanelProps> = React.memo(
             <div className="h-full">
               {isCalculating ? (
                 <PreviewLoadingState />
-              ) : error ? (
-                <PreviewErrorState error={error} onRetry={handleRetry} />
               ) : result?.info_tab_html ? (
                 <ValuationInfoPanel result={result} />
+              ) : error ? (
+                <PreviewErrorState error={error} onRetry={handleRetry} />
               ) : (
                 <InfoEmptyState />
               )}
@@ -214,9 +214,19 @@ export const ReportPanel: React.FC<ReportPanelProps> = React.memo(
 
           {/* History Tab */}
           {activeTab === 'history' && (
-            <Suspense fallback={<PreviewLoadingState />}>
-              <AuditTrailPanel reportId={reportId} />
-            </Suspense>
+            <div className="h-full">
+              {isCalculating ? (
+                <PreviewLoadingState />
+              ) : error ? (
+                <PreviewErrorState error={error} onRetry={handleRetry} />
+              ) : result ? (
+                <Suspense fallback={<PreviewLoadingState />}>
+                  <AuditTrailPanel reportId={reportId} />
+                </Suspense>
+              ) : (
+                <HistoryEmptyState />
+              )}
+            </div>
           )}
         </div>
       </div>
