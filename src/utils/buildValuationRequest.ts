@@ -10,6 +10,7 @@
 import type { DataResponse } from '../types/data-collection'
 import type { ValuationFormData, ValuationRequest } from '../types/valuation'
 import { convertDataResponsesToFormData } from './dataCollectionUtils'
+import { generalLogger } from './logger'
 
 /**
  * Build ValuationRequest from formData or DataResponse[]
@@ -177,7 +178,7 @@ export function buildValuationRequest(
 
   // BANK-GRADE: Log request structure for diagnostics (only in development)
   if (typeof window !== 'undefined' && process.env.NODE_ENV === 'development') {
-    console.log('[buildValuationRequest] Request structure:', {
+    generalLogger.debug('buildValuationRequest: Request structure', {
       company_name: request.company_name,
       industry: request.industry,
       business_model: request.business_model,

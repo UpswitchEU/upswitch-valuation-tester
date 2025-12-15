@@ -59,8 +59,7 @@ export const useValuationResultsStore = create<ValuationResultsStore>((set, get)
           hasHtmlReport: !!result.html_report,
           htmlReportLength: result.html_report?.length || 0,
         })
-        // CRITICAL: Console.log for visibility
-        console.error('[DIAGNOSTIC-FRONTEND] info_tab_html MISSING when setting result in store', {
+        storeLogger.error('CRITICAL: info_tab_html MISSING when setting result in store', {
           valuationId: result.valuation_id,
           hasInfoTabHtml: !!result.info_tab_html,
           infoTabHtmlLength: result.info_tab_html?.length || 0,
@@ -68,7 +67,9 @@ export const useValuationResultsStore = create<ValuationResultsStore>((set, get)
           infoTabHtmlInKeys: 'info_tab_html' in result,
         })
       } else {
-        console.log(`[DIAGNOSTIC-FRONTEND] info_tab_html set in store: length=${result.info_tab_html.length}`)
+        storeLogger.debug('info_tab_html set in store', {
+          infoTabHtmlLength: result.info_tab_html.length,
+        })
       }
     } else {
       storeLogger.debug('Valuation result cleared', {

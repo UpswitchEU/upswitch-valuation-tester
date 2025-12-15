@@ -1,7 +1,8 @@
 'use client'
 
 import { useRouter } from 'next/navigation'
-import React, { useEffect, useRef, useState } from 'react'
+import React, { useContext, useEffect, useRef, useState } from 'react'
+import { AuthContext } from '../../contexts/AuthContextTypes'
 import { RecentReportsSection } from '../../features/reports'
 import { type BusinessCardData, businessCardService } from '../../services/businessCard'
 import UrlGeneratorService from '../../services/urlGenerator'

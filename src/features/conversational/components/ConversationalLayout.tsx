@@ -167,6 +167,65 @@ const ConversationalLayoutInner: React.FC<ConversationalLayoutProps> = ({
     actions,
   ])
 
+  // Generate import summary when switching from manual → conversational with data
+  const hasGeneratedSummaryRef = useRef(false)
+  useEffect(() => {
+    // Only run after restoration is complete
+    if (!restoration.state.isRestored) {
+      return
+    }
+
+    // Only run once per report
+    if (hasGeneratedSummaryRef.current) {
+      return
+    }
+
+    // Check if we should generate an import summary
+    const sessionData = session?.sessionData
+    if (shouldGenerateImportSummary(sessionData, state.messages)) {
+      chatLogger.info('Generating import summary for manual → conversational switch', {
+        reportId,
+        hasCompanyName: !!sessionData?.company_name,
+        hasRevenue: !!sessionData?.current_year_data?.revenue,
+      })
+
+      // Generate summary message
+      const summaryMessage = generateImportSummaryMessage(sessionData)
+      
+      // Add to conversation
+      actions.addMessage(summaryMessage)
+
+      // Persist to database (non-blocking)
+      const messageId = `import_summary_${Date.now()}`
+      conversationAPI.saveMessage({
+        reportId,
+        messageId,
+        role: summaryMessage.role || 'assistant',
+        type: summaryMessage.type,
+        content: summaryMessage.content,
+        metadata: summaryMessage.metadata || {},
+      }).catch((error) => {
+        chatLogger.warn('Failed to persist import summary message', {
+          reportId,
+          error: error instanceof Error ? error.message : String(error),
+        })
+      })
+
+      hasGeneratedSummaryRef.current = true
+    }
+  }, [
+    restoration.state.isRestored,
+    session?.sessionData,
+    state.messages.length,
+    reportId,
+    actions,
+  ])
+
+  // Reset summary generation flag when reportId changes
+  useEffect(() => {
+    hasGeneratedSummaryRef.current = false
+  }, [reportId])
+
   // Track reportId changes and reset when needed
   useReportIdTracking({
     reportId,

@@ -77,7 +77,6 @@ class ReportServiceImpl implements ReportService {
 
       // Add guest session ID header for guest users
       if (!userId || userId === 'guest') {
-        const { guestSessionService } = await import('../guestSessionService')
         try {
           const guestSessionId = guestSessionService.getGuestSessionId()
           if (guestSessionId) {

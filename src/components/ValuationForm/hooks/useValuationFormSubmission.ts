@@ -149,7 +149,7 @@ export const useValuationFormSubmission = (
         
         // CRITICAL: Warn if info_tab_html is missing
         if (!result.info_tab_html || result.info_tab_html.trim().length === 0) {
-          console.error('[DIAGNOSTIC-FRONTEND] CRITICAL: info_tab_html missing before setResult', {
+          generalLogger.error('CRITICAL: info_tab_html missing or empty in valuation result', {
             valuationId: result.valuation_id,
             hasInfoTabHtml: !!result.info_tab_html,
             infoTabHtmlLength: result.info_tab_html?.length || 0,
@@ -158,15 +158,10 @@ export const useValuationFormSubmission = (
             resultType: typeof result,
             resultStringified: JSON.stringify(result).substring(0, 1000),
           })
-          generalLogger.error('CRITICAL: info_tab_html missing or empty in valuation result', {
-            valuationId: result.valuation_id,
-            hasInfoTabHtml: !!result.info_tab_html,
-            infoTabHtmlLength: result.info_tab_html?.length || 0,
-            resultKeys: Object.keys(result),
-            infoTabHtmlInKeys: 'info_tab_html' in result,
-          })
         } else {
-          console.log(`[DIAGNOSTIC-FRONTEND] info_tab_html present before setResult: length=${result.info_tab_html.length}`)
+          generalLogger.debug('info_tab_html present before setResult', {
+            infoTabHtmlLength: result.info_tab_html.length,
+          })
         }
         
         // Store result in results store
