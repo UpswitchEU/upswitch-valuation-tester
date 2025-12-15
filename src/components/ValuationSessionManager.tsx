@@ -10,7 +10,7 @@
 'use client'
 
 import { useRouter, useSearchParams } from 'next/navigation'
-import React, { useCallback, useEffect, useState } from 'react'
+import React, { useCallback, useEffect, useRef, useState } from 'react'
 import { useAuth } from '../hooks/useAuth'
 import { guestCreditService } from '../services/guestCreditService'
 import UrlGeneratorService from '../services/urlGenerator'
@@ -52,6 +52,10 @@ export const ValuationSessionManager: React.FC<ValuationSessionManagerProps> = R
     const [stage, setStage] = useState<Stage>('loading')
     const [error, setError] = useState<string | null>(null)
     const [showOutOfCreditsModal, setShowOutOfCreditsModal] = useState(false)
+    
+    // Ref to track the target flow we're updating to (for race condition prevention)
+    const targetFlowRef = useRef<string | null>(null)
+    const updateTimeoutRef = useRef<NodeJS.Timeout | null>(null)
 
     // Extract prefilled query from URL search params (Next.js App Router)
     const prefilledQuery = searchParams?.get('prefilledQuery') || null
@@ -134,8 +138,14 @@ export const ValuationSessionManager: React.FC<ValuationSessionManagerProps> = R
       initializeSessionForReport(reportId)
     }, [reportId, initializeSessionForReport])
 
-    // Sync URL with current view - simple and robust
+    // Sync URL with current view - robust with race condition prevention
     useEffect(() => {
+      // Clear any pending timeout on effect re-run
+      if (updateTimeoutRef.current) {
+        clearTimeout(updateTimeoutRef.current)
+        updateTimeoutRef.current = null
+      }
+
       if (!session?.currentView || !session?.reportId || !searchParams) {
         return
       }
@@ -154,9 +164,19 @@ export const ValuationSessionManager: React.FC<ValuationSessionManagerProps> = R
       const normalizedCurrentFlow = 
         currentFlow === 'manual' || currentFlow === 'conversational' ? currentFlow : null
 
-      // Only update if different (handles both directions: manual↔conversational)
+      // CRITICAL FIX: Check if searchParams have updated to match our target
+      // This handles the case where Next.js has updated the URL and searchParams
+      // have propagated back, but we haven't reset the flag yet
       if (normalizedCurrentFlow === targetFlow) {
-        setUpdatingUrl(false)
+        // If we were updating to this flow, reset the flag
+        if (targetFlowRef.current === targetFlow) {
+          targetFlowRef.current = null
+          setUpdatingUrl(false)
+          generalLogger.debug('URL update confirmed via searchParams change', {
+            reportId: session.reportId,
+            targetFlow,
+          })
+        }
         return
       }
 
@@ -165,27 +185,63 @@ export const ValuationSessionManager: React.FC<ValuationSessionManagerProps> = R
         return
       }
 
-      // Set flag atomically via Zustand
+      // Set flag atomically via Zustand and track target flow
       setUpdatingUrl(true)
+      targetFlowRef.current = targetFlow
 
       // Extract existing params and update flow
       const params: Record<string, string> = {}
-        searchParams.forEach((value, key) => {
+      searchParams.forEach((value, key) => {
         if (key !== 'flow') {
           params[key] = value
         }
-        })
+      })
       params.flow = targetFlow
 
       const newUrl = UrlGeneratorService.reportById(session.reportId, params)
 
-      // Update URL
-        router.replace(newUrl, { scroll: false })
+      generalLogger.debug('Updating URL to sync with session view', {
+        reportId: session.reportId,
+        currentFlow: normalizedCurrentFlow,
+        targetFlow,
+        newUrl,
+      })
 
-      // Reset flag after Next.js updates (simple delay)
-        setTimeout(() => {
-        setUpdatingUrl(false)
-      }, 100)
+      // Update URL
+      router.replace(newUrl, { scroll: false })
+
+      // CRITICAL FIX: Use a longer timeout to allow Next.js router to complete
+      // Next.js router.replace() needs time to:
+      // 1. Update the browser URL
+      // 2. Propagate changes back through useSearchParams()
+      // 3. Re-render components with new searchParams
+      // 
+      // The original 300ms delay was safer. 100ms is too short and causes race conditions
+      // where the effect runs again with stale searchParams before Next.js has updated them.
+      // 
+      // We use 500ms to be conservative, but the effect will also reset the flag early
+      // if searchParams update correctly (checked above).
+      updateTimeoutRef.current = setTimeout(() => {
+        // Only reset if we're still waiting for this target flow
+        if (targetFlowRef.current === targetFlow) {
+          targetFlowRef.current = null
+          setUpdatingUrl(false)
+          generalLogger.debug('URL update timeout - resetting flag', {
+            reportId: session.reportId,
+            targetFlow,
+            currentFlow: searchParams.get('flow'),
+          })
+        }
+        updateTimeoutRef.current = null
+      }, 500) // Increased from 100ms to 500ms to prevent race conditions
+
+      // Cleanup timeout on unmount or if effect runs again
+      return () => {
+        if (updateTimeoutRef.current) {
+          clearTimeout(updateTimeoutRef.current)
+          updateTimeoutRef.current = null
+        }
+      }
     }, [session?.currentView, session?.reportId, searchParams, router, isUpdatingUrl, setUpdatingUrl])
 
     return (

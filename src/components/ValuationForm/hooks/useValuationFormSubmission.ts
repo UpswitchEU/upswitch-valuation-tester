@@ -17,9 +17,9 @@ import { useVersionHistoryStore } from '../../../store/useVersionHistoryStore'
 import { buildValuationRequest } from '../../../utils/buildValuationRequest'
 import { generalLogger } from '../../../utils/logger'
 import {
-  areChangesSignificant,
-  detectVersionChanges,
-  generateAutoLabel,
+    areChangesSignificant,
+    detectVersionChanges,
+    generateAutoLabel,
 } from '../../../utils/versionDiffDetection'
 import { convertFormDataToDataResponses } from '../utils/convertFormDataToDataResponses'
 
@@ -133,6 +133,7 @@ export const useValuationFormSubmission = (
 
       // CRITICAL: Sync all form data to session IMMEDIATELY before calculation
       // This ensures all data is saved even if calculation fails or user navigates away
+      // NOTE: We use fire-and-forget to avoid blocking calculation if backend is slow
       const { updateSessionData } = useValuationSessionStore.getState()
       try {
         // Convert formData to session format and update directly
@@ -164,12 +165,21 @@ export const useValuationFormSubmission = (
           shares_for_sale: formData.shares_for_sale,
           business_context: formData.business_context,
         }
-        await updateSessionData(sessionUpdate)
-        generalLogger.info('Form data synced to session before calculation', {
+        
+        // Fire-and-forget: Don't await to avoid blocking calculation
+        // The sync will happen in the background, and data will be saved after calculation anyway
+        updateSessionData(sessionUpdate).catch((syncError) => {
+          generalLogger.warn('Background sync failed before calculation, continuing anyway', {
+            error: syncError instanceof Error ? syncError.message : String(syncError),
+            reportId: session?.reportId,
+          })
+        })
+        
+        generalLogger.info('Form data sync initiated (non-blocking) before calculation', {
           reportId: session?.reportId,
         })
       } catch (syncError) {
-        generalLogger.warn('Failed to sync form data before calculation, continuing anyway', {
+        generalLogger.warn('Failed to initiate sync before calculation, continuing anyway', {
           error: syncError instanceof Error ? syncError.message : String(syncError),
         })
         // Continue with calculation even if sync fails - data will be saved after calculation
