@@ -75,7 +75,7 @@ export function convertToApplicationError(
  */
 function convertAxiosError(error: AxiosError, context?: Record<string, unknown>): ApplicationError {
   const status = error.response?.status
-  const message = error.response?.data?.message || error.message || 'Request failed'
+  const message = (error.response?.data as { message?: string })?.message || error.message || 'Request failed'
   const errorContext = {
     ...context,
     url: error.config?.url,

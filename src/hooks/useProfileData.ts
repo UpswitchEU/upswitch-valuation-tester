@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react'
 import { backendAPI } from '../services/backendApi'
+import { convertToApplicationError } from '../utils/errors/errorConverter'
+import { isNetworkError, isNotFoundError } from '../utils/errors/errorGuards'
 import { generalLogger } from '../utils/logger'
 
 // Note: Owner Dependency UI has been removed. This hook is kept for backward compatibility
@@ -61,7 +63,7 @@ export const useProfileData = (): UseProfileDataReturn => {
           generalLogger.debug(
             '[useProfileData] Profile not found - user may not have created profile yet',
             {
-              code: appError.code,
+              code: (appError as any).code,
             }
           )
           setProfileData(null)
@@ -75,20 +77,20 @@ export const useProfileData = (): UseProfileDataReturn => {
       // Log with specific error type
       if (isNetworkError(appError)) {
         generalLogger.error('[useProfileData] Error fetching profile - network error', {
-          error: appError.message,
-          code: appError.code,
-          context: appError.context,
+          error: (appError as any).message,
+          code: (appError as any).code,
+          context: (appError as any).context,
         })
       } else if (isNotFoundError(appError)) {
         generalLogger.debug('[useProfileData] Profile not found', {
-          error: appError.message,
-          code: appError.code,
+          error: (appError as any).message,
+          code: (appError as any).code,
         })
       } else {
         generalLogger.error('[useProfileData] Error fetching profile', {
-          error: appError.message,
-          code: appError.code,
-          context: appError.context,
+          error: (appError as any).message,
+          code: (appError as any).code,
+          context: (appError as any).context,
         })
       }
 

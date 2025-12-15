@@ -20,7 +20,7 @@ import { generateReportId } from '../../../utils/reportIdGenerator'
 /**
  * Manual Toolbar Hook Return Type
  */
-interface UseManualToolbarReturn {
+export interface UseManualToolbarReturn {
   /** Handle refresh action */
   handleRefresh: () => void
   /** Handle download action */

@@ -284,11 +284,11 @@ export class SessionAPI extends HttpClient {
       const appError = convertToApplicationError(error, { reportId, view })
 
       // Handle rate limiting gracefully (429)
-      if (appError.code === 'RATE_LIMIT_ERROR' || appError.code === 'TOO_MANY_REQUESTS_ERROR') {
+      if ((appError as any).code === 'RATE_LIMIT_ERROR' || (appError as any).code === 'TOO_MANY_REQUESTS_ERROR') {
         apiLogger.warn('Rate limited on switch view - keeping optimistic update', {
           reportId,
           view,
-          code: appError.code,
+          code: (appError as any).code,
         })
         // Return success with requested view - optimistic update already happened
         // Don't throw error, just log it
@@ -311,44 +311,44 @@ export class SessionAPI extends HttpClient {
     // Log with specific error type
     if (isNetworkError(appError)) {
       apiLogger.error(`Session ${operation} failed - network error`, {
-        error: appError.message,
-        code: appError.code,
+        error: (appError as any).message,
+        code: (appError as any).code,
         operation,
-        context: appError.context,
+        context: (appError as any).context,
       })
     } else if (isSessionConflictError(appError)) {
       apiLogger.warn(`Session ${operation} failed - conflict`, {
-        error: appError.message,
-        code: appError.code,
+        error: (appError as any).message,
+        code: (appError as any).code,
         operation,
-        context: appError.context,
+        context: (appError as any).context,
       })
     } else if (isValidationError(appError)) {
       apiLogger.error(`Session ${operation} failed - validation error`, {
-        error: appError.message,
-        code: appError.code,
+        error: (appError as any).message,
+        code: (appError as any).code,
         operation,
-        context: appError.context,
+        context: (appError as any).context,
       })
     } else {
       apiLogger.error(`Session ${operation} failed`, {
-        error: appError.message,
-        code: appError.code,
+        error: (appError as any).message,
+        code: (appError as any).code,
         operation,
-        context: appError.context,
+        context: (appError as any).context,
       })
     }
 
     // Re-throw as appropriate error type
-    if (appError.code === 'NOT_FOUND_ERROR') {
+    if ((appError as any).code === 'NOT_FOUND_ERROR') {
       throw new APIError('Session not found', 404, undefined, true)
     }
 
-    if (appError.code === 'AUTH_ERROR' || appError.code === 'PERMISSION_ERROR') {
+    if ((appError as any).code === 'AUTH_ERROR' || (appError as any).code === 'PERMISSION_ERROR') {
       throw new AuthenticationError('Authentication required for session operation')
     }
 
-    if (appError.code === 'SESSION_CONFLICT') {
+    if ((appError as any).code === 'SESSION_CONFLICT') {
       throw new APIError('Session conflict - please refresh and try again', 409, undefined, true)
     }
 

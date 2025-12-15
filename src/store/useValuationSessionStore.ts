@@ -154,31 +154,31 @@ export const useValuationSessionStore = create<ValuationSessionStore>((set, get)
         // Log with specific error type
         if (isSessionConflictError(appError)) {
           storeLogger.warn('Session conflict during initialization', {
-            error: appError.message,
-            code: appError.code,
+            error: (appError as any).message,
+            code: (appError as any).code,
             reportId,
-            context: appError.context,
+            context: (appError as any).context,
           })
         } else if (isNetworkError(appError)) {
           storeLogger.error('Failed to initialize session - network error', {
-            error: appError.message,
-            code: appError.code,
+            error: (appError as any).message,
+            code: (appError as any).code,
             reportId,
-            context: appError.context,
+            context: (appError as any).context,
           })
         } else if (isValidationError(appError)) {
           storeLogger.error('Failed to initialize session - validation error', {
-            error: appError.message,
-            code: appError.code,
+            error: (appError as any).message,
+            code: (appError as any).code,
             reportId,
-            context: appError.context,
+            context: (appError as any).context,
           })
         } else {
           storeLogger.error('Failed to initialize session', {
-            error: appError.message,
-            code: appError.code,
+            error: (appError as any).message,
+            code: (appError as any).code,
             reportId,
-            context: appError.context,
+            context: (appError as any).context,
           })
         }
 
@@ -201,7 +201,7 @@ export const useValuationSessionStore = create<ValuationSessionStore>((set, get)
           storeLogger.error('Session conflict but failed to load existing session', {
             reportId,
             error: errorMessage,
-            code: appError.code,
+            code: (appError as any).code,
           })
         }
       }
@@ -340,30 +340,30 @@ export const useValuationSessionStore = create<ValuationSessionStore>((set, get)
         // Log with specific error type
         if (isNetworkError(appError)) {
           storeLogger.error('Failed to load session - network error', {
-            error: appError.message,
-            code: appError.code,
+            error: (appError as any).message,
+            code: (appError as any).code,
             reportId,
             duration_ms: duration,
             correlationId,
-            context: appError.context,
+            context: (appError as any).context,
           })
         } else if (isSessionConflictError(appError)) {
           storeLogger.warn('Session conflict during load', {
-            error: appError.message,
-            code: appError.code,
+            error: (appError as any).message,
+            code: (appError as any).code,
             reportId,
             duration_ms: duration,
             correlationId,
-            context: appError.context,
+            context: (appError as any).context,
           })
         } else {
           storeLogger.error('Failed to load session', {
-            error: appError.message,
-            code: appError.code,
+            error: (appError as any).message,
+            code: (appError as any).code,
             reportId,
             duration_ms: duration,
             correlationId,
-            context: appError.context,
+            context: (appError as any).context,
           })
         }
 
@@ -377,7 +377,7 @@ export const useValuationSessionStore = create<ValuationSessionStore>((set, get)
           duration_ms: duration,
           correlationId,
           error: errorMessage,
-          metadata: { errorCode: appError.code },
+          metadata: { errorCode: (appError as any).code },
         })
 
         // Record failure in metrics
@@ -512,24 +512,24 @@ export const useValuationSessionStore = create<ValuationSessionStore>((set, get)
         // Log with specific error type
         if (isValidationError(appError)) {
           storeLogger.error('Failed to update session data - validation error', {
-            error: appError.message,
-            code: appError.code,
+            error: (appError as any).message,
+            code: (appError as any).code,
             reportId: session.reportId,
-            context: appError.context,
+            context: (appError as any).context,
           })
         } else if (isNetworkError(appError)) {
           storeLogger.error('Failed to update session data - network error', {
-            error: appError.message,
-            code: appError.code,
+            error: (appError as any).message,
+            code: (appError as any).code,
             reportId: session.reportId,
-            context: appError.context,
+            context: (appError as any).context,
           })
         } else {
           storeLogger.error('Failed to update session data', {
-            error: appError.message,
-            code: appError.code,
+            error: (appError as any).message,
+            code: (appError as any).code,
             reportId: session.reportId,
-            context: appError.context,
+            context: (appError as any).context,
           })
         }
 
@@ -571,7 +571,7 @@ export const useValuationSessionStore = create<ValuationSessionStore>((set, get)
             completeness,
           },
           isSyncing: false,
-          syncError: error.message || 'Failed to sync with backend',
+          syncError: (error as any)?.message || 'Failed to sync with backend',
         })
       }
     },
@@ -750,27 +750,27 @@ export const useValuationSessionStore = create<ValuationSessionStore>((set, get)
           // Log with specific error type
           if (isNetworkError(appError)) {
             storeLogger.error('Failed to sync view switch with backend - network error', {
-              error: appError.message,
-              code: appError.code,
+              error: (appError as any).message,
+              code: (appError as any).code,
               reportId: currentSession.reportId,
               requestedView: view,
-              context: appError.context,
+              context: (appError as any).context,
             })
           } else if (isSessionConflictError(appError)) {
             storeLogger.warn('Session conflict during view switch', {
-              error: appError.message,
-              code: appError.code,
+              error: (appError as any).message,
+              code: (appError as any).code,
               reportId: currentSession.reportId,
               requestedView: view,
-              context: appError.context,
+              context: (appError as any).context,
             })
           } else {
             storeLogger.error('Failed to sync view switch with backend', {
-              error: appError.message,
-              code: appError.code,
+              error: (appError as any).message,
+              code: (appError as any).code,
               reportId: currentSession.reportId,
               requestedView: view,
-              context: appError.context,
+              context: (appError as any).context,
             })
           }
 
@@ -957,17 +957,17 @@ export const useValuationSessionStore = create<ValuationSessionStore>((set, get)
         // Log with specific error type
         if (isNetworkError(appError)) {
           storeLogger.error('Failed to sync from manual form - network error', {
-            error: appError.message,
-            code: appError.code,
+            error: (appError as any).message,
+            code: (appError as any).code,
             reportId: session.reportId,
-            context: appError.context,
+            context: (appError as any).context,
           })
         } else {
           storeLogger.error('Failed to sync from manual form', {
-            error: appError.message,
-            code: appError.code,
+            error: (appError as any).message,
+            code: (appError as any).code,
             reportId: session.reportId,
-            context: appError.context,
+            context: (appError as any).context,
           })
         }
       }
@@ -1035,17 +1035,17 @@ export const useValuationSessionStore = create<ValuationSessionStore>((set, get)
         // Log with specific error type
         if (isNetworkError(appError)) {
           storeLogger.error('Failed to sync to manual form - network error', {
-            error: appError.message,
-            code: appError.code,
+            error: (appError as any).message,
+            code: (appError as any).code,
             reportId: session.reportId,
-            context: appError.context,
+            context: (appError as any).context,
           })
         } else {
           storeLogger.error('Failed to sync to manual form', {
-            error: appError.message,
-            code: appError.code,
+            error: (appError as any).message,
+            code: (appError as any).code,
             reportId: session.reportId,
-            context: appError.context,
+            context: (appError as any).context,
           })
         }
       }

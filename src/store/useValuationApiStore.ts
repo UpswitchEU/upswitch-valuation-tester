@@ -59,27 +59,27 @@ export const useValuationApiStore = create<ValuationApiStore>((set, get) => ({
       // Log with specific error type
       if (isValidationError(appError)) {
         storeLogger.error('Valuation calculation failed - validation error', {
-          error: appError.message,
-          code: appError.code,
-          context: appError.context,
+          error: (appError as any).message,
+          code: (appError as any).code,
+          context: (appError as any).context,
         })
       } else if (isNetworkError(appError)) {
         storeLogger.error('Valuation calculation failed - network error', {
-          error: appError.message,
-          code: appError.code,
-          context: appError.context,
+          error: (appError as any).message,
+          code: (appError as any).code,
+          context: (appError as any).context,
         })
       } else if (isRetryableError(appError)) {
         storeLogger.warn('Valuation calculation failed - retryable error', {
-          error: appError.message,
-          code: appError.code,
-          context: appError.context,
+          error: (appError as any).message,
+          code: (appError as any).code,
+          context: (appError as any).context,
         })
       } else {
         storeLogger.error('Valuation calculation failed', {
-          error: appError.message,
-          code: appError.code,
-          context: appError.context,
+          error: (appError as any).message,
+          code: (appError as any).code,
+          context: (appError as any).context,
         })
       }
 

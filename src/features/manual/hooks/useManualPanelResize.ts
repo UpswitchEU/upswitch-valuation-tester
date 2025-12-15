@@ -12,7 +12,7 @@ import { MOBILE_BREAKPOINT, PANEL_CONSTRAINTS } from '../../../constants/panelCo
 /**
  * Manual Panel Resize Hook Return Type
  */
-interface UseManualPanelResizeReturn {
+export interface UseManualPanelResizeReturn {
   /** Left panel width percentage */
   leftPanelWidth: number
   /** Handle panel resize */

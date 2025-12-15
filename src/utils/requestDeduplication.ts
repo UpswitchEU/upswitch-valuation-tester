@@ -7,6 +7,8 @@
  * @module utils/requestDeduplication
  */
 
+import { storeLogger } from '../utils/logger'
+
 /**
  * Request Deduplicator
  *
@@ -167,3 +169,4 @@ export const globalRequestDeduplicator = new RequestDeduplicator()
 export async function deduplicateRequest<T>(key: string, fn: () => Promise<T>): Promise<T> {
   return globalRequestDeduplicator.deduplicate(key, fn)
 }
+

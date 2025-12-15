@@ -261,11 +261,6 @@ export const performanceThresholds: Record<string, PerformanceThresholds> = {
     acceptable: 500,
     slow: 1000,
   },
-  sessionLoad: {
-    target: 500,
-    acceptable: 1000,
-    slow: 2000,
-  },
 }
 
 // Global performance monitor instance
