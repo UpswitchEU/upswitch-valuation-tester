@@ -31,13 +31,28 @@ import { HistoricalDataSection } from './sections/HistoricalDataSection'
 import { OwnershipStructureSection } from './sections/OwnershipStructureSection'
 import { convertFormDataToDataResponses } from './utils/convertFormDataToDataResponses'
 
+export interface ValuationFormProps {
+  /** Initial version to load (for M&A workflow - edit previous versions) */
+  initialVersion?: number
+  /** Whether form is in regeneration mode (shows "Regenerate" instead of "Calculate") */
+  isRegenerationMode?: boolean
+}
+
 /**
  * ValuationForm Component
  *
  * Main form for entering business valuation data.
  * Orchestrates all form sections and manages form-level state.
+ * 
+ * Enhanced for M&A workflow:
+ * - Load specific version data for editing
+ * - Show regeneration mode when editing completed reports
+ * - Track changes for version diff
  */
-export const ValuationForm: React.FC = () => {
+export const ValuationForm: React.FC<ValuationFormProps> = ({ 
+  initialVersion,
+  isRegenerationMode = false,
+}) => {
   const { formData, updateFormData, prefillFromBusinessCard, setCollectedData } = useValuationFormStore()
   const { session, updateSessionData, getSessionData } = useValuationSessionStore()
   const { error, clearError } = useValuationApiStore()

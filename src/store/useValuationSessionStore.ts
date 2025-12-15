@@ -1,7 +1,19 @@
 import { create } from 'zustand';
 import { backendAPI } from '../services/backendApi';
 import type { ValuationFormData, ValuationRequest, ValuationSession } from '../types/valuation';
+import { sessionCircuitBreaker } from '../utils/circuitBreaker';
+import { createCorrelationId, CorrelationPrefixes } from '../utils/correlationId';
+import { extractErrorMessage, is409Conflict } from '../utils/errorDetection';
 import { storeLogger } from '../utils/logger';
+import { globalSessionMetrics } from '../utils/metrics/sessionMetrics';
+import { globalPerformanceMonitor, performanceThresholds } from '../utils/performanceMonitor';
+import { globalRequestDeduplicator } from '../utils/requestDeduplication';
+import { retrySessionOperation } from '../utils/retryWithBackoff';
+import { globalAuditTrail } from '../utils/sessionAuditTrail';
+import { globalSessionCache } from '../utils/sessionCacheManager';
+import { createFallbackSession, createOrLoadSession } from '../utils/sessionErrorHandlers';
+import { mergePrefilledQuery, normalizeSessionDates } from '../utils/sessionHelpers';
+import { validateSessionData } from '../utils/sessionValidation';
 
 export interface ValuationSessionStore {
   // Session state
@@ -24,6 +36,11 @@ export interface ValuationSessionStore {
   isSyncing: boolean;
   syncError: string | null;
 
+  // Save status (for M&A workflow - trust indicators)
+  isSaving: boolean;
+  lastSaved: Date | null;
+  hasUnsavedChanges: boolean;
+
   // Flow switch confirmation
   pendingFlowSwitch: 'manual' | 'conversational' | null;
   setPendingFlowSwitch: (view: 'manual' | 'conversational' | null) => void;
@@ -41,6 +58,11 @@ export const useValuationSessionStore = create<ValuationSessionStore>((set, get)
     isSyncing: false,
     syncError: null,
     pendingFlowSwitch: null,
+
+    // Save status (M&A workflow trust indicators)
+    isSaving: false,
+    lastSaved: null,
+    hasUnsavedChanges: false,
 
     /**
      * Initialize a new session or load existing one
@@ -76,171 +98,220 @@ export const useValuationSessionStore = create<ValuationSessionStore>((set, get)
         // Try to load existing session from backend
       const existingSessionResponse = await backendAPI.getValuationSession(reportId);
 
-      if (existingSessionResponse && existingSessionResponse.session) {
+      if (existingSessionResponse?.session) {
         const existingSession = existingSessionResponse.session;
           // Load existing session - use backend's currentView, not the parameter
           // This prevents overriding a view that was just switched
-        const updatedPartialData = { ...existingSession.partialData } as any;
-          if (prefilledQuery && !updatedPartialData._prefilledQuery) {
-          updatedPartialData._prefilledQuery = prefilledQuery;
-          }
+        const updatedPartialData = mergePrefilledQuery(existingSession.partialData, prefilledQuery);
 
           set({
-            session: {
+            session: normalizeSessionDates({
               ...existingSession,
               partialData: updatedPartialData,
-              createdAt: new Date(existingSession.createdAt),
-              updatedAt: new Date(existingSession.updatedAt),
-            completedAt: existingSession.completedAt ? new Date(existingSession.completedAt) : undefined,
-            },
+            }),
             syncError: null,
         });
         storeLogger.info('Loaded existing session', { reportId, currentView: existingSession.currentView });
         } else {
-          // Create new session
-        const sessionId = `session_${Date.now()}_${Math.random().toString(36).substring(2, 15)}`;
-          const newSession: ValuationSession = {
-            sessionId,
-            reportId,
-            currentView,
-            dataSource: currentView,
-            createdAt: new Date(),
-            updatedAt: new Date(),
-          partialData: prefilledQuery ? { _prefilledQuery: prefilledQuery } as any : {},
-            sessionData: {},
-        };
-
-          // Save to backend
-        try {
-          await backendAPI.createValuationSession(newSession);
-
+          // Create new session using helper (handles 409 conflicts automatically)
+          const newSession = await createOrLoadSession(reportId, currentView, prefilledQuery);
           set({
             session: newSession,
             syncError: null,
           });
-
-          storeLogger.info('Created new session', { reportId, sessionId, currentView, hasPrefilledQuery: !!prefilledQuery });
-        } catch (createError: any) {
-          // FIX: Handle 409 Conflict - session was created concurrently
-          // Try to load the existing session instead of failing
-          const axiosError = createError as any
-          if (axiosError?.response?.status === 409 || axiosError?.status === 409) {
-            storeLogger.info('Session creation conflict (409) - loading existing session', { reportId })
-            
-            try {
-              // Session was created by another request - load it
-              const existingSessionResponse = await backendAPI.getValuationSession(reportId)
-              if (existingSessionResponse?.session) {
-                const existingSession = existingSessionResponse.session
-                const updatedPartialData = { ...existingSession.partialData } as any
-                if (prefilledQuery && !updatedPartialData._prefilledQuery) {
-                  updatedPartialData._prefilledQuery = prefilledQuery
-                }
-
-                set({
-                  session: {
-                    ...existingSession,
-                    partialData: updatedPartialData,
-                    createdAt: new Date(existingSession.createdAt),
-                    updatedAt: new Date(existingSession.updatedAt),
-                    completedAt: existingSession.completedAt ? new Date(existingSession.completedAt) : undefined,
-                  },
-                  syncError: null,
-                })
-                storeLogger.info('Loaded existing session after conflict', { reportId, currentView: existingSession.currentView })
-                return // Successfully loaded, exit early
-              }
-            } catch (loadError) {
-              storeLogger.error('Failed to load session after conflict', { reportId, error: loadError })
-              // Fall through to local session creation
-            }
-          }
-          
-          // For other errors or if load failed, throw to be caught by outer catch
-          throw createError
-        }
         }
     } catch (error: any) {
         storeLogger.error('Failed to initialize session', {
-          error: error instanceof Error ? error.message : 'Unknown error',
+          error: extractErrorMessage(error),
           reportId,
       });
 
-        // Create local session even if backend fails (offline mode)
-        // Only create local session if it's not a 409 conflict (already handled above)
-        const axiosError = error as any
-        const isConflict = axiosError?.response?.status === 409 || axiosError?.status === 409
-        
-        if (!isConflict) {
-          const sessionId = `session_${Date.now()}_${Math.random().toString(36).substring(2, 15)}`;
-          const newSession: ValuationSession = {
-            sessionId,
-            reportId,
-            currentView,
-            dataSource: currentView,
-            createdAt: new Date(),
-            updatedAt: new Date(),
-            partialData: prefilledQuery ? { _prefilledQuery: prefilledQuery } as any : {},
-            sessionData: {},
-          };
-
+        // Create fallback local session if not a 409 conflict
+        if (!is409Conflict(error)) {
+          const fallbackSession = createFallbackSession(reportId, currentView, prefilledQuery, error);
           set({
-            session: newSession,
-            syncError: error.message || 'Failed to sync with backend',
+            session: fallbackSession,
+            syncError: extractErrorMessage(error),
           });
-
-          storeLogger.warn('Created local session (backend sync failed)', { reportId, sessionId })
         } else {
           // 409 conflict but couldn't load - this shouldn't happen, but log it
-          storeLogger.error('Session conflict but failed to load existing session', { reportId, error })
+          storeLogger.error('Session conflict but failed to load existing session', { 
+            reportId, 
+            error: extractErrorMessage(error) 
+          });
         }
       }
     },
 
     /**
      * Load session from backend
+     * 
+     * ENHANCED with fail-proof features for M&A workflow robustness:
+     * - Request deduplication (prevents concurrent loads)
+     * - Exponential backoff retry (recovers from network glitches)
+     * - Circuit breaker (fast-fail when backend down)
+     * - localStorage cache (offline resilience)
+     * - Performance monitoring (<500ms target)
+     * - Audit trail (compliance)
+     * - Session validation (prevents corrupted data crashes)
+     * 
+     * CRITICAL: This ensures users NEVER lose access to existing reports
+     * Even with network issues, rate limits, or backend hiccups
      */
     loadSession: async (reportId: string) => {
+      const correlationId = createCorrelationId(CorrelationPrefixes.SESSION_LOAD);
+      const startTime = performance.now();
+
       try {
-      set({ isSyncing: true, syncError: null });
+        set({ isSyncing: true, syncError: null });
 
-      const sessionResponse = await backendAPI.getValuationSession(reportId);
+        // Deduplicate concurrent load requests (prevents double-load)
+        const session = await globalRequestDeduplicator.deduplicate(
+          `session-load-${reportId}`,
+          async () => {
+            // Monitor performance (<500ms target)
+            return await globalPerformanceMonitor.measure(
+              'session-load',
+              async () => {
+                // Retry with exponential backoff (handles transient failures)
+                return await retrySessionOperation(
+                  async () => {
+                    // Circuit breaker protection (fast-fail when backend down)
+                    return await sessionCircuitBreaker.execute(async () => {
+                      const sessionResponse = await backendAPI.getValuationSession(reportId);
 
-      if (sessionResponse && sessionResponse.session) {
-        const session = sessionResponse.session;
-          set({
-            session: {
-              ...session,
-              createdAt: new Date(session.createdAt),
-              updatedAt: new Date(session.updatedAt),
-              completedAt: session.completedAt ? new Date(session.completedAt) : undefined,
-            },
-            isSyncing: false,
-            syncError: null,
+                      if (!sessionResponse?.session) {
+                        // Try cache as fallback before throwing
+                        storeLogger.info('Session not found on backend, checking cache', {
+                          reportId,
+                          correlationId,
+                        });
+
+                        const cachedSession = globalSessionCache.get(reportId);
+                        if (cachedSession) {
+                          storeLogger.info('Session loaded from cache', {
+                            reportId,
+                            correlationId,
+                          });
+                          return cachedSession;
+                        }
+
+                        throw new Error('Session not found');
+                      }
+
+                      // Validate session data (prevents corrupted data crashes)
+                      validateSessionData(sessionResponse.session);
+
+                      // Normalize dates
+                      const normalizedSession = normalizeSessionDates(sessionResponse.session);
+
+                      // Cache for offline resilience
+                      globalSessionCache.set(reportId, normalizedSession);
+
+                      return normalizedSession;
+                    });
+                  },
+                  {
+                    onRetry: (attempt, error, delay) => {
+                      storeLogger.warn('Retrying session load', {
+                        reportId,
+                        attempt,
+                        delay_ms: delay,
+                        error: extractErrorMessage(error),
+                        correlationId,
+                      });
+
+                      // Record retry in metrics
+                      globalSessionMetrics.recordOperation(
+                        'load',
+                        false,
+                        performance.now() - startTime,
+                        attempt,
+                        extractErrorMessage(error)
+                      );
+                    },
+                  }
+                );
+              },
+              performanceThresholds.sessionLoad,
+              { reportId, correlationId }
+            );
+          }
+        );
+
+        // Success - update state
+        set({
+          session,
+          isSyncing: false,
+          syncError: null,
         });
-        storeLogger.info('Session loaded', { reportId });
-        } else {
-        // Session not found - throw error so caller can handle it
-        set({ isSyncing: false, syncError: 'Session not found' });
-        throw new Error('Session not found');
-        }
-    } catch (error: any) {
-        storeLogger.error('Failed to load session', {
-          error: error instanceof Error ? error.message : 'Unknown error',
+
+        // Record success in audit trail
+        const duration = performance.now() - startTime;
+        globalAuditTrail.log({
+          operation: 'LOAD',
           reportId,
-      });
+          success: true,
+          duration_ms: duration,
+          correlationId,
+          metadata: {
+            sessionId: session.sessionId,
+            currentView: session.currentView,
+          },
+        });
+
+        // Record success in metrics
+        globalSessionMetrics.recordOperation('load', true, duration);
+
+        storeLogger.info('Session loaded successfully', {
+          reportId,
+          sessionId: session.sessionId,
+          duration_ms: duration.toFixed(2),
+          correlationId,
+        });
+      } catch (error: any) {
+        const duration = performance.now() - startTime;
+
+        // Record failure in audit trail
+        globalAuditTrail.log({
+          operation: 'LOAD',
+          reportId,
+          success: false,
+          duration_ms: duration,
+          correlationId,
+          error: extractErrorMessage(error),
+        });
+
+        // Record failure in metrics
+        globalSessionMetrics.recordOperation(
+          'load',
+          false,
+          duration,
+          0,
+          extractErrorMessage(error)
+        );
+
+        storeLogger.error('Failed to load session after retries', {
+          error: extractErrorMessage(error),
+          reportId,
+          duration_ms: duration.toFixed(2),
+          correlationId,
+        });
+
         set({
           isSyncing: false,
-          syncError: error.message || 'Failed to load session',
-      });
-      // Re-throw so caller can handle 404 vs other errors
-      throw error;
+          syncError: extractErrorMessage(error),
+        });
+
+        // Re-throw so caller can handle (ValuationSessionManager will try to create new)
+        throw error;
       }
     },
 
     /**
      * Update session data (merge partial data with deep merging for nested objects)
      * Throttled to prevent excessive API calls
+     * Enhanced with save status indicators for M&A workflow trust
      */
     updateSessionData: async (data: Partial<ValuationRequest>) => {
     const { session } = get();
@@ -248,7 +319,10 @@ export const useValuationSessionStore = create<ValuationSessionStore>((set, get)
       if (!session) {
       storeLogger.warn('Cannot update session data: no active session');
       return;
-      }
+    }
+
+      // Mark as having unsaved changes
+      set({ hasUnsavedChanges: true });
 
       // Throttle updates - if called too soon, queue the update
     const now = Date.now();

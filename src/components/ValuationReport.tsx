@@ -15,12 +15,25 @@ import { ValuationSessionManager } from './ValuationSessionManager'
  *
  * Single Responsibility: Route validation and delegation.
  * Handles URL parameter validation and delegates to session/flow management.
+ * 
+ * Enhanced for M&A workflow:
+ * - Supports edit/view mode switching
+ * - Supports version selection
+ * - Always editable by default (M&A requirement)
  */
 interface ValuationReportProps {
   reportId: string
+  /** Initial mode (edit = editable form, view = static report) */
+  initialMode?: 'edit' | 'view'
+  /** Initial version number to load */
+  initialVersion?: number
 }
 
-export const ValuationReport: React.FC<ValuationReportProps> = React.memo(({ reportId }) => {
+export const ValuationReport: React.FC<ValuationReportProps> = React.memo(({ 
+  reportId,
+  initialMode = 'edit', // Default to edit mode for M&A workflow
+  initialVersion,
+}) => {
   const router = useRouter()
 
   // Handle valuation completion
@@ -50,7 +63,11 @@ export const ValuationReport: React.FC<ValuationReportProps> = React.memo(({ rep
   return (
     <div className="flex h-screen w-screen flex-col overflow-hidden bg-zinc-950">
       <Suspense fallback={<div className="flex items-center justify-center h-screen">Loading...</div>}>
-        <ValuationSessionManager reportId={reportId}>
+        <ValuationSessionManager 
+          reportId={reportId}
+          initialMode={initialMode}
+          initialVersion={initialVersion}
+        >
           {({
             session,
             stage,
@@ -67,6 +84,8 @@ export const ValuationReport: React.FC<ValuationReportProps> = React.memo(({ rep
               prefilledQuery={prefilledQuery}
               autoSend={autoSend}
               onComplete={handleValuationComplete}
+              initialMode={initialMode}
+              initialVersion={initialVersion}
             />
           )}
         </ValuationSessionManager>

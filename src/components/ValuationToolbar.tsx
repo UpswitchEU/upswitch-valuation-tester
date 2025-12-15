@@ -3,6 +3,7 @@ import {
     Download,
     Edit3,
     Eye,
+    History,
     Info,
     Loader2,
     Maximize,
@@ -223,6 +224,18 @@ export const ValuationToolbar: React.FC<ValuationToolbarProps> = ({
                     }`}
                   >
                     <Info className="w-4 h-4" />
+                  </button>
+                </Tooltip>
+                <Tooltip content="Audit Trail" position="bottom" className="">
+                  <button
+                    onClick={() => onTabChange?.('history')}
+                    className={`p-2 rounded-lg transition-all duration-200 ${
+                      currentActiveTab === 'history'
+                        ? 'bg-zinc-700 text-white'
+                        : 'text-gray-400 hover:text-gray-300 hover:bg-zinc-800'
+                    }`}
+                  >
+                    <History className="w-4 h-4" />
                   </button>
                 </Tooltip>
                 <div className="mx-2 h-6 w-px bg-zinc-700"></div>

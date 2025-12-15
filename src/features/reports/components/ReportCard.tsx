@@ -18,6 +18,15 @@ export interface ReportCardProps {
   onDelete: () => void
 }
 
+/**
+ * Report Card Component
+ * 
+ * M&A Workflow Enhancement:
+ * - Always navigates to edit mode (not view mode)
+ * - Clicking any report (even completed) opens editable form
+ * - Enables continuous adjustments and regeneration
+ * - Like Figma projects: always editable, previews are secondary
+ */
 export function ReportCard({ report, onClick, onDelete }: ReportCardProps) {
   const [isHovered, setIsHovered] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
@@ -30,6 +39,7 @@ export function ReportCard({ report, onClick, onDelete }: ReportCardProps) {
   const currentView = report.currentView || 'manual'
   
   // Determine status from session state
+  // M&A workflow: All reports are "editable" - status just indicates calculation state
   const status = report.completedAt ? 'completed' : 'in_progress'
   
   // Get valuation result if available (completed reports)

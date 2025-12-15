@@ -11,23 +11,17 @@ import React, { useCallback, useEffect, useRef, useState } from 'react'
 import { FullScreenModal } from '../../../components/FullScreenModal'
 import { ResizableDivider } from '../../../components/ResizableDivider'
 import { ValuationToolbar } from '../../../components/ValuationToolbar'
-import { MOBILE_BREAKPOINT, PANEL_CONSTRAINTS } from '../../../constants/panelConstants'
+import { MOBILE_BREAKPOINT } from '../../../constants/panelConstants'
 import { useAuth } from '../../../hooks/useAuth'
-import {
-    useValuationToolbarDownload,
-    useValuationToolbarFullscreen,
-    useValuationToolbarRefresh,
-    useValuationToolbarTabs,
-} from '../../../hooks/valuationToolbar'
+import { useConversationalToolbar } from '../../../hooks/useConversationalToolbar'
+import { usePanelResize } from '../../../hooks/usePanelResize'
+import { useReportIdTracking } from '../../../hooks/useReportIdTracking'
 import { guestCreditService } from '../../../services/guestCreditService'
-import { RefreshService } from '../../../services/toolbar/refreshService'
-import UrlGeneratorService from '../../../services/urlGenerator'
 import { useValuationApiStore } from '../../../store/useValuationApiStore'
 import { useValuationFormStore } from '../../../store/useValuationFormStore'
 import { useValuationResultsStore } from '../../../store/useValuationResultsStore'
 import type { ValuationResponse } from '../../../types/valuation'
 import { chatLogger } from '../../../utils/logger'
-import { generateReportId } from '../../../utils/reportIdGenerator'
 import { CreditGuard } from '../../auth/components/CreditGuard'
 import { ConversationProvider, useConversationActions, useConversationState } from '../context/ConversationContext'
 import { useConversationRestoration } from '../hooks'
@@ -69,7 +63,6 @@ const ConversationalLayoutInner: React.FC<ConversationalLayoutProps> = ({
 
   // Restore conversation from Python backend
   // FIX: Use refs to stabilize callbacks and prevent infinite loops
-  // actions object is recreated on every render, so we use refs to access stable functions
   const actionsRef = useRef(actions)
   actionsRef.current = actions // Always keep ref up to date
   
@@ -86,7 +79,6 @@ const ConversationalLayoutInner: React.FC<ConversationalLayoutProps> = ({
           messageCount: messages.length,
           pythonSessionId,
         })
-        // Update conversation context with restored messages using ref
         actionsRef.current.setMessages(messages)
         if (pythonSessionId) {
           actionsRef.current.setPythonSessionId(pythonSessionId)
@@ -100,7 +92,6 @@ const ConversationalLayoutInner: React.FC<ConversationalLayoutProps> = ({
       (error: string) => {
         chatLogger.error('Failed to restore conversation', { reportId: reportIdRef.current, error })
         actionsRef.current.setError(error)
-        // Still allow new conversation even if restoration fails
         actionsRef.current.setRestored(true)
         actionsRef.current.setInitialized(true)
       },
@@ -108,42 +99,20 @@ const ConversationalLayoutInner: React.FC<ConversationalLayoutProps> = ({
     ),
   })
 
-  // Toolbar hooks
-  const { handleRefresh: handleHookRefresh } = useValuationToolbarRefresh()
-  const { handleDownload: handleHookDownload, isDownloading } = useValuationToolbarDownload()
-  const {
-    isFullScreen,
-    handleOpenFullscreen: handleHookOpenFullscreen,
-    handleCloseFullscreen: handleHookCloseFullscreen,
-  } = useValuationToolbarFullscreen()
-  const { activeTab, handleTabChange: handleHookTabChange } = useValuationToolbarTabs({
-    initialTab: 'preview',
+  // Custom hooks for modular responsibilities
+  const { leftPanelWidth, handleResize } = usePanelResize()
+  const toolbar = useConversationalToolbar({
+    reportId,
+    restoration,
+    actions,
+    state,
+    result,
   })
 
   // UI State
   const [isMobile, setIsMobile] = useState(false)
   const [mobileActivePanel, setMobileActivePanel] = useState<'chat' | 'preview'>('chat')
   const [showPreConversationSummary, setShowPreConversationSummary] = useState(false)
-
-  // Panel resize state
-  const [leftPanelWidth, setLeftPanelWidth] = useState(() => {
-    try {
-      const saved = localStorage.getItem('upswitch-panel-width')
-      if (saved) {
-        const parsed = parseFloat(saved)
-        if (
-          !isNaN(parsed) &&
-          parsed >= PANEL_CONSTRAINTS.MIN_WIDTH &&
-          parsed <= PANEL_CONSTRAINTS.MAX_WIDTH
-        ) {
-          return parsed
-        }
-      }
-    } catch (error) {
-      chatLogger.warn('Failed to load saved panel width', { error })
-    }
-    return PANEL_CONSTRAINTS.DEFAULT_WIDTH
-  })
 
   // Mobile detection
   useEffect(() => {
@@ -153,15 +122,6 @@ const ConversationalLayoutInner: React.FC<ConversationalLayoutProps> = ({
     return () => window.removeEventListener('resize', checkMobile)
   }, [])
 
-  // Save panel width
-  useEffect(() => {
-    try {
-      localStorage.setItem('upswitch-panel-width', leftPanelWidth.toString())
-    } catch (error) {
-      chatLogger.warn('Failed to save panel width', { error })
-    }
-  }, [leftPanelWidth])
-
   // Sync valuation result from conversation context to results store
   useEffect(() => {
     if (state.valuationResult) {
@@ -170,7 +130,6 @@ const ConversationalLayoutInner: React.FC<ConversationalLayoutProps> = ({
   }, [state.valuationResult, setResult])
 
   // Sync restored messages to conversation context
-  // FIX: Use messages.length instead of messages array to prevent infinite loops
   useEffect(() => {
     if (restoration.state.messages.length > 0 && state.messages.length === 0) {
       actions.setMessages(restoration.state.messages)
@@ -180,104 +139,44 @@ const ConversationalLayoutInner: React.FC<ConversationalLayoutProps> = ({
     }
   }, [restoration.state.messages.length, restoration.state.pythonSessionId, state.messages.length, state.pythonSessionId, actions])
 
-  // Reset conversation context and restoration when reportId changes
-  // FIX: Only reset when reportId actually changes, not on remounts or flow switches
-  // Use sessionStorage to persist across remounts, or check restoration state
-  const previousReportIdRef = useRef<string | null>(null)
-  
-  useEffect(() => {
-    // On first render, initialize ref from sessionStorage to persist across remounts
-    if (previousReportIdRef.current === null) {
-      const storedReportId = typeof window !== 'undefined' 
-        ? sessionStorage.getItem(`conversational_reportId_${reportId}`)
-        : null
-      previousReportIdRef.current = storedReportId || null
-    }
-    
-    // Only reset if reportId actually changed (not just remount or flow switch)
-    if (previousReportIdRef.current === reportId) {
-      // reportId hasn't changed - just ensure session ID is set
-      if (state.sessionId !== reportId) {
+  // Track reportId changes and reset when needed
+  useReportIdTracking({
+    reportId,
+    onReportIdChange: useCallback(
+      (isNewReport) => {
+        if (!isNewReport) {
+          // Same reportId - just ensure session ID is set
+          if (state.sessionId !== reportId) {
+            actions.setSessionId(reportId)
+          }
+          return
+        }
+
+        // Don't reset if restoration is in progress
+        if (restoration.state.isRestoring || restoration.state.isRestored) {
+          chatLogger.debug('Skipping reset - restoration in progress or already restored', {
+            reportId,
+            isRestoring: restoration.state.isRestoring,
+            isRestored: restoration.state.isRestored,
+          })
+          return
+        }
+
+        // Reset for new report
+        restoration.reset()
+        actions.setMessages([])
+        actions.setValuationResult(null)
+        actions.setGenerating(false)
+        actions.setError(null)
+        actions.setRestored(false)
+        actions.setInitialized(false)
+        actions.setPythonSessionId(null)
         actions.setSessionId(reportId)
-      }
-      return // Skip reset
-    }
-    
-    // FIX: Don't reset if restoration is already in progress
-    // This prevents aborting an ongoing restoration and causing reset loops
-    if (restoration.state.isRestoring) {
-      chatLogger.debug('Skipping reset - restoration already in progress', { reportId })
-      return
-    }
-    
-    // Update ref and sessionStorage before resetting to prevent re-triggering
-    previousReportIdRef.current = reportId
-    if (typeof window !== 'undefined') {
-      sessionStorage.setItem(`conversational_reportId_${reportId}`, reportId)
-    }
-    
-    // Reset restoration hook when reportId changes
-    // This sets hasRestoredRef.current = false, which will trigger auto-restore
-    restoration.reset()
-    
-    // Reset conversation context
-    actions.setMessages([])
-    actions.setValuationResult(null)
-    actions.setGenerating(false)
-    actions.setError(null)
-    actions.setRestored(false)
-    actions.setInitialized(false)
-    actions.setPythonSessionId(null)
-    
-    // Update session ID in context
-    actions.setSessionId(reportId)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [reportId, restoration.state.isRestoring]) // Include isRestoring to prevent reset during restoration
+      },
+      [reportId, state.sessionId, restoration, actions]
+    ),
+  })
 
-  // Handle panel resize
-  const handleResize = useCallback((newWidth: number) => {
-    const constrainedWidth = Math.max(
-      PANEL_CONSTRAINTS.MIN_WIDTH,
-      Math.min(PANEL_CONSTRAINTS.MAX_WIDTH, newWidth)
-    )
-    if (Math.abs(constrainedWidth - PANEL_CONSTRAINTS.DEFAULT_WIDTH) < 2) {
-      setLeftPanelWidth(PANEL_CONSTRAINTS.DEFAULT_WIDTH)
-    } else {
-      setLeftPanelWidth(constrainedWidth)
-    }
-  }, [])
-
-  // Toolbar handlers - using hooks
-  const handleRefresh = useCallback(() => {
-    // Reset restoration state and start new conversation
-    restoration.reset()
-    actions.setMessages([])
-    actions.setValuationResult(null)
-    actions.setGenerating(false)
-    actions.setError(null)
-    actions.setRestored(false)
-    actions.setInitialized(false)
-    
-    // Generate new report ID and navigate using RefreshService
-    const newReportId = generateReportId()
-    RefreshService.navigateTo(UrlGeneratorService.reportById(newReportId))
-    handleHookRefresh()
-  }, [restoration, actions, handleHookRefresh])
-
-  const handleDownload = useCallback(async () => {
-    // Read from results store (same as manual flow)
-    const currentResult = result || useValuationResultsStore.getState().result
-    if (currentResult && currentResult.html_report) {
-      await handleHookDownload({
-        companyName: state.businessProfile?.company_name || currentResult.company_name || 'Company',
-        valuationAmount: currentResult.equity_value_mid,
-        valuationDate: new Date(),
-        method: currentResult.methodology || 'DCF Analysis',
-        confidenceScore: currentResult.confidence_score,
-        htmlContent: currentResult.html_report || '',
-      })
-    }
-  }, [result, state.businessProfile, handleHookDownload])
 
   // Handle Python session ID updates from conversation
   const handlePythonSessionIdReceived = useCallback(
@@ -332,15 +231,15 @@ const ConversationalLayoutInner: React.FC<ConversationalLayoutProps> = ({
       <div className="flex flex-col h-full overflow-hidden">
         {/* Toolbar */}
         <ValuationToolbar
-          onRefresh={handleRefresh}
-          onDownload={handleDownload}
-          onFullScreen={handleHookOpenFullscreen}
-          isGenerating={isGeneratingState || isDownloading}
+          onRefresh={toolbar.handleRefresh}
+          onDownload={toolbar.handleDownload}
+          onFullScreen={toolbar.handleOpenFullscreen}
+          isGenerating={isGeneratingState || toolbar.isDownloading}
           user={user}
           valuationName="Valuation"
           valuationId={result?.valuation_id || state.valuationResult?.valuation_id}
-          activeTab={activeTab}
-          onTabChange={handleHookTabChange}
+          activeTab={toolbar.activeTab}
+          onTabChange={toolbar.handleTabChange}
           companyName={state.businessProfile?.company_name || result?.company_name}
         />
 
@@ -433,7 +332,7 @@ const ConversationalLayoutInner: React.FC<ConversationalLayoutProps> = ({
             } h-full min-h-[400px] lg:min-h-0 w-full lg:w-auto border-t lg:border-t-0 border-zinc-800`}
             style={{ width: isMobile ? '100%' : `${100 - leftPanelWidth}%` }}
           >
-            <ReportPanel activeTab={activeTab} onTabChange={handleHookTabChange} />
+            <ReportPanel activeTab={toolbar.activeTab} onTabChange={toolbar.handleTabChange} />
           </div>
         </div>
 
@@ -465,11 +364,11 @@ const ConversationalLayoutInner: React.FC<ConversationalLayoutProps> = ({
 
         {/* Full Screen Modal */}
         <FullScreenModal
-          isOpen={isFullScreen}
-          onClose={handleHookCloseFullscreen}
+          isOpen={toolbar.isFullScreen}
+          onClose={toolbar.handleCloseFullscreen}
           title="Valuation - Full Screen"
         >
-          <ReportPanel className="h-full" activeTab={activeTab} onTabChange={handleHookTabChange} />
+          <ReportPanel className="h-full" activeTab={toolbar.activeTab} onTabChange={toolbar.handleTabChange} />
         </FullScreenModal>
       </div>
     </CreditGuard>

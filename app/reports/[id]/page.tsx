@@ -9,19 +9,41 @@ interface ValuationReportPageProps {
   }> | {
     id: string
   }
+  searchParams?: Promise<{
+    mode?: 'edit' | 'view'
+    version?: string
+    flow?: 'manual' | 'conversational'
+    prefilledQuery?: string
+    autoSend?: string
+  }> | {
+    mode?: 'edit' | 'view'
+    version?: string
+    flow?: 'manual' | 'conversational'
+    prefilledQuery?: string
+    autoSend?: string
+  }
 }
 
-export default function ValuationReportPage({ params }: ValuationReportPageProps) {
+/**
+ * Valuation Report Page
+ * 
+ * Supports M&A workflow with multiple modes:
+ * - Edit mode (default): Editable form for adjustments and regeneration
+ * - View mode: Static report view
+ * - Version selection: Load specific version (v1, v2, v3...)
+ * 
+ * Query params:
+ * - ?mode=edit|view (default: edit for always-editable UX)
+ * - ?version=N (load specific version, default: latest)
+ * - ?flow=manual|conversational (existing flow selection)
+ * - ?prefilledQuery=Restaurant (existing prefill)
+ */
+export default function ValuationReportPage({ params, searchParams }: ValuationReportPageProps) {
   // Handle both Promise and plain object params (Next.js 14+ compatibility)
-  // FIX: Call use() unconditionally to comply with Rules of Hooks
-  // React error #438 occurs when use() receives undefined/null or non-Promise
   if (!params) {
     throw new Error('Params are required')
   }
   
-  // FIX: Always call use() unconditionally - wrap non-Promise in Promise.resolve()
-  // Next.js 15+ always passes Promise, but we handle both cases for compatibility
-  // use() requires a Promise or Context, so we ensure params is always a Promise
   const paramsPromise = params instanceof Promise ? params : Promise.resolve(params)
   const resolvedParams = use(paramsPromise)
   
@@ -30,6 +52,28 @@ export default function ValuationReportPage({ params }: ValuationReportPageProps
   if (!id) {
     throw new Error('Report ID is required')
   }
+
+  // Handle searchParams (optional)
+  let mode: 'edit' | 'view' = 'edit' // Default to edit mode (M&A workflow)
+  let versionNumber: number | undefined
+
+  if (searchParams) {
+    const searchParamsPromise = searchParams instanceof Promise 
+      ? searchParams 
+      : Promise.resolve(searchParams)
+    const resolvedSearchParams = use(searchParamsPromise)
+    
+    mode = resolvedSearchParams.mode || 'edit'
+    versionNumber = resolvedSearchParams.version 
+      ? parseInt(resolvedSearchParams.version) 
+      : undefined
+  }
   
-  return <ValuationReport reportId={id} />
+  return (
+    <ValuationReport 
+      reportId={id} 
+      initialMode={mode}
+      initialVersion={versionNumber}
+    />
+  )
 }
