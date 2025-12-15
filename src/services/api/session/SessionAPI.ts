@@ -128,15 +128,25 @@ export class SessionAPI extends HttpClient {
       // Transform to { success: true, session: {...}, sessionId, reportId }
       const sessionData = response.data
 
+      // CRITICAL: Validate sessionData exists before accessing properties
+      if (!sessionData) {
+        throw new Error('Backend returned empty session data')
+      }
+
       // Map backend 'ai-guided' to frontend 'conversational'
-      if (sessionData) {
-        if ((sessionData.currentView as string) === 'ai-guided') {
-          sessionData.currentView = 'conversational'
-        }
-        // Map dataSource: 'ai-guided' → 'conversational'
-        if (sessionData.dataSource === 'ai-guided') {
-          sessionData.dataSource = 'conversational'
-        }
+      if ((sessionData.currentView as string) === 'ai-guided') {
+        sessionData.currentView = 'conversational'
+      }
+      // Map dataSource: 'ai-guided' → 'conversational'
+      if (sessionData.dataSource === 'ai-guided') {
+        sessionData.dataSource = 'conversational'
+      }
+
+      // CRITICAL: Validate required fields exist
+      if (!sessionData.sessionId || !sessionData.reportId) {
+        throw new Error(
+          `Backend returned incomplete session data: missing ${!sessionData.sessionId ? 'sessionId' : ''} ${!sessionData.reportId ? 'reportId' : ''}`
+        )
       }
 
       return {

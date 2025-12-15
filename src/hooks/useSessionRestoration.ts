@@ -21,42 +21,7 @@ import { useValuationResultsStore } from '../store/useValuationResultsStore'
 import { useValuationSessionStore } from '../store/useValuationSessionStore'
 import { useVersionHistoryStore } from '../store/useVersionHistoryStore'
 import { generalLogger } from '../utils/logger'
-
-/**
- * Check if sessionData has meaningful data (not just empty object from NEW report)
- *
- * NEW reports are created optimistically with empty sessionData: {}
- * EXISTING reports have populated sessionData with form fields, results, etc.
- *
- * @param sessionData - Session data to check
- * @returns true if sessionData has meaningful fields, false if empty (NEW report)
- */
-function hasMeaningfulSessionData(sessionData: any): boolean {
-  if (!sessionData || typeof sessionData !== 'object') {
-    return false
-  }
-
-  const keys = Object.keys(sessionData)
-  // Empty object means NEW report
-  if (keys.length === 0) {
-    return false
-  }
-
-  // Check if it has actual form fields (not just metadata)
-  const meaningfulFields = [
-    'company_name',
-    'revenue',
-    'ebitda',
-    'business_type_id',
-    'html_report',
-    'info_tab_html',
-    'valuation_result',
-    'current_year_data',
-    'historical_years_data',
-  ]
-
-  return keys.some((key) => meaningfulFields.includes(key))
-}
+import { hasMeaningfulSessionData } from '../utils/sessionDataUtils'
 
 /**
  * Hook to automatically restore form data, results, and versions from session
@@ -116,7 +81,16 @@ export function useSessionRestoration() {
         generalLogger.debug('Skipping restoration - NEW report (empty sessionData)', {
           reportId: session.reportId,
         })
+        // Mark as checked even for NEW reports to prevent re-checking
+        if (lastRestoredReportIdRef.current !== session.reportId) {
+          lastRestoredReportIdRef.current = session.reportId
+        }
         return
+      }
+
+      // CRITICAL: Set reportId immediately to prevent race conditions
+      if (lastRestoredReportIdRef.current !== session.reportId) {
+        lastRestoredReportIdRef.current = session.reportId
       }
 
       // Convert session data to form data format - COMPLETE FIELD MAPPING
@@ -176,13 +150,17 @@ export function useSessionRestoration() {
       })
 
       if (Object.keys(formDataUpdate).length > 0) {
-        updateFormData(formDataUpdate)
+        // CRITICAL: Set flag BEFORE updateFormData to prevent race conditions
         hasRestoredFormDataRef.current = true
+        updateFormData(formDataUpdate)
         generalLogger.info('Form data restored from session', {
           reportId: session.reportId,
           fieldsRestored: Object.keys(formDataUpdate).length,
           restoredFields: Object.keys(formDataUpdate),
         })
+      } else {
+        // Even if no data to restore, mark as checked to prevent re-checking
+        hasRestoredFormDataRef.current = true
       }
     } catch (error) {
       // Phase 7: Error handling - graceful degradation
@@ -213,7 +191,14 @@ export function useSessionRestoration() {
         generalLogger.debug('Skipping results restoration - NEW report (empty sessionData)', {
           reportId: session.reportId,
         })
+        // Mark as checked even for NEW reports to prevent re-checking
+        hasRestoredResultsRef.current = true
         return
+      }
+
+      // CRITICAL: Set reportId immediately to prevent race conditions
+      if (lastRestoredReportIdRef.current !== session.reportId) {
+        lastRestoredReportIdRef.current = session.reportId
       }
 
       const valuationResult = sessionData?.valuation_result || (session as any).valuationResult
@@ -226,8 +211,9 @@ export function useSessionRestoration() {
           html_report: valuationResult.html_report || sessionData?.html_report,
           info_tab_html: valuationResult.info_tab_html || sessionData?.info_tab_html,
         }
-        setResult(fullResult)
+        // CRITICAL: Set flag BEFORE setResult to prevent race conditions
         hasRestoredResultsRef.current = true
+        setResult(fullResult)
         generalLogger.info('Valuation result restored from session', {
           reportId: session.reportId,
           valuationId: fullResult.valuation_id,
@@ -237,6 +223,8 @@ export function useSessionRestoration() {
         })
       } else if (sessionData?.html_report || sessionData?.info_tab_html) {
         // Phase 6: Partial restoration - HTML exists but no result object
+        // CRITICAL: Set flag BEFORE setting HTML to prevent race conditions
+        hasRestoredResultsRef.current = true
         // Create minimal result object with HTML reports
         if (sessionData.html_report) {
           setHtmlReport(sessionData.html_report)
@@ -252,6 +240,8 @@ export function useSessionRestoration() {
             htmlLength: sessionData.info_tab_html.length,
           })
         }
+      } else {
+        // No results to restore, but mark as checked to prevent re-checking
         hasRestoredResultsRef.current = true
       }
     } catch (error) {
@@ -264,7 +254,7 @@ export function useSessionRestoration() {
     }
   }, [session?.reportId, session?.sessionData, setResult, setHtmlReport, setInfoTabHtml])
 
-  // Phase 3: Version history auto-fetch
+  // Phase 3: Version history auto-fetch (only for EXISTING reports)
   useEffect(() => {
     if (!session?.reportId) {
       return
@@ -272,6 +262,15 @@ export function useSessionRestoration() {
 
     // Skip if we've already fetched versions for this report
     if (lastRestoredReportIdRef.current === session.reportId && hasRestoredVersionsRef.current) {
+      return
+    }
+
+    // CRITICAL: Skip version fetching for NEW reports (no meaningful data)
+    const sessionData = session.sessionData as any
+    if (!hasMeaningfulSessionData(sessionData)) {
+      generalLogger.debug('Skipping version fetch - NEW report (empty sessionData)', {
+        reportId: session.reportId,
+      })
       return
     }
 
@@ -291,6 +290,6 @@ export function useSessionRestoration() {
         })
         // Don't set hasRestoredVersionsRef to true on error - allow retry
       })
-  }, [session?.reportId, fetchVersions])
+  }, [session?.reportId, session?.sessionData, fetchVersions])
 }
 
