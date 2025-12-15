@@ -171,13 +171,13 @@ export const HomePage: React.FC = () => {
         disableKeyboardInteraction={true}
       />
 
-      <div className="min-h-screen relative pt-12 md:pt-16">
+      <div className="min-h-screen relative pt-8 md:pt-12">
         {/* Hero Section with Video Background */}
-        <section className="relative z-10 pt-12 md:pt-16 pb-4 md:pb-6 flex items-center justify-center min-h-[85vh] md:min-h-[90vh]">
+        <section className="relative z-10 pt-8 md:pt-12 pb-2 md:pb-4 flex items-center justify-center min-h-[70vh] md:min-h-[75vh]">
           <div className="w-full max-w-6xl mx-auto px-4">
-            <div className="text-center space-y-4 md:space-y-5">
+            <div className="text-center space-y-3 md:space-y-4">
               {/* Hero Content */}
-              <div className="space-y-4 md:space-y-5">
+              <div className="space-y-3 md:space-y-4">
                 <h1 className="text-5xl md:text-6xl lg:text-7xl xl:text-8xl font-bold leading-tight tracking-tight text-[#F4F1EA]">
                   Know the true value of
                   <br />
@@ -190,7 +190,7 @@ export const HomePage: React.FC = () => {
               </div>
 
               {/* Action Bridge */}
-              <p className="text-[#F4F1EA] text-opacity-80 text-sm md:text-base mb-2 font-medium">
+              <p className="text-[#F4F1EA] text-opacity-80 text-sm md:text-base mb-1 font-medium">
                 Start by entering the business type, and discover the true value in minutes.
               </p>
 
@@ -201,7 +201,7 @@ export const HomePage: React.FC = () => {
                     e.preventDefault()
                     handleQuerySubmit()
                   }}
-                  className="focus-within:bg-zinc-900/30 group flex flex-col gap-3 p-4 duration-150 w-full rounded-3xl border border-zinc-700/50 bg-zinc-900/20 text-base shadow-xl transition-all ease-in-out focus-within:border-zinc-500/40 hover:border-zinc-600/30 focus-within:hover:border-zinc-500/40 backdrop-blur-sm"
+                  className="focus-within:bg-zinc-900/30 group flex flex-col gap-2 p-3 md:p-4 duration-150 w-full rounded-3xl border border-zinc-700/50 bg-zinc-900/20 text-base shadow-xl transition-all ease-in-out focus-within:border-zinc-500/40 hover:border-zinc-600/30 focus-within:hover:border-zinc-500/40 backdrop-blur-sm"
                 >
                   {/* Main textarea container */}
                   <div className="relative flex items-center">
@@ -330,7 +330,7 @@ export const HomePage: React.FC = () => {
                 </form>
 
                 {/* Trust Signal */}
-                <div className="mt-4 text-center">
+                <div className="mt-2 md:mt-3 text-center">
                   <p className="text-xs text-[#F4F1EA] text-opacity-60">
                     Join 500+ owners and advisors · No account required to start
                   </p>
