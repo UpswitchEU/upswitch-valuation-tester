@@ -35,7 +35,7 @@ export type {
   CalculateOptionData,
   CollectedData,
   StreamingChatProps,
-  ValuationPreviewData,
+  ValuationPreviewData
 } from './StreamingChat.types'
 
 export const StreamingChat: React.FC<import('./StreamingChat.types').StreamingChatProps> = ({
@@ -93,6 +93,17 @@ export const StreamingChat: React.FC<import('./StreamingChat.types').StreamingCh
 
   // Use centralized state management
   const state = useStreamingChatState(sessionId, userId)
+
+  // Prefill input field with initialMessage when available
+  useEffect(() => {
+    if (initialMessage && initialMessage.trim() && !state.input.trim()) {
+      chatLogger.debug('Prefilling input field with initialMessage', {
+        sessionId,
+        initialMessage: initialMessage.substring(0, 50),
+      })
+      state.setInput(initialMessage.trim())
+    }
+  }, [initialMessage, state.input, state.setInput, sessionId])
 
   // Extract message management logic
   const messageManagement = useMessageManagement({
@@ -281,6 +292,8 @@ export const StreamingChat: React.FC<import('./StreamingChat.types').StreamingCh
     pythonSessionId,
     isRestorationComplete,
     onSessionIdUpdate: setPythonSessionId,
+    autoSend,
+    initialMessage,
   })
 
   useEffect(() => {

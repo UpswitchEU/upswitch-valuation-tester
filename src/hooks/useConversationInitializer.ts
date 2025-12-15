@@ -65,6 +65,8 @@ export interface ConversationInitializerCallbacks {
   isSessionInitialized?: boolean // CRITICAL: Indicates if session initialization is complete
   pythonSessionId?: string | null // NEW: Current Python sessionId (for restoration coordination)
   isRestorationComplete?: boolean // NEW: Explicit restoration completion flag
+  autoSend?: boolean // NEW: Skip initialization if auto-send is enabled
+  initialMessage?: string | null // NEW: Initial message to send (used with autoSend)
 }
 
 /**
@@ -307,6 +309,7 @@ export const useConversationInitializer = (
             // CRITICAL FIX: Create initial message from /start endpoint
             // This displays the first question immediately when page loads
             // Backend handles message flow - frontend trusts backend completely
+            // ALWAYS display the first question so user can see what they're answering
             const message: Omit<Message, 'id' | 'timestamp'> = {
               type: 'ai',
               content: data.ai_message,
@@ -324,6 +327,7 @@ export const useConversationInitializer = (
             chatLogger.debug('Initial message created from /start', {
               field: data.field_name,
               questionPreview: data.ai_message?.substring(0, 50),
+              autoSend: callbacks.autoSend,
             })
           }
         } catch (error) {
@@ -534,7 +538,24 @@ export const useConversationInitializer = (
       return
     }
 
-    // RULE 6: Start new conversation
+    // RULE 6: Auto-send enabled → still initialize conversation, but skip displaying initial AI message
+    // CRITICAL: We must call /start to initialize the conversation session on the backend,
+    // even when autoSend=true, so the backend knows about the conversation before we send the first message
+    if (callbacks.autoSend && callbacks.initialMessage && callbacks.initialMessage.trim()) {
+      chatLogger.info('⏭️ Auto-send enabled - initializing conversation without displaying initial message', {
+        sessionId,
+        pythonSessionId: currentPythonSessionId,
+        initialMessage: callbacks.initialMessage.substring(0, 50),
+      })
+      hasInitializedRef.current = true
+      // Call initializeWithRetry but with a flag to skip adding the initial AI message
+      // The initializeWithRetry function will handle calling /start to create the conversation
+      initializeWithRetry()
+      // Note: setIsInitializing(false) will be called by initializeWithRetry when it completes
+      return
+    }
+
+    // RULE 7: Start new conversation (normal flow)
     chatLogger.info('🚀 Starting new conversation', {
       sessionId,
       pythonSessionId: currentPythonSessionId,

@@ -17,9 +17,9 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { UtilityAPI } from '../../../services/api/utility/UtilityAPI'
+import { useValuationSessionStore } from '../../../store/useValuationSessionStore'
 import type { Message } from '../../../types/message'
 import { CorrelationPrefixes, createCorrelationId } from '../../../utils/correlationId'
-import { extractErrorMessage } from '../../../utils/errorDetection'
 import { convertToApplicationError, getErrorMessage } from '../../../utils/errors/errorConverter'
 import {
   isNetworkError,
@@ -32,6 +32,34 @@ import { globalSessionMetrics } from '../../../utils/metrics/sessionMetrics'
 import { globalAuditTrail } from '../../../utils/sessionAuditTrail'
 
 const utilityAPI = new UtilityAPI()
+
+/**
+ * Ensure a session exists for the given reportId
+ * Creates a new session if it doesn't exist, otherwise loads the existing one
+ */
+async function ensureSessionExists(reportId: string): Promise<void> {
+  try {
+    const { initializeSession } = useValuationSessionStore.getState()
+    const currentSession = useValuationSessionStore.getState().session
+
+    // If session already exists in store, no need to create
+    if (currentSession && currentSession.reportId === reportId) {
+      chatLogger.debug('Session already exists in store', { reportId })
+      return
+    }
+
+    // Initialize session (will create if doesn't exist, or load if exists)
+    chatLogger.info('Ensuring session exists', { reportId })
+    await initializeSession(reportId, 'conversational')
+    chatLogger.info('Session ensured', { reportId })
+  } catch (error) {
+    // Log error but don't throw - session creation failure shouldn't block restoration
+    chatLogger.warn('Failed to ensure session exists', {
+      reportId,
+      error: error instanceof Error ? error.message : 'Unknown error',
+    })
+  }
+}
 
 export interface ConversationRestorationState {
   isRestoring: boolean
@@ -147,8 +175,13 @@ export const useConversationRestoration = (
       // Verify status object structure (type guard)
       if (!status || typeof status !== 'object' || !('exists' in status)) {
         chatLogger.warn('Invalid conversation status response', { sessionId, status })
+        // CRITICAL: Ensure session exists even when status response is invalid
+        await ensureSessionExists(sessionId)
         setIsRestored(true)
         hasRestoredRef.current = true
+        // CRITICAL: Call onRestored with empty messages to signal initialization is complete
+        // This allows auto-send to work even when status response is invalid
+        onRestored?.([], null)
         return
       }
 
@@ -163,8 +196,13 @@ export const useConversationRestoration = (
         // Verify history object structure (type guard)
         if (!history || typeof history !== 'object' || !('exists' in history)) {
           chatLogger.warn('Invalid conversation history response', { sessionId, history })
+          // CRITICAL: Ensure session exists even when history response is invalid
+          await ensureSessionExists(sessionId)
           setIsRestored(true)
           hasRestoredRef.current = true
+          // CRITICAL: Call onRestored with empty messages to signal initialization is complete
+          // This allows auto-send to work even when history response is invalid
+          onRestored?.([], null)
           return
         }
 
@@ -198,13 +236,25 @@ export const useConversationRestoration = (
           onRestored?.(restoredMessages, extractedPythonSessionId)
         } else {
           chatLogger.info('ℹ️ No existing conversation found, starting new', { sessionId })
+          // CRITICAL: Ensure session exists when no conversation is found
+          // This ensures a new session is created if it doesn't exist yet
+          await ensureSessionExists(sessionId)
           setIsRestored(true) // Mark as restored even if no messages (new conversation)
           hasRestoredRef.current = true
+          // CRITICAL: Call onRestored with empty messages to signal initialization is complete
+          // This allows auto-send to work for new conversations
+          onRestored?.([], null)
         }
       } else {
         chatLogger.info('ℹ️ No existing conversation found, starting new', { sessionId })
+        // CRITICAL: Ensure session exists when no conversation is found
+        // This ensures a new session is created if it doesn't exist yet
+        await ensureSessionExists(sessionId)
         setIsRestored(true) // Mark as restored even if no messages (new conversation)
         hasRestoredRef.current = true
+        // CRITICAL: Call onRestored with empty messages to signal initialization is complete
+        // This allows auto-send to work for new conversations
+        onRestored?.([], null)
       }
     } catch (error) {
       const duration = performance.now() - startTime
