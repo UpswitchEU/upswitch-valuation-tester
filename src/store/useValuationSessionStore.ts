@@ -19,6 +19,7 @@ import { globalAuditTrail } from '../utils/sessionAuditTrail'
 import { globalSessionCache } from '../utils/sessionCacheManager'
 import { createFallbackSession, createOrLoadSession } from '../utils/sessionErrorHandlers'
 import { mergePrefilledQuery, normalizeSessionDates } from '../utils/sessionHelpers'
+import { verifySessionInBackground } from '../utils/sessionVerification'
 import { validateSessionData } from '../utils/sessionValidation'
 
 export interface ValuationSessionStore {
@@ -117,6 +118,46 @@ export const useValuationSessionStore = create<ValuationSessionStore>((set, get)
           return // Don't re-initialize if session already exists
         }
 
+        // CACHE-FIRST OPTIMIZATION: Check localStorage cache BEFORE backend API call
+        const cachedSession = globalSessionCache.get(reportId)
+        if (cachedSession) {
+          storeLogger.info('Session found in cache, using immediately', {
+            reportId,
+            currentView: cachedSession.currentView,
+            cacheAge_minutes: cachedSession.updatedAt
+              ? Math.floor((Date.now() - new Date(cachedSession.updatedAt).getTime()) / (60 * 1000))
+              : null,
+          })
+
+          // Merge prefilled query if provided
+          const updatedPartialData = mergePrefilledQuery(cachedSession.partialData, prefilledQuery)
+
+          // Use cached session immediately
+          set({
+            session: {
+              ...cachedSession,
+              partialData: updatedPartialData,
+            },
+            syncError: null,
+          })
+
+          // Verify with backend in background (non-blocking)
+          verifySessionInBackground(reportId, cachedSession)
+
+          // Record cache hit metric (cache load is near-instant, ~0-5ms)
+          const cacheLoadTime = 5 // Approximate cache read time
+          globalSessionMetrics.recordOperation('load', true, cacheLoadTime, 0, 'cache_hit')
+          
+          storeLogger.info('Cache hit - session loaded from cache', {
+            reportId,
+            loadTime_ms: cacheLoadTime,
+          })
+
+          return
+        }
+
+        storeLogger.debug('Session not found in cache, checking backend', { reportId })
+
         // Try to load existing session from backend
         const existingSessionResponse = await backendAPI.getValuationSession(reportId)
 
@@ -129,23 +170,37 @@ export const useValuationSessionStore = create<ValuationSessionStore>((set, get)
             prefilledQuery
           )
 
+          const normalizedSession = normalizeSessionDates({
+            ...existingSession,
+            partialData: updatedPartialData,
+          })
+
+          // Cache for next time (cache-first optimization)
+          globalSessionCache.set(reportId, normalizedSession)
+
           set({
-            session: normalizeSessionDates({
-              ...existingSession,
-              partialData: updatedPartialData,
-            }),
+            session: normalizedSession,
             syncError: null,
           })
-          storeLogger.info('Loaded existing session', {
+          storeLogger.info('Loaded existing session from backend and cached', {
             reportId,
             currentView: existingSession.currentView,
           })
         } else {
           // Create new session using helper (handles 409 conflicts automatically)
           const newSession = await createOrLoadSession(reportId, currentView, prefilledQuery)
+
+          // Cache new session for next time
+          globalSessionCache.set(reportId, newSession)
+
           set({
             session: newSession,
             syncError: null,
+          })
+
+          storeLogger.info('Created new session and cached', {
+            reportId,
+            currentView: newSession.currentView,
           })
         }
       } catch (error) {
@@ -241,6 +296,53 @@ export const useValuationSessionStore = create<ValuationSessionStore>((set, get)
       try {
         set({ isSaving: true, isSyncing: true, syncError: null })
 
+        // CACHE-FIRST OPTIMIZATION: Check localStorage cache BEFORE backend API call
+        const cachedSession = globalSessionCache.get(reportId)
+        if (cachedSession) {
+          const loadTime = performance.now() - startTime
+          storeLogger.info('Session loaded from cache (cache-first)', {
+            reportId,
+            correlationId,
+            loadTime_ms: loadTime.toFixed(2),
+            cacheAge_minutes: cachedSession.updatedAt
+              ? Math.floor((Date.now() - new Date(cachedSession.updatedAt).getTime()) / (60 * 1000))
+              : null,
+          })
+
+          // Validate cached session
+          validateSessionData(cachedSession)
+
+          // Use cached session immediately
+          set({
+            session: cachedSession,
+            isSaving: false,
+            isSyncing: false,
+            syncError: null,
+          })
+
+          // Record cache hit metric
+          globalSessionMetrics.recordOperation('load', true, loadTime, 0, 'cache_hit')
+          
+          storeLogger.info('Cache hit - session loaded from cache', {
+            reportId,
+            correlationId,
+            loadTime_ms: loadTime.toFixed(2),
+          })
+
+          // Verify with backend in background (non-blocking)
+          verifySessionInBackground(reportId, cachedSession)
+
+          return // Return void (interface requirement)
+        }
+
+        storeLogger.info('Cache miss - checking backend', {
+          reportId,
+          correlationId,
+        })
+        
+        // Record cache miss metric
+        globalSessionMetrics.recordOperation('load', false, 0, 0, 'cache_miss')
+
         // Deduplicate concurrent load requests (prevents double-load)
         const session = await globalRequestDeduplicator.deduplicate(
           `session-load-${reportId}`,
@@ -257,21 +359,6 @@ export const useValuationSessionStore = create<ValuationSessionStore>((set, get)
                       const sessionResponse = await backendAPI.getValuationSession(reportId)
 
                       if (!sessionResponse?.session) {
-                        // Try cache as fallback before throwing
-                        storeLogger.info('Session not found on backend, checking cache', {
-                          reportId,
-                          correlationId,
-                        })
-
-                        const cachedSession = globalSessionCache.get(reportId)
-                        if (cachedSession) {
-                          storeLogger.info('Session loaded from cache', {
-                            reportId,
-                            correlationId,
-                          })
-                          return cachedSession
-                        }
-
                         throw new Error('Session not found')
                       }
 
@@ -281,8 +368,13 @@ export const useValuationSessionStore = create<ValuationSessionStore>((set, get)
                       // Normalize dates
                       const normalizedSession = normalizeSessionDates(sessionResponse.session)
 
-                      // Cache for offline resilience
+                      // Cache for next time (cache-first optimization)
                       globalSessionCache.set(reportId, normalizedSession)
+
+                      storeLogger.info('Session loaded from backend and cached', {
+                        reportId,
+                        correlationId,
+                      })
 
                       return normalizedSession
                     })
@@ -416,6 +508,7 @@ export const useValuationSessionStore = create<ValuationSessionStore>((set, get)
      * Update session data (merge partial data with deep merging for nested objects)
      * Throttled to prevent excessive API calls
      * Enhanced with save status indicators for M&A workflow trust
+     * CACHE INVALIDATION: Updates cache when session data changes
      */
     updateSessionData: async (data: Partial<ValuationRequest>) => {
       const { session } = get()
@@ -513,7 +606,10 @@ export const useValuationSessionStore = create<ValuationSessionStore>((set, get)
           syncError: null,
         })
 
-        storeLogger.debug('Session data updated', {
+        // CACHE INVALIDATION: Update cache with latest session data
+        globalSessionCache.set(session.reportId, updatedSession)
+
+        storeLogger.debug('Session data updated and cache invalidated', {
           reportId: session.reportId,
           fieldsUpdated: Object.keys(data),
           completeness,
@@ -576,19 +672,24 @@ export const useValuationSessionStore = create<ValuationSessionStore>((set, get)
         set({ session: tempSession })
         const completeness = get().getCompleteness()
 
+        const fallbackUpdatedSession: ValuationSession = {
+          ...session,
+          partialData: updatedPartialData,
+          sessionData: updatedSessionData,
+          dataSource,
+          updatedAt: new Date(),
+          completeness,
+        }
+
         set({
-          session: {
-            ...session,
-            partialData: updatedPartialData,
-            sessionData: updatedSessionData,
-            dataSource,
-            updatedAt: new Date(),
-            completeness,
-          },
+          session: fallbackUpdatedSession,
           isSaving: false,
           isSyncing: false,
           syncError: (error as any)?.message || 'Failed to sync with backend',
         })
+
+        // CACHE INVALIDATION: Update cache even on error (local state is still updated)
+        globalSessionCache.set(session.reportId, fallbackUpdatedSession)
       }
     },
 
@@ -730,6 +831,9 @@ export const useValuationSessionStore = create<ValuationSessionStore>((set, get)
         syncError: null,
       })
 
+      // CACHE INVALIDATION: Update cache with switched session
+      globalSessionCache.set(currentSession.reportId, updatedSession)
+
       storeLogger.info('View switched optimistically (UI updated immediately)', {
         reportId: currentSession.reportId,
         from: currentSession.currentView,
@@ -749,6 +853,10 @@ export const useValuationSessionStore = create<ValuationSessionStore>((set, get)
               isSyncing: false,
               syncError: null,
             })
+            
+            // CACHE INVALIDATION: Update cache with latest session after backend sync
+            globalSessionCache.set(currentSession.reportId, latestSession)
+            
             storeLogger.info('Backend sync completed successfully', {
               reportId: currentSession.reportId,
               view,
@@ -954,12 +1062,17 @@ export const useValuationSessionStore = create<ValuationSessionStore>((set, get)
         await get().updateSessionData(sessionUpdate)
 
         // Update lastSyncedAt
+        const syncedSession: ValuationSession = {
+          ...session,
+          lastSyncedAt: new Date(),
+        }
+        
         set({
-          session: {
-            ...session,
-            lastSyncedAt: new Date(),
-          },
+          session: syncedSession,
         })
+        
+        // CACHE INVALIDATION: Update cache after sync
+        globalSessionCache.set(session.reportId, syncedSession)
 
         storeLogger.info('Synced from manual form to session', {
           reportId: session.reportId,

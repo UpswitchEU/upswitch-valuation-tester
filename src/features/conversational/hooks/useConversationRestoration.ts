@@ -30,6 +30,7 @@ import {
 import { chatLogger } from '../../../utils/logger'
 import { globalSessionMetrics } from '../../../utils/metrics/sessionMetrics'
 import { globalAuditTrail } from '../../../utils/sessionAuditTrail'
+import { globalSessionCache } from '../../../utils/sessionCacheManager'
 
 const utilityAPI = new UtilityAPI()
 
@@ -48,7 +49,15 @@ async function ensureSessionExists(reportId: string): Promise<void> {
       return
     }
 
-    // Initialize session (will create if doesn't exist, or load if exists)
+    // CACHE-FIRST OPTIMIZATION: Check cache before initializing
+    const cachedSession = globalSessionCache.get(reportId)
+    if (cachedSession) {
+      chatLogger.debug('Session found in cache, using cached session', { reportId })
+      // Session will be loaded by initializeSession's cache-first logic
+      // No need to skip initialization - it will use cache
+    }
+
+    // Initialize session (will use cache if available, or create/load if not)
     chatLogger.info('Ensuring session exists', { reportId })
     await initializeSession(reportId, 'conversational')
     chatLogger.info('Session ensured', { reportId })

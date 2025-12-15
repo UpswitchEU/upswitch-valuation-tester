@@ -17,6 +17,11 @@ import UrlGeneratorService from '../services/urlGenerator'
 import { useValuationSessionStore } from '../store/useValuationSessionStore'
 import type { ValuationSession } from '../types/valuation'
 import { generalLogger } from '../utils/logger'
+import {
+  checkReportExists,
+  markReportExists,
+  markReportNotExists,
+} from '../utils/reportExistenceCache'
 import { OutOfCreditsModal } from './OutOfCreditsModal'
 
 type Stage = 'loading' | 'data-entry' | 'processing' | 'flow-selection'
@@ -97,26 +102,45 @@ export const ValuationSessionManager: React.FC<ValuationSessionManagerProps> = R
             return
           }
 
-          // Try to restore existing session first (for continuing existing reports)
-          const { loadSession } = useValuationSessionStore.getState()
+          // CACHE-FIRST OPTIMIZATION: Check report existence cache before API call
+          const reportExists = checkReportExists(reportId)
 
-          try {
-            generalLogger.info('Attempting to restore existing session', { reportId })
-
-            await loadSession(reportId)
-
-            // Session restored successfully
-            setStage('data-entry')
-            initializationState.current.set(reportId, { initialized: true, isInitializing: false })
-
-            generalLogger.info('Existing session restored successfully', { reportId })
-            return
-          } catch (restoreError) {
-            // Session doesn't exist on backend - create new one
-            generalLogger.info('Session not found on backend, creating new session', {
+          if (reportExists === false) {
+            // Report doesn't exist (cached) - skip loadSession and create new immediately
+            generalLogger.info('Report marked as non-existent in cache, creating new session', {
               reportId,
-              error: restoreError instanceof Error ? restoreError.message : 'Unknown error',
             })
+            // Continue to create new session below
+          } else {
+            // Report exists or unknown - try to restore existing session
+            const { loadSession } = useValuationSessionStore.getState()
+
+            try {
+              generalLogger.info('Attempting to restore existing session', { reportId })
+
+              await loadSession(reportId)
+
+              // Session restored successfully - mark as existing
+              markReportExists(reportId)
+
+              // Session restored successfully
+              setStage('data-entry')
+              initializationState.current.set(reportId, {
+                initialized: true,
+                isInitializing: false,
+              })
+
+              generalLogger.info('Existing session restored successfully', { reportId })
+              return
+            } catch (restoreError) {
+              // Session doesn't exist on backend - mark as non-existent and create new one
+              markReportNotExists(reportId)
+
+              generalLogger.info('Session not found on backend, creating new session', {
+                reportId,
+                error: restoreError instanceof Error ? restoreError.message : 'Unknown error',
+              })
+            }
           }
 
           // Create new session
@@ -141,6 +165,7 @@ export const ValuationSessionManager: React.FC<ValuationSessionManagerProps> = R
               setShowOutOfCreditsModal(true)
               // Still initialize session but with manual view
               await initializeSession(reportId, 'manual', prefilledQuery)
+              markReportExists(reportId) // Mark as existing after successful initialization
               setStage('data-entry')
               initializationState.current.set(reportId, {
                 initialized: true,
@@ -152,6 +177,9 @@ export const ValuationSessionManager: React.FC<ValuationSessionManagerProps> = R
 
           // Initialize new session with prefilled query from homepage
           await initializeSession(reportId, initialView, prefilledQuery)
+
+          // Mark report as existing after successful initialization
+          markReportExists(reportId)
 
           // Handle business card prefill if token present
           if (tokenParam) {
