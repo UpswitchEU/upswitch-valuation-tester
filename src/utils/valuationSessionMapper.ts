@@ -123,12 +123,12 @@ export function mapValuationSessionToBusinessInfo(session: ValuationSession): Bu
     : new Date().getFullYear()
 
   // Extract team size (check multiple field names)
-  const employees = getValueFromSources(
+  const employees: number | string | null = getValueFromSources<number | string | null>(
     allSources,
     ['number_of_employees', 'employee_count', 'employees'],
     null
   )
-  const teamSize = employees 
+  const teamSize = employees !== null && employees !== undefined
     ? (typeof employees === 'number' ? employees.toString() : String(employees))
     : 'N/A'
 
