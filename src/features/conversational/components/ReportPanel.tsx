@@ -8,18 +8,20 @@
  */
 
 import React, { Suspense } from 'react'
+import { AuditTrailPanel } from '../../../components/AuditTrailPanel'
 import { Results } from '../../../components/results/Results'
 import { ValuationInfoPanel } from '../../../components/ValuationInfoPanel'
 import { useValuationApiStore } from '../../../store/useValuationApiStore'
 import type { ValuationResponse } from '../../../types/valuation'
 
-interface ReportPanelProps {
+export interface ReportPanelProps {
   className?: string
   activeTab?: 'preview' | 'info' | 'history'
   onTabChange?: (tab: 'preview' | 'info' | 'history') => void
   isCalculating?: boolean
   error?: string | null
   result?: ValuationResponse | null
+  reportId: string
 }
 
 /**
@@ -160,6 +162,7 @@ export const ReportPanel: React.FC<ReportPanelProps> = React.memo(
     isCalculating = false,
     error = null,
     result = null,
+    reportId,
   }) => {
     const { clearError } = useValuationApiStore()
     
@@ -210,7 +213,11 @@ export const ReportPanel: React.FC<ReportPanelProps> = React.memo(
           )}
 
           {/* History Tab */}
-          {activeTab === 'history' && <HistoryEmptyState />}
+          {activeTab === 'history' && (
+            <Suspense fallback={<PreviewLoadingState />}>
+              <AuditTrailPanel reportId={reportId} />
+            </Suspense>
+          )}
         </div>
       </div>
     )

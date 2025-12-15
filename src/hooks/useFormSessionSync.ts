@@ -40,12 +40,36 @@ export const useFormSessionSync = ({
   matchBusinessType,
 }: UseFormSessionSyncOptions) => {
   const [hasLoadedSessionData, setHasLoadedSessionData] = useState(false)
+  const [lastLoadedReportId, setLastLoadedReportId] = useState<string | null>(null)
 
-  // Load session data into form when switching to manual view (one-time)
+  // CRITICAL FIX: Reset hasLoadedSessionData when reportId changes
   useEffect(() => {
-    if (session && session.currentView === 'manual' && !hasLoadedSessionData) {
+    if (session?.reportId && session.reportId !== lastLoadedReportId) {
+      generalLogger.info('Report changed, resetting form load state', {
+        previousReportId: lastLoadedReportId,
+        newReportId: session.reportId,
+      })
+      setHasLoadedSessionData(false)
+      setLastLoadedReportId(session.reportId)
+    }
+  }, [session?.reportId, lastLoadedReportId])
+
+  // Load session data into form when switching to manual view OR when report loads
+  useEffect(() => {
+    // CRITICAL: Load data if:
+    // 1. Session exists
+    // 2. Current view is manual (or we're loading from home page)
+    // 3. Haven't loaded this report's data yet
+    if (session && !hasLoadedSessionData) {
       const sessionData = getSessionData()
       const prefilledQuery = (session.partialData as any)?._prefilledQuery as string | undefined
+
+      generalLogger.info('Attempting to load session data into form', {
+        reportId: session.reportId,
+        currentView: session.currentView,
+        hasSessionData: !!sessionData,
+        hasPrefilledQuery: !!prefilledQuery,
+      })
 
       // Convert ValuationRequest to ValuationFormData format
       const formDataUpdate: Partial<any> = {
@@ -98,17 +122,27 @@ export const useFormSessionSync = ({
         setHasLoadedSessionData(true)
 
         generalLogger.info('Loaded session data into form', {
+          reportId: session.reportId,
           hasCompanyName: !!formDataUpdate.company_name,
           hasRevenue: !!formDataUpdate.revenue,
           hasBusinessType: !!formDataUpdate.business_type_id,
           fieldsLoaded: Object.keys(formDataUpdate).length,
+          fields: Object.keys(formDataUpdate),
+        })
+      } else {
+        generalLogger.warn('No form data to load from session', {
+          reportId: session.reportId,
+          hasSessionData: !!sessionData,
+          sessionDataKeys: sessionData ? Object.keys(sessionData) : [],
         })
       }
     }
   }, [
+    session?.reportId, // CRITICAL: Add reportId to trigger on report change
     session?.currentView,
     session?.sessionId,
     session?.partialData,
+    session?.sessionData, // CRITICAL: Add sessionData to trigger when data loads
     getSessionData,
     updateFormData,
     hasLoadedSessionData,

@@ -14,7 +14,7 @@ export type ValuationTab = 'preview' | 'info' | 'history'
 export type ValuationTabWithoutHistory = 'preview' | 'info'
 
 export interface UseValuationToolbarTabsReturn {
-  activeTab: ValuationTabWithoutHistory
+  activeTab: ValuationTab
   handleTabChange: (tab: ValuationTab) => void
 }
 
@@ -34,16 +34,11 @@ export const useValuationToolbarTabs = (
 ): UseValuationToolbarTabsReturn => {
   const { initialTab = 'preview', onTabChange } = options
 
-  const [activeTab, setActiveTab] = useState<ValuationTabWithoutHistory>(initialTab)
+  const [activeTab, setActiveTab] = useState<ValuationTab>(initialTab)
 
   const handleTabChange = useCallback(
     (tab: ValuationTab) => {
-      // Filter out 'history' tab for manual flow (only conversational flow supports it)
-      if (tab === 'history') {
-        onTabChange?.(tab) // Still call parent callback even if we don't set internal state
-        return
-      }
-      setActiveTab(tab as ValuationTabWithoutHistory)
+      setActiveTab(tab)
       onTabChange?.(tab)
     },
     [onTabChange]

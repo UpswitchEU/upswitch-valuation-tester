@@ -131,13 +131,10 @@ export const ManualLayout: React.FC<ManualLayoutProps> = ({
           style={{ width: isMobile ? '100%' : `${100 - leftPanelWidth}%` }}
         >
           <ReportPanel
-            activeTab={activeTab as 'preview' | 'info'}
+            reportId={reportId}
+            activeTab={activeTab as 'preview' | 'info' | 'history'}
             onTabChange={(tab: 'preview' | 'info' | 'history') => {
-              if (tab !== 'history') {
-                handleHookTabChange(tab as ValuationTab)
-              } else {
-                // History tab not supported in manual flow - ignore
-              }
+              handleHookTabChange(tab as ValuationTab)
             }}
             isCalculating={isCalculating}
             error={error}
