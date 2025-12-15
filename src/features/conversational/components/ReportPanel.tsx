@@ -7,12 +7,18 @@
  * @module features/conversational/components/ReportPanel
  */
 
-import React from 'react'
+import React, { Suspense } from 'react'
+import { Results } from '../../../components/results/Results'
+import { useValuationApiStore } from '../../../store/useValuationApiStore'
+import type { ValuationResponse } from '../../../types/valuation'
 
 interface ReportPanelProps {
   className?: string
   activeTab?: 'preview' | 'source' | 'info' | 'history'
   onTabChange?: (tab: 'preview' | 'source' | 'info' | 'history') => void
+  isCalculating?: boolean
+  error?: string | null
+  result?: ValuationResponse | null
 }
 
 /**
@@ -38,6 +44,50 @@ const PreviewEmptyState: React.FC = () => (
     <h3 className="mt-4 text-lg font-semibold text-slate-ink">Your valuation report</h3>
     <p className="mt-2 text-sm text-gray-600 max-w-sm leading-relaxed">
       Complete the conversation to generate your personalized valuation report with detailed insights and analysis
+    </p>
+  </div>
+)
+
+/**
+ * Loading State Component for Preview Tab
+ * Matches empty state structure exactly - same layout, spinner instead of icon
+ */
+const PreviewLoadingState: React.FC = () => (
+  <div className="flex flex-col items-center justify-center h-full p-8 text-center bg-canvas">
+    <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-gray-200 flex items-center justify-center mb-3 sm:mb-4 transition-all duration-300 hover:scale-110">
+      <div className="w-6 h-6 sm:w-8 sm:h-8 border-2 border-primary-500 border-t-transparent rounded-full animate-spin" />
+    </div>
+    <h3 className="mt-4 text-lg font-semibold text-slate-ink">Your valuation report</h3>
+    <p className="mt-2 text-sm text-gray-600 max-w-sm leading-relaxed">
+      Complete the conversation to generate your personalized valuation report with detailed insights and analysis
+    </p>
+  </div>
+)
+
+/**
+ * Error State Component for Preview Tab
+ * Matches empty state structure exactly - same layout, document icon (same as empty state)
+ */
+const PreviewErrorState: React.FC<{ error: string; onRetry?: () => void }> = ({ error, onRetry }) => (
+  <div className="flex flex-col items-center justify-center h-full p-8 text-center bg-canvas">
+    <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-gray-200 flex items-center justify-center mb-3 sm:mb-4 transition-all duration-300 hover:scale-110">
+      <svg
+        className="w-6 h-6 sm:w-8 sm:h-8 text-primary-500"
+        fill="none"
+        stroke="currentColor"
+        viewBox="0 0 24 24"
+      >
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth={2}
+          d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+        />
+      </svg>
+    </div>
+    <h3 className="mt-4 text-lg font-semibold text-slate-ink">Your valuation report</h3>
+    <p className="mt-2 text-sm text-gray-600 max-w-sm leading-relaxed">
+      {error || 'An error occurred while generating your valuation report. Please try again.'}
     </p>
   </div>
 )
@@ -129,27 +179,59 @@ const HistoryEmptyState: React.FC = () => (
  * PERFORMANCE: Memoized to prevent unnecessary re-renders when props haven't changed
  */
 export const ReportPanel: React.FC<ReportPanelProps> = React.memo(
-  ({ className = '', activeTab = 'preview', onTabChange }) => {
-  return (
+  ({ 
+    className = '', 
+    activeTab = 'preview', 
+    onTabChange,
+    isCalculating = false,
+    error = null,
+    result = null,
+  }) => {
+    const { clearError } = useValuationApiStore()
+    
+    const handleRetry = () => {
+      // Clear the error from the store
+      clearError()
+      // Ensure we're on the preview tab
+      if (onTabChange) {
+        onTabChange('preview')
+      }
+    }
+
+    return (
       <div
         className={`h-full min-h-[400px] lg:min-h-0 flex flex-col bg-white overflow-hidden w-full lg:w-auto border-t lg:border-t-0 border-zinc-800 ${className}`}
       >
-      <div className="flex-1 overflow-y-auto">
-        {/* Preview Tab */}
-          {activeTab === 'preview' && <PreviewEmptyState />}
+        <div className="flex-1 overflow-y-auto">
+          {/* Preview Tab */}
+          {activeTab === 'preview' && (
+            <div className="h-full">
+              {isCalculating ? (
+                <PreviewLoadingState />
+              ) : error ? (
+                <PreviewErrorState error={error} onRetry={handleRetry} />
+              ) : result?.html_report ? (
+                <Suspense fallback={<PreviewLoadingState />}>
+                  <Results />
+                </Suspense>
+              ) : (
+                <PreviewEmptyState />
+              )}
+            </div>
+          )}
 
-        {/* Source Tab */}
+          {/* Source Tab */}
           {activeTab === 'source' && <SourceEmptyState />}
 
-        {/* Info Tab */}
+          {/* Info Tab */}
           {activeTab === 'info' && <InfoEmptyState />}
 
           {/* History Tab */}
           {activeTab === 'history' && <HistoryEmptyState />}
+        </div>
       </div>
-    </div>
-  )
-}
+    )
+  }
 )
 
 ReportPanel.displayName = 'ReportPanel'

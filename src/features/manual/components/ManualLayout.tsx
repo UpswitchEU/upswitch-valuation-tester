@@ -53,7 +53,7 @@ export const ManualLayout: React.FC<ManualLayoutProps> = ({
   initialMode = 'edit',
 }) => {
   const { user } = useAuth()
-  const { isCalculating } = useValuationApiStore()
+  const { isCalculating, error } = useValuationApiStore()
   const { result, setResult } = useValuationResultsStore()
   const { isSaving, lastSaved, hasUnsavedChanges, syncError } = useValuationSessionStore()
 
@@ -139,6 +139,9 @@ export const ManualLayout: React.FC<ManualLayoutProps> = ({
                 // History tab not supported in manual flow - ignore
               }
             }}
+            isCalculating={isCalculating}
+            error={error}
+            result={result}
           />
         </div>
       </div>
