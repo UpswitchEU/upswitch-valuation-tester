@@ -463,6 +463,21 @@ export class StreamEventHandler {
           return this.uiHandlers.handleClarificationNeeded(data)
         case 'html_preview':
           return this.uiHandlers.handleHtmlPreview(data)
+        case 'complete':
+          // CRITICAL FIX: Handle complete event silently (no error message)
+          // This is a success signal from backend after valuation completes
+          // The report has already been loaded via valuation_complete/html_report events
+          chatLogger.info('Completion event received (success)', {
+            sessionId: this.sessionId,
+            message: data.message || 'Valuation calculation complete',
+          })
+          // Reset streaming state if still active
+          const store = useConversationStore.getState()
+          store.setStreaming(false)
+          this.callbacks.setIsStreaming?.(false)
+          this.callbacks.setIsTyping?.(false)
+          this.callbacks.setIsThinking?.(false)
+          return
         case 'error':
           return this.uiHandlers.handleError(data)
 
