@@ -11,9 +11,9 @@
 import { useCallback } from 'react'
 import { StreamEventHandler } from '../../services/chat/StreamEventHandler'
 import { StreamingManager } from '../../services/chat/StreamingManager'
+import type { Message } from '../../types/message'
 import { chatLogger } from '../../utils/logger'
 import { InputValidator } from '../../utils/validation/InputValidator'
-import type { Message } from '../../types/message'
 
 export interface UseStreamSubmissionOptions {
   sessionId: string
@@ -178,6 +178,17 @@ export const useStreamSubmission = ({
       // CRITICAL FIX: Use Python session ID if available, otherwise use client session ID
       const effectiveSessionId = pythonSessionId || sessionId
 
+      // CRITICAL FIX: Add timeout safeguard to reset thinking state if stream doesn't start
+      // This prevents UI from getting stuck if stream fails silently
+      const thinkingTimeout = setTimeout(() => {
+        chatLogger.warn('Thinking timeout - resetting state', {
+          sessionId: effectiveSessionId,
+          hasPythonSessionId: !!pythonSessionId,
+        })
+        setIsThinking(false)
+        setIsTyping(false)
+      }, 35000) // 35 seconds (slightly longer than stream timeout of 30s)
+
       try {
         await streamingManager.startStreaming(
           effectiveSessionId,
@@ -245,6 +256,8 @@ export const useStreamSubmission = ({
         )
 
         chatLogger.debug('Stream request completed')
+        // Clear timeout on successful completion
+        clearTimeout(thinkingTimeout)
       } catch (error) {
         chatLogger.error('Streaming failed', {
           error: error instanceof Error ? error.message : String(error),
@@ -262,6 +275,9 @@ export const useStreamSubmission = ({
           isComplete: true,
         })
       } finally {
+        // CRITICAL FIX: Clear timeout in finally block to ensure it's always cleared
+        clearTimeout(thinkingTimeout)
+        
         // CRITICAL FIX: ALWAYS release lock when done (success or error)
         isRequestInProgressRef.current = false
         chatLogger.debug('Request lock released', {

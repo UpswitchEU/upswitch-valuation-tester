@@ -1,80 +1,58 @@
 # Chat Utilities
 
-This directory contains utility classes that handle chat-related operations extracted from the StreamingChat component.
+This directory contains utility classes that handle chat-related operations.
 
-## Utilities Overview
+## Current Architecture
 
-### `MessageManager.ts`
-Centralized message management utility that handles all message CRUD operations for the streaming chat.
+**Note**: Message management is now handled by the Zustand store (`useConversationStore`). See `apps/upswitch-valuation-tester/src/store/useConversationStore.ts` for the current implementation.
 
-**Features:**
-- Message creation with unique ID generation
-- Streaming message updates
-- Auto-scrolling functionality
-- Message filtering and searching
-- Message statistics and analytics
-- Message cleanup operations
+### Key Principles
 
-**Core Operations:**
-- `addMessage()` - Add new messages to the conversation
-- `updateStreamingMessage()` - Update messages during streaming
-- `scrollToBottom()` - Auto-scroll to latest message
-- `findMessageById()` - Find specific messages
-- `getMessagesByType()` - Filter messages by type
-- `removeMessage()` - Delete specific messages
+- **Single Source of Truth**: Zustand store manages all message state
+- **Atomic Updates**: Zustand ensures race-condition-free updates
+- **Linear Flow**: Simple, predictable message operations
+- **Performance**: Optimized selectors and shallow comparisons
 
-**Usage:**
+### Message Operations (via useConversationStore)
+
+All message operations are now handled through the Zustand store:
+
 ```typescript
-const messageManager = new MessageManager();
+import { useConversationStore } from '../../store/useConversationStore'
+
+// Get store actions
+const { addMessage, updateMessage, appendToMessage, clearMessages } = useConversationStore()
 
 // Add a new message
-const newMessages = messageManager.addMessage(messages, {
+const messageId = addMessage({
   type: 'user',
   content: 'Hello!',
   isComplete: true
-});
+})
 
-// Update streaming message
-const updatedMessages = messageManager.updateStreamingMessage(
-  messages,
-  messageId,
-  'New content',
-  false
-);
+// Append content to streaming message
+appendToMessage(messageId, 'New content')
 
-// Scroll to bottom
-messageManager.scrollToBottom(messagesEndRef);
+// Update message
+updateMessage(messageId, {
+  isComplete: true,
+  isStreaming: false
+})
+
+// Clear all messages
+clearMessages()
 ```
 
-## Message Management Features
+### Migration from MessageManager
 
-### Message Creation
-- Automatic ID generation with timestamp and random component
-- Type-safe message creation
-- Metadata support for additional message properties
+The previous `MessageManager` class has been removed in favor of the Zustand store for the following reasons:
 
-### Streaming Updates
-- Real-time content updates during streaming
-- Completion status tracking
-- Streaming state management
+1. **Race Condition Prevention**: Zustand provides atomic state updates
+2. **Better Performance**: Optimized selectors reduce unnecessary re-renders
+3. **Simpler Architecture**: Single source of truth eliminates confusion
+4. **Built-in Features**: Message pruning, streaming message tracking, etc.
 
-### Auto-Scrolling
-- Smooth scrolling to latest message
-- Configurable scroll behavior
-- Error handling for missing refs
-
-### Message Filtering
-- Filter by message type (user, ai, system, suggestion)
-- Find messages by ID
-- Get message statistics
-
-### Message Statistics
-- Count user messages
-- Count AI messages
-- Check for streaming messages
-- Get incomplete messages
-
-## Message ID Generation
+### Message ID Generation
 
 Messages are assigned unique IDs using the format:
 ```
@@ -83,15 +61,26 @@ msg_{timestamp}_{randomString}
 
 Example: `msg_1703123456789_abc123def`
 
-## Error Handling
+### Message Pruning
 
-The MessageManager includes comprehensive error handling:
-- Null/undefined ref validation
-- Empty message array handling
-- Invalid message ID detection
-- Graceful degradation for missing elements
+The store automatically prunes messages when the conversation exceeds 100 messages:
+- Keeps first 10 messages (initial context)
+- Keeps most recent 50 messages
+- Prevents unbounded memory growth
 
-## Logging
+### Streaming Message Tracking
+
+The store explicitly tracks the current streaming message ID (`currentStreamingMessageId`), preventing race conditions when chunks arrive rapidly.
+
+### Error Handling
+
+All operations include comprehensive error handling:
+- Null/undefined validation
+- Empty content skipping
+- Message not found warnings
+- Graceful degradation
+
+### Logging
 
 All operations are logged with:
 - Operation type and parameters
@@ -99,15 +88,7 @@ All operations are logged with:
 - Success/failure status
 - Performance metrics
 
-## Performance Considerations
-
-The MessageManager is optimized for performance:
-- Immutable state updates
-- Efficient array operations
-- Minimal re-renders
-- Memory-efficient message storage
-
-## Type Safety
+### Type Safety
 
 All methods are fully typed with:
 - Message interface definitions
@@ -115,16 +96,17 @@ All methods are fully typed with:
 - Return type annotations
 - Parameter validation
 
-## Testing
+### Testing
 
-The MessageManager should be tested with:
+The store should be tested with:
 - Message creation scenarios
 - Streaming update scenarios
+- Race condition scenarios
 - Error conditions
 - Edge cases (empty arrays, invalid IDs)
 - Performance under load
 
-## Future Enhancements
+### Future Enhancements
 
 - Message persistence
 - Message search functionality
@@ -133,66 +115,17 @@ The MessageManager should be tested with:
 - Message encryption
 - Message compression
 
-## Dependencies
+### Dependencies
 
+- Zustand for state management
 - Custom logger utility
-- React refs for DOM manipulation
-- Type definitions from hooks
+- Type definitions from `types/message.ts`
 
-## Usage Patterns
+### Integration
 
-### Basic Message Flow
-```typescript
-// 1. Add user message
-const userMessage = messageManager.addMessage(messages, {
-  type: 'user',
-  content: userInput,
-  isComplete: true
-});
-
-// 2. Add AI message for streaming
-const aiMessage = messageManager.addMessage(messages, {
-  type: 'ai',
-  content: '',
-  isStreaming: true,
-  isComplete: false
-});
-
-// 3. Update AI message during streaming
-const updatedMessages = messageManager.updateStreamingMessage(
-  messages,
-  aiMessage.id,
-  'Streaming content...',
-  false
-);
-
-// 4. Complete AI message
-const finalMessages = messageManager.updateStreamingMessage(
-  updatedMessages,
-  aiMessage.id,
-  'Final content',
-  true
-);
-```
-
-### Message Analytics
-```typescript
-// Get conversation statistics
-const userCount = messageManager.getUserMessageCount(messages);
-const aiCount = messageManager.getAIMessageCount(messages);
-const hasStreaming = messageManager.hasStreamingMessages(messages);
-
-// Filter messages
-const userMessages = messageManager.getMessagesByType(messages, 'user');
-const systemMessages = messageManager.getMessagesByType(messages, 'system');
-```
-
-## Integration
-
-The MessageManager integrates seamlessly with:
-- React state management
-- Streaming event handlers
+The store integrates seamlessly with:
+- React components via hooks
+- Streaming event handlers (`StreamEventHandler`)
 - Typing animations
 - Auto-scroll functionality
-- Message rendering components
-
+- Message rendering components (`MessagesList`, `MessageItem`)

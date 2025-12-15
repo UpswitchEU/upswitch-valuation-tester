@@ -6,13 +6,11 @@
  */
 
 import { BUSINESS_TYPES_FALLBACK, BusinessTypeOption } from '../../config/businessTypes'
-import type { Message } from '../../types/message'
-import { chatLogger } from '../../utils/logger'
 import { useConversationStore } from '../../store/useConversationStore'
-import type { StreamEvent } from './streamingChatService'
-import { businessTypesApiService } from '../businessTypesApi'
-import { registryService } from '../registry/registryService'
+import type { Message, MessageMetadata } from '../../types/message'
+import { chatLogger } from '../../utils/logger'
 import { ReportHandlers, UIHandlers, ValuationHandlers } from './handlers'
+import type { StreamEvent } from './streamingChatService'
 
 const normalizeText = (value: string) => value.trim().toLowerCase()
 
@@ -190,7 +188,7 @@ export class StreamEventHandler {
             content: data.content || '',
             isStreaming: true,
             isComplete: false,
-            metadata: data.metadata || data.data || {},
+            metadata: (data.metadata || data.data) as MessageMetadata | undefined,
           })
           store.setStreaming(true)
           store.setTyping(false)
@@ -205,7 +203,24 @@ export class StreamEventHandler {
         case 'message_chunk': {
           // Simple: Append content to streaming message (store only, no callback)
           const store = useConversationStore.getState()
-          const streamingId = store.currentStreamingMessageId
+          let streamingId = store.currentStreamingMessageId
+          
+          // CRITICAL FIX: If currentStreamingMessageId is not set (race condition),
+          // find the last streaming message as fallback
+          if (!streamingId) {
+            const lastStreamingMessage = store.messages
+              .slice()
+              .reverse()
+              .find((msg) => msg.isStreaming && !msg.isComplete)
+            if (lastStreamingMessage) {
+              streamingId = lastStreamingMessage.id
+              chatLogger.debug('Found streaming message via fallback search', {
+                messageId: streamingId,
+                sessionId: this.sessionId,
+              })
+            }
+          }
+          
           if (streamingId && data.content) {
             store.appendToMessage(streamingId, data.content)
           } else if (!streamingId && data.content) {
@@ -222,7 +237,7 @@ export class StreamEventHandler {
               metadata: data.metadata || {},
             })
             store.setStreaming(true)
-          } else {
+          } else if (!streamingId) {
             chatLogger.warn('Message chunk received but no streaming message found and no content', {
               sessionId: this.sessionId,
               hasContent: !!data.content,
@@ -234,28 +249,56 @@ export class StreamEventHandler {
           // CRITICAL FIX: Don't replace content - it's already accumulated from chunks
           // Backend sends empty content in message_complete (content sent via chunks)
           const store = useConversationStore.getState()
-          const streamingId = store.currentStreamingMessageId
+          let streamingId = store.currentStreamingMessageId
+          
+          // CRITICAL FIX: If currentStreamingMessageId is not set (race condition),
+          // find the last streaming message as fallback
+          if (!streamingId) {
+            const lastStreamingMessage = store.messages
+              .slice()
+              .reverse()
+              .find((msg) => msg.isStreaming && !msg.isComplete)
+            if (lastStreamingMessage) {
+              streamingId = lastStreamingMessage.id
+              chatLogger.debug('Found streaming message via fallback search for message_complete', {
+                messageId: streamingId,
+                sessionId: this.sessionId,
+              })
+            }
+          }
+          
           if (streamingId) {
             // Only update completion status and metadata, preserve accumulated content
             const currentMessage = store.messages.find((m) => m.id === streamingId)
-            const completedMessage = {
-              ...currentMessage!,
-              content: currentMessage?.content || data.content || '',
-              isComplete: true,
-              isStreaming: false,
-              metadata: { ...currentMessage?.metadata, ...(data.metadata || data.data || {}) },
+            if (currentMessage) {
+              const completedMessage = {
+                ...currentMessage,
+                content: currentMessage.content || data.content || '',
+                isComplete: true,
+                isStreaming: false,
+                metadata: { ...currentMessage.metadata, ...(data.metadata || data.data || {}) },
+              }
+              
+              store.updateMessage(streamingId, completedMessage)
+              store.setStreaming(false)
+              
+              // CRITICAL FIX: Reset thinking state when message completes
+              this.callbacks.setIsThinking?.(false)
+              this.callbacks.setIsTyping?.(false)
+              
+              // Track completion if callback provided
+              if (this.callbacks.trackConversationCompletion) {
+                this.callbacks.trackConversationCompletion(true, false)
+              }
+              
+              // Note: onMessageComplete callback is handled by StreamingChat component
+              // via useEffect watching for completed messages in the store
+            } else {
+              chatLogger.warn('Message complete received but message not found in store', {
+                messageId: streamingId,
+                sessionId: this.sessionId,
+              })
             }
-            
-            store.updateMessage(streamingId, completedMessage)
-            store.setStreaming(false)
-            
-            // Track completion if callback provided
-            if (this.callbacks.trackConversationCompletion) {
-              this.callbacks.trackConversationCompletion(true, false)
-            }
-            
-            // Note: onMessageComplete callback is handled by StreamingChat component
-            // via useEffect watching for completed messages in the store
           } else {
             chatLogger.warn('Message complete received but no streaming message found', {
               sessionId: this.sessionId,

@@ -275,10 +275,27 @@ export function syncSessionToBackend(session: ValuationSession): void {
               // Update cache with backend version
               globalSessionCache.set(reportId, backendSession)
 
-              // Update Zustand store with backend version
-              // Note: We can't directly set session from here, but the session will be updated
-              // when the store's initializeSession or loadSession is called
-              // For now, we update the cache and the store will pick it up on next access
+              // CRITICAL FIX: Update Zustand store with backend version immediately
+              // This ensures the store has the correct session data after 409 conflict resolution
+              const store = useValuationSessionStore.getState()
+              const currentSession = store.session
+              
+              // Only update if the reportId matches (prevents overwriting a different session)
+              if (currentSession?.reportId === reportId) {
+                store.set({
+                  session: backendSession,
+                  syncError: null,
+                })
+                sessionHelpersLogger.info('Updated store session after 409 conflict resolution', {
+                  reportId,
+                  currentView: backendSession.currentView,
+                })
+              } else {
+                sessionHelpersLogger.debug('Skipping store update - reportId mismatch', {
+                  reportId,
+                  currentReportId: currentSession?.reportId,
+                })
+              }
 
               sessionHelpersLogger.info('Loaded existing session from backend after 409', {
                 reportId,

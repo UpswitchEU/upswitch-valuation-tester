@@ -26,8 +26,9 @@ import { useStreamingCoordinator } from '../hooks/chat/useStreamingCoordinator'
 import { useAuth } from '../hooks/useAuth'
 import { type UserProfile, useConversationInitializer } from '../hooks/useConversationInitializer'
 import { useConversationMetrics } from '../hooks/useConversationMetrics'
-import { useConversationStore } from '../store/useConversationStore'
 import { useTypingAnimation } from '../hooks/useTypingAnimation'
+import { useConversationStore } from '../store/useConversationStore'
+import type { Message } from '../types/message'
 import { convertToApplicationError, getErrorMessage } from '../utils/errors/errorConverter'
 import { isNetworkError, isTimeoutError } from '../utils/errors/errorGuards'
 import { chatLogger } from '../utils/logger'
@@ -38,7 +39,7 @@ export type {
   CalculateOptionData,
   CollectedData,
   StreamingChatProps,
-  ValuationPreviewData,
+  ValuationPreviewData
 } from './StreamingChat.types'
 
 export const StreamingChat: React.FC<import('./StreamingChat.types').StreamingChatProps> = ({
@@ -159,7 +160,40 @@ export const StreamingChat: React.FC<import('./StreamingChat.types').StreamingCh
   })
 
   // Get stable references to store actions
-  const setMessages = useConversationStore((state) => state.setMessages)
+  const storeSetMessages = useConversationStore((state) => state.setMessages)
+  const storeAddMessage = useConversationStore((state) => state.addMessage)
+  
+  // Wrapper to match expected signature for useStreamingCoordinator
+  const setMessages = useCallback(
+    (newMessages: Message[] | ((prev: Message[]) => Message[])) => {
+      if (typeof newMessages === 'function') {
+        const currentMessages = useConversationStore.getState().messages
+        const updatedMessages = newMessages(currentMessages)
+        storeSetMessages(updatedMessages)
+      } else {
+        storeSetMessages(newMessages)
+      }
+    },
+    [storeSetMessages]
+  )
+  
+  // Wrapper for addMessage to match useConversationInitializer signature
+  const addMessageWrapper = useCallback(
+    (message: Omit<Message, 'id' | 'timestamp'>) => {
+      const messageId = storeAddMessage(message)
+      const store = useConversationStore.getState()
+      const newMessage = store.messages.find((m) => m.id === messageId)
+      return {
+        updatedMessages: store.messages,
+        newMessage: newMessage || ({
+          ...message,
+          id: messageId,
+          timestamp: new Date(),
+        } as Message),
+      }
+    },
+    [storeAddMessage]
+  )
 
   // Extract streaming coordination logic
   const streamingCoordinator = useStreamingCoordinator({
@@ -178,7 +212,20 @@ export const StreamingChat: React.FC<import('./StreamingChat.types').StreamingCh
     updateStreamingMessage: (content: string, isComplete?: boolean, metadata?: unknown) => {
       // Simple wrapper: use store's appendToMessage or updateMessage
       const store = useConversationStore.getState()
-      const streamingId = store.currentStreamingMessageId
+      let streamingId = store.currentStreamingMessageId
+      
+      // CRITICAL FIX: If currentStreamingMessageId is not set (race condition),
+      // find the last streaming message as fallback
+      if (!streamingId) {
+        const lastStreamingMessage = store.messages
+          .slice()
+          .reverse()
+          .find((msg) => msg.isStreaming && !msg.isComplete)
+        if (lastStreamingMessage) {
+          streamingId = lastStreamingMessage.id
+        }
+      }
+      
       if (streamingId) {
         if (isComplete) {
           store.updateMessage(streamingId, {
@@ -191,6 +238,13 @@ export const StreamingChat: React.FC<import('./StreamingChat.types').StreamingCh
         } else {
           store.appendToMessage(streamingId, content)
         }
+      } else {
+        // Fallback: create message if none exists (shouldn't happen in normal flow)
+        chatLogger.warn('updateStreamingMessage called but no streaming message found', {
+          sessionId,
+          hasContent: !!content,
+          isComplete,
+        })
       }
     },
     onValuationComplete,
@@ -417,8 +471,8 @@ export const StreamingChat: React.FC<import('./StreamingChat.types').StreamingCh
 
   // Use extracted conversation initializer
   const { isInitializing } = useConversationInitializer(sessionId, userId, {
-    addMessage,
-    setMessages,
+    addMessage: addMessageWrapper,
+    setMessages: setMessages as React.Dispatch<React.SetStateAction<Message[]>>,
     getCurrentMessages: () => messages,
     user: user as UserProfile | undefined,
     initialData,

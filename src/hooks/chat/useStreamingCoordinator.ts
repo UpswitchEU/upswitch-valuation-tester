@@ -256,20 +256,19 @@ export function useStreamingCoordinator({
       const callbacks: StreamingManagerCallbacks = {
         setIsStreaming: callbacksRef.current.setIsStreaming,
         addMessage: (message: Omit<Message, 'id' | 'timestamp'>) => {
-          // Simple message addition for streaming context
-          callbacksRef.current.setMessages((prev) => {
-            const newMessage: Message = {
-              ...message,
-              id: `msg-${Date.now()}`,
-              timestamp: new Date(),
-            }
-            return [...prev, newMessage]
-          })
+          // CRITICAL: Use store's addMessage for consistency and atomic updates
+          const store = useConversationStore.getState()
+          const messageId = store.addMessage(message)
+          const newMessage = store.messages.find((m) => m.id === messageId) || ({
+            ...message,
+            id: messageId,
+            timestamp: new Date(),
+          } as Message)
 
           // Mark as having unsaved conversation changes
           useValuationSessionStore.getState().updateSessionData({})
 
-          return { updatedMessages: [], newMessage: {} as Message }
+          return { updatedMessages: store.messages, newMessage }
         },
         updateStreamingMessage: callbacksRef.current.updateStreamingMessage,
         extractBusinessModelFromInput,
