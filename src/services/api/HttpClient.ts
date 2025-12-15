@@ -300,6 +300,37 @@ export class HttpClient {
 
       // Extract data from nested response structure
       const responseData = response.data?.data || response.data
+      
+      // CRITICAL: Log response structure for valuation endpoints to diagnose missing html_report
+      if (config.url?.includes('/valuations/calculate')) {
+        apiLogger.info('DIAGNOSTIC: Valuation response received', {
+          url: config.url,
+          hasResponseData: !!responseData,
+          responseDataType: typeof responseData,
+          responseDataKeys: responseData ? Object.keys(responseData) : [],
+          hasHtmlReport: !!(responseData as any)?.html_report,
+          htmlReportLength: (responseData as any)?.html_report?.length || 0,
+          hasInfoTabHtml: !!(responseData as any)?.info_tab_html,
+          infoTabHtmlLength: (responseData as any)?.info_tab_html?.length || 0,
+          htmlReportPreview: (responseData as any)?.html_report?.substring(0, 200) || 'N/A',
+          rawResponseData: response.data,
+          rawResponseDataType: typeof response.data,
+          rawResponseDataKeys: response.data ? Object.keys(response.data) : [],
+          hasNestedData: !!(response.data as any)?.data,
+          nestedDataKeys: (response.data as any)?.data ? Object.keys((response.data as any).data) : [],
+        })
+        
+        // Warn if html_report is missing
+        if (!(responseData as any)?.html_report || (responseData as any).html_report.trim().length === 0) {
+          apiLogger.error('CRITICAL: html_report missing or empty in valuation response', {
+            url: config.url,
+            hasResponseData: !!responseData,
+            responseDataKeys: responseData ? Object.keys(responseData) : [],
+            rawResponseData: JSON.stringify(response.data).substring(0, 1000),
+          })
+        }
+      }
+      
       return responseData
     } finally {
       // Cleanup

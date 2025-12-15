@@ -114,6 +114,30 @@ export const useValuationFormSubmission = (
       const calculationDuration = performance.now() - calculationStart
 
       if (result) {
+        // CRITICAL: Log html_report presence before storing
+        generalLogger.info('Valuation calculation completed - checking html_report', {
+          valuationId: result.valuation_id,
+          hasHtmlReport: !!result.html_report,
+          htmlReportLength: result.html_report?.length || 0,
+          hasInfoTabHtml: !!result.info_tab_html,
+          infoTabHtmlLength: result.info_tab_html?.length || 0,
+          resultKeys: Object.keys(result),
+          htmlReportPreview: result.html_report?.substring(0, 200) || 'N/A',
+          calculationDuration: `${calculationDuration.toFixed(2)}ms`,
+        })
+        
+        // Warn if html_report is missing
+        if (!result.html_report || result.html_report.trim().length === 0) {
+          generalLogger.error('CRITICAL: html_report missing or empty in valuation result', {
+            valuationId: result.valuation_id,
+            hasHtmlReport: !!result.html_report,
+            htmlReportLength: result.html_report?.length || 0,
+            resultKeys: Object.keys(result),
+            resultType: typeof result,
+            resultStringified: JSON.stringify(result).substring(0, 500),
+          })
+        }
+        
         // Store result in results store
         setResult(result)
 

@@ -24,11 +24,37 @@ export const useValuationResultsStore = create<ValuationResultsStore>((set, get)
 
   // Set result
   setResult: (result: ValuationResponse | null) => {
+    // CRITICAL: Log html_report presence for debugging
+    if (result) {
+      storeLogger.info('Valuation result set in store', {
+        hasResult: !!result,
+        valuationId: result.valuation_id,
+        hasHtmlReport: !!result.html_report,
+        htmlReportLength: result.html_report?.length || 0,
+        hasInfoTabHtml: !!result.info_tab_html,
+        infoTabHtmlLength: result.info_tab_html?.length || 0,
+        htmlReportPreview: result.html_report?.substring(0, 200) || 'N/A',
+        resultKeys: Object.keys(result),
+        htmlReportInKeys: 'html_report' in result,
+        infoTabHtmlInKeys: 'info_tab_html' in result,
+      })
+      
+      // Warn if html_report is missing
+      if (!result.html_report || result.html_report.trim().length === 0) {
+        storeLogger.error('CRITICAL: html_report missing or empty when setting result', {
+          valuationId: result.valuation_id,
+          hasHtmlReport: !!result.html_report,
+          htmlReportLength: result.html_report?.length || 0,
+          resultKeys: Object.keys(result),
+        })
+      }
+    } else {
+      storeLogger.debug('Valuation result cleared', {
+        hasResult: false,
+      })
+    }
+    
     set({ result })
-    storeLogger.debug('Valuation result set', {
-      hasResult: !!result,
-      valuationId: result?.valuation_id,
-    })
   },
 
   // Clear result
@@ -37,3 +63,4 @@ export const useValuationResultsStore = create<ValuationResultsStore>((set, get)
     storeLogger.debug('Valuation result cleared')
   },
 }))
+
