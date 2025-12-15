@@ -179,9 +179,3 @@ export const ValuationFlowSelector: React.FC<ValuationFlowSelectorProps> = React
 )
 
 ValuationFlowSelector.displayName = 'ValuationFlowSelector'
-
-    return <LoadingState steps={INITIALIZATION_STEPS} variant="dark" />
-  }
-)
-
-ValuationFlowSelector.displayName = 'ValuationFlowSelector'

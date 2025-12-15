@@ -171,43 +171,6 @@ export async function deduplicateRequest<T>(
 ): Promise<T> {
   return globalRequestDeduplicator.deduplicate(key, fn)
 }
-
-/**
- * Request Deduplication Utility
- * 
- * Single Responsibility: Prevent concurrent duplicate requests to same endpoint.
- * Solves 409 conflicts caused by multiple components initializing same session.
- * 
- * @module utils/requestDeduplication
- */
-
-
-/**
- * Request Deduplicator
- * 
- * Prevents concurrent requests with same key by caching pending promises.
- * If request is already in-flight, returns the existing promise.
- * 
- * Use Case:
- * - Multiple tabs loading same session
- * - Multiple components initializing same report
- * - Race conditions in session creation
- * 
- * @example
- * ```typescript
- * const deduplicator = new RequestDeduplicator()
- * 
- * // First call: executes function
- * const promise1 = deduplicator.deduplicate('session-123', () => createSession())
- * 
- * // Second call (before first completes): returns same promise
- * const promise2 = deduplicator.deduplicate('session-123', () => createSession())
- * 
- * // promise1 === promise2 (same instance)
- * ```
- */
-export class RequestDeduplicator {
-  private pending = new Map<string, Promise<any>>()
   private stats = {
     total: 0,
     deduplicated: 0,
