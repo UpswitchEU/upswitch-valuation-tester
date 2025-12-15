@@ -353,3 +353,358 @@ export function AuditLogEmpty() {
   )
 }
 
+/**
+ * Audit Log Panel Component
+ * 
+ * Single Responsibility: Display audit trail for compliance
+ * Shows timeline of all changes for M&A due diligence
+ * 
+ * @module components/AuditLogPanel
+ */
+
+'use client'
+
+import { Calendar, Edit3, RefreshCw, Save, User } from 'lucide-react'
+import React, { useMemo, useState } from 'react'
+import { formatCurrency } from '../config/countries'
+import { valuationAuditService } from '../services/audit/ValuationAuditService'
+import type { SessionAuditEntry } from '../utils/sessionAuditTrail'
+
+export interface AuditLogPanelProps {
+  reportId: string
+  countryCode?: string
+}
+
+/**
+ * Audit Log Panel
+ * 
+ * Displays chronological audit trail of all changes.
+ * 
+ * Features:
+ * - Timeline view of edits, regenerations, version creations
+ * - Filter by operation type
+ * - Export to CSV for compliance
+ * - Statistics summary
+ * 
+ * @example
+ * ```tsx
+ * <AuditLogPanel reportId="val_123" countryCode="BE" />
+ * ```
+ */
+export function AuditLogPanel({ reportId, countryCode = 'BE' }: AuditLogPanelProps) {
+  const [filterOperation, setFilterOperation] = useState<string>('all')
+  
+  // Get audit log
+  const auditLog = useMemo(() => {
+    return valuationAuditService.getAuditLog(reportId)
+  }, [reportId])
+
+  // Get statistics
+  const stats = useMemo(() => {
+    return valuationAuditService.getStatistics(reportId)
+  }, [reportId])
+
+  // Filter entries
+  const filteredEntries = useMemo(() => {
+    if (filterOperation === 'all') {
+      return auditLog
+    }
+    return auditLog.filter((entry) => entry.operation === filterOperation)
+  }, [auditLog, filterOperation])
+
+  // Sort by timestamp (newest first)
+  const sortedEntries = useMemo(() => {
+    return [...filteredEntries].sort(
+      (a, b) => b.timestamp.getTime() - a.timestamp.getTime()
+    )
+  }, [filteredEntries])
+
+  const handleExport = () => {
+    const csv = valuationAuditService.exportAuditLog(reportId, 'csv')
+    const blob = new Blob([csv], { type: 'text/csv' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `audit-log-${reportId}.csv`
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+    URL.revokeObjectURL(url)
+  }
+
+  if (auditLog.length === 0) {
+    return (
+      <div className="p-8 text-center">
+        <div className="w-16 h-16 bg-gray-200 rounded-full flex items-center justify-center mx-auto mb-4">
+          <Edit3 className="w-8 h-8 text-gray-500" />
+        </div>
+        <h3 className="text-lg font-semibold text-gray-900 mb-2">No audit trail yet</h3>
+        <p className="text-sm text-gray-600">
+          Changes and regenerations will appear here
+        </p>
+      </div>
+    )
+  }
+
+  return (
+    <div className="h-full flex flex-col bg-white">
+      {/* Header with statistics */}
+      <div className="p-6 border-b border-gray-200">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-2xl font-semibold text-gray-900">Audit Trail</h2>
+          <button
+            onClick={handleExport}
+            className="px-4 py-2 text-sm font-medium text-primary-600 hover:text-primary-700 hover:bg-primary-50 rounded-lg transition-colors"
+          >
+            Export CSV
+          </button>
+        </div>
+
+        {/* Statistics */}
+        <div className="grid grid-cols-3 gap-4">
+          <div className="p-3 bg-blue-50 rounded-lg">
+            <p className="text-sm text-blue-600 font-medium mb-1">Total Edits</p>
+            <p className="text-2xl font-bold text-blue-700">{stats.totalEdits}</p>
+          </div>
+          <div className="p-3 bg-green-50 rounded-lg">
+            <p className="text-sm text-green-600 font-medium mb-1">Regenerations</p>
+            <p className="text-2xl font-bold text-green-700">{stats.totalRegenerations}</p>
+          </div>
+          <div className="p-3 bg-purple-50 rounded-lg">
+            <p className="text-sm text-purple-600 font-medium mb-1">Versions</p>
+            <p className="text-2xl font-bold text-purple-700">{stats.totalVersions}</p>
+          </div>
+        </div>
+
+        {/* Most edited fields */}
+        {stats.mostEditedFields.length > 0 && (
+          <div className="mt-4">
+            <p className="text-sm text-gray-600 font-medium mb-2">Most Edited Fields:</p>
+            <div className="flex flex-wrap gap-2">
+              {stats.mostEditedFields.map((item) => (
+                <span
+                  key={item.field}
+                  className="px-3 py-1 bg-gray-100 text-gray-700 text-sm rounded-full"
+                >
+                  {item.field} ({item.count})
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Filter */}
+        <div className="mt-4">
+          <select
+            value={filterOperation}
+            onChange={(e) => setFilterOperation(e.target.value)}
+            className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+          >
+            <option value="all">All Operations</option>
+            <option value="EDIT">Field Edits</option>
+            <option value="REGENERATE">Regenerations</option>
+            <option value="VERSION_CREATE">Version Creations</option>
+            <option value="SWITCH_VIEW">Flow Switches</option>
+          </select>
+        </div>
+      </div>
+
+      {/* Timeline */}
+      <div className="flex-1 overflow-y-auto">
+        <div className="divide-y divide-gray-200">
+          {sortedEntries.map((entry) => (
+            <AuditLogEntry
+              key={entry.id}
+              entry={entry}
+              countryCode={countryCode}
+            />
+          ))}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+/**
+ * Audit Log Entry
+ * 
+ * Individual entry in audit timeline.
+ */
+interface AuditLogEntryProps {
+  entry: SessionAuditEntry
+  countryCode: string
+}
+
+function AuditLogEntry({ entry, countryCode }: AuditLogEntryProps): React.ReactElement {
+  const formatDate = (date: Date): string => {
+    return date.toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    })
+  }
+
+  const formatValue = (value: any): string => {
+    if (value == null) return 'N/A'
+    if (typeof value === 'number') {
+      // Format as currency if looks like money (>1000 and in financial fields)
+      if (Math.abs(value) > 1000) {
+        return formatCurrency(value, countryCode)
+      }
+      return value.toLocaleString()
+    }
+    if (typeof value === 'string') {
+      return value
+    }
+    return JSON.stringify(value)
+  }
+
+  // Get icon based on operation
+  const getIcon = () => {
+    switch (entry.operation) {
+      case 'EDIT':
+        return <Edit3 className="w-5 h-5 text-blue-600" />
+      case 'REGENERATE':
+        return <RefreshCw className="w-5 h-5 text-green-600" />
+      case 'VERSION_CREATE':
+        return <Save className="w-5 h-5 text-purple-600" />
+      default:
+        return <Calendar className="w-5 h-5 text-gray-600" />
+    }
+  }
+
+  // Get operation label
+  const getLabel = (): string => {
+    switch (entry.operation) {
+      case 'EDIT':
+        return 'Field Edited'
+      case 'REGENERATE':
+        return 'Valuation Regenerated'
+      case 'VERSION_CREATE':
+        return 'Version Created'
+      case 'SWITCH_VIEW':
+        return 'Flow Switched'
+      default:
+        return entry.operation
+    }
+  }
+
+  // Get background color based on operation
+  const getBgColor = (): string => {
+    switch (entry.operation) {
+      case 'EDIT':
+        return 'bg-blue-50'
+      case 'REGENERATE':
+        return 'bg-green-50'
+      case 'VERSION_CREATE':
+        return 'bg-purple-50'
+      default:
+        return 'bg-gray-50'
+    }
+  }
+
+  const operationLabel = getLabel()
+  const operationIcon = getIcon()
+  const bgColor = getBgColor()
+
+  return (
+    <div className="p-4 hover:bg-gray-50 transition-colors">
+      <div className="flex items-start gap-4">
+        {/* Icon */}
+        <div className={`flex-shrink-0 w-10 h-10 rounded-full ${bgColor} flex items-center justify-center`}>
+          {operationIcon}
+        </div>
+
+        {/* Content */}
+        <div className="flex-1 min-w-0">
+          {/* Header */}
+          <div className="flex items-center gap-2 mb-1">
+            <span className="font-semibold text-gray-900">{operationLabel}</span>
+            <span className="text-sm text-gray-500">·</span>
+            <span className="text-sm text-gray-600">{formatDate(entry.timestamp)}</span>
+          </div>
+
+          {/* Details based on operation type */}
+          {entry.operation === 'EDIT' && entry.metadata?.field ? (
+            <div className="text-sm text-gray-700 mt-2">
+              <p className="mb-1">
+                <span className="font-medium text-gray-900">
+                  {String(entry.metadata?.fieldLabel || entry.metadata?.field || '')}
+                </span>
+                {' changed'}
+              </p>
+              <div className="flex items-center gap-3 mt-1">
+                <span className="text-gray-600">
+                  {formatValue(entry.metadata.oldValue)}
+                </span>
+                <span className="text-gray-400">→</span>
+                <span className="text-gray-900 font-medium">
+                  {formatValue(entry.metadata.newValue)}
+                </span>
+                {typeof entry.metadata.percentChange === 'number' && (
+                  <span
+                    className={`text-sm font-medium ${
+                      entry.metadata.percentChange > 0 ? 'text-green-600' : 'text-red-600'
+                    }`}
+                  >
+                    ({entry.metadata.percentChange > 0 ? '+' : ''}
+                    {entry.metadata.percentChange.toFixed(1)}%)
+                  </span>
+                )}
+              </div>
+            </div>
+          ) : null}
+
+          {entry.operation === 'REGENERATE' && entry.metadata ? (
+            <div className="text-sm text-gray-700 mt-2">
+              <p className="mb-1">
+                Created <span className="font-medium">Version {String(entry.metadata.versionNumber || '')}</span>
+              </p>
+              {Array.isArray(entry.metadata.significantChanges) && entry.metadata.significantChanges.length > 0 && (
+                <p className="text-gray-600">
+                  Significant changes: {entry.metadata.significantChanges.join(', ')}
+                </p>
+              )}
+            </div>
+          ) : null}
+
+          {entry.operation === 'VERSION_CREATE' && entry.metadata ? (
+            <div className="text-sm text-gray-700 mt-2">
+              <p>
+                <span className="font-medium">{String(entry.metadata.versionLabel || '')}</span>
+                {' saved'}
+              </p>
+            </div>
+          ) : null}
+
+          {/* User info */}
+          {entry.userId && (
+            <div className="flex items-center gap-1 mt-2 text-xs text-gray-500">
+              <User className="w-3 h-3" />
+              <span>{entry.userId}</span>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+/**
+ * Empty state for audit log
+ */
+export function AuditLogEmpty() {
+  return (
+    <div className="flex flex-col items-center justify-center h-full p-8 text-center">
+      <div className="w-16 h-16 bg-gray-200 rounded-full flex items-center justify-center mb-4">
+        <Edit3 className="w-8 h-8 text-gray-500" />
+      </div>
+      <h3 className="text-lg font-semibold text-gray-900 mb-2">No changes yet</h3>
+      <p className="text-sm text-gray-600 max-w-sm">
+        Edit fields or regenerate the valuation to see the audit trail here
+      </p>
+    </div>
+  )
+}
+

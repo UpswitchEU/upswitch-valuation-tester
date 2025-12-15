@@ -272,3 +272,74 @@ export const ConversationPanel: React.FC<ConversationPanelProps> = ({
     </ComponentErrorBoundary>
   )
 }
+
+
+      // Call parent callback
+      onValuationComplete?.(result)
+    },
+    [actions, onValuationComplete, setResult, session, getLatestVersion, createVersion]
+  )
+
+  // Handle valuation start
+  const handleValuationStart = useCallback(() => {
+    chatLogger.info('ConversationPanel: Valuation started')
+    actions.setGenerating(true)
+    onValuationStart?.()
+  }, [actions, onValuationStart])
+
+  // Handle Python session ID
+  const handlePythonSessionIdReceived = useCallback(
+    (newPythonSessionId: string) => {
+      chatLogger.info('ConversationPanel: Python session ID received', {
+        pythonSessionId: newPythonSessionId,
+      })
+      actions.setPythonSessionId(newPythonSessionId)
+      onPythonSessionIdReceived?.(newPythonSessionId)
+    },
+    [actions, onPythonSessionIdReceived]
+  )
+
+  // Handle message complete - sync to context
+  const handleMessageComplete = useCallback(
+    (message: Message) => {
+      chatLogger.debug('ConversationPanel: Message complete', {
+        messageId: message.id,
+        type: message.type,
+      })
+      // Messages are managed by StreamingChat internally
+      // We can add to context if needed for cross-component access
+    },
+    []
+  )
+
+  return (
+    <ComponentErrorBoundary component="ConversationPanel">
+      <StreamingChat
+        sessionId={sessionId}
+        userId={userId}
+        initialMessages={restoredMessages}
+        isRestoring={isRestoring}
+        isRestorationComplete={isRestorationComplete}
+        isSessionInitialized={isSessionInitialized}
+        pythonSessionId={pythonSessionId ?? state.pythonSessionId}
+        onPythonSessionIdReceived={handlePythonSessionIdReceived}
+        onValuationComplete={handleValuationComplete}
+        onValuationStart={handleValuationStart}
+        onMessageComplete={handleMessageComplete}
+        onReportUpdate={onReportUpdate}
+        onDataCollected={handleDataCollected}
+        onValuationPreview={onValuationPreview}
+        onCalculateOptionAvailable={onCalculateOptionAvailable}
+        onProgressUpdate={onProgressUpdate}
+        onReportSectionUpdate={onReportSectionUpdate}
+        onSectionLoading={onSectionLoading}
+        onSectionComplete={onSectionComplete}
+        onReportComplete={onReportComplete}
+        onContextUpdate={onContextUpdate}
+        onHtmlPreviewUpdate={onHtmlPreviewUpdate}
+        initialMessage={initialMessage}
+        autoSend={autoSend}
+      />
+    </ComponentErrorBoundary>
+  )
+}

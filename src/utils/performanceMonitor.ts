@@ -59,7 +59,7 @@ export class PerformanceMonitor {
    * @param operation - Operation name
    * @param fn - Function to measure
    * @param thresholds - Performance thresholds
-   * @param context - Additional context for logging
+   * @param context - Optional context data
    * @returns Result from function
    */
   async measure<T>(
@@ -68,17 +68,21 @@ export class PerformanceMonitor {
     thresholds: PerformanceThresholds,
     context?: Record<string, unknown>
   ): Promise<T> {
-    const start = performance.now()
+    const startTime = performance.now()
+    const correlationId = context?.correlationId as string | undefined
 
     try {
       const result = await fn()
-      const duration = performance.now() - start
+      const duration = performance.now() - startTime
 
-      this.recordMetric(operation, duration, thresholds, 'success', context)
+      this.recordMetric(operation, duration, thresholds, context, 'success', correlationId)
+
       return result
     } catch (error) {
-      const duration = performance.now() - start
-      this.recordMetric(operation, duration, thresholds, 'error', context)
+      const duration = performance.now() - startTime
+
+      this.recordMetric(operation, duration, thresholds, context, 'error', correlationId, error)
+
       throw error
     }
   }
@@ -90,8 +94,10 @@ export class PerformanceMonitor {
     operation: string,
     duration_ms: number,
     thresholds: PerformanceThresholds,
-    outcome: 'success' | 'error',
-    context?: Record<string, unknown>
+    context?: Record<string, unknown>,
+    outcome: 'success' | 'error' = 'success',
+    correlationId?: string,
+    error?: unknown
   ): void {
     // Determine status
     let status: PerformanceMetric['status']
@@ -105,6 +111,7 @@ export class PerformanceMonitor {
       status = 'critical'
     }
 
+    // Create metric
     const metric: PerformanceMetric = {
       operation,
       duration_ms,
@@ -169,10 +176,14 @@ export class PerformanceMonitor {
     p99Duration_ms: number
     targetRate: number
     acceptableRate: number
+    slowRate: number
+    criticalRate: number
   } {
-    const metrics = operation ? this.getMetrics(operation) : this.metrics
+    const filtered = operation
+      ? this.metrics.filter((m) => m.operation === operation)
+      : this.metrics
 
-    if (metrics.length === 0) {
+    if (filtered.length === 0) {
       return {
         count: 0,
         avgDuration_ms: 0,
@@ -183,147 +194,79 @@ export class PerformanceMonitor {
         p99Duration_ms: 0,
         targetRate: 0,
         acceptableRate: 0,
+        slowRate: 0,
+        criticalRate: 0,
       }
     }
 
-    const durations = metrics.map((m) => m.duration_ms).sort((a, b) => a - b)
-    const sum = durations.reduce((acc, d) => acc + d, 0)
+    const durations = filtered.map((m) => m.duration_ms).sort((a, b) => a - b)
 
-    const targetCount = metrics.filter((m) => m.status === 'target').length
-    const acceptableCount = metrics.filter(
-      (m) => m.status === 'target' || m.status === 'acceptable'
-    ).length
+    const sum = durations.reduce((acc, d) => acc + d, 0)
+    const avg = sum / durations.length
+    const min = durations[0]
+    const max = durations[durations.length - 1]
+
+    const p50 = durations[Math.floor(durations.length * 0.5)]
+    const p95 = durations[Math.floor(durations.length * 0.95)]
+    const p99 = durations[Math.floor(durations.length * 0.99)]
+
+    const targetCount = filtered.filter((m) => m.status === 'target').length
+    const acceptableCount = filtered.filter((m) => m.status === 'acceptable').length
+    const slowCount = filtered.filter((m) => m.status === 'slow').length
+    const criticalCount = filtered.filter((m) => m.status === 'critical').length
 
     return {
-      count: metrics.length,
-      avgDuration_ms: sum / metrics.length,
-      minDuration_ms: durations[0],
-      maxDuration_ms: durations[durations.length - 1],
-      p50Duration_ms: durations[Math.floor(durations.length * 0.5)],
-      p95Duration_ms: durations[Math.floor(durations.length * 0.95)],
-      p99Duration_ms: durations[Math.floor(durations.length * 0.99)],
-      targetRate: targetCount / metrics.length,
-      acceptableRate: acceptableCount / metrics.length,
+      count: filtered.length,
+      avgDuration_ms: avg,
+      minDuration_ms: min,
+      maxDuration_ms: max,
+      p50Duration_ms: p50,
+      p95Duration_ms: p95,
+      p99Duration_ms: p99,
+      targetRate: targetCount / filtered.length,
+      acceptableRate: acceptableCount / filtered.length,
+      slowRate: slowCount / filtered.length,
+      criticalRate: criticalCount / filtered.length,
     }
   }
 
   /**
    * Clear all metrics
    */
-  clearMetrics(): void {
+  clear(): void {
     this.metrics = []
+    storeLogger.info('Performance metrics cleared')
   }
 }
 
-// Singleton performance monitor
-export const globalPerformanceMonitor = new PerformanceMonitor()
-
-/**
- * Preset thresholds for common operations
- * 
- * Based on framework requirements (lines 1400-1406).
- */
-export const performanceThresholds = {
-  /**
-   * Session creation
-   * - Target: <500ms
-   * - Acceptable: <1s
-   * - Slow: >1s
-   */
+// Default performance thresholds
+export const performanceThresholds: Record<string, PerformanceThresholds> = {
   sessionCreate: {
     target: 500,
     acceptable: 1000,
     slow: 2000,
   },
-
-  /**
-   * Conversation restoration
-   * - Target: <1s
-   * - Acceptable: <2s
-   * - Slow: >2s
-   */
-  restoration: {
-    target: 1000,
-    acceptable: 2000,
-    slow: 5000,
+  sessionLoad: {
+    target: 300,
+    acceptable: 800,
+    slow: 2000,
   },
-
-  /**
-   * View switching
-   * - Target: <500ms
-   * - Acceptable: <1s
-   * - Slow: >1s
-   */
-  viewSwitch: {
-    target: 500,
+  sessionRestore: {
+    target: 400,
     acceptable: 1000,
     slow: 2000,
   },
-
-  /**
-   * Session load
-   * - Target: <500ms
-   * - Acceptable: <1s
-   * - Slow: >1s
-   */
+  viewSwitch: {
+    target: 200,
+    acceptable: 500,
+    slow: 1000,
+  },
   sessionLoad: {
     target: 500,
     acceptable: 1000,
     slow: 2000,
   },
-
-  /**
-   * General API call
-   * - Target: <200ms
-   * - Acceptable: <500ms
-   * - Slow: >500ms
-   */
-  apiCall: {
-    target: 200,
-    acceptable: 500,
-    slow: 1000,
-  },
-} as const
-
-/**
- * Convenience function to measure session operation
- * 
- * @param operation - Operation name
- * @param fn - Function to measure
- * @param context - Additional context
- * @returns Result from function
- */
-export async function measureSessionOperation<T>(
-  operation: string,
-  fn: () => Promise<T>,
-  context?: Record<string, unknown>
-): Promise<T> {
-  return globalPerformanceMonitor.measure(
-    operation,
-    fn,
-    performanceThresholds.sessionCreate,
-    context
-  )
 }
 
-/**
- * Convenience function to measure restoration operation
- * 
- * @param operation - Operation name
- * @param fn - Function to measure
- * @param context - Additional context
- * @returns Result from function
- */
-export async function measureRestorationOperation<T>(
-  operation: string,
-  fn: () => Promise<T>,
-  context?: Record<string, unknown>
-): Promise<T> {
-  return globalPerformanceMonitor.measure(
-    operation,
-    fn,
-    performanceThresholds.restoration,
-    context
-  )
-}
-
+// Global performance monitor instance
+export const globalPerformanceMonitor = new PerformanceMonitor()

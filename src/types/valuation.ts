@@ -1175,3 +1175,7 @@ export interface ValuationSession {
   // This is the canonical ValuationRequest that will be sent for calculation
   sessionData?: Partial<ValuationRequest>
 }
+
+  // This is the canonical ValuationRequest that will be sent for calculation
+  sessionData?: Partial<ValuationRequest>
+}

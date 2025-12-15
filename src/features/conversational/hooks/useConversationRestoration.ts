@@ -296,3 +296,59 @@ export const useConversationRestoration = (
   }
 }
 
+
+
+      onError?.(errorMessage)
+    } finally {
+      setIsRestoring(false)
+      abortControllerRef.current = null
+    }
+  }, [sessionId, enabled, onRestored, onError])
+
+  /**
+   * Reset restoration state (for starting new conversation)
+   */
+  const reset = useCallback(() => {
+    chatLogger.info('🔄 Resetting conversation restoration state', { sessionId })
+    hasRestoredRef.current = false
+    lastSessionIdRef.current = null
+    setIsRestoring(false)
+    setIsRestored(false)
+    setMessages([])
+    setPythonSessionId(null)
+    setError(null)
+
+    // Abort any pending restoration
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort()
+      abortControllerRef.current = null
+    }
+  }, [sessionId])
+
+  // Auto-restore on mount if enabled
+  useEffect(() => {
+    if (enabled && sessionId && !hasRestoredRef.current) {
+      restore()
+    }
+
+    return () => {
+      // Cleanup on unmount
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort()
+      }
+    }
+  }, [enabled, sessionId, restore])
+
+  return {
+    state: {
+      isRestoring,
+      isRestored,
+      messages,
+      pythonSessionId,
+      error,
+    },
+    restore,
+    reset,
+  }
+}
+

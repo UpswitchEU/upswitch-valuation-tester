@@ -721,3 +721,24 @@ export const ValuationForm = (props: any) => {
 **Version**: 1.1.0  
 **Status**: Production-Ready Frontend  
 **License**: Proprietary (Internal Use Only)
+
+
+## 🆕 Recent Updates
+
+### October 2025: Critical Fixes Implementation
+
+**Status**: ✅ COMPLETED | **Build**: ✅ Passing | **Production**: ✅ Ready
+
+- **Fixed Hardcoded Data**: Info tab now displays real user input data instead of fake €1M revenue/€200K EBITDA
+- **Restored Download PDF**: Download functionality works via browser print API
+- **Added Business Profile Context**: Shows actual company information (industry, country, founding year)
+- **Enhanced AI-Guided Flow**: Added calculation details to AI-guided flow Info tab
+
+**Documentation**: [Critical Fixes Implementation](../../docs/product/valuation-tester/implementations/critical-fixes-2025-10/README.md)
+
+---
+
+**Last Updated**: October 26, 2025  
+**Version**: 1.1.0  
+**Status**: Production-Ready Frontend  
+**License**: Proprietary (Internal Use Only)

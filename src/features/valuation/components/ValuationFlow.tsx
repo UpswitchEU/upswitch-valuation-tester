@@ -86,3 +86,13 @@ export const ValuationFlow: React.FC<ValuationFlowProps> = ({
     </Suspense>
   )
 }
+
+      <ManualLayout
+        reportId={reportId}
+        onComplete={onComplete}
+        initialVersion={initialVersion}
+        initialMode={initialMode}
+      />
+    </Suspense>
+  )
+}

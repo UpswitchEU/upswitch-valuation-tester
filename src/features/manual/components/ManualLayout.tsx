@@ -278,3 +278,28 @@ export const ManualLayout: React.FC<ManualLayoutProps> = ({
     </div>
   )
 }
+
+            onClick={() => setMobileActivePanel('form')}
+            className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
+              mobileActivePanel === 'form'
+                ? 'bg-primary-600 text-white'
+                : 'text-zinc-400 hover:text-white'
+            }`}
+          >
+            Form
+          </button>
+          <button
+            onClick={() => setMobileActivePanel('preview')}
+            className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
+              mobileActivePanel === 'preview'
+                ? 'bg-primary-600 text-white'
+                : 'text-zinc-400 hover:text-white'
+            }`}
+          >
+            Preview
+          </button>
+        </div>
+      )}
+    </div>
+  )
+}

@@ -395,3 +395,45 @@ export const ValuationForm: React.FC<ValuationFormProps> = ({
     </form>
   )
 }
+
+  // Use form submission hook
+  const { handleSubmit, isSubmitting } = useValuationFormSubmission(setEmployeeCountError)
+
+  // Get business types loading/error state
+  const { loading: businessTypesLoading, error: businessTypesError } = useBusinessTypes()
+
+  return (
+    <form onSubmit={(e) => { e.preventDefault(); handleSubmit(e); }} className="space-y-12 @container">
+      <BasicInformationSection
+        formData={formData}
+        updateFormData={updateFormData}
+        businessTypes={businessTypes}
+        businessTypesLoading={businessTypesLoading}
+        businessTypesError={businessTypesError}
+      />
+
+      <OwnershipStructureSection
+        formData={formData}
+        updateFormData={updateFormData}
+        employeeCountError={employeeCountError}
+        setEmployeeCountError={setEmployeeCountError}
+      />
+
+      <FinancialDataSection formData={formData} updateFormData={updateFormData} />
+
+      <HistoricalDataSection
+        historicalInputs={historicalInputs}
+        setHistoricalInputs={setHistoricalInputs}
+        foundingYear={formData.founding_year}
+      />
+
+      <FormSubmitSection
+        isSubmitting={isSubmitting}
+        error={error}
+        clearError={clearError}
+        formData={formData}
+        isRegenerationMode={isRegenerationMode}
+      />
+    </form>
+  )
+}

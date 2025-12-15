@@ -11,6 +11,7 @@ import {
     Loader2,
     Maximize,
     MessageSquare,
+    Pencil,
     RefreshCw,
     Save,
 } from 'lucide-react'
@@ -206,8 +207,9 @@ export const ValuationToolbar: React.FC<ValuationToolbarProps> = ({
                       Valuation
                     </button>
                   </div>
+                  {/* Edit indicator - shows on hover */}
                   <div className="hidden md:block text-xs text-zinc-500 opacity-0 group-hover:opacity-100 transition-opacity">
-                    ??
+                    <Pencil className="w-3 h-3" />
                   </div>
                 </div>
                 {/* Save Status Icon (M&A Workflow) - Minimalist inline indicator */}
@@ -389,3 +391,115 @@ export const ValuationToolbar: React.FC<ValuationToolbarProps> = ({
     </>
   )
 }
+
+                              {version.versionLabel}
+                            </option>
+                          ))}
+                      </select>
+                      <GitBranch className="absolute right-1.5 top-1/2 -translate-y-1/2 w-3 h-3 text-gray-400 pointer-events-none" />
+                    </div>
+                  </Tooltip>
+                )}
+
+                <Tooltip content="Preview" position="bottom" className="">
+                  <button
+                    onClick={() => handleTabClick('preview')}
+                    className={`p-2 rounded-lg transition-all duration-200 ${
+                      currentActiveTab === 'preview'
+                        ? 'bg-zinc-700 text-white'
+                        : 'text-gray-400 hover:text-gray-300 hover:bg-zinc-800'
+                    }`}
+                  >
+                    <Eye className="w-4 h-4" />
+                  </button>
+                </Tooltip>
+                <Tooltip content="Source Code" position="bottom" className="">
+                  <button
+                    onClick={() => handleTabClick('source')}
+                    className={`p-2 rounded-lg transition-all duration-200 ${
+                      currentActiveTab === 'source'
+                        ? 'bg-zinc-700 text-white'
+                        : 'text-gray-400 hover:text-gray-300 hover:bg-zinc-800'
+                    }`}
+                  >
+                    <Code className="w-4 h-4" />
+                  </button>
+                </Tooltip>
+                <Tooltip content="Valuation Info" position="bottom" className="">
+                  <button
+                    onClick={() => handleTabClick('info')}
+                    className={`p-2 rounded-lg transition-all duration-200 ${
+                      currentActiveTab === 'info'
+                        ? 'bg-zinc-700 text-white'
+                        : 'text-gray-400 hover:text-gray-300 hover:bg-zinc-800'
+                    }`}
+                  >
+                    <Info className="w-4 h-4" />
+                  </button>
+                </Tooltip>
+                <Tooltip content="Audit Trail" position="bottom" className="">
+                  <button
+                    onClick={() => onTabChange?.('history')}
+                    className={`p-2 rounded-lg transition-all duration-200 ${
+                      currentActiveTab === 'history'
+                        ? 'bg-zinc-700 text-white'
+                        : 'text-gray-400 hover:text-gray-300 hover:bg-zinc-800'
+                    }`}
+                  >
+                    <History className="w-4 h-4" />
+                  </button>
+                </Tooltip>
+                <div className="mx-2 h-6 w-px bg-zinc-700"></div>
+                <Tooltip content="Refresh" position="bottom" className="">
+                  <button
+                    onClick={handleRefresh}
+                    className="p-2 rounded-lg transition-all duration-200 text-gray-400 hover:text-gray-300 hover:bg-zinc-800"
+                    disabled={isGenerating}
+                  >
+                    <RefreshCw className="w-4 h-4" />
+                  </button>
+                </Tooltip>
+                <Tooltip content="Download PDF" position="bottom" className="">
+                  <button
+                    onClick={handleDownload}
+                    className="p-2 rounded-lg transition-all duration-200 text-gray-400 hover:text-gray-300 hover:bg-zinc-800"
+                    disabled={isDownloading}
+                  >
+                    {isDownloading ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <Download className="w-4 h-4" />
+                    )}
+                  </button>
+                </Tooltip>
+                <Tooltip content="Open Full Screen" position="bottom" className="">
+                  <button
+                    onClick={handleFullScreen}
+                    className="p-2 rounded-lg transition-all duration-200 text-gray-400 hover:text-gray-300 hover:bg-zinc-800"
+                  >
+                    <Maximize className="w-4 h-4" />
+                  </button>
+                </Tooltip>
+              </div>
+
+              {/* Right Section - User Info */}
+              <div className="flex items-center gap-1.5">
+                <div className="flex items-center gap-3">
+                  <UserDropdown user={user} onLogout={handleLogout} />
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </nav>
+      <FlowSwitchWarningModal
+        isOpen={showSwitchConfirmation}
+        currentFlow={session?.currentView || 'manual'}
+        targetFlow={pendingFlowSwitch || 'manual'}
+        onConfirm={handleConfirmSwitch}
+        onClose={handleCancelSwitch}
+      />
+    </>
+  )
+}
+

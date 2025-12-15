@@ -186,3 +186,25 @@ export const ReportPanel: React.FC<ReportPanelProps> = ({
     </div>
   )
 }
+
+        {activeTab === 'history' && (
+          <div className="h-full">
+            {session?.reportId ? (
+              <AuditLogPanel reportId={session.reportId} countryCode={session.partialData?.country_code || 'BE'} />
+            ) : (
+              <div className="flex flex-col items-center justify-center h-full p-8 text-center bg-canvas">
+                <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-gray-200 flex items-center justify-center mb-3 sm:mb-4">
+                  <Edit3 className="w-6 h-6 sm:w-8 sm:h-8 text-primary-500" />
+                </div>
+                <h3 className="mt-4 text-lg font-semibold text-slate-ink">No audit trail available</h3>
+                <p className="mt-2 text-sm text-gray-600 max-w-sm leading-relaxed">
+                  Start a valuation to see change history and audit logs
+                </p>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}

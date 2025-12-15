@@ -306,4 +306,3 @@ if (typeof window !== 'undefined' && process.env.NODE_ENV === 'development') {
     globalSessionMetrics.logSummary()
   }, 5 * 60 * 1000) // 5 minutes
 }
-

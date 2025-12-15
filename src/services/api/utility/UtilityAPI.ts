@@ -72,7 +72,7 @@ export class UtilityAPI extends HttpClient {
       // CRITICAL FIX: Use correct endpoint path - intelligent-conversation, not conversation
       const response = await this.client.request({
         method: 'GET',
-        url: `/api/conversation/status/${sessionId}`,
+        url: `/api/v1/intelligent-conversation/status/${sessionId}`,
         signal: options?.signal,
         timeout: options?.timeout || 10000, // 10 second timeout for status checks
       })

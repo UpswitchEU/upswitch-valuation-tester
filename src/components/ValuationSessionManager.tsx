@@ -297,3 +297,5 @@ export const ValuationSessionManager: React.FC<ValuationSessionManagerProps> = R
 )
 
 ValuationSessionManager.displayName = 'ValuationSessionManager'
+
+ValuationSessionManager.displayName = 'ValuationSessionManager'

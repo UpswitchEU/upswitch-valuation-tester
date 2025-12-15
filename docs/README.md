@@ -135,3 +135,35 @@ For questions or issues:
 - Check [Architecture Documentation](./architecture/MA_WORKFLOW_COMPLETE.md)
 - Review [Implementation Summary](./implementation/MA_WORKFLOW_IMPLEMENTATION_SUMMARY.md)
 - See [API Specification](./api/VERSIONING_API_SPEC.md)
+
+The M&A workflow enables iterative valuation refinement over weeks or months:
+
+1. **Create** → Start new valuation
+2. **Save** → Auto-save on changes
+3. **Return** → Resume anytime
+4. **Edit** → Adjust assumptions
+5. **Regenerate** → New version created
+6. **Compare** → See what changed
+
+### Version Management
+
+- **Auto-Versioning**: New version created on regeneration with significant changes
+- **Version History**: Complete timeline of all versions
+- **Version Comparison**: Side-by-side diff view
+- **Version Labels**: User-friendly labels (e.g., "Q4 2025 Final")
+
+### Session Robustness
+
+- **Fail-Proof Loading**: Request deduplication, retry, circuit breaker
+- **Session Caching**: localStorage cache for offline resilience
+- **Data Validation**: Auto-fix common data issues
+- **Audit Logging**: Complete operation history
+
+---
+
+## Support
+
+For questions or issues:
+- Check [Architecture Documentation](./architecture/MA_WORKFLOW_COMPLETE.md)
+- Review [Implementation Summary](./implementation/MA_WORKFLOW_IMPLEMENTATION_SUMMARY.md)
+- See [API Specification](./api/VERSIONING_API_SPEC.md)
