@@ -44,23 +44,51 @@ export class UIHandlers {
     }
 
     // Field mapping from conversational names to ValuationRequest structure
+    // CRITICAL: This must include ALL fields that can be collected in conversational flow
     const fieldMap: Record<string, string> = {
+      // Basic company information
       'company_name': 'company_name',
       'business_type': 'business_type',
       'business_type_id': 'business_type_id',
       'country_code': 'country_code',
       'founding_year': 'founding_year',
-      'revenue': 'current_year_data.revenue',
-      'ebitda': 'current_year_data.ebitda',
-      'number_of_employees': 'number_of_employees',
-      'number_of_owners': 'number_of_owners',
-      'shares_for_sale': 'shares_for_sale',
       'industry': 'industry',
       'business_model': 'business_model',
-      'recurring_revenue_percentage': 'recurring_revenue_percentage',
+      
+      // Business structure and ownership
+      'business_structure': 'business_type', // Maps to business_type (company/sole_trader)
+      'shares_for_sale': 'shares_for_sale',
+      'number_of_owners': 'number_of_owners',
+      'number_of_employees': 'number_of_employees',
+      'employee_count': 'number_of_employees', // Alias
+      
+      // Financial data (current year)
+      'revenue': 'current_year_data.revenue',
+      'ebitda': 'current_year_data.ebitda',
+      'net_income': 'current_year_data.net_income',
       'total_assets': 'current_year_data.total_assets',
       'total_debt': 'current_year_data.total_debt',
       'cash': 'current_year_data.cash',
+      'current_year': 'current_year_data.year',
+      
+      // Historical data
+      'provide_historical_data': 'provide_historical_data', // Boolean flag
+      'historical_years_data': 'historical_years_data', // Array of year data
+      
+      // Additional financial metrics
+      'recurring_revenue_percentage': 'recurring_revenue_percentage',
+      
+      // Owner profiling (if collected)
+      'owner_role': 'owner_role',
+      'owner_hours': 'owner_hours',
+      'delegation_capability': 'delegation_capability',
+      'succession_plan': 'succession_plan',
+      
+      // Additional business context
+      'business_description': 'business_description',
+      'business_highlights': 'business_highlights',
+      'reason_for_selling': 'reason_for_selling',
+      'city': 'city',
     }
 
     const targetPath = fieldMap[field] || field
@@ -89,44 +117,106 @@ export class UIHandlers {
       }
 
       const [parent, child] = parts
-      sessionUpdate[parent as keyof ValuationRequest] = {
-        [child]: value,
-      } as any
+      
+      // CRITICAL FIX: For nested objects like current_year_data, we need to merge
+      // not overwrite, so we preserve existing data
+      const existingParent = sessionUpdate[parent as keyof ValuationRequest] as any
+      if (existingParent && typeof existingParent === 'object') {
+        sessionUpdate[parent as keyof ValuationRequest] = {
+          ...existingParent,
+          [child]: value,
+        } as any
+      } else {
+        sessionUpdate[parent as keyof ValuationRequest] = {
+          [child]: value,
+        } as any
+      }
     } else {
       sessionUpdate[targetPath as keyof ValuationRequest] = value as any
     }
 
-    // CRITICAL FIX: Handle business_type metadata to save business_type_id and industry
-    // When backend confirms business type, it sends metadata with id, industry, etc.
-    // We need to save ALL of this data to ensure valuation request is complete
-    if (field === 'business_type' && metadata) {
-      chatLogger.info('Saving business_type with metadata', {
-        business_type: value,
-        metadata: metadata,
-        has_id: !!metadata.id,
-        has_industry: !!metadata.industry,
+    // CRITICAL FIX: Handle metadata for ALL fields, not just business_type
+    // Many fields have metadata that contains additional important data
+    if (metadata && Object.keys(metadata).length > 0) {
+      chatLogger.debug('Processing metadata for field', {
+        field,
+        metadataKeys: Object.keys(metadata),
       })
 
-      // Save business_type_id if present (CRITICAL for backend validation)
-      if (metadata.id) {
-        sessionUpdate.business_type_id = metadata.id
-        chatLogger.info('✅ Saved business_type_id from metadata', {
-          business_type_id: metadata.id,
+      // Handle business_type metadata (most complex case)
+      if (field === 'business_type' || field === 'business_type_id') {
+        chatLogger.info('Saving business_type with metadata', {
+          business_type: value,
+          metadata: metadata,
+          has_id: !!metadata.id,
+          has_industry: !!metadata.industry,
+        })
+
+        // Save business_type_id if present (CRITICAL for backend validation)
+        if (metadata.id) {
+          sessionUpdate.business_type_id = metadata.id
+          chatLogger.info('✅ Saved business_type_id from metadata', {
+            business_type_id: metadata.id,
+          })
+        }
+
+        // Save industry if present (auto-derived from business_type_id)
+        if (metadata.industry || metadata.industry_mapping) {
+          sessionUpdate.industry = metadata.industry || metadata.industry_mapping
+          chatLogger.info('✅ Saved industry from metadata', {
+            industry: sessionUpdate.industry,
+          })
+        }
+      }
+
+      // Handle company_name metadata (may include KBO registration data)
+      if (field === 'company_name' && metadata.registration_number) {
+        // Store KBO data in business_context (extend with any for custom fields)
+        if (!sessionUpdate.business_context) {
+          sessionUpdate.business_context = {} as any
+        }
+        sessionUpdate.business_context = {
+          ...sessionUpdate.business_context,
+          kbo_registration: metadata.registration_number,
+          legal_form: metadata.legal_form,
+        } as any
+        chatLogger.debug('✅ Saved KBO registration data from metadata', {
+          registration_number: metadata.registration_number,
         })
       }
 
-      // Save industry if present (auto-derived from business_type_id)
-      if (metadata.industry || metadata.industry_mapping) {
-        sessionUpdate.industry = metadata.industry || metadata.industry_mapping
-        chatLogger.info('✅ Saved industry from metadata', {
-          industry: sessionUpdate.industry,
-        })
+      // Handle current_year_data.year if provided in metadata
+      if (field === 'revenue' || field === 'ebitda') {
+        if (metadata.year && !sessionUpdate.current_year_data?.year) {
+          // Ensure current_year_data object exists
+          if (!sessionUpdate.current_year_data) {
+            sessionUpdate.current_year_data = { year: metadata.year } as any
+          } else {
+            sessionUpdate.current_year_data = {
+              ...sessionUpdate.current_year_data,
+              year: metadata.year,
+            } as any
+          }
+          chatLogger.debug('✅ Saved year from metadata', {
+            year: metadata.year,
+          })
+        }
       }
 
-      // Save category for reference (optional but helpful)
-      if (metadata.category) {
-        // Store in business_type field for backend compatibility
-        sessionUpdate.business_type = value // Keep the display name
+      // Handle any other metadata fields that map directly to ValuationRequest
+      // This is a catch-all for fields that might have metadata we want to save
+      const metadataFieldMap: Record<string, keyof ValuationRequest> = {
+        'industry_mapping': 'industry',
+        'category': 'business_type',
+      }
+
+      for (const [metaKey, requestKey] of Object.entries(metadataFieldMap)) {
+        if (metadata[metaKey] && !sessionUpdate[requestKey]) {
+          sessionUpdate[requestKey] = metadata[metaKey] as any
+          chatLogger.debug(`✅ Saved ${metaKey} from metadata to ${requestKey}`, {
+            [metaKey]: metadata[metaKey],
+          })
+        }
       }
     }
 
