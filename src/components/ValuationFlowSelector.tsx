@@ -36,6 +36,10 @@ interface ValuationFlowSelectorProps {
   autoSend: boolean
   /** Callback when valuation completes */
   onComplete: (result: ValuationResponse) => void
+  /** Initial mode for M&A workflow */
+  initialMode?: 'edit' | 'view'
+  /** Initial version for M&A workflow */
+  initialVersion?: number
 }
 
 // Lazy load unified flow component

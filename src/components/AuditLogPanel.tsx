@@ -249,25 +249,29 @@ function AuditLogEntry({ entry, countryCode }: AuditLogEntryProps): React.ReactE
     }
   }
 
+  const operationLabel = getLabel()
+  const operationIcon = getIcon()
+  const bgColor = getBgColor()
+
   return (
     <div className="p-4 hover:bg-gray-50 transition-colors">
       <div className="flex items-start gap-4">
         {/* Icon */}
-        <div className={`flex-shrink-0 w-10 h-10 rounded-full ${getBgColor()} flex items-center justify-center`}>
-          {getIcon()}
+        <div className={`flex-shrink-0 w-10 h-10 rounded-full ${bgColor} flex items-center justify-center`}>
+          {operationIcon}
         </div>
 
         {/* Content */}
         <div className="flex-1 min-w-0">
           {/* Header */}
           <div className="flex items-center gap-2 mb-1">
-            <span className="font-semibold text-gray-900">{getLabel()}</span>
+            <span className="font-semibold text-gray-900">{operationLabel}</span>
             <span className="text-sm text-gray-500">·</span>
             <span className="text-sm text-gray-600">{formatDate(entry.timestamp)}</span>
           </div>
 
           {/* Details based on operation type */}
-          {entry.operation === 'EDIT' && entry.metadata?.field && (
+          {entry.operation === 'EDIT' && entry.metadata?.field ? (
             <div className="text-sm text-gray-700 mt-2">
               <p className="mb-1">
                 <span className="font-medium text-gray-900">
@@ -295,30 +299,29 @@ function AuditLogEntry({ entry, countryCode }: AuditLogEntryProps): React.ReactE
                 )}
               </div>
             </div>
-            )
-          })()}
+          ) : null}
 
-          {entry.operation === 'REGENERATE' && entry.metadata && (
+          {entry.operation === 'REGENERATE' && entry.metadata ? (
             <div className="text-sm text-gray-700 mt-2">
               <p className="mb-1">
-                Created <span className="font-medium">Version {entry.metadata.versionNumber as number}</span>
+                Created <span className="font-medium">Version {String(entry.metadata.versionNumber || '')}</span>
               </p>
-              {entry.metadata.significantChanges && Array.isArray(entry.metadata.significantChanges) && entry.metadata.significantChanges.length > 0 && (
+              {Array.isArray(entry.metadata.significantChanges) && entry.metadata.significantChanges.length > 0 && (
                 <p className="text-gray-600">
-                  Significant changes: {(entry.metadata.significantChanges as string[]).join(', ')}
+                  Significant changes: {entry.metadata.significantChanges.join(', ')}
                 </p>
               )}
             </div>
-          )}
+          ) : null}
 
-          {entry.operation === 'VERSION_CREATE' && entry.metadata && (
+          {entry.operation === 'VERSION_CREATE' && entry.metadata ? (
             <div className="text-sm text-gray-700 mt-2">
               <p>
-                <span className="font-medium">{entry.metadata.versionLabel as string}</span>
+                <span className="font-medium">{String(entry.metadata.versionLabel || '')}</span>
                 {' saved'}
               </p>
             </div>
-          )}
+          ) : null}
 
           {/* User info */}
           {entry.userId && (

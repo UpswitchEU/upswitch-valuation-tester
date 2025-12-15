@@ -280,6 +280,7 @@ export const useValuationSessionStore = create<ValuationSessionStore>((set, get)
           duration_ms: duration,
           correlationId,
           error: extractErrorMessage(error),
+          metadata: {},
         });
 
         // Record failure in metrics

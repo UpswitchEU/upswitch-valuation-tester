@@ -116,7 +116,7 @@ export const useValuationFormSubmission = (
               reportId,
               formData: request,
               valuationResult: result,
-              htmlReport: result.html_report || null,
+              htmlReport: result.html_report || undefined,
               changesSummary: changes,
               versionLabel: generateAutoLabel(previousVersion.versionNumber + 1, changes),
             })

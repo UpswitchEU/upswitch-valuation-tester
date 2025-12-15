@@ -23,6 +23,8 @@ type Stage = 'loading' | 'data-entry' | 'processing' | 'flow-selection'
 
 interface ValuationSessionManagerProps {
   reportId: string
+  initialMode?: 'edit' | 'view'
+  initialVersion?: number
   children: (props: {
     session: ValuationSession | null
     stage: Stage

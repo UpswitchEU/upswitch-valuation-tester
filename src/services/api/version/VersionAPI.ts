@@ -17,7 +17,11 @@ import type {
     VersionStatistics,
 } from '../../../types/ValuationVersion'
 import { createContextLogger } from '../../../utils/logger'
-import type { APIRequestConfig } from '../types'
+
+export interface APIRequestConfig {
+  signal?: AbortSignal
+  timeout?: number
+}
 
 const versionLogger = createContextLogger('VersionAPI')
 

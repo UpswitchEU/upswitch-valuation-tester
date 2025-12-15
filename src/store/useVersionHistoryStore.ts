@@ -409,22 +409,23 @@ export const useVersionHistoryStore = create<VersionHistoryStore>()(
 
         // Calculate valuation delta
         const valuationDelta =
-          vA.valuationResult && vB.valuationResult
+          vA.valuationResult && typeof vA.valuationResult === 'object' &&
+          vB.valuationResult && typeof vB.valuationResult === 'object'
             ? {
                 absoluteChange:
-                  (vB.valuationResult.valuation_summary?.final_valuation || 0) -
-                  (vA.valuationResult.valuation_summary?.final_valuation || 0),
+                  ((vB.valuationResult as any).valuation_summary?.final_valuation || 0) -
+                  ((vA.valuationResult as any).valuation_summary?.final_valuation || 0),
                 percentChange:
-                  ((vB.valuationResult.valuation_summary?.final_valuation || 0) -
-                    (vA.valuationResult.valuation_summary?.final_valuation || 0)) /
-                  (vA.valuationResult.valuation_summary?.final_valuation || 1) *
+                  (((vB.valuationResult as any).valuation_summary?.final_valuation || 0) -
+                    ((vA.valuationResult as any).valuation_summary?.final_valuation || 0)) /
+                  ((vA.valuationResult as any).valuation_summary?.final_valuation || 1) *
                   100,
                 direction:
-                  (vB.valuationResult.valuation_summary?.final_valuation || 0) >
-                  (vA.valuationResult.valuation_summary?.final_valuation || 0)
+                  ((vB.valuationResult as any).valuation_summary?.final_valuation || 0) >
+                  ((vA.valuationResult as any).valuation_summary?.final_valuation || 0)
                     ? 'increase' as const
-                    : (vB.valuationResult.valuation_summary?.final_valuation || 0) <
-                      (vA.valuationResult.valuation_summary?.final_valuation || 0)
+                    : ((vB.valuationResult as any).valuation_summary?.final_valuation || 0) <
+                      ((vA.valuationResult as any).valuation_summary?.final_valuation || 0)
                     ? 'decrease' as const
                     : 'unchanged' as const,
               }

@@ -101,7 +101,7 @@ describe('errorDetection', () => {
   describe('extractStatusCode', () => {
     it('should extract status code from various error structures', () => {
       expect(extractStatusCode({ response: { status: 409 } })).toBe(409)
-      expect(extractStatusCode({ status: 404 } })).toBe(404)
+      expect(extractStatusCode({ status: 404 })).toBe(404)
       expect(extractStatusCode({ statusCode: 500 })).toBe(500)
     })
 

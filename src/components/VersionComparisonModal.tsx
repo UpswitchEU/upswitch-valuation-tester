@@ -76,7 +76,7 @@ export function VersionComparisonModal({
                   <p className="text-sm text-gray-600 mb-1">Previous Valuation</p>
                   <p className="text-2xl font-bold text-gray-900">
                     {formatCurrency(
-                      versionA.valuationResult?.valuation_summary?.final_valuation || 0,
+                      typeof versionA.valuationResult === 'object' && versionA.valuationResult?.valuation_summary?.final_valuation || 0,
                       countryCode
                     )}
                   </p>
@@ -90,7 +90,7 @@ export function VersionComparisonModal({
                   <p className="text-sm text-gray-600 mb-1">New Valuation</p>
                   <p className="text-2xl font-bold text-gray-900">
                     {formatCurrency(
-                      versionB.valuationResult?.valuation_summary?.final_valuation || 0,
+                      typeof versionB.valuationResult === 'object' && versionB.valuationResult?.valuation_summary?.final_valuation || 0,
                       countryCode
                     )}
                   </p>
