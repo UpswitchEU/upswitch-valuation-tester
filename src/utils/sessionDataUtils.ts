@@ -43,15 +43,48 @@ export function hasMeaningfulSessionData(sessionData: any): boolean {
   // Check if it has actual form fields (not just metadata)
   // These fields indicate the report has been worked on and has data to restore
   const meaningfulFields = [
+    // Core financial data
     'company_name',
     'revenue',
     'ebitda',
+    'current_year_data',
+    'historical_years_data',
+    
+    // Business identification
+    'business_type',
     'business_type_id',
+    'business_structure',
+    'business_model',
+    'industry',
+    
+    // Business details
+    'business_description',
+    'business_highlights',
+    'reason_for_selling',
+    
+    // Location & basic info
+    'country_code',
+    'city',
+    'founding_year',
+    
+    // Ownership
+    'number_of_employees',
+    'number_of_owners',
+    'shares_for_sale',
+    
+    // Generated content
     'html_report',
     'info_tab_html',
     'valuation_result',
-    'current_year_data',
-    'historical_years_data',
+    
+    // Other user-entered data
+    'comparables',
+    'business_context',
+    'recurring_revenue_percentage',
+    'owner_role',
+    'owner_hours',
+    'delegation_capability',
+    'succession_plan',
   ]
 
   return keys.some((key) => meaningfulFields.includes(key))
