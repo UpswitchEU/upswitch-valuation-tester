@@ -13,13 +13,70 @@
 
 import pino from 'pino'
 
+// Check if we're in a browser environment
+const isBrowser = typeof window !== 'undefined'
+
 const logger = pino({
   level: (process.env.NODE_ENV === 'production' ? 'info' : 'debug') as 'info' | 'debug',
-  browser: {
-    asObject: true,
-  },
+  // In browser, use custom write function to format logs properly
+  // This prevents "Object" spam in console
+  browser: isBrowser
+    ? {
+        write: (o: any) => {
+          // Extract log level and message
+          const level = o.level === 10 ? 'DEBUG' : o.level === 20 ? 'INFO' : o.level === 30 ? 'WARN' : o.level === 40 ? 'ERROR' : 'INFO'
+          const msg = o.msg || ''
+          const context = o.context || ''
+          
+          // Build formatted message
+          const prefix = context ? `[${level}] [${context}]` : `[${level}]`
+          const logMessage = `${prefix} ${msg}`
+          
+          // Extract data (everything except standard pino fields)
+          const data: any = {}
+          Object.keys(o).forEach((key) => {
+            if (!['level', 'time', 'msg', 'context', 'pid', 'hostname'].includes(key)) {
+              data[key] = o[key]
+            }
+          })
+          const hasData = Object.keys(data).length > 0
+          
+          // Use appropriate console method based on level
+          if (o.level >= 50) {
+            // ERROR
+            if (hasData) {
+              console.error(logMessage, data)
+            } else {
+              console.error(logMessage)
+            }
+          } else if (o.level >= 40) {
+            // WARN
+            if (hasData) {
+              console.warn(logMessage, data)
+            } else {
+              console.warn(logMessage)
+            }
+          } else if (o.level >= 20) {
+            // INFO
+            if (hasData) {
+              console.log(logMessage, data)
+            } else {
+              console.log(logMessage)
+            }
+          } else {
+            // DEBUG
+            if (hasData) {
+              console.debug(logMessage, data)
+            } else {
+              console.debug(logMessage)
+            }
+          }
+        },
+      }
+    : undefined,
+  // Only use pino-pretty transport in Node.js (not browser - it doesn't work there)
   transport:
-    process.env.NODE_ENV !== 'production'
+    !isBrowser && process.env.NODE_ENV !== 'production'
       ? {
           target: 'pino-pretty',
           options: {

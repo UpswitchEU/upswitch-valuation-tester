@@ -450,9 +450,16 @@ export const ValuationForm: React.FC<ValuationFormProps> = ({
 
   return (
     <form
-      onSubmit={(e) => {
+      onSubmit={async (e) => {
         e.preventDefault()
-        handleSubmit(e)
+        try {
+          await handleSubmit(e)
+        } catch (error) {
+          generalLogger.error('Form submission error', {
+            error: error instanceof Error ? error.message : String(error),
+            stack: error instanceof Error ? error.stack : undefined,
+          })
+        }
       }}
       className="space-y-12 @container"
     >

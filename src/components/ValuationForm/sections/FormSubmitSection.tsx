@@ -7,7 +7,7 @@
  * @module components/ValuationForm/sections/FormSubmitSection
  */
 
-import React from 'react'
+import React, { useEffect } from 'react'
 import type { ValuationFormData } from '../../../types/valuation'
 
 interface FormSubmitSectionProps {
@@ -34,6 +34,24 @@ export const FormSubmitSection: React.FC<FormSubmitSectionProps> = ({
   const isFormValid =
     formData.revenue && formData.ebitda && formData.industry && formData.country_code
 
+  // Debug: Log form validation state
+  useEffect(() => {
+    if (process.env.NODE_ENV !== 'production') {
+      console.log('[FormSubmitSection] Form validation state:', {
+        isFormValid,
+        isSubmitting,
+        hasRevenue: !!formData.revenue,
+        hasEbitda: !!formData.ebitda,
+        hasIndustry: !!formData.industry,
+        hasCountryCode: !!formData.country_code,
+        revenue: formData.revenue,
+        ebitda: formData.ebitda,
+        industry: formData.industry,
+        country_code: formData.country_code,
+      })
+    }
+  }, [isFormValid, isSubmitting, formData.revenue, formData.ebitda, formData.industry, formData.country_code])
+
   return (
     <>
       {/* Submit Button */}
@@ -41,6 +59,18 @@ export const FormSubmitSection: React.FC<FormSubmitSectionProps> = ({
         <button
           type="submit"
           disabled={isSubmitting || !isFormValid}
+          onClick={(e) => {
+            // Debug: Log button click
+            if (process.env.NODE_ENV !== 'production') {
+              console.log('[FormSubmitSection] Button clicked', {
+                isSubmitting,
+                isFormValid,
+                disabled: isSubmitting || !isFormValid,
+                eventType: e.type,
+              })
+            }
+            // Don't prevent default - let form onSubmit handle it
+          }}
           className={`
             w-full justify-center px-8 py-4 rounded-xl font-semibold text-lg shadow-lg
             transition-all duration-200 transform hover:-translate-y-0.5
