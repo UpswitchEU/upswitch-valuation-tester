@@ -60,6 +60,7 @@ export interface VersionChanges {
   // Financial changes
   revenue?: FieldChange<number>
   ebitda?: FieldChange<number>
+  netIncome?: FieldChange<number>
   totalAssets?: FieldChange<number>
   totalDebt?: FieldChange<number>
   cash?: FieldChange<number>
@@ -69,10 +70,17 @@ export interface VersionChanges {
   foundingYear?: FieldChange<number>
   numberOfEmployees?: FieldChange<number>
   numberOfOwners?: FieldChange<number>
+  sharesForSale?: FieldChange<number>
 
-  // Other changes
+  // Business type and industry
   businessTypeId?: FieldChange<string>
+  businessType?: FieldChange<string>
+  industry?: FieldChange<string>
+  businessModel?: FieldChange<string>
   countryCode?: FieldChange<string>
+
+  // Additional metrics
+  recurringRevenuePercentage?: FieldChange<number>
 
   // Summary statistics
   totalChanges: number // Number of fields changed

@@ -114,19 +114,32 @@ class ReportServiceImpl implements ReportService {
       // Transform backend reports to ValuationSession format
       const sessions: ValuationSession[] = reports.map((report: any) => {
         // Get valuation data if available
+        // Backend returns: session_data, partial_data (both are JSONB objects)
         const partialData = report.partial_data || {}
-        const sessionData = report.valuation_data || {}
+        const sessionData = report.session_data || report.valuation_data || {}
+
+        // Ensure company_name is in sessionData if provided at top level
+        // Backend extracts company_name from session_data for convenience
+        const enrichedSessionData = {
+          ...sessionData,
+          ...(report.company_name && !sessionData.company_name ? { company_name: report.company_name } : {}),
+        }
 
         return {
-          sessionId: report.id, // Use report ID as session ID for now
-          reportId: report.id,
-          currentView: report.flow_type === 'ai-guided' ? 'conversational' : 'manual',
-          dataSource: report.flow_type === 'ai-guided' ? 'conversational' : 'manual',
-          createdAt: new Date(report.created_at),
-          updatedAt: new Date(report.updated_at || report.created_at),
+          sessionId: report.id || report.report_id || report.session_id, // Use report ID as session ID for now
+          reportId: report.id || report.report_id,
+          currentView: report.flow_type === 'ai-guided' || report.current_view === 'ai-guided' ? 'conversational' : 'manual',
+          dataSource: report.flow_type === 'ai-guided' || report.data_source === 'ai-guided' ? 'conversational' : 'manual',
+          createdAt: report.created_at ? new Date(report.created_at) : new Date(),
+          updatedAt: report.updated_at ? new Date(report.updated_at) : new Date(),
           completedAt: report.completed_at ? new Date(report.completed_at) : undefined,
           partialData,
-          sessionData,
+          sessionData: enrichedSessionData,
+          // CRITICAL: Include valuation result fields from backend
+          valuationResult: report.valuation_result || null,
+          htmlReport: report.html_report || null,
+          infoTabHtml: report.info_tab_html || null,
+          calculatedAt: report.calculated_at ? new Date(report.calculated_at) : undefined,
         } as ValuationSession
       })
 

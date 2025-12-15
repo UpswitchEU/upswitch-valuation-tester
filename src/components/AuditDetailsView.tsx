@@ -184,19 +184,30 @@ function formatDate(date: Date): string {
  */
 function formatFieldLabel(field: string): string {
   const labels: Record<string, string> = {
+    // Financial fields
     revenue: 'Revenue',
     ebitda: 'EBITDA',
+    netIncome: 'Net Income',
     totalAssets: 'Total Assets',
     totalDebt: 'Total Debt',
     cash: 'Cash',
+    recurringRevenuePercentage: 'Recurring Revenue %',
+    
+    // Business profile
     companyName: 'Company Name',
     foundingYear: 'Founding Year',
     numberOfEmployees: 'Employees',
     numberOfOwners: 'Owners',
-    businessTypeId: 'Business Type',
+    sharesForSale: 'Shares for Sale',
+    
+    // Business type and industry
+    businessTypeId: 'Business Type ID',
+    businessType: 'Business Type',
+    industry: 'Industry',
+    businessModel: 'Business Model',
     countryCode: 'Country',
   }
-  return labels[field] || field
+  return labels[field] || field.replace(/([A-Z])/g, ' $1').replace(/^./, (str) => str.toUpperCase()).trim()
 }
 
 /**
@@ -205,9 +216,14 @@ function formatFieldLabel(field: string): string {
 function formatValue(value: any, field: string, countryCode: string): string {
   if (value === null || value === undefined) return 'N/A'
   
-  // Numeric fields
-  if (['revenue', 'ebitda', 'totalAssets', 'totalDebt', 'cash'].includes(field)) {
+  // Numeric fields (currency)
+  if (['revenue', 'ebitda', 'netIncome', 'totalAssets', 'totalDebt', 'cash'].includes(field)) {
     return formatCurrency(value)
+  }
+  
+  // Percentage fields
+  if (field === 'recurringRevenuePercentage') {
+    return `${(value * 100).toFixed(1)}%`
   }
   
   // Year field
@@ -220,51 +236,70 @@ function formatValue(value: any, field: string, countryCode: string): string {
     return value.toLocaleString()
   }
   
+  // Percentage fields (0-100)
+  if (field === 'sharesForSale') {
+    return `${value}%`
+  }
+  
   // Default string representation
   return String(value)
 }
 
 /**
  * Render all field changes
+ * CRITICAL: Dynamically render ALL fields that changed, not just a hardcoded list
  */
 function renderFieldChanges(changes: any, countryCode: string) {
-  const fields = [
-    'revenue',
-    'ebitda',
-    'totalAssets',
-    'totalDebt',
-    'cash',
-    'companyName',
-    'foundingYear',
-    'numberOfEmployees',
-    'numberOfOwners',
-    'businessTypeId',
-    'countryCode',
-  ]
+  // Get all fields that have changes (excluding summary fields)
+  const summaryFields = ['totalChanges', 'significantChanges']
+  const changedFields = Object.keys(changes).filter(
+    (key) => !summaryFields.includes(key) && changes[key] && typeof changes[key] === 'object' && 'from' in changes[key]
+  )
 
-  const changeElements = []
-
-  for (const field of fields) {
-    const change = changes[field]
-    if (change) {
-      const isSignificant = changes.significantChanges.includes(field)
-      changeElements.push(
-        <FieldChangeRow
-          key={field}
-          field={field}
-          change={change}
-          countryCode={countryCode}
-          isSignificant={isSignificant}
-        />
-      )
-    }
+  if (changedFields.length === 0) {
+    return <p className="text-gray-400 text-sm text-center py-4">No field changes detected</p>
   }
 
-  return changeElements.length > 0 ? (
-    changeElements
-  ) : (
-    <p className="text-gray-400 text-sm text-center py-4">No field changes detected</p>
-  )
+  // Sort fields: financial first, then business profile, then others
+  const fieldOrder: Record<string, number> = {
+    revenue: 1,
+    ebitda: 2,
+    netIncome: 3,
+    totalAssets: 4,
+    totalDebt: 5,
+    cash: 6,
+    recurringRevenuePercentage: 7,
+    companyName: 10,
+    foundingYear: 11,
+    numberOfEmployees: 12,
+    numberOfOwners: 13,
+    sharesForSale: 14,
+    businessTypeId: 20,
+    businessType: 21,
+    industry: 22,
+    businessModel: 23,
+    countryCode: 24,
+  }
+
+  const sortedFields = changedFields.sort((a, b) => {
+    const orderA = fieldOrder[a] || 100
+    const orderB = fieldOrder[b] || 100
+    return orderA - orderB
+  })
+
+  return sortedFields.map((field) => {
+    const change = changes[field]
+    const isSignificant = changes.significantChanges?.includes(field) || false
+    return (
+      <FieldChangeRow
+        key={field}
+        field={field}
+        change={change}
+        countryCode={countryCode}
+        isSignificant={isSignificant}
+      />
+    )
+  })
 }
 
 /**

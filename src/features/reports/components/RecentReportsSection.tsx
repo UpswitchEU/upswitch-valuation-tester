@@ -149,9 +149,21 @@ export function RecentReportsSection({
         {/* Grid of report cards - Using BusinessProfileCardV4 */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
           {reportsWithValuations.map((report) => {
+              // Map session data to business info (comprehensive extraction)
               const businessInfo = mapValuationSessionToBusinessInfo(report)
               const valuationAmount = extractValuationAmount(report)
               const profileData = extractProfileData(report, user || undefined)
+
+              // Debug logging (only in development)
+              if (process.env.NODE_ENV === 'development') {
+                console.debug('[RecentReportsSection] Mapping report to card:', {
+                  reportId: report.reportId,
+                  businessInfo,
+                  hasValuation: !!(report as any).valuationResult,
+                  valuationAmount,
+                  hasProfileData: !!profileData,
+                })
+              }
 
               return (
                 <BusinessProfileCardV4

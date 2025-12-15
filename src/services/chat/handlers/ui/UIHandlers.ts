@@ -98,7 +98,18 @@ export class UIHandlers {
       chatLogger.warn('Invalid targetPath in field mapping', {
         field,
         targetPath,
+        availableFields: Object.keys(fieldMap).slice(0, 10), // Log first 10 for debugging
       })
+      // CRITICAL FIX: If field is not in map, try to use it directly (for new fields)
+      // This ensures backward compatibility and handles new fields gracefully
+      if (field && typeof field === 'string') {
+        chatLogger.info('Using unmapped field directly', {
+          field,
+          value,
+        })
+        // Return the field as-is - let the backend handle validation
+        return { [field]: value } as any
+      }
       return {}
     }
 
@@ -289,7 +300,17 @@ export class UIHandlers {
         return
       }
       
-      if (field && value !== undefined && value !== null) {
+      // CRITICAL: Handle all value types including empty strings, zero, false
+      // Empty strings are valid for some fields (e.g., business_description can be empty)
+      // Zero is valid for numeric fields (e.g., number_of_employees can be 0)
+      // False is valid for boolean fields (e.g., provide_historical_data can be false)
+      const isValidValue = value !== undefined && value !== null && value !== ''
+      
+      // Exception: Allow empty strings for text fields that might legitimately be empty
+      const textFields = ['business_description', 'business_highlights', 'reason_for_selling', 'city']
+      const isEmptyStringAllowed = typeof value === 'string' && value === '' && textFields.includes(field)
+      
+      if (field && (isValidValue || isEmptyStringAllowed)) {
         // Map conversational field names to ValuationRequest structure
         const sessionDataUpdate = this.mapConversationalFieldToSessionData(
           field,
@@ -302,6 +323,8 @@ export class UIHandlers {
           chatLogger.warn('Skipping auto-save: empty sessionDataUpdate', {
             field,
             value,
+            hasMetadata: !!collectedData.metadata,
+            metadataKeys: collectedData.metadata ? Object.keys(collectedData.metadata) : [],
           })
           return
         }

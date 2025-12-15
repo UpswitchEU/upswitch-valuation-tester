@@ -1164,6 +1164,7 @@ export interface ValuationSession {
   updatedAt: Date
   completedAt?: Date
   lastSyncedAt?: Date // Last time data was synced between flows
+  calculatedAt?: Date // When valuation was calculated
 
   // Data completeness tracking (0-100)
   completeness?: number
@@ -1174,4 +1175,9 @@ export interface ValuationSession {
   // Complete session data (merged from partialData)
   // This is the canonical ValuationRequest that will be sent for calculation
   sessionData?: Partial<ValuationRequest>
+
+  // Valuation result data (for completed valuations)
+  valuationResult?: ValuationResponse // Full valuation result including calculations
+  htmlReport?: string // Generated HTML report
+  infoTabHtml?: string // Info tab HTML content
 }

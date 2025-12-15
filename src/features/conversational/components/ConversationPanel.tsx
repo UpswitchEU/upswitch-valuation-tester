@@ -186,15 +186,47 @@ export const ConversationPanel: React.FC<ConversationPanelProps> = ({
         try {
           const previousVersion = getLatestVersion(reportId)
 
-          // Convert result to ValuationRequest format for comparison
-          // Note: ValuationResponse doesn't include form fields, so we use empty defaults
+          // CRITICAL FIX: Get complete formData from session, not just result
+          // The result only has calculated fields, but formData needs all input fields
+          const sessionStore = useValuationSessionStore.getState()
+          const sessionData = sessionStore.session?.sessionData || sessionStore.session?.partialData || {}
+          
+          // Build complete formData from session + result
+          // Session has the collected data, result has calculated/computed fields
+          const resultAny = result as any
           const newFormData = {
-            company_name: result.company_name,
-            industry: (result as any).industry || '',
-            revenue: (result as any).revenue || 0,
-            ebitda: (result as any).ebitda || 0,
-            country_code: (result as any).country_code || '',
-            // Map other fields from result to formData structure
+            // From session (collected during conversation)
+            company_name: sessionData.company_name || result.company_name || '',
+            business_type: sessionData.business_type || '',
+            business_type_id: sessionData.business_type_id || '',
+            industry: sessionData.industry || resultAny.industry || '',
+            business_model: sessionData.business_model || '',
+            country_code: sessionData.country_code || result.country_code || 'BE',
+            founding_year: sessionData.founding_year || 0,
+            number_of_employees: sessionData.number_of_employees || 0,
+            number_of_owners: sessionData.number_of_owners || 0,
+            shares_for_sale: sessionData.shares_for_sale || 100,
+            recurring_revenue_percentage: sessionData.recurring_revenue_percentage || 0,
+            
+            // Financial data from session (preferred) or result
+            current_year_data: {
+              year: sessionData.current_year_data?.year || new Date().getFullYear(),
+              revenue: sessionData.current_year_data?.revenue || sessionData.revenue || resultAny.revenue || 0,
+              ebitda: sessionData.current_year_data?.ebitda || sessionData.ebitda || resultAny.ebitda || 0,
+              net_income: sessionData.current_year_data?.net_income || 0,
+              total_assets: sessionData.current_year_data?.total_assets || 0,
+              total_debt: sessionData.current_year_data?.total_debt || 0,
+              cash: sessionData.current_year_data?.cash || 0,
+            },
+            
+            // Historical data if available
+            historical_years_data: sessionData.historical_years_data || [],
+            
+            // Additional context
+            business_description: sessionData.business_description || '',
+            business_highlights: sessionData.business_highlights || '',
+            reason_for_selling: sessionData.reason_for_selling || '',
+            city: sessionData.city || '',
           } as any
 
           if (previousVersion) {
@@ -214,6 +246,8 @@ export const ConversationPanel: React.FC<ConversationPanelProps> = ({
                 reportId,
                 versionNumber: newVersion.versionNumber,
                 versionLabel: newVersion.versionLabel,
+                totalChanges: changes.totalChanges,
+                significantChanges: changes.significantChanges,
               })
 
               // Log regeneration to audit trail

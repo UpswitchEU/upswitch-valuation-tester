@@ -159,6 +159,63 @@ export function detectVersionChanges(
     )
   }
 
+  // Additional financial fields
+  const oldNetIncome = oldData.current_year_data?.net_income || 0
+  const newNetIncome = newData.current_year_data?.net_income || 0
+  if (oldNetIncome !== newNetIncome) {
+    const percentChange =
+      oldNetIncome !== 0 ? Math.abs(((newNetIncome - oldNetIncome) / oldNetIncome) * 100) : 0
+    changes.netIncome = createChange('netIncome', oldNetIncome, newNetIncome, percentChange > 10)
+  }
+
+  // Business structure and ownership
+  if (oldData.shares_for_sale !== newData.shares_for_sale) {
+    changes.sharesForSale = createChange(
+      'sharesForSale',
+      oldData.shares_for_sale || 100,
+      newData.shares_for_sale || 100
+    )
+  }
+
+  // Industry and business model
+  if (oldData.industry !== newData.industry) {
+    changes.industry = createChange(
+      'industry',
+      oldData.industry || '',
+      newData.industry || ''
+    )
+  }
+
+  if (oldData.business_model !== newData.business_model) {
+    changes.businessModel = createChange(
+      'businessModel',
+      oldData.business_model || '',
+      newData.business_model || ''
+    )
+  }
+
+  // Business type (string, not just ID)
+  if (oldData.business_type !== newData.business_type) {
+    changes.businessType = createChange(
+      'businessType',
+      oldData.business_type || '',
+      newData.business_type || ''
+    )
+  }
+
+  // Recurring revenue percentage
+  if (oldData.recurring_revenue_percentage !== newData.recurring_revenue_percentage) {
+    const oldPct = oldData.recurring_revenue_percentage || 0
+    const newPct = newData.recurring_revenue_percentage || 0
+    const percentChange = oldPct !== 0 ? Math.abs(((newPct - oldPct) / oldPct) * 100) : 0
+    changes.recurringRevenuePercentage = createChange(
+      'recurringRevenuePercentage',
+      oldPct,
+      newPct,
+      percentChange > 10
+    )
+  }
+
   return changes
 }
 
