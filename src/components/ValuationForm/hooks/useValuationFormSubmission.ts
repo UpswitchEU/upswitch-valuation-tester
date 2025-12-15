@@ -53,7 +53,8 @@ export const useValuationFormSubmission = (
     async (e: React.FormEvent) => {
       e.preventDefault()
 
-      generalLogger.info('Form submit triggered', {
+      try {
+        generalLogger.info('Form submit triggered', {
         isCalculating,
         hasFormData: !!formData,
         formDataKeys: Object.keys(formData || {}),
@@ -411,24 +412,24 @@ export const useValuationFormSubmission = (
           calculationDuration_ms: calculationDuration.toFixed(2),
         })
       }
-    } catch (error) {
-      // Catch any errors during submission and log them
-      generalLogger.error('Form submission failed with error', {
-        error: error instanceof Error ? error.message : String(error),
-        stack: error instanceof Error ? error.stack : undefined,
-        formDataKeys: Object.keys(formData || {}),
-        hasSession: !!session,
-        reportId: session?.reportId,
-      })
-      // Set employee count error to display to user (this is the only error display mechanism)
-      setEmployeeCountError(
-        error instanceof Error
-          ? `Calculation failed: ${error.message}`
-          : 'Calculation failed. Please check the console for details.'
-      )
-      // Re-throw to prevent silent failures
-      throw error
-    }
+      } catch (error) {
+        // Catch any errors during submission and log them
+        generalLogger.error('Form submission failed with error', {
+          error: error instanceof Error ? error.message : String(error),
+          stack: error instanceof Error ? error.stack : undefined,
+          formDataKeys: Object.keys(formData || {}),
+          hasSession: !!session,
+          reportId: session?.reportId,
+        })
+        // Set employee count error to display to user (this is the only error display mechanism)
+        setEmployeeCountError(
+          error instanceof Error
+            ? `Calculation failed: ${error.message}`
+            : 'Calculation failed. Please check the console for details.'
+        )
+        // Re-throw to prevent silent failures
+        throw error
+      }
     },
     [
       formData,
