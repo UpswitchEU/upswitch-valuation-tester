@@ -8,7 +8,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { guestSessionService } from '../services/guestSessionService'
 import { chatLogger } from '../utils/logger'
-import { Message } from './useStreamingChatState'
+import type { Message } from '../types/message'
 
 // Fallback questions for when backend is unavailable
 const FALLBACK_QUESTIONS = [

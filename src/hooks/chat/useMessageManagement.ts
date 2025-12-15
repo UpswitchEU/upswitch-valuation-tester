@@ -7,7 +7,7 @@
 
 import { useCallback, useMemo } from 'react'
 import { MessageManager } from '../../utils/chat/MessageManager'
-import { Message } from '../useStreamingChatState'
+import type { Message } from '../../types/message'
 
 export interface UseMessageManagementOptions {
   sessionId: string

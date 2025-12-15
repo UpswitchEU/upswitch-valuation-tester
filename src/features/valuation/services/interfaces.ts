@@ -5,7 +5,7 @@
  * Components depend on these abstractions, not concrete implementations.
  */
 
-import { Message } from '../../../hooks/useStreamingChatState'
+import type { Message } from '../../../types/message'
 import { ValuationRequest, ValuationResponse, ValuationSession } from '../../../types/valuation'
 
 // Core domain types

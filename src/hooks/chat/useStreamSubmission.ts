@@ -13,7 +13,7 @@ import { StreamingManager } from '../../services/chat/StreamingManager'
 import { MessageManager } from '../../utils/chat/MessageManager'
 import { chatLogger } from '../../utils/logger'
 import { InputValidator } from '../../utils/validation/InputValidator'
-import { Message } from '../useStreamingChatState'
+import type { Message } from '../../types/message'
 
 export interface UseStreamSubmissionOptions {
   sessionId: string

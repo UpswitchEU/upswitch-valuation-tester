@@ -6,7 +6,7 @@
  */
 
 import { BUSINESS_TYPES_FALLBACK, BusinessTypeOption } from '../../config/businessTypes'
-import { Message } from '../../hooks/useStreamingChatState'
+import type { Message } from '../../types/message'
 import { chatLogger } from '../../utils/logger'
 import { useConversationStore } from '../../store/useConversationStore'
 import type { StreamEvent } from './streamingChatService'

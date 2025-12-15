@@ -6,7 +6,7 @@
  */
 
 import { useMemo } from 'react'
-import { Message } from '../useStreamingChatState'
+import type { Message } from '../../types/message'
 
 export interface UseSmartSuggestionsOptions {
   messages: Message[]

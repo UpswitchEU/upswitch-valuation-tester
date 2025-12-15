@@ -9,7 +9,7 @@
 
 import { AnimatePresence } from 'framer-motion'
 import React from 'react'
-import { Message } from '../../hooks/useStreamingChatState'
+import type { Message } from '../../types/message'
 import { TypingIndicator } from '../TypingIndicator'
 import { MessageItem } from './MessageItem'
 

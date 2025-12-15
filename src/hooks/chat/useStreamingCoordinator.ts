@@ -25,7 +25,7 @@ import {
 import { convertToApplicationError, getErrorMessage } from '../../utils/errors/errorConverter'
 import { isNetworkError, isTimeoutError } from '../../utils/errors/errorGuards'
 import { chatLogger } from '../../utils/logger'
-import type { Message } from '../useStreamingChatState'
+import type { Message } from '../../types/message'
 import { useConversationStore } from '../../store/useConversationStore'
 import { useValuationSessionStore } from '../../store/useValuationSessionStore'
 

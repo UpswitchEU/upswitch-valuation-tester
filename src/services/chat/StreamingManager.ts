@@ -10,7 +10,7 @@
  * - Cleanup method for component unmount
  */
 
-import { Message } from '../../hooks/useStreamingChatState'
+import type { Message } from '../../types/message'
 import { debugLogger } from '../../utils/debugLogger'
 import { chatLogger } from '../../utils/logger'
 import { streamingChatService } from './streamingChatService'

@@ -8,7 +8,7 @@
  */
 
 import { useMemo } from 'react'
-import { Message } from '../useStreamingChatState'
+import type { Message } from '../../types/message'
 
 /**
  * Hook for generating smart follow-up suggestions
