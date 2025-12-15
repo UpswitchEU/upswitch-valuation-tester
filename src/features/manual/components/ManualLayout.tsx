@@ -13,6 +13,7 @@ import { ValuationForm } from '../../../components/ValuationForm'
 import { ValuationToolbar } from '../../../components/ValuationToolbar'
 import { useAuth } from '../../../hooks/useAuth'
 import { useSessionRestoration } from '../../../hooks/useSessionRestoration'
+import { useToast } from '../../../hooks/useToast'
 import {
   useValuationToolbarFullscreen,
   useValuationToolbarTabs,
@@ -57,6 +58,7 @@ export const ManualLayout: React.FC<ManualLayoutProps> = ({
   const { isCalculating, error } = useValuationApiStore()
   const { result, setResult } = useValuationResultsStore()
   const { isSaving, lastSaved, hasUnsavedChanges, syncError } = useValuationSessionStore()
+  const { showToast } = useToast()
 
   // CRITICAL: Automatically restore form data and results from session
   // This ensures smooth repopulation on reload/revisit
@@ -81,6 +83,21 @@ export const ManualLayout: React.FC<ManualLayoutProps> = ({
       onComplete(result)
     }
   }, [result, onComplete])
+
+  // Show success toast when save completes
+  useEffect(() => {
+    if (lastSaved && !isSaving && !syncError) {
+      const timeAgo = Math.floor((Date.now() - lastSaved.getTime()) / 1000)
+      // Only show toast for recent saves (within last 2 seconds)
+      if (timeAgo < 2) {
+        showToast(
+          'Valuation report saved successfully! All data has been persisted.',
+          'success',
+          4000
+        )
+      }
+    }
+  }, [lastSaved, isSaving, syncError, showToast])
 
   return (
     <div className="flex flex-col h-full overflow-hidden">

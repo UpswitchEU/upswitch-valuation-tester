@@ -133,59 +133,46 @@ export const useValuationFormSubmission = (
 
       // CRITICAL: Sync all form data to session IMMEDIATELY before calculation
       // This ensures all data is saved even if calculation fails or user navigates away
-      // We do this BEFORE building the request to ensure latest form data is captured
-      const { syncFromManualForm, updateSessionData } = useValuationSessionStore.getState()
+      const { updateSessionData } = useValuationSessionStore.getState()
       try {
-        // First try syncFromManualForm (reads from form store)
-        await syncFromManualForm()
+        // Convert formData to session format and update directly
+        const sessionUpdate: Partial<any> = {
+          company_name: formData.company_name,
+          country_code: formData.country_code,
+          industry: formData.industry,
+          business_model: formData.business_model,
+          founding_year: formData.founding_year,
+          current_year_data: {
+            year: formData.current_year_data?.year || new Date().getFullYear(),
+            revenue: formData.revenue || formData.current_year_data?.revenue || 0,
+            ebitda: formData.ebitda || formData.current_year_data?.ebitda || 0,
+            ...(formData.current_year_data?.total_assets && {
+              total_assets: formData.current_year_data.total_assets,
+            }),
+            ...(formData.current_year_data?.total_debt && {
+              total_debt: formData.current_year_data.total_debt,
+            }),
+            ...(formData.current_year_data?.cash && { cash: formData.current_year_data.cash }),
+          },
+          historical_years_data: formData.historical_years_data,
+          number_of_employees: formData.number_of_employees,
+          number_of_owners: formData.number_of_owners,
+          recurring_revenue_percentage: formData.recurring_revenue_percentage,
+          comparables: formData.comparables,
+          business_type_id: formData.business_type_id,
+          business_type: formData.business_type,
+          shares_for_sale: formData.shares_for_sale,
+          business_context: formData.business_context,
+        }
+        await updateSessionData(sessionUpdate)
         generalLogger.info('Form data synced to session before calculation', {
           reportId: session?.reportId,
         })
       } catch (syncError) {
-        // Fallback: Directly update session with current formData
-        generalLogger.warn('syncFromManualForm failed, trying direct update', {
+        generalLogger.warn('Failed to sync form data before calculation, continuing anyway', {
           error: syncError instanceof Error ? syncError.message : String(syncError),
         })
-        try {
-          // Convert formData to session format and update directly
-          const sessionUpdate: Partial<any> = {
-            company_name: formData.company_name,
-            country_code: formData.country_code,
-            industry: formData.industry,
-            business_model: formData.business_model,
-            founding_year: formData.founding_year,
-            current_year_data: {
-              year: formData.current_year_data?.year || new Date().getFullYear(),
-              revenue: formData.revenue || formData.current_year_data?.revenue || 0,
-              ebitda: formData.ebitda || formData.current_year_data?.ebitda || 0,
-              ...(formData.current_year_data?.total_assets && {
-                total_assets: formData.current_year_data.total_assets,
-              }),
-              ...(formData.current_year_data?.total_debt && {
-                total_debt: formData.current_year_data.total_debt,
-              }),
-              ...(formData.current_year_data?.cash && { cash: formData.current_year_data.cash }),
-            },
-            historical_years_data: formData.historical_years_data,
-            number_of_employees: formData.number_of_employees,
-            number_of_owners: formData.number_of_owners,
-            recurring_revenue_percentage: formData.recurring_revenue_percentage,
-            comparables: formData.comparables,
-            business_type_id: formData.business_type_id,
-            business_type: formData.business_type,
-            shares_for_sale: formData.shares_for_sale,
-            business_context: formData.business_context,
-          }
-          await updateSessionData(sessionUpdate)
-          generalLogger.info('Form data synced via direct update before calculation', {
-            reportId: session?.reportId,
-          })
-        } catch (directUpdateError) {
-          generalLogger.warn('Failed to sync form data before calculation, continuing anyway', {
-            error: directUpdateError instanceof Error ? directUpdateError.message : String(directUpdateError),
-          })
-          // Continue with calculation even if sync fails - data will be saved after calculation
-        }
+        // Continue with calculation even if sync fails - data will be saved after calculation
       }
 
       // Convert formData to DataResponse[] for unified pipeline

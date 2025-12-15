@@ -17,6 +17,7 @@ import { useConversationalToolbar } from '../../../hooks/useConversationalToolba
 import { usePanelResize } from '../../../hooks/usePanelResize'
 import { useReportIdTracking } from '../../../hooks/useReportIdTracking'
 import { useSessionRestoration } from '../../../hooks/useSessionRestoration'
+import { useToast } from '../../../hooks/useToast'
 import { conversationAPI } from '../../../services/api/conversation/ConversationAPI'
 import { guestCreditService } from '../../../services/guestCreditService'
 import { useValuationApiStore } from '../../../store/useValuationApiStore'
@@ -72,6 +73,7 @@ const ConversationalLayoutInner: React.FC<ConversationalLayoutProps> = ({
   const { user } = useAuth()
   const state = useConversationState()
   const actions = useConversationActions()
+  const { showToast } = useToast()
 
   // Use split stores instead of monolithic useValuationStore
   const { setCollectedData } = useValuationFormStore()
@@ -91,6 +93,21 @@ const ConversationalLayoutInner: React.FC<ConversationalLayoutProps> = ({
       useValuationSessionStore.setState({ hasUnsavedChanges: true })
     }
   }, [state.messages.length])
+
+  // Show success toast when save completes
+  useEffect(() => {
+    if (lastSaved && !isSaving && !syncError) {
+      const timeAgo = Math.floor((Date.now() - lastSaved.getTime()) / 1000)
+      // Only show toast for recent saves (within last 2 seconds)
+      if (timeAgo < 2) {
+        showToast(
+          'Valuation report saved successfully! All data has been persisted.',
+          'success',
+          4000
+        )
+      }
+    }
+  }, [lastSaved, isSaving, syncError, showToast])
 
   // Restore conversation from Python backend
   // FIX: Use refs to stabilize callbacks and prevent infinite loops
