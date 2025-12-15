@@ -96,7 +96,7 @@ const ValuationFlow = lazy(() =>
  * @author UpSwitch UI Team
  */
 export const ValuationFlowSelector: React.FC<ValuationFlowSelectorProps> = React.memo(
-  ({ session, stage, error, prefilledQuery, autoSend, onComplete }) => {
+  ({ session, stage, error, prefilledQuery, autoSend, onComplete, initialMode, initialVersion }) => {
     // Memoize flow type calculation
     const flowType = useMemo(() => {
       return session?.currentView === 'manual' ? 'manual' : 'conversational'
@@ -164,6 +164,8 @@ export const ValuationFlowSelector: React.FC<ValuationFlowSelectorProps> = React
                 onComplete={onComplete}
                 initialQuery={prefilledQuery}
                 autoSend={autoSend}
+                initialMode={initialMode}
+                initialVersion={initialVersion}
               />
             </Suspense>
           </div>

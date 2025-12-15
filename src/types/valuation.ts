@@ -1128,6 +1128,10 @@ export interface ValuationToolbarProps {
   onTabChange?: (tab: 'preview' | 'source' | 'info' | 'history') => void
   companyName?: string
   valuationMethod?: string
+  // M&A Workflow: Version management
+  versions?: import('./ValuationVersion').ValuationVersion[]
+  activeVersion?: number
+  onVersionSelect?: (versionNumber: number) => void
 }
 
 // NEW: Dual format display type

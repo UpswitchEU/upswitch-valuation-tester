@@ -409,3 +409,4 @@ Incident 2 (2025-12-13 18:45:00):
 **Export Format**: JSON (for external analysis)  
 **Retention**: 30 days rolling window  
 **Next Review**: December 20, 2025
+

@@ -21,6 +21,7 @@ import type { BusinessType } from '../../services/businessTypesApi'
 import { useValuationApiStore } from '../../store/useValuationApiStore'
 import { useValuationFormStore } from '../../store/useValuationFormStore'
 import { useValuationSessionStore } from '../../store/useValuationSessionStore'
+import { useVersionHistoryStore } from '../../store/useVersionHistoryStore'
 import { debounce } from '../../utils/debounce'
 import { generalLogger } from '../../utils/logger'
 import { useValuationFormSubmission } from './hooks/useValuationFormSubmission'
@@ -58,6 +59,31 @@ export const ValuationForm: React.FC<ValuationFormProps> = ({
   const { error, clearError } = useValuationApiStore()
   const { businessTypes } = useBusinessTypes()
   const { businessCard, isAuthenticated } = useAuth()
+  const { getVersion } = useVersionHistoryStore()
+  
+  // Load version data if initialVersion is provided (M&A workflow)
+  useEffect(() => {
+    if (initialVersion && session?.reportId) {
+      try {
+        const version = getVersion(session.reportId, initialVersion)
+        if (version?.formData) {
+          generalLogger.info('Loading version data into form', {
+            reportId: session.reportId,
+            versionNumber: initialVersion,
+          })
+          // Convert version formData to form store format
+          // This will pre-fill the form with the version's data
+          updateFormData(version.formData as any)
+        }
+      } catch (error) {
+        generalLogger.warn('Failed to load version data', {
+          reportId: session.reportId,
+          versionNumber: initialVersion,
+          error,
+        })
+      }
+    }
+  }, [initialVersion, session?.reportId, getVersion, updateFormData])
 
   // Local state for historical data inputs
   const [historicalInputs, setHistoricalInputs] = useState<{ [key: string]: string }>({})
@@ -364,6 +390,7 @@ export const ValuationForm: React.FC<ValuationFormProps> = ({
         error={error}
         clearError={clearError}
         formData={formData}
+        isRegenerationMode={isRegenerationMode}
       />
     </form>
   )

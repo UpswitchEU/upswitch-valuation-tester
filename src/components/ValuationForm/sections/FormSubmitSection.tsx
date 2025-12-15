@@ -15,6 +15,8 @@ interface FormSubmitSectionProps {
   error: string | null
   clearError: () => void
   formData: ValuationFormData
+  /** Whether form is in regeneration mode (shows "Regenerate" instead of "Calculate") */
+  isRegenerationMode?: boolean
 }
 
 /**
@@ -59,7 +61,7 @@ export const FormSubmitSection: React.FC<FormSubmitSectionProps> = ({
             </>
           ) : (
             <>
-              <span>Calculate Valuation</span>
+              <span>{isRegenerationMode ? 'Regenerate Valuation' : 'Calculate Valuation'}</span>
               <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path
                   strokeLinecap="round"

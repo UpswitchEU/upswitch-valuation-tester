@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import { backendAPI } from '../services/backendApi';
 import type { ValuationFormData, ValuationRequest, ValuationSession } from '../types/valuation';
 import { sessionCircuitBreaker } from '../utils/circuitBreaker';
-import { createCorrelationId, CorrelationPrefixes } from '../utils/correlationId';
+import { CorrelationPrefixes, createCorrelationId } from '../utils/correlationId';
 import { extractErrorMessage, is409Conflict } from '../utils/errorDetection';
 import { storeLogger } from '../utils/logger';
 import { globalSessionMetrics } from '../utils/metrics/sessionMetrics';

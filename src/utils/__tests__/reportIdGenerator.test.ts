@@ -4,10 +4,10 @@
 
 import { describe, expect, it } from 'vitest'
 import {
-  generateReportId,
-  generateReportName,
-  getReportTimestamp,
-  isValidReportId,
+    generateReportId,
+    generateReportName,
+    getReportTimestamp,
+    isValidReportId,
 } from '../reportIdGenerator'
 
 describe('reportIdGenerator', () => {

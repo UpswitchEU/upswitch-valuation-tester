@@ -35,6 +35,10 @@ interface ManualLayoutProps {
   reportId: string
   /** Callback when manual valuation completes */
   onComplete: (result: ValuationResponse) => void
+  /** Initial version to load (M&A workflow) */
+  initialVersion?: number
+  /** Initial mode (edit/view) */
+  initialMode?: 'edit' | 'view'
 }
 
 /**
@@ -51,6 +55,7 @@ export const ManualLayout: React.FC<ManualLayoutProps> = ({
   const { user } = useAuth()
   const { isCalculating } = useValuationApiStore()
   const { result, setResult } = useValuationResultsStore()
+  const { isSaving, lastSaved, hasUnsavedChanges, syncError } = useValuationSessionStore()
 
   // Panel width state - load from localStorage or use default (30% matches pre-merge UI)
   const [leftPanelWidth, setLeftPanelWidth] = useState(() => {
@@ -173,19 +178,23 @@ export const ManualLayout: React.FC<ManualLayoutProps> = ({
 
   return (
     <div className="flex flex-col h-full overflow-hidden">
-      {/* Toolbar */}
-      <ValuationToolbar
-        onRefresh={handleRefresh}
-        onDownload={handleDownload}
-        onFullScreen={handleHookOpenFullscreen}
-        isGenerating={isCalculating || isDownloading}
-        user={user}
-        valuationName="Valuation"
-        valuationId={result?.valuation_id}
-        activeTab={activeTab}
-        onTabChange={handleHookTabChange}
-        companyName={result?.company_name}
-      />
+      {/* Toolbar (Save Status integrated inside toolbar) */}
+        <ValuationToolbar
+          onRefresh={handleRefresh}
+          onDownload={handleDownload}
+          onFullScreen={handleHookOpenFullscreen}
+          isGenerating={isCalculating || isDownloading}
+          user={user}
+          valuationName="Valuation"
+          valuationId={result?.valuation_id}
+          activeTab={activeTab}
+          onTabChange={(tab) => {
+            if (tab !== 'history') {
+              handleHookTabChange(tab as 'preview' | 'source' | 'info')
+            }
+          }}
+          companyName={result?.company_name}
+        />
 
       {/* Split Panel */}
       <div
@@ -203,7 +212,10 @@ export const ManualLayout: React.FC<ManualLayoutProps> = ({
         >
           <div className="flex-1 p-6">
             {/* ValuationForm - Main form inputs */}
-            <ValuationForm />
+            <ValuationForm 
+              initialVersion={initialVersion}
+              isRegenerationMode={initialMode === 'edit' && !!initialVersion}
+            />
           </div>
         </div>
 
@@ -223,7 +235,11 @@ export const ManualLayout: React.FC<ManualLayoutProps> = ({
         >
           <ReportPanel 
             activeTab={activeTab as 'preview' | 'source' | 'info'} 
-            onTabChange={handleHookTabChange} 
+            onTabChange={(tab) => {
+              if (tab !== 'history') {
+                handleHookTabChange(tab as 'preview' | 'source' | 'info')
+              }
+            }} 
           />
         </div>
       </div>

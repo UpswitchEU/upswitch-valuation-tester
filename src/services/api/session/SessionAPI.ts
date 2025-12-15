@@ -40,8 +40,14 @@ export class SessionAPI extends HttpClient {
       )
 
       // Map backend 'ai-guided' to frontend 'conversational'
-      if (response && response.session && (response.session.currentView as string) === 'ai-guided') {
-        response.session.currentView = 'conversational'
+      if (response && response.session) {
+        if ((response.session.currentView as string) === 'ai-guided') {
+          response.session.currentView = 'conversational'
+        }
+        // Map dataSource: 'ai-guided' → 'conversational'
+        if ((response.session as any).dataSource === 'ai-guided') {
+          (response.session as any).dataSource = 'conversational'
+        }
       }
 
       return response
@@ -58,16 +64,36 @@ export class SessionAPI extends HttpClient {
 
   /**
    * Create new valuation session
+   * 
+   * Handles both CreateValuationSessionRequest and ValuationSession types.
+   * Maps frontend 'conversational' to backend 'ai-guided' for both currentView and dataSource.
    */
   async createValuationSession(
-    session: CreateValuationSessionRequest,
+    session: CreateValuationSessionRequest | any,
     options?: APIRequestConfig
   ): Promise<CreateValuationSessionResponse> {
     try {
+      // Handle both CreateValuationSessionRequest and ValuationSession types
+      const sessionAny = session as any
+      
       // Map frontend 'conversational' to backend 'ai-guided'
+      const mappedCurrentView = session.currentView === 'conversational' ? 'ai-guided' : session.currentView
+      
+      // Map dataSource: 'conversational' → 'ai-guided'
+      // If dataSource exists, map it; otherwise derive from currentView
+      const mappedDataSource = sessionAny.dataSource === 'conversational' 
+        ? 'ai-guided' 
+        : (sessionAny.dataSource || (session.currentView === 'conversational' ? 'ai-guided' : 'manual'))
+      
       const backendSession = {
-        ...session,
-        currentView: session.currentView === 'conversational' ? 'ai-guided' : session.currentView,
+        // Include sessionId if present (required by backend)
+        ...(sessionAny.sessionId && { sessionId: sessionAny.sessionId }),
+        reportId: session.reportId,
+        currentView: mappedCurrentView,
+        dataSource: mappedDataSource,
+        // Include sessionData and partialData if present
+        ...(sessionAny.sessionData && { sessionData: sessionAny.sessionData }),
+        ...(sessionAny.partialData && { partialData: sessionAny.partialData }),
       }
 
       // Backend endpoint: /api/valuation-sessions (POST)
@@ -86,8 +112,14 @@ export class SessionAPI extends HttpClient {
       const sessionData = response.data
 
       // Map backend 'ai-guided' to frontend 'conversational'
-      if (sessionData && (sessionData.currentView as string) === 'ai-guided') {
-        sessionData.currentView = 'conversational'
+      if (sessionData) {
+        if ((sessionData.currentView as string) === 'ai-guided') {
+          sessionData.currentView = 'conversational'
+        }
+        // Map dataSource: 'ai-guided' → 'conversational'
+        if (sessionData.dataSource === 'ai-guided') {
+          sessionData.dataSource = 'conversational'
+        }
       }
 
       return {
@@ -111,11 +143,21 @@ export class SessionAPI extends HttpClient {
   ): Promise<UpdateValuationSessionResponse> {
     try {
       // Map frontend 'conversational' to backend 'ai-guided'
+      const updatesAny = updates.updates as any
+      const mappedCurrentView = updates.updates?.currentView === 'conversational' ? 'ai-guided' : updates.updates?.currentView
+      
+      // Map dataSource: 'conversational' → 'ai-guided' (if present in updates)
+      const mappedDataSource = updatesAny?.dataSource === 'conversational'
+        ? 'ai-guided'
+        : updatesAny?.dataSource
+      
       const backendUpdates = {
         ...updates,
         updates: {
           ...updates.updates,
-          currentView: updates.updates?.currentView === 'conversational' ? 'ai-guided' : updates.updates?.currentView,
+          currentView: mappedCurrentView,
+          // Include mapped dataSource if it was provided in updates
+          ...(updatesAny?.dataSource !== undefined && { dataSource: mappedDataSource }),
         },
       }
 
@@ -135,8 +177,14 @@ export class SessionAPI extends HttpClient {
       const sessionData = response.data
 
       // Map backend 'ai-guided' to frontend 'conversational'
-      if (sessionData && (sessionData.currentView as string) === 'ai-guided') {
-        sessionData.currentView = 'conversational'
+      if (sessionData) {
+        if ((sessionData.currentView as string) === 'ai-guided') {
+          sessionData.currentView = 'conversational'
+        }
+        // Map dataSource: 'ai-guided' → 'conversational'
+        if (sessionData.dataSource === 'ai-guided') {
+          sessionData.dataSource = 'conversational'
+        }
       }
 
       return {

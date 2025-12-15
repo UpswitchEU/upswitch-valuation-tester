@@ -9,11 +9,13 @@
 
 import { Edit3 } from 'lucide-react'
 import React, { Suspense, useContext, useState } from 'react'
+import { AuditLogPanel } from '../../../components/AuditLogPanel'
 import { HTMLView } from '../../../components/HTMLView'
 import { LoadingState } from '../../../components/LoadingState'
 import { GENERATION_STEPS } from '../../../components/LoadingState.constants'
 import { Results } from '../../../components/results'
 import { ValuationInfoPanel } from '../../../components/ValuationInfoPanel'
+import { useValuationSessionStore } from '../../../store/useValuationSessionStore'
 import { useValuationApiStore } from '../../../store/useValuationApiStore'
 import { useValuationResultsStore } from '../../../store/useValuationResultsStore'
 import { ConversationContext } from '../context/ConversationContext'
@@ -35,8 +37,8 @@ const useOptionalConversationState = () => {
  */
 export interface ReportPanelProps {
   className?: string
-  activeTab?: 'preview' | 'source' | 'info'
-  onTabChange?: (tab: 'preview' | 'source' | 'info') => void
+  activeTab?: 'preview' | 'source' | 'info' | 'history'
+  onTabChange?: (tab: 'preview' | 'source' | 'info' | 'history') => void
 }
 
 /**
@@ -105,7 +107,7 @@ export const ReportPanel: React.FC<ReportPanelProps> = ({
   onTabChange: externalOnTabChange,
 }) => {
   // Internal tab state (used if external props not provided)
-  const [internalActiveTab, setInternalActiveTab] = useState<'preview' | 'source' | 'info'>('preview')
+  const [internalActiveTab, setInternalActiveTab] = useState<'preview' | 'source' | 'info' | 'history'>('preview')
 
   // Use external tab state if provided, otherwise use internal
   const activeTab = externalActiveTab ?? internalActiveTab
@@ -115,6 +117,7 @@ export const ReportPanel: React.FC<ReportPanelProps> = ({
   const { result } = useValuationResultsStore()
   const { isCalculating } = useValuationApiStore()
   const conversationState = useOptionalConversationState()
+  const { session } = useValuationSessionStore()
 
   // Determine if generating (from API store or conversation context)
   const isGenerating = isCalculating || conversationState.isGenerating
@@ -157,6 +160,25 @@ export const ReportPanel: React.FC<ReportPanelProps> = ({
               </Suspense>
             ) : (
               <EmptyStateWithEdit3Icon />
+            )}
+          </div>
+        )}
+
+        {/* History Tab (M&A Workflow - Audit Trail) */}
+        {activeTab === 'history' && (
+          <div className="h-full">
+            {session?.reportId ? (
+              <AuditLogPanel reportId={session.reportId} countryCode={session.partialData?.country_code || 'BE'} />
+            ) : (
+              <div className="flex flex-col items-center justify-center h-full p-8 text-center bg-canvas">
+                <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-gray-200 flex items-center justify-center mb-3 sm:mb-4">
+                  <Edit3 className="w-6 h-6 sm:w-8 sm:h-8 text-primary-500" />
+                </div>
+                <h3 className="mt-4 text-lg font-semibold text-slate-ink">No audit trail available</h3>
+                <p className="mt-2 text-sm text-gray-600 max-w-sm leading-relaxed">
+                  Start a valuation to see change history and audit logs
+                </p>
+              </div>
             )}
           </div>
         )}

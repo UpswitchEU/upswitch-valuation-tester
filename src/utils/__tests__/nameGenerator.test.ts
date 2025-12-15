@@ -2,7 +2,7 @@
  * Unit tests for NameGenerator utility
  */
 
-import { describe, expect, it, vi, beforeEach } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { NameGenerator } from '../nameGenerator'
 
 describe('NameGenerator', () => {

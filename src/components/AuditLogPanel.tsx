@@ -11,9 +11,9 @@
 
 import { Calendar, Edit3, RefreshCw, Save, User } from 'lucide-react'
 import React, { useMemo, useState } from 'react'
-import type { SessionAuditEntry } from '../utils/sessionAuditTrail'
-import { valuationAuditService } from '../services/audit/ValuationAuditService'
 import { formatCurrency } from '../config/countries'
+import { valuationAuditService } from '../services/audit/ValuationAuditService'
+import type { SessionAuditEntry } from '../utils/sessionAuditTrail'
 
 export interface AuditLogPanelProps {
   reportId: string
@@ -352,3 +352,4 @@ export function AuditLogEmpty() {
     </div>
   )
 }
+

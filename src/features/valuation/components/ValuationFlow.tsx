@@ -25,6 +25,10 @@ interface ValuationFlowProps {
   initialQuery?: string | null
   /** Whether to automatically send initial query */
   autoSend?: boolean
+  /** Initial mode for M&A workflow (edit/view) */
+  initialMode?: 'edit' | 'view'
+  /** Initial version number to load */
+  initialVersion?: number
 }
 
 // Lazy load flow components
@@ -52,6 +56,8 @@ export const ValuationFlow: React.FC<ValuationFlowProps> = ({
   onComplete,
   initialQuery,
   autoSend = false,
+  initialMode,
+  initialVersion,
 }) => {
   if (flowType === 'conversational') {
     return (
@@ -61,6 +67,8 @@ export const ValuationFlow: React.FC<ValuationFlowProps> = ({
           onComplete={onComplete}
           initialQuery={initialQuery}
           autoSend={autoSend}
+          initialVersion={initialVersion}
+          initialMode={initialMode}
         />
       </Suspense>
     )
@@ -72,6 +80,8 @@ export const ValuationFlow: React.FC<ValuationFlowProps> = ({
       <ManualLayout
         reportId={reportId}
         onComplete={onComplete}
+        initialVersion={initialVersion}
+        initialMode={initialMode}
       />
     </Suspense>
   )

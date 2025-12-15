@@ -4,14 +4,14 @@
  * @module utils/__tests__/errorDetection.test
  */
 
-import { describe, it, expect } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import {
-  is409Conflict,
-  is404NotFound,
-  is401Unauthorized,
-  is429RateLimit,
-  extractErrorMessage,
-  extractStatusCode,
+    extractErrorMessage,
+    extractStatusCode,
+    is401Unauthorized,
+    is404NotFound,
+    is409Conflict,
+    is429RateLimit,
 } from '../errorDetection'
 
 describe('errorDetection', () => {

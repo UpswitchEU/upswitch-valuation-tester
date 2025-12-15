@@ -571,3 +571,4 @@ describe('Homepage → Existing Report flow', () => {
 ---
 
 **Next Steps**: Implement Fix 1, 2, 3 now.
+

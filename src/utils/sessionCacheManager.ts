@@ -355,3 +355,4 @@ export class SessionCacheManager {
 
 // Singleton instance
 export const globalSessionCache = SessionCacheManager.getInstance()
+

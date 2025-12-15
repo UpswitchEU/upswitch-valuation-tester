@@ -289,3 +289,4 @@ export function generateAutoLabel(versionNumber: number, changes: VersionChanges
 
   return `v${versionNumber} - ${changes.totalChanges} changes`
 }
+

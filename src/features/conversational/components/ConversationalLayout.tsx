@@ -20,6 +20,7 @@ import { guestCreditService } from '../../../services/guestCreditService'
 import { useValuationApiStore } from '../../../store/useValuationApiStore'
 import { useValuationFormStore } from '../../../store/useValuationFormStore'
 import { useValuationResultsStore } from '../../../store/useValuationResultsStore'
+import { useValuationSessionStore } from '../../../store/useValuationSessionStore'
 import type { ValuationResponse } from '../../../types/valuation'
 import { chatLogger } from '../../../utils/logger'
 import { CreditGuard } from '../../auth/components/CreditGuard'
@@ -41,6 +42,10 @@ interface ConversationalLayoutProps {
   initialQuery?: string | null
   /** Whether to automatically send the initial query */
   autoSend?: boolean
+  /** Initial version to load (M&A workflow) */
+  initialVersion?: number
+  /** Initial mode (edit/view) */
+  initialMode?: 'edit' | 'view'
 }
 
 /**
@@ -51,6 +56,8 @@ const ConversationalLayoutInner: React.FC<ConversationalLayoutProps> = ({
   onComplete,
   initialQuery = null,
   autoSend = false,
+  initialVersion,
+  initialMode = 'edit',
 }) => {
   const { user } = useAuth()
   const state = useConversationState()
@@ -60,6 +67,7 @@ const ConversationalLayoutInner: React.FC<ConversationalLayoutProps> = ({
   const { setCollectedData } = useValuationFormStore()
   const { isCalculating } = useValuationApiStore()
   const { result, setResult } = useValuationResultsStore()
+  const { isSaving, lastSaved, hasUnsavedChanges, syncError } = useValuationSessionStore()
 
   // Restore conversation from Python backend
   // FIX: Use refs to stabilize callbacks and prevent infinite loops
@@ -229,7 +237,7 @@ const ConversationalLayoutInner: React.FC<ConversationalLayoutProps> = ({
       }}
     >
       <div className="flex flex-col h-full overflow-hidden">
-        {/* Toolbar */}
+        {/* Toolbar (Save Status integrated inside toolbar) */}
         <ValuationToolbar
           onRefresh={toolbar.handleRefresh}
           onDownload={toolbar.handleDownload}

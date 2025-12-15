@@ -9,11 +9,15 @@
 
 import React, { useCallback } from 'react'
 import { StreamingChat } from '../../../components/StreamingChat'
+import { valuationAuditService } from '../../../services/audit/ValuationAuditService'
 import { useValuationFormStore } from '../../../store/useValuationFormStore'
 import { useValuationResultsStore } from '../../../store/useValuationResultsStore'
+import { useValuationSessionStore } from '../../../store/useValuationSessionStore'
+import { useVersionHistoryStore } from '../../../store/useVersionHistoryStore'
 import type { Message } from '../../../types/message'
 import type { ValuationResponse } from '../../../types/valuation'
 import { chatLogger } from '../../../utils/logger'
+import { areChangesSignificant, detectVersionChanges, generateAutoLabel } from '../../../utils/versionDiffDetection'
 import { ComponentErrorBoundary } from '../../shared/components/ErrorBoundary'
 import { useConversationActions, useConversationState } from '../context/ConversationContext'
 
@@ -119,8 +123,11 @@ export const ConversationPanel: React.FC<ConversationPanelProps> = ({
 
   // Handle valuation complete - sync to context and results store
   const { setResult } = useValuationResultsStore()
+  const { session } = useValuationSessionStore()
+  const { createVersion, getLatestVersion } = useVersionHistoryStore()
+  
   const handleValuationComplete = useCallback(
-    (result: ValuationResponse) => {
+    async (result: ValuationResponse) => {
       chatLogger.info('ConversationPanel: Valuation complete', {
         valuationId: result.valuation_id,
       })
@@ -132,10 +139,73 @@ export const ConversationPanel: React.FC<ConversationPanelProps> = ({
       // Sync to results store (same as manual flow)
       setResult(result)
 
+      // M&A Workflow: Create new version if this is a regeneration (conversational flow)
+      const reportId = session?.reportId
+      if (reportId) {
+        try {
+          const previousVersion = getLatestVersion(reportId)
+          
+          // Convert result to ValuationRequest format for comparison
+          const newFormData = {
+            company_name: result.company_name,
+            industry: result.industry,
+            revenue: result.revenue,
+            ebitda: result.ebitda,
+            country_code: result.country_code,
+            // Map other fields from result to formData structure
+          } as any
+          
+          if (previousVersion) {
+            const changes = detectVersionChanges(previousVersion.formData, newFormData)
+            
+            if (areChangesSignificant(changes)) {
+              const newVersion = await createVersion({
+                reportId,
+                formData: newFormData,
+                valuationResult: result,
+                htmlReport: result.html_report || undefined,
+                changesSummary: changes,
+                versionLabel: generateAutoLabel(previousVersion.versionNumber + 1, changes),
+              })
+
+              chatLogger.info('New version created on conversational valuation', {
+                reportId,
+                versionNumber: newVersion.versionNumber,
+                versionLabel: newVersion.versionLabel,
+              })
+
+              // Log regeneration to audit trail
+              valuationAuditService.logRegeneration(
+                reportId,
+                newVersion.versionNumber,
+                changes,
+                undefined // Duration not tracked in conversational flow
+              )
+            }
+          } else {
+            // First version - create it
+            await createVersion({
+              reportId,
+              formData: newFormData,
+              valuationResult: result,
+              htmlReport: result.html_report || undefined,
+              changesSummary: { totalChanges: 0, significantChanges: [] },
+              versionLabel: 'v1 - Initial valuation',
+            })
+          }
+        } catch (versionError) {
+          // Don't fail the valuation if versioning fails
+          chatLogger.error('Failed to create version on conversational valuation', {
+            reportId,
+            error: versionError instanceof Error ? versionError.message : 'Unknown error',
+          })
+        }
+      }
+
       // Call parent callback
       onValuationComplete?.(result)
     },
-    [actions, onValuationComplete, setResult]
+    [actions, onValuationComplete, setResult, session, getLatestVersion, createVersion]
   )
 
   // Handle valuation start

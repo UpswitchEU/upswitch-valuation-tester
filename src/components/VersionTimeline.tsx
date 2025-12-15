@@ -269,26 +269,26 @@ export function CompactVersionSelector({
         value={activeVersion}
         onChange={(e) => onVersionSelect(parseInt(e.target.value))}
         className="
-          px-3 py-2 pr-8 rounded-lg border border-gray-300
-          bg-white text-gray-900 text-sm font-medium
-          focus:outline-none focus:ring-2 focus:ring-primary-500
-          cursor-pointer
+          px-2 py-1.5 pr-6 rounded-lg border border-zinc-700
+          bg-zinc-800 text-gray-200 text-xs font-medium
+          focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500
+          cursor-pointer hover:bg-zinc-750 transition-colors
           appearance-none
         "
+        title={`Select version (${versions.length} total)`}
       >
         {sortedVersions.map((version) => (
-          <option key={version.id} value={version.versionNumber}>
+          <option key={version.id} value={version.versionNumber} className="bg-zinc-800 text-gray-200">
             {version.versionLabel}
             {version.isPinned ? ' 📌' : ''}
-            {version.versionNumber === activeVersion ? ' (current)' : ''}
           </option>
         ))}
       </select>
 
       {/* Dropdown icon */}
-      <div className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none">
+      <div className="absolute right-1.5 top-1/2 -translate-y-1/2 pointer-events-none">
         <svg
-          className="w-4 h-4 text-gray-500"
+          className="w-3 h-3 text-gray-400"
           fill="none"
           stroke="currentColor"
           viewBox="0 0 24 24"
@@ -299,3 +299,4 @@ export function CompactVersionSelector({
     </div>
   )
 }
+

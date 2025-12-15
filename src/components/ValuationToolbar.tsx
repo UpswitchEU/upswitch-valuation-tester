@@ -1,14 +1,18 @@
 import {
+    AlertCircle,
+    Check,
     Code,
     Download,
     Edit3,
     Eye,
+    GitBranch,
     History,
     Info,
     Loader2,
     Maximize,
     MessageSquare,
     RefreshCw,
+    Save,
 } from 'lucide-react'
 import React from 'react'
 import {
@@ -21,6 +25,7 @@ import {
     useValuationToolbarTabs,
 } from '../hooks/valuationToolbar'
 import { useValuationSessionStore } from '../store/useValuationSessionStore'
+import { useVersionHistoryStore } from '../store/useVersionHistoryStore'
 import { ValuationToolbarProps } from '../types/valuation'
 import { FlowSwitchWarningModal } from './FlowSwitchWarningModal'
 import { UserDropdown } from './UserDropdown'
@@ -36,8 +41,64 @@ export const ValuationToolbar: React.FC<ValuationToolbarProps> = ({
   activeTab = 'preview',
   onTabChange,
   companyName,
+  versions,
+  activeVersion,
+  onVersionSelect,
 }) => {
-  const { session, pendingFlowSwitch } = useValuationSessionStore()
+  const { session, pendingFlowSwitch, isSaving, lastSaved, hasUnsavedChanges, syncError } = useValuationSessionStore()
+  const { versions: storeVersions, getActiveVersion, setActiveVersion, fetchVersions } = useVersionHistoryStore()
+  
+  // Use props if provided, otherwise use store
+  const displayVersions = versions || (session?.reportId ? storeVersions[session.reportId] || [] : [])
+  const storeActiveVersion = session?.reportId ? getActiveVersion(session.reportId) : null
+  const displayActiveVersion = activeVersion ?? storeActiveVersion?.versionNumber
+  
+  const handleVersionSelect = onVersionSelect || ((versionNumber: number) => {
+    if (session?.reportId) {
+      setActiveVersion(session.reportId, versionNumber)
+    }
+  })
+  
+  // Fetch versions if we have a reportId but no versions
+  React.useEffect(() => {
+    if (session?.reportId && !displayVersions.length) {
+      fetchVersions(session.reportId).catch(() => {
+        // Silently fail - versions are optional
+      })
+    }
+  }, [session?.reportId, displayVersions.length, fetchVersions])
+  
+  // Save status icon (minimalist - just icon with tooltip)
+  const getSaveStatusIcon = () => {
+    if (syncError) {
+      return <AlertCircle className="w-4 h-4 text-red-500" />
+    }
+    if (isSaving) {
+      return <Loader2 className="w-4 h-4 animate-spin text-blue-400" />
+    }
+    if (hasUnsavedChanges) {
+      return <Save className="w-4 h-4 text-amber-400" />
+    }
+    if (lastSaved) {
+      const timeAgo = Math.floor((Date.now() - lastSaved.getTime()) / 1000 / 60)
+      if (timeAgo < 1) return <Check className="w-4 h-4 text-green-500" />
+      return <Check className="w-4 h-4 text-green-500 opacity-70" />
+    }
+    return null
+  }
+  
+  const getSaveStatusTooltip = () => {
+    if (syncError) return 'Save failed - click to retry'
+    if (isSaving) return 'Saving...'
+    if (hasUnsavedChanges) return 'Unsaved changes'
+    if (lastSaved) {
+      const timeAgo = Math.floor((Date.now() - lastSaved.getTime()) / 1000 / 60)
+      if (timeAgo < 1) return 'Saved just now'
+      if (timeAgo < 60) return `Saved ${timeAgo}m ago`
+      return `Saved ${Math.floor(timeAgo / 60)}h ago`
+    }
+    return 'No changes'
+  }
 
   // Use focused hooks for business logic
   const {
@@ -108,7 +169,7 @@ export const ValuationToolbar: React.FC<ValuationToolbarProps> = ({
         <div className="relative max-w-full gap-1 flex w-full shrink-0 items-center">
           <div className="w-full overflow-visible whitespace-nowrap scrollbar-hide">
             <div className="relative flex w-full flex-shrink-0 items-center justify-between">
-              {/* Left Section - Valuation Name */}
+              {/* Left Section - Valuation Name + Save Status */}
               <div className="flex flex-shrink-0 items-center gap-2" style={{ width: '23%' }}>
                 <div className="relative flex items-center gap-2 group">
                   <div className="flex items-center gap-2 text-sm font-medium text-white">
@@ -146,9 +207,17 @@ export const ValuationToolbar: React.FC<ValuationToolbarProps> = ({
                     </button>
                   </div>
                   <div className="hidden md:block text-xs text-zinc-500 opacity-0 group-hover:opacity-100 transition-opacity">
-                    ✏️
+                    ??
                   </div>
                 </div>
+                {/* Save Status Icon (M&A Workflow) - Minimalist inline indicator */}
+                {getSaveStatusIcon() && (
+                  <Tooltip content={getSaveStatusTooltip()} position="bottom" className="">
+                    <div className="flex items-center justify-center p-1">
+                      {getSaveStatusIcon()}
+                    </div>
+                  </Tooltip>
+                )}
               </div>
 
               {/* Center Section - Action Buttons */}
@@ -189,6 +258,35 @@ export const ValuationToolbar: React.FC<ValuationToolbarProps> = ({
                   </button>
                 </Tooltip>
                 <div className="mx-2 h-6 w-px bg-zinc-700"></div>
+
+                {/* Version Selector (M&A Workflow) - Minimalist dropdown when versions exist */}
+                {displayVersions.length > 0 && (
+                  <Tooltip content={`Version ${displayActiveVersion || displayVersions[displayVersions.length - 1].versionNumber} of ${displayVersions.length}`} position="bottom" className="">
+                    <div className="relative">
+                      <select
+                        value={displayActiveVersion || displayVersions[displayVersions.length - 1].versionNumber}
+                        onChange={(e) => handleVersionSelect(parseInt(e.target.value))}
+                        className="
+                          px-2 py-1.5 pr-6 rounded-lg border border-zinc-700
+                          bg-zinc-800 text-gray-200 text-xs font-medium
+                          focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500
+                          cursor-pointer hover:bg-zinc-750 transition-colors
+                          appearance-none
+                        "
+                        title="Select version"
+                      >
+                        {displayVersions
+                          .sort((a, b) => b.versionNumber - a.versionNumber)
+                          .map((version) => (
+                            <option key={version.id} value={version.versionNumber} className="bg-zinc-800 text-gray-200">
+                              {version.versionLabel}
+                            </option>
+                          ))}
+                      </select>
+                      <GitBranch className="absolute right-1.5 top-1/2 -translate-y-1/2 w-3 h-3 text-gray-400 pointer-events-none" />
+                    </div>
+                  </Tooltip>
+                )}
 
                 <Tooltip content="Preview" position="bottom" className="">
                   <button

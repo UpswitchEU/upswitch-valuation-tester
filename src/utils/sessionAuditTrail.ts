@@ -327,3 +327,4 @@ export function logSessionOperation(
 ): SessionAuditEntry {
   return globalAuditTrail.log(entry)
 }
+

@@ -131,16 +131,9 @@ class BackendAPI {
   async createValuationSession(
     session: CreateValuationSessionRequest | ValuationSession
   ): Promise<CreateValuationSessionResponse> {
-    // Convert ValuationSession to CreateValuationSessionRequest if needed
-    const request: CreateValuationSessionRequest = 
-      'reportId' in session && 'currentView' in session
-        ? session as CreateValuationSessionRequest
-        : {
-            reportId: (session as any).reportId,
-            currentView: (session as any).currentView || 'manual',
-            initialData: (session as any).partialData,
-          }
-    return this.sessionAPI.createValuationSession(request)
+    // Pass session directly to SessionAPI - it handles both types
+    // SessionAPI will extract required fields and map 'conversational' → 'ai-guided'
+    return this.sessionAPI.createValuationSession(session as any)
   }
 
   async updateValuationSession(
