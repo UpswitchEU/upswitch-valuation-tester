@@ -126,8 +126,14 @@ export const useValuationFormSubmission = (
           calculationDuration: `${calculationDuration.toFixed(2)}ms`,
         })
         
-        // CRITICAL: Console.log for visibility
-        console.log(`[DIAGNOSTIC-FRONTEND] Before setResult: hasHtmlReport=${!!result.html_report}, htmlReportLength=${result.html_report?.length || 0}, hasInfoTabHtml=${!!result.info_tab_html}, infoTabHtmlLength=${result.info_tab_html?.length || 0}, resultKeys=${Object.keys(result).join(',')}`)
+        // Use structured logger instead of console.log to avoid "Object" spam
+        generalLogger.debug('Before setResult: checking html_report and info_tab_html', {
+          hasHtmlReport: !!result.html_report,
+          htmlReportLength: result.html_report?.length || 0,
+          hasInfoTabHtml: !!result.info_tab_html,
+          infoTabHtmlLength: result.info_tab_html?.length || 0,
+          resultKeys: Object.keys(result).join(','),
+        })
         
         // Warn if html_report is missing
         if (!result.html_report || result.html_report.trim().length === 0) {

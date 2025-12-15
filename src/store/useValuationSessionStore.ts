@@ -25,6 +25,7 @@ import {
 } from '../utils/sessionHelpers'
 import { validateSessionData } from '../utils/sessionValidation'
 import { verifySessionInBackground } from '../utils/sessionVerification'
+import { useValuationResultsStore } from './useValuationResultsStore'
 
 export interface ValuationSessionStore {
   // Session state
@@ -469,6 +470,20 @@ export const useValuationSessionStore = create<ValuationSessionStore>((set, get)
           performanceThresholds.sessionLoad,
           { reportId, correlationId }
         )
+
+        // CRITICAL: Restore valuation result if it exists
+        if ((session as any).valuationResult || (session as any).valuation_result) {
+          const valuationResult = (session as any).valuationResult || (session as any).valuation_result
+          const resultsStore = useValuationResultsStore.getState()
+          resultsStore.setResult(valuationResult)
+
+          storeLogger.info('Restored valuation result from session', {
+            reportId,
+            hasHtmlReport: !!(valuationResult.html_report || (session as any).htmlReport || (session as any).html_report),
+            hasInfoTabHtml: !!(valuationResult.info_tab_html || (session as any).infoTabHtml || (session as any).info_tab_html),
+            correlationId,
+          })
+        }
 
         // Success - update state
         set({

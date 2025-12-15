@@ -197,10 +197,8 @@ export const useConversationRestoration = (
       if (status.exists) {
         // IMPORTANT: status does NOT contain messages or metadata
         // We must call getConversationHistory() separately to get messages
-        const history = await utilityAPI.getConversationHistory(
-          sessionId,
-          abortControllerRef.current.signal
-        )
+        // NEW: Use conversationAPI which checks Python backend first, then falls back to database
+        const history = await conversationAPI.getHistory(sessionId)
 
         // Verify history object structure (type guard)
         if (!history || typeof history !== 'object' || !('exists' in history)) {

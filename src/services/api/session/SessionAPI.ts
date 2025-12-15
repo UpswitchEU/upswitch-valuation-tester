@@ -355,4 +355,44 @@ export class SessionAPI extends HttpClient {
     // Re-throw the converted error
     throw appError
   }
+
+  /**
+   * Save valuation result to session
+   * Persists valuation result, HTML report, and info tab HTML for restoration
+   */
+  async saveValuationResult(
+    reportId: string,
+    data: {
+      valuationResult: any
+      htmlReport?: string
+      infoTabHtml?: string
+    },
+    options?: APIRequestConfig
+  ): Promise<{ success: boolean; message: string }> {
+    try {
+      const response = await this.executeRequest<{ success: boolean; message: string }>(
+        {
+          method: 'PUT',
+          url: `/api/valuation-sessions/${reportId}/result`,
+          data,
+          headers: {},
+        } as any,
+        options
+      )
+
+      apiLogger.info('Valuation result saved to session', {
+        reportId,
+        hasHtmlReport: !!data.htmlReport,
+        hasInfoTabHtml: !!data.infoTabHtml,
+      })
+
+      return response
+    } catch (error) {
+      apiLogger.error('Failed to save valuation result to session', {
+        reportId,
+        error: error instanceof Error ? error.message : String(error),
+      })
+      this.handleSessionError(error, 'save valuation result')
+    }
+  }
 }

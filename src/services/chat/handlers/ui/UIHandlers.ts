@@ -9,12 +9,58 @@
 
 import { chatLogger } from '../../../../utils/logger'
 import { StreamEventHandlerCallbacks } from '../../StreamEventHandler'
+import { useValuationSessionStore } from '../../../../store/useValuationSessionStore'
+import type { ValuationRequest } from '../../../../types/valuation'
 
 export class UIHandlers {
   private callbacks: StreamEventHandlerCallbacks
 
   constructor(callbacks: StreamEventHandlerCallbacks) {
     this.callbacks = callbacks
+  }
+
+  /**
+   * Map conversational field names to ValuationRequest structure
+   * Handles nested fields (e.g., 'revenue' -> 'current_year_data.revenue')
+   */
+  private mapConversationalFieldToSessionData(
+    field: string,
+    value: any,
+    metadata?: any
+  ): Partial<ValuationRequest> {
+    // Field mapping from conversational names to ValuationRequest structure
+    const fieldMap: Record<string, string> = {
+      'company_name': 'company_name',
+      'business_type': 'business_type',
+      'business_type_id': 'business_type_id',
+      'country_code': 'country_code',
+      'founding_year': 'founding_year',
+      'revenue': 'current_year_data.revenue',
+      'ebitda': 'current_year_data.ebitda',
+      'number_of_employees': 'number_of_employees',
+      'number_of_owners': 'number_of_owners',
+      'shares_for_sale': 'shares_for_sale',
+      'industry': 'industry',
+      'business_model': 'business_model',
+      'recurring_revenue_percentage': 'recurring_revenue_percentage',
+      'total_assets': 'current_year_data.total_assets',
+      'total_debt': 'current_year_data.total_debt',
+      'cash': 'current_year_data.cash',
+    }
+
+    const targetPath = fieldMap[field] || field
+
+    // Build nested update object
+    if (targetPath.includes('.')) {
+      const [parent, child] = targetPath.split('.')
+      return {
+        [parent]: {
+          [child]: value,
+        },
+      } as any
+    }
+
+    return { [targetPath]: value } as any
   }
 
   /**
@@ -50,7 +96,7 @@ export class UIHandlers {
    */
   handleDataCollected(data: any): void {
     const collectedData = data.data || data.collected_data || data
-    const field = collectedData.field || collectedData.key
+    const field = collectedData.field || collectedData.field_name || collectedData.key
     const value = collectedData.value
     const source = collectedData.source || 'backend'
 
@@ -66,6 +112,31 @@ export class UIHandlers {
       ...prev,
       [field]: value,
     }))
+
+    // CRITICAL: Auto-save collected data to session store
+    const sessionStore = useValuationSessionStore.getState()
+    
+    if (field && value !== undefined) {
+      // Map conversational field names to ValuationRequest structure
+      const sessionDataUpdate = this.mapConversationalFieldToSessionData(
+        field,
+        value,
+        collectedData.metadata
+      )
+
+      // Auto-save to backend (debounced via updateSessionData)
+      sessionStore.updateSessionData(sessionDataUpdate).catch((error) => {
+        chatLogger.error('Failed to auto-save collected data', {
+          field,
+          error: error instanceof Error ? error.message : String(error),
+        })
+      })
+
+      chatLogger.debug('Auto-saved collected data to session', {
+        field,
+        sessionDataKeys: Object.keys(sessionDataUpdate),
+      })
+    }
 
     // Call data collected callback
     this.callbacks.onDataCollected?.(collectedData)

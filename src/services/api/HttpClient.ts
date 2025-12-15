@@ -359,8 +359,8 @@ export class HttpClient {
             htmlReportLength: (extractedData as any)?.html_report?.length || 0,
             rawResponseSample: JSON.stringify(rawData).substring(0, 1000),
           })
-          // CRITICAL: Console.log for visibility
-          console.error('[DIAGNOSTIC-FRONTEND] info_tab_html MISSING in valuation response', {
+          // Use structured logger instead of console.error to avoid "Object" spam
+          apiLogger.error('CRITICAL: info_tab_html MISSING in valuation response (console)', {
             url: config.url,
             hasExtractedData: !!extractedData,
             extractedDataKeys: extractedData ? Object.keys(extractedData) : [],
@@ -375,8 +375,10 @@ export class HttpClient {
             infoTabHtmlLength: (extractedData as any)?.info_tab_html?.length || 0,
             infoTabHtmlPreview: (extractedData as any)?.info_tab_html?.substring(0, 200),
           })
-          // CRITICAL: Console.log for visibility
-          console.log(`[DIAGNOSTIC-FRONTEND] info_tab_html found: length=${(extractedData as any)?.info_tab_html?.length || 0}`)
+          // Use structured logger instead of console.log
+          apiLogger.debug('info_tab_html found in valuation response', {
+            infoTabHtmlLength: (extractedData as any)?.info_tab_html?.length || 0,
+          })
         }
       }
       

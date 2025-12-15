@@ -365,36 +365,37 @@ export const ValuationToolbar: React.FC<ValuationToolbarProps> = ({
                 {displayVersions.length > 0 && (
                   <>
                     <div className="mx-2 h-6 w-px bg-zinc-700"></div>
-                    <div className="relative">
-                      <select
-                        value={
-                          displayActiveVersion ||
-                          displayVersions[displayVersions.length - 1].versionNumber
-                        }
-                        onChange={(e) => handleVersionSelect(parseInt(e.target.value))}
-                        className="
-                          px-2 py-1.5 pr-6 rounded-lg border border-zinc-700
-                          bg-zinc-800 text-gray-200 text-xs font-medium
-                          focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500
-                          cursor-pointer hover:bg-zinc-750 transition-colors
-                          appearance-none
-                        "
-                        title="Select version"
-                      >
-                        {displayVersions
-                          .sort((a, b) => b.versionNumber - a.versionNumber)
-                          .map((version) => (
-                            <option
-                              key={version.id}
-                              value={version.versionNumber}
-                              className="bg-zinc-800 text-gray-200"
-                            >
-                              {formatVersionLabel(version)}
-                            </option>
-                          ))}
-                      </select>
-                      <GitBranch className="absolute right-1.5 top-1/2 -translate-y-1/2 w-3 h-3 text-gray-400 pointer-events-none" />
-                    </div>
+                    <Tooltip content="Select version" position="bottom" className="">
+                      <div className="relative">
+                        <select
+                          value={
+                            displayActiveVersion ||
+                            displayVersions[displayVersions.length - 1].versionNumber
+                          }
+                          onChange={(e) => handleVersionSelect(parseInt(e.target.value))}
+                          className="
+                            px-2 py-1.5 pr-6 rounded-lg border border-zinc-700
+                            bg-zinc-800 text-gray-200 text-xs font-medium
+                            focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500
+                            cursor-pointer hover:bg-zinc-750 transition-colors
+                            appearance-none
+                          "
+                        >
+                          {displayVersions
+                            .sort((a, b) => b.versionNumber - a.versionNumber)
+                            .map((version) => (
+                              <option
+                                key={version.id}
+                                value={version.versionNumber}
+                                className="bg-zinc-800 text-gray-200"
+                              >
+                                {formatVersionLabel(version)}
+                              </option>
+                            ))}
+                        </select>
+                        <GitBranch className="absolute right-1.5 top-1/2 -translate-y-1/2 w-3 h-3 text-gray-400 pointer-events-none" />
+                      </div>
+                    </Tooltip>
                   </>
                 )}
               </div>

@@ -10,6 +10,7 @@
 import React, { useCallback } from 'react'
 import { StreamingChat } from '../../../components/StreamingChat'
 import { valuationAuditService } from '../../../services/audit/ValuationAuditService'
+import { SessionAPI } from '../../../services/api/session/SessionAPI'
 import { useValuationFormStore } from '../../../store/useValuationFormStore'
 import { useValuationResultsStore } from '../../../store/useValuationResultsStore'
 import { useValuationSessionStore } from '../../../store/useValuationSessionStore'
@@ -24,6 +25,8 @@ import {
 } from '../../../utils/versionDiffDetection'
 import { ComponentErrorBoundary } from '../../shared/components/ErrorBoundary'
 import { useConversationActions, useConversationState } from '../context/ConversationContext'
+
+const sessionAPI = new SessionAPI()
 
 /**
  * ConversationPanel Props
@@ -142,6 +145,28 @@ export const ConversationPanel: React.FC<ConversationPanelProps> = ({
 
       // Sync to results store (same as manual flow)
       setResult(result)
+
+      // CRITICAL: Save valuation result to session for restoration
+      if (session?.reportId) {
+        try {
+          await sessionAPI.saveValuationResult(session.reportId, {
+            valuationResult: result,
+            htmlReport: result.html_report,
+            infoTabHtml: result.info_tab_html,
+          })
+
+          chatLogger.info('Valuation result saved to session', {
+            reportId: session.reportId,
+            hasHtmlReport: !!result.html_report,
+            hasInfoTabHtml: !!result.info_tab_html,
+          })
+        } catch (error) {
+          chatLogger.error('Failed to save valuation result to session', {
+            reportId: session.reportId,
+            error: error instanceof Error ? error.message : String(error),
+          })
+        }
+      }
 
       // M&A Workflow: Create new version if this is a regeneration (conversational flow)
       const reportId = session?.reportId
