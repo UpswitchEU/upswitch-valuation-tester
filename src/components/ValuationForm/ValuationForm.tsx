@@ -374,6 +374,74 @@ export const ValuationForm: React.FC<ValuationFormProps> = ({
     updateFormData,
   ])
 
+  // Pre-fill business type from prefilledQuery (URL parameter)
+  // This runs after restoration and business types are loaded
+  const [hasProcessedPrefilledQuery, setHasProcessedPrefilledQuery] = useState(false)
+  useEffect(() => {
+    const prefilledQuery = (session?.partialData as any)?._prefilledQuery
+
+    // Only process if:
+    // 1. prefilledQuery exists
+    // 2. Business types are loaded
+    // 3. Form doesn't already have a business type (to avoid overriding restored data)
+    // 4. We haven't processed it yet
+    if (
+      prefilledQuery &&
+      businessTypes.length > 0 &&
+      !formData.business_type_id &&
+      !hasProcessedPrefilledQuery
+    ) {
+      generalLogger.info('Processing prefilledQuery from URL', {
+        prefilledQuery,
+        reportId: session?.reportId,
+      })
+
+      // Match query to business type
+      const matchedBusinessTypeId = matchBusinessType(prefilledQuery, businessTypes)
+
+      if (matchedBusinessTypeId) {
+        const matchedType = businessTypes.find((bt) => bt.id === matchedBusinessTypeId)
+        if (matchedType) {
+          generalLogger.info('Prefilled business type from URL query', {
+            query: prefilledQuery,
+            matchedType: matchedType.title,
+            id: matchedType.id,
+          })
+
+          updateFormData({
+            business_type_id: matchedType.id,
+            business_model: matchedType.id,
+            industry: matchedType.industry || matchedType.industryMapping || 'services',
+            subIndustry: matchedType.category,
+            // Store internal metadata for backend
+            _internal_dcf_preference: matchedType.dcfPreference,
+            _internal_multiples_preference: matchedType.multiplesPreference,
+            _internal_owner_dependency_impact: matchedType.ownerDependencyImpact,
+            _internal_key_metrics: matchedType.keyMetrics,
+            _internal_typical_employee_range: matchedType.typicalEmployeeRange,
+            _internal_typical_revenue_range: matchedType.typicalRevenueRange,
+          } as any)
+
+          setHasProcessedPrefilledQuery(true)
+        }
+      } else {
+        generalLogger.warn('Could not match prefilledQuery to business type', {
+          prefilledQuery,
+        })
+        // Mark as processed even if no match to avoid retrying
+        setHasProcessedPrefilledQuery(true)
+      }
+    }
+  }, [
+    session?.partialData,
+    session?.reportId,
+    businessTypes,
+    formData.business_type_id,
+    hasProcessedPrefilledQuery,
+    matchBusinessType,
+    updateFormData,
+  ])
+
   // Use form submission hook
   const { handleSubmit, isSubmitting } = useValuationFormSubmission(setEmployeeCountError)
 

@@ -213,37 +213,37 @@ export function syncSessionToBackend(session: ValuationSession): void {
           }
           
           // For other errors, retry with exponential backoff
-          await retryWithBackoff(
-            async () => {
-              return await backendAPI.createValuationSession(session)
-            },
-            {
-              maxRetries: 3,
+        await retryWithBackoff(
+          async () => {
+            return await backendAPI.createValuationSession(session)
+          },
+          {
+            maxRetries: 3,
               initialDelay: 200,
               maxDelay: 2000,
-              backoffMultiplier: 2,
-              onRetry: (attempt, error, delay) => {
+            backoffMultiplier: 2,
+            onRetry: (attempt, error, delay) => {
                 sessionHelpersLogger.debug('Retrying background sync', {
-                  reportId,
-                  attempt,
-                  delay_ms: delay,
-                  error: error instanceof Error ? error.message : 'Unknown error',
-                })
-              },
-              onFailure: (error, attempts) => {
+                reportId,
+                attempt,
+                delay_ms: delay,
+                error: error instanceof Error ? error.message : 'Unknown error',
+              })
+            },
+            onFailure: (error, attempts) => {
                 sessionHelpersLogger.warn('Background sync failed after retries', {
-                  reportId,
-                  attempts,
-                  error: error instanceof Error ? error.message : 'Unknown error',
-                })
-              },
-            }
-          )
+                reportId,
+                attempts,
+                error: error instanceof Error ? error.message : 'Unknown error',
+              })
+            },
+          }
+        )
 
           sessionHelpersLogger.debug('Background sync completed successfully after retries', {
-            reportId,
-            sessionId: session.sessionId,
-          })
+          reportId,
+          sessionId: session.sessionId,
+        })
         }
       } catch (error) {
         // Handle 409 conflicts (not retryable - session already exists)

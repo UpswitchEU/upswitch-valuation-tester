@@ -6,9 +6,9 @@ import { CorrelationPrefixes, createCorrelationId } from '../utils/correlationId
 import { extractErrorMessage } from '../utils/errorDetection'
 import { convertToApplicationError, getErrorMessage } from '../utils/errors/errorConverter'
 import {
-  isNetworkError,
-  isSessionConflictError,
-  isValidationError,
+    isNetworkError,
+    isSessionConflictError,
+    isValidationError,
 } from '../utils/errors/errorGuards'
 import { storeLogger } from '../utils/logger'
 import { globalSessionMetrics } from '../utils/metrics/sessionMetrics'
@@ -18,10 +18,10 @@ import { globalAuditTrail } from '../utils/sessionAuditTrail'
 import { globalSessionCache } from '../utils/sessionCacheManager'
 import { createFallbackSession, createOrLoadSession } from '../utils/sessionErrorHandlers'
 import {
-  createSessionOptimistically,
-  mergePrefilledQuery,
-  normalizeSessionDates,
-  syncSessionToBackend,
+    createSessionOptimistically,
+    mergePrefilledQuery,
+    normalizeSessionDates,
+    syncSessionToBackend,
 } from '../utils/sessionHelpers'
 import { validateSessionData } from '../utils/sessionValidation'
 import { verifySessionInBackground } from '../utils/sessionVerification'
@@ -1430,7 +1430,7 @@ export const useValuationSessionStore = create<ValuationSessionStore>((set, get)
             })
 
             storeLogger.info('Valuation result saved to backend', {
-              reportId: session.reportId,
+          reportId: session.reportId,
               hasHtmlReport: !!data.htmlReport,
               htmlLength: data.htmlReport?.length || 0,
               hasInfoTab: !!data.infoTabHtml,
