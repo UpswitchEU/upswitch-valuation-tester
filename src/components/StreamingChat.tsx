@@ -30,7 +30,8 @@ import { useTypingAnimation } from '../hooks/useTypingAnimation'
 import { useConversationStore } from '../store/useConversationStore'
 import type { Message } from '../types/message'
 import { convertToApplicationError, getErrorMessage } from '../utils/errors/errorConverter'
-import { isNetworkError, isTimeoutError } from '../utils/errors/errorGuards'
+import { is429RateLimit } from '../utils/errorDetection'
+import { isNetworkError, isRateLimitError, isTimeoutError } from '../utils/errors/errorGuards'
 import { chatLogger } from '../utils/logger'
 import { ChatInputForm, MessagesList } from './chat'
 
@@ -341,6 +342,12 @@ export const StreamingChat: React.FC<import('./StreamingChat.types').StreamingCh
         } else if (isTimeoutError(appError)) {
           userMessage = 'The request took too long to complete. Please try again.'
           errorDetailsText = 'Request timeout. The server may be busy.'
+        } else if (is429RateLimit(appError) || isRateLimitError(appError)) {
+          // CRITICAL FIX: Handle rate limit errors with user-friendly message
+          const retryAfter = (appError as any).context?.retryAfter || 3600
+          const retryAfterMinutes = Math.ceil(retryAfter / 60)
+          userMessage = `Too many requests. Please wait ${retryAfterMinutes} minute${retryAfterMinutes !== 1 ? 's' : ''} before trying again.`
+          errorDetailsText = `Rate limit exceeded. You can make ${retryAfterMinutes === 60 ? '30 requests per hour' : 'more requests'} after the wait period.`
         } else {
           userMessage = errorMessage || 'An unexpected error occurred. Please try again.'
         }
@@ -355,7 +362,7 @@ export const StreamingChat: React.FC<import('./StreamingChat.types').StreamingCh
             error_code: appError.code,
             error_details: errorDetailsText,
             original_input: inputToSubmit.trim(),
-            can_retry: isNetworkError(appError) || isTimeoutError(appError),
+            can_retry: isNetworkError(appError) || isTimeoutError(appError) || isRateLimitError(appError),
           },
         })
       }
