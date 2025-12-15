@@ -15,26 +15,30 @@ export interface BusinessTypeSuggestion {
 
 /**
  * Parses a clarification message to extract numbered business type suggestions
- * Pattern: "1. Full-Service Restaurant" or "1. 🍴 Full-Service Restaurant"
+ * Pattern: "1. Full-Service Restaurant" or "1. 🍴 **Full-Service Restaurant**"
+ * Backend format: "1. 🍴 **Restaurant**" or "1. **Restaurant**"
  */
 export function parseBusinessTypeSuggestions(message: string): BusinessTypeSuggestion[] {
   const suggestions: BusinessTypeSuggestion[] = []
 
-  // Pattern to match: "1. Title" or "1. 🍴 Title"
-  // Backend format: "1. Full-Service Restaurant"
+  // Pattern to match: "1. Title" or "1. 🍴 **Title**" or "1. **Title**"
+  // Backend format: "1. 🍴 **Restaurant**" (with markdown bold)
   const pattern = /(\d+)\.\s+(.+?)(?:\n|$)/g
 
   let match
   while ((match = pattern.exec(message)) !== null) {
-    const fullText = match[2].trim()
+    let fullText = match[2].trim()
 
     // Skip if it's not a real business type (too short or contains question text)
     if (fullText.length > 1 && !fullText.toLowerCase().includes('best describes')) {
+      // Remove markdown bold formatting (**text**)
+      fullText = fullText.replace(/\*\*(.+?)\*\*/g, '$1')
+      
       // Extract emoji if present (first character)
       const firstChar = fullText.charAt(0)
       const hasEmoji = /[\u{1F300}-\u{1F9FF}]/u.test(firstChar)
 
-      const title = hasEmoji ? fullText.slice(1).trim() : fullText
+      const title = hasEmoji ? fullText.slice(1).trim() : fullText.trim()
       const icon = hasEmoji ? firstChar : undefined
 
       suggestions.push({

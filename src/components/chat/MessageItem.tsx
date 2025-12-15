@@ -104,7 +104,21 @@ export const MessageItem = React.memo<MessageItemProps>(
 
     // Detect business type suggestions in the message
     const businessTypeSuggestions = React.useMemo((): BusinessTypeSuggestion[] | null => {
-      // First check metadata clarification_message (if available)
+      // First check for structured suggestions in metadata (preferred - more reliable)
+      const structuredSuggestions = getMetadataValue<BusinessTypeSuggestion[]>('business_type_suggestions')
+      if (structuredSuggestions && Array.isArray(structuredSuggestions) && structuredSuggestions.length > 0) {
+        return structuredSuggestions.map((s, idx) => ({
+          number: s.number || idx + 1,
+          id: s.id || String(s.number || idx + 1),
+          title: s.title || '',
+          description: s.description,
+          industry: s.industry,
+          category: s.category,
+          icon: s.icon,
+        }))
+      }
+      
+      // Fallback: parse from clarification message text
       const clarificationMsg = getMetadataString('clarification_message')
       if (clarificationMsg && hasBusinessTypeSuggestions(clarificationMsg)) {
         return parseBusinessTypeSuggestions(clarificationMsg)
@@ -114,7 +128,7 @@ export const MessageItem = React.memo<MessageItemProps>(
         return parseBusinessTypeSuggestions(message.content)
       }
       return null
-    }, [message.content, message.metadata, getMetadataString])
+    }, [message.content, message.metadata, getMetadataString, getMetadataValue])
 
     const hasBusinessTypeSuggestionsInMessage =
       businessTypeSuggestions !== null && businessTypeSuggestions.length > 0
@@ -136,7 +150,17 @@ export const MessageItem = React.memo<MessageItemProps>(
 
     // Detect KBO suggestions in the message
     const kboSuggestions = React.useMemo((): KBOSuggestion[] | null => {
-      // First check metadata clarification_message (if available)
+      // First check for structured suggestions in metadata (preferred - more reliable)
+      const structuredSuggestions = getMetadataValue<Array<{company_name: string; registration_number?: string}>>('kbo_suggestions')
+      if (structuredSuggestions && Array.isArray(structuredSuggestions) && structuredSuggestions.length > 0) {
+        return structuredSuggestions.map((s, idx) => ({
+          number: idx + 1,
+          companyName: s.company_name || '',
+          registrationNumber: s.registration_number,
+        }))
+      }
+      
+      // Fallback: parse from clarification message text
       const clarificationMsg = getMetadataString('clarification_message')
       if (clarificationMsg && hasKBOSuggestions(clarificationMsg)) {
         return parseKBOSuggestions(clarificationMsg)
@@ -146,7 +170,7 @@ export const MessageItem = React.memo<MessageItemProps>(
         return parseKBOSuggestions(message.content)
       }
       return null
-    }, [message.content, message.metadata, getMetadataString])
+    }, [message.content, message.metadata, getMetadataString, getMetadataValue])
 
     const hasKBOSuggestionsInMessage = kboSuggestions !== null && kboSuggestions.length > 0
 
