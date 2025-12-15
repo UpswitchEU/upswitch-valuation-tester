@@ -15,6 +15,8 @@ import { VideoBackground } from '../VideoBackground'
 
 export const HomePage: React.FC = () => {
   const router = useRouter()
+  const authContext = useContext(AuthContext)
+  const user = authContext?.user
   const [query, setQuery] = useState('')
   const [mode, setMode] = useState<'manual' | 'conversational'>('manual')
   const [businessCardData, setBusinessCardData] = useState<BusinessCardData | null>(null)
@@ -66,10 +68,12 @@ export const HomePage: React.FC = () => {
     }
   }, [router])
 
-  // Fetch recent reports on mount
+  // Fetch recent reports on mount and when user changes
   useEffect(() => {
-    fetchReports()
-  }, [fetchReports])
+    // Pass userId for authenticated users, undefined for guests
+    // Backend will use cookies for auth or guest_session_id header for guests
+    fetchReports(user?.id)
+  }, [fetchReports, user?.id])
 
   // Auto-focus the textarea when component mounts
   useEffect(() => {
