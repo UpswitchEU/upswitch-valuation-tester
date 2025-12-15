@@ -17,11 +17,16 @@ import UrlGeneratorService from '../services/urlGenerator'
 import { useValuationSessionStore } from '../store/useValuationSessionStore'
 import type { ValuationSession } from '../types/valuation'
 import { generalLogger } from '../utils/logger'
+import { isNewReport } from '../utils/newReportDetector'
 import {
   checkReportExists,
   markReportExists,
   markReportNotExists,
 } from '../utils/reportExistenceCache'
+import {
+  createSessionOptimistically,
+  syncSessionToBackend,
+} from '../utils/sessionHelpers'
 import { OutOfCreditsModal } from './OutOfCreditsModal'
 
 type Stage = 'loading' | 'data-entry' | 'processing' | 'flow-selection'
@@ -102,6 +107,77 @@ export const ValuationSessionManager: React.FC<ValuationSessionManagerProps> = R
             return
           }
 
+          // FAST PATH OPTIMIZATION: Check if NEW report BEFORE any backend calls
+          if (isNewReport(reportId)) {
+            // NEW REPORT: Create optimistically (instant, <50ms)
+            generalLogger.info('NEW report detected, using optimistic fast-path', { reportId })
+
+            // Determine initial view from URL params
+            let flowParam = searchParams.get('flow')
+            const initialView =
+              flowParam === 'manual' || flowParam === 'conversational' ? flowParam : 'manual'
+
+            // Validate credits for Conversational (guests only)
+            if (initialView === 'conversational' && !isAuthenticated) {
+              const hasCredits = guestCreditService.hasCredits()
+              if (!hasCredits) {
+                setShowOutOfCreditsModal(true)
+                // Create session with manual view instead
+                const optimisticSession = createSessionOptimistically(
+                  reportId,
+                  'manual',
+                  prefilledQuery
+                )
+                // Set in store via initializeSession (which will detect cached session)
+                await initializeSession(reportId, 'manual', prefilledQuery)
+                syncSessionToBackend(optimisticSession)
+                markReportExists(reportId)
+                setStage('data-entry')
+                initializationState.current.set(reportId, {
+                  initialized: true,
+                  isInitializing: false,
+                })
+                return
+              }
+            }
+
+            // Create session optimistically (instant)
+            const optimisticSession = createSessionOptimistically(
+              reportId,
+              initialView,
+              prefilledQuery
+            )
+
+            // Set in store immediately - initializeSession will detect it's cached and use it
+            // But we need to set it in the store directly. Since Zustand doesn't expose set(),
+            // we'll call initializeSession which will see it's cached and set it in the store
+            await initializeSession(reportId, initialView, prefilledQuery)
+            
+            // Note: initializeSession will detect the cached session and use it,
+            // but since isNewReport() will now return false (session is cached),
+            // it will use the cache-first path which is fine
+
+            // Mark as initialized
+            markReportExists(reportId)
+            setStage('data-entry')
+            initializationState.current.set(reportId, {
+              initialized: true,
+              isInitializing: false,
+            })
+
+            // Sync to backend in background (non-blocking)
+            syncSessionToBackend(optimisticSession)
+
+            generalLogger.info('NEW report created optimistically, UI ready instantly', {
+              reportId,
+              currentView: initialView,
+            })
+
+            // Skip all backend checks - UI is ready!
+            return
+          }
+
+          // EXISTING REPORT: Use cache-first flow
           // CACHE-FIRST OPTIMIZATION: Check report existence cache before API call
           const reportExists = checkReportExists(reportId)
 

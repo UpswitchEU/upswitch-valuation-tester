@@ -125,6 +125,8 @@ export function useStreamingCoordinator({
   useEffect(() => {
     const requestIdRef = { current: null }
     const currentStreamingMessageRef = { current: null }
+    const eventSourceRef: { current: EventSource | null } = { current: null }
+    const abortControllerRef: { current: AbortController | null } = { current: null }
 
     streamingManagerRef.current = new StreamingManager(requestIdRef, currentStreamingMessageRef)
 
@@ -166,12 +168,13 @@ export function useStreamingCoordinator({
     })
 
     return () => {
-      // CRITICAL FIX: Properly cleanup streaming manager
-      if (streamingManagerRef.current) {
-        streamingManagerRef.current.cleanup()
-        streamingManagerRef.current = null
+      // Cleanup
+      if (eventSourceRef.current) {
+        eventSourceRef.current.close()
       }
-      eventHandlerRef.current = null
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort()
+      }
     }
   }, [
     sessionId,

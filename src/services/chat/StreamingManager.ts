@@ -297,16 +297,24 @@ export class StreamingManager {
     abortSignal?: AbortSignal
   ): Promise<void> {
     let eventCount = 0
-    let generatorTimeout: NodeJS.Timeout
+    let generatorTimeout: NodeJS.Timeout | null = null
 
-    // Set timeout to detect if generator hangs
+    // CRITICAL FIX: Simplified timeout - backend now sends typing event immediately
+    // Bank-Grade Principle: Simplicity - Remove complex timeout logic since backend handles it
+    // WHAT: Single timeout (60s) to detect complete stream hangs, not per-event timeouts
+    // WHY: Backend sends typing event immediately, so we don't need complex first-event logic
+    // HOW: Simple timeout that only triggers if stream completely hangs
+    // WHEN: When streaming conversation events
+    const STREAM_TIMEOUT = 60000 // 60 seconds total timeout (generous since backend sends typing immediately)
+
+    // Set timeout to detect if generator completely hangs
     generatorTimeout = setTimeout(() => {
-      chatLogger.warn('Async generator timeout - no events received in 10 seconds', { sessionId })
-      throw new Error('Streaming timeout')
-    }, 10000)
+      chatLogger.warn('Stream timeout - no activity for 60 seconds', { sessionId, eventCount })
+      throw new Error('Stream timeout - connection may have been lost')
+    }, STREAM_TIMEOUT)
 
     try {
-      // Use streaming service
+      // Use streaming service - simple iteration like the old working version
       for await (const event of streamingChatService.streamConversation(
         sessionId,
         userInput,
@@ -316,11 +324,19 @@ export class StreamingManager {
         // CRITICAL FIX: Check if request was aborted
         if (abortSignal?.aborted) {
           chatLogger.info('Stream aborted via AbortSignal', { sessionId })
-          clearTimeout(generatorTimeout)
+          if (generatorTimeout) clearTimeout(generatorTimeout)
           throw new Error('Stream aborted')
         }
 
-        clearTimeout(generatorTimeout)
+        // Reset timeout on each event (stream is active)
+        if (generatorTimeout) {
+          clearTimeout(generatorTimeout)
+          generatorTimeout = setTimeout(() => {
+            chatLogger.warn('Stream timeout - no activity for 60 seconds', { sessionId, eventCount })
+            throw new Error('Stream timeout - connection may have been lost')
+          }, STREAM_TIMEOUT)
+        }
+
         eventCount++
 
         // DEFENSIVE LOGGING: Track callback execution
@@ -337,19 +353,27 @@ export class StreamingManager {
         }
       }
 
-      clearTimeout(generatorTimeout)
+      // Clear timeout on successful completion
+      if (generatorTimeout) {
+        clearTimeout(generatorTimeout)
+        generatorTimeout = null
+      }
+
       chatLogger.debug('Async generator completed', {
         totalEvents: eventCount,
         sessionId,
       })
 
-      // If no events were received, throw error to trigger fallback
+      // Only throw error if absolutely no events received (shouldn't happen with typing event)
       if (eventCount === 0) {
-        chatLogger.warn('No events received from async generator', { sessionId })
-        throw new Error('No events received from async generator')
+        chatLogger.warn('No events received from async generator - server may not have responded', { sessionId })
+        throw new Error('No events received from async generator - server may not have responded')
       }
     } catch (error) {
-      clearTimeout(generatorTimeout)
+      if (generatorTimeout) {
+        clearTimeout(generatorTimeout)
+        generatorTimeout = null
+      }
       throw error
     }
   }

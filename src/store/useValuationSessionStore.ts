@@ -18,7 +18,13 @@ import { retrySessionOperation } from '../utils/retryWithBackoff'
 import { globalAuditTrail } from '../utils/sessionAuditTrail'
 import { globalSessionCache } from '../utils/sessionCacheManager'
 import { createFallbackSession, createOrLoadSession } from '../utils/sessionErrorHandlers'
-import { mergePrefilledQuery, normalizeSessionDates } from '../utils/sessionHelpers'
+import {
+  createSessionOptimistically,
+  mergePrefilledQuery,
+  normalizeSessionDates,
+  syncSessionToBackend,
+} from '../utils/sessionHelpers'
+import { isNewReport } from '../utils/newReportDetector'
 import { verifySessionInBackground } from '../utils/sessionVerification'
 import { validateSessionData } from '../utils/sessionValidation'
 
@@ -50,6 +56,7 @@ export interface ValuationSessionStore {
   // Sync state
   isSyncing: boolean
   syncError: string | null
+  backgroundSyncStatus: 'idle' | 'syncing' | 'synced' | 'failed'
 
   // Save status (for M&A workflow - trust indicators)
   isSaving: boolean
@@ -59,6 +66,9 @@ export interface ValuationSessionStore {
   // Flow switch confirmation
   pendingFlowSwitch: 'manual' | 'conversational' | null
   setPendingFlowSwitch: (view: 'manual' | 'conversational' | null) => void
+
+  // Background sync status management
+  setBackgroundSyncStatus: (status: 'idle' | 'syncing' | 'synced' | 'failed') => void
 }
 
 export const useValuationSessionStore = create<ValuationSessionStore>((set, get) => {
@@ -72,6 +82,7 @@ export const useValuationSessionStore = create<ValuationSessionStore>((set, get)
     session: null,
     isSyncing: false,
     syncError: null,
+    backgroundSyncStatus: 'idle',
     pendingFlowSwitch: null,
 
     // Save status (M&A workflow trust indicators)
@@ -116,6 +127,32 @@ export const useValuationSessionStore = create<ValuationSessionStore>((set, get)
             }
           }
           return // Don't re-initialize if session already exists
+        }
+
+        // FAST PATH OPTIMIZATION: Check if NEW report BEFORE any backend calls
+        if (isNewReport(reportId)) {
+          // NEW REPORT: Create optimistically (instant, <50ms)
+          storeLogger.info('NEW report detected in initializeSession, using optimistic fast-path', {
+            reportId,
+            currentView,
+          })
+
+          const optimisticSession = createSessionOptimistically(reportId, currentView, prefilledQuery)
+
+          set({
+            session: optimisticSession,
+            syncError: null,
+          })
+
+          // Sync to backend in background (non-blocking)
+          syncSessionToBackend(optimisticSession)
+
+          storeLogger.info('NEW report created optimistically in initializeSession', {
+            reportId,
+            currentView: optimisticSession.currentView,
+          })
+
+          return // Skip all backend checks!
         }
 
         // CACHE-FIRST OPTIMIZATION: Check localStorage cache BEFORE backend API call
@@ -1242,6 +1279,13 @@ export const useValuationSessionStore = create<ValuationSessionStore>((set, get)
      */
     setPendingFlowSwitch: (view: 'manual' | 'conversational' | null) => {
       set({ pendingFlowSwitch: view })
+    },
+
+    /**
+     * Set background sync status (for optimistic session sync)
+     */
+    setBackgroundSyncStatus: (status: 'idle' | 'syncing' | 'synced' | 'failed') => {
+      set({ backgroundSyncStatus: status })
     },
   }
 })

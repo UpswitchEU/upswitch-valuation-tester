@@ -37,7 +37,12 @@ export class MessageHandlers {
    * Handle typing indicator events
    */
   handleTyping(_data: any): void {
-    chatLogger.debug('AI typing indicator received')
+    // CRITICAL DEBUG: Log typing events to verify they're being received
+    chatLogger.info('⌨️ AI typing indicator received', {
+      sessionId: _data?.session_id,
+      timestamp: _data?.timestamp,
+    })
+    
     // Show typing indicator and thinking state
     this.callbacks.setIsTyping?.(true)
     this.callbacks.setIsThinking?.(true)
