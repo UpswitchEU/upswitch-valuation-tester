@@ -258,10 +258,8 @@ export const useConversationRestoration = (
         // Handle any other error types
         chatLogger.error('❌ Failed to restore conversation', {
           sessionId,
-          error: appError instanceof Error ? appError.message : String(appError),
-          code: 'code' in appError ? String(appError.code) : 'UNKNOWN',
-          error: (appError as any).message,
-          code: (appError as any).code,
+          error: (appError as any).message || String(appError),
+          code: (appError as any).code || 'UNKNOWN',
           duration_ms: duration.toFixed(2),
           correlationId,
           retryable: isRetryable(appError),
@@ -346,3 +344,4 @@ export const useConversationRestoration = (
     reset,
   }
 }
+
