@@ -79,10 +79,7 @@ export class MessageHandlers {
       this.callbacks.setIsStreaming(false)
     }
 
-    // CRITICAL FIX: Reset state COMPLETELY - don't set hasStartedMessage=true yet
-    // Let the chunks trigger ensureMessageExists to create the message
-    // This prevents duplicate message creation
-    this.hasStartedMessage = false
+    // CRITICAL FIX: Reset state COMPLETELY
     this.messageCreationLock = false
     this.chunkBuffer = []
     this.lastProcessedChunks = [] // CRITICAL FIX: Clear processed chunks on new message start
@@ -97,12 +94,12 @@ export class MessageHandlers {
     // and re-enabled after message_complete
     this.callbacks.setIsStreaming(true)
 
-    // CRITICAL FIX: Don't call ensureMessageExists here - let chunks create the message
-    // This prevents creating duplicate messages when:
-    // 1. handleTyping() creates message via ensureMessageExists
-    // 2. handleMessageStart() resets state and calls ensureMessageExists again
-    // 3. handleMessageChunk() calls ensureMessageExists again
-    // Instead, chunks will call ensureMessageExists which will create the message once
+    // CRITICAL FIX: Create message immediately on message_start
+    // This ensures the message exists before chunks arrive, preventing "No streaming message found" errors
+    // We still use ensureMessageExists to handle the creation safely (with locking)
+    this.ensureMessageExists().catch((err) => {
+      chatLogger.error('Failed to ensure message exists on message_start', { error: err })
+    })
   }
 
   /**
@@ -132,22 +129,29 @@ export class MessageHandlers {
     // This prevents first chunk loss when chunks arrive before message_start
     await this.ensureMessageExists()
 
+    // CRITICAL FIX: Wait a tick to ensure React state has updated
+    // This prevents "No streaming message found" errors when updateStreamingMessage
+    // is called immediately after addMessage (React state updates are async)
+    if (!this.hasStartedMessage) {
+      // Wait for next tick to allow React state to update
+      await new Promise((resolve) => setTimeout(resolve, 0))
+      // Re-check after waiting
+      if (!this.hasStartedMessage) {
+        chatLogger.warn('⚠️ Message not created yet after ensureMessageExists - buffering chunk', {
+          chunkContent: content.substring(0, 30),
+        })
+        // CRITICAL FIX: Only buffer if not already buffered to prevent duplicates
+        if (!wasBuffered) {
+          this.chunkBuffer.push(content)
+        }
+        return
+      }
+    }
+
     // Clear typing indicators since we're now streaming
     if (this.hasStartedMessage) {
       this.callbacks.setIsThinking?.(false)
       this.callbacks.setIsTyping?.(false)
-    }
-
-    // If message doesn't exist yet (shouldn't happen after await, but defensive), buffer the chunk
-    if (!this.hasStartedMessage) {
-      chatLogger.warn('⚠️ Message not created yet after ensureMessageExists - buffering chunk', {
-        chunkContent: content.substring(0, 30),
-      })
-      // CRITICAL FIX: Only buffer if not already buffered to prevent duplicates
-      if (!wasBuffered) {
-        this.chunkBuffer.push(content)
-      }
-      return
     }
 
     // CRITICAL FIX: If chunk is currently buffered, it will be flushed by ensureMessageExists
