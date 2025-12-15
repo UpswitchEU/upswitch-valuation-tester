@@ -1,8 +1,11 @@
 /**
- * useStreamingChatState - Centralized state management for StreamingChat component
+ * useStreamingChatState - DEPRECATED
  *
- * Extracted from StreamingChat.tsx to reduce component complexity and improve maintainability.
- * Consolidates all useState hooks and refs into a single, reusable custom hook.
+ * @deprecated This hook is no longer used. State management is now handled by
+ * the Zustand store (useConversationStore). This file is kept only for type
+ * re-exports (Message, ConversationMetrics) and will be removed in a future version.
+ *
+ * Legacy code - DO NOT USE. Use useConversationStore instead.
  */
 
 import { useCallback, useRef, useState } from 'react'

@@ -1,8 +1,11 @@
 /**
- * Streaming Chat Hook
+ * useStreamingChat Hook - DEPRECATED/UNUSED
  *
- * Manages streaming conversation state and logic.
- * Extracted from StreamingChat to improve testability and reusability.
+ * @deprecated This hook is not currently used in the codebase. Streaming conversation
+ * is handled by useStreamingCoordinator and useConversationStore (Zustand).
+ * This file is kept for reference only and may be removed in a future version.
+ *
+ * Legacy code - DO NOT USE. Use useStreamingCoordinator + useConversationStore instead.
  */
 
 import { useCallback, useRef, useState } from 'react'

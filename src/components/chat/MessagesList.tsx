@@ -135,24 +135,43 @@ export const MessagesList: React.FC<MessagesListProps> = React.memo(
     )
   },
   (prevProps, nextProps) => {
-    // Only re-render if messages, typing state, or callbacks changed
-    return (
-      prevProps.messages.length === nextProps.messages.length &&
-      prevProps.messages.every((msg, idx) => msg.id === nextProps.messages[idx]?.id) &&
-      prevProps.isTyping === nextProps.isTyping &&
-      prevProps.isThinking === nextProps.isThinking &&
-      prevProps.isInitializing === nextProps.isInitializing &&
-      prevProps.calculateOption === nextProps.calculateOption &&
-      prevProps.valuationPreview === nextProps.valuationPreview &&
-      prevProps.onRetry === nextProps.onRetry &&
-      prevProps.onSuggestionSelect === nextProps.onSuggestionSelect &&
-      prevProps.onSuggestionDismiss === nextProps.onSuggestionDismiss &&
-      prevProps.onClarificationConfirm === nextProps.onClarificationConfirm &&
-      prevProps.onClarificationReject === nextProps.onClarificationReject &&
-      prevProps.onKBOSuggestionSelect === nextProps.onKBOSuggestionSelect &&
-      prevProps.onBusinessTypeSuggestionSelect === nextProps.onBusinessTypeSuggestionSelect &&
-      prevProps.onValuationStart === nextProps.onValuationStart
-    )
+    // Fast path: Quick checks first
+    if (
+      prevProps.messages.length !== nextProps.messages.length ||
+      prevProps.isTyping !== nextProps.isTyping ||
+      prevProps.isThinking !== nextProps.isThinking ||
+      prevProps.isInitializing !== nextProps.isInitializing ||
+      prevProps.calculateOption !== nextProps.calculateOption ||
+      prevProps.valuationPreview !== nextProps.valuationPreview
+    ) {
+      return false // Re-render needed
+    }
+
+    // Only check message IDs if length matches (optimized: check last message first for streaming)
+    const lastIdx = prevProps.messages.length - 1
+    if (lastIdx >= 0) {
+      const prevLast = prevProps.messages[lastIdx]
+      const nextLast = nextProps.messages[lastIdx]
+      if (prevLast?.id !== nextLast?.id || prevLast?.content !== nextLast?.content) {
+        return false // Re-render needed
+      }
+    }
+
+    // Check callbacks (should be stable, but verify)
+    if (
+      prevProps.onRetry !== nextProps.onRetry ||
+      prevProps.onSuggestionSelect !== nextProps.onSuggestionSelect ||
+      prevProps.onSuggestionDismiss !== nextProps.onSuggestionDismiss ||
+      prevProps.onClarificationConfirm !== nextProps.onClarificationConfirm ||
+      prevProps.onClarificationReject !== nextProps.onClarificationReject ||
+      prevProps.onKBOSuggestionSelect !== nextProps.onKBOSuggestionSelect ||
+      prevProps.onBusinessTypeSuggestionSelect !== nextProps.onBusinessTypeSuggestionSelect ||
+      prevProps.onValuationStart !== nextProps.onValuationStart
+    ) {
+      return false // Re-render needed
+    }
+
+    return true // No re-render needed
   }
 )
 

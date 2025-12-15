@@ -414,6 +414,63 @@ export const MessageItem = React.memo<MessageItemProps>(
         </div>
       </motion.div>
     )
+  },
+  (prevProps, nextProps) => {
+    // Fast path: Only re-render if message content or key props changed
+    // Optimized for streaming: Check content last since it changes frequently
+    if (
+      prevProps.message.id !== nextProps.message.id ||
+      prevProps.message.type !== nextProps.message.type ||
+      prevProps.message.isStreaming !== nextProps.message.isStreaming ||
+      prevProps.message.isComplete !== nextProps.message.isComplete ||
+      prevProps.isTyping !== nextProps.isTyping ||
+      prevProps.isThinking !== nextProps.isThinking
+    ) {
+      return false // Re-render needed
+    }
+
+    // Check content only if IDs match (content changes frequently during streaming)
+    if (prevProps.message.content !== nextProps.message.content) {
+      return false // Re-render needed
+    }
+
+    // Check metadata (for suggestions, confirmations, etc.)
+    const prevMeta = prevProps.message.metadata
+    const nextMeta = nextProps.message.metadata
+    if (prevMeta !== nextMeta) {
+      // Only re-render if metadata keys that affect rendering changed
+      const relevantKeys = [
+        'input_type',
+        'suggestions',
+        'business_type_suggestions',
+        'kbo_suggestions',
+        'is_business_type_confirmation',
+        'is_company_name_confirmation',
+        'button_text',
+        'is_ai_help',
+      ]
+      for (const key of relevantKeys) {
+        if (prevMeta?.[key] !== nextMeta?.[key]) {
+          return false // Re-render needed
+        }
+      }
+    }
+
+    // Callbacks should be stable, but verify
+    if (
+      prevProps.onSuggestionSelect !== nextProps.onSuggestionSelect ||
+      prevProps.onSuggestionDismiss !== nextProps.onSuggestionDismiss ||
+      prevProps.onClarificationConfirm !== nextProps.onClarificationConfirm ||
+      prevProps.onClarificationReject !== nextProps.onClarificationReject ||
+      prevProps.onKBOSuggestionSelect !== nextProps.onKBOSuggestionSelect ||
+      prevProps.onBusinessTypeSuggestionSelect !== nextProps.onBusinessTypeSuggestionSelect ||
+      prevProps.onValuationStart !== nextProps.onValuationStart ||
+      prevProps.onRetry !== nextProps.onRetry
+    ) {
+      return false // Re-render needed
+    }
+
+    return true // No re-render needed
   }
 )
 
