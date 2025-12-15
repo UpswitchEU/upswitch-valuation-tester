@@ -70,6 +70,21 @@ export const useValuationFormSubmission = (
       // Clear validation error if validation passes
       setEmployeeCountError(null)
 
+      // CRITICAL: Sync all form data to session IMMEDIATELY before calculation
+      // This ensures all data is saved even if calculation fails or user navigates away
+      const { syncFromManualForm } = useValuationSessionStore.getState()
+      try {
+        await syncFromManualForm()
+        generalLogger.info('Form data synced to session before calculation', {
+          reportId: session?.reportId,
+        })
+      } catch (syncError) {
+        generalLogger.warn('Failed to sync form data before calculation, continuing anyway', {
+          error: syncError instanceof Error ? syncError.message : String(syncError),
+        })
+        // Continue with calculation even if sync fails
+      }
+
       // Convert formData to DataResponse[] for unified pipeline
       const dataResponses = convertFormDataToDataResponses(formData)
 
@@ -241,14 +256,45 @@ export const useValuationFormSubmission = (
           }
         }
 
+        // CRITICAL: Save valuation result, HTML reports, and info tab HTML to session
+        // This ensures everything can be restored when user returns later
+        const { markReportSaving, markReportSaved, markReportSaveFailed } = useValuationSessionStore.getState()
+        markReportSaving()
+
+        if (session?.reportId) {
+          try {
+            const { SessionAPI } = await import('../../../services/api/session/SessionAPI')
+            const sessionAPI = new SessionAPI()
+            
+            await sessionAPI.saveValuationResult(session.reportId, {
+              valuationResult: result,
+              htmlReport: result.html_report,
+              infoTabHtml: result.info_tab_html,
+            })
+
+            generalLogger.info('Valuation result saved to session after calculation', {
+              reportId: session.reportId,
+              hasHtmlReport: !!result.html_report,
+              hasInfoTabHtml: !!result.info_tab_html,
+            })
+
+            markReportSaved()
+          } catch (saveError) {
+            generalLogger.error('Failed to save valuation result to session', {
+              reportId: session.reportId,
+              error: saveError instanceof Error ? saveError.message : String(saveError),
+            })
+            markReportSaveFailed(saveError instanceof Error ? saveError.message : 'Save failed')
+            // Continue - don't block user even if save fails
+          }
+        } else {
+          markReportSaved()
+        }
+
         generalLogger.info('Valuation calculated successfully', {
           valuationId: result.valuation_id,
           calculationDuration_ms: calculationDuration.toFixed(2),
         })
-
-        // Mark report as saved after generation
-        // Report is automatically saved by backend when calculation completes
-        useValuationSessionStore.getState().markReportSaved()
       }
     },
     [

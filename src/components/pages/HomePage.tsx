@@ -173,7 +173,7 @@ export const HomePage: React.FC = () => {
 
       <div className="min-h-screen relative pt-16 md:pt-20">
         {/* Hero Section with Video Background */}
-        <section className="relative z-10 py-20 md:py-24 flex items-center justify-center min-h-screen">
+        <section className="relative z-10 pt-20 md:pt-24 pb-8 md:pb-12 flex items-center justify-center min-h-screen">
           <div className="w-full max-w-6xl mx-auto px-4">
             <div className="text-center space-y-6">
               {/* Hero Content */}

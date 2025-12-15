@@ -271,11 +271,29 @@ class ReportServiceImpl implements ReportService {
         'https://web-production-8d00b.up.railway.app'
       const url = `${baseURL}/api/reports/${reportId}`
 
+      // Get guest session ID header for guest users
+      const headers: HeadersInit = {
+        'Content-Type': 'application/json',
+      }
+
+      // Add guest session ID header for guest users
+      try {
+        const guestSessionId = guestSessionService.getGuestSessionId()
+        if (guestSessionId) {
+          headers['x-guest-session-id'] = guestSessionId
+          reportLogger.debug('Added guest session ID to delete request', {
+            guestSessionId: guestSessionId.substring(0, 15) + '...',
+            reportId,
+          })
+        }
+      } catch (error) {
+        reportLogger.warn('Failed to get guest session ID for delete', { error })
+        // Continue without guest session ID - backend will check auth
+      }
+
       const response = await fetch(url, {
         method: 'DELETE',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers,
         credentials: 'include', // Include cookies for auth
       })
 

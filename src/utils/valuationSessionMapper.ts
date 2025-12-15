@@ -123,14 +123,54 @@ export function mapValuationSessionToBusinessInfo(session: ValuationSession): Bu
     : new Date().getFullYear()
 
   // Extract team size (check multiple field names)
+  // Check for employees first, then owners, then combine if both exist
+  // Also check nested structures and alternative field names
   const employees: number | string | null = getValueFromSources<number | string | null>(
     allSources,
-    ['number_of_employees', 'employee_count', 'employees'],
+    [
+      'number_of_employees',
+      'employee_count',
+      'employees',
+      'fullData.number_of_employees', // Check nested fullData
+      'fullData.employee_count',
+    ],
     null
   )
-  const teamSize = employees !== null && employees !== undefined
-    ? (typeof employees === 'number' ? employees.toString() : String(employees))
-    : 'N/A'
+  
+  const owners: number | string | null = getValueFromSources<number | string | null>(
+    allSources,
+    [
+      'number_of_owners',
+      'owners',
+      'fullData.number_of_owners', // Check nested fullData
+    ],
+    null
+  )
+  
+  // Format team size: show employees, or employees + owners if both exist
+  let teamSize = 'N/A'
+  if (employees !== null && employees !== undefined && employees !== '') {
+    const empCount = typeof employees === 'number' ? employees : parseInt(String(employees), 10)
+    if (!isNaN(empCount) && empCount >= 0) {
+      if (owners !== null && owners !== undefined && owners !== '') {
+        const ownerCount = typeof owners === 'number' ? owners : parseInt(String(owners), 10)
+        if (!isNaN(ownerCount) && ownerCount > 0) {
+          // Show "employees (owners)" format
+          teamSize = `${empCount} (${ownerCount} owner${ownerCount !== 1 ? 's' : ''})`
+        } else {
+          teamSize = empCount.toString()
+        }
+      } else {
+        teamSize = empCount.toString()
+      }
+    }
+  } else if (owners !== null && owners !== undefined && owners !== '') {
+    // Only owners available
+    const ownerCount = typeof owners === 'number' ? owners : parseInt(String(owners), 10)
+    if (!isNaN(ownerCount) && ownerCount > 0) {
+      teamSize = `${ownerCount} owner${ownerCount !== 1 ? 's' : ''}`
+    }
+  }
 
   // Extract revenue (check nested current_year_data structure)
   const revenueRaw = getValueFromSources(

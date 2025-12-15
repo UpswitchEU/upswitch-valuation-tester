@@ -119,13 +119,17 @@ export function AuditTrailPanel({ reportId, className = '' }: AuditTrailPanelPro
   }
 
   return (
-    <div className={`flex flex-col lg:flex-row h-full overflow-hidden ${className}`}>
-      {/* Timeline Panel - Left on desktop, top on mobile */}
-      <div className="w-full lg:w-[30%] h-64 lg:h-full border-b lg:border-b-0 lg:border-r border-zinc-800 overflow-y-auto bg-zinc-900">
-        <div className="p-4 border-b border-zinc-800 bg-zinc-800/50">
-          <h2 className="text-sm font-semibold text-gray-200">Version History</h2>
-          <p className="text-xs text-gray-400 mt-1">{versions.length} version{versions.length !== 1 ? 's' : ''}</p>
-        </div>
+    <div className={`h-full overflow-hidden bg-white ${className}`}>
+      {/* Header */}
+      <div className="p-6 border-b border-gray-200">
+        <h2 className="text-2xl font-semibold text-gray-900">Version History</h2>
+        <p className="text-sm text-gray-600 mt-1">
+          {versions.length} version{versions.length !== 1 ? 's' : ''} • Track changes and compare valuations
+        </p>
+      </div>
+
+      {/* Timeline */}
+      <div className="h-[calc(100%-5rem)] overflow-y-auto">
         <VersionTimeline
           versions={versions}
           activeVersion={selectedVersionNumber || activeVersion?.versionNumber || 1}
@@ -133,19 +137,6 @@ export function AuditTrailPanel({ reportId, className = '' }: AuditTrailPanelPro
           onVersionPin={handleVersionPin}
           compact={false}
         />
-      </div>
-
-      {/* Details Panel - Right on desktop, bottom on mobile */}
-      <div className="flex-1 h-full overflow-hidden">
-        <div className="p-4 border-b border-zinc-800 bg-zinc-800/50">
-          <h2 className="text-sm font-semibold text-gray-200">Version Details</h2>
-          {selectedVersion && (
-            <p className="text-xs text-gray-400 mt-1">
-              Viewing {selectedVersion.versionLabel}
-            </p>
-          )}
-        </div>
-        <AuditDetailsView version={selectedVersion || null} />
       </div>
     </div>
   )
