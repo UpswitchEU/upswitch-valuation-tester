@@ -134,13 +134,13 @@ export class SessionAPI extends HttpClient {
       }
 
       // Map backend 'ai-guided' to frontend 'conversational'
-      if ((sessionData.currentView as string) === 'ai-guided') {
-        sessionData.currentView = 'conversational'
-      }
-      // Map dataSource: 'ai-guided' → 'conversational'
-      if (sessionData.dataSource === 'ai-guided') {
-        sessionData.dataSource = 'conversational'
-      }
+        if ((sessionData.currentView as string) === 'ai-guided') {
+          sessionData.currentView = 'conversational'
+        }
+        // Map dataSource: 'ai-guided' → 'conversational'
+        if (sessionData.dataSource === 'ai-guided') {
+          sessionData.dataSource = 'conversational'
+        }
 
       // CRITICAL: Validate required fields exist
       if (!sessionData.sessionId || !sessionData.reportId) {

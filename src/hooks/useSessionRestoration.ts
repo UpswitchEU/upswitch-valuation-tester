@@ -35,6 +35,8 @@ import { hasMeaningfulSessionData } from '../utils/sessionDataUtils'
  *
  * NOTE: Only restores for EXISTING reports (with meaningful sessionData).
  * NEW reports (empty sessionData) skip restoration entirely.
+ * 
+ * SIMPLIFIED: Single restoration per reportId - no complex flag management.
  */
 export function useSessionRestoration() {
   const { session, getSessionData } = useValuationSessionStore()
@@ -42,254 +44,206 @@ export function useSessionRestoration() {
   const { setResult, setHtmlReport, setInfoTabHtml } = useValuationResultsStore()
   const { fetchVersions } = useVersionHistoryStore()
 
-  // Track last restored reportId to avoid duplicate restorations
-  const lastRestoredReportIdRef = useRef<string | null>(null)
-  const hasRestoredFormDataRef = useRef(false)
-  const hasRestoredResultsRef = useRef(false)
-  const hasRestoredVersionsRef = useRef(false)
+  // Track restored reports using a Set (simple and efficient)
+  const restoredReports = useRef<Set<string>>(new Set())
 
-  // Reset restoration flags when reportId changes
-  useEffect(() => {
-    if (session?.reportId && session.reportId !== lastRestoredReportIdRef.current) {
-      generalLogger.info('Report changed, resetting restoration flags', {
-        previousReportId: lastRestoredReportIdRef.current,
-        newReportId: session.reportId,
-      })
-      lastRestoredReportIdRef.current = session.reportId
-      hasRestoredFormDataRef.current = false
-      hasRestoredResultsRef.current = false
-      hasRestoredVersionsRef.current = false
-    }
-  }, [session?.reportId])
-
-  // Phase 1 & 5: Restore form data from session (complete field mapping)
+  // Single restoration effect - runs once per reportId
   useEffect(() => {
     if (!session?.reportId) {
       return
     }
 
-    // Skip if we've already restored this report's form data
-    if (lastRestoredReportIdRef.current === session.reportId && hasRestoredFormDataRef.current) {
+    // Skip if already restored this report
+    if (restoredReports.current.has(session.reportId)) {
       return
     }
 
-    try {
-      const sessionData = getSessionData()
+    const sessionData = getSessionData()
 
-      // CRITICAL: Skip restoration for NEW reports (empty sessionData)
-      if (!sessionData || !hasMeaningfulSessionData(sessionData)) {
-        generalLogger.debug('Skipping restoration - NEW report (empty sessionData)', {
-          reportId: session.reportId,
-        })
-        // Mark as checked even for NEW reports to prevent re-checking
-        if (lastRestoredReportIdRef.current !== session.reportId) {
-          lastRestoredReportIdRef.current = session.reportId
-        }
-        return
-      }
-
-      // CRITICAL: Set reportId immediately to prevent race conditions
-      if (lastRestoredReportIdRef.current !== session.reportId) {
-        lastRestoredReportIdRef.current = session.reportId
-      }
-
-      // Convert session data to form data format - COMPLETE FIELD MAPPING
-      // Includes all fields from ValuationRequest for comprehensive restoration
-      // Cast sessionData to any to access fields that may not be in the type definition
-      const sessionDataAny = sessionData as any
-      const formDataUpdate: Partial<any> = {
-        // Basic company information
-        company_name: sessionData.company_name,
-        country_code: sessionData.country_code,
-        industry: sessionData.industry,
-        business_model: sessionData.business_model,
-        founding_year: sessionData.founding_year,
-
-        // Business details
-        business_type: sessionData.business_type,
-        business_type_id: sessionData.business_type_id,
-        business_structure: sessionDataAny.business_structure || sessionData.business_type, // Fallback to business_type
-        business_description: sessionData.business_description,
-        business_highlights: sessionData.business_highlights,
-        reason_for_selling: sessionData.reason_for_selling,
-
-        // Location
-        city: sessionData.city,
-
-        // Financials (handle both nested and flat structures)
-        revenue: sessionData.current_year_data?.revenue || sessionDataAny.revenue,
-        ebitda: sessionData.current_year_data?.ebitda || sessionDataAny.ebitda,
-        current_year_data: sessionData.current_year_data,
-        historical_years_data: sessionData.historical_years_data,
-        recurring_revenue_percentage: sessionData.recurring_revenue_percentage,
-
-        // Ownership
-        number_of_employees: sessionData.number_of_employees,
-        number_of_owners: sessionData.number_of_owners,
-        shares_for_sale: sessionData.shares_for_sale,
-
-        // Owner profiling (if collected - these may not be in ValuationRequest type)
-        owner_role: sessionDataAny.owner_role,
-        owner_hours: sessionDataAny.owner_hours,
-        delegation_capability: sessionDataAny.delegation_capability,
-        succession_plan: sessionDataAny.succession_plan,
-
-        // Historical data flag
-        provide_historical_data: sessionDataAny.provide_historical_data,
-
-        // Other
-        comparables: sessionData.comparables,
-        business_context: sessionData.business_context,
-      }
-
-      // Remove undefined values (preserve existing form data when merging)
-      Object.keys(formDataUpdate).forEach((key) => {
-        if (formDataUpdate[key] === undefined) {
-          delete formDataUpdate[key]
-        }
+    // CRITICAL: Skip restoration for NEW reports (empty sessionData)
+    if (!sessionData || !hasMeaningfulSessionData(sessionData)) {
+      generalLogger.debug('Skipping restoration - NEW report (empty sessionData)', {
+        reportId: session.reportId,
       })
+      // Mark as restored to prevent re-checking
+      restoredReports.current.add(session.reportId)
+      return
+    }
 
-      if (Object.keys(formDataUpdate).length > 0) {
-        // CRITICAL: Set flag BEFORE updateFormData to prevent race conditions
-        hasRestoredFormDataRef.current = true
-        updateFormData(formDataUpdate)
-        generalLogger.info('Form data restored from session', {
-          reportId: session.reportId,
-          fieldsRestored: Object.keys(formDataUpdate).length,
-          restoredFields: Object.keys(formDataUpdate),
+    // Mark as restoring immediately to prevent duplicates
+    restoredReports.current.add(session.reportId)
+
+    generalLogger.info('Starting session restoration', {
+      reportId: session.reportId,
+      hasSessionData: !!sessionData,
+      sessionDataKeys: Object.keys(sessionData || {}),
+    })
+
+    try {
+      // STEP 1: Restore form data
+      restoreFormData(session.reportId, sessionData, updateFormData)
+
+      // STEP 2: Restore valuation results
+      restoreResults(session.reportId, sessionData, setResult, setHtmlReport, setInfoTabHtml)
+
+      // STEP 3: Fetch version history (async, non-blocking)
+      fetchVersions(session.reportId)
+        .then(() => {
+          generalLogger.info('Version history fetched', {
+            reportId: session.reportId,
+          })
         })
-      } else {
-        // Even if no data to restore, mark as checked to prevent re-checking
-        hasRestoredFormDataRef.current = true
-      }
+        .catch((error) => {
+          generalLogger.warn('Failed to fetch versions (non-blocking)', {
+            error: error instanceof Error ? error.message : String(error),
+            reportId: session.reportId,
+          })
+        })
+
+      generalLogger.info('Session restoration completed', {
+        reportId: session.reportId,
+      })
     } catch (error) {
-      // Phase 7: Error handling - graceful degradation
-      generalLogger.error('Form data restoration failed', {
+      generalLogger.error('Session restoration failed', {
         error: error instanceof Error ? error.message : String(error),
         reportId: session.reportId,
       })
-      // Continue with other restoration steps - don't block
+      // Remove from restored set to allow retry on next mount
+      restoredReports.current.delete(session.reportId)
     }
-  }, [session?.reportId, session?.sessionData, getSessionData, updateFormData])
+  }, [session?.reportId, session?.sessionData, getSessionData, updateFormData, setResult, setHtmlReport, setInfoTabHtml, fetchVersions])
+}
 
-  // Phase 2 & 6: Restore valuation results from session (complete results)
-  useEffect(() => {
-    if (!session?.reportId) {
-      return
+/**
+ * Helper: Restore form data from session to form store
+ */
+function restoreFormData(
+  reportId: string,
+  sessionData: any,
+  updateFormData: (data: Partial<any>) => void
+) {
+  try {
+    // Convert session data to form data format - COMPLETE FIELD MAPPING
+    const sessionDataAny = sessionData as any
+    const formDataUpdate: Partial<any> = {
+      // Basic company information
+      company_name: sessionData.company_name,
+      country_code: sessionData.country_code,
+      industry: sessionData.industry,
+      business_model: sessionData.business_model,
+      founding_year: sessionData.founding_year,
+
+      // Business details
+      business_type: sessionData.business_type,
+      business_type_id: sessionData.business_type_id,
+      business_structure: sessionDataAny.business_structure || sessionData.business_type,
+      business_description: sessionData.business_description,
+      business_highlights: sessionData.business_highlights,
+      reason_for_selling: sessionData.reason_for_selling,
+
+      // Location
+      city: sessionData.city,
+
+      // Financials (handle both nested and flat structures)
+      revenue: sessionData.current_year_data?.revenue || sessionDataAny.revenue,
+      ebitda: sessionData.current_year_data?.ebitda || sessionDataAny.ebitda,
+      current_year_data: sessionData.current_year_data,
+      historical_years_data: sessionData.historical_years_data,
+      recurring_revenue_percentage: sessionData.recurring_revenue_percentage,
+
+      // Ownership
+      number_of_employees: sessionData.number_of_employees,
+      number_of_owners: sessionData.number_of_owners,
+      shares_for_sale: sessionData.shares_for_sale,
+
+      // Owner profiling
+      owner_role: sessionDataAny.owner_role,
+      owner_hours: sessionDataAny.owner_hours,
+      delegation_capability: sessionDataAny.delegation_capability,
+      succession_plan: sessionDataAny.succession_plan,
+      provide_historical_data: sessionDataAny.provide_historical_data,
+
+      // Other
+      comparables: sessionData.comparables,
+      business_context: sessionData.business_context,
     }
 
-    // Skip if we've already restored this report's results
-    if (lastRestoredReportIdRef.current === session.reportId && hasRestoredResultsRef.current) {
-      return
-    }
-
-    try {
-      const sessionData = session.sessionData as any
-
-      // CRITICAL: Skip restoration for NEW reports (empty sessionData)
-      if (!hasMeaningfulSessionData(sessionData)) {
-        generalLogger.debug('Skipping results restoration - NEW report (empty sessionData)', {
-          reportId: session.reportId,
-        })
-        // Mark as checked even for NEW reports to prevent re-checking
-        hasRestoredResultsRef.current = true
-        return
+    // Remove undefined values
+    Object.keys(formDataUpdate).forEach((key) => {
+      if (formDataUpdate[key] === undefined) {
+        delete formDataUpdate[key]
       }
+    })
 
-      // CRITICAL: Set reportId immediately to prevent race conditions
-      if (lastRestoredReportIdRef.current !== session.reportId) {
-        lastRestoredReportIdRef.current = session.reportId
+    if (Object.keys(formDataUpdate).length > 0) {
+      updateFormData(formDataUpdate)
+      generalLogger.info('Form data restored from session', {
+        reportId,
+        fieldsRestored: Object.keys(formDataUpdate).length,
+        companyName: formDataUpdate.company_name,
+        hasRevenue: !!formDataUpdate.revenue,
+      })
+    }
+  } catch (error) {
+    generalLogger.error('Form data restoration failed', {
+      error: error instanceof Error ? error.message : String(error),
+      reportId,
+    })
+  }
+}
+
+/**
+ * Helper: Restore valuation results from session to results store
+ */
+function restoreResults(
+  reportId: string,
+  sessionData: any,
+  setResult: (result: any) => void,
+  setHtmlReport: (html: string) => void,
+  setInfoTabHtml: (html: string) => void
+) {
+  try {
+    const valuationResult = sessionData?.valuation_result || (sessionData as any).valuationResult
+
+    // Restore complete result object (not just HTML)
+    if (valuationResult) {
+      const fullResult = {
+        ...valuationResult,
+        // Merge HTML reports if not in result object
+        html_report: valuationResult.html_report || sessionData?.html_report,
+        info_tab_html: valuationResult.info_tab_html || sessionData?.info_tab_html,
       }
-
-      const valuationResult = sessionData?.valuation_result || (session as any).valuationResult
-
-      // Restore complete result object (not just HTML)
-      if (valuationResult) {
-        const fullResult = {
-          ...valuationResult,
-          // Merge HTML reports if not in result object
-          html_report: valuationResult.html_report || sessionData?.html_report,
-          info_tab_html: valuationResult.info_tab_html || sessionData?.info_tab_html,
-        }
-        // CRITICAL: Set flag BEFORE setResult to prevent race conditions
-        hasRestoredResultsRef.current = true
-        setResult(fullResult)
-        generalLogger.info('Valuation result restored from session', {
-          reportId: session.reportId,
-          valuationId: fullResult.valuation_id,
-          hasHtmlReport: !!fullResult.html_report,
-          hasInfoTabHtml: !!fullResult.info_tab_html,
-          resultKeys: Object.keys(fullResult),
+      setResult(fullResult)
+      generalLogger.info('Valuation result restored from session', {
+        reportId,
+        valuationId: fullResult.valuation_id,
+        hasHtmlReport: !!fullResult.html_report,
+        htmlLength: fullResult.html_report?.length || 0,
+        hasInfoTabHtml: !!fullResult.info_tab_html,
+        infoLength: fullResult.info_tab_html?.length || 0,
+      })
+    } else if (sessionData?.html_report || sessionData?.info_tab_html) {
+      // Partial restoration - HTML exists but no result object
+      if (sessionData.html_report) {
+        setHtmlReport(sessionData.html_report)
+        generalLogger.info('HTML report restored from session (partial)', {
+          reportId,
+          htmlLength: sessionData.html_report.length,
         })
-      } else if (sessionData?.html_report || sessionData?.info_tab_html) {
-        // Phase 6: Partial restoration - HTML exists but no result object
-        // CRITICAL: Set flag BEFORE setting HTML to prevent race conditions
-        hasRestoredResultsRef.current = true
-        // Create minimal result object with HTML reports
-        if (sessionData.html_report) {
-          setHtmlReport(sessionData.html_report)
-          generalLogger.info('HTML report restored from session (partial)', {
-            reportId: session.reportId,
-            htmlLength: sessionData.html_report.length,
-          })
-        }
-        if (sessionData.info_tab_html) {
-          setInfoTabHtml(sessionData.info_tab_html)
-          generalLogger.info('Info tab HTML restored from session (partial)', {
-            reportId: session.reportId,
-            htmlLength: sessionData.info_tab_html.length,
-          })
-        }
-      } else {
-        // No results to restore, but mark as checked to prevent re-checking
-        hasRestoredResultsRef.current = true
       }
-    } catch (error) {
-      // Phase 7: Error handling - graceful degradation
-      generalLogger.error('Results restoration failed', {
-        error: error instanceof Error ? error.message : String(error),
-        reportId: session.reportId,
-      })
-      // Continue with version restoration - don't block
-    }
-  }, [session?.reportId, session?.sessionData, setResult, setHtmlReport, setInfoTabHtml])
-
-  // Phase 3: Version history auto-fetch (only for EXISTING reports)
-  useEffect(() => {
-    if (!session?.reportId) {
-      return
-    }
-
-    // Skip if we've already fetched versions for this report
-    if (lastRestoredReportIdRef.current === session.reportId && hasRestoredVersionsRef.current) {
-      return
-    }
-
-    // CRITICAL: Skip version fetching for NEW reports (no meaningful data)
-    const sessionData = session.sessionData as any
-    if (!hasMeaningfulSessionData(sessionData)) {
-      generalLogger.debug('Skipping version fetch - NEW report (empty sessionData)', {
-        reportId: session.reportId,
-      })
-      return
-    }
-
-    // Fetch versions asynchronously - don't block other restoration
-    fetchVersions(session.reportId)
-      .then(() => {
-        hasRestoredVersionsRef.current = true
-        generalLogger.info('Version history fetched', {
-          reportId: session.reportId,
+      if (sessionData.info_tab_html) {
+        setInfoTabHtml(sessionData.info_tab_html)
+        generalLogger.info('Info tab HTML restored from session (partial)', {
+          reportId,
+          infoLength: sessionData.info_tab_html.length,
         })
-      })
-      .catch((error) => {
-        // Phase 7: Graceful degradation - versions are optional
-        generalLogger.warn('Failed to fetch versions (non-blocking)', {
-          error: error instanceof Error ? error.message : String(error),
-          reportId: session.reportId,
-        })
-        // Don't set hasRestoredVersionsRef to true on error - allow retry
-      })
-  }, [session?.reportId, session?.sessionData, fetchVersions])
+      }
+    }
+  } catch (error) {
+    generalLogger.error('Results restoration failed', {
+      error: error instanceof Error ? error.message : String(error),
+      reportId,
+    })
+  }
 }
 

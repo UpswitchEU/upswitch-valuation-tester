@@ -170,20 +170,20 @@ export const ValuationSessionManager: React.FC<ValuationSessionManagerProps> = R
 
       // Extract existing params and update flow
       const params: Record<string, string> = {}
-      searchParams.forEach((value, key) => {
+        searchParams.forEach((value, key) => {
         if (key !== 'flow') {
           params[key] = value
         }
-      })
+        })
       params.flow = targetFlow
 
       const newUrl = UrlGeneratorService.reportById(session.reportId, params)
 
       // Update URL
-      router.replace(newUrl, { scroll: false })
+        router.replace(newUrl, { scroll: false })
 
       // Reset flag after Next.js updates (simple delay)
-      setTimeout(() => {
+        setTimeout(() => {
         setUpdatingUrl(false)
       }, 100)
     }, [session?.currentView, session?.reportId, searchParams, router, isUpdatingUrl, setUpdatingUrl])

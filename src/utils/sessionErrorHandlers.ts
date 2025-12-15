@@ -345,6 +345,33 @@ export async function createOrLoadSession(
         globalSessionMetrics.recordOperation('create', true, duration, 0)
 
         return existingSession
+      } else {
+        // CRITICAL: If handle409Conflict returns null (failed to load after retries),
+        // create a fallback session instead of throwing. This ensures report generation
+        // can proceed even if session loading fails.
+        storeLogger.warn('Failed to load existing session after 409 conflict, creating fallback', {
+          reportId,
+          correlationId,
+        })
+        
+        // Record partial success (conflict resolved but had to use fallback)
+        globalAuditTrail.log({
+          operation: 'CREATE',
+          reportId,
+          success: true,
+          duration_ms: duration,
+          correlationId,
+          metadata: {
+            resolved: 'fallback_after_409',
+            fallbackCreated: true,
+          },
+        })
+
+        // Record in metrics
+        globalSessionMetrics.recordOperation('create', true, duration, 0)
+
+        // Create fallback session for 409 conflicts that couldn't be loaded
+        return createFallbackSession(reportId, currentView, prefilledQuery, createError)
       }
     }
 

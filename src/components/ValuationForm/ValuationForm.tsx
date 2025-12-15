@@ -187,15 +187,12 @@ export const ValuationForm: React.FC<ValuationFormProps> = ({
     []
   )
 
-  // Use form session sync hook for loading session data and syncing changes
+  // Use form session sync hook for syncing form changes to session
+  // Note: Restoration is handled by useSessionRestoration in ManualLayout
   useFormSessionSync({
     session,
     formData,
     updateSessionData,
-    getSessionData,
-    updateFormData,
-    businessTypes,
-    matchBusinessType,
   })
 
   // Sync formData to DataResponse[] format (unified pipeline)

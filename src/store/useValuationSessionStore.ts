@@ -6,9 +6,9 @@ import { CorrelationPrefixes, createCorrelationId } from '../utils/correlationId
 import { extractErrorMessage } from '../utils/errorDetection'
 import { convertToApplicationError, getErrorMessage } from '../utils/errors/errorConverter'
 import {
-    isNetworkError,
-    isSessionConflictError,
-    isValidationError,
+  isNetworkError,
+  isSessionConflictError,
+  isValidationError,
 } from '../utils/errors/errorGuards'
 import { storeLogger } from '../utils/logger'
 import { globalSessionMetrics } from '../utils/metrics/sessionMetrics'
@@ -18,10 +18,10 @@ import { globalAuditTrail } from '../utils/sessionAuditTrail'
 import { globalSessionCache } from '../utils/sessionCacheManager'
 import { createFallbackSession, createOrLoadSession } from '../utils/sessionErrorHandlers'
 import {
-    createSessionOptimistically,
-    mergePrefilledQuery,
-    normalizeSessionDates,
-    syncSessionToBackend,
+  createSessionOptimistically,
+  mergePrefilledQuery,
+  normalizeSessionDates,
+  syncSessionToBackend,
 } from '../utils/sessionHelpers'
 import { validateSessionData } from '../utils/sessionValidation'
 import { verifySessionInBackground } from '../utils/sessionVerification'
@@ -49,8 +49,15 @@ export interface ValuationSessionStore {
 
   // Sync methods for cross-flow data sharing
   syncFromManualForm: () => Promise<void>
-  syncToManualForm: () => void
   getCompleteness: () => number
+  
+  // Save complete session (all data atomically)
+  saveCompleteSession: (data: {
+    formData?: ValuationFormData
+    valuationResult?: any
+    htmlReport?: string
+    infoTabHtml?: string
+  }) => Promise<void>
 
   // Sync state
   isSyncing: boolean
@@ -405,8 +412,12 @@ export const useValuationSessionStore = create<ValuationSessionStore>((set, get)
               reportId,
               error: errorMessage,
             })
+            // CRITICAL: For 409 conflicts, don't throw - use fallback session and continue
+            // This allows report generation to proceed even if session loading fails
+            return
           }
 
+          // For other errors, still throw (but fallback session is available)
           throw appError
         } finally {
           // Step 4: Set state to 'ready' (atomic write)
@@ -499,23 +510,8 @@ export const useValuationSessionStore = create<ValuationSessionStore>((set, get)
             })
           }
 
-          // CRITICAL: Sync to manual form if current view is manual
-          try {
-            if (cachedSession.currentView === 'manual' && cachedSession.sessionData) {
-              get().syncToManualForm()
-              storeLogger.info('Synced cached session data to manual form', {
-                reportId,
-                correlationId,
-              })
-            }
-          } catch (error) {
-            // Failproof: Never let form sync break session load
-            storeLogger.error('Failed to sync cached session to manual form', {
-              reportId,
-              correlationId,
-              error: error instanceof Error ? error.message : String(error),
-            })
-          }
+          // CRITICAL: Form restoration is now handled by useSessionRestoration hook
+          // No manual sync needed here - restoration happens automatically in components
 
           // Record cache hit metric
           globalSessionMetrics.recordOperation('load', true, loadTime, 0, 'cache_hit')
@@ -648,23 +644,8 @@ export const useValuationSessionStore = create<ValuationSessionStore>((set, get)
           syncError: null,
         })
 
-        // CRITICAL: Sync to manual form if current view is manual
-        try {
-          if (session.currentView === 'manual' && session.sessionData) {
-            get().syncToManualForm()
-            storeLogger.info('Synced backend session data to manual form', {
-              reportId,
-              correlationId,
-            })
-          }
-        } catch (error) {
-          // Failproof: Never let form sync break session load
-          storeLogger.error('Failed to sync backend session to manual form', {
-            reportId,
-            correlationId,
-            error: error instanceof Error ? error.message : String(error),
-          })
-        }
+        // CRITICAL: Form restoration is now handled by useSessionRestoration hook
+        // No manual sync needed here - restoration happens automatically in components
 
         // Record success in audit trail
         const duration = performance.now() - startTime
@@ -1356,80 +1337,165 @@ export const useValuationSessionStore = create<ValuationSessionStore>((set, get)
     },
 
     /**
-     * Sync data from session to manual form
-     * Writes session data to useValuationFormStore for manual form display
+     * Save complete session atomically
+     * 
+     * Saves all data in a single atomic operation:
+     * - Form data (all input fields)
+     * - Valuation results (final_valuation, calculated_at, etc.)
+     * - HTML reports (main report and info tab)
+     * 
+     * This ensures no partial states and smooth restoration on revisit.
      */
-    syncToManualForm: () => {
+    saveCompleteSession: async (data: {
+      formData?: ValuationFormData
+      valuationResult?: any
+      htmlReport?: string
+      infoTabHtml?: string
+    }) => {
       const { session } = get()
 
-      if (!session || !session.sessionData) {
-        storeLogger.warn('Cannot sync to manual form: no session data')
+      if (!session) {
+        storeLogger.warn('Cannot save complete session: no active session')
         return
       }
 
       try {
-        // Import dynamically to avoid circular dependency
-        const { useValuationFormStore } = require('./useValuationFormStore')
-        const sessionData = session.sessionData
+        set({ isSaving: true, isSyncing: true, syncError: null })
 
-        storeLogger.debug('Syncing from session to manual form', {
+        storeLogger.info('Saving complete session', {
           reportId: session.reportId,
-          fieldsPresent: Object.keys(sessionData).length,
+          hasFormData: !!data.formData,
+          hasResult: !!data.valuationResult,
+          hasHtmlReport: !!data.htmlReport,
+          hasInfoTab: !!data.infoTabHtml,
         })
 
-        // Convert session data to form data format
-        const formUpdate: Partial<ValuationFormData> = {
-          company_name: sessionData.company_name,
-          country_code: sessionData.country_code,
-          industry: sessionData.industry,
-          business_model: sessionData.business_model,
-          founding_year: sessionData.founding_year,
-          current_year_data: sessionData.current_year_data,
-          historical_years_data: sessionData.historical_years_data,
-          number_of_employees: sessionData.number_of_employees,
-          number_of_owners: sessionData.number_of_owners,
-          recurring_revenue_percentage: sessionData.recurring_revenue_percentage,
-          shares_for_sale: sessionData.shares_for_sale,
-          business_type_id: sessionData.business_type_id,
-          business_context: sessionData.business_context,
-          comparables: sessionData.comparables,
+        // Import SessionAPI dynamically to avoid circular dependencies
+        const { SessionAPI } = await import('../services/api/session/SessionAPI')
+        const sessionAPI = new SessionAPI()
+
+        // Prepare complete session data
+        const sessionUpdate: Partial<ValuationRequest> = {}
+
+        // Merge form data if provided
+        if (data.formData) {
+          Object.assign(sessionUpdate, {
+            company_name: data.formData.company_name,
+            country_code: data.formData.country_code,
+            industry: data.formData.industry,
+            business_model: data.formData.business_model,
+            founding_year: data.formData.founding_year,
+            current_year_data: data.formData.current_year_data,
+            historical_years_data: data.formData.historical_years_data,
+            number_of_employees: data.formData.number_of_employees,
+            number_of_owners: data.formData.number_of_owners,
+            recurring_revenue_percentage: data.formData.recurring_revenue_percentage,
+            shares_for_sale: data.formData.shares_for_sale,
+            business_type_id: data.formData.business_type_id,
+            business_context: data.formData.business_context,
+            comparables: data.formData.comparables,
+          })
         }
 
-        // Remove undefined values
-        Object.keys(formUpdate).forEach((key) => {
-          if (formUpdate[key as keyof typeof formUpdate] === undefined) {
-            delete formUpdate[key as keyof typeof formUpdate]
+        // Add valuation result data if provided
+        if (data.valuationResult) {
+          Object.assign(sessionUpdate, {
+            valuation_result: data.valuationResult,
+          })
+        }
+
+        // Add HTML reports if provided
+        if (data.htmlReport) {
+          Object.assign(sessionUpdate, {
+            html_report: data.htmlReport,
+          })
+        }
+
+        if (data.infoTabHtml) {
+          Object.assign(sessionUpdate, {
+            info_tab_html: data.infoTabHtml,
+          })
+        }
+
+        // Update local session data first (optimistic update)
+        await get().updateSessionData(sessionUpdate)
+
+        // Save valuation result to backend (if provided)
+        if (data.valuationResult || data.htmlReport || data.infoTabHtml) {
+          try {
+            await sessionAPI.saveValuationResult(session.reportId, {
+              valuationResult: data.valuationResult,
+              htmlReport: data.htmlReport,
+              infoTabHtml: data.infoTabHtml,
+            })
+
+            storeLogger.info('Valuation result saved to backend', {
+              reportId: session.reportId,
+              hasHtmlReport: !!data.htmlReport,
+              htmlLength: data.htmlReport?.length || 0,
+              hasInfoTab: !!data.infoTabHtml,
+              infoLength: data.infoTabHtml?.length || 0,
+            })
+          } catch (saveError) {
+            // Log but don't fail - session data is already saved locally
+            storeLogger.error('Failed to save valuation result to backend', {
+              reportId: session.reportId,
+              error: saveError instanceof Error ? saveError.message : String(saveError),
+            })
           }
+        }
+
+        // Mark save as complete
+        set({
+          isSaving: false,
+          isSyncing: false,
+          hasUnsavedChanges: false,
+          lastSaved: new Date(),
+          syncError: null,
         })
 
-        // Update manual form store
-        useValuationFormStore.getState().updateFormData(formUpdate)
-
-        storeLogger.info('Synced from session to manual form', {
+        storeLogger.info('Complete session saved successfully', {
           reportId: session.reportId,
-          fieldsUpdated: Object.keys(formUpdate).length,
         })
       } catch (error) {
         const appError = convertToApplicationError(error, {
           reportId: session.reportId,
         })
 
+        const errorMessage = getErrorMessage(appError)
+
+        set({
+          isSaving: false,
+          isSyncing: false,
+          syncError: errorMessage,
+        })
+
         // Log with specific error type
         if (isNetworkError(appError)) {
-          storeLogger.error('Failed to sync to manual form - network error', {
+          storeLogger.error('Failed to save complete session - network error', {
+            error: (appError as any).message,
+            code: (appError as any).code,
+            reportId: session.reportId,
+            context: (appError as any).context,
+          })
+        } else if (isValidationError(appError)) {
+          storeLogger.error('Failed to save complete session - validation error', {
             error: (appError as any).message,
             code: (appError as any).code,
             reportId: session.reportId,
             context: (appError as any).context,
           })
         } else {
-          storeLogger.error('Failed to sync to manual form', {
+          storeLogger.error('Failed to save complete session', {
             error: (appError as any).message,
             code: (appError as any).code,
             reportId: session.reportId,
             context: (appError as any).context,
           })
         }
+
+        // Re-throw to allow caller to handle
+        throw appError
       }
     },
 

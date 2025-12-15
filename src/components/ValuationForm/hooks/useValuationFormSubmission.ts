@@ -235,28 +235,28 @@ export const useValuationFormSubmission = (
           try {
             if (previousVersion && changes && areChangesSignificant(changes)) {
               // Regeneration - create new version with changes
-              const newVersion = await createVersion({
-                reportId,
-                formData: request,
-                valuationResult: result,
-                htmlReport: result.html_report || undefined,
-                changesSummary: changes,
-                versionLabel: generateAutoLabel(previousVersion.versionNumber + 1, changes),
-              })
+            const newVersion = await createVersion({
+              reportId,
+              formData: request,
+              valuationResult: result,
+              htmlReport: result.html_report || undefined,
+              changesSummary: changes,
+              versionLabel: generateAutoLabel(previousVersion.versionNumber + 1, changes),
+            })
 
-              generalLogger.info('New version created on regeneration', {
-                reportId,
-                versionNumber: newVersion.versionNumber,
-                versionLabel: newVersion.versionLabel,
-              })
+            generalLogger.info('New version created on regeneration', {
+              reportId,
+              versionNumber: newVersion.versionNumber,
+              versionLabel: newVersion.versionLabel,
+            })
 
-              // Log regeneration to audit trail
-              valuationAuditService.logRegeneration(
-                reportId,
-                newVersion.versionNumber,
-                changes,
-                calculationDuration
-              )
+            // Log regeneration to audit trail
+            valuationAuditService.logRegeneration(
+              reportId,
+              newVersion.versionNumber,
+              changes,
+              calculationDuration
+            )
 
               // Refetch versions to update the toolbar dropdown
               fetchVersions(reportId).catch(() => {
@@ -304,31 +304,32 @@ export const useValuationFormSubmission = (
           }
         }
 
-        // CRITICAL: Save valuation result, HTML reports, and info tab HTML to session
+        // CRITICAL: Save complete session atomically (form data + results + HTML reports)
         // This ensures everything can be restored when user returns later
-        const { markReportSaving, markReportSaved, markReportSaveFailed } = useValuationSessionStore.getState()
+        const { saveCompleteSession, markReportSaving, markReportSaved, markReportSaveFailed } = useValuationSessionStore.getState()
         markReportSaving()
 
         if (session?.reportId) {
           try {
-            const { SessionAPI } = await import('../../../services/api/session/SessionAPI')
-            const sessionAPI = new SessionAPI()
-            
-            await sessionAPI.saveValuationResult(session.reportId, {
+            // Atomic save: all data in one operation
+            await saveCompleteSession({
+              formData,
               valuationResult: result,
               htmlReport: result.html_report,
               infoTabHtml: result.info_tab_html,
             })
 
-            generalLogger.info('Valuation result saved to session after calculation', {
+            generalLogger.info('Complete session saved atomically after calculation', {
               reportId: session.reportId,
+              hasFormData: !!formData,
+              hasResult: !!result,
               hasHtmlReport: !!result.html_report,
               hasInfoTabHtml: !!result.info_tab_html,
             })
 
             markReportSaved()
           } catch (saveError) {
-            generalLogger.error('Failed to save valuation result to session', {
+            generalLogger.error('Failed to save complete session', {
               reportId: session.reportId,
               error: saveError instanceof Error ? saveError.message : String(saveError),
             })

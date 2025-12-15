@@ -175,12 +175,12 @@ export const ReportPanel: React.FC<ReportPanelProps> = React.memo(
       }
     }
 
-    return (
+  return (
       <div
         className={`h-full min-h-[400px] lg:min-h-0 flex flex-col bg-white overflow-hidden w-full lg:w-auto border-t lg:border-t-0 border-zinc-800 ${className}`}
       >
-        <div className="flex-1 overflow-y-auto">
-          {/* Preview Tab */}
+      <div className="flex-1 overflow-y-auto">
+        {/* Preview Tab */}
           {activeTab === 'preview' && (
             <div className="h-full">
               {isCalculating ? (
@@ -197,7 +197,7 @@ export const ReportPanel: React.FC<ReportPanelProps> = React.memo(
             </div>
           )}
 
-          {/* Info Tab */}
+        {/* Info Tab */}
           {activeTab === 'info' && (
             <div className="h-full">
               {isCalculating ? (
@@ -228,10 +228,10 @@ export const ReportPanel: React.FC<ReportPanelProps> = React.memo(
               )}
             </div>
           )}
-        </div>
       </div>
-    )
-  }
+    </div>
+  )
+}
 )
 
 ReportPanel.displayName = 'ReportPanel'

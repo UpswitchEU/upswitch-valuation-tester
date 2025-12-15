@@ -137,7 +137,7 @@ export const ManualLayout: React.FC<ManualLayoutProps> = ({
             reportId={reportId}
             activeTab={activeTab as 'preview' | 'info' | 'history'}
             onTabChange={(tab: 'preview' | 'info' | 'history') => {
-              handleHookTabChange(tab as ValuationTab)
+                handleHookTabChange(tab as ValuationTab)
             }}
             isCalculating={isCalculating}
             error={error}

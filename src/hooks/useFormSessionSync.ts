@@ -1,235 +1,38 @@
 /**
  * useFormSessionSync Hook
  *
- * Single Responsibility: Synchronize form data with session store
- * Extracted from ValuationForm to follow SRP
+ * SIMPLIFIED: Single Responsibility - Sync form changes TO session (one direction only)
+ * 
+ * Restoration is handled by useSessionRestoration hook.
+ * This hook ONLY syncs form changes to session store (debounced).
  *
  * @module hooks/useFormSessionSync
  */
 
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect } from 'react'
 import type { ValuationSessionStore } from '../store/useValuationSessionStore'
 import { debounce } from '../utils/debounce'
 import { generalLogger } from '../utils/logger'
-import { hasMeaningfulSessionData } from '../utils/sessionDataUtils'
-import { useValuationFormStore } from '../store/useValuationFormStore'
 
 interface UseFormSessionSyncOptions {
   session: any
   formData: any
   updateSessionData: ValuationSessionStore['updateSessionData']
-  getSessionData: ValuationSessionStore['getSessionData']
-  updateFormData: (data: Partial<any>) => void
-  businessTypes: any[]
-  matchBusinessType: (query: string, businessTypes: any[]) => string | null
 }
 
 /**
- * Hook for synchronizing form data with session store
+ * Hook for synchronizing form data changes TO session store
  *
- * Handles:
- * - Loading session data into form when switching to manual view
- * - Debounced syncing of form changes to session store
- * - Prefilling from homepage query
- *
- * NOTE: For NEW reports (empty sessionData), only handles prefilledQuery matching.
- * For EXISTING reports, loads full session data.
+ * SIMPLIFIED: Only handles form → session sync (debounced)
+ * Restoration (session → form) is handled by useSessionRestoration hook
  */
 export const useFormSessionSync = ({
   session,
   formData,
   updateSessionData,
-  getSessionData,
-  updateFormData,
-  businessTypes,
-  matchBusinessType,
 }: UseFormSessionSyncOptions) => {
-  const [hasLoadedSessionData, setHasLoadedSessionData] = useState(false)
-  const [lastLoadedReportId, setLastLoadedReportId] = useState<string | null>(null)
-  // Use ref to track form data check without causing re-renders
-  const hasCheckedFormDataRef = useRef(false)
 
-  // CRITICAL FIX: Reset hasLoadedSessionData when reportId changes
-  useEffect(() => {
-    if (session?.reportId && session.reportId !== lastLoadedReportId) {
-      generalLogger.info('Report changed, resetting form load state', {
-        previousReportId: lastLoadedReportId,
-        newReportId: session.reportId,
-      })
-      setHasLoadedSessionData(false)
-      setLastLoadedReportId(session.reportId)
-      hasCheckedFormDataRef.current = false // Reset check flag
-    }
-  }, [session?.reportId, lastLoadedReportId])
-
-  // Load session data into form when switching to manual view OR when report loads
-  // NOTE: useSessionRestoration hook (in layouts) handles comprehensive restoration
-  // This hook focuses on manual flow specific needs (prefilledQuery matching) and syncing changes TO session
-  useEffect(() => {
-    // CRITICAL: Load data if:
-    // 1. Session exists
-    // 2. Current view is manual (or we're loading from home page)
-    // 3. Haven't loaded this report's data yet
-    // 4. Skip if useSessionRestoration has already loaded data (check if form has data)
-    if (session && !hasLoadedSessionData && !hasCheckedFormDataRef.current) {
-      const sessionData = getSessionData()
-      const prefilledQuery = (session.partialData as any)?._prefilledQuery as string | undefined
-
-      // CRITICAL: Skip loading for NEW reports (empty sessionData)
-      // Only handle prefilledQuery matching for NEW reports
-      if (!hasMeaningfulSessionData(sessionData)) {
-        // NEW report - handle prefilledQuery if present
-        // CRITICAL: Wait for businessTypes to load before matching
-        if (prefilledQuery) {
-          if (businessTypes.length > 0) {
-            // businessTypes are loaded - match immediately
-            const matchedBusinessTypeId = matchBusinessType(prefilledQuery, businessTypes)
-            if (matchedBusinessTypeId) {
-              const matchedBusinessType = businessTypes.find((bt) => bt.id === matchedBusinessTypeId)
-              if (matchedBusinessType) {
-                const formDataUpdate: Partial<any> = {
-                  business_type_id: matchedBusinessTypeId,
-                  business_model: matchedBusinessTypeId,
-                  industry: matchedBusinessType.industry || matchedBusinessType.industryMapping,
-                }
-                updateFormData(formDataUpdate)
-                generalLogger.info('Prefilled business type from homepage query (NEW report)', {
-                  query: prefilledQuery,
-                  businessTypeId: matchedBusinessTypeId,
-                  businessTypeTitle: matchedBusinessType.title || matchedBusinessType.id,
-                })
-              }
-            }
-            setHasLoadedSessionData(true)
-            hasCheckedFormDataRef.current = true
-          } else {
-            // businessTypes not loaded yet - wait for them to load
-            // Don't mark as loaded yet, allow effect to re-run when businessTypes load
-            generalLogger.debug('Waiting for businessTypes to load before matching prefilledQuery', {
-              reportId: session.reportId,
-              prefilledQuery,
-            })
-            return // Exit early, will re-run when businessTypes load
-          }
-        } else {
-          // No prefilledQuery - mark as loaded
-          setHasLoadedSessionData(true)
-          hasCheckedFormDataRef.current = true
-        }
-        return
-      }
-
-      // EXISTING report - check if useSessionRestoration already ran
-      // Use Zustand getState() for synchronous read (prevents race conditions, no subscription)
-      const currentFormData = useValuationFormStore.getState().formData
-      const hasExistingFormData = currentFormData?.company_name || currentFormData?.revenue || currentFormData?.business_type_id
-      
-      if (hasExistingFormData && !prefilledQuery) {
-        // useSessionRestoration already loaded data - skip to avoid duplicate restoration
-        generalLogger.debug('Skipping form load - useSessionRestoration already loaded data', {
-          reportId: session.reportId,
-        })
-        setHasLoadedSessionData(true)
-        hasCheckedFormDataRef.current = true
-        return
-      }
-      
-      hasCheckedFormDataRef.current = true // Mark as checked even if we proceed
-
-      generalLogger.info('Attempting to load session data into form', {
-        reportId: session.reportId,
-        currentView: session.currentView,
-        hasSessionData: !!sessionData,
-        hasPrefilledQuery: !!prefilledQuery,
-        hasExistingFormData,
-      })
-
-      // Convert ValuationRequest to ValuationFormData format
-      const formDataUpdate: Partial<any> = {
-        company_name: sessionData?.company_name,
-        country_code: sessionData?.country_code,
-        industry: sessionData?.industry,
-        business_model: sessionData?.business_model,
-        founding_year: sessionData?.founding_year,
-        revenue: sessionData?.current_year_data?.revenue || (sessionData as any)?.revenue,
-        ebitda: sessionData?.current_year_data?.ebitda || (sessionData as any)?.ebitda,
-        current_year_data: sessionData?.current_year_data,
-        historical_years_data: sessionData?.historical_years_data,
-        number_of_employees: sessionData?.number_of_employees,
-        number_of_owners: sessionData?.number_of_owners,
-        recurring_revenue_percentage: sessionData?.recurring_revenue_percentage,
-        comparables: sessionData?.comparables,
-        business_type_id: sessionData?.business_type_id,
-        business_type: sessionData?.business_type,
-        shares_for_sale: sessionData?.shares_for_sale,
-      }
-
-      // If we have a prefilledQuery from homepage and no business_type_id yet, try to match it
-      if (prefilledQuery && !formDataUpdate.business_type_id && businessTypes.length > 0) {
-        const matchedBusinessTypeId = matchBusinessType(prefilledQuery, businessTypes)
-        if (matchedBusinessTypeId) {
-          const matchedBusinessType = businessTypes.find((bt) => bt.id === matchedBusinessTypeId)
-          if (matchedBusinessType) {
-            formDataUpdate.business_type_id = matchedBusinessTypeId
-            formDataUpdate.business_model = matchedBusinessTypeId
-            formDataUpdate.industry =
-              matchedBusinessType.industry || matchedBusinessType.industryMapping
-            generalLogger.info('Prefilled business type from homepage query', {
-              query: prefilledQuery,
-              businessTypeId: matchedBusinessTypeId,
-              businessTypeTitle: matchedBusinessType.title || matchedBusinessType.id,
-            })
-          }
-        }
-      }
-
-      // Remove undefined values
-      Object.keys(formDataUpdate).forEach((key) => {
-        if (formDataUpdate[key] === undefined) {
-          delete formDataUpdate[key]
-        }
-      })
-
-      if (Object.keys(formDataUpdate).length > 0) {
-        updateFormData(formDataUpdate)
-        setHasLoadedSessionData(true)
-
-        generalLogger.info('Loaded session data into form', {
-          reportId: session.reportId,
-          hasCompanyName: !!formDataUpdate.company_name,
-          hasRevenue: !!formDataUpdate.revenue,
-          hasBusinessType: !!formDataUpdate.business_type_id,
-          fieldsLoaded: Object.keys(formDataUpdate).length,
-          fields: Object.keys(formDataUpdate),
-        })
-      } else {
-        generalLogger.warn('No form data to load from session', {
-          reportId: session.reportId,
-          hasSessionData: !!sessionData,
-          sessionDataKeys: sessionData ? Object.keys(sessionData) : [],
-        })
-      }
-    }
-    // CRITICAL: Do NOT include formData in dependencies to prevent infinite loops
-    // formData is checked once via ref, not on every change
-    // CRITICAL: Include businessTypes to re-run when they load (for prefilledQuery matching)
-  }, [
-    session?.reportId, // CRITICAL: Add reportId to trigger on report change
-    session?.currentView,
-    session?.sessionId,
-    session?.partialData, // CRITICAL: Include to detect prefilledQuery changes
-    session?.sessionData, // CRITICAL: Add sessionData to trigger when data loads
-    getSessionData,
-    updateFormData,
-    hasLoadedSessionData,
-    businessTypes, // CRITICAL: Include to re-run when businessTypes load
-    matchBusinessType,
-    session,
-    // formData intentionally excluded to prevent infinite loops
-  ])
-
-  // Debounced sync form data to session store (500ms delay)
-  // CRITICAL FIX: Include all dependencies to prevent stale closures
+  // Debounced sync: form data → session store (500ms delay)
   const debouncedSyncToSession = useCallback(
     debounce(async (data: typeof formData) => {
       if (!session || !data || Object.keys(data).length === 0) {
@@ -288,10 +91,8 @@ export const useFormSessionSync = ({
 
   // Sync form data to session store whenever it changes (debounced)
   useEffect(() => {
-    if (hasLoadedSessionData && formData && Object.keys(formData).length > 0) {
+    if (formData && Object.keys(formData).length > 0) {
       debouncedSyncToSession(formData)
     }
-  }, [formData, debouncedSyncToSession, hasLoadedSessionData])
-
-  return { hasLoadedSessionData }
+  }, [formData, debouncedSyncToSession])
 }

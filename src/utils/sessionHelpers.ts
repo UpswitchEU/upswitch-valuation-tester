@@ -194,50 +194,63 @@ export function syncSessionToBackend(session: ValuationSession): void {
   Promise.resolve()
     .then(async () => {
       try {
-        sessionHelpersLogger.info('Starting background sync', { reportId })
+        sessionHelpersLogger.debug('Starting background sync', { reportId })
 
-        // Retry sync with exponential backoff for transient errors
-        await retryWithBackoff(
-          async () => {
-            return await backendAPI.createValuationSession(session)
-          },
-          {
-            maxRetries: 3,
-            initialDelay: 200, // Start with 200ms delay
-            maxDelay: 2000, // Max 2s delay
-            backoffMultiplier: 2,
-            onRetry: (attempt, error, delay) => {
-              sessionHelpersLogger.warn('Retrying background sync', {
-                reportId,
-                attempt,
-                delay_ms: delay,
-                error: error instanceof Error ? error.message : 'Unknown error',
-              })
-            },
-            onFailure: (error, attempts) => {
-              sessionHelpersLogger.error('Background sync failed after all retries', {
-                reportId,
-                attempts,
-                error: error instanceof Error ? error.message : 'Unknown error',
-              })
-            },
+        // CRITICAL: Try to create session, but handle 409 conflicts immediately (don't retry)
+        try {
+          await backendAPI.createValuationSession(session)
+          sessionHelpersLogger.debug('Background sync completed successfully', {
+            reportId,
+            sessionId: session.sessionId,
+          })
+          // Success - cache already updated by createSessionOptimistically
+          return // Exit early on success
+        } catch (createError) {
+          // CRITICAL: 409 conflicts are EXPECTED - session already exists, don't retry
+          if (is409Conflict(createError)) {
+            // Re-throw to outer catch block for 409 handling
+            throw createError
           }
-        )
+          
+          // For other errors, retry with exponential backoff
+          await retryWithBackoff(
+            async () => {
+              return await backendAPI.createValuationSession(session)
+            },
+            {
+              maxRetries: 3,
+              initialDelay: 200,
+              maxDelay: 2000,
+              backoffMultiplier: 2,
+              onRetry: (attempt, error, delay) => {
+                sessionHelpersLogger.debug('Retrying background sync', {
+                  reportId,
+                  attempt,
+                  delay_ms: delay,
+                  error: error instanceof Error ? error.message : 'Unknown error',
+                })
+              },
+              onFailure: (error, attempts) => {
+                sessionHelpersLogger.warn('Background sync failed after retries', {
+                  reportId,
+                  attempts,
+                  error: error instanceof Error ? error.message : 'Unknown error',
+                })
+              },
+            }
+          )
 
-        sessionHelpersLogger.info('Background sync completed successfully', {
-          reportId,
-          sessionId: session.sessionId,
-        })
-
-        // Sync completed successfully
-
-        // Success - cache already updated by createSessionOptimistically
-        // Backend may have additional fields, but we keep local version for now
+          sessionHelpersLogger.debug('Background sync completed successfully after retries', {
+            reportId,
+            sessionId: session.sessionId,
+          })
+        }
       } catch (error) {
         // Handle 409 conflicts (not retryable - session already exists)
+        // CRITICAL: 409 conflicts are EXPECTED in background sync - handle silently
         if (is409Conflict(error)) {
-          // Session already exists - load from backend
-          sessionHelpersLogger.info('409 conflict during sync, loading existing session', {
+          // Session already exists - load from backend (expected behavior, not an error)
+          sessionHelpersLogger.debug('Session already exists (409), loading from backend', {
             reportId,
           })
 
@@ -278,7 +291,7 @@ export function syncSessionToBackend(session: ValuationSession): void {
                   session: backendSession,
                   syncError: null,
                 })
-                sessionHelpersLogger.info('Updated store session after 409 conflict resolution', {
+                sessionHelpersLogger.debug('Updated store session after 409 conflict resolution', {
                   reportId,
                   currentView: backendSession.currentView,
                 })
@@ -289,7 +302,7 @@ export function syncSessionToBackend(session: ValuationSession): void {
                 })
               }
 
-              sessionHelpersLogger.info('Loaded existing session from backend after 409', {
+              sessionHelpersLogger.debug('Loaded existing session from backend after 409', {
                 reportId,
                 currentView: backendSession.currentView,
               })

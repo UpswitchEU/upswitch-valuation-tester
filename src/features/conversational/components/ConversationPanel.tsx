@@ -10,7 +10,6 @@
 import React, { useCallback, useMemo } from 'react'
 import { StreamingChat } from '../../../components/StreamingChat'
 import { valuationAuditService } from '../../../services/audit/ValuationAuditService'
-import { SessionAPI } from '../../../services/api/session/SessionAPI'
 import { useValuationFormStore } from '../../../store/useValuationFormStore'
 import { useValuationResultsStore } from '../../../store/useValuationResultsStore'
 import { useValuationSessionStore } from '../../../store/useValuationSessionStore'
@@ -26,8 +25,6 @@ import {
 import { ComponentErrorBoundary } from '../../shared/components/ErrorBoundary'
 import { useConversationActions, useConversationState } from '../context/ConversationContext'
 import { ConversationSummaryBlock } from './ConversationSummaryBlock'
-
-const sessionAPI = new SessionAPI()
 
 /**
  * ConversationPanel Props
@@ -147,36 +144,36 @@ export const ConversationPanel: React.FC<ConversationPanelProps> = ({
       // Sync to results store (same as manual flow)
       setResult(result)
 
-      // CRITICAL: Save valuation result to session for restoration
-      const { markReportSaving, markReportSaved, markReportSaveFailed } = useValuationSessionStore.getState()
+      // CRITICAL: Save complete session atomically (unified with manual flow)
+      // Uses the same saveCompleteSession() method for consistency
+      const { saveCompleteSession, markReportSaving, markReportSaved, markReportSaveFailed } = useValuationSessionStore.getState()
       markReportSaving()
 
       if (session?.reportId) {
         try {
-          await sessionAPI.saveValuationResult(session.reportId, {
+          // Atomic save: all data in one operation
+          await saveCompleteSession({
             valuationResult: result,
             htmlReport: result.html_report,
             infoTabHtml: result.info_tab_html,
           })
 
-          chatLogger.info('Valuation result saved to session', {
+          chatLogger.info('Complete session saved atomically (conversational flow)', {
             reportId: session.reportId,
+            hasResult: !!result,
             hasHtmlReport: !!result.html_report,
             hasInfoTabHtml: !!result.info_tab_html,
           })
 
-          // Mark report as saved after successful session save
           markReportSaved()
         } catch (error) {
-          chatLogger.error('Failed to save valuation result to session', {
+          chatLogger.error('Failed to save complete session', {
             reportId: session.reportId,
             error: error instanceof Error ? error.message : String(error),
           })
-          // Mark save as failed
           markReportSaveFailed(error instanceof Error ? error.message : 'Save failed')
         }
       } else {
-        // No session reportId - mark as saved anyway (report might be saved elsewhere)
         markReportSaved()
       }
 
@@ -378,32 +375,32 @@ export const ConversationPanel: React.FC<ConversationPanelProps> = ({
 
         {/* Chat Interface */}
         <div className="flex-1 min-h-0">
-          <StreamingChat
-            sessionId={sessionId}
-            userId={userId}
-            initialMessages={restoredMessages}
-            isRestoring={isRestoring}
-            isRestorationComplete={isRestorationComplete}
-            isSessionInitialized={isSessionInitialized}
-            pythonSessionId={pythonSessionId ?? state.pythonSessionId}
-            onPythonSessionIdReceived={handlePythonSessionIdReceived}
-            onValuationComplete={handleValuationComplete}
-            onValuationStart={handleValuationStart}
-            onMessageComplete={handleMessageComplete}
-            onReportUpdate={onReportUpdate}
-            onDataCollected={handleDataCollected}
-            onValuationPreview={onValuationPreview}
-            onCalculateOptionAvailable={onCalculateOptionAvailable}
-            onProgressUpdate={onProgressUpdate}
-            onReportSectionUpdate={onReportSectionUpdate}
-            onSectionLoading={onSectionLoading}
-            onSectionComplete={onSectionComplete}
-            onReportComplete={onReportComplete}
-            onContextUpdate={onContextUpdate}
-            onHtmlPreviewUpdate={onHtmlPreviewUpdate}
-            initialMessage={initialMessage}
-            autoSend={autoSend}
-          />
+      <StreamingChat
+        sessionId={sessionId}
+        userId={userId}
+        initialMessages={restoredMessages}
+        isRestoring={isRestoring}
+        isRestorationComplete={isRestorationComplete}
+        isSessionInitialized={isSessionInitialized}
+        pythonSessionId={pythonSessionId ?? state.pythonSessionId}
+        onPythonSessionIdReceived={handlePythonSessionIdReceived}
+        onValuationComplete={handleValuationComplete}
+        onValuationStart={handleValuationStart}
+        onMessageComplete={handleMessageComplete}
+        onReportUpdate={onReportUpdate}
+        onDataCollected={handleDataCollected}
+        onValuationPreview={onValuationPreview}
+        onCalculateOptionAvailable={onCalculateOptionAvailable}
+        onProgressUpdate={onProgressUpdate}
+        onReportSectionUpdate={onReportSectionUpdate}
+        onSectionLoading={onSectionLoading}
+        onSectionComplete={onSectionComplete}
+        onReportComplete={onReportComplete}
+        onContextUpdate={onContextUpdate}
+        onHtmlPreviewUpdate={onHtmlPreviewUpdate}
+        initialMessage={initialMessage}
+        autoSend={autoSend}
+      />
         </div>
       </div>
     </ComponentErrorBoundary>

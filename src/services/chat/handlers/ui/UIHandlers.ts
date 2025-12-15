@@ -206,8 +206,8 @@ export class UIHandlers {
             sessionUpdate.current_year_data = {
               ...sessionUpdate.current_year_data,
               year: metadata.year,
-            } as any
-          }
+      } as any
+    }
           chatLogger.debug('✅ Saved year from metadata', {
             year: metadata.year,
           })
