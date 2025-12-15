@@ -275,60 +275,81 @@ export const useConversationInitializer = (
             throw new Error('Invalid response structure from backend')
           }
 
-          // Check if still mounted
-          if (!abortControllerRef.current?.signal.aborted) {
-            const timeToFirstQuestion = Date.now() - startTime
+          // CRITICAL FIX: Check if still mounted and not aborted before any state updates
+          if (abortControllerRef.current?.signal.aborted) {
+            chatLogger.debug('Initialization aborted - skipping state updates', { sessionId })
+            return
+          }
 
-            // Log successful initialization
-            chatLogger.info('Conversation initialized successfully', {
-              sessionId,
-              userId,
-              isAuthenticated: !!userId,
-              firstField: data.field_name,
-              backendDriven: true,
-              attempt,
-              timeToFirstQuestionMs: timeToFirstQuestion,
-            })
+          const timeToFirstQuestion = Date.now() - startTime
 
-            // Track success analytics
-            chatLogger.info('conversation_initialized', {
-              session_id: sessionId,
-              user_id: userId,
-              is_authenticated: !!userId,
-              time_to_first_question_ms: timeToFirstQuestion,
-              backend_driven: true,
-              first_field: data.field_name,
-              attempt,
-              has_profile_data: !!(
-                callbacks.user?.company_name ||
-                callbacks.user?.business_type ||
-                callbacks.user?.industry
-              ),
-            })
+          // Log successful initialization
+          chatLogger.info('Conversation initialized successfully', {
+            sessionId,
+            userId,
+            isAuthenticated: !!userId,
+            firstField: data.field_name,
+            backendDriven: true,
+            attempt,
+            timeToFirstQuestionMs: timeToFirstQuestion,
+          })
 
-            // CRITICAL FIX: Create initial message from /start endpoint
-            // This displays the first question immediately when page loads
-            // Backend handles message flow - frontend trusts backend completely
-            // ALWAYS display the first question so user can see what they're answering
-            const message: Omit<Message, 'id' | 'timestamp'> = {
-              type: 'ai',
-              content: data.ai_message,
-              isComplete: true,
-              isStreaming: false,
-              metadata: {
-                collected_field: data.field_name,
+          // Track success analytics
+          chatLogger.info('conversation_initialized', {
+            session_id: sessionId,
+            user_id: userId,
+            is_authenticated: !!userId,
+            time_to_first_question_ms: timeToFirstQuestion,
+            backend_driven: true,
+            first_field: data.field_name,
+            attempt,
+            has_profile_data: !!(
+              callbacks.user?.company_name ||
+              callbacks.user?.business_type ||
+              callbacks.user?.industry
+            ),
+          })
+
+          // CRITICAL FIX: Check again before state updates (double-check pattern)
+          if (abortControllerRef.current?.signal.aborted) {
+            chatLogger.debug('Initialization aborted before state update - skipping', { sessionId })
+            return
+          }
+
+          // CRITICAL FIX: Create initial message from /start endpoint
+          // This displays the first question immediately when page loads
+          // Backend handles message flow - frontend trusts backend completely
+          // ALWAYS display the first question so user can see what they're answering
+          const message: Omit<Message, 'id' | 'timestamp'> = {
+            type: 'ai',
+            content: data.ai_message,
+            isComplete: true,
+            isStreaming: false,
+            metadata: {
+              collected_field: data.field_name,
                 help_text: data.help_text,
                 session_phase: 'data_collection',
                 conversation_turn: 1,
               },
             }
-            callbacks.addMessage(message)
+            
+          // CRITICAL FIX: Final check before state update
+          if (abortControllerRef.current?.signal.aborted) {
+            chatLogger.debug('Initialization aborted before adding message - skipping', { sessionId })
+            return
+          }
+          
+          callbacks.addMessage(message)
 
-            chatLogger.debug('Initial message created from /start', {
-              field: data.field_name,
-              questionPreview: data.ai_message?.substring(0, 50),
-              autoSend: callbacks.autoSend,
-            })
+          chatLogger.debug('Initial message created from /start', {
+            field: data.field_name,
+            questionPreview: data.ai_message?.substring(0, 50),
+            autoSend: callbacks.autoSend,
+          })
+          
+          // CRITICAL FIX: Set isInitializing to false only if not aborted
+          if (!abortControllerRef.current?.signal.aborted) {
+            setIsInitializing(false)
           }
         } catch (error) {
           clearTimeout(timeoutId) // Clear timeout on error
@@ -563,9 +584,11 @@ export const useConversationInitializer = (
     hasInitializedRef.current = true
     initializeWithRetry()
 
+    // CRITICAL FIX: Return cleanup function properly
     return () => {
       if (abortControllerRef.current) {
         abortControllerRef.current.abort()
+        abortControllerRef.current = null
       }
     }
   }, [

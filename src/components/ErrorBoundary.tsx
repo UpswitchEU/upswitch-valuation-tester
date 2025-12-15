@@ -85,17 +85,17 @@ export class ErrorBoundary extends Component<Props, State> {
       const canRetry = retryCount < MAX_RETRIES
 
       return (
-        <div className="bg-red-50 border-2 border-red-300 rounded-lg p-6">
+        <div className="bg-accent-600/10 border-2 border-accent-600/30 rounded-lg p-6 backdrop-blur-sm">
           <div className="flex items-start gap-3">
-            <AlertTriangle className="w-6 h-6 text-red-600 flex-shrink-0 mt-0.5" />
+            <AlertTriangle className="w-6 h-6 text-accent-500 flex-shrink-0 mt-0.5" />
             <div className="flex-1">
-              <h3 className="text-lg font-semibold text-red-900 mb-2">{componentName} Error</h3>
-              <p className="text-sm text-red-800 mb-3">
+              <h3 className="text-lg font-semibold text-accent-200 mb-2">{componentName} Error</h3>
+              <p className="text-sm text-zinc-200 mb-3">
                 An unexpected error occurred while rendering this component.
                 {this.state.error && (
                   <>
                     {' '}
-                    <span className="font-mono text-xs bg-red-100 px-2 py-1 rounded">
+                    <span className="font-mono text-xs bg-accent-600/20 px-2 py-1 rounded text-zinc-300">
                       {this.state.error.message}
                     </span>
                   </>
@@ -104,7 +104,7 @@ export class ErrorBoundary extends Component<Props, State> {
 
               {/* Retry count warning */}
               {retryCount > 0 && canRetry && (
-                <div className="mb-3 text-xs text-red-700 bg-red-100 p-2 rounded border border-red-200">
+                <div className="mb-3 text-xs text-harvest-200 bg-harvest-600/10 p-2 rounded border border-harvest-600/30">
                   <strong>
                     ⚠️ This error has occurred {retryCount} time{retryCount > 1 ? 's' : ''}.
                   </strong>{' '}
@@ -114,7 +114,7 @@ export class ErrorBoundary extends Component<Props, State> {
 
               {/* Max retries reached warning */}
               {!canRetry && (
-                <div className="mb-3 text-xs text-red-800 bg-red-100 p-2 rounded border border-red-300">
+                <div className="mb-3 text-xs text-accent-200 bg-accent-600/20 p-2 rounded border border-accent-600/30">
                   <strong>❌ Maximum retry attempts reached ({MAX_RETRIES}).</strong> This appears
                   to be a persistent error. Please reload the page or contact support if the issue
                   continues.
@@ -125,7 +125,7 @@ export class ErrorBoundary extends Component<Props, State> {
                 {canRetry ? (
                   <button
                     onClick={this.handleReset}
-                    className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 text-sm font-medium transition-colors"
+                    className="px-4 py-2 bg-harvest-600 text-white rounded hover:bg-harvest-500 text-sm font-medium transition-colors"
                   >
                     Try Again {retryCount > 0 && `(${retryCount}/${MAX_RETRIES})`}
                   </button>
@@ -133,7 +133,7 @@ export class ErrorBoundary extends Component<Props, State> {
                   <button
                     onClick={this.handleReset}
                     disabled
-                    className="px-4 py-2 bg-gray-300 text-gray-500 rounded cursor-not-allowed text-sm font-medium"
+                    className="px-4 py-2 bg-zinc-700 text-zinc-400 rounded cursor-not-allowed text-sm font-medium"
                     title="Maximum retry attempts reached"
                   >
                     Try Again (Max Reached)
@@ -141,7 +141,7 @@ export class ErrorBoundary extends Component<Props, State> {
                 )}
                 <button
                   onClick={() => window.location.reload()}
-                  className="px-4 py-2 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 text-sm font-medium transition-colors"
+                  className="px-4 py-2 bg-zinc-700 text-zinc-200 rounded hover:bg-zinc-600 text-sm font-medium transition-colors"
                 >
                   Reload Page
                 </button>
@@ -149,10 +149,10 @@ export class ErrorBoundary extends Component<Props, State> {
 
               {process.env.NODE_ENV === 'development' && this.state.error && (
                 <details className="mt-4">
-                  <summary className="text-xs text-red-700 cursor-pointer hover:text-red-900">
+                  <summary className="text-xs text-accent-400 cursor-pointer hover:text-accent-300">
                     Show Error Details (Development Only)
                   </summary>
-                  <pre className="mt-2 text-xs bg-red-100 p-3 rounded overflow-auto max-h-64 border border-red-300">
+                  <pre className="mt-2 text-xs bg-accent-600/20 p-3 rounded overflow-auto max-h-64 border border-accent-600/30 text-zinc-300">
                     {this.state.error.stack}
                   </pre>
                 </details>

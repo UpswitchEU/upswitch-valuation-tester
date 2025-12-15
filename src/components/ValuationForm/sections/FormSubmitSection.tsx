@@ -75,10 +75,10 @@ export const FormSubmitSection: React.FC<FormSubmitSectionProps> = ({
 
       {/* Error Display */}
       {error && (
-        <div className="mt-4 p-4 bg-red-50 border-l-4 border-red-500 rounded-r-lg">
+        <div className="mt-4 p-4 bg-accent-600/10 border-l-4 border-accent-600/30 rounded-r-lg backdrop-blur-sm">
           <div className="flex items-start">
             <div className="flex-shrink-0">
-              <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
+              <svg className="h-5 w-5 text-accent-500" viewBox="0 0 20 20" fill="currentColor">
                 <path
                   fillRule="evenodd"
                   d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
@@ -87,13 +87,13 @@ export const FormSubmitSection: React.FC<FormSubmitSectionProps> = ({
               </svg>
             </div>
             <div className="ml-3 flex-1">
-              <h3 className="text-sm font-medium text-red-800">Calculation Failed</h3>
-              <p className="mt-1 text-sm text-red-700">{error}</p>
+              <h3 className="text-sm font-medium text-accent-200">Calculation Failed</h3>
+              <p className="mt-1 text-sm text-zinc-200">{error}</p>
               <div className="mt-3">
                 <button
                   type="button"
                   onClick={clearError}
-                  className="text-sm font-medium text-red-800 hover:text-red-900 underline"
+                  className="text-sm font-medium text-accent-300 hover:text-accent-200 underline"
                 >
                   Dismiss
                 </button>

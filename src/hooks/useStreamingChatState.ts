@@ -7,6 +7,7 @@
 
 import { useCallback, useRef, useState } from 'react'
 import type { Message } from '../types/message'
+import { chatLogger } from '../utils/logger'
 
 // CRITICAL FIX: Message window management constants
 // Limits message history to prevent unbounded growth and token limit issues
@@ -107,8 +108,11 @@ export const useStreamingChatState = (sessionId: string, userId?: string): Strea
         ...recentMessages.filter((msg) => !firstMessages.find((fm) => fm.id === msg.id)),
       ]
 
-      console.warn(`Message pruning: ${messageList.length} -> ${prunedMessages.length} messages`, {
+      // Use proper logger instead of console.warn
+      chatLogger.warn('Message pruning triggered', {
         sessionId,
+        originalCount: messageList.length,
+        prunedCount: prunedMessages.length,
         keptFirst: firstMessages.length,
         keptRecent: recentMessages.length,
         removed: messageList.length - prunedMessages.length,

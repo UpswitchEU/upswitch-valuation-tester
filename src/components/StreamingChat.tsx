@@ -98,15 +98,28 @@ export const StreamingChat: React.FC<import('./StreamingChat.types').StreamingCh
   const state = useStreamingChatState(sessionId, userId)
 
   // Prefill input field with initialMessage when available
+  // CRITICAL FIX: Use ref to track if we've already prefilled to prevent infinite loops
+  const hasPrefilledRef = useRef(false)
   useEffect(() => {
-    if (initialMessage && initialMessage.trim() && !state.input.trim()) {
+    // Only prefill once per initialMessage change, and only if input is empty
+    if (
+      initialMessage &&
+      initialMessage.trim() &&
+      !state.input.trim() &&
+      !hasPrefilledRef.current
+    ) {
       chatLogger.debug('Prefilling input field with initialMessage', {
         sessionId,
         initialMessage: initialMessage.substring(0, 50),
       })
       state.setInput(initialMessage.trim())
+      hasPrefilledRef.current = true
     }
-  }, [initialMessage, state.input, state.setInput, sessionId])
+    // Reset prefilled flag when initialMessage or sessionId changes
+    if (!initialMessage || !initialMessage.trim()) {
+      hasPrefilledRef.current = false
+    }
+  }, [initialMessage, sessionId, state.setInput]) // Removed state.input from deps to prevent loops
 
   // Extract message management logic
   const messageManagement = useMessageManagement({

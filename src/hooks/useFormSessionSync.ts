@@ -118,6 +118,7 @@ export const useFormSessionSync = ({
   ])
 
   // Debounced sync form data to session store (500ms delay)
+  // CRITICAL FIX: Include all dependencies to prevent stale closures
   const debouncedSyncToSession = useCallback(
     debounce(async (data: typeof formData) => {
       if (!session || !data || Object.keys(data).length === 0) {
@@ -171,7 +172,7 @@ export const useFormSessionSync = ({
         generalLogger.warn('Failed to sync form data to session', { error: err })
       }
     }, 500),
-    []
+    [session, updateSessionData]
   )
 
   // Sync form data to session store whenever it changes (debounced)

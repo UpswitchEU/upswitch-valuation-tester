@@ -100,45 +100,45 @@ const DefaultErrorFallback: React.FC<DefaultErrorFallbackProps> = ({ error, leve
         return {
           title: 'Application Error',
           message: 'Something went wrong with the application. Please refresh the page.',
-          bgColor: 'bg-red-50',
-          borderColor: 'border-red-200',
-          textColor: 'text-red-800',
+          bgColor: 'bg-accent-600/10',
+          borderColor: 'border-accent-600/30',
+          textColor: 'text-accent-200',
           icon: '🚨',
         }
       case 'feature':
         return {
           title: 'Feature Error',
           message: 'This feature encountered an error. Try refreshing or contact support.',
-          bgColor: 'bg-orange-50',
-          borderColor: 'border-orange-200',
-          textColor: 'text-orange-800',
+          bgColor: 'bg-harvest-600/10',
+          borderColor: 'border-harvest-600/30',
+          textColor: 'text-harvest-200',
           icon: '⚠️',
         }
       case 'component':
         return {
           title: 'Component Error',
           message: 'This component failed to load. The rest of the page should still work.',
-          bgColor: 'bg-yellow-50',
-          borderColor: 'border-yellow-200',
-          textColor: 'text-yellow-800',
+          bgColor: 'bg-harvest-600/10',
+          borderColor: 'border-harvest-600/30',
+          textColor: 'text-harvest-200',
           icon: '🔧',
         }
       case 'network':
         return {
           title: 'Connection Error',
           message: 'Unable to connect to our servers. Please check your internet connection.',
-          bgColor: 'bg-blue-50',
-          borderColor: 'border-blue-200',
-          textColor: 'text-blue-800',
+          bgColor: 'bg-accent-600/10',
+          borderColor: 'border-accent-600/30',
+          textColor: 'text-accent-200',
           icon: '🌐',
         }
       default:
         return {
           title: 'Error',
           message: 'An unexpected error occurred.',
-          bgColor: 'bg-gray-50',
-          borderColor: 'border-gray-200',
-          textColor: 'text-gray-800',
+          bgColor: 'bg-zinc-800/50',
+          borderColor: 'border-zinc-700',
+          textColor: 'text-zinc-200',
           icon: '❌',
         }
     }
@@ -257,18 +257,18 @@ export const NetworkErrorBoundary: React.FC<{
   onRetry?: () => void
 }> = ({ children, operation, fallback, onRetry }) => {
   const networkFallback = fallback || (
-    <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+    <div className="p-4 bg-accent-600/10 border border-accent-600/30 rounded-lg backdrop-blur-sm">
       <div className="flex items-center space-x-3">
-        <div className="text-blue-600">🌐</div>
+        <div className="text-accent-500">🌐</div>
         <div>
-          <h4 className="text-blue-800 font-medium">Connection Error</h4>
-          <p className="text-blue-700 text-sm">
+          <h4 className="text-accent-200 font-medium">Connection Error</h4>
+          <p className="text-zinc-200 text-sm">
             Failed to {operation}. Please check your connection and try again.
           </p>
           {onRetry && (
             <button
               onClick={onRetry}
-              className="mt-2 px-3 py-1 text-sm bg-blue-600 text-white rounded hover:bg-blue-700"
+              className="mt-2 px-3 py-1 text-sm bg-harvest-600 text-white rounded hover:bg-harvest-500 transition-colors"
             >
               Retry
             </button>
