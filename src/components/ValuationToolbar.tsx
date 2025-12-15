@@ -360,10 +360,6 @@ export const ValuationToolbar: React.FC<ValuationToolbarProps> = ({
                     <Maximize className="w-4 h-4" />
                   </button>
                 </Tooltip>
-              </div>
-
-              {/* Right Section - User Info */}
-              <div className="flex items-center gap-1.5">
                 {/* Version Selector (M&A Workflow) - Shows valuation values */}
                 {displayVersions.length > 0 && (
                   <>
@@ -400,6 +396,10 @@ export const ValuationToolbar: React.FC<ValuationToolbarProps> = ({
                     </div>
                   </>
                 )}
+              </div>
+
+              {/* Right Section - User Info */}
+              <div className="flex items-center gap-1.5">
                 <div className="flex items-center gap-3">
                   <UserDropdown user={user} onLogout={handleLogout} />
                 </div>

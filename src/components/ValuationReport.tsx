@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation'
 import React, { Suspense } from 'react'
 import { reportApiService } from '../services/reportApi'
 import UrlGeneratorService from '../services/urlGenerator'
+import { useValuationSessionStore } from '../store/useValuationSessionStore'
 import type { ValuationResponse } from '../types/valuation'
 import { generalLogger } from '../utils/logger'
 import { generateReportId, isValidReportId } from '../utils/reportIdGenerator'
@@ -39,6 +40,9 @@ export const ValuationReport: React.FC<ValuationReportProps> = React.memo(
 
     // Handle valuation completion
     const handleValuationComplete = async (result: ValuationResponse) => {
+      // Mark as saving during completion process
+      useValuationSessionStore.setState({ isSaving: true })
+
       // Save completed valuation to backend
       try {
         await reportApiService.completeReport(reportId, result)
@@ -46,7 +50,20 @@ export const ValuationReport: React.FC<ValuationReportProps> = React.memo(
           reportId,
           valuationId: result.valuation_id,
         })
+
+        // Mark save as completed - report is automatically saved after generation
+        useValuationSessionStore.setState({
+          hasUnsavedChanges: false,
+          lastSaved: new Date(),
+          isSaving: false,
+          syncError: null,
+        })
       } catch (error) {
+        // Mark save as failed
+        useValuationSessionStore.setState({
+          isSaving: false,
+          syncError: error instanceof Error ? error.message : 'Save failed',
+        })
         // BANK-GRADE: Specific error handling - report save failure
         // Don't show error to user as the valuation is already complete locally
         if (error instanceof Error) {
