@@ -30,27 +30,38 @@ export class SessionAPI extends HttpClient {
     options?: APIRequestConfig
   ): Promise<ValuationSessionResponse | null> {
     try {
-      const response = await this.executeRequest<ValuationSessionResponse>(
+      // Backend returns { success: true, data: {...} }
+      const response = await this.executeRequest<{ success: boolean; data: any }>(
         {
           method: 'GET',
-          url: `/api/sessions/${reportId}`,
+          url: `/api/valuation-sessions/${reportId}`,
           headers: {},
         } as any,
         options
       )
 
-      // Map backend 'ai-guided' to frontend 'conversational'
-      if (response && response.session) {
-        if ((response.session.currentView as string) === 'ai-guided') {
-          response.session.currentView = 'conversational'
-        }
-        // Map dataSource: 'ai-guided' → 'conversational'
-        if ((response.session as any).dataSource === 'ai-guided') {
-          (response.session as any).dataSource = 'conversational'
-        }
+      // Transform backend format { success, data } to frontend format { success, session }
+      if (!response?.data) {
+        apiLogger.debug('Session not found', { reportId })
+        return null
       }
 
-      return response
+      const sessionData = response.data
+
+      // Map backend 'ai-guided' to frontend 'conversational'
+      if ((sessionData.currentView as string) === 'ai-guided') {
+        sessionData.currentView = 'conversational'
+      }
+      // Map dataSource: 'ai-guided' → 'conversational'
+      if (sessionData.dataSource === 'ai-guided') {
+        sessionData.dataSource = 'conversational'
+      }
+
+      // Return in expected format
+      return {
+        success: response.success,
+        session: sessionData,
+      }
     } catch (error) {
       const axiosError = error as any
       // Handle 404 gracefully - session doesn't exist yet

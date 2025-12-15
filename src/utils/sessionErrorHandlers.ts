@@ -35,16 +35,18 @@ import { createBaseSession, generateSessionId, mergePrefilledQuery, normalizeSes
  * 
  * Recovery Strategy:
  * 1. Log conflict detection
- * 2. Attempt to load existing session from backend
+ * 2. Attempt to load existing session from backend with retry logic
+ *    - Retries up to 3 times with exponential backoff (100ms, 200ms, 400ms)
+ *    - Handles race condition where session was just created but not immediately readable
  * 3. Merge prefilled query if provided
  * 4. Normalize dates
- * 5. Return loaded session or null if load fails
+ * 5. Return loaded session or null if load fails after retries
  * 
  * Use Case: Multiple tabs/requests trying to create same session concurrently.
  * 
  * @param reportId - Report identifier for the session
  * @param prefilledQuery - Optional prefilled query to merge
- * @returns Loaded session or null if not found/failed
+ * @returns Loaded session or null if not found/failed after retries
  * 
  * @example
  * ```typescript
@@ -64,40 +66,86 @@ export async function handle409Conflict(
   reportId: string,
   prefilledQuery?: string | null
 ): Promise<ValuationSession | null> {
-  try {
-    storeLogger.info('Session creation conflict (409) - loading existing session', { reportId })
-    
-    const existingSessionResponse = await backendAPI.getValuationSession(reportId)
-    if (!existingSessionResponse?.session) {
-      storeLogger.error('No session found after 409 conflict', { reportId })
-      return null
+  storeLogger.info('Session creation conflict (409) - loading existing session', { reportId })
+  
+  // Retry logic to handle race condition where session was just created
+  // but might not be immediately readable due to database replication lag
+  const maxRetries = 3
+  const baseDelayMs = 100
+  
+  for (let attempt = 0; attempt < maxRetries; attempt++) {
+    try {
+      // Wait before retry (except first attempt)
+      if (attempt > 0) {
+        const delayMs = baseDelayMs * Math.pow(2, attempt - 1) // 100ms, 200ms, 400ms
+        storeLogger.debug('Retrying session load after 409 conflict', {
+          reportId,
+          attempt: attempt + 1,
+          delayMs,
+        })
+        await new Promise(resolve => setTimeout(resolve, delayMs))
+      }
+      
+      const existingSessionResponse = await backendAPI.getValuationSession(reportId)
+      if (existingSessionResponse?.session) {
+        const existingSession = existingSessionResponse.session
+        
+        // Merge prefilled query if provided
+        const updatedPartialData = mergePrefilledQuery(
+          existingSession.partialData,
+          prefilledQuery
+        )
+
+        storeLogger.info('Loaded existing session after conflict', { 
+          reportId, 
+          currentView: existingSession.currentView,
+          attempt: attempt + 1,
+        })
+
+        // Normalize dates and return
+        return normalizeSessionDates({
+          ...existingSession,
+          partialData: updatedPartialData,
+        })
+      }
+      
+      // Session not found, will retry if attempts remain
+      if (attempt < maxRetries - 1) {
+        storeLogger.debug('Session not found after 409 conflict, will retry', {
+          reportId,
+          attempt: attempt + 1,
+          remainingRetries: maxRetries - attempt - 1,
+        })
+      }
+    } catch (loadError) {
+      const axiosError = loadError as any
+      // If it's a 404, we'll retry (might be replication lag)
+      // If it's another error, log and retry anyway
+      if (attempt < maxRetries - 1) {
+        storeLogger.debug('Failed to load session after conflict, will retry', {
+          reportId,
+          attempt: attempt + 1,
+          error: extractErrorMessage(loadError),
+          status: axiosError?.response?.status,
+        })
+      } else {
+        // Last attempt failed
+        storeLogger.error('Failed to load session after conflict (all retries exhausted)', { 
+          reportId, 
+          error: extractErrorMessage(loadError),
+          attempts: maxRetries,
+        })
+        return null
+      }
     }
-
-    const existingSession = existingSessionResponse.session
-    
-    // Merge prefilled query if provided
-    const updatedPartialData = mergePrefilledQuery(
-      existingSession.partialData,
-      prefilledQuery
-    )
-
-    storeLogger.info('Loaded existing session after conflict', { 
-      reportId, 
-      currentView: existingSession.currentView 
-    })
-
-    // Normalize dates and return
-    return normalizeSessionDates({
-      ...existingSession,
-      partialData: updatedPartialData,
-    })
-  } catch (loadError) {
-    storeLogger.error('Failed to load session after conflict', { 
-      reportId, 
-      error: extractErrorMessage(loadError) 
-    })
-    return null
   }
+  
+  // All retries exhausted
+  storeLogger.error('No session found after 409 conflict (all retries exhausted)', { 
+    reportId,
+    attempts: maxRetries,
+  })
+  return null
 }
 
 /**
