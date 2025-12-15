@@ -1,13 +1,46 @@
 import { chatLogger } from '../../utils/logger'
 import { guestSessionService } from '../guestSessionService'
 
-interface StreamEvent {
-  type: 'message_start' | 'message_chunk' | 'message_complete' | 'report_update' | 'error'
+/**
+ * StreamEvent - Type-safe interface for SSE events from the backend
+ *
+ * All streaming events follow this structure. The type field determines
+ * which handler processes the event.
+ */
+export interface StreamEvent {
+  type:
+    | 'message_start'
+    | 'message_chunk'
+    | 'message_complete'
+    | 'report_update'
+    | 'error'
+    | 'typing'
+    | 'data_collected'
+    | 'progress_update'
+    | 'progress_summary'
+    | 'html_preview'
+    | 'suggestion_offered'
+    | 'clarification_needed'
+    | 'registry_data'
+    | 'complete'
+    | 'section_loading'
+    | 'section_complete'
+    | 'report_section'
+    | 'report_complete'
+    | 'valuation_preview'
+    | 'calculate_option'
+    | 'valuation_ready'
+    | 'valuation_confirmed'
+    | 'valuation_complete'
+    | 'unknown'
   content?: string
   html?: string
   progress?: number
-  metadata?: any
+  metadata?: Record<string, unknown>
   session_id?: string
+  message?: string
+  error_type?: string
+  [key: string]: unknown // Index signature for additional properties
 }
 
 export class StreamingChatService {

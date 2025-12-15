@@ -11,7 +11,6 @@ import {
   Loader2,
   Maximize,
   MessageSquare,
-  Pencil,
   RefreshCw,
   Save,
 } from 'lucide-react'
@@ -216,10 +215,6 @@ export const ValuationToolbar: React.FC<ValuationToolbarProps> = ({
                     >
                       Valuation
                     </button>
-                  </div>
-                  {/* Edit indicator - shows on hover */}
-                  <div className="hidden md:block text-xs text-zinc-500 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <Pencil className="w-3 h-3" />
                   </div>
                 </div>
                 {/* Save Status Icon (M&A Workflow) - Minimalist inline indicator */}

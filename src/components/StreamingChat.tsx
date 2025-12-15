@@ -27,6 +27,8 @@ import { type UserProfile, useConversationInitializer } from '../hooks/useConver
 import { useConversationMetrics } from '../hooks/useConversationMetrics'
 import { useStreamingChatState } from '../hooks/useStreamingChatState'
 import { useTypingAnimation } from '../hooks/useTypingAnimation'
+import { convertToApplicationError, getErrorMessage } from '../utils/errors/errorConverter'
+import { isNetworkError, isTimeoutError } from '../utils/errors/errorGuards'
 import { chatLogger } from '../utils/logger'
 import { ChatInputForm, MessagesList } from './chat'
 
@@ -178,9 +180,44 @@ export const StreamingChat: React.FC<import('./StreamingChat.types').StreamingCh
         // Start streaming with validated input
         await streamingCoordinator.startStreaming(inputToSubmit.trim())
       } catch (error) {
-        chatLogger.error('Stream submission failed', { error, sessionId })
+        const appError = convertToApplicationError(error, {
+          sessionId,
+          pythonSessionId,
+          operation: 'stream_submission',
+        })
+
+        if (isNetworkError(appError)) {
+          chatLogger.error('Network error during stream submission', {
+            error: (appError as any).message,
+            code: (appError as any).code,
+            sessionId,
+            pythonSessionId,
+          })
+        } else if (isTimeoutError(appError)) {
+          chatLogger.error('Timeout during stream submission', {
+            error: (appError as any).message,
+            code: (appError as any).code,
+            sessionId,
+            pythonSessionId,
+          })
+        } else {
+          chatLogger.error('Stream submission failed', {
+            error: (appError as any).message,
+            code: (appError as any).code,
+            sessionId,
+            pythonSessionId,
+          })
+        }
+
         // Reset streaming state on error
         state.setIsStreaming(false)
+
+        // Add user-friendly error message
+        messageManagement.addMessage({
+          type: 'system',
+          content: `Error: ${getErrorMessage(appError)}`,
+          isComplete: true,
+        })
       }
     },
     [
@@ -407,10 +444,44 @@ export const StreamingChat: React.FC<import('./StreamingChat.types').StreamingCh
       try {
         await submitStream()
       } catch (error) {
-        chatLogger.error('Stream submission failed', { error, sessionId })
+        const appError = convertToApplicationError(error, {
+          sessionId,
+          pythonSessionId,
+          operation: 'form_submission',
+        })
+
+        if (isNetworkError(appError)) {
+          chatLogger.error('Network error during form submission', {
+            error: (appError as any).message,
+            code: (appError as any).code,
+            sessionId,
+            pythonSessionId,
+          })
+        } else if (isTimeoutError(appError)) {
+          chatLogger.error('Timeout during form submission', {
+            error: (appError as any).message,
+            code: (appError as any).code,
+            sessionId,
+            pythonSessionId,
+          })
+        } else {
+          chatLogger.error('Form submission failed', {
+            error: (appError as any).message,
+            code: (appError as any).code,
+            sessionId,
+            pythonSessionId,
+          })
+        }
+
+        // Add user-friendly error message
+        messageManagement.addMessage({
+          type: 'system',
+          content: `Error: ${getErrorMessage(appError)}`,
+          isComplete: true,
+        })
       }
     },
-    [state.input, submitStream, sessionId]
+    [state.input, submitStream, sessionId, pythonSessionId, messageManagement]
   )
 
   return (

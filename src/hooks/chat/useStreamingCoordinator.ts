@@ -12,6 +12,7 @@ import type {
   ValuationPreviewData,
 } from '../../components/StreamingChat.types'
 import { ModelPerformanceMetrics, StreamEventHandler } from '../../services/chat/StreamEventHandler'
+import type { StreamEvent } from '../../services/chat/streamingChatService'
 import {
   StreamingManager,
   type StreamingManagerCallbacks,
@@ -21,6 +22,8 @@ import {
   extractBusinessModelFromInput,
   extractFoundingYearFromInput,
 } from '../../utils/businessExtractionUtils'
+import { convertToApplicationError, getErrorMessage } from '../../utils/errors/errorConverter'
+import { isNetworkError, isTimeoutError } from '../../utils/errors/errorGuards'
 import { chatLogger } from '../../utils/logger'
 import type { Message } from '../useStreamingChatState'
 
@@ -34,7 +37,7 @@ export interface UseStreamingCoordinatorOptions {
   setIsTyping: (typing: boolean) => void
   setIsThinking: (thinking: boolean) => void
   setTypingContext: (context?: string) => void
-  setCollectedData: React.Dispatch<React.SetStateAction<Record<string, any>>>
+  setCollectedData: React.Dispatch<React.SetStateAction<Record<string, unknown>>>
   setValuationPreview: (preview: ValuationPreviewData) => void
   setCalculateOption: (option: CalculateOptionData) => void
   updateStreamingMessage: (content: string, isComplete?: boolean, metadata?: unknown) => void
@@ -240,16 +243,46 @@ export function useStreamingCoordinator({
       }
 
       // Create event handler
-      const onEvent = (event: any) => {
+      const onEvent = (event: StreamEvent) => {
         try {
           eventHandlerRef.current?.handleEvent(event)
         } catch (error) {
-          chatLogger.error('Error handling streaming event', {
-            error: error instanceof Error ? error.message : String(error),
+          const appError = convertToApplicationError(error, {
             sessionId,
             pythonSessionId,
             effectiveSessionId,
+            eventType: event.type,
+            operation: 'event_handling',
           })
+
+          if (isNetworkError(appError)) {
+            chatLogger.error('Network error handling streaming event', {
+              error: (appError as any).message,
+              code: (appError as any).code,
+              sessionId,
+              pythonSessionId,
+              effectiveSessionId,
+              eventType: event.type,
+            })
+          } else if (isTimeoutError(appError)) {
+            chatLogger.error('Timeout handling streaming event', {
+              error: (appError as any).message,
+              code: (appError as any).code,
+              sessionId,
+              pythonSessionId,
+              effectiveSessionId,
+              eventType: event.type,
+            })
+          } else {
+            chatLogger.error('Error handling streaming event', {
+              error: (appError as any).message,
+              code: (appError as any).code,
+              sessionId,
+              pythonSessionId,
+              effectiveSessionId,
+              eventType: event.type,
+            })
+          }
         }
       }
 
@@ -298,11 +331,45 @@ export function useStreamingCoordinator({
         )
       } catch (error) {
         setIsStreaming(false)
-        // Clean up error state
-        if (error instanceof Error) {
-          onError(error)
+
+        const appError = convertToApplicationError(error, {
+          sessionId,
+          pythonSessionId,
+          effectiveSessionId,
+          operation: 'stream_start',
+        })
+
+        if (isNetworkError(appError)) {
+          chatLogger.error('Network error starting stream', {
+            error: (appError as any).message,
+            code: (appError as any).code,
+            sessionId,
+            pythonSessionId,
+            effectiveSessionId,
+          })
+        } else if (isTimeoutError(appError)) {
+          chatLogger.error('Timeout starting stream', {
+            error: (appError as any).message,
+            code: (appError as any).code,
+            sessionId,
+            pythonSessionId,
+            effectiveSessionId,
+          })
+        } else {
+          chatLogger.error('Error starting stream', {
+            error: (appError as any).message,
+            code: (appError as any).code,
+            sessionId,
+            pythonSessionId,
+            effectiveSessionId,
+          })
         }
-        throw error
+
+        // Convert to Error for onError handler (maintains backward compatibility)
+        const errorForHandler = appError instanceof Error ? appError : new Error(getErrorMessage(appError))
+        onError(errorForHandler)
+
+        throw appError
       }
     },
     [sessionId, pythonSessionId, userId, setIsStreaming, setMessages, updateStreamingMessage]

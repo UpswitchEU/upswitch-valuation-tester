@@ -8,6 +8,7 @@
 import { BUSINESS_TYPES_FALLBACK, BusinessTypeOption } from '../../config/businessTypes'
 import { Message } from '../../hooks/useStreamingChatState'
 import { chatLogger } from '../../utils/logger'
+import type { StreamEvent } from './streamingChatService'
 import { businessTypesApiService } from '../businessTypesApi'
 import { registryService } from '../registry/registryService'
 import { MessageHandlers, ReportHandlers, UIHandlers, ValuationHandlers } from './handlers'
@@ -168,7 +169,7 @@ export class StreamEventHandler {
    *
    * @param data - Event data from SSE stream
    */
-  handleEvent(data: any): void {
+  handleEvent(data: StreamEvent): void {
     // Defensive parsing: extract event type from multiple possible locations
     const eventType = data?.type || data?.event || 'unknown'
 
