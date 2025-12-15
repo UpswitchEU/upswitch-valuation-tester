@@ -7,7 +7,7 @@
  * @module features/conversational/components/ConversationPanel
  */
 
-import React, { useCallback } from 'react'
+import React, { useCallback, useMemo } from 'react'
 import { StreamingChat } from '../../../components/StreamingChat'
 import { valuationAuditService } from '../../../services/audit/ValuationAuditService'
 import { SessionAPI } from '../../../services/api/session/SessionAPI'
@@ -25,6 +25,7 @@ import {
 } from '../../../utils/versionDiffDetection'
 import { ComponentErrorBoundary } from '../../shared/components/ErrorBoundary'
 import { useConversationActions, useConversationState } from '../context/ConversationContext'
+import { ConversationSummaryBlock } from './ConversationSummaryBlock'
 
 const sessionAPI = new SessionAPI()
 
@@ -278,34 +279,99 @@ export const ConversationPanel: React.FC<ConversationPanelProps> = ({
     // We can add to context if needed for cross-component access
   }, [])
 
+  // Get valuation data for summary block
+  const valuationResult = useValuationResultsStore((state) => state.result)
+
+  // Determine if we should show summary block
+  const showSummaryBlock = useMemo(() => {
+    // Show if we have restored messages AND collected data
+    const hasRestoredMessages = restoredMessages && restoredMessages.length > 0
+    const hasCollectedData = session?.sessionData && Object.keys(session.sessionData).length > 0
+    return hasRestoredMessages && hasCollectedData && isRestorationComplete
+  }, [restoredMessages, session?.sessionData, isRestorationComplete])
+
+  // Calculate completion percentage
+  const completionPercentage = useMemo(() => {
+    if (!session?.sessionData) return 0
+
+    const data = session.sessionData as any
+    let filledFields = 0
+    const totalFields = 8 // Key fields we track
+
+    if (data.company_name) filledFields++
+    if (data.industry) filledFields++
+    if (data.country_code) filledFields++
+    if (data.current_year_data?.revenue || data.revenue) filledFields++
+    if (data.current_year_data?.ebitda !== undefined || data.ebitda !== undefined) filledFields++
+    if (data.business_type_id) filledFields++
+    if (data.number_of_employees) filledFields++
+    if (data.number_of_owners) filledFields++
+
+    return Math.round((filledFields / totalFields) * 100)
+  }, [session?.sessionData])
+
+  // Handle continue action
+  const handleContinue = useCallback(() => {
+    // Scroll to bottom of chat to continue conversation
+    const chatContainer = document.querySelector('[data-chat-container]')
+    if (chatContainer) {
+      chatContainer.scrollTop = chatContainer.scrollHeight
+    }
+  }, [])
+
+  // Handle view report action
+  const handleViewReport = useCallback(() => {
+    // Trigger report panel to show
+    onReportComplete?.(valuationResult?.html_report || '', valuationResult?.valuation_id || '')
+  }, [valuationResult, onReportComplete])
+
   return (
     <ComponentErrorBoundary component="ConversationPanel">
-      <StreamingChat
-        sessionId={sessionId}
-        userId={userId}
-        initialMessages={restoredMessages}
-        isRestoring={isRestoring}
-        isRestorationComplete={isRestorationComplete}
-        isSessionInitialized={isSessionInitialized}
-        pythonSessionId={pythonSessionId ?? state.pythonSessionId}
-        onPythonSessionIdReceived={handlePythonSessionIdReceived}
-        onValuationComplete={handleValuationComplete}
-        onValuationStart={handleValuationStart}
-        onMessageComplete={handleMessageComplete}
-        onReportUpdate={onReportUpdate}
-        onDataCollected={handleDataCollected}
-        onValuationPreview={onValuationPreview}
-        onCalculateOptionAvailable={onCalculateOptionAvailable}
-        onProgressUpdate={onProgressUpdate}
-        onReportSectionUpdate={onReportSectionUpdate}
-        onSectionLoading={onSectionLoading}
-        onSectionComplete={onSectionComplete}
-        onReportComplete={onReportComplete}
-        onContextUpdate={onContextUpdate}
-        onHtmlPreviewUpdate={onHtmlPreviewUpdate}
-        initialMessage={initialMessage}
-        autoSend={autoSend}
-      />
+      <div className="flex flex-col h-full">
+        {/* Summary Block (shown at top when restoring existing session) */}
+        {showSummaryBlock && (
+          <div className="flex-shrink-0 p-4 overflow-y-auto">
+            <ConversationSummaryBlock
+              collectedData={session?.sessionData || {}}
+              completionPercentage={completionPercentage}
+              calculatedAt={session?.completedAt}
+              valuationResult={valuationResult}
+              onContinue={handleContinue}
+              onViewReport={valuationResult ? handleViewReport : undefined}
+            />
+          </div>
+        )}
+
+        {/* Chat Interface */}
+        <div className="flex-1 min-h-0">
+          <StreamingChat
+            sessionId={sessionId}
+            userId={userId}
+            initialMessages={restoredMessages}
+            isRestoring={isRestoring}
+            isRestorationComplete={isRestorationComplete}
+            isSessionInitialized={isSessionInitialized}
+            pythonSessionId={pythonSessionId ?? state.pythonSessionId}
+            onPythonSessionIdReceived={handlePythonSessionIdReceived}
+            onValuationComplete={handleValuationComplete}
+            onValuationStart={handleValuationStart}
+            onMessageComplete={handleMessageComplete}
+            onReportUpdate={onReportUpdate}
+            onDataCollected={handleDataCollected}
+            onValuationPreview={onValuationPreview}
+            onCalculateOptionAvailable={onCalculateOptionAvailable}
+            onProgressUpdate={onProgressUpdate}
+            onReportSectionUpdate={onReportSectionUpdate}
+            onSectionLoading={onSectionLoading}
+            onSectionComplete={onSectionComplete}
+            onReportComplete={onReportComplete}
+            onContextUpdate={onContextUpdate}
+            onHtmlPreviewUpdate={onHtmlPreviewUpdate}
+            initialMessage={initialMessage}
+            autoSend={autoSend}
+          />
+        </div>
+      </div>
     </ComponentErrorBoundary>
   )
 }

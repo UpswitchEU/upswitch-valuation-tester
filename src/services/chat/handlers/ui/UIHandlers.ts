@@ -75,6 +75,8 @@ export class UIHandlers {
     }
 
     // Build nested update object
+    const sessionUpdate: Partial<ValuationRequest> = {}
+    
     if (targetPath.includes('.')) {
       const parts = targetPath.split('.')
       if (parts.length !== 2) {
@@ -87,14 +89,48 @@ export class UIHandlers {
       }
 
       const [parent, child] = parts
-      return {
-        [parent]: {
-          [child]: value,
-        },
+      sessionUpdate[parent as keyof ValuationRequest] = {
+        [child]: value,
       } as any
+    } else {
+      sessionUpdate[targetPath as keyof ValuationRequest] = value as any
     }
 
-    return { [targetPath]: value } as any
+    // CRITICAL FIX: Handle business_type metadata to save business_type_id and industry
+    // When backend confirms business type, it sends metadata with id, industry, etc.
+    // We need to save ALL of this data to ensure valuation request is complete
+    if (field === 'business_type' && metadata) {
+      chatLogger.info('Saving business_type with metadata', {
+        business_type: value,
+        metadata: metadata,
+        has_id: !!metadata.id,
+        has_industry: !!metadata.industry,
+      })
+
+      // Save business_type_id if present (CRITICAL for backend validation)
+      if (metadata.id) {
+        sessionUpdate.business_type_id = metadata.id
+        chatLogger.info('✅ Saved business_type_id from metadata', {
+          business_type_id: metadata.id,
+        })
+      }
+
+      // Save industry if present (auto-derived from business_type_id)
+      if (metadata.industry || metadata.industry_mapping) {
+        sessionUpdate.industry = metadata.industry || metadata.industry_mapping
+        chatLogger.info('✅ Saved industry from metadata', {
+          industry: sessionUpdate.industry,
+        })
+      }
+
+      // Save category for reference (optional but helpful)
+      if (metadata.category) {
+        // Store in business_type field for backend compatibility
+        sessionUpdate.business_type = value // Keep the display name
+      }
+    }
+
+    return sessionUpdate
   }
 
   /**

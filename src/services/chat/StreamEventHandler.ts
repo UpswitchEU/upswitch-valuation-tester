@@ -8,6 +8,7 @@
 import { BUSINESS_TYPES_FALLBACK, BusinessTypeOption } from '../../config/businessTypes'
 import { useConversationStore } from '../../store/useConversationStore'
 import { useValuationResultsStore } from '../../store/useValuationResultsStore'
+import { useValuationSessionStore } from '../../store/useValuationSessionStore'
 import type { Message, MessageMetadata } from '../../types/message'
 import { chatLogger } from '../../utils/logger'
 import { ReportHandlers, UIHandlers, ValuationHandlers } from './handlers'
@@ -421,7 +422,7 @@ export class StreamEventHandler {
                     html_report: htmlReport,
                   },
                   htmlReport: htmlReport,
-                  infoTabHtml: resultToSave.info_tab_html,
+                  infoTabHtml: 'info_tab_html' in resultToSave ? resultToSave.info_tab_html : undefined,
                 }).then(() => {
                   chatLogger.info('HTML report saved to session store', {
                     reportId: session.reportId,
@@ -507,7 +508,7 @@ export class StreamEventHandler {
                     ...resultToSave,
                     info_tab_html: infoTabHtml,
                   },
-                  htmlReport: resultToSave.html_report,
+                  htmlReport: 'html_report' in resultToSave ? resultToSave.html_report : undefined,
                   infoTabHtml: infoTabHtml,
                 }).then(() => {
                   chatLogger.info('Info tab HTML saved to session store', {

@@ -83,6 +83,58 @@ export const useValuationResultsStore = create<ValuationResultsStore>((set, get)
     set({ result })
   },
 
+  // Set valuation result (for restoration)
+  setValuationResult: (result: ValuationResponse) => {
+    storeLogger.info('Setting valuation result from restoration', {
+      valuationId: result.valuation_id,
+      hasHtmlReport: !!result.html_report,
+      hasInfoTabHtml: !!result.info_tab_html,
+    })
+    set({ result })
+  },
+
+  // Set HTML report separately (for restoration)
+  setHtmlReport: (html: string) => {
+    const currentResult = get().result
+    if (currentResult) {
+      set({ result: { ...currentResult, html_report: html } })
+      storeLogger.info('HTML report updated in existing result', {
+        htmlLength: html.length,
+      })
+    } else {
+      // Create minimal result object with HTML report
+      set({
+        result: {
+          html_report: html,
+        } as ValuationResponse,
+      })
+      storeLogger.info('HTML report set without existing result', {
+        htmlLength: html.length,
+      })
+    }
+  },
+
+  // Set info tab HTML separately (for restoration)
+  setInfoTabHtml: (html: string) => {
+    const currentResult = get().result
+    if (currentResult) {
+      set({ result: { ...currentResult, info_tab_html: html } })
+      storeLogger.info('Info tab HTML updated in existing result', {
+        htmlLength: html.length,
+      })
+    } else {
+      // Create minimal result object with info tab HTML
+      set({
+        result: {
+          info_tab_html: html,
+        } as ValuationResponse,
+      })
+      storeLogger.info('Info tab HTML set without existing result', {
+        htmlLength: html.length,
+      })
+    }
+  },
+
   // Clear result
   clearResult: () => {
     set({ result: null })

@@ -120,8 +120,14 @@ export const HomePage: React.FC = () => {
   }
 
   const handleReportClick = (reportId: string) => {
-    generalLogger.info('Opening existing report', { reportId })
-    router.push(UrlGeneratorService.reportById(reportId))
+    // Get report from list to determine flow type
+    const report = reports.find((r) => r.reportId === reportId)
+    const flow = report?.currentView || 'manual'
+
+    generalLogger.info('Opening existing report', { reportId, flow })
+
+    // Navigate with flow type preserved
+    router.push(UrlGeneratorService.reportById(reportId, { flow }))
   }
 
   const handleReportDelete = async (reportId: string) => {
@@ -340,6 +346,7 @@ export const HomePage: React.FC = () => {
           loading={reportsLoading}
           onReportClick={handleReportClick}
           onReportDelete={handleReportDelete}
+          user={user || null}
         />
       </div>
     </>
