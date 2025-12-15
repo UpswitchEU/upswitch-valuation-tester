@@ -183,111 +183,147 @@ export const useValuationSessionStore = create<ValuationSessionStore>((set, get)
           // CACHE-FIRST: Check localStorage cache BEFORE backend API call
           const cachedSession = globalSessionCache.get(reportId)
           if (cachedSession && hasMeaningfulSessionData(cachedSession.sessionData)) {
-            // Cached session exists with meaningful data - use it (not NEW)
-            storeLogger.info('Session found in cache with meaningful data, using immediately', {
-              reportId,
-              currentView: cachedSession.currentView,
-              cacheAge_minutes: cachedSession.updatedAt
-                ? Math.floor((Date.now() - new Date(cachedSession.updatedAt).getTime()) / (60 * 1000))
-                : null,
-            })
-
-            // Merge prefilled query if provided
-            const updatedPartialData = mergePrefilledQuery(cachedSession.partialData, prefilledQuery)
-
-            // Use cached session immediately
-            set({
-              session: {
-                ...cachedSession,
-                partialData: updatedPartialData,
-              },
-              syncError: null,
-            })
-
-            // CRITICAL FIX: Restore HTML reports and valuation results from cache
-            // This ensures reports are displayed when navigating from home page
-            const cachedSessionData = cachedSession.sessionData as any
-            if (cachedSessionData?.html_report || cachedSessionData?.valuation_result || (cachedSession as any).valuationResult) {
-              storeLogger.info('Restoring HTML reports and valuation results from cache', {
+            // Check cache age - if older than 5 minutes, verify with backend first
+            const cacheAge = cachedSession.updatedAt 
+              ? Date.now() - new Date(cachedSession.updatedAt).getTime()
+              : Infinity
+            
+            const CACHE_MAX_AGE = 5 * 60 * 1000 // 5 minutes
+            
+            if (cacheAge > CACHE_MAX_AGE) {
+              // Cache is old - verify with backend first
+              storeLogger.info('Cache is old, verifying with backend first', {
                 reportId,
-                hasHtmlReport: !!cachedSessionData?.html_report,
-                hasInfoTabHtml: !!cachedSessionData?.info_tab_html,
-                hasValuationResult: !!cachedSessionData?.valuation_result || !!(cachedSession as any).valuationResult,
+                cacheAge_minutes: Math.floor(cacheAge / 60000),
               })
+              
+              try {
+                const backendResponse = await backendAPI.getValuationSession(reportId)
+                
+                if (!backendResponse?.session || !hasMeaningfulSessionData(backendResponse.session.sessionData)) {
+                  // Backend doesn't have it or has empty data - cache is stale, remove it
+                  storeLogger.warn('Backend verification failed - cache is stale, removing', {
+                    reportId,
+                    cacheAge_minutes: Math.floor(cacheAge / 60000),
+                  })
+                  globalSessionCache.remove(reportId)
+                  // Fall through to create NEW below
+                } else {
+                  // Backend has it - use backend version (fresher than cache)
+                  const existingSession = backendResponse.session
+                  const updatedPartialData = mergePrefilledQuery(
+                    existingSession.partialData,
+                    prefilledQuery
+                  )
 
-              // Import the results store dynamically to avoid circular dependencies
-              const { useValuationResultsStore } = await import('./useValuationResultsStore')
-              const resultsStore = useValuationResultsStore.getState()
+                  const normalizedSession = normalizeSessionDates({
+                    ...existingSession,
+                    partialData: updatedPartialData,
+                  })
 
-              // Store HTML reports
-              if (cachedSessionData?.html_report) {
-                resultsStore.setHtmlReport(cachedSessionData.html_report)
-              }
-              if (cachedSessionData?.info_tab_html) {
-                resultsStore.setInfoTabHtml(cachedSessionData.info_tab_html)
-              }
+                  // Update cache with fresh backend data
+                  globalSessionCache.set(reportId, normalizedSession)
 
-              // Store valuation result (check multiple possible locations)
-              const valuationResult = cachedSessionData?.valuation_result || (cachedSession as any).valuationResult
-              if (valuationResult) {
-                // Merge HTML reports if not in result
-                const fullResult = {
-                  ...valuationResult,
-                  html_report: valuationResult.html_report || cachedSessionData?.html_report,
-                  info_tab_html: valuationResult.info_tab_html || cachedSessionData?.info_tab_html,
+                  set({
+                    session: normalizedSession,
+                    syncError: null,
+                  })
+
+                  // CRITICAL: Restore HTML reports and valuation results
+                  const sessionData = existingSession.sessionData as any
+                  const valuationResult = sessionData?.valuation_result || (existingSession as any).valuationResult
+                  if (sessionData?.html_report || sessionData?.info_tab_html || valuationResult) {
+                    storeLogger.info('Restoring HTML reports and valuation results from backend', {
+                      reportId,
+                      hasHtmlReport: !!sessionData?.html_report,
+                      hasInfoTabHtml: !!sessionData?.info_tab_html,
+                      hasValuationResult: !!valuationResult,
+                    })
+
+                    const { useValuationResultsStore } = await import('./useValuationResultsStore')
+                    const resultsStore = useValuationResultsStore.getState()
+
+                    if (sessionData?.html_report) {
+                      resultsStore.setHtmlReport(sessionData.html_report)
+                    }
+                    if (sessionData?.info_tab_html) {
+                      resultsStore.setInfoTabHtml(sessionData.info_tab_html)
+                    }
+
+                    if (valuationResult) {
+                      const fullResult = {
+                        ...valuationResult,
+                        html_report: valuationResult.html_report || sessionData?.html_report,
+                        info_tab_html: valuationResult.info_tab_html || sessionData?.info_tab_html,
+                      }
+                      resultsStore.setResult(fullResult)
+                    }
+                  }
+
+                  storeLogger.info('Loaded session from backend (cache was old)', {
+                    reportId,
+                    currentView: existingSession.currentView,
+                  })
+                  
+                  // Mark initialization as complete and return
+                  initializationState.set(reportId, { status: 'ready' })
+                  return
                 }
-                resultsStore.setResult(fullResult)
+              } catch (backendError) {
+                const is404 = (backendError as any)?.response?.status === 404
+                
+                if (is404) {
+                  // Confirmed stale - remove cache and create NEW
+                  storeLogger.warn('Backend returned 404 - cache is stale, removing', {
+                    reportId,
+                  })
+                  globalSessionCache.remove(reportId)
+                  // Fall through to create NEW below
+                } else {
+                  // Network error or other issue - use cache as fallback
+                  storeLogger.warn('Backend check failed, using cache as fallback', {
+                    reportId,
+                    error: backendError instanceof Error ? backendError.message : String(backendError),
+                  })
+                  // Continue to use cache below
+                }
               }
             }
-
-            // Verify with backend in background (non-blocking)
-            verifySessionInBackground(reportId, cachedSession)
-
-            // Record cache hit metric
-            const cacheLoadTime = 5
-            globalSessionMetrics.recordOperation('load', true, cacheLoadTime, 0, 'cache_hit')
             
-            storeLogger.info('Cache hit - session loaded from cache', {
-              reportId,
-              loadTime_ms: cacheLoadTime,
-            })
-          } else {
-            // Not in cache or cache has no meaningful data - check backend
-            storeLogger.debug('Session not found in cache or cache empty, checking backend', { reportId })
-
-            try {
-              const backendResponse = await backendAPI.getValuationSession(reportId)
-              
-              if (backendResponse?.session && hasMeaningfulSessionData(backendResponse.session.sessionData)) {
-                // Backend has session with meaningful data - use it (not NEW)
-                const existingSession = backendResponse.session
-                const updatedPartialData = mergePrefilledQuery(
-                  existingSession.partialData,
-                  prefilledQuery
-                )
-
-                const normalizedSession = normalizeSessionDates({
-                  ...existingSession,
-                  partialData: updatedPartialData,
+              // If we reach here with a valid cached session, use it
+              // Re-check cache in case it was removed during backend verification
+              const stillCachedSession = globalSessionCache.get(reportId)
+              if (stillCachedSession && hasMeaningfulSessionData(stillCachedSession.sessionData)) {
+                // Cached session exists with meaningful data - use it (not NEW)
+                storeLogger.info('Using cached session (fresh or fallback)', {
+                  reportId,
+                  currentView: stillCachedSession.currentView,
+                  cacheAge_minutes: stillCachedSession.updatedAt
+                    ? Math.floor((Date.now() - new Date(stillCachedSession.updatedAt).getTime()) / (60 * 1000))
+                    : null,
                 })
 
-                // Cache for next time
-                globalSessionCache.set(reportId, normalizedSession)
+                // Merge prefilled query if provided
+                const updatedPartialData = mergePrefilledQuery(stillCachedSession.partialData, prefilledQuery)
 
+                // Use cached session immediately
                 set({
-                  session: normalizedSession,
+                  session: {
+                    ...stillCachedSession,
+                    partialData: updatedPartialData,
+                  },
                   syncError: null,
                 })
 
-                // CRITICAL: Restore HTML reports and valuation results if available
-                const sessionData = existingSession.sessionData as any
-                const valuationResult = sessionData?.valuation_result || (existingSession as any).valuationResult
-                if (sessionData?.html_report || sessionData?.info_tab_html || valuationResult) {
-                  storeLogger.info('Restoring HTML reports and valuation results from backend', {
+                // CRITICAL FIX: Restore HTML reports and valuation results from cache
+                // This ensures reports are displayed when navigating from home page
+                const cachedSessionData = stillCachedSession.sessionData as any
+                if (cachedSessionData?.html_report || cachedSessionData?.valuation_result || (stillCachedSession as any).valuationResult) {
+                  storeLogger.info('Restoring HTML reports and valuation results from cache', {
                     reportId,
-                    hasHtmlReport: !!sessionData?.html_report,
-                    hasInfoTabHtml: !!sessionData?.info_tab_html,
-                    hasValuationResult: !!valuationResult,
+                    hasHtmlReport: !!cachedSessionData?.html_report,
+                    hasInfoTabHtml: !!cachedSessionData?.info_tab_html,
+                    hasValuationResult: !!cachedSessionData?.valuation_result || !!(stillCachedSession as any).valuationResult,
                   })
 
                   // Import the results store dynamically to avoid circular dependencies
@@ -295,58 +331,121 @@ export const useValuationSessionStore = create<ValuationSessionStore>((set, get)
                   const resultsStore = useValuationResultsStore.getState()
 
                   // Store HTML reports
-                  if (sessionData?.html_report) {
-                    resultsStore.setHtmlReport(sessionData.html_report)
+                  if (cachedSessionData?.html_report) {
+                    resultsStore.setHtmlReport(cachedSessionData.html_report)
                   }
-                  if (sessionData?.info_tab_html) {
-                    resultsStore.setInfoTabHtml(sessionData.info_tab_html)
+                  if (cachedSessionData?.info_tab_html) {
+                    resultsStore.setInfoTabHtml(cachedSessionData.info_tab_html)
                   }
 
-                  // Store valuation result (merge HTML reports if not in result)
+                  // Store valuation result (check multiple possible locations)
+                  const valuationResult = cachedSessionData?.valuation_result || (stillCachedSession as any).valuationResult
                   if (valuationResult) {
+                    // Merge HTML reports if not in result
                     const fullResult = {
                       ...valuationResult,
-                      html_report: valuationResult.html_report || sessionData?.html_report,
-                      info_tab_html: valuationResult.info_tab_html || sessionData?.info_tab_html,
+                      html_report: valuationResult.html_report || cachedSessionData?.html_report,
+                      info_tab_html: valuationResult.info_tab_html || cachedSessionData?.info_tab_html,
                     }
                     resultsStore.setResult(fullResult)
                   }
                 }
-                // Form data restoration is handled by useSessionRestoration hook (called in layouts)
 
-                storeLogger.info('Loaded existing session from backend and cached', {
+                // Verify with backend in background (non-blocking)
+                // Only verify if cache is fresh (< 5 minutes), otherwise we just verified above
+                if (cacheAge <= CACHE_MAX_AGE) {
+                  verifySessionInBackground(reportId, stillCachedSession)
+                }
+
+                // Record cache hit metric
+                const cacheLoadTime = 5
+                globalSessionMetrics.recordOperation('load', true, cacheLoadTime, 0, 'cache_hit')
+                
+                storeLogger.info('Cache hit - session loaded from cache', {
                   reportId,
-                  currentView: existingSession.currentView,
-                  hasRedisContext: !!(existingSession as any).redisContext,
-                  dataSource: (existingSession as any).dataSource_info || 'db-only',
+                  loadTime_ms: cacheLoadTime,
                 })
-              } else {
-                // Backend doesn't have session or session has no meaningful data - truly NEW
-                storeLogger.info('No existing session found in backend, creating NEW report optimistically', {
-                  reportId,
-                  currentView,
-                })
-
-                const optimisticSession = createSessionOptimistically(reportId, currentView, prefilledQuery)
-
-                set({
-                  session: optimisticSession,
-                  syncError: null,
-                })
-
-                // Sync to backend in background (non-blocking)
-                syncSessionToBackend(optimisticSession)
-
-                storeLogger.info('NEW report created optimistically', {
-                  reportId,
-                  currentView: optimisticSession.currentView,
-                })
+                
+                // Mark initialization as complete
+                initializationState.set(reportId, { status: 'ready' })
+                return
               }
-            } catch (backendError) {
-              // Backend error - assume NEW (safer to create optimistically)
-              storeLogger.warn('Backend check failed, creating NEW report optimistically', {
+              // If cache was removed, fall through to check backend below
+            }
+          
+          // Not in cache or cache was removed (stale) - check backend
+          storeLogger.debug('Session not found in cache or cache empty, checking backend', { reportId })
+
+          try {
+            const backendResponse = await backendAPI.getValuationSession(reportId)
+            
+            if (backendResponse?.session && hasMeaningfulSessionData(backendResponse.session.sessionData)) {
+              // Backend has session with meaningful data - use it (not NEW)
+              const existingSession = backendResponse.session
+              const updatedPartialData = mergePrefilledQuery(
+                existingSession.partialData,
+                prefilledQuery
+              )
+
+              const normalizedSession = normalizeSessionDates({
+                ...existingSession,
+                partialData: updatedPartialData,
+              })
+
+              // Cache for next time
+              globalSessionCache.set(reportId, normalizedSession)
+
+              set({
+                session: normalizedSession,
+                syncError: null,
+              })
+
+              // CRITICAL: Restore HTML reports and valuation results if available
+              const sessionData = existingSession.sessionData as any
+              const valuationResult = sessionData?.valuation_result || (existingSession as any).valuationResult
+              if (sessionData?.html_report || sessionData?.info_tab_html || valuationResult) {
+                storeLogger.info('Restoring HTML reports and valuation results from backend', {
+                  reportId,
+                  hasHtmlReport: !!sessionData?.html_report,
+                  hasInfoTabHtml: !!sessionData?.info_tab_html,
+                  hasValuationResult: !!valuationResult,
+                })
+
+                // Import the results store dynamically to avoid circular dependencies
+                const { useValuationResultsStore } = await import('./useValuationResultsStore')
+                const resultsStore = useValuationResultsStore.getState()
+
+                // Store HTML reports
+                if (sessionData?.html_report) {
+                  resultsStore.setHtmlReport(sessionData.html_report)
+                }
+                if (sessionData?.info_tab_html) {
+                  resultsStore.setInfoTabHtml(sessionData.info_tab_html)
+                }
+
+                // Store valuation result (merge HTML reports if not in result)
+                if (valuationResult) {
+                  const fullResult = {
+                    ...valuationResult,
+                    html_report: valuationResult.html_report || sessionData?.html_report,
+                    info_tab_html: valuationResult.info_tab_html || sessionData?.info_tab_html,
+                  }
+                  resultsStore.setResult(fullResult)
+                }
+              }
+              // Form data restoration is handled by useSessionRestoration hook (called in layouts)
+
+              storeLogger.info('Loaded existing session from backend and cached', {
                 reportId,
-                error: backendError instanceof Error ? backendError.message : String(backendError),
+                currentView: existingSession.currentView,
+                hasRedisContext: !!(existingSession as any).redisContext,
+                dataSource: (existingSession as any).dataSource_info || 'db-only',
+              })
+            } else {
+              // Backend doesn't have session or session has no meaningful data - truly NEW
+              storeLogger.info('No existing session found in backend, creating NEW report optimistically', {
+                reportId,
+                currentView,
               })
 
               const optimisticSession = createSessionOptimistically(reportId, currentView, prefilledQuery)
@@ -359,12 +458,36 @@ export const useValuationSessionStore = create<ValuationSessionStore>((set, get)
               // Sync to backend in background (non-blocking)
               syncSessionToBackend(optimisticSession)
 
-              storeLogger.info('NEW report created optimistically after backend error', {
+              storeLogger.info('NEW report created optimistically', {
                 reportId,
                 currentView: optimisticSession.currentView,
               })
             }
+          } catch (backendError) {
+            // Backend error - assume NEW (safer to create optimistically)
+            storeLogger.warn('Backend check failed, creating NEW report optimistically', {
+              reportId,
+              error: backendError instanceof Error ? backendError.message : String(backendError),
+            })
+
+            const optimisticSession = createSessionOptimistically(reportId, currentView, prefilledQuery)
+
+            set({
+              session: optimisticSession,
+              syncError: null,
+            })
+
+            // Sync to backend in background (non-blocking)
+            syncSessionToBackend(optimisticSession)
+
+            storeLogger.info('NEW report created optimistically after backend error', {
+              reportId,
+              currentView: optimisticSession.currentView,
+            })
           }
+          
+          // Mark initialization as complete
+          initializationState.set(reportId, { status: 'ready' })
         } catch (error) {
           const appError = convertToApplicationError(error, { reportId, currentView, prefilledQuery })
 

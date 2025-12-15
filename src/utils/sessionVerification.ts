@@ -90,10 +90,21 @@ export function verifySessionInBackground(
         const backendResponse = await backendAPI.getValuationSession(reportId)
 
         if (!backendResponse?.session) {
-          VERIFICATION_LOGGER.warn('Session not found on backend during verification', {
+          // Backend doesn't have this session - cache is stale
+          VERIFICATION_LOGGER.warn('Backend verification failed - cache is stale', {
             reportId,
+            cacheAge: cachedSession.updatedAt,
           })
-          // Don't remove cache - might be a temporary backend issue
+          
+          // CRITICAL: Invalidate stale cache
+          globalSessionCache.remove(reportId)
+          
+          // Re-initialize to check backend properly and create NEW if needed
+          // Import dynamically to avoid circular dependencies
+          const { useValuationSessionStore } = await import('../store/useValuationSessionStore')
+          const { initializeSession } = useValuationSessionStore.getState()
+          await initializeSession(reportId, cachedSession.currentView)
+          
           return
         }
 
@@ -130,11 +141,36 @@ export function verifySessionInBackground(
           })
         }
       } catch (error) {
-        // Log error but don't throw - verification failures shouldn't break the app
-        VERIFICATION_LOGGER.warn('Background verification failed', {
-          reportId,
-          error: error instanceof Error ? error.message : 'Unknown error',
-        })
+        // Check if it's a 404 - explicit signal that session doesn't exist
+        const is404 = (error as any)?.response?.status === 404
+        
+        if (is404) {
+          // Explicit 404 - cache is definitely stale
+          VERIFICATION_LOGGER.error('Backend session not found (404) - invalidating cache', {
+            reportId,
+          })
+          
+          // Remove stale cache
+          globalSessionCache.remove(reportId)
+          
+          // Re-initialize as NEW
+          try {
+            const { useValuationSessionStore } = await import('../store/useValuationSessionStore')
+            const { initializeSession } = useValuationSessionStore.getState()
+            await initializeSession(reportId, cachedSession.currentView)
+          } catch (reinitError) {
+            VERIFICATION_LOGGER.error('Failed to re-initialize after 404', {
+              reportId,
+              error: reinitError instanceof Error ? reinitError.message : 'Unknown error',
+            })
+          }
+        } else {
+          // Other errors - don't remove cache (might be temporary network issue)
+          VERIFICATION_LOGGER.warn('Background verification failed', {
+            reportId,
+            error: error instanceof Error ? error.message : 'Unknown error',
+          })
+        }
       } finally {
         // Remove from in-progress set
         verificationInProgress.delete(reportId)

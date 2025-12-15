@@ -175,6 +175,16 @@ export class SessionCacheManager {
   }
 
   /**
+   * Remove session from cache (alias for delete)
+   * Used when cache becomes stale or invalid
+   *
+   * @param reportId - Report identifier
+   */
+  remove(reportId: string): void {
+    this.delete(reportId)
+  }
+
+  /**
    * Check if session is cached and valid
    *
    * @param reportId - Report identifier
