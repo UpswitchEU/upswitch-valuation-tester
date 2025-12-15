@@ -9,6 +9,7 @@
  */
 
 import { useCallback, useRef, useState } from 'react'
+import type { ConversationMetrics } from '../types/conversationMetrics'
 import type { Message } from '../types/message'
 import { chatLogger } from '../utils/logger'
 
@@ -20,8 +21,8 @@ const KEEP_RECENT = 50 // Keep most recent N messages when pruning
 const KEEP_FIRST = 10 // Keep first N messages (initial context)
 
 // Re-export types for convenience
-export type { Message } from '../types/message'
 export type { ConversationMetrics } from '../types/conversationMetrics'
+export type { Message } from '../types/message'
 
 export interface StreamingChatState {
   // Core state

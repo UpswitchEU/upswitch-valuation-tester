@@ -282,7 +282,7 @@ export function syncSessionToBackend(session: ValuationSession): void {
               
               // Only update if the reportId matches (prevents overwriting a different session)
               if (currentSession?.reportId === reportId) {
-                store.set({
+                useValuationSessionStore.setState({
                   session: backendSession,
                   syncError: null,
                 })
