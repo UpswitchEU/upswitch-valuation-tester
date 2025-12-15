@@ -98,6 +98,15 @@ export async function handle409Conflict(
         // Merge prefilled query if provided
         const updatedPartialData = mergePrefilledQuery(existingSession.partialData, prefilledQuery)
 
+        // CRITICAL: Merge top-level fields (valuationResult, htmlReport, infoTabHtml) into sessionData
+        // Backend stores these separately, but we need them in sessionData for consistent access
+        const mergedSessionData = {
+          ...(existingSession.sessionData || {}),
+          ...(existingSession.valuationResult && { valuation_result: existingSession.valuationResult }),
+          ...(existingSession.htmlReport && { html_report: existingSession.htmlReport }),
+          ...(existingSession.infoTabHtml && { info_tab_html: existingSession.infoTabHtml }),
+        }
+
         storeLogger.info('Loaded existing session after conflict', {
           reportId,
           currentView: existingSession.currentView,
@@ -107,6 +116,7 @@ export async function handle409Conflict(
         // Normalize dates and return
         return normalizeSessionDates({
           ...existingSession,
+          sessionData: mergedSessionData,  // Use merged version
           partialData: updatedPartialData,
         })
       }

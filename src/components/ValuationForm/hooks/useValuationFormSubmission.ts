@@ -79,9 +79,17 @@ export const useValuationFormSubmission = (
         })
 
         // Prevent double submission
+        // CRITICAL FIX: Only check store state, not hook value
+        // Hook values are stale until re-render, but store state is synchronous
+        // After setCalculating(true) on line 60, checkState.isCalculating is true immediately
+        // but isCalculating hook value is still false until component re-renders
+        // Checking both would allow concurrent submissions: true && false = false
         const checkState = useValuationApiStore.getState()
-        if (checkState.isCalculating && isCalculating) {
-          generalLogger.warn('Calculation already in progress')
+        if (checkState.isCalculating) {
+          generalLogger.warn('Calculation already in progress, preventing double submission', {
+            storeState: checkState.isCalculating,
+            hookValue: isCalculating, // Logged for debugging but not used in check
+          })
           return // Don't reset - let existing calculation finish
         }
 

@@ -57,14 +57,17 @@ export function useSessionRestoration() {
       return
     }
 
-    const sessionData = getSessionData()
+    // CRITICAL: Use session.sessionData directly (merged with top-level fields)
+    // NOT getSessionData() which filters to form fields only
+    // We need access to html_report, info_tab_html, valuation_result for restoration
+    const sessionData = session.sessionData as any
     
     // Create a hash of sessionData to detect changes
     const sessionDataHash = JSON.stringify(sessionData || {})
     
     // Check if sessionData changed from empty to populated
     const wasEmpty = !lastSessionDataHash.current || lastSessionDataHash.current === '{}'
-    const isNowPopulated = hasMeaningfulSessionData(sessionData)
+    const isNowPopulated = hasMeaningfulSessionData(sessionData, session)
     const dataJustLoaded = wasEmpty && isNowPopulated
 
     // Update hash
@@ -76,7 +79,7 @@ export function useSessionRestoration() {
     }
 
     // CRITICAL: Skip restoration for NEW reports (empty sessionData)
-    if (!sessionData || !hasMeaningfulSessionData(sessionData)) {
+    if (!sessionData || !hasMeaningfulSessionData(sessionData, session)) {
       generalLogger.debug('Skipping restoration - NEW report (empty sessionData)', {
         reportId: session.reportId,
       })
@@ -95,14 +98,17 @@ export function useSessionRestoration() {
       hasSessionData: !!sessionData,
       sessionDataKeys: Object.keys(sessionData || {}),
       dataJustLoaded,
+      hasHtmlReport: !!sessionData?.html_report,
+      hasInfoTabHtml: !!sessionData?.info_tab_html,
+      hasValuationResult: !!sessionData?.valuation_result,
     })
 
     try {
-      // STEP 1: Restore form data
+      // STEP 1: Restore form data (from merged sessionData)
       restoreFormData(session.reportId, sessionData, updateFormData)
 
-      // STEP 2: Restore valuation results
-      restoreResults(session.reportId, sessionData, setResult, setHtmlReport, setInfoTabHtml)
+      // STEP 2: Restore valuation results (from merged sessionData which includes top-level fields)
+      restoreResults(session.reportId, sessionData, session, setResult, setHtmlReport, setInfoTabHtml)
 
       // STEP 3: Fetch version history (async, non-blocking)
       fetchVersions(session.reportId)
@@ -135,7 +141,7 @@ export function useSessionRestoration() {
       // Show error toast
       showToast('Failed to load report data. Please refresh the page.', 'error', 5000)
     }
-  }, [session?.reportId, session?.sessionData, getSessionData, updateFormData, setResult, setHtmlReport, setInfoTabHtml, fetchVersions, showToast])
+  }, [session?.reportId, session?.sessionData, updateFormData, setResult, setHtmlReport, setInfoTabHtml, fetchVersions, showToast])
 }
 
 /**
@@ -218,24 +224,29 @@ function restoreFormData(
 
 /**
  * Helper: Restore valuation results from session to results store
+ * Checks both merged sessionData AND top-level session fields for backward compatibility
  */
 function restoreResults(
   reportId: string,
   sessionData: any,
+  session: any,
   setResult: (result: any) => void,
   setHtmlReport: (html: string) => void,
   setInfoTabHtml: (html: string) => void
 ) {
   try {
-    const valuationResult = sessionData?.valuation_result || (sessionData as any).valuationResult
+    // Check merged sessionData first, then top-level session fields as fallback
+    const valuationResult = sessionData?.valuation_result || session?.valuationResult
+    const htmlReport = sessionData?.html_report || session?.htmlReport
+    const infoTabHtml = sessionData?.info_tab_html || session?.infoTabHtml
 
     // Restore complete result object (not just HTML)
     if (valuationResult) {
       const fullResult = {
         ...valuationResult,
         // Merge HTML reports if not in result object
-        html_report: valuationResult.html_report || sessionData?.html_report,
-        info_tab_html: valuationResult.info_tab_html || sessionData?.info_tab_html,
+        html_report: valuationResult.html_report || htmlReport,
+        info_tab_html: valuationResult.info_tab_html || infoTabHtml,
       }
       setResult(fullResult)
       generalLogger.info('Valuation result restored from session', {
@@ -246,20 +257,20 @@ function restoreResults(
         hasInfoTabHtml: !!fullResult.info_tab_html,
         infoLength: fullResult.info_tab_html?.length || 0,
       })
-    } else if (sessionData?.html_report || sessionData?.info_tab_html) {
+    } else if (htmlReport || infoTabHtml) {
       // Partial restoration - HTML exists but no result object
-      if (sessionData.html_report) {
-        setHtmlReport(sessionData.html_report)
+      if (htmlReport) {
+        setHtmlReport(htmlReport)
         generalLogger.info('HTML report restored from session (partial)', {
           reportId,
-          htmlLength: sessionData.html_report.length,
+          htmlLength: htmlReport.length,
         })
       }
-      if (sessionData.info_tab_html) {
-        setInfoTabHtml(sessionData.info_tab_html)
+      if (infoTabHtml) {
+        setInfoTabHtml(infoTabHtml)
         generalLogger.info('Info tab HTML restored from session (partial)', {
           reportId,
-          infoLength: sessionData.info_tab_html.length,
+          infoLength: infoTabHtml.length,
         })
       }
     }

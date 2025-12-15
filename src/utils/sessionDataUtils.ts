@@ -16,77 +16,98 @@
  * This is the single source of truth for detecting NEW vs EXISTING reports
  * based on sessionData content.
  *
+ * ENHANCED: Also checks top-level session fields (valuationResult, htmlReport, infoTabHtml)
+ * because backend stores these separately from sessionData.
+ *
  * @param sessionData - Session data to check
- * @returns true if sessionData has meaningful fields, false if empty (NEW report)
+ * @param session - Optional full session object to check top-level fields
+ * @returns true if sessionData has meaningful fields OR session has top-level fields, false if empty (NEW report)
  *
  * @example
  * ```typescript
  * const sessionData = getSessionData()
- * if (hasMeaningfulSessionData(sessionData)) {
+ * if (hasMeaningfulSessionData(sessionData, session)) {
  *   // EXISTING report - restore data
  * } else {
  *   // NEW report - skip restoration
  * }
  * ```
  */
-export function hasMeaningfulSessionData(sessionData: any): boolean {
-  if (!sessionData || typeof sessionData !== 'object') {
-    return false
+export function hasMeaningfulSessionData(sessionData: any, session?: any): boolean {
+  // Check sessionData itself (form fields)
+  if (sessionData && typeof sessionData === 'object') {
+    const keys = Object.keys(sessionData)
+    // Empty object means NEW report (unless session has top-level fields)
+    if (keys.length === 0) {
+      // Check top-level session fields before returning false
+      if (session) {
+        if (session.valuationResult || session.htmlReport || session.infoTabHtml) {
+          return true
+        }
+      }
+      return false
+    }
+
+    // Check if it has actual form fields (not just metadata)
+    // These fields indicate the report has been worked on and has data to restore
+    const meaningfulFields = [
+      // Core financial data
+      'company_name',
+      'revenue',
+      'ebitda',
+      'current_year_data',
+      'historical_years_data',
+      
+      // Business identification
+      'business_type',
+      'business_type_id',
+      'business_structure',
+      'business_model',
+      'industry',
+      
+      // Business details
+      'business_description',
+      'business_highlights',
+      'reason_for_selling',
+      
+      // Location & basic info
+      'country_code',
+      'city',
+      'founding_year',
+      
+      // Ownership
+      'number_of_employees',
+      'number_of_owners',
+      'shares_for_sale',
+      
+      // Generated content
+      'html_report',
+      'info_tab_html',
+      'valuation_result',
+      
+      // Other user-entered data
+      'comparables',
+      'business_context',
+      'recurring_revenue_percentage',
+      'owner_role',
+      'owner_hours',
+      'delegation_capability',
+      'succession_plan',
+    ]
+
+    if (keys.some((key) => meaningfulFields.includes(key))) {
+      return true
+    }
   }
-
-  const keys = Object.keys(sessionData)
-  // Empty object means NEW report
-  if (keys.length === 0) {
-    return false
+  
+  // Check top-level session fields (valuationResult, htmlReport, infoTabHtml)
+  // Backend stores these separately from sessionData
+  if (session) {
+    if (session.valuationResult || session.htmlReport || session.infoTabHtml) {
+      return true
+    }
   }
-
-  // Check if it has actual form fields (not just metadata)
-  // These fields indicate the report has been worked on and has data to restore
-  const meaningfulFields = [
-    // Core financial data
-    'company_name',
-    'revenue',
-    'ebitda',
-    'current_year_data',
-    'historical_years_data',
-    
-    // Business identification
-    'business_type',
-    'business_type_id',
-    'business_structure',
-    'business_model',
-    'industry',
-    
-    // Business details
-    'business_description',
-    'business_highlights',
-    'reason_for_selling',
-    
-    // Location & basic info
-    'country_code',
-    'city',
-    'founding_year',
-    
-    // Ownership
-    'number_of_employees',
-    'number_of_owners',
-    'shares_for_sale',
-    
-    // Generated content
-    'html_report',
-    'info_tab_html',
-    'valuation_result',
-    
-    // Other user-entered data
-    'comparables',
-    'business_context',
-    'recurring_revenue_percentage',
-    'owner_role',
-    'owner_hours',
-    'delegation_capability',
-    'succession_plan',
-  ]
-
-  return keys.some((key) => meaningfulFields.includes(key))
+  
+  return false
 }
 

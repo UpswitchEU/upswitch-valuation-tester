@@ -275,7 +275,21 @@ export function syncSessionToBackend(session: ValuationSession): void {
             )
 
             if (backendSessionResponse?.session) {
-              const backendSession = normalizeSessionDates(backendSessionResponse.session)
+              const existingSession = backendSessionResponse.session
+
+              // CRITICAL: Merge top-level fields (valuationResult, htmlReport, infoTabHtml) into sessionData
+              // Backend stores these separately, but we need them in sessionData for consistent access
+              const mergedSessionData = {
+                ...(existingSession.sessionData || {}),
+                ...(existingSession.valuationResult && { valuation_result: existingSession.valuationResult }),
+                ...(existingSession.htmlReport && { html_report: existingSession.htmlReport }),
+                ...(existingSession.infoTabHtml && { info_tab_html: existingSession.infoTabHtml }),
+              }
+
+              const backendSession = normalizeSessionDates({
+                ...existingSession,
+                sessionData: mergedSessionData,  // Use merged version
+              })
 
               // Update cache with backend version
               globalSessionCache.set(reportId, backendSession)
@@ -296,16 +310,18 @@ export function syncSessionToBackend(session: ValuationSession): void {
                   currentView: backendSession.currentView,
                 })
 
-                // CRITICAL: Also restore HTML reports and valuation results
-                // This ensures the UI displays data after 409 conflict resolution
+                // CRITICAL: Also restore HTML reports and valuation results from MERGED data
+                // backendSession.sessionData already has merged top-level fields, but check both for safety
                 const sessionData = backendSession.sessionData as any
-                const valuationResult = sessionData?.valuation_result || (backendSession as any).valuationResult
+                const valuationResult = sessionData?.valuation_result || backendSession.valuationResult
+                const htmlReport = sessionData?.html_report || backendSession.htmlReport
+                const infoTabHtml = sessionData?.info_tab_html || backendSession.infoTabHtml
                 
-                if (sessionData?.html_report || sessionData?.info_tab_html || valuationResult) {
+                if (htmlReport || infoTabHtml || valuationResult) {
                   sessionHelpersLogger.info('Restoring HTML reports and valuation results after 409', {
                     reportId,
-                    hasHtmlReport: !!sessionData?.html_report,
-                    hasInfoTabHtml: !!sessionData?.info_tab_html,
+                    hasHtmlReport: !!htmlReport,
+                    hasInfoTabHtml: !!infoTabHtml,
                     hasValuationResult: !!valuationResult,
                   })
 
@@ -314,19 +330,19 @@ export function syncSessionToBackend(session: ValuationSession): void {
                     const resultsStore = useValuationResultsStore.getState()
 
                     // Store HTML reports
-                    if (sessionData?.html_report) {
-                      resultsStore.setHtmlReport(sessionData.html_report)
+                    if (htmlReport) {
+                      resultsStore.setHtmlReport(htmlReport)
                     }
-                    if (sessionData?.info_tab_html) {
-                      resultsStore.setInfoTabHtml(sessionData.info_tab_html)
+                    if (infoTabHtml) {
+                      resultsStore.setInfoTabHtml(infoTabHtml)
                     }
 
                     // Store valuation result (merge HTML reports if not in result)
                     if (valuationResult) {
                       const fullResult = {
                         ...valuationResult,
-                        html_report: valuationResult.html_report || sessionData?.html_report,
-                        info_tab_html: valuationResult.info_tab_html || sessionData?.info_tab_html,
+                        html_report: valuationResult.html_report || htmlReport,
+                        info_tab_html: valuationResult.info_tab_html || infoTabHtml,
                       }
                       resultsStore.setResult(fullResult)
                     }
