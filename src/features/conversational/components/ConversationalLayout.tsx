@@ -73,7 +73,15 @@ const ConversationalLayoutInner: React.FC<ConversationalLayoutProps> = ({
   const { setCollectedData } = useValuationFormStore()
   const { isCalculating } = useValuationApiStore()
   const { result, setResult } = useValuationResultsStore()
-  const { isSaving, lastSaved, hasUnsavedChanges, syncError } = useValuationSessionStore()
+  const { isSaving, lastSaved, hasUnsavedChanges, syncError, updateSessionData } = useValuationSessionStore()
+
+  // Mark conversation changes as unsaved (for save status indicator)
+  useEffect(() => {
+    if (state.messages.length > 0) {
+      // Mark as having unsaved conversation data
+      useValuationSessionStore.setState({ hasUnsavedChanges: true })
+    }
+  }, [state.messages.length])
 
   // Restore conversation from Python backend
   // FIX: Use refs to stabilize callbacks and prevent infinite loops
@@ -212,17 +220,37 @@ const ConversationalLayoutInner: React.FC<ConversationalLayoutProps> = ({
   // Handle valuation completion
   const handleValuationComplete = useCallback(
     async (result: ValuationResponse) => {
-      actions.setValuationResult(result)
-      actions.setGenerating(false)
+      // Mark as saving during completion process
+      useValuationSessionStore.setState({ isSaving: true })
 
-      // Store in results store (same as manual flow)
-      setResult(result)
+      try {
+        actions.setValuationResult(result)
+        actions.setGenerating(false)
 
-      onComplete(result)
+        // Store in results store (same as manual flow)
+        setResult(result)
 
-      // Update frontend credit count for guests
-      if (!user && (result as any).creditsRemaining !== undefined) {
-        guestCreditService.setCredits((result as any).creditsRemaining)
+        // Call parent completion handler (may be async)
+        await onComplete(result)
+
+        // Mark save as completed
+        useValuationSessionStore.setState({
+          hasUnsavedChanges: false,
+          lastSaved: new Date(),
+          isSaving: false,
+        })
+
+        // Update frontend credit count for guests
+        if (!user && (result as any).creditsRemaining !== undefined) {
+          guestCreditService.setCredits((result as any).creditsRemaining)
+        }
+      } catch (error) {
+        // Mark save as failed
+        useValuationSessionStore.setState({
+          isSaving: false,
+          syncError: error instanceof Error ? error.message : 'Save failed',
+        })
+        throw error
       }
     },
     [actions, onComplete, user, setResult]

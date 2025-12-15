@@ -26,6 +26,7 @@ import {
 } from '../utils/businessTypeParsing'
 import { hasKBOSuggestions, type KBOSuggestion, parseKBOSuggestions } from '../utils/kboParsing'
 import { ValuationReadyCTA } from '../ValuationReadyCTA'
+import { ErrorMessage } from './ErrorMessage'
 
 export interface MessageItemProps {
   message: Message
@@ -35,6 +36,7 @@ export interface MessageItemProps {
   onClarificationReject: (messageId: string) => void
   onKBOSuggestionSelect: (selection: string) => void
   onValuationStart?: () => void
+  onRetry?: (messageId: string) => void | Promise<void>
   isTyping?: boolean
   isThinking?: boolean
 }
@@ -58,6 +60,7 @@ export const MessageItem = React.memo<MessageItemProps>(
     onClarificationReject,
     onKBOSuggestionSelect,
     onValuationStart,
+    onRetry,
     isTyping = false,
     isThinking = false,
   }) => {
@@ -226,6 +229,41 @@ export const MessageItem = React.memo<MessageItemProps>(
           confidence={getMetadataNumber('confidence')}
           timestamp={message.timestamp}
         />
+      )
+    }
+
+    // Handle system error messages with retry functionality
+    if (message.type === 'system' && message.metadata?.error_type) {
+      const errorType = getMetadataString('error_type')
+      const errorCode = getMetadataString('error_code')
+      const errorDetails = getMetadataString('error_details')
+      const isRetrying = getMetadataValue<boolean>('is_retrying') === true
+
+      // Create error object for ErrorMessage component
+      const errorObject = errorCode
+        ? {
+            code: errorCode,
+            message: message.content.replace(/^Error:\s*/i, ''),
+          }
+        : undefined
+
+      return (
+        <motion.div
+          initial={{ opacity: 0, y: 10, scale: 0.98 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          transition={{ duration: 0.3, ease: 'easeOut' }}
+          className="flex justify-start"
+        >
+          <div className="max-w-[85%] mr-auto">
+            <ErrorMessage
+              message={message.content.replace(/^Error:\s*/i, '')}
+              error={errorObject}
+              onRetry={onRetry ? () => onRetry(message.id) : undefined}
+              isRetrying={isRetrying}
+              details={errorDetails}
+            />
+          </div>
+        </motion.div>
       )
     }
 

@@ -106,22 +106,22 @@ export function SaveStatusIndicator({
     // Error state
     icon = <AlertCircle className="w-4 h-4" />
     text = compact ? '' : 'Save failed'
-    colorClasses = 'text-red-600 bg-red-50 border-red-200'
+    colorClasses = 'text-accent-600 bg-accent-50 border-accent-200'
   } else if (isSaving) {
     // Saving state
     icon = <Loader2 className="w-4 h-4 animate-spin" />
     text = compact ? '' : 'Saving...'
-    colorClasses = 'text-blue-600 bg-blue-50 border-blue-200'
+    colorClasses = 'text-primary-600 bg-primary-50 border-primary-200'
   } else if (hasUnsavedChanges) {
     // Unsaved changes state
     icon = <Save className="w-4 h-4" />
     text = compact ? '' : 'Unsaved changes'
-    colorClasses = 'text-amber-600 bg-amber-50 border-amber-200'
+    colorClasses = 'text-harvest-600 bg-harvest-50 border-harvest-200'
   } else if (lastSaved) {
     // Saved state
     icon = <Check className="w-4 h-4" />
     text = compact ? '' : `Saved ${relativeTime}`
-    colorClasses = 'text-green-600 bg-green-50 border-green-200'
+    colorClasses = 'text-primary-600 bg-primary-50 border-primary-200'
   } else {
     // Initial state (no changes yet)
     return null

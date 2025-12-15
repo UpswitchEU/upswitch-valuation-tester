@@ -80,18 +80,18 @@ export const ValuationToolbar: React.FC<ValuationToolbarProps> = ({
   // Save status icon (minimalist - just icon with tooltip)
   const getSaveStatusIcon = () => {
     if (syncError) {
-      return <AlertCircle className="w-4 h-4 text-red-500" />
+      return <AlertCircle className="w-4 h-4 text-accent-500" />
     }
     if (isSaving) {
-      return <Loader2 className="w-4 h-4 animate-spin text-blue-400" />
+      return <Loader2 className="w-4 h-4 animate-spin text-primary-500" />
     }
     if (hasUnsavedChanges) {
-      return <Save className="w-4 h-4 text-amber-400" />
+      return <Save className="w-4 h-4 text-harvest-500" />
     }
     if (lastSaved) {
       const timeAgo = Math.floor((Date.now() - lastSaved.getTime()) / 1000 / 60)
-      if (timeAgo < 1) return <Check className="w-4 h-4 text-green-500" />
-      return <Check className="w-4 h-4 text-green-500 opacity-70" />
+      if (timeAgo < 1) return <Check className="w-4 h-4 text-primary-600" />
+      return <Check className="w-4 h-4 text-primary-600 opacity-70" />
     }
     return null
   }

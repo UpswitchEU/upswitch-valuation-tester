@@ -24,6 +24,7 @@ export interface MessagesListProps {
   onClarificationReject: (messageId: string) => void
   onKBOSuggestionSelect: (selection: string) => void
   onValuationStart?: () => void
+  onRetry?: (messageId: string) => void | Promise<void>
   calculateOption?: any
   valuationPreview?: any
   messagesEndRef: React.RefObject<HTMLDivElement>
@@ -52,6 +53,7 @@ export const MessagesList: React.FC<MessagesListProps> = React.memo(
     onClarificationReject,
     onKBOSuggestionSelect,
     onValuationStart,
+    onRetry,
     calculateOption,
     valuationPreview,
     messagesEndRef,
@@ -84,6 +86,7 @@ export const MessagesList: React.FC<MessagesListProps> = React.memo(
                 onClarificationReject={onClarificationReject}
                 onKBOSuggestionSelect={onKBOSuggestionSelect}
                 onValuationStart={onValuationStart}
+                onRetry={onRetry}
                 isTyping={isTyping}
                 isThinking={isThinking}
               />

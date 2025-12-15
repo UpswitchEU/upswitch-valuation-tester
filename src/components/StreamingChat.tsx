@@ -19,6 +19,7 @@
  */
 
 import React, { useCallback, useEffect, useRef } from 'react'
+import { useAutoSend } from '../hooks/chat/useAutoSend'
 import { useMessageManagement } from '../hooks/chat/useMessageManagement'
 import { useSmartSuggestions } from '../hooks/chat/useSmartSuggestions'
 import { useStreamingCoordinator } from '../hooks/chat/useStreamingCoordinator'
@@ -186,24 +187,27 @@ export const StreamingChat: React.FC<import('./StreamingChat.types').StreamingCh
           operation: 'stream_submission',
         })
 
+        // Type assertion since we know appError is an ApplicationError from convertToApplicationError
+        const errorDetails = appError as any
+
         if (isNetworkError(appError)) {
           chatLogger.error('Network error during stream submission', {
-            error: (appError as any).message,
-            code: (appError as any).code,
+            error: errorDetails.message,
+            code: errorDetails.code,
             sessionId,
             pythonSessionId,
           })
         } else if (isTimeoutError(appError)) {
           chatLogger.error('Timeout during stream submission', {
-            error: (appError as any).message,
-            code: (appError as any).code,
+            error: errorDetails.message,
+            code: errorDetails.code,
             sessionId,
             pythonSessionId,
           })
         } else {
           chatLogger.error('Stream submission failed', {
-            error: (appError as any).message,
-            code: (appError as any).code,
+            error: errorDetails.message,
+            code: errorDetails.code,
             sessionId,
             pythonSessionId,
           })
@@ -212,11 +216,35 @@ export const StreamingChat: React.FC<import('./StreamingChat.types').StreamingCh
         // Reset streaming state on error
         state.setIsStreaming(false)
 
-        // Add user-friendly error message
+        // Get user-friendly error message
+        const errorMessage = getErrorMessage(appError)
+        
+        // Determine error type and create helpful message
+        let userMessage = errorMessage
+        let errorDetailsText: string | undefined
+
+        if (isNetworkError(appError)) {
+          userMessage = 'Unable to connect to the server. Please check your internet connection.'
+          errorDetailsText = 'Network connection failed. This is usually temporary.'
+        } else if (isTimeoutError(appError)) {
+          userMessage = 'The request took too long to complete. Please try again.'
+          errorDetailsText = 'Request timeout. The server may be busy.'
+        } else {
+          userMessage = errorMessage || 'An unexpected error occurred. Please try again.'
+        }
+
+        // Add user-friendly error message with metadata for retry
         messageManagement.addMessage({
           type: 'system',
-          content: `Error: ${getErrorMessage(appError)}`,
+          content: userMessage,
           isComplete: true,
+          metadata: {
+            error_type: 'error',
+            error_code: errorDetails.code,
+            error_details: errorDetailsText,
+            original_input: inputToSubmit.trim(),
+            can_retry: isNetworkError(appError) || isTimeoutError(appError),
+          },
         })
       }
     },
@@ -301,24 +329,6 @@ export const StreamingChat: React.FC<import('./StreamingChat.types').StreamingCh
     }
   }, [initialMessages, sessionId, state.messages.length, state.setMessages])
 
-  // CRITICAL: Auto-send initial message when autoSend is true
-  const hasAutoSentRef = useRef(false)
-  const lastSessionIdRef = useRef<string | null>(null)
-  const lastCheckedMessagesLengthRef = useRef(0)
-
-  // Reset auto-send flag when sessionId changes
-  useEffect(() => {
-    if (lastSessionIdRef.current !== null && lastSessionIdRef.current !== sessionId) {
-      hasAutoSentRef.current = false
-      lastCheckedMessagesLengthRef.current = 0
-      chatLogger.debug('Session ID changed, resetting auto-send flag', {
-        previousSessionId: lastSessionIdRef.current,
-        newSessionId: sessionId,
-      })
-    }
-    lastSessionIdRef.current = sessionId
-  }, [sessionId])
-
   // Use extracted conversation initializer
   const { isInitializing } = useConversationInitializer(sessionId, userId, {
     addMessage: messageManagement.addMessage,
@@ -336,90 +346,22 @@ export const StreamingChat: React.FC<import('./StreamingChat.types').StreamingCh
     initialMessage,
   })
 
-  useEffect(() => {
-    // Early return if already sent or conditions not met
-    if (hasAutoSentRef.current || !autoSend || !initialMessage?.trim()) {
-      return
-    }
-
-    // Don't auto-send if conversation already exists (has restored messages)
-    const hasRestoredMessages = initialMessages && initialMessages.length > 0
-    if (hasRestoredMessages) {
-      return
-    }
-
-    // Session is ready when:
-    // - Session is initialized, OR
-    // - Restoration is complete (if restoration was attempted)
-    const sessionReady =
-      isSessionInitialized || (isRestorationComplete && !isRestoring)
-
-    // CRITICAL: Wait for pythonSessionId to be available if initialization is complete
-    // This ensures we use the correct backend session ID for streaming
-    // If initialization is still in progress, pythonSessionId will be set when /start completes
-    // If initialization is complete but pythonSessionId is null, it means no conversation exists yet
-    // In that case, we can proceed with client sessionId (it will be mapped by backend)
-    // However, if initialization just completed, give it a moment for pythonSessionId to be set
-    const pythonSessionIdReady = 
-      pythonSessionId !== null || // Python session ID is available
-      (!isInitializing && isRestorationComplete) // Or initialization is done and restoration is complete
-
-    // Only check for matching messages if messages length changed (optimization)
-    const messagesLengthChanged = state.messages.length !== lastCheckedMessagesLengthRef.current
-    if (messagesLengthChanged) {
-      lastCheckedMessagesLengthRef.current = state.messages.length
-    }
-
-    // Check if we should auto-send
-    const hasMatchingUserMessage = state.messages.some(
-      (m) => m.type === 'user' && m.content === initialMessage.trim()
-    )
-
-    const shouldAutoSend =
-      sessionReady &&
-      pythonSessionIdReady &&
-      !state.isStreaming &&
-      !isInitializing &&
-      !hasMatchingUserMessage
-
-    if (shouldAutoSend) {
-      hasAutoSentRef.current = true
-      chatLogger.info('🚀 Auto-sending initial message', {
-        sessionId,
-        pythonSessionId,
-        initialMessage: initialMessage.substring(0, 50),
-        isRestorationComplete,
-        isSessionInitialized,
-        isRestoring,
-        isInitializing,
-      })
-      // Use setTimeout to ensure state is fully settled before sending
-      setTimeout(() => {
-        submitStream(initialMessage.trim())
-      }, 100)
-    } else if (sessionReady && !pythonSessionIdReady && !isInitializing) {
-      // Log when we're waiting for pythonSessionId
-      chatLogger.debug('⏳ Waiting for pythonSessionId before auto-send', {
-        sessionId,
-        pythonSessionId,
-        isInitializing,
-      })
-    }
-  }, [
-    autoSend,
+  // Use extracted auto-send hook
+  useAutoSend({
+    autoSend: autoSend ?? false,
     initialMessage,
     isSessionInitialized,
     isRestorationComplete,
     isRestoring,
     isInitializing,
-    pythonSessionId, // CRITICAL: Wait for pythonSessionId to be available
-    state.isStreaming,
-    state.messages.length, // Only depend on length, not full messages array
-    state.messages, // Still need full array for .some() check, but only when length changes
-    initialMessages?.length, // Only depend on length
+    pythonSessionId,
+    isStreaming: state.isStreaming,
+    messagesLength: state.messages.length,
+    hasRestoredMessages: (initialMessages?.length ?? 0) > 0,
     submitStream,
     sessionId,
-  ])
+    getMessages: () => state.messages,
+  })
 
   // Use extracted metrics tracking
   const {
@@ -450,38 +392,120 @@ export const StreamingChat: React.FC<import('./StreamingChat.types').StreamingCh
           operation: 'form_submission',
         })
 
+        // Type assertion since we know appError is an ApplicationError from convertToApplicationError
+        const errorDetails = appError as any
+
         if (isNetworkError(appError)) {
           chatLogger.error('Network error during form submission', {
-            error: (appError as any).message,
-            code: (appError as any).code,
+            error: errorDetails.message,
+            code: errorDetails.code,
             sessionId,
             pythonSessionId,
           })
         } else if (isTimeoutError(appError)) {
           chatLogger.error('Timeout during form submission', {
-            error: (appError as any).message,
-            code: (appError as any).code,
+            error: errorDetails.message,
+            code: errorDetails.code,
             sessionId,
             pythonSessionId,
           })
         } else {
           chatLogger.error('Form submission failed', {
-            error: (appError as any).message,
-            code: (appError as any).code,
+            error: errorDetails.message,
+            code: errorDetails.code,
             sessionId,
             pythonSessionId,
           })
         }
 
-        // Add user-friendly error message
+        // Get user-friendly error message
+        const errorMessage = getErrorMessage(appError)
+        
+        // Determine error type and create helpful message
+        let userMessage = errorMessage
+        let errorDetailsText: string | undefined
+
+        if (isNetworkError(appError)) {
+          userMessage = 'Unable to connect to the server. Please check your internet connection.'
+          errorDetailsText = 'Network connection failed. This is usually temporary.'
+        } else if (isTimeoutError(appError)) {
+          userMessage = 'The request took too long to complete. Please try again.'
+          errorDetailsText = 'Request timeout. The server may be busy.'
+        } else {
+          userMessage = errorMessage || 'An unexpected error occurred. Please try again.'
+        }
+
+        // Add user-friendly error message with metadata for retry
         messageManagement.addMessage({
           type: 'system',
-          content: `Error: ${getErrorMessage(appError)}`,
+          content: userMessage,
           isComplete: true,
+          metadata: {
+            error_type: 'error',
+            error_code: errorDetails.code,
+            error_details: errorDetailsText,
+            original_input: state.input.trim(),
+            can_retry: isNetworkError(appError) || isTimeoutError(appError),
+          },
         })
       }
     },
     [state.input, submitStream, sessionId, pythonSessionId, messageManagement]
+  )
+
+  // Handle retry for error messages
+  const handleRetry = useCallback(
+    async (messageId: string) => {
+      // Find the error message
+      const errorMessage = state.messages.find((m) => m.id === messageId)
+      if (!errorMessage || errorMessage.type !== 'system') {
+        return
+      }
+
+      const originalInput = errorMessage.metadata?.original_input as string | undefined
+      if (!originalInput) {
+        return
+      }
+
+      // Update error message to show retrying state
+      state.setMessages((prev) =>
+        prev.map((m) =>
+          m.id === messageId
+            ? {
+                ...m,
+                metadata: {
+                  ...m.metadata,
+                  is_retrying: true,
+                },
+              }
+            : m
+        )
+      )
+
+      try {
+        // Retry the submission
+        await submitStream(originalInput)
+        
+        // Remove the error message on success
+        state.setMessages((prev) => prev.filter((m) => m.id !== messageId))
+      } catch (retryError) {
+        // Update error message to remove retrying state
+        state.setMessages((prev) =>
+          prev.map((m) =>
+            m.id === messageId
+              ? {
+                  ...m,
+                  metadata: {
+                    ...m.metadata,
+                    is_retrying: false,
+                  },
+                }
+              : m
+          )
+        )
+      }
+    },
+    [state.messages, state.setMessages, submitStream]
   )
 
   return (
@@ -498,6 +522,7 @@ export const StreamingChat: React.FC<import('./StreamingChat.types').StreamingCh
         onClarificationReject={suggestionHandlers.handleClarificationReject}
         onKBOSuggestionSelect={suggestionHandlers.handleKBOSuggestionSelect}
         onValuationStart={onValuationStart}
+        onRetry={handleRetry}
         calculateOption={state.calculateOption}
         valuationPreview={state.valuationPreview}
         messagesEndRef={state.refs.messagesEndRef}

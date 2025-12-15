@@ -239,7 +239,7 @@ export const useValuationSessionStore = create<ValuationSessionStore>((set, get)
       const startTime = performance.now()
 
       try {
-        set({ isSyncing: true, syncError: null })
+        set({ isSaving: true, isSyncing: true, syncError: null })
 
         // Deduplicate concurrent load requests (prevents double-load)
         const session = await globalRequestDeduplicator.deduplicate(
@@ -453,7 +453,7 @@ export const useValuationSessionStore = create<ValuationSessionStore>((set, get)
       lastUpdateTime = now
 
       try {
-        set({ isSyncing: true, syncError: null })
+        set({ isSaving: true, isSyncing: true, syncError: null })
 
         // Deep merge function for nested objects
         const deepMerge = (target: any, source: any) => {
@@ -506,7 +506,10 @@ export const useValuationSessionStore = create<ValuationSessionStore>((set, get)
 
         set({
           session: updatedSession,
+          isSaving: false,
           isSyncing: false,
+          lastSaved: new Date(),
+          hasUnsavedChanges: false,
           syncError: null,
         })
 
@@ -582,6 +585,7 @@ export const useValuationSessionStore = create<ValuationSessionStore>((set, get)
             updatedAt: new Date(),
             completeness,
           },
+          isSaving: false,
           isSyncing: false,
           syncError: (error as any)?.message || 'Failed to sync with backend',
         })

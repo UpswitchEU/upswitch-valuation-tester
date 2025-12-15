@@ -26,6 +26,7 @@ import { convertToApplicationError, getErrorMessage } from '../../utils/errors/e
 import { isNetworkError, isTimeoutError } from '../../utils/errors/errorGuards'
 import { chatLogger } from '../../utils/logger'
 import type { Message } from '../useStreamingChatState'
+import { useValuationSessionStore } from '../../store/useValuationSessionStore'
 
 export interface UseStreamingCoordinatorOptions {
   sessionId: string
@@ -231,6 +232,10 @@ export function useStreamingCoordinator({
             }
             return [...prev, newMessage]
           })
+
+          // Mark as having unsaved conversation changes
+          useValuationSessionStore.getState().updateSessionData({})
+
           return { updatedMessages: [], newMessage: {} as Message }
         },
         updateStreamingMessage,
@@ -255,10 +260,13 @@ export function useStreamingCoordinator({
             operation: 'event_handling',
           })
 
+          // Type assertion since we know appError is an ApplicationError from convertToApplicationError
+          const errorDetails = appError as any
+
           if (isNetworkError(appError)) {
             chatLogger.error('Network error handling streaming event', {
-              error: (appError as any).message,
-              code: (appError as any).code,
+              error: errorDetails.message,
+              code: errorDetails.code,
               sessionId,
               pythonSessionId,
               effectiveSessionId,
@@ -266,8 +274,8 @@ export function useStreamingCoordinator({
             })
           } else if (isTimeoutError(appError)) {
             chatLogger.error('Timeout handling streaming event', {
-              error: (appError as any).message,
-              code: (appError as any).code,
+              error: errorDetails.message,
+              code: errorDetails.code,
               sessionId,
               pythonSessionId,
               effectiveSessionId,
@@ -275,8 +283,8 @@ export function useStreamingCoordinator({
             })
           } else {
             chatLogger.error('Error handling streaming event', {
-              error: (appError as any).message,
-              code: (appError as any).code,
+              error: errorDetails.message,
+              code: errorDetails.code,
               sessionId,
               pythonSessionId,
               effectiveSessionId,
@@ -339,26 +347,29 @@ export function useStreamingCoordinator({
           operation: 'stream_start',
         })
 
+        // Type assertion since we know appError is an ApplicationError from convertToApplicationError
+        const errorDetails = appError as any
+
         if (isNetworkError(appError)) {
           chatLogger.error('Network error starting stream', {
-            error: (appError as any).message,
-            code: (appError as any).code,
+            error: errorDetails.message,
+            code: errorDetails.code,
             sessionId,
             pythonSessionId,
             effectiveSessionId,
           })
         } else if (isTimeoutError(appError)) {
           chatLogger.error('Timeout starting stream', {
-            error: (appError as any).message,
-            code: (appError as any).code,
+            error: errorDetails.message,
+            code: errorDetails.code,
             sessionId,
             pythonSessionId,
             effectiveSessionId,
           })
         } else {
           chatLogger.error('Error starting stream', {
-            error: (appError as any).message,
-            code: (appError as any).code,
+            error: errorDetails.message,
+            code: errorDetails.code,
             sessionId,
             pythonSessionId,
             effectiveSessionId,

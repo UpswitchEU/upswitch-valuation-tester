@@ -1,6 +1,6 @@
 /**
  * Valuation API Store
- *
+ * 
  * Manages API call state for valuation calculations.
  * Used by ConversationalLayout and manual flows.
  */
@@ -20,7 +20,7 @@ interface ValuationApiStore {
   // Calculation state
   isCalculating: boolean
   error: string | null
-
+  
   // Actions
   calculateValuation: (request: ValuationRequest) => Promise<ValuationResponse | null>
   clearError: () => void
@@ -30,32 +30,32 @@ export const useValuationApiStore = create<ValuationApiStore>((set, get) => ({
   // Initial state
   isCalculating: false,
   error: null,
-
+  
   // Calculate valuation
   calculateValuation: async (request: ValuationRequest): Promise<ValuationResponse | null> => {
     set({ isCalculating: true, error: null })
-
+    
     try {
       storeLogger.info('Calculating valuation', {
         companyName: request.company_name,
         industry: request.industry,
       })
-
+      
       const response = await backendAPI.calculateValuation(request)
-
+      
       set({ isCalculating: false })
-
+      
       storeLogger.info('Valuation calculated successfully', {
         valuationId: response?.valuation_id,
       })
-
+      
       return response
     } catch (error) {
       const appError = convertToApplicationError(error, {
         companyName: request.company_name,
         industry: request.industry,
       })
-
+      
       // Log with specific error type
       if (isValidationError(appError)) {
         storeLogger.error('Valuation calculation failed - validation error', {
@@ -82,18 +82,18 @@ export const useValuationApiStore = create<ValuationApiStore>((set, get) => ({
           context: (appError as any).context,
         })
       }
-
+      
       const errorMessage = getErrorMessage(appError)
-
-      set({
+      
+      set({ 
         isCalculating: false,
         error: errorMessage,
       })
-
+      
       return null
     }
   },
-
+  
   // Clear error
   clearError: () => {
     set({ error: null })
