@@ -29,6 +29,7 @@ export const ValuationInfoPanel: React.FC<ValuationInfoPanelProps> = React.memo(
       const hasServerHtml = !!(result.info_tab_html && result.info_tab_html.length > 0)
 
       if (hasServerHtml) {
+        console.log(`[DIAGNOSTIC-FRONTEND] ValuationInfoPanel: Rendering info_tab_html | length=${result.info_tab_html?.length || 0}`)
         componentLogger.info('ValuationInfoPanel: Using server-generated HTML', {
           component: 'ValuationInfoPanel',
           valuationId: result.valuation_id,
@@ -36,6 +37,14 @@ export const ValuationInfoPanel: React.FC<ValuationInfoPanelProps> = React.memo(
           renderingMode: 'server-html',
         })
       } else {
+        console.error('[DIAGNOSTIC-FRONTEND] ValuationInfoPanel: info_tab_html NOT AVAILABLE', {
+          valuationId: result.valuation_id,
+          hasInfoTabHtml: !!result.info_tab_html,
+          infoTabHtmlLength: result.info_tab_html?.length || 0,
+          resultKeys: Object.keys(result),
+          infoTabHtmlInKeys: 'info_tab_html' in result,
+          resultType: typeof result,
+        })
         componentLogger.error('ValuationInfoPanel: info_tab_html not available', {
           component: 'ValuationInfoPanel',
           valuationId: result.valuation_id,

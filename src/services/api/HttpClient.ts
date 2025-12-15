@@ -327,7 +327,7 @@ export class HttpClient {
           extractionMethod: rawData?.data ? 'nested' : 'direct',
         })
         
-        // Warn if html_report is missing
+        // CRITICAL: Warn if html_report is missing
         if (!(extractedData as any)?.html_report || (extractedData as any).html_report.trim().length === 0) {
           apiLogger.error('CRITICAL: html_report missing or empty in valuation response', {
             url: config.url,
@@ -344,6 +344,39 @@ export class HttpClient {
             htmlReportLength: (extractedData as any)?.html_report?.length || 0,
             htmlReportPreview: (extractedData as any)?.html_report?.substring(0, 200),
           })
+        }
+        
+        // CRITICAL: Warn if info_tab_html is missing
+        if (!(extractedData as any)?.info_tab_html || (extractedData as any).info_tab_html.trim().length === 0) {
+          apiLogger.error('CRITICAL: info_tab_html missing or empty in valuation response', {
+            url: config.url,
+            hasExtractedData: !!extractedData,
+            extractedDataKeys: extractedData ? Object.keys(extractedData) : [],
+            hasNestedData: !!nestedData,
+            nestedDataKeys: nestedData ? Object.keys(nestedData) : [],
+            nestedDataHasInfoTabHtml: !!(nestedData as any)?.info_tab_html,
+            hasHtmlReport: !!(extractedData as any)?.html_report,
+            htmlReportLength: (extractedData as any)?.html_report?.length || 0,
+            rawResponseSample: JSON.stringify(rawData).substring(0, 1000),
+          })
+          // CRITICAL: Console.log for visibility
+          console.error('[DIAGNOSTIC-FRONTEND] info_tab_html MISSING in valuation response', {
+            url: config.url,
+            hasExtractedData: !!extractedData,
+            extractedDataKeys: extractedData ? Object.keys(extractedData) : [],
+            hasNestedData: !!nestedData,
+            nestedDataKeys: nestedData ? Object.keys(nestedData) : [],
+            nestedDataHasInfoTabHtml: !!(nestedData as any)?.info_tab_html,
+            rawResponseSample: JSON.stringify(rawData).substring(0, 500),
+          })
+        } else {
+          apiLogger.info('SUCCESS: info_tab_html found in valuation response', {
+            url: config.url,
+            infoTabHtmlLength: (extractedData as any)?.info_tab_html?.length || 0,
+            infoTabHtmlPreview: (extractedData as any)?.info_tab_html?.substring(0, 200),
+          })
+          // CRITICAL: Console.log for visibility
+          console.log(`[DIAGNOSTIC-FRONTEND] info_tab_html found: length=${(extractedData as any)?.info_tab_html?.length || 0}`)
         }
       }
       

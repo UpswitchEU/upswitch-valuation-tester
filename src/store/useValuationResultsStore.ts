@@ -48,6 +48,28 @@ export const useValuationResultsStore = create<ValuationResultsStore>((set, get)
           resultKeys: Object.keys(result),
         })
       }
+      
+      // CRITICAL: Warn if info_tab_html is missing
+      if (!result.info_tab_html || result.info_tab_html.trim().length === 0) {
+        storeLogger.error('CRITICAL: info_tab_html missing or empty when setting result', {
+          valuationId: result.valuation_id,
+          hasInfoTabHtml: !!result.info_tab_html,
+          infoTabHtmlLength: result.info_tab_html?.length || 0,
+          resultKeys: Object.keys(result),
+          hasHtmlReport: !!result.html_report,
+          htmlReportLength: result.html_report?.length || 0,
+        })
+        // CRITICAL: Console.log for visibility
+        console.error('[DIAGNOSTIC-FRONTEND] info_tab_html MISSING when setting result in store', {
+          valuationId: result.valuation_id,
+          hasInfoTabHtml: !!result.info_tab_html,
+          infoTabHtmlLength: result.info_tab_html?.length || 0,
+          resultKeys: Object.keys(result),
+          infoTabHtmlInKeys: 'info_tab_html' in result,
+        })
+      } else {
+        console.log(`[DIAGNOSTIC-FRONTEND] info_tab_html set in store: length=${result.info_tab_html.length}`)
+      }
     } else {
       storeLogger.debug('Valuation result cleared', {
         hasResult: false,
