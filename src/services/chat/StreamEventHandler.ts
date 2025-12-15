@@ -8,10 +8,11 @@
 import { BUSINESS_TYPES_FALLBACK, BusinessTypeOption } from '../../config/businessTypes'
 import { Message } from '../../hooks/useStreamingChatState'
 import { chatLogger } from '../../utils/logger'
+import { useConversationStore } from '../../store/useConversationStore'
 import type { StreamEvent } from './streamingChatService'
 import { businessTypesApiService } from '../businessTypesApi'
 import { registryService } from '../registry/registryService'
-import { MessageHandlers, ReportHandlers, UIHandlers, ValuationHandlers } from './handlers'
+import { ReportHandlers, UIHandlers, ValuationHandlers } from './handlers'
 
 const normalizeText = (value: string) => value.trim().toLowerCase()
 
@@ -132,7 +133,7 @@ export class StreamEventHandler {
   private sessionId: string
 
   // Modular handler instances - each handles a specific domain
-  private messageHandlers: MessageHandlers
+  // MessageHandlers removed - using Zustand store directly
   private reportHandlers: ReportHandlers
   private valuationHandlers: ValuationHandlers
   private uiHandlers: UIHandlers
@@ -143,8 +144,7 @@ export class StreamEventHandler {
   ) {
     this.sessionId = sessionId
 
-    // Initialize modular handlers
-    this.messageHandlers = new MessageHandlers(callbacks)
+    // Initialize modular handlers (message handling now uses store directly)
     this.reportHandlers = new ReportHandlers(callbacks)
     this.valuationHandlers = new ValuationHandlers(callbacks)
     this.uiHandlers = new UIHandlers(callbacks)
@@ -152,16 +152,13 @@ export class StreamEventHandler {
 
   /**
    * Reset event handler state for a new stream
-   * CRITICAL FIX: Resets flags when a new stream starts, not just when message completes
-   * This prevents the second message from appearing empty
+   * Simplified - no complex message handler state to reset
    */
   reset(): void {
     chatLogger.debug('Resetting StreamEventHandler state for new stream', {
       sessionId: this.sessionId,
     })
-
-    // Reset all modular handlers
-    this.messageHandlers.reset()
+    // Store handles state, no reset needed
   }
 
   /**
@@ -175,19 +172,97 @@ export class StreamEventHandler {
 
     try {
       switch (eventType) {
-        // Message-related events
-        case 'typing':
-          return this.messageHandlers.handleTyping(data)
-        case 'message_start':
-          return this.messageHandlers.handleMessageStart(data)
-        case 'message_chunk':
-          // CRITICAL FIX: handleMessageChunk is async - handle promise
-          this.messageHandlers.handleMessageChunk(data).catch((err) => {
-            chatLogger.error('Error handling message chunk', { error: err })
-          })
+        // Message-related events - direct store updates (simple linear flow)
+        case 'typing': {
+          const store = useConversationStore.getState()
+          store.setTyping(true)
+          store.setThinking(true)
+          // Callbacks for non-message state (collectedData, etc.)
+          this.callbacks.setIsTyping?.(true)
+          this.callbacks.setIsThinking?.(true)
           return
-        case 'message_complete':
-          return this.messageHandlers.handleMessageComplete(data)
+        }
+        case 'message_start': {
+          // Simple: Create message immediately in store (optimistic update)
+          const store = useConversationStore.getState()
+          const messageId = store.addMessage({
+            type: 'ai',
+            content: data.content || '',
+            isStreaming: true,
+            isComplete: false,
+            metadata: data.metadata || data.data || {},
+          })
+          store.setStreaming(true)
+          store.setTyping(false)
+          store.setThinking(false)
+          // Callbacks for non-message state only
+          this.callbacks.setIsStreaming(true)
+          this.callbacks.setIsTyping?.(false)
+          this.callbacks.setIsThinking?.(false)
+          chatLogger.debug('Message started', { messageId, sessionId: this.sessionId })
+          return
+        }
+        case 'message_chunk': {
+          // Simple: Append content to streaming message (store only, no callback)
+          const store = useConversationStore.getState()
+          const streamingId = store.currentStreamingMessageId
+          if (streamingId && data.content) {
+            store.appendToMessage(streamingId, data.content)
+          } else if (!streamingId && data.content) {
+            // Edge case: Chunk arrived before message_start - create message optimistically
+            chatLogger.warn('Message chunk received before message_start - creating message optimistically', {
+              sessionId: this.sessionId,
+              hasContent: !!data.content,
+            })
+            const messageId = store.addMessage({
+              type: 'ai',
+              content: data.content,
+              isStreaming: true,
+              isComplete: false,
+              metadata: data.metadata || {},
+            })
+            store.setStreaming(true)
+          } else {
+            chatLogger.warn('Message chunk received but no streaming message found and no content', {
+              sessionId: this.sessionId,
+              hasContent: !!data.content,
+            })
+          }
+          return
+        }
+        case 'message_complete': {
+          // CRITICAL FIX: Don't replace content - it's already accumulated from chunks
+          // Backend sends empty content in message_complete (content sent via chunks)
+          const store = useConversationStore.getState()
+          const streamingId = store.currentStreamingMessageId
+          if (streamingId) {
+            // Only update completion status and metadata, preserve accumulated content
+            const currentMessage = store.messages.find((m) => m.id === streamingId)
+            const completedMessage = {
+              ...currentMessage!,
+              content: currentMessage?.content || data.content || '',
+              isComplete: true,
+              isStreaming: false,
+              metadata: { ...currentMessage?.metadata, ...(data.metadata || data.data || {}) },
+            }
+            
+            store.updateMessage(streamingId, completedMessage)
+            store.setStreaming(false)
+            
+            // Track completion if callback provided
+            if (this.callbacks.trackConversationCompletion) {
+              this.callbacks.trackConversationCompletion(true, false)
+            }
+            
+            // Note: onMessageComplete callback is handled by StreamingChat component
+            // via useMessageManagement hook (if still used) or directly in component
+          } else {
+            chatLogger.warn('Message complete received but no streaming message found', {
+              sessionId: this.sessionId,
+            })
+          }
+          return
+        }
 
         // Report-related events
         case 'report_update':

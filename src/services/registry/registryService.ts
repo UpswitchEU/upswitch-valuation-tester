@@ -263,7 +263,7 @@ export class RegistryService {
       const controller = new AbortController()
       const timeoutId = setTimeout(() => controller.abort(), this.timeout)
 
-      const response = await fetch(`${this.baseURL}/api/registry/financials`, {
+      const response = await fetch(`${this.baseURL}/api/v1/registry/financials`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

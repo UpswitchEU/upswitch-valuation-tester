@@ -83,7 +83,7 @@ export class CreditAPI extends HttpClient {
       return await this.executeRequest<SaveValuationResponse>(
         {
           method: 'POST',
-          url: '/api/valuation/save',
+          url: '/api/valuations/save',
           data,
           headers: {},
         } as any,

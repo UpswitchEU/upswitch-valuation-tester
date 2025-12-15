@@ -26,6 +26,7 @@ import { convertToApplicationError, getErrorMessage } from '../../utils/errors/e
 import { isNetworkError, isTimeoutError } from '../../utils/errors/errorGuards'
 import { chatLogger } from '../../utils/logger'
 import type { Message } from '../useStreamingChatState'
+import { useConversationStore } from '../../store/useConversationStore'
 import { useValuationSessionStore } from '../../store/useValuationSessionStore'
 
 export interface UseStreamingCoordinatorOptions {
@@ -196,16 +197,11 @@ export function useStreamingCoordinator({
       setValuationPreview: callbacksRef.current.setValuationPreview,
       setCalculateOption: callbacksRef.current.setCalculateOption,
       addMessage: (message: Omit<Message, 'id' | 'timestamp'>) => {
-        // Simple message addition for streaming context
-        callbacksRef.current.setMessages((prev) => [
-          ...prev,
-          {
-            ...message,
-            id: `msg-${Date.now()}`,
-            timestamp: new Date(),
-          },
-        ])
-        return { updatedMessages: [], newMessage: {} as Message }
+        // Use Zustand store directly for message addition
+        const store = useConversationStore.getState()
+        const messageId = store.addMessage(message)
+        const newMessage = store.messages.find((m) => m.id === messageId) || ({} as Message)
+        return { updatedMessages: store.messages, newMessage }
       },
       onValuationComplete: callbacksRef.current.onValuationComplete,
       onReportUpdate: callbacksRef.current.onReportUpdate,

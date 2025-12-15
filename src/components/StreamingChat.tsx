@@ -9,8 +9,8 @@
  * BEFORE: 1,311-line god component with 10+ responsibilities
  * AFTER:  ~200-line orchestrator coordinating focused hooks
  *
- * Responsibilities now handled by specialized hooks:
- * - useMessageManagement: Message operations and streaming updates
+ * Responsibilities now handled by specialized hooks and stores:
+ * - useConversationStore: Message state management (Zustand store - simple linear flow)
  * - useStreamingCoordinator: Streaming lifecycle and backend communication
  * - useSmartSuggestions: Contextual follow-up suggestions
  * - useConversationInitializer: Session setup and restoration
@@ -18,15 +18,15 @@
  * - useTypingAnimation: Smooth AI response animation
  */
 
-import React, { useCallback, useEffect, useRef } from 'react'
+import React, { useCallback, useEffect, useRef, useState } from 'react'
+import { shallow } from 'zustand/shallow'
 import { useAutoSend } from '../hooks/chat/useAutoSend'
-import { useMessageManagement } from '../hooks/chat/useMessageManagement'
 import { useSmartSuggestions } from '../hooks/chat/useSmartSuggestions'
 import { useStreamingCoordinator } from '../hooks/chat/useStreamingCoordinator'
 import { useAuth } from '../hooks/useAuth'
 import { type UserProfile, useConversationInitializer } from '../hooks/useConversationInitializer'
 import { useConversationMetrics } from '../hooks/useConversationMetrics'
-import { useStreamingChatState } from '../hooks/useStreamingChatState'
+import { useConversationStore } from '../store/useConversationStore'
 import { useTypingAnimation } from '../hooks/useTypingAnimation'
 import { convertToApplicationError, getErrorMessage } from '../utils/errors/errorConverter'
 import { isNetworkError, isTimeoutError } from '../utils/errors/errorGuards'
@@ -94,8 +94,40 @@ export const StreamingChat: React.FC<import('./StreamingChat.types').StreamingCh
     }
   }, [pythonSessionIdProp, internalPythonSessionId])
 
-  // Use centralized state management
-  const state = useStreamingChatState(sessionId, userId)
+  // Use Zustand store for messages (simple linear flow)
+  // Optimized: Use single selector with shallow comparison to reduce re-renders
+  const {
+    messages,
+    isStreaming,
+    isTyping,
+    isThinking,
+    typingContext,
+    addMessage,
+    setStreaming,
+    setTyping,
+    setThinking,
+    setTypingContext,
+  } = useConversationStore(
+    (state) => ({
+      messages: state.messages,
+      isStreaming: state.isStreaming,
+      isTyping: state.isTyping,
+      isThinking: state.isThinking,
+      typingContext: state.typingContext,
+      addMessage: state.addMessage,
+      setStreaming: state.setStreaming,
+      setTyping: state.setTyping,
+      setThinking: state.setThinking,
+      setTypingContext: state.setTypingContext,
+    }),
+    shallow
+  )
+  
+  // Local state for input and other UI state
+  const [input, setInput] = useState('')
+  const [collectedData, setCollectedData] = useState<Record<string, any>>({})
+  const [valuationPreview, setValuationPreview] = useState<any>(null)
+  const [calculateOption, setCalculateOption] = useState<any>(null)
 
   // Prefill input field with initialMessage when available
   // CRITICAL FIX: Use ref to track if we've already prefilled to prevent infinite loops
@@ -105,50 +137,62 @@ export const StreamingChat: React.FC<import('./StreamingChat.types').StreamingCh
     if (
       initialMessage &&
       initialMessage.trim() &&
-      !state.input.trim() &&
+      !input.trim() &&
       !hasPrefilledRef.current
     ) {
       chatLogger.debug('Prefilling input field with initialMessage', {
         sessionId,
         initialMessage: initialMessage.substring(0, 50),
       })
-      state.setInput(initialMessage.trim())
+      setInput(initialMessage.trim())
       hasPrefilledRef.current = true
     }
     // Reset prefilled flag when initialMessage or sessionId changes
     if (!initialMessage || !initialMessage.trim()) {
       hasPrefilledRef.current = false
     }
-  }, [initialMessage, sessionId, state.setInput]) // Removed state.input from deps to prevent loops
-
-  // Extract message management logic
-  const messageManagement = useMessageManagement({
-    sessionId,
-    messages: state.messages,
-    setMessages: state.setMessages,
-    onMessageComplete,
-  })
+  }, [initialMessage, sessionId, input])
 
   // Extract smart suggestions logic
   const { suggestions } = useSmartSuggestions({
-    messages: state.messages,
+    messages,
   })
+
+  // Get stable references to store actions
+  const setMessages = useConversationStore((state) => state.setMessages)
 
   // Extract streaming coordination logic
   const streamingCoordinator = useStreamingCoordinator({
     sessionId,
     pythonSessionId, // CRITICAL: Pass Python session ID for backend communication
     userId: userId ?? user?.id,
-    messages: state.messages,
-    setMessages: state.setMessages,
-    setIsStreaming: state.setIsStreaming,
-    setIsTyping: state.setIsTyping,
-    setIsThinking: state.setIsThinking,
-    setTypingContext: state.setTypingContext,
-    setCollectedData: state.setCollectedData,
-    setValuationPreview: state.setValuationPreview,
-    setCalculateOption: state.setCalculateOption,
-    updateStreamingMessage: messageManagement.updateStreamingMessage,
+    messages,
+    setMessages,
+    setIsStreaming: setStreaming,
+    setIsTyping: setTyping,
+    setIsThinking: setThinking,
+    setTypingContext,
+    setCollectedData,
+    setValuationPreview,
+    setCalculateOption,
+    updateStreamingMessage: (content: string, isComplete?: boolean, metadata?: unknown) => {
+      // Simple wrapper: use store's appendToMessage or updateMessage
+      const store = useConversationStore.getState()
+      const streamingId = store.currentStreamingMessageId
+      if (streamingId) {
+        if (isComplete) {
+          store.updateMessage(streamingId, {
+            content,
+            isComplete: true,
+            isStreaming: false,
+            metadata: metadata as any,
+          })
+          store.setStreaming(false)
+        } else {
+          store.appendToMessage(streamingId, content)
+        }
+      }
+    },
     onValuationComplete,
     onReportUpdate,
     onDataCollected,
@@ -172,7 +216,7 @@ export const StreamingChat: React.FC<import('./StreamingChat.types').StreamingCh
   // Accepts optional input parameter to handle async state updates
   const submitStream = useCallback(
     async (inputValue?: string) => {
-      const inputToSubmit = inputValue ?? state.input
+      const inputToSubmit = inputValue ?? input
 
       // Validate input before submission
       if (!inputToSubmit || !inputToSubmit.trim()) {
@@ -181,19 +225,15 @@ export const StreamingChat: React.FC<import('./StreamingChat.types').StreamingCh
       }
 
       try {
-        // Add user message before starting stream
-        messageManagement.addMessage({
+        // Add user message before starting stream (using store)
+        addMessage({
           type: 'user',
           content: inputToSubmit.trim(),
           role: 'user',
         })
 
-        // Clear input before starting stream (use provided value or state)
-        if (inputValue) {
-          state.setInput('')
-        } else {
-          state.setInput('')
-        }
+        // Clear input before starting stream
+        setInput('')
 
         // Start streaming with validated input
         await streamingCoordinator.startStreaming(inputToSubmit.trim())
@@ -232,7 +272,7 @@ export const StreamingChat: React.FC<import('./StreamingChat.types').StreamingCh
         }
 
         // Reset streaming state on error
-        state.setIsStreaming(false)
+        setStreaming(false)
 
         // Get user-friendly error message
         const errorMessage = getErrorMessage(appError)
@@ -251,8 +291,8 @@ export const StreamingChat: React.FC<import('./StreamingChat.types').StreamingCh
           userMessage = errorMessage || 'An unexpected error occurred. Please try again.'
         }
 
-        // Add user-friendly error message with metadata for retry
-        messageManagement.addMessage({
+        // Add user-friendly error message with metadata for retry (using store)
+        addMessage({
           type: 'system',
           content: userMessage,
           isComplete: true,
@@ -267,11 +307,11 @@ export const StreamingChat: React.FC<import('./StreamingChat.types').StreamingCh
       }
     },
     [
-      state.input,
-      state.setInput,
-      state.setIsStreaming,
+      input,
+      setInput,
+      setStreaming,
       streamingCoordinator,
-      messageManagement,
+      addMessage,
       sessionId,
       pythonSessionId,
     ]
@@ -281,12 +321,11 @@ export const StreamingChat: React.FC<import('./StreamingChat.types').StreamingCh
   const suggestionHandlers = {
     handleSuggestionSelect: useCallback(
       (suggestion: string) => {
-        // Fix Bug 2: Pass suggestion directly to submitStream to avoid async state update issue
-        state.setInput(suggestion)
-        // Use the suggestion value directly instead of relying on state update
+        // Pass suggestion directly to submitStream
+        setInput(suggestion)
         submitStream(suggestion)
       },
-      [state.setInput, submitStream]
+      [setInput, submitStream]
     ),
 
     handleSuggestionDismiss: useCallback(() => {
@@ -295,57 +334,51 @@ export const StreamingChat: React.FC<import('./StreamingChat.types').StreamingCh
 
     handleClarificationConfirm: useCallback(
       (messageId: string) => {
-        // Fix Bug 3: Set input before calling submitStream
         const confirmationText = 'Yes'
-        state.setInput(confirmationText)
-        // Pass the confirmation text directly to avoid async state issue
+        setInput(confirmationText)
         submitStream(confirmationText)
       },
-      [state.setInput, submitStream]
+      [setInput, submitStream]
     ),
 
     handleClarificationReject: useCallback(
       (messageId: string) => {
-        // Fix Bug 3: Set input before calling submitStream
         const rejectionText = 'No'
-        state.setInput(rejectionText)
-        // Pass the rejection text directly to avoid async state issue
+        setInput(rejectionText)
         submitStream(rejectionText)
       },
-      [state.setInput, submitStream]
+      [setInput, submitStream]
     ),
 
     handleKBOSuggestionSelect: useCallback(
       (selection: string) => {
-        // Fix Bug 2: Pass selection directly to submitStream to avoid async state update issue
-        state.setInput(selection)
-        // Use the selection value directly instead of relying on state update
+        setInput(selection)
         submitStream(selection)
       },
-      [state.setInput, submitStream]
+      [setInput, submitStream]
     ),
 
     handleBusinessTypeSuggestionSelect: useCallback(
       (selection: string) => {
         // Business type suggestions work the same way as KBO suggestions
         // Send the selection (number string like "1", "2", etc. or "none") directly to backend
-        state.setInput(selection)
-        // Use the selection value directly instead of relying on state update
+        setInput(selection)
         submitStream(selection)
       },
-      [state.setInput, submitStream]
+      [setInput, submitStream]
     ),
   }
 
   // CRITICAL: Restore messages from backend on mount
   const lastRestoredMessagesRef = useRef<string>('')
+  const lastCompletedMessageIdRef = useRef<string | null>(null)
 
   useEffect(() => {
     if (initialMessages && initialMessages.length > 0) {
       const messagesFingerprint = initialMessages.map((m) => m.id).join(',')
 
       const shouldRestore =
-        state.messages.length === 0 || lastRestoredMessagesRef.current !== messagesFingerprint
+        messages.length === 0 || lastRestoredMessagesRef.current !== messagesFingerprint
 
       if (shouldRestore) {
         chatLogger.info('✅ Restoring conversation messages in StreamingChat', {
@@ -353,17 +386,40 @@ export const StreamingChat: React.FC<import('./StreamingChat.types').StreamingCh
           messagesCount: initialMessages.length,
           fingerprint: messagesFingerprint,
         })
-        state.setMessages(initialMessages)
+        setMessages(initialMessages)
         lastRestoredMessagesRef.current = messagesFingerprint
       }
     }
-  }, [initialMessages, sessionId, state.messages.length, state.setMessages])
+  }, [initialMessages, sessionId, messages.length, setMessages])
+
+  // Call onMessageComplete when a message completes
+  useEffect(() => {
+    if (!onMessageComplete) return
+
+    // Find the most recent completed AI message that we haven't notified about
+    const completedMessages = messages.filter(
+      (msg) => msg.type === 'ai' && msg.isComplete && !msg.isStreaming
+    )
+    const latestCompleted = completedMessages[completedMessages.length - 1]
+
+    if (
+      latestCompleted &&
+      latestCompleted.id !== lastCompletedMessageIdRef.current
+    ) {
+      lastCompletedMessageIdRef.current = latestCompleted.id
+      onMessageComplete(latestCompleted)
+      chatLogger.debug('Message completion callback invoked', {
+        messageId: latestCompleted.id,
+        sessionId,
+      })
+    }
+  }, [messages, onMessageComplete, sessionId])
 
   // Use extracted conversation initializer
   const { isInitializing } = useConversationInitializer(sessionId, userId, {
-    addMessage: messageManagement.addMessage,
-    setMessages: state.setMessages,
-    getCurrentMessages: () => state.messages,
+    addMessage,
+    setMessages,
+    getCurrentMessages: () => messages,
     user: user as UserProfile | undefined,
     initialData,
     initialMessages,
@@ -385,12 +441,12 @@ export const StreamingChat: React.FC<import('./StreamingChat.types').StreamingCh
     isRestoring,
     isInitializing,
     pythonSessionId,
-    isStreaming: state.isStreaming,
-    messagesLength: state.messages.length,
+    isStreaming,
+    messagesLength: messages.length,
     hasRestoredMessages: (initialMessages?.length ?? 0) > 0,
     submitStream,
     sessionId,
-    getMessages: () => state.messages,
+    getMessages: () => messages,
   })
 
   // Use extracted metrics tracking
@@ -411,7 +467,7 @@ export const StreamingChat: React.FC<import('./StreamingChat.types').StreamingCh
   const handleSubmit = useCallback(
     async (e?: React.FormEvent) => {
       if (e) e.preventDefault()
-      if (!state.input.trim()) return
+      if (!input.trim()) return
 
       try {
         await submitStream()
@@ -466,8 +522,8 @@ export const StreamingChat: React.FC<import('./StreamingChat.types').StreamingCh
           userMessage = errorMessage || 'An unexpected error occurred. Please try again.'
         }
 
-        // Add user-friendly error message with metadata for retry
-        messageManagement.addMessage({
+        // Add user-friendly error message with metadata for retry (using store)
+        addMessage({
           type: 'system',
           content: userMessage,
           isComplete: true,
@@ -475,20 +531,20 @@ export const StreamingChat: React.FC<import('./StreamingChat.types').StreamingCh
             error_type: 'error',
             error_code: appError.code,
             error_details: errorDetailsText,
-            original_input: state.input.trim(),
+            original_input: input.trim(),
             can_retry: isNetworkError(appError) || isTimeoutError(appError),
           },
         })
       }
     },
-    [state.input, submitStream, sessionId, pythonSessionId, messageManagement]
+    [input, submitStream, sessionId, pythonSessionId, addMessage]
   )
 
   // Handle retry for error messages
   const handleRetry = useCallback(
     async (messageId: string) => {
       // Find the error message
-      const errorMessage = state.messages.find((m) => m.id === messageId)
+      const errorMessage = messages.find((m) => m.id === messageId)
       if (!errorMessage || errorMessage.type !== 'system') {
         return
       }
@@ -499,53 +555,41 @@ export const StreamingChat: React.FC<import('./StreamingChat.types').StreamingCh
       }
 
       // Update error message to show retrying state
-      state.setMessages((prev) =>
-        prev.map((m) =>
-          m.id === messageId
-            ? {
-                ...m,
-                metadata: {
-                  ...m.metadata,
-                  is_retrying: true,
-                },
-              }
-            : m
-        )
-      )
+      const store = useConversationStore.getState()
+      store.updateMessage(messageId, {
+        metadata: {
+          ...errorMessage.metadata,
+          is_retrying: true,
+        },
+      })
 
       try {
         // Retry the submission
         await submitStream(originalInput)
         
         // Remove the error message on success
-        state.setMessages((prev) => prev.filter((m) => m.id !== messageId))
+        const updatedMessages = messages.filter((m) => m.id !== messageId)
+        store.setMessages(updatedMessages)
       } catch {
         // Update error message to remove retrying state
-        state.setMessages((prev) =>
-          prev.map((m) =>
-            m.id === messageId
-              ? {
-                  ...m,
-                  metadata: {
-                    ...m.metadata,
-                    is_retrying: false,
-                  },
-                }
-              : m
-          )
-        )
+        store.updateMessage(messageId, {
+          metadata: {
+            ...errorMessage.metadata,
+            is_retrying: false,
+          },
+        })
       }
     },
-    [state.messages, state.setMessages, submitStream]
+    [messages, submitStream]
   )
 
   return (
     <div className={`flex h-full flex-col overflow-hidden flex-1 ${className}`}>
       {/* Messages Container */}
       <MessagesList
-        messages={state.messages}
-        isTyping={state.isTyping}
-        isThinking={state.isThinking}
+        messages={messages}
+        isTyping={isTyping}
+        isThinking={isThinking}
         isInitializing={isInitializing}
         onSuggestionSelect={suggestionHandlers.handleSuggestionSelect}
         onSuggestionDismiss={suggestionHandlers.handleSuggestionDismiss}
@@ -555,17 +599,17 @@ export const StreamingChat: React.FC<import('./StreamingChat.types').StreamingCh
         onBusinessTypeSuggestionSelect={suggestionHandlers.handleBusinessTypeSuggestionSelect}
         onValuationStart={onValuationStart}
         onRetry={handleRetry}
-        calculateOption={state.calculateOption}
-        valuationPreview={state.valuationPreview}
-        messagesEndRef={state.refs.messagesEndRef}
+        calculateOption={calculateOption}
+        valuationPreview={valuationPreview}
+        messagesEndRef={useRef<HTMLDivElement>(null)}
       />
 
       {/* Input Form */}
       <ChatInputForm
-        input={state.input}
-        onInputChange={state.setInput}
+        input={input}
+        onInputChange={setInput}
         onSubmit={handleSubmit}
-        isStreaming={state.isStreaming}
+        isStreaming={isStreaming}
         disabled={disabled}
         placeholder="Ask about your business valuation..."
         suggestions={suggestions}
