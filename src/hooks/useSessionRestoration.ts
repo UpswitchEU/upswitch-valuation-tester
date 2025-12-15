@@ -23,6 +23,42 @@ import { useVersionHistoryStore } from '../store/useVersionHistoryStore'
 import { generalLogger } from '../utils/logger'
 
 /**
+ * Check if sessionData has meaningful data (not just empty object from NEW report)
+ *
+ * NEW reports are created optimistically with empty sessionData: {}
+ * EXISTING reports have populated sessionData with form fields, results, etc.
+ *
+ * @param sessionData - Session data to check
+ * @returns true if sessionData has meaningful fields, false if empty (NEW report)
+ */
+function hasMeaningfulSessionData(sessionData: any): boolean {
+  if (!sessionData || typeof sessionData !== 'object') {
+    return false
+  }
+
+  const keys = Object.keys(sessionData)
+  // Empty object means NEW report
+  if (keys.length === 0) {
+    return false
+  }
+
+  // Check if it has actual form fields (not just metadata)
+  const meaningfulFields = [
+    'company_name',
+    'revenue',
+    'ebitda',
+    'business_type_id',
+    'html_report',
+    'info_tab_html',
+    'valuation_result',
+    'current_year_data',
+    'historical_years_data',
+  ]
+
+  return keys.some((key) => meaningfulFields.includes(key))
+}
+
+/**
  * Hook to automatically restore form data, results, and versions from session
  *
  * This ensures smooth repopulation when:
@@ -31,6 +67,9 @@ import { generalLogger } from '../utils/logger'
  * - Session data loads from backend
  *
  * Uses Zustand stores for simple, robust state management
+ *
+ * NOTE: Only restores for EXISTING reports (with meaningful sessionData).
+ * NEW reports (empty sessionData) skip restoration entirely.
  */
 export function useSessionRestoration() {
   const { session, getSessionData } = useValuationSessionStore()
@@ -71,7 +110,12 @@ export function useSessionRestoration() {
 
     try {
       const sessionData = getSessionData()
-      if (!sessionData || Object.keys(sessionData).length === 0) {
+
+      // CRITICAL: Skip restoration for NEW reports (empty sessionData)
+      if (!sessionData || !hasMeaningfulSessionData(sessionData)) {
+        generalLogger.debug('Skipping restoration - NEW report (empty sessionData)', {
+          reportId: session.reportId,
+        })
         return
       }
 
@@ -163,6 +207,15 @@ export function useSessionRestoration() {
 
     try {
       const sessionData = session.sessionData as any
+
+      // CRITICAL: Skip restoration for NEW reports (empty sessionData)
+      if (!hasMeaningfulSessionData(sessionData)) {
+        generalLogger.debug('Skipping results restoration - NEW report (empty sessionData)', {
+          reportId: session.reportId,
+        })
+        return
+      }
+
       const valuationResult = sessionData?.valuation_result || (session as any).valuationResult
 
       // Restore complete result object (not just HTML)

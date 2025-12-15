@@ -7,7 +7,7 @@
  * @module hooks/useFormSessionSync
  */
 
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import type { ValuationSessionStore } from '../store/useValuationSessionStore'
 import { debounce } from '../utils/debounce'
 import { generalLogger } from '../utils/logger'
@@ -23,12 +23,51 @@ interface UseFormSessionSyncOptions {
 }
 
 /**
+ * Check if sessionData has meaningful data (not just empty object from NEW report)
+ *
+ * NEW reports are created optimistically with empty sessionData: {}
+ * EXISTING reports have populated sessionData with form fields, results, etc.
+ *
+ * @param sessionData - Session data to check
+ * @returns true if sessionData has meaningful fields, false if empty (NEW report)
+ */
+function hasMeaningfulSessionData(sessionData: any): boolean {
+  if (!sessionData || typeof sessionData !== 'object') {
+    return false
+  }
+
+  const keys = Object.keys(sessionData)
+  // Empty object means NEW report
+  if (keys.length === 0) {
+    return false
+  }
+
+  // Check if it has actual form fields (not just metadata)
+  const meaningfulFields = [
+    'company_name',
+    'revenue',
+    'ebitda',
+    'business_type_id',
+    'html_report',
+    'info_tab_html',
+    'valuation_result',
+    'current_year_data',
+    'historical_years_data',
+  ]
+
+  return keys.some((key) => meaningfulFields.includes(key))
+}
+
+/**
  * Hook for synchronizing form data with session store
  *
  * Handles:
  * - Loading session data into form when switching to manual view
  * - Debounced syncing of form changes to session store
  * - Prefilling from homepage query
+ *
+ * NOTE: For NEW reports (empty sessionData), only handles prefilledQuery matching.
+ * For EXISTING reports, loads full session data.
  */
 export const useFormSessionSync = ({
   session,
@@ -41,6 +80,8 @@ export const useFormSessionSync = ({
 }: UseFormSessionSyncOptions) => {
   const [hasLoadedSessionData, setHasLoadedSessionData] = useState(false)
   const [lastLoadedReportId, setLastLoadedReportId] = useState<string | null>(null)
+  // Use ref to track form data check without causing re-renders
+  const hasCheckedFormDataRef = useRef(false)
 
   // CRITICAL FIX: Reset hasLoadedSessionData when reportId changes
   useEffect(() => {
@@ -51,6 +92,7 @@ export const useFormSessionSync = ({
       })
       setHasLoadedSessionData(false)
       setLastLoadedReportId(session.reportId)
+      hasCheckedFormDataRef.current = false // Reset check flag
     }
   }, [session?.reportId, lastLoadedReportId])
 
@@ -63,20 +105,52 @@ export const useFormSessionSync = ({
     // 2. Current view is manual (or we're loading from home page)
     // 3. Haven't loaded this report's data yet
     // 4. Skip if useSessionRestoration has already loaded data (check if form has data)
-    if (session && !hasLoadedSessionData) {
+    if (session && !hasLoadedSessionData && !hasCheckedFormDataRef.current) {
       const sessionData = getSessionData()
       const prefilledQuery = (session.partialData as any)?._prefilledQuery as string | undefined
 
+      // CRITICAL: Skip loading for NEW reports (empty sessionData)
+      // Only handle prefilledQuery matching for NEW reports
+      if (!hasMeaningfulSessionData(sessionData)) {
+        // NEW report - only handle prefilledQuery if present
+        if (prefilledQuery && businessTypes.length > 0) {
+          const matchedBusinessTypeId = matchBusinessType(prefilledQuery, businessTypes)
+          if (matchedBusinessTypeId) {
+            const matchedBusinessType = businessTypes.find((bt) => bt.id === matchedBusinessTypeId)
+            if (matchedBusinessType) {
+              const formDataUpdate: Partial<any> = {
+                business_type_id: matchedBusinessTypeId,
+                business_model: matchedBusinessTypeId,
+                industry: matchedBusinessType.industry || matchedBusinessType.industryMapping,
+              }
+              updateFormData(formDataUpdate)
+              generalLogger.info('Prefilled business type from homepage query (NEW report)', {
+                query: prefilledQuery,
+                businessTypeId: matchedBusinessTypeId,
+                businessTypeTitle: matchedBusinessType.title || matchedBusinessType.id,
+              })
+            }
+          }
+        }
+        setHasLoadedSessionData(true)
+        hasCheckedFormDataRef.current = true
+        return
+      }
+
+      // EXISTING report - proceed with full restoration
       // Check if form already has data (indicating useSessionRestoration already ran)
       // If form has significant data, skip this load to avoid conflicts
+      // Only check once per reportId to prevent infinite loops
       const hasExistingFormData = formData?.company_name || formData?.revenue || formData?.business_type_id
       if (hasExistingFormData && !prefilledQuery) {
         generalLogger.debug('Skipping form load - useSessionRestoration already loaded data', {
           reportId: session.reportId,
         })
         setHasLoadedSessionData(true) // Mark as loaded to prevent future loads
+        hasCheckedFormDataRef.current = true // Mark as checked
         return
       }
+      hasCheckedFormDataRef.current = true // Mark as checked even if we proceed
 
       generalLogger.info('Attempting to load session data into form', {
         reportId: session.reportId,
@@ -152,6 +226,8 @@ export const useFormSessionSync = ({
         })
       }
     }
+    // CRITICAL: Do NOT include formData in dependencies to prevent infinite loops
+    // formData is checked once via ref, not on every change
   }, [
     session?.reportId, // CRITICAL: Add reportId to trigger on report change
     session?.currentView,
@@ -164,7 +240,7 @@ export const useFormSessionSync = ({
     businessTypes,
     matchBusinessType,
     session,
-    formData, // Add formData to check if restoration already happened
+    // formData intentionally excluded to prevent infinite loops
   ])
 
   // Debounced sync form data to session store (500ms delay)
