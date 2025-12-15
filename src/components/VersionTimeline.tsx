@@ -63,7 +63,7 @@ export function VersionTimeline({
   const sortedVersions = [...versions].sort((a, b) => b.versionNumber - a.versionNumber)
 
   return (
-    <div className="max-w-4xl mx-auto p-6">
+    <div className="w-full p-6">
       {/* Timeline connector */}
       <div className="relative">
         {sortedVersions.map((version, index) => (
@@ -259,38 +259,168 @@ function VersionTimelineItem({
             </div>
           </div>
 
-          {/* Valuation amount */}
-          <div className="flex items-baseline gap-3 mb-3">
-            <div>
-              <div className="text-xs text-gray-500 mb-1">Final Valuation</div>
-              <div className="text-2xl font-bold text-gray-900">
-                {formatCurrency(currentValuation, countryCode)}
-              </div>
-            </div>
+          {/* Valuation Card - Full Width Navy Theme */}
+          {version.valuationResult && (() => {
+            const valuationResult = version.valuationResult as any
+            const equityValueLow = valuationResult.equity_value_low || valuationResult.valuation_summary?.equity_value_low || 0
+            const equityValueMid = valuationResult.equity_value_mid || valuationResult.valuation_summary?.final_valuation || currentValuation || 0
+            const equityValueHigh = valuationResult.equity_value_high || valuationResult.valuation_summary?.equity_value_high || 0
+            const recommendedAskingPrice = valuationResult.recommended_asking_price || valuationResult.valuation_summary?.recommended_asking_price || 0
             
-            {/* Price change indicator */}
-            {previousValuation !== null && priceChange !== 0 ? (
-              <div className={`flex items-center gap-1 text-sm font-medium ${
-                priceChange > 0 ? 'text-green-600' : priceChange < 0 ? 'text-red-600' : 'text-gray-600'
-              }`}>
-                {priceChange > 0 ? (
-                  <ArrowUp className="w-4 h-4" />
-                ) : priceChange < 0 ? (
-                  <ArrowDown className="w-4 h-4" />
-                ) : (
-                  <Minus className="w-4 h-4" />
-                )}
-                <span>
-                  {formatCurrency(Math.abs(priceChange), countryCode)} 
-                  ({priceChangePercent > 0 ? '+' : ''}{priceChangePercent.toFixed(1)}%)
-                </span>
+            // Calculate premium percentage if we have both mid and asking price
+            const premiumPercent = recommendedAskingPrice && equityValueMid 
+              ? Math.round(((recommendedAskingPrice - equityValueMid) / equityValueMid) * 100)
+              : 0
+
+            return (
+              <div 
+                className="w-full mb-4 rounded-xl overflow-hidden"
+                style={{
+                  backgroundColor: '#0F172A',
+                  backgroundImage: 'linear-gradient(to bottom right, #0F172A, #1E293B)',
+                  boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
+                }}
+              >
+                <div className="relative p-8">
+                  {/* Decorative circle */}
+                  <div 
+                    className="absolute -top-36 -right-8 w-72 h-72 rounded-full opacity-50"
+                    style={{ backgroundColor: '#1E293B' }}
+                  />
+                  
+                  <div className="relative z-10">
+                    {/* Header */}
+                    <p 
+                      className="text-xs font-semibold uppercase tracking-wider mb-3"
+                      style={{ color: '#94A3B8', opacity: 0.9 }}
+                    >
+                      Synthesized Intrinsic Value (Equity)
+                    </p>
+                    
+                    {/* Main Valuation Amount */}
+                    <div className="flex items-baseline gap-4 mb-6">
+                      <span 
+                        className="text-5xl font-extrabold leading-none tracking-tight"
+                        style={{ color: '#FFFFFF', letterSpacing: '-0.02em' }}
+                      >
+                        {formatCurrency(equityValueMid, countryCode)}
+                      </span>
+                    </div>
+                    
+                    {/* Range and Suggested Price Table */}
+                    <table className="w-full border-collapse border-t border-white/10 pt-6 mt-6">
+                      <tbody>
+                        <tr>
+                          {/* Valuation Range */}
+                          <td className="w-1/2 align-top pr-4">
+                            <p 
+                              className="text-xs font-semibold uppercase tracking-wider mb-2 mt-3"
+                              style={{ color: '#94A3B8', opacity: 0.6 }}
+                            >
+                              Valuation Range
+                            </p>
+                            <div className="inline-block">
+                              <p 
+                                className="text-base font-semibold mb-1"
+                                style={{ color: '#FFFFFF' }}
+                              >
+                                {formatCurrency(equityValueLow, countryCode)}
+                              </p>
+                              <p 
+                                className="text-xs mb-1"
+                                style={{ color: 'rgba(255,255,255,0.4)' }}
+                              >
+                                to
+                              </p>
+                              <p 
+                                className="text-base font-semibold"
+                                style={{ color: '#FFFFFF' }}
+                              >
+                                {formatCurrency(equityValueHigh, countryCode)}
+                              </p>
+                            </div>
+                          </td>
+                          
+                          {/* Suggested Listing Price */}
+                          <td className="w-1/2 align-top pl-4">
+                            <p 
+                              className="text-xs font-semibold uppercase tracking-wider mb-2 mt-3"
+                              style={{ color: '#94A3B8', opacity: 0.6 }}
+                            >
+                              Suggested Listing Price
+                            </p>
+                            <div className="mb-1">
+                              <span 
+                                className="text-lg font-semibold mr-2"
+                                style={{ color: '#FFFFFF' }}
+                              >
+                                {formatCurrency(recommendedAskingPrice, countryCode)}
+                              </span>
+                              {premiumPercent > 0 && (
+                                <span 
+                                  className="inline-block align-middle text-xs font-bold px-2 py-1 rounded border"
+                                  style={{
+                                    backgroundColor: 'rgba(52, 211, 153, 0.2)',
+                                    color: '#6EE7B7',
+                                    borderColor: 'rgba(52, 211, 153, 0.3)',
+                                  }}
+                                >
+                                  +{premiumPercent}% Premium
+                                </span>
+                              )}
+                            </div>
+                            <p 
+                              className="text-xs"
+                              style={{ color: '#94A3B8' }}
+                            >
+                              Strategic buffer for negotiation
+                            </p>
+                          </td>
+                        </tr>
+                      </tbody>
+                    </table>
+                    
+                    {/* Opinion of Value Badge */}
+                    {(equityValueLow > 0 && equityValueHigh > 0) && (
+                      <div 
+                        className="inline-block mt-4 px-4 py-2 rounded-md border"
+                        style={{
+                          backgroundColor: 'rgba(255,255,255,0.1)',
+                          borderColor: 'rgba(255,255,255,0.1)',
+                        }}
+                      >
+                        <p 
+                          className="text-sm m-0"
+                          style={{ color: '#E2E8F0' }}
+                        >
+                          Opinion of Value: <strong>{formatCurrency(equityValueLow, countryCode)}</strong> — <strong>{formatCurrency(equityValueHigh, countryCode)}</strong>
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                </div>
               </div>
-            ) : previousValuation === null && !isLatest ? (
-              <span className="text-xs text-gray-500 px-2 py-1 bg-gray-100 rounded">
-                Initial version
+            )
+          })()}
+          
+          {/* Price change indicator (below the card) */}
+          {previousValuation !== null && priceChange !== 0 && (
+            <div className={`flex items-center gap-1 text-sm font-medium mb-3 ${
+              priceChange > 0 ? 'text-green-600' : priceChange < 0 ? 'text-red-600' : 'text-gray-600'
+            }`}>
+              {priceChange > 0 ? (
+                <ArrowUp className="w-4 h-4" />
+              ) : priceChange < 0 ? (
+                <ArrowDown className="w-4 h-4" />
+              ) : (
+                <Minus className="w-4 h-4" />
+              )}
+              <span>
+                {formatCurrency(Math.abs(priceChange), countryCode)} 
+                ({priceChangePercent > 0 ? '+' : ''}{priceChangePercent.toFixed(1)}%)
               </span>
-            ) : null}
-          </div>
+            </div>
+          )}
 
           {/* Changes summary */}
           {!compact && hasChanges && changeSummaries.length > 0 && (

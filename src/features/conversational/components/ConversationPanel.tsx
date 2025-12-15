@@ -132,7 +132,7 @@ export const ConversationPanel: React.FC<ConversationPanelProps> = ({
   const { setResult } = useValuationResultsStore()
   const { session } = useValuationSessionStore()
   const { createVersion, getLatestVersion } = useVersionHistoryStore()
-  const { calculateValuation, isCalculating } = useValuationApiStore()
+  const { calculateValuation, isCalculating, setCalculating } = useValuationApiStore()
 
   const handleValuationComplete = useCallback(
     async (result: ValuationResponse) => {
@@ -441,6 +441,9 @@ export const ConversationPanel: React.FC<ConversationPanelProps> = ({
       if (result) {
         // Call handleValuationComplete directly (it's already defined above)
         await handleValuationComplete(result)
+        // CRITICAL: Reset loading state after successful completion
+        setCalculating(false)
+        actions.setGenerating(false)
       } else {
         chatLogger.error('Manual calculate returned no result')
         actions.setError('Calculation failed')
@@ -454,6 +457,14 @@ export const ConversationPanel: React.FC<ConversationPanelProps> = ({
       )
       actions.setGenerating(false)
       setCalculating(false) // Reset on error
+    } finally {
+      // CRITICAL: Always reset loading state, even if handleValuationComplete throws
+      // This ensures the UI doesn't get stuck in loading state
+      const finalState = useValuationApiStore.getState()
+      if (finalState.isCalculating) {
+        setCalculating(false)
+        chatLogger.debug('Loading state reset in finally block (conversational flow)')
+      }
     }
   }, [
     session,
@@ -462,6 +473,7 @@ export const ConversationPanel: React.FC<ConversationPanelProps> = ({
     handleValuationComplete,
     actions,
     onValuationStart,
+    setCalculating,
   ])
 
   return (

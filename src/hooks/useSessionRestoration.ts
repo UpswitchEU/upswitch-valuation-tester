@@ -22,6 +22,7 @@ import { useValuationSessionStore } from '../store/useValuationSessionStore'
 import { useVersionHistoryStore } from '../store/useVersionHistoryStore'
 import { generalLogger } from '../utils/logger'
 import { hasMeaningfulSessionData } from '../utils/sessionDataUtils'
+import { useToast } from './useToast'
 
 /**
  * Hook to automatically restore form data, results, and versions from session
@@ -43,30 +44,46 @@ export function useSessionRestoration() {
   const { updateFormData } = useValuationFormStore()
   const { setResult, setHtmlReport, setInfoTabHtml } = useValuationResultsStore()
   const { fetchVersions } = useVersionHistoryStore()
+  const { showToast } = useToast()
 
   // Track restored reports using a Set (simple and efficient)
+  // Also track the last sessionData hash to detect when data changes from empty to populated
   const restoredReports = useRef<Set<string>>(new Set())
+  const lastSessionDataHash = useRef<string>('')
 
-  // Single restoration effect - runs once per reportId
+  // Single restoration effect - runs when reportId or sessionData changes
   useEffect(() => {
     if (!session?.reportId) {
       return
     }
 
-    // Skip if already restored this report
-    if (restoredReports.current.has(session.reportId)) {
+    const sessionData = getSessionData()
+    
+    // Create a hash of sessionData to detect changes
+    const sessionDataHash = JSON.stringify(sessionData || {})
+    
+    // Check if sessionData changed from empty to populated
+    const wasEmpty = !lastSessionDataHash.current || lastSessionDataHash.current === '{}'
+    const isNowPopulated = hasMeaningfulSessionData(sessionData)
+    const dataJustLoaded = wasEmpty && isNowPopulated
+
+    // Update hash
+    lastSessionDataHash.current = sessionDataHash
+
+    // Skip if already restored this report AND data hasn't changed from empty to populated
+    if (restoredReports.current.has(session.reportId) && !dataJustLoaded) {
       return
     }
-
-    const sessionData = getSessionData()
 
     // CRITICAL: Skip restoration for NEW reports (empty sessionData)
     if (!sessionData || !hasMeaningfulSessionData(sessionData)) {
       generalLogger.debug('Skipping restoration - NEW report (empty sessionData)', {
         reportId: session.reportId,
       })
-      // Mark as restored to prevent re-checking
-      restoredReports.current.add(session.reportId)
+      // Mark as restored to prevent re-checking (but allow re-check if data loads later)
+      if (!dataJustLoaded) {
+        restoredReports.current.add(session.reportId)
+      }
       return
     }
 
@@ -77,6 +94,7 @@ export function useSessionRestoration() {
       reportId: session.reportId,
       hasSessionData: !!sessionData,
       sessionDataKeys: Object.keys(sessionData || {}),
+      dataJustLoaded,
     })
 
     try {
@@ -103,6 +121,9 @@ export function useSessionRestoration() {
       generalLogger.info('Session restoration completed', {
         reportId: session.reportId,
       })
+
+      // Show success toast
+      showToast('Report loaded successfully', 'success', 3000)
     } catch (error) {
       generalLogger.error('Session restoration failed', {
         error: error instanceof Error ? error.message : String(error),
@@ -110,8 +131,11 @@ export function useSessionRestoration() {
       })
       // Remove from restored set to allow retry on next mount
       restoredReports.current.delete(session.reportId)
+      
+      // Show error toast
+      showToast('Failed to load report data. Please refresh the page.', 'error', 5000)
     }
-  }, [session?.reportId, session?.sessionData, getSessionData, updateFormData, setResult, setHtmlReport, setInfoTabHtml, fetchVersions])
+  }, [session?.reportId, session?.sessionData, getSessionData, updateFormData, setResult, setHtmlReport, setInfoTabHtml, fetchVersions, showToast])
 }
 
 /**
