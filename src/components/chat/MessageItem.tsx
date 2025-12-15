@@ -35,6 +35,7 @@ export interface MessageItemProps {
   onClarificationConfirm: (messageId: string) => void
   onClarificationReject: (messageId: string) => void
   onKBOSuggestionSelect: (selection: string) => void
+  onBusinessTypeSuggestionSelect: (selection: string) => void
   onValuationStart?: () => void
   onRetry?: (messageId: string) => void | Promise<void>
   isTyping?: boolean
@@ -59,6 +60,7 @@ export const MessageItem = React.memo<MessageItemProps>(
     onClarificationConfirm,
     onClarificationReject,
     onKBOSuggestionSelect,
+    onBusinessTypeSuggestionSelect,
     onValuationStart,
     onRetry,
     isTyping = false,
@@ -126,11 +128,11 @@ export const MessageItem = React.memo<MessageItemProps>(
         <div className="mt-3">
           <BusinessTypeSuggestionsList
             suggestions={businessTypeSuggestions}
-            onSelect={onKBOSuggestionSelect}
+            onSelect={onBusinessTypeSuggestionSelect}
           />
         </div>
       ) as React.ReactNode
-    }, [hasBusinessTypeSuggestionsInMessage, businessTypeSuggestions, onKBOSuggestionSelect])
+    }, [hasBusinessTypeSuggestionsInMessage, businessTypeSuggestions, onBusinessTypeSuggestionSelect])
 
     // Detect KBO suggestions in the message
     const kboSuggestions = React.useMemo((): KBOSuggestion[] | null => {

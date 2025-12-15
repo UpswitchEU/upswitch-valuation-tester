@@ -3,30 +3,28 @@ import { backendAPI } from '../services/backendApi'
 import type { ValuationFormData, ValuationRequest, ValuationSession } from '../types/valuation'
 import { sessionCircuitBreaker } from '../utils/circuitBreaker'
 import { CorrelationPrefixes, createCorrelationId } from '../utils/correlationId'
-import { extractErrorMessage, is409Conflict } from '../utils/errorDetection'
+import { extractErrorMessage } from '../utils/errorDetection'
 import { convertToApplicationError, getErrorMessage } from '../utils/errors/errorConverter'
 import {
-  isNetworkError,
-  isSessionConflictError,
-  isValidationError,
+    isNetworkError,
+    isSessionConflictError,
+    isValidationError,
 } from '../utils/errors/errorGuards'
 import { storeLogger } from '../utils/logger'
 import { globalSessionMetrics } from '../utils/metrics/sessionMetrics'
 import { globalPerformanceMonitor, performanceThresholds } from '../utils/performanceMonitor'
-import { globalRequestDeduplicator } from '../utils/requestDeduplication'
 import { retrySessionOperation } from '../utils/retryWithBackoff'
 import { globalAuditTrail } from '../utils/sessionAuditTrail'
 import { globalSessionCache } from '../utils/sessionCacheManager'
 import { createFallbackSession, createOrLoadSession } from '../utils/sessionErrorHandlers'
 import {
-  createSessionOptimistically,
-  mergePrefilledQuery,
-  normalizeSessionDates,
-  syncSessionToBackend,
+    createSessionOptimistically,
+    mergePrefilledQuery,
+    normalizeSessionDates,
+    syncSessionToBackend,
 } from '../utils/sessionHelpers'
-import { isNewReport } from '../utils/newReportDetector'
-import { verifySessionInBackground } from '../utils/sessionVerification'
 import { validateSessionData } from '../utils/sessionValidation'
+import { verifySessionInBackground } from '../utils/sessionVerification'
 
 export interface ValuationSessionStore {
   // Session state
@@ -69,6 +67,12 @@ export interface ValuationSessionStore {
 
   // Background sync status management
   setBackgroundSyncStatus: (status: 'idle' | 'syncing' | 'synced' | 'failed') => void
+
+  // Atomic initialization state (single source of truth)
+  initializationState: Map<string, {
+    status: 'idle' | 'initializing' | 'ready'
+    promise?: Promise<void>
+  }>
 }
 
 export const useValuationSessionStore = create<ValuationSessionStore>((set, get) => {
@@ -76,6 +80,12 @@ export const useValuationSessionStore = create<ValuationSessionStore>((set, get)
   let lastUpdateTime = 0
   let pendingUpdate: NodeJS.Timeout | null = null
   const UPDATE_THROTTLE_MS = 2000 // Minimum 2 seconds between updates
+
+  // Atomic initialization state (single source of truth)
+  const initializationState = new Map<string, {
+    status: 'idle' | 'initializing' | 'ready'
+    promise?: Promise<void>
+  }>()
 
   return {
     // Initial state
@@ -90,225 +100,241 @@ export const useValuationSessionStore = create<ValuationSessionStore>((set, get)
     lastSaved: null,
     hasUnsavedChanges: false,
 
+    // Atomic initialization state
+    initializationState,
+
     /**
      * Initialize a new session or load existing one
+     * 
+     * Simple Chain Architecture:
+     * 1. Check atomic initialization state
+     * 2. If 'initializing': Return existing promise (wait)
+     * 3. If 'ready': Return immediately
+     * 4. If 'idle': Set to 'initializing', execute flow, set to 'ready'
      */
     initializeSession: async (
       reportId: string,
       currentView: 'manual' | 'conversational' = 'manual',
       prefilledQuery?: string | null
     ) => {
-      try {
-        storeLogger.info('Initializing valuation session', {
+      // Step 1: Check atomic initialization state
+      const initState = initializationState.get(reportId)
+      
+      if (initState?.status === 'initializing' && initState.promise) {
+        // Already initializing - return existing promise (deduplication)
+        storeLogger.debug('Initialization already in progress, waiting for existing promise', {
           reportId,
-          currentView,
-          hasPrefilledQuery: !!prefilledQuery,
         })
-
-        // Check if we already have a session for this reportId - if so, don't override it
-        const { session: existingLocalSession } = get()
-        if (existingLocalSession?.reportId === reportId && existingLocalSession.currentView) {
-          storeLogger.info('Session already exists locally, skipping initialization', {
-            reportId,
-            existingView: existingLocalSession.currentView,
-            requestedView: currentView,
-          })
-          // Only update prefilledQuery if provided and not already set
-          if (prefilledQuery && existingLocalSession.partialData) {
-            const updatedPartialData = { ...existingLocalSession.partialData } as any
+        return initState.promise
+      }
+      
+      if (initState?.status === 'ready') {
+        // Already initialized - check if session exists and update prefilledQuery if needed
+        const { session: existingSession } = get()
+        if (existingSession?.reportId === reportId) {
+          if (prefilledQuery && existingSession.partialData) {
+            const updatedPartialData = { ...existingSession.partialData } as any
             if (!updatedPartialData._prefilledQuery) {
               updatedPartialData._prefilledQuery = prefilledQuery
               set({
                 session: {
-                  ...existingLocalSession,
+                  ...existingSession,
                   partialData: updatedPartialData,
                 },
               })
             }
           }
-          return // Don't re-initialize if session already exists
-        }
-
-        // FAST PATH OPTIMIZATION: Check if NEW report BEFORE any backend calls
-        if (isNewReport(reportId)) {
-          // NEW REPORT: Create optimistically (instant, <50ms)
-          storeLogger.info('NEW report detected in initializeSession, using optimistic fast-path', {
-            reportId,
-            currentView,
-          })
-
-          const optimisticSession = createSessionOptimistically(reportId, currentView, prefilledQuery)
-
-          set({
-            session: optimisticSession,
-            syncError: null,
-          })
-
-          // Sync to backend in background (non-blocking)
-          syncSessionToBackend(optimisticSession)
-
-          storeLogger.info('NEW report created optimistically in initializeSession', {
-            reportId,
-            currentView: optimisticSession.currentView,
-          })
-
-          return // Skip all backend checks!
-        }
-
-        // CACHE-FIRST OPTIMIZATION: Check localStorage cache BEFORE backend API call
-        const cachedSession = globalSessionCache.get(reportId)
-        if (cachedSession) {
-          storeLogger.info('Session found in cache, using immediately', {
-            reportId,
-            currentView: cachedSession.currentView,
-            cacheAge_minutes: cachedSession.updatedAt
-              ? Math.floor((Date.now() - new Date(cachedSession.updatedAt).getTime()) / (60 * 1000))
-              : null,
-          })
-
-          // Merge prefilled query if provided
-          const updatedPartialData = mergePrefilledQuery(cachedSession.partialData, prefilledQuery)
-
-          // Use cached session immediately
-          set({
-            session: {
-              ...cachedSession,
-              partialData: updatedPartialData,
-            },
-            syncError: null,
-          })
-
-          // Verify with backend in background (non-blocking)
-          verifySessionInBackground(reportId, cachedSession)
-
-          // Record cache hit metric (cache load is near-instant, ~0-5ms)
-          const cacheLoadTime = 5 // Approximate cache read time
-          globalSessionMetrics.recordOperation('load', true, cacheLoadTime, 0, 'cache_hit')
-          
-          storeLogger.info('Cache hit - session loaded from cache', {
-            reportId,
-            loadTime_ms: cacheLoadTime,
-          })
-
+          storeLogger.debug('Session already initialized, skipping', { reportId })
           return
         }
-
-        storeLogger.debug('Session not found in cache, checking backend', { reportId })
-
-        // Try to load existing session from backend
-        const existingSessionResponse = await backendAPI.getValuationSession(reportId)
-
-        if (existingSessionResponse?.session) {
-          const existingSession = existingSessionResponse.session
-          // Load existing session - use backend's currentView, not the parameter
-          // This prevents overriding a view that was just switched
-          const updatedPartialData = mergePrefilledQuery(
-            existingSession.partialData,
-            prefilledQuery
-          )
-
-          const normalizedSession = normalizeSessionDates({
-            ...existingSession,
-            partialData: updatedPartialData,
-          })
-
-          // Cache for next time (cache-first optimization)
-          globalSessionCache.set(reportId, normalizedSession)
-
-          set({
-            session: normalizedSession,
-            syncError: null,
-          })
-          storeLogger.info('Loaded existing session from backend and cached', {
-            reportId,
-            currentView: existingSession.currentView,
-          })
-        } else {
-          // Create new session using helper (handles 409 conflicts automatically)
-          const newSession = await createOrLoadSession(reportId, currentView, prefilledQuery)
-
-          // Cache new session for next time
-          globalSessionCache.set(reportId, newSession)
-
-          set({
-            session: newSession,
-            syncError: null,
-          })
-
-          storeLogger.info('Created new session and cached', {
-            reportId,
-            currentView: newSession.currentView,
-          })
-        }
-      } catch (error) {
-        const appError = convertToApplicationError(error, { reportId, currentView, prefilledQuery })
-
-        // Log with specific error type
-        if (isSessionConflictError(appError)) {
-          storeLogger.warn('Session conflict during initialization', {
-            error: (appError as any).message,
-            code: (appError as any).code,
-            reportId,
-            context: (appError as any).context,
-          })
-        } else if (isNetworkError(appError)) {
-          storeLogger.error('Failed to initialize session - network error', {
-            error: (appError as any).message,
-            code: (appError as any).code,
-            reportId,
-            context: (appError as any).context,
-          })
-        } else if (isValidationError(appError)) {
-          storeLogger.error('Failed to initialize session - validation error', {
-            error: (appError as any).message,
-            code: (appError as any).code,
-            reportId,
-            context: (appError as any).context,
-          })
-        } else {
-          storeLogger.error('Failed to initialize session', {
-            error: (appError as any).message,
-            code: (appError as any).code,
-            reportId,
-            context: (appError as any).context,
-          })
-        }
-
-        const errorMessage = getErrorMessage(appError)
-
-        // Create fallback local session for any error that reaches this catch block
-        // This ensures the UI can continue even when session creation/loading fails
-        const fallbackSession = createFallbackSession(
-          reportId,
-          currentView,
-          prefilledQuery,
-          error
-        )
-        set({
-          session: fallbackSession,
-          syncError: errorMessage,
-        })
-
-        // Log specific error types for debugging
-        if (isSessionConflictError(appError)) {
-          storeLogger.warn('Session conflict could not be resolved, created fallback session', {
-            reportId,
-            error: errorMessage,
-            code: (appError as any).code,
-          })
-        } else if (is409Conflict(error)) {
-          storeLogger.warn('409 conflict during session creation, created fallback session', {
-            reportId,
-            error: errorMessage,
-          })
-        } else {
-          storeLogger.error('Session initialization failed, created fallback session', {
-            reportId,
-            error: errorMessage,
-            code: (appError as any).code,
-          })
-        }
+        // State says ready but no session - reset to idle and continue
+        initializationState.set(reportId, { status: 'idle' })
       }
+
+      // Step 2: Set state to 'initializing' (atomic write)
+      const initPromise = (async () => {
+        try {
+          storeLogger.info('Initializing valuation session', {
+            reportId,
+            currentView,
+            hasPrefilledQuery: !!prefilledQuery,
+          })
+
+          // Step 3: Check if NEW (read from store state only)
+          const { session: existingLocalSession } = get()
+          const isNew = !existingLocalSession || existingLocalSession.reportId !== reportId
+          
+          if (isNew) {
+            // NEW REPORT: Create optimistically (instant, <50ms)
+            storeLogger.info('NEW report detected, using optimistic fast-path', {
+              reportId,
+              currentView,
+            })
+
+            const optimisticSession = createSessionOptimistically(reportId, currentView, prefilledQuery)
+
+            set({
+              session: optimisticSession,
+              syncError: null,
+            })
+
+            // Sync to backend in background (non-blocking)
+            syncSessionToBackend(optimisticSession)
+
+            storeLogger.info('NEW report created optimistically', {
+              reportId,
+              currentView: optimisticSession.currentView,
+            })
+          } else {
+            // EXISTING REPORT: Load from cache or backend
+            // CACHE-FIRST: Check localStorage cache BEFORE backend API call
+            const cachedSession = globalSessionCache.get(reportId)
+            if (cachedSession) {
+              storeLogger.info('Session found in cache, using immediately', {
+                reportId,
+                currentView: cachedSession.currentView,
+                cacheAge_minutes: cachedSession.updatedAt
+                  ? Math.floor((Date.now() - new Date(cachedSession.updatedAt).getTime()) / (60 * 1000))
+                  : null,
+              })
+
+              // Merge prefilled query if provided
+              const updatedPartialData = mergePrefilledQuery(cachedSession.partialData, prefilledQuery)
+
+              // Use cached session immediately
+              set({
+                session: {
+                  ...cachedSession,
+                  partialData: updatedPartialData,
+                },
+                syncError: null,
+              })
+
+              // Verify with backend in background (non-blocking)
+              verifySessionInBackground(reportId, cachedSession)
+
+              // Record cache hit metric
+              const cacheLoadTime = 5
+              globalSessionMetrics.recordOperation('load', true, cacheLoadTime, 0, 'cache_hit')
+              
+              storeLogger.info('Cache hit - session loaded from cache', {
+                reportId,
+                loadTime_ms: cacheLoadTime,
+              })
+            } else {
+              // Not in cache - load from backend
+              storeLogger.debug('Session not found in cache, checking backend', { reportId })
+
+              const existingSessionResponse = await backendAPI.getValuationSession(reportId)
+
+              if (existingSessionResponse?.session) {
+                const existingSession = existingSessionResponse.session
+                const updatedPartialData = mergePrefilledQuery(
+                  existingSession.partialData,
+                  prefilledQuery
+                )
+
+                const normalizedSession = normalizeSessionDates({
+                  ...existingSession,
+                  partialData: updatedPartialData,
+                })
+
+                // Cache for next time
+                globalSessionCache.set(reportId, normalizedSession)
+
+                set({
+                  session: normalizedSession,
+                  syncError: null,
+                })
+                storeLogger.info('Loaded existing session from backend and cached', {
+                  reportId,
+                  currentView: existingSession.currentView,
+                })
+              } else {
+                // Create new session
+                const newSession = await createOrLoadSession(reportId, currentView, prefilledQuery)
+
+                // Cache new session
+                globalSessionCache.set(reportId, newSession)
+
+                set({
+                  session: newSession,
+                  syncError: null,
+                })
+
+                storeLogger.info('Created new session and cached', {
+                  reportId,
+                  currentView: newSession.currentView,
+                })
+              }
+            }
+          }
+        } catch (error) {
+          const appError = convertToApplicationError(error, { reportId, currentView, prefilledQuery })
+
+          // Log with specific error type
+          if (isSessionConflictError(appError)) {
+            storeLogger.warn('Session conflict during initialization', {
+              error: (appError as any).message,
+              code: (appError as any).code,
+              reportId,
+              context: (appError as any).context,
+            })
+          } else if (isNetworkError(appError)) {
+            storeLogger.error('Failed to initialize session - network error', {
+              error: (appError as any).message,
+              code: (appError as any).code,
+              reportId,
+              context: (appError as any).context,
+            })
+          } else if (isValidationError(appError)) {
+            storeLogger.error('Failed to initialize session - validation error', {
+              error: (appError as any).message,
+              code: (appError as any).code,
+              reportId,
+              context: (appError as any).context,
+            })
+          } else {
+            storeLogger.error('Failed to initialize session', {
+              error: (appError as any).message,
+              code: (appError as any).code,
+              reportId,
+              context: (appError as any).context,
+            })
+          }
+
+          const errorMessage = getErrorMessage(appError)
+
+          // Create fallback local session
+          const fallbackSession = createFallbackSession(
+            reportId,
+            currentView,
+            prefilledQuery,
+            error
+          )
+          set({
+            session: fallbackSession,
+            syncError: errorMessage,
+          })
+
+          if (isSessionConflictError(appError)) {
+            storeLogger.warn('Session conflict could not be resolved, created fallback session', {
+              reportId,
+              error: errorMessage,
+            })
+          }
+
+          throw appError
+        } finally {
+          // Step 4: Set state to 'ready' (atomic write)
+          initializationState.set(reportId, { status: 'ready' })
+        }
+      })()
+
+      // Store promise for deduplication
+      initializationState.set(reportId, { status: 'initializing', promise: initPromise })
+      
+      return initPromise
     },
 
     /**
@@ -380,73 +406,68 @@ export const useValuationSessionStore = create<ValuationSessionStore>((set, get)
         // Record cache miss metric
         globalSessionMetrics.recordOperation('load', false, 0, 0, 'cache_miss')
 
-        // Deduplicate concurrent load requests (prevents double-load)
-        const session = await globalRequestDeduplicator.deduplicate(
-          `session-load-${reportId}`,
+        // Monitor performance (<500ms target)
+        const session = await globalPerformanceMonitor.measure(
+          'session-load',
           async () => {
-            // Monitor performance (<500ms target)
-            return await globalPerformanceMonitor.measure(
-              'session-load',
+            // Retry with exponential backoff (handles transient failures)
+            return await retrySessionOperation(
               async () => {
-                // Retry with exponential backoff (handles transient failures)
-                return await retrySessionOperation(
-                  async () => {
-                    // Circuit breaker protection (fast-fail when backend down)
-                    return await sessionCircuitBreaker.execute(async () => {
-                      const sessionResponse = await backendAPI.getValuationSession(reportId)
+                // Circuit breaker protection (fast-fail when backend down)
+                return await sessionCircuitBreaker.execute(async () => {
+                  const sessionResponse = await backendAPI.getValuationSession(reportId)
 
-                      if (!sessionResponse?.session) {
-                        throw new Error('Session not found')
-                      }
-
-                      // Validate session data (prevents corrupted data crashes)
-                      validateSessionData(sessionResponse.session)
-
-                      // Normalize dates
-                      const normalizedSession = normalizeSessionDates(sessionResponse.session)
-
-                      // Cache for next time (cache-first optimization)
-                      globalSessionCache.set(reportId, normalizedSession)
-
-                      storeLogger.info('Session loaded from backend and cached', {
-                        reportId,
-                        correlationId,
-                      })
-
-                      return normalizedSession
-                    })
-                  },
-                  {
-                    onRetry: (attempt, error, delay) => {
-                      storeLogger.warn('Retrying session load', {
-                        reportId,
-                        attempt,
-                        delay_ms: delay,
-                        error: extractErrorMessage(error),
-                        correlationId,
-                      })
-
-                      // Record retry in metrics
-                      globalSessionMetrics.recordOperation(
-                        'load',
-                        false,
-                        performance.now() - startTime,
-                        attempt,
-                        extractErrorMessage(error)
-                      )
-                    },
+                  if (!sessionResponse?.session) {
+                    throw new Error('Session not found')
                   }
-                )
+
+                  // Validate session data (prevents corrupted data crashes)
+                  validateSessionData(sessionResponse.session)
+
+                  // Normalize dates
+                  const normalizedSession = normalizeSessionDates(sessionResponse.session)
+
+                  // Cache for next time (cache-first optimization)
+                  globalSessionCache.set(reportId, normalizedSession)
+
+                  storeLogger.info('Session loaded from backend and cached', {
+                    reportId,
+                    correlationId,
+                  })
+
+                  return normalizedSession
+                })
               },
-              performanceThresholds.sessionLoad,
-              { reportId, correlationId }
+              {
+                onRetry: (attempt, error, delay) => {
+                  storeLogger.warn('Retrying session load', {
+                    reportId,
+                    attempt,
+                    delay_ms: delay,
+                    error: extractErrorMessage(error),
+                    correlationId,
+                  })
+
+                  // Record retry in metrics
+                  globalSessionMetrics.recordOperation(
+                    'load',
+                    false,
+                    performance.now() - startTime,
+                    attempt,
+                    extractErrorMessage(error)
+                  )
+                },
+              }
             )
-          }
+          },
+          performanceThresholds.sessionLoad,
+          { reportId, correlationId }
         )
 
         // Success - update state
         set({
           session,
+          isSaving: false,
           isSyncing: false,
           syncError: null,
         })
@@ -532,6 +553,7 @@ export const useValuationSessionStore = create<ValuationSessionStore>((set, get)
         })
 
         set({
+          isSaving: false,
           isSyncing: false,
           syncError: extractErrorMessage(error),
         })

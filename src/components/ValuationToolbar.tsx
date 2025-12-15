@@ -27,6 +27,7 @@ import {
 import { useValuationSessionStore } from '../store/useValuationSessionStore'
 import { useVersionHistoryStore } from '../store/useVersionHistoryStore'
 import { ValuationToolbarProps } from '../types/valuation'
+import { BackgroundSyncIndicator } from './BackgroundSyncIndicator'
 import { FlowSwitchWarningModal } from './FlowSwitchWarningModal'
 import { UserDropdown } from './UserDropdown'
 import { Tooltip } from './ui/Tooltip'
@@ -45,8 +46,15 @@ export const ValuationToolbar: React.FC<ValuationToolbarProps> = ({
   activeVersion,
   onVersionSelect,
 }) => {
-  const { session, pendingFlowSwitch, isSaving, lastSaved, hasUnsavedChanges, syncError } =
-    useValuationSessionStore()
+  const {
+    session,
+    pendingFlowSwitch,
+    isSaving,
+    lastSaved,
+    hasUnsavedChanges,
+    syncError,
+    backgroundSyncStatus,
+  } = useValuationSessionStore()
   const {
     versions: storeVersions,
     getActiveVersion,
@@ -248,6 +256,8 @@ export const ValuationToolbar: React.FC<ValuationToolbarProps> = ({
                     )}
                   </Tooltip>
                 )}
+                {/* Background Sync Indicator - Shows optimistic sync status for NEW reports */}
+                <BackgroundSyncIndicator status={backgroundSyncStatus} compact={true} />
               </div>
 
               {/* Center Section - Action Buttons */}

@@ -23,6 +23,7 @@ export interface MessagesListProps {
   onClarificationConfirm: (messageId: string) => void
   onClarificationReject: (messageId: string) => void
   onKBOSuggestionSelect: (selection: string) => void
+  onBusinessTypeSuggestionSelect: (selection: string) => void
   onValuationStart?: () => void
   onRetry?: (messageId: string) => void | Promise<void>
   calculateOption?: any
@@ -52,6 +53,7 @@ export const MessagesList: React.FC<MessagesListProps> = React.memo(
     onClarificationConfirm,
     onClarificationReject,
     onKBOSuggestionSelect,
+    onBusinessTypeSuggestionSelect,
     onValuationStart,
     onRetry,
     calculateOption,
@@ -85,6 +87,7 @@ export const MessagesList: React.FC<MessagesListProps> = React.memo(
                 onClarificationConfirm={onClarificationConfirm}
                 onClarificationReject={onClarificationReject}
                 onKBOSuggestionSelect={onKBOSuggestionSelect}
+                onBusinessTypeSuggestionSelect={onBusinessTypeSuggestionSelect}
                 onValuationStart={onValuationStart}
                 onRetry={onRetry}
                 isTyping={isTyping}
@@ -132,7 +135,7 @@ export const MessagesList: React.FC<MessagesListProps> = React.memo(
     )
   },
   (prevProps, nextProps) => {
-    // Only re-render if messages or typing state changed
+    // Only re-render if messages, typing state, or callbacks changed
     return (
       prevProps.messages.length === nextProps.messages.length &&
       prevProps.messages.every((msg, idx) => msg.id === nextProps.messages[idx]?.id) &&
@@ -140,7 +143,15 @@ export const MessagesList: React.FC<MessagesListProps> = React.memo(
       prevProps.isThinking === nextProps.isThinking &&
       prevProps.isInitializing === nextProps.isInitializing &&
       prevProps.calculateOption === nextProps.calculateOption &&
-      prevProps.valuationPreview === nextProps.valuationPreview
+      prevProps.valuationPreview === nextProps.valuationPreview &&
+      prevProps.onRetry === nextProps.onRetry &&
+      prevProps.onSuggestionSelect === nextProps.onSuggestionSelect &&
+      prevProps.onSuggestionDismiss === nextProps.onSuggestionDismiss &&
+      prevProps.onClarificationConfirm === nextProps.onClarificationConfirm &&
+      prevProps.onClarificationReject === nextProps.onClarificationReject &&
+      prevProps.onKBOSuggestionSelect === nextProps.onKBOSuggestionSelect &&
+      prevProps.onBusinessTypeSuggestionSelect === nextProps.onBusinessTypeSuggestionSelect &&
+      prevProps.onValuationStart === nextProps.onValuationStart
     )
   }
 )

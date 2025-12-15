@@ -10,12 +10,12 @@
 import { backendAPI } from '../services/backendApi'
 import { useValuationSessionStore } from '../store/useValuationSessionStore'
 import type { ValuationSession } from '../types/valuation'
+import { is409Conflict } from './errorDetection'
+import { isRetryable } from './errors/errorGuards'
 import { createContextLogger } from './logger'
 import { markReportExists } from './reportExistenceCache'
-import { globalSessionCache } from './sessionCacheManager'
-import { is409Conflict } from './errorDetection'
 import { retryWithBackoff } from './retryWithBackoff'
-import { isRetryable } from './errors/errorGuards'
+import { globalSessionCache } from './sessionCacheManager'
 
 const sessionHelpersLogger = createContextLogger('SessionHelpers')
 
@@ -164,18 +164,13 @@ export function createSessionOptimistically(
 }
 
 /**
- * Tracks in-progress syncs to prevent duplicate syncs
- */
-const syncInProgress = new Set<string>()
-
-/**
  * Syncs optimistically created session to backend (non-blocking)
  *
  * BACKGROUND SYNC:
  * - Non-blocking (doesn't await)
  * - Handles 409 conflicts (session already exists - load it)
  * - Updates cache with backend response
- * - Prevents duplicate syncs
+ * - Prevents duplicate syncs via store state (atomic)
  * - Logs sync results
  *
  * This runs in the background after optimistic creation,
@@ -191,17 +186,16 @@ const syncInProgress = new Set<string>()
  */
 export function syncSessionToBackend(session: ValuationSession): void {
   const { reportId } = session
+  const store = useValuationSessionStore.getState()
 
-  // Prevent duplicate syncs
-  if (syncInProgress.has(reportId)) {
+  // Check store state atomically (prevents duplicate syncs)
+  if (store.backgroundSyncStatus === 'syncing') {
     sessionHelpersLogger.debug('Sync already in progress, skipping', { reportId })
     return
   }
 
-  syncInProgress.add(reportId)
-
-  // Update sync status to 'syncing'
-  useValuationSessionStore.getState().setBackgroundSyncStatus('syncing')
+  // Update sync status to 'syncing' (atomic write)
+  store.setBackgroundSyncStatus('syncing')
 
   // Sync in background (non-blocking) with retry logic
   Promise.resolve()
@@ -313,18 +307,21 @@ export function syncSessionToBackend(session: ValuationSession): void {
             }
           )
           // Session still works locally - user can retry later
+          // Update sync status to 'failed'
+          useValuationSessionStore.getState().setBackgroundSyncStatus('failed')
         } else {
           // Non-retryable error - log but don't block UI
-          sessionHelpersLogger.warn('Background sync failed (non-retryable), session still works locally', {
-            reportId,
-            error: error instanceof Error ? error.message : 'Unknown error',
-          })
+          sessionHelpersLogger.warn(
+            'Background sync failed (non-retryable), session still works locally',
+            {
+              reportId,
+              error: error instanceof Error ? error.message : 'Unknown error',
+            }
+          )
           // Session still works locally - user can retry later
           // Update sync status to 'failed'
           useValuationSessionStore.getState().setBackgroundSyncStatus('failed')
         }
-      } finally {
-        syncInProgress.delete(reportId)
       }
     })
     .catch((error) => {
@@ -333,6 +330,7 @@ export function syncSessionToBackend(session: ValuationSession): void {
         reportId,
         error: error instanceof Error ? error.message : 'Unknown error',
       })
-      syncInProgress.delete(reportId)
+      // Update sync status to 'failed'
+      useValuationSessionStore.getState().setBackgroundSyncStatus('failed')
     })
 }

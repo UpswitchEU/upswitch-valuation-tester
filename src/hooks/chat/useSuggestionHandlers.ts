@@ -331,10 +331,100 @@ export const useSuggestionHandlers = ({
     ]
   )
 
+  // Handle Business Type suggestion selection (sends number or "none" directly to backend)
+  const handleBusinessTypeSuggestionSelect = useCallback(
+    async (selection: string) => {
+      chatLogger.info('Business type suggestion selected', { selection, sessionId })
+
+      const effectiveSessionId = pythonSessionId || sessionId
+
+      // Send the selection (number or "none") directly to backend
+      try {
+        setIsStreaming(true)
+        setIsTyping(true)
+
+        await streamingManager.startStreaming(
+          effectiveSessionId,
+          selection, // Send "1", "2", "3", etc. or "none"
+          userId,
+          {
+            setIsStreaming,
+            addMessage,
+            updateStreamingMessage,
+            onContextUpdate: (context: any) => {
+              onHtmlPreviewUpdate?.(context.html || '', context.preview_type || 'progressive')
+            },
+            extractBusinessModelFromInput: (_input: string) => null,
+            extractFoundingYearFromInput: (_input: string) => null,
+            onStreamStart: () => {
+              eventHandler.reset()
+              chatLogger.debug('Stream start - reset event handler state')
+            },
+          },
+          (event) => {
+            try {
+              if (!eventHandler) {
+                chatLogger.error('Event handler is null/undefined', {
+                  sessionId: effectiveSessionId,
+                })
+                return
+              }
+
+              if (typeof eventHandler.handleEvent !== 'function') {
+                chatLogger.error('Event handler handleEvent is not a function', {
+                  sessionId: effectiveSessionId,
+                  eventHandlerType: typeof eventHandler,
+                })
+                return
+              }
+
+              eventHandler.handleEvent(event)
+            } catch (error) {
+              chatLogger.error('Error in onEvent callback', {
+                error: error instanceof Error ? error.message : String(error),
+                eventType: event?.type,
+                sessionId: event?.session_id || effectiveSessionId,
+              })
+            }
+          },
+          (error: Error) => {
+            chatLogger.error('Streaming error during business type selection', {
+              error: error.message,
+              sessionId: effectiveSessionId,
+            })
+            setIsStreaming(false)
+            setIsTyping(false)
+          }
+        )
+      } catch (error) {
+        chatLogger.error('Failed to send business type selection', {
+          error: error instanceof Error ? error.message : String(error),
+          selection,
+          sessionId: effectiveSessionId,
+        })
+        setIsStreaming(false)
+        setIsTyping(false)
+      }
+    },
+    [
+      sessionId,
+      pythonSessionId,
+      userId,
+      streamingManager,
+      eventHandler,
+      setIsStreaming,
+      setIsTyping,
+      addMessage,
+      updateStreamingMessage,
+      onHtmlPreviewUpdate,
+    ]
+  )
+
   return {
     handleSuggestionSelect,
     handleSuggestionDismiss,
     handleKBOSuggestionSelect,
+    handleBusinessTypeSuggestionSelect,
     handleClarificationConfirm,
     handleClarificationReject,
   }

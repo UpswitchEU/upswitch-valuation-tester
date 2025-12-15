@@ -10,25 +10,24 @@
 import { useValuationSessionStore } from '../store/useValuationSessionStore'
 import { createContextLogger } from './logger'
 import { checkReportExists } from './reportExistenceCache'
-import { globalSessionCache } from './sessionCacheManager'
 
 const detectorLogger = createContextLogger('NewReportDetector')
 
 /**
  * Check if a report is NEW (never seen before)
  *
+ * Simple Chain Architecture: Store is single source of truth
+ *
  * A report is considered NEW if:
- * - Not in existence cache (or existence cache is null/unknown)
- * - Not in session cache
- * - Not in Zustand store
+ * - Not in Zustand store (session?.reportId !== reportId)
+ * - Not in existence cache (null means unknown/never checked)
  *
  * A report is NOT NEW if:
+ * - Exists in Zustand store (session?.reportId === reportId)
  * - Exists in existence cache (true or false - both mean it was checked)
- * - Exists in session cache
- * - Exists in Zustand store
  *
  * @param reportId - Report identifier
- * @returns true if report is NEW, false if report exists in any cache/store
+ * @returns true if report is NEW, false if report exists in store or cache
  *
  * @example
  * ```typescript
@@ -43,30 +42,7 @@ const detectorLogger = createContextLogger('NewReportDetector')
  */
 export function isNewReport(reportId: string): boolean {
   try {
-    // Check existence cache first (fastest check)
-    const exists = checkReportExists(reportId)
-    
-    // If existence cache has any value (true or false), report was checked before
-    // Only null means "unknown" - which could be NEW
-    if (exists !== null) {
-      detectorLogger.debug('Report exists in existence cache', {
-        reportId,
-        exists,
-      })
-      return false // Not new - was checked before
-    }
-
-    // Check session cache
-    const cachedSession = globalSessionCache.get(reportId)
-    if (cachedSession) {
-      detectorLogger.debug('Report exists in session cache', {
-        reportId,
-        cachedAt: cachedSession.updatedAt,
-      })
-      return false // Not new - has cached session
-    }
-
-    // Check Zustand store (current session)
+    // Check Zustand store (single source of truth)
     const { session } = useValuationSessionStore.getState()
     if (session?.reportId === reportId) {
       detectorLogger.debug('Report exists in Zustand store', {
@@ -74,6 +50,16 @@ export function isNewReport(reportId: string): boolean {
         currentView: session.currentView,
       })
       return false // Not new - already in store
+    }
+
+    // Check existence cache (but store is primary source)
+    const exists = checkReportExists(reportId)
+    if (exists !== null) {
+      detectorLogger.debug('Report exists in existence cache', {
+        reportId,
+        exists,
+      })
+      return false // Not new - was checked before
     }
 
     // All checks passed - this is a NEW report
@@ -102,4 +88,3 @@ export function markReportAsChecked(reportId: string): void {
   // No need for separate function, but kept for API consistency
   detectorLogger.debug('Report marked as checked', { reportId })
 }
-

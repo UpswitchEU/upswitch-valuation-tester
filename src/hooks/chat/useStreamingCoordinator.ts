@@ -121,17 +121,36 @@ export function useStreamingCoordinator({
   const eventHandlerRef = useRef<StreamEventHandler | null>(null)
   const _activeRequestRef = useRef<{ abort: () => void } | null>(null)
 
-  // Initialize streaming manager
+  // CRITICAL FIX: Use refs for callbacks to prevent infinite re-renders
+  // Callbacks passed as props may be recreated on every render, causing the effect to run repeatedly
+  const callbacksRef = useRef({
+    updateStreamingMessage,
+    setIsStreaming,
+    setIsTyping,
+    setIsThinking,
+    setTypingContext,
+    setCollectedData,
+    setValuationPreview,
+    setCalculateOption,
+    setMessages,
+    onValuationComplete,
+    onReportUpdate,
+    onDataCollected,
+    onValuationPreview,
+    onCalculateOptionAvailable,
+    onProgressUpdate,
+    onReportSectionUpdate,
+    onSectionLoading,
+    onSectionComplete,
+    onReportComplete,
+    onHtmlPreviewUpdate,
+    trackModelPerformance: trackModelPerformance || (() => {}),
+    trackConversationCompletion: trackConversationCompletion || (() => {}),
+  })
+
+  // Update callbacks ref whenever they change (without triggering effect re-run)
   useEffect(() => {
-    const requestIdRef = { current: null }
-    const currentStreamingMessageRef = { current: null }
-    const eventSourceRef: { current: EventSource | null } = { current: null }
-    const abortControllerRef: { current: AbortController | null } = { current: null }
-
-    streamingManagerRef.current = new StreamingManager(requestIdRef, currentStreamingMessageRef)
-
-    // Create event handler with all callbacks
-    eventHandlerRef.current = new StreamEventHandler(effectiveSessionId, {
+    callbacksRef.current = {
       updateStreamingMessage,
       setIsStreaming,
       setIsTyping,
@@ -140,18 +159,7 @@ export function useStreamingCoordinator({
       setCollectedData,
       setValuationPreview,
       setCalculateOption,
-      addMessage: (message: Omit<Message, 'id' | 'timestamp'>) => {
-        // Simple message addition for streaming context
-        setMessages((prev) => [
-          ...prev,
-          {
-            ...message,
-            id: `msg-${Date.now()}`,
-            timestamp: new Date(),
-          },
-        ])
-        return { updatedMessages: [], newMessage: {} as Message }
-      },
+      setMessages,
       onValuationComplete,
       onReportUpdate,
       onDataCollected,
@@ -165,6 +173,53 @@ export function useStreamingCoordinator({
       onHtmlPreviewUpdate,
       trackModelPerformance: trackModelPerformance || (() => {}),
       trackConversationCompletion: trackConversationCompletion || (() => {}),
+    }
+  })
+
+  // Initialize streaming manager
+  useEffect(() => {
+    const requestIdRef = { current: null }
+    const currentStreamingMessageRef = { current: null }
+    const eventSourceRef: { current: EventSource | null } = { current: null }
+    const abortControllerRef: { current: AbortController | null } = { current: null }
+
+    streamingManagerRef.current = new StreamingManager(requestIdRef, currentStreamingMessageRef)
+
+    // Create event handler with callbacks from ref (to avoid dependency on callback props)
+    eventHandlerRef.current = new StreamEventHandler(effectiveSessionId, {
+      updateStreamingMessage: (...args) => callbacksRef.current.updateStreamingMessage(...args),
+      setIsStreaming: (...args) => callbacksRef.current.setIsStreaming(...args),
+      setIsTyping: (...args) => callbacksRef.current.setIsTyping?.(...args),
+      setIsThinking: (...args) => callbacksRef.current.setIsThinking?.(...args),
+      setTypingContext: (...args) => callbacksRef.current.setTypingContext?.(...args),
+      setCollectedData: callbacksRef.current.setCollectedData,
+      setValuationPreview: callbacksRef.current.setValuationPreview,
+      setCalculateOption: callbacksRef.current.setCalculateOption,
+      addMessage: (message: Omit<Message, 'id' | 'timestamp'>) => {
+        // Simple message addition for streaming context
+        callbacksRef.current.setMessages((prev) => [
+          ...prev,
+          {
+            ...message,
+            id: `msg-${Date.now()}`,
+            timestamp: new Date(),
+          },
+        ])
+        return { updatedMessages: [], newMessage: {} as Message }
+      },
+      onValuationComplete: callbacksRef.current.onValuationComplete,
+      onReportUpdate: callbacksRef.current.onReportUpdate,
+      onDataCollected: callbacksRef.current.onDataCollected,
+      onValuationPreview: callbacksRef.current.onValuationPreview,
+      onCalculateOptionAvailable: callbacksRef.current.onCalculateOptionAvailable,
+      onProgressUpdate: callbacksRef.current.onProgressUpdate,
+      onReportSectionUpdate: callbacksRef.current.onReportSectionUpdate,
+      onSectionLoading: callbacksRef.current.onSectionLoading,
+      onSectionComplete: callbacksRef.current.onSectionComplete,
+      onReportComplete: callbacksRef.current.onReportComplete,
+      onHtmlPreviewUpdate: callbacksRef.current.onHtmlPreviewUpdate,
+      trackModelPerformance: callbacksRef.current.trackModelPerformance,
+      trackConversationCompletion: callbacksRef.current.trackConversationCompletion,
     })
 
     return () => {
@@ -179,27 +234,8 @@ export function useStreamingCoordinator({
   }, [
     sessionId,
     pythonSessionId,
-    // effectiveSessionId is derived from pythonSessionId and sessionId, so we don't need it in deps
-    setMessages,
-    setIsStreaming,
-    setIsTyping,
-    setIsThinking,
-    setTypingContext,
-    setCollectedData,
-    setValuationPreview,
-    setCalculateOption,
-    updateStreamingMessage,
-    onValuationComplete,
-    onReportUpdate,
-    onDataCollected,
-    onValuationPreview,
-    onCalculateOptionAvailable,
-    onProgressUpdate,
-    onReportSectionUpdate,
-    onSectionLoading,
-    onSectionComplete,
-    onReportComplete,
-    onHtmlPreviewUpdate,
+    // CRITICAL: Only include stable dependencies (sessionId, pythonSessionId)
+    // Callbacks are stored in refs and updated separately to prevent infinite re-renders
   ])
 
   // Start streaming session
@@ -220,11 +256,12 @@ export function useStreamingCoordinator({
       }
 
       // Create callbacks object matching StreamingManagerCallbacks interface
+      // Use callbacks from ref to ensure we always have the latest versions
       const callbacks: StreamingManagerCallbacks = {
-        setIsStreaming,
+        setIsStreaming: callbacksRef.current.setIsStreaming,
         addMessage: (message: Omit<Message, 'id' | 'timestamp'>) => {
           // Simple message addition for streaming context
-          setMessages((prev) => {
+          callbacksRef.current.setMessages((prev) => {
             const newMessage: Message = {
               ...message,
               id: `msg-${Date.now()}`,
@@ -238,7 +275,7 @@ export function useStreamingCoordinator({
 
           return { updatedMessages: [], newMessage: {} as Message }
         },
-        updateStreamingMessage,
+        updateStreamingMessage: callbacksRef.current.updateStreamingMessage,
         extractBusinessModelFromInput,
         extractFoundingYearFromInput,
         onStreamStart: () => {
@@ -303,9 +340,9 @@ export function useStreamingCoordinator({
           effectiveSessionId,
           stack: error.stack,
         })
-        setIsStreaming(false)
+        callbacksRef.current.setIsStreaming(false)
         // Add error message to chat
-        setMessages((prev) => [
+        callbacksRef.current.setMessages((prev) => [
           ...prev,
           {
             id: `error-${Date.now()}`,
@@ -317,7 +354,7 @@ export function useStreamingCoordinator({
       }
 
       try {
-        setIsStreaming(true)
+        callbacksRef.current.setIsStreaming(true)
         // Reset event handler state before starting new stream
         eventHandlerRef.current.reset()
 
@@ -338,7 +375,7 @@ export function useStreamingCoordinator({
           onError
         )
       } catch (error) {
-        setIsStreaming(false)
+        callbacksRef.current.setIsStreaming(false)
 
         const appError = convertToApplicationError(error, {
           sessionId,
@@ -383,7 +420,9 @@ export function useStreamingCoordinator({
         throw appError
       }
     },
-    [sessionId, pythonSessionId, userId, setIsStreaming, setMessages, updateStreamingMessage]
+    [sessionId, pythonSessionId, userId]
+    // CRITICAL: Only include stable dependencies
+    // Callbacks are accessed via refs to prevent infinite re-renders
     // effectiveSessionId is derived from pythonSessionId and sessionId, so we don't need it in deps
   )
 
@@ -392,8 +431,8 @@ export function useStreamingCoordinator({
     if (streamingManagerRef.current) {
       streamingManagerRef.current.clearCurrentRequest()
     }
-    setIsStreaming(false)
-  }, [setIsStreaming])
+    callbacksRef.current.setIsStreaming(false)
+  }, [])
 
   return {
     startStreaming,

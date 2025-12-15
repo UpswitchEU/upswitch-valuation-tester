@@ -17,16 +17,6 @@ import UrlGeneratorService from '../services/urlGenerator'
 import { useValuationSessionStore } from '../store/useValuationSessionStore'
 import type { ValuationSession } from '../types/valuation'
 import { generalLogger } from '../utils/logger'
-import { isNewReport } from '../utils/newReportDetector'
-import {
-  checkReportExists,
-  markReportExists,
-  markReportNotExists,
-} from '../utils/reportExistenceCache'
-import {
-  createSessionOptimistically,
-  syncSessionToBackend,
-} from '../utils/sessionHelpers'
 import { OutOfCreditsModal } from './OutOfCreditsModal'
 
 type Stage = 'loading' | 'data-entry' | 'processing' | 'flow-selection'
@@ -69,159 +59,24 @@ export const ValuationSessionManager: React.FC<ValuationSessionManagerProps> = R
     const prefilledQuery = searchParams?.get('prefilledQuery') || null
     const autoSend = searchParams?.get('autoSend') === 'true'
 
-    // Track initialization state per reportId using ref to avoid dependency loops
-    const initializationState = useRef<
-      Map<string, { initialized: boolean; isInitializing: boolean }>
-    >(new Map())
-
     // Track if we're updating URL ourselves to prevent re-initialization
     const isUpdatingUrlRef = useRef(false)
 
-    // Initialize session on mount - only once per reportId
+    // Initialize session on mount - store handles all state management atomically
     const initializeSessionForReport = useCallback(
       async (reportId: string) => {
-        const state = initializationState.current.get(reportId)
-
         // CRITICAL FIX: Don't re-initialize if we're updating URL ourselves
         // This prevents re-initialization when URL changes due to flow switch
         if (isUpdatingUrlRef.current) {
           return // URL update in progress, don't re-initialize
         }
 
-        // Prevent concurrent initialization attempts
-        if (state?.isInitializing) {
-          return // Already initializing, wait for completion
-        }
-
-        // Prevent re-initialization if already initialized
-        if (state?.initialized) {
-          return // Already initialized, don't re-initialize
-        }
-
-        // Mark as initializing to prevent concurrent calls
-        initializationState.current.set(reportId, { initialized: false, isInitializing: true })
-
         try {
           if (!searchParams) {
-            initializationState.current.set(reportId, { initialized: false, isInitializing: false })
             return
           }
 
-          // FAST PATH OPTIMIZATION: Check if NEW report BEFORE any backend calls
-          if (isNewReport(reportId)) {
-            // NEW REPORT: Create optimistically (instant, <50ms)
-            generalLogger.info('NEW report detected, using optimistic fast-path', { reportId })
-
-            // Determine initial view from URL params
-            let flowParam = searchParams.get('flow')
-            const initialView =
-              flowParam === 'manual' || flowParam === 'conversational' ? flowParam : 'manual'
-
-            // Validate credits for Conversational (guests only)
-            if (initialView === 'conversational' && !isAuthenticated) {
-              const hasCredits = guestCreditService.hasCredits()
-              if (!hasCredits) {
-                setShowOutOfCreditsModal(true)
-                // Create session with manual view instead
-                const optimisticSession = createSessionOptimistically(
-                  reportId,
-                  'manual',
-                  prefilledQuery
-                )
-                // Set in store via initializeSession (which will detect cached session)
-                await initializeSession(reportId, 'manual', prefilledQuery)
-                syncSessionToBackend(optimisticSession)
-                markReportExists(reportId)
-                setStage('data-entry')
-                initializationState.current.set(reportId, {
-                  initialized: true,
-                  isInitializing: false,
-                })
-                return
-              }
-            }
-
-            // Create session optimistically (instant)
-            const optimisticSession = createSessionOptimistically(
-              reportId,
-              initialView,
-              prefilledQuery
-            )
-
-            // Set in store immediately - initializeSession will detect it's cached and use it
-            // But we need to set it in the store directly. Since Zustand doesn't expose set(),
-            // we'll call initializeSession which will see it's cached and set it in the store
-            await initializeSession(reportId, initialView, prefilledQuery)
-            
-            // Note: initializeSession will detect the cached session and use it,
-            // but since isNewReport() will now return false (session is cached),
-            // it will use the cache-first path which is fine
-
-            // Mark as initialized
-            markReportExists(reportId)
-            setStage('data-entry')
-            initializationState.current.set(reportId, {
-              initialized: true,
-              isInitializing: false,
-            })
-
-            // Sync to backend in background (non-blocking)
-            syncSessionToBackend(optimisticSession)
-
-            generalLogger.info('NEW report created optimistically, UI ready instantly', {
-              reportId,
-              currentView: initialView,
-            })
-
-            // Skip all backend checks - UI is ready!
-            return
-          }
-
-          // EXISTING REPORT: Use cache-first flow
-          // CACHE-FIRST OPTIMIZATION: Check report existence cache before API call
-          const reportExists = checkReportExists(reportId)
-
-          if (reportExists === false) {
-            // Report doesn't exist (cached) - skip loadSession and create new immediately
-            generalLogger.info('Report marked as non-existent in cache, creating new session', {
-              reportId,
-            })
-            // Continue to create new session below
-          } else {
-            // Report exists or unknown - try to restore existing session
-            const { loadSession } = useValuationSessionStore.getState()
-
-            try {
-              generalLogger.info('Attempting to restore existing session', { reportId })
-
-              await loadSession(reportId)
-
-              // Session restored successfully - mark as existing
-              markReportExists(reportId)
-
-              // Session restored successfully
-              setStage('data-entry')
-              initializationState.current.set(reportId, {
-                initialized: true,
-                isInitializing: false,
-              })
-
-              generalLogger.info('Existing session restored successfully', { reportId })
-              return
-            } catch (restoreError) {
-              // Session doesn't exist on backend - mark as non-existent and create new one
-              markReportNotExists(reportId)
-
-              generalLogger.info('Session not found on backend, creating new session', {
-                reportId,
-                error: restoreError instanceof Error ? restoreError.message : 'Unknown error',
-              })
-            }
-          }
-
-          // Create new session
-          // CRITICAL FIX: If we're updating URL ourselves (flow switch), use session's currentView
-          // Otherwise, read from URL params (initial load)
+          // Determine initial view from URL params
           let flowParam = searchParams.get('flow')
           if (isUpdatingUrlRef.current) {
             // We're updating URL ourselves - use session's currentView as source of truth
@@ -232,32 +87,24 @@ export const ValuationSessionManager: React.FC<ValuationSessionManagerProps> = R
           }
           const initialView =
             flowParam === 'manual' || flowParam === 'conversational' ? flowParam : 'manual'
-          const tokenParam = searchParams.get('token')
 
           // Validate credits for Conversational (guests only)
           if (initialView === 'conversational' && !isAuthenticated) {
             const hasCredits = guestCreditService.hasCredits()
             if (!hasCredits) {
               setShowOutOfCreditsModal(true)
-              // Still initialize session but with manual view
+              // Initialize session with manual view instead
               await initializeSession(reportId, 'manual', prefilledQuery)
-              markReportExists(reportId) // Mark as existing after successful initialization
               setStage('data-entry')
-              initializationState.current.set(reportId, {
-                initialized: true,
-                isInitializing: false,
-              })
               return
             }
           }
 
-          // Initialize new session with prefilled query from homepage
+          // Store handles all initialization logic atomically (NEW vs EXISTING)
           await initializeSession(reportId, initialView, prefilledQuery)
 
-          // Mark report as existing after successful initialization
-          markReportExists(reportId)
-
           // Handle business card prefill if token present
+          const tokenParam = searchParams.get('token')
           if (tokenParam) {
             try {
               const { businessCardService } = await import('../services/businessCard')
@@ -283,10 +130,7 @@ export const ValuationSessionManager: React.FC<ValuationSessionManagerProps> = R
           }
 
           setStage('data-entry')
-          initializationState.current.set(reportId, { initialized: true, isInitializing: false })
         } catch (error) {
-          // On error, allow retry by not marking as initialized
-          initializationState.current.set(reportId, { initialized: false, isInitializing: false })
           generalLogger.error('Failed to initialize session', { error, reportId })
           setError('Failed to initialize valuation session')
         }
@@ -300,14 +144,9 @@ export const ValuationSessionManager: React.FC<ValuationSessionManagerProps> = R
         return
       }
 
-      // Clean up initialization state for previous reportId if changed
-      if (currentReportId && currentReportId !== reportId) {
-        initializationState.current.delete(currentReportId)
-      }
-
       setCurrentReportId(reportId)
       initializeSessionForReport(reportId)
-    }, [reportId, initializeSessionForReport, currentReportId])
+    }, [reportId, initializeSessionForReport])
 
     // Sync URL with current view - prevent loops by only updating when needed
     useEffect(() => {
@@ -315,10 +154,12 @@ export const ValuationSessionManager: React.FC<ValuationSessionManagerProps> = R
         return
       }
 
-      const state = initializationState.current.get(session.reportId)
+      // Check if session is initialized (store manages this atomically)
+      const { initializationState } = useValuationSessionStore.getState()
+      const initState = initializationState.get(session.reportId)
 
       // Only sync URL if initialization is complete
-      if (!state?.initialized) {
+      if (initState?.status !== 'ready') {
         return // Wait for initialization to complete
       }
 

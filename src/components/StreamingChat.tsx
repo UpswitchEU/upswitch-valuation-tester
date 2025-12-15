@@ -324,6 +324,17 @@ export const StreamingChat: React.FC<import('./StreamingChat.types').StreamingCh
       },
       [state.setInput, submitStream]
     ),
+
+    handleBusinessTypeSuggestionSelect: useCallback(
+      (selection: string) => {
+        // Business type suggestions work the same way as KBO suggestions
+        // Send the selection (number string like "1", "2", etc. or "none") directly to backend
+        state.setInput(selection)
+        // Use the selection value directly instead of relying on state update
+        submitStream(selection)
+      },
+      [state.setInput, submitStream]
+    ),
   }
 
   // CRITICAL: Restore messages from backend on mount
@@ -541,6 +552,7 @@ export const StreamingChat: React.FC<import('./StreamingChat.types').StreamingCh
         onClarificationConfirm={suggestionHandlers.handleClarificationConfirm}
         onClarificationReject={suggestionHandlers.handleClarificationReject}
         onKBOSuggestionSelect={suggestionHandlers.handleKBOSuggestionSelect}
+        onBusinessTypeSuggestionSelect={suggestionHandlers.handleBusinessTypeSuggestionSelect}
         onValuationStart={onValuationStart}
         onRetry={handleRetry}
         calculateOption={state.calculateOption}

@@ -141,15 +141,15 @@ export class MessageHandlers {
       // Wait for next tick to allow React state to update
       await new Promise((resolve) => setTimeout(resolve, 0))
       // Re-check after waiting
-      if (!this.hasStartedMessage) {
-        chatLogger.warn('⚠️ Message not created yet after ensureMessageExists - buffering chunk', {
-          chunkContent: content.substring(0, 30),
-        })
-        // CRITICAL FIX: Only buffer if not already buffered to prevent duplicates
-        if (!wasBuffered) {
-          this.chunkBuffer.push(content)
-        }
-        return
+    if (!this.hasStartedMessage) {
+      chatLogger.warn('⚠️ Message not created yet after ensureMessageExists - buffering chunk', {
+        chunkContent: content.substring(0, 30),
+      })
+      // CRITICAL FIX: Only buffer if not already buffered to prevent duplicates
+      if (!wasBuffered) {
+        this.chunkBuffer.push(content)
+      }
+      return
       }
     }
 
