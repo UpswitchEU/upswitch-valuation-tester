@@ -57,7 +57,6 @@ export const ValuationForm: React.FC<ValuationFormProps> = ({
   const { formData, updateFormData, prefillFromBusinessCard, setCollectedData } =
     useValuationFormStore()
   const { session, updateSessionData, getSessionData } = useValuationSessionStore()
-  const { error, clearError } = useValuationApiStore()
   const { businessTypes } = useBusinessTypes()
   const { businessCard, isAuthenticated } = useAuth()
   const { getVersion } = useVersionHistoryStore()
@@ -448,11 +447,26 @@ export const ValuationForm: React.FC<ValuationFormProps> = ({
   // Get business types loading/error state
   const { loading: businessTypesLoading, error: businessTypesError } = useBusinessTypes()
 
+  // Get API errors from store
+  const apiError = useValuationApiStore((state) => state.error)
+  const clearApiErrorFromStore = useValuationApiStore((state) => state.clearError)
+
+  // Combine all errors: employeeCountError (validation) + apiError (API failures)
+  const displayError = employeeCountError || apiError || null
+
+  // Clear all errors
+  const clearAllErrors = useCallback(() => {
+    setEmployeeCountError(null)
+    clearApiErrorFromStore()
+  }, [setEmployeeCountError, clearApiErrorFromStore])
+
   return (
     <form
       onSubmit={async (e) => {
         e.preventDefault()
         try {
+          // Clear previous errors
+          clearAllErrors()
           await handleSubmit(e)
         } catch (error) {
           generalLogger.error('Form submission error', {
@@ -488,8 +502,8 @@ export const ValuationForm: React.FC<ValuationFormProps> = ({
 
       <FormSubmitSection
         isSubmitting={isSubmitting}
-        error={error}
-        clearError={clearError}
+        error={displayError}
+        clearError={clearAllErrors}
         formData={formData}
         isRegenerationMode={isRegenerationMode}
       />

@@ -61,6 +61,8 @@ export const StreamingChat: React.FC<import('./StreamingChat.types').StreamingCh
   onContextUpdate,
   onHtmlPreviewUpdate,
   onPythonSessionIdReceived,
+  onCalculate,
+  isCalculating = false,
   className = '',
   disabled = false,
   initialMessage = null,
@@ -668,6 +670,8 @@ export const StreamingChat: React.FC<import('./StreamingChat.types').StreamingCh
         onRetry={handleRetry}
         calculateOption={calculateOption}
         valuationPreview={valuationPreview}
+        onCalculate={onCalculate}
+        isCalculating={isCalculating}
         messagesEndRef={useRef<HTMLDivElement>(null)}
       />
 

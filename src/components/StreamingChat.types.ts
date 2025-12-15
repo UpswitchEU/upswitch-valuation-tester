@@ -27,6 +27,8 @@ export interface StreamingChatMessageCallbacks {
 export interface StreamingChatValuationCallbacks {
   onValuationComplete?: (result: import('../types/valuation').ValuationResponse) => void
   onValuationStart?: () => void
+  onCalculate?: () => void | Promise<void>
+  isCalculating?: boolean
 }
 
 // Report update callbacks

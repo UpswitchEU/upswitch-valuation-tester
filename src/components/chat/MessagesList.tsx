@@ -28,6 +28,8 @@ export interface MessagesListProps {
   onRetry?: (messageId: string) => void | Promise<void>
   calculateOption?: any
   valuationPreview?: any
+  onCalculate?: () => void | Promise<void>
+  isCalculating?: boolean
   messagesEndRef: React.RefObject<HTMLDivElement>
 }
 
@@ -58,6 +60,8 @@ export const MessagesList: React.FC<MessagesListProps> = React.memo(
     onRetry,
     calculateOption,
     valuationPreview,
+    onCalculate,
+    isCalculating = false,
     messagesEndRef,
   }) => {
     return (
@@ -106,15 +110,33 @@ export const MessagesList: React.FC<MessagesListProps> = React.memo(
         </AnimatePresence>
 
         {/* Calculate Now Button */}
-        {calculateOption && (
+        {calculateOption && onCalculate && (
           <div className="flex justify-center">
             <button
               onClick={() => {
-                // Handle calculate now
+                onCalculate()
               }}
-              className="px-6 py-2 bg-accent-600 text-white rounded-lg hover:bg-accent-500 transition-colors"
+              disabled={isCalculating}
+              className="px-6 py-3 bg-gradient-to-r from-primary-600 to-primary-500 hover:from-primary-500 hover:to-primary-400 text-white rounded-lg font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 shadow-lg hover:shadow-xl hover:shadow-primary-500/30"
             >
-              Calculate Now
+              {isCalculating ? (
+                <>
+                  <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  <span>Calculating...</span>
+                </>
+              ) : (
+                <>
+                  <span>Calculate Valuation</span>
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M13 7l5 5m0 0l-5 5m5-5H6"
+                    />
+                  </svg>
+                </>
+              )}
             </button>
           </div>
         )}

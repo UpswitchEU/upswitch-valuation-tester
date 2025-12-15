@@ -10,12 +10,14 @@
 import React, { useCallback, useMemo } from 'react'
 import { StreamingChat } from '../../../components/StreamingChat'
 import { valuationAuditService } from '../../../services/audit/ValuationAuditService'
+import { useValuationApiStore } from '../../../store/useValuationApiStore'
 import { useValuationFormStore } from '../../../store/useValuationFormStore'
 import { useValuationResultsStore } from '../../../store/useValuationResultsStore'
 import { useValuationSessionStore } from '../../../store/useValuationSessionStore'
 import { useVersionHistoryStore } from '../../../store/useVersionHistoryStore'
 import type { Message } from '../../../types/message'
 import type { ValuationResponse } from '../../../types/valuation'
+import { buildValuationRequest } from '../../../utils/buildValuationRequest'
 import { chatLogger } from '../../../utils/logger'
 import {
   areChangesSignificant,
@@ -130,6 +132,7 @@ export const ConversationPanel: React.FC<ConversationPanelProps> = ({
   const { setResult } = useValuationResultsStore()
   const { session } = useValuationSessionStore()
   const { createVersion, getLatestVersion } = useVersionHistoryStore()
+  const { calculateValuation, isCalculating } = useValuationApiStore()
 
   const handleValuationComplete = useCallback(
     async (result: ValuationResponse) => {
@@ -356,6 +359,101 @@ export const ConversationPanel: React.FC<ConversationPanelProps> = ({
     onReportComplete?.(valuationResult?.html_report || '', valuationResult?.valuation_id || '')
   }, [valuationResult, onReportComplete])
 
+  // Handle manual calculate action (same as manual flow)
+  const handleManualCalculate = useCallback(async () => {
+    if (!session?.sessionData) {
+      chatLogger.warn('Cannot calculate: no session data', { sessionId })
+      return
+    }
+
+    try {
+      chatLogger.info('Manual calculate triggered from conversational flow', {
+        sessionId,
+        hasSessionData: !!session.sessionData,
+      })
+
+      // Mark as generating
+      actions.setGenerating(true)
+      onValuationStart?.()
+
+      // Build ValuationRequest from session data (same as manual flow)
+      const sessionData = session.sessionData as any
+      const formData = {
+        company_name: sessionData.company_name || '',
+        industry: sessionData.industry || '',
+        country_code: sessionData.country_code || 'BE',
+        business_model: sessionData.business_model || '',
+        founding_year: sessionData.founding_year || 0,
+        revenue: sessionData.current_year_data?.revenue || sessionData.revenue || 0,
+        ebitda: sessionData.current_year_data?.ebitda || sessionData.ebitda || 0,
+        current_year_data: {
+          year: sessionData.current_year_data?.year || new Date().getFullYear(),
+          revenue: sessionData.current_year_data?.revenue || sessionData.revenue || 0,
+          ebitda: sessionData.current_year_data?.ebitda || sessionData.ebitda || 0,
+          net_income: sessionData.current_year_data?.net_income || 0,
+          total_assets: sessionData.current_year_data?.total_assets || 0,
+          total_debt: sessionData.current_year_data?.total_debt || 0,
+          cash: sessionData.current_year_data?.cash || 0,
+        },
+        historical_years_data: sessionData.historical_years_data || [],
+        number_of_employees: sessionData.number_of_employees || 0,
+        number_of_owners: sessionData.number_of_owners || 0,
+        recurring_revenue_percentage: sessionData.recurring_revenue_percentage || 0,
+        comparables: sessionData.comparables || [],
+        business_type_id: sessionData.business_type_id || '',
+        business_type: sessionData.business_type || '',
+        shares_for_sale: sessionData.shares_for_sale || 100,
+        business_context: sessionData.business_context || '',
+      } as any
+
+      // Build request using unified function
+      const request = buildValuationRequest(formData)
+      ;(request as any).dataSource = 'ai-guided' // Conversational flow
+
+      // Validate required fields
+      if (!request.current_year_data?.revenue || !request.current_year_data?.ebitda || !request.industry || !request.country_code) {
+        const missingFields = []
+        if (!request.current_year_data?.revenue) missingFields.push('Revenue')
+        if (!request.current_year_data?.ebitda) missingFields.push('EBITDA')
+        if (!request.industry) missingFields.push('Industry')
+        if (!request.country_code) missingFields.push('Country')
+
+        chatLogger.warn('Cannot calculate: missing required fields', { missingFields })
+        actions.setError(`Please provide: ${missingFields.join(', ')}`)
+        actions.setGenerating(false)
+        return
+      }
+
+      // Calculate valuation (same API call as manual flow)
+      const result = await calculateValuation(request)
+
+      if (result) {
+        // Call handleValuationComplete directly (it's already defined above)
+        await handleValuationComplete(result)
+      } else {
+        chatLogger.error('Manual calculate returned no result')
+        actions.setError('Calculation failed. Please try again.')
+        actions.setGenerating(false)
+      }
+    } catch (error) {
+      chatLogger.error('Manual calculate failed', {
+        error: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined,
+      })
+      actions.setError(
+        error instanceof Error ? `Calculation failed: ${error.message}` : 'Calculation failed. Please try again.'
+      )
+      actions.setGenerating(false)
+    }
+  }, [
+    session,
+    sessionId,
+    calculateValuation,
+    handleValuationComplete,
+    actions,
+    onValuationStart,
+  ])
+
   return (
     <ComponentErrorBoundary component="ConversationPanel">
       <div className="flex flex-col h-full">
@@ -398,6 +496,8 @@ export const ConversationPanel: React.FC<ConversationPanelProps> = ({
         onReportComplete={onReportComplete}
         onContextUpdate={onContextUpdate}
         onHtmlPreviewUpdate={onHtmlPreviewUpdate}
+        onCalculate={handleManualCalculate}
+        isCalculating={isCalculating || state.isGenerating}
         initialMessage={initialMessage}
         autoSend={autoSend}
       />
