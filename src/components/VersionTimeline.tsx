@@ -114,14 +114,19 @@ function VersionTimelineItem({
   compact,
 }: VersionTimelineItemProps) {
   const [isExpanded, setIsExpanded] = useState(false)
-  const formatDate = (date: Date) => {
-    return date.toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-    })
+  const formatDate = (date: Date | string) => {
+    try {
+      const dateObj = date instanceof Date ? date : new Date(date)
+      return dateObj.toLocaleDateString('en-US', {
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+      })
+    } catch (error) {
+      return 'Invalid date'
+    }
   }
 
   // Get valuation amounts
@@ -338,24 +343,24 @@ function VersionTimelineItem({
             <div className="mt-4">
               <h4 className="text-sm font-semibold text-gray-900 mb-3">Valuation Details</h4>
               <div className="grid grid-cols-2 gap-3">
-                {version.valuationResult.valuation_summary && (
+                {version.valuationResult.valuation_summary && typeof version.valuationResult.valuation_summary === 'object' && (
                   <>
-                    {version.valuationResult.valuation_summary.base_valuation && (
+                    {(version.valuationResult.valuation_summary as any).base_valuation && (
                       <div className="p-3 bg-gray-50 rounded-lg">
                         <p className="text-xs text-gray-600 mb-1">Base Valuation</p>
                         <p className="text-sm font-semibold text-gray-900">
-                          {formatCurrency(version.valuationResult.valuation_summary.base_valuation, countryCode)}
+                          {formatCurrency((version.valuationResult.valuation_summary as any).base_valuation, countryCode)}
                         </p>
                       </div>
                     )}
-                    {version.valuationResult.valuation_summary.adjustments_total !== undefined && (
+                    {(version.valuationResult.valuation_summary as any).adjustments_total !== undefined && (
                       <div className="p-3 bg-gray-50 rounded-lg">
                         <p className="text-xs text-gray-600 mb-1">Total Adjustments</p>
                         <p className={`text-sm font-semibold ${
-                          version.valuationResult.valuation_summary.adjustments_total >= 0 ? 'text-green-700' : 'text-red-700'
+                          (version.valuationResult.valuation_summary as any).adjustments_total >= 0 ? 'text-green-700' : 'text-red-700'
                         }`}>
-                          {version.valuationResult.valuation_summary.adjustments_total >= 0 ? '+' : ''}
-                          {formatCurrency(version.valuationResult.valuation_summary.adjustments_total, countryCode)}
+                          {(version.valuationResult.valuation_summary as any).adjustments_total >= 0 ? '+' : ''}
+                          {formatCurrency((version.valuationResult.valuation_summary as any).adjustments_total, countryCode)}
                         </p>
                       </div>
                     )}

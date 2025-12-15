@@ -291,6 +291,7 @@ export const useValuationSessionStore = create<ValuationSessionStore>((set, get)
                 })
 
                 // CRITICAL: Restore HTML reports and valuation results if available
+                // Note: Form data restoration is handled by useSessionRestoration hook for better separation
                 const sessionData = existingSession.sessionData as any
                 const valuationResult = sessionData?.valuation_result || (existingSession as any).valuationResult
                 if (sessionData?.html_report || sessionData?.info_tab_html || valuationResult) {
@@ -322,6 +323,55 @@ export const useValuationSessionStore = create<ValuationSessionStore>((set, get)
                     }
                     resultsStore.setResult(fullResult)
                   }
+                }
+
+                // CRITICAL: Also restore form data from backend to form store
+                // This ensures form fields are populated when revisiting
+                try {
+                  const { useValuationFormStore } = await import('./useValuationFormStore')
+                  const formStore = useValuationFormStore.getState()
+                  
+                  if (sessionData && Object.keys(sessionData).length > 0) {
+                    const formDataUpdate: Partial<any> = {
+                      company_name: sessionData.company_name,
+                      country_code: sessionData.country_code,
+                      industry: sessionData.industry,
+                      business_model: sessionData.business_model,
+                      founding_year: sessionData.founding_year,
+                      revenue: sessionData.current_year_data?.revenue || (sessionData as any)?.revenue,
+                      ebitda: sessionData.current_year_data?.ebitda || (sessionData as any)?.ebitda,
+                      current_year_data: sessionData.current_year_data,
+                      historical_years_data: sessionData.historical_years_data,
+                      number_of_employees: sessionData.number_of_employees,
+                      number_of_owners: sessionData.number_of_owners,
+                      recurring_revenue_percentage: sessionData.recurring_revenue_percentage,
+                      comparables: sessionData.comparables,
+                      business_type_id: sessionData.business_type_id,
+                      business_type: sessionData.business_type,
+                      shares_for_sale: sessionData.shares_for_sale,
+                      business_context: sessionData.business_context,
+                    }
+
+                    // Remove undefined values
+                    Object.keys(formDataUpdate).forEach((key) => {
+                      if (formDataUpdate[key] === undefined) {
+                        delete formDataUpdate[key]
+                      }
+                    })
+
+                    if (Object.keys(formDataUpdate).length > 0) {
+                      formStore.updateFormData(formDataUpdate)
+                      storeLogger.info('Form data restored from backend', {
+                        reportId,
+                        fieldsRestored: Object.keys(formDataUpdate).length,
+                      })
+                    }
+                  }
+                } catch (formRestoreError) {
+                  // Non-blocking - form restoration will happen via useSessionRestoration hook
+                  storeLogger.debug('Form data restoration from backend skipped (will use hook)', {
+                    error: formRestoreError instanceof Error ? formRestoreError.message : String(formRestoreError),
+                  })
                 }
 
                 storeLogger.info('Loaded existing session from backend and cached', {

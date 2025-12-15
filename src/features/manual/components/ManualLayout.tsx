@@ -12,6 +12,7 @@ import { ResizableDivider } from '../../../components/ResizableDivider'
 import { ValuationForm } from '../../../components/ValuationForm'
 import { ValuationToolbar } from '../../../components/ValuationToolbar'
 import { useAuth } from '../../../hooks/useAuth'
+import { useSessionRestoration } from '../../../hooks/useSessionRestoration'
 import {
   useValuationToolbarFullscreen,
   useValuationToolbarTabs,
@@ -56,6 +57,10 @@ export const ManualLayout: React.FC<ManualLayoutProps> = ({
   const { isCalculating, error } = useValuationApiStore()
   const { result, setResult } = useValuationResultsStore()
   const { isSaving, lastSaved, hasUnsavedChanges, syncError } = useValuationSessionStore()
+
+  // CRITICAL: Automatically restore form data and results from session
+  // This ensures smooth repopulation on reload/revisit
+  useSessionRestoration()
 
   // Panel resize hook
   const { leftPanelWidth, handleResize, isMobile, mobileActivePanel, setMobileActivePanel } =
