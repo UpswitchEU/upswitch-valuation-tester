@@ -47,7 +47,7 @@ export const useValuationFormSubmission = (
   const { calculateValuation, isCalculating } = useValuationApiStore()
   const { setResult } = useValuationResultsStore()
   const { session } = useValuationSessionStore()
-  const { createVersion, getLatestVersion } = useVersionHistoryStore()
+  const { createVersion, getLatestVersion, fetchVersions } = useVersionHistoryStore()
 
   const handleSubmit = useCallback(
     async (e: React.FormEvent) => {
@@ -167,44 +167,75 @@ export const useValuationFormSubmission = (
         // Store result in results store
         setResult(result)
 
-        // M&A Workflow: Create new version if this is a regeneration
-        if (reportId && previousVersion && changes && areChangesSignificant(changes)) {
+        // M&A Workflow: Create version for first calculation or regeneration
+        if (reportId) {
           try {
-            const newVersion = await createVersion({
-              reportId,
-              formData: request,
-              valuationResult: result,
-              htmlReport: result.html_report || undefined,
-              changesSummary: changes,
-              versionLabel: generateAutoLabel(previousVersion.versionNumber + 1, changes),
-            })
+            if (previousVersion && changes && areChangesSignificant(changes)) {
+              // Regeneration - create new version with changes
+              const newVersion = await createVersion({
+                reportId,
+                formData: request,
+                valuationResult: result,
+                htmlReport: result.html_report || undefined,
+                changesSummary: changes,
+                versionLabel: generateAutoLabel(previousVersion.versionNumber + 1, changes),
+              })
 
-            generalLogger.info('New version created on regeneration', {
-              reportId,
-              versionNumber: newVersion.versionNumber,
-              versionLabel: newVersion.versionLabel,
-            })
+              generalLogger.info('New version created on regeneration', {
+                reportId,
+                versionNumber: newVersion.versionNumber,
+                versionLabel: newVersion.versionLabel,
+              })
 
-            // Log regeneration to audit trail
-            valuationAuditService.logRegeneration(
-              reportId,
-              newVersion.versionNumber,
-              changes,
-              calculationDuration
-            )
+              // Log regeneration to audit trail
+              valuationAuditService.logRegeneration(
+                reportId,
+                newVersion.versionNumber,
+                changes,
+                calculationDuration
+              )
+
+              // Refetch versions to update the toolbar dropdown
+              fetchVersions(reportId).catch(() => {
+                // Silently fail - versions will be fetched on next render
+              })
+            } else if (!previousVersion) {
+              // First calculation - create initial version
+              const firstVersion = await createVersion({
+                reportId,
+                formData: request,
+                valuationResult: result,
+                htmlReport: result.html_report || undefined,
+                changesSummary: { totalChanges: 0, significantChanges: [] },
+                versionLabel: 'v1 - Initial valuation',
+              })
+
+              generalLogger.info('Initial version created on first calculation', {
+                reportId,
+                versionNumber: firstVersion.versionNumber,
+                versionLabel: firstVersion.versionLabel,
+              })
+
+              // Refetch versions to update the toolbar dropdown
+              fetchVersions(reportId).catch(() => {
+                // Silently fail - versions will be fetched on next render
+              })
+            }
           } catch (versionError) {
             // Don't fail the valuation if versioning fails
             // BANK-GRADE: Specific error handling - version creation failure
             if (versionError instanceof Error) {
-              generalLogger.error('Failed to create version on regeneration', {
+              generalLogger.error('Failed to create version', {
                 reportId,
                 error: versionError.message,
                 stack: versionError.stack,
+                isFirstVersion: !previousVersion,
               })
             } else {
-              generalLogger.error('Failed to create version on regeneration', {
+              generalLogger.error('Failed to create version', {
                 reportId,
                 error: String(versionError),
+                isFirstVersion: !previousVersion,
               })
             }
           }
@@ -229,6 +260,7 @@ export const useValuationFormSubmission = (
       session,
       getLatestVersion,
       createVersion,
+      fetchVersions,
     ]
   )
 

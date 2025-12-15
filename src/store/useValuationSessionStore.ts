@@ -472,17 +472,38 @@ export const useValuationSessionStore = create<ValuationSessionStore>((set, get)
         )
 
         // CRITICAL: Restore valuation result if it exists
-        if ((session as any).valuationResult || (session as any).valuation_result) {
+        // Failproof: Comprehensive error handling
+        try {
           const valuationResult = (session as any).valuationResult || (session as any).valuation_result
-          const resultsStore = useValuationResultsStore.getState()
-          resultsStore.setResult(valuationResult)
+          if (valuationResult && typeof valuationResult === 'object') {
+            const resultsStore = useValuationResultsStore.getState()
+            
+            // Failproof: Validate result structure before setting
+            if (resultsStore && typeof resultsStore.setResult === 'function') {
+              resultsStore.setResult(valuationResult)
 
-          storeLogger.info('Restored valuation result from session', {
+              storeLogger.info('Restored valuation result from session', {
+                reportId,
+                hasHtmlReport: !!(valuationResult.html_report || (session as any).htmlReport || (session as any).html_report),
+                hasInfoTabHtml: !!(valuationResult.info_tab_html || (session as any).infoTabHtml || (session as any).info_tab_html),
+                correlationId,
+              })
+            } else {
+              storeLogger.warn('Cannot restore valuation result: resultsStore.setResult not available', {
+                reportId,
+                correlationId,
+              })
+            }
+          }
+        } catch (error) {
+          // Failproof: Never let result restoration break session load
+          storeLogger.error('Failed to restore valuation result from session', {
             reportId,
-            hasHtmlReport: !!(valuationResult.html_report || (session as any).htmlReport || (session as any).html_report),
-            hasInfoTabHtml: !!(valuationResult.info_tab_html || (session as any).infoTabHtml || (session as any).info_tab_html),
             correlationId,
+            error: error instanceof Error ? error.message : String(error),
+            errorStack: error instanceof Error ? error.stack : undefined,
           })
+          // Continue - session load succeeds even if result restoration fails
         }
 
         // Success - update state

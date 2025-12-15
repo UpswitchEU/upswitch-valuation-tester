@@ -22,12 +22,27 @@ export class UIHandlers {
   /**
    * Map conversational field names to ValuationRequest structure
    * Handles nested fields (e.g., 'revenue' -> 'current_year_data.revenue')
+   * Failproof: Validates inputs and handles edge cases
    */
   private mapConversationalFieldToSessionData(
     field: string,
     value: any,
     metadata?: any
   ): Partial<ValuationRequest> {
+    // Failproof: Validate inputs
+    if (!field || typeof field !== 'string') {
+      chatLogger.warn('Invalid field name in mapConversationalFieldToSessionData', {
+        field,
+        fieldType: typeof field,
+      })
+      return {}
+    }
+
+    if (value === undefined || value === null) {
+      chatLogger.debug('Skipping null/undefined value in field mapping', { field })
+      return {}
+    }
+
     // Field mapping from conversational names to ValuationRequest structure
     const fieldMap: Record<string, string> = {
       'company_name': 'company_name',
@@ -50,9 +65,28 @@ export class UIHandlers {
 
     const targetPath = fieldMap[field] || field
 
+    // Failproof: Validate targetPath
+    if (!targetPath || typeof targetPath !== 'string') {
+      chatLogger.warn('Invalid targetPath in field mapping', {
+        field,
+        targetPath,
+      })
+      return {}
+    }
+
     // Build nested update object
     if (targetPath.includes('.')) {
-      const [parent, child] = targetPath.split('.')
+      const parts = targetPath.split('.')
+      if (parts.length !== 2) {
+        chatLogger.warn('Unexpected nested path format', {
+          field,
+          targetPath,
+          partsCount: parts.length,
+        })
+        return {}
+      }
+
+      const [parent, child] = parts
       return {
         [parent]: {
           [child]: value,
@@ -114,28 +148,69 @@ export class UIHandlers {
     }))
 
     // CRITICAL: Auto-save collected data to session store
-    const sessionStore = useValuationSessionStore.getState()
-    
-    if (field && value !== undefined) {
-      // Map conversational field names to ValuationRequest structure
-      const sessionDataUpdate = this.mapConversationalFieldToSessionData(
-        field,
-        value,
-        collectedData.metadata
-      )
-
-      // Auto-save to backend (debounced via updateSessionData)
-      sessionStore.updateSessionData(sessionDataUpdate).catch((error) => {
-        chatLogger.error('Failed to auto-save collected data', {
+    // Failproof: Handle all edge cases gracefully
+    try {
+      const sessionStore = useValuationSessionStore.getState()
+      const session = sessionStore.session
+      
+      // Validate session exists and has reportId
+      if (!session?.reportId) {
+        chatLogger.warn('Cannot auto-save: session or reportId missing', {
           field,
-          error: error instanceof Error ? error.message : String(error),
+          hasSession: !!session,
+          reportId: session?.reportId,
         })
-      })
+        return
+      }
+      
+      if (field && value !== undefined && value !== null) {
+        // Map conversational field names to ValuationRequest structure
+        const sessionDataUpdate = this.mapConversationalFieldToSessionData(
+          field,
+          value,
+          collectedData.metadata
+        )
 
-      chatLogger.debug('Auto-saved collected data to session', {
+        // Validate update object is not empty
+        if (!sessionDataUpdate || Object.keys(sessionDataUpdate).length === 0) {
+          chatLogger.warn('Skipping auto-save: empty sessionDataUpdate', {
+            field,
+            value,
+          })
+          return
+        }
+
+        // Auto-save to backend (debounced via updateSessionData)
+        sessionStore.updateSessionData(sessionDataUpdate).catch((error) => {
+          chatLogger.error('Failed to auto-save collected data', {
+            field,
+            reportId: session.reportId,
+            error: error instanceof Error ? error.message : String(error),
+            errorStack: error instanceof Error ? error.stack : undefined,
+          })
+          // Don't throw - non-blocking persistence
+        })
+
+        chatLogger.debug('Auto-saved collected data to session', {
+          field,
+          reportId: session.reportId,
+          sessionDataKeys: Object.keys(sessionDataUpdate),
+        })
+      } else {
+        chatLogger.debug('Skipping auto-save: invalid field or value', {
+          field,
+          hasValue: value !== undefined,
+          valueType: typeof value,
+        })
+      }
+    } catch (error) {
+      // Failproof: Never let auto-save break the conversation flow
+      chatLogger.error('Unexpected error in auto-save', {
         field,
-        sessionDataKeys: Object.keys(sessionDataUpdate),
+        error: error instanceof Error ? error.message : String(error),
+        errorStack: error instanceof Error ? error.stack : undefined,
       })
+      // Continue conversation flow - don't throw
     }
 
     // Call data collected callback

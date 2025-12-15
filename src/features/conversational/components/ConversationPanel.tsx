@@ -147,6 +147,9 @@ export const ConversationPanel: React.FC<ConversationPanelProps> = ({
       setResult(result)
 
       // CRITICAL: Save valuation result to session for restoration
+      const { markReportSaving, markReportSaved, markReportSaveFailed } = useValuationSessionStore.getState()
+      markReportSaving()
+
       if (session?.reportId) {
         try {
           await sessionAPI.saveValuationResult(session.reportId, {
@@ -160,12 +163,20 @@ export const ConversationPanel: React.FC<ConversationPanelProps> = ({
             hasHtmlReport: !!result.html_report,
             hasInfoTabHtml: !!result.info_tab_html,
           })
+
+          // Mark report as saved after successful session save
+          markReportSaved()
         } catch (error) {
           chatLogger.error('Failed to save valuation result to session', {
             reportId: session.reportId,
             error: error instanceof Error ? error.message : String(error),
           })
+          // Mark save as failed
+          markReportSaveFailed(error instanceof Error ? error.message : 'Save failed')
         }
+      } else {
+        // No session reportId - mark as saved anyway (report might be saved elsewhere)
+        markReportSaved()
       }
 
       // M&A Workflow: Create new version if this is a regeneration (conversational flow)

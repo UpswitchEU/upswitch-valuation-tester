@@ -22,6 +22,7 @@ import { useValuationApiStore } from '../../../store/useValuationApiStore'
 import { useValuationFormStore } from '../../../store/useValuationFormStore'
 import { useValuationResultsStore } from '../../../store/useValuationResultsStore'
 import { useValuationSessionStore } from '../../../store/useValuationSessionStore'
+import type { Message } from '../../../types/message'
 import type { ValuationResponse } from '../../../types/valuation'
 import { chatLogger } from '../../../utils/logger'
 import { generateImportSummaryMessage, shouldGenerateImportSummary } from '../utils/generateImportSummary'
@@ -170,8 +171,14 @@ const ConversationalLayoutInner: React.FC<ConversationalLayoutProps> = ({
   ])
 
   // Generate import summary when switching from manual → conversational with data
+  // Failproof: Comprehensive error handling and validation
   const hasGeneratedSummaryRef = useRef(false)
   useEffect(() => {
+    // Failproof: Validate all prerequisites
+    if (!reportId) {
+      return
+    }
+
     // Only run after restoration is complete
     if (!restoration.state.isRestored) {
       return
@@ -182,43 +189,98 @@ const ConversationalLayoutInner: React.FC<ConversationalLayoutProps> = ({
       return
     }
 
+    // Failproof: Validate session exists
+    if (!session) {
+      chatLogger.debug('Skipping import summary: session not available', { reportId })
+      return
+    }
+
     // Check if we should generate an import summary
-    const sessionData = session?.sessionData
-    if (sessionData && shouldGenerateImportSummary(sessionData, state.messages)) {
-      chatLogger.info('Generating import summary for manual → conversational switch', {
-        reportId,
-        hasCompanyName: !!sessionData?.company_name,
-        hasRevenue: !!sessionData?.current_year_data?.revenue,
-      })
+    const sessionData = session.sessionData
+    if (!sessionData) {
+      chatLogger.debug('Skipping import summary: no session data', { reportId })
+      return
+    }
 
-      // Generate summary message
-      const summaryMessagePartial = generateImportSummaryMessage(sessionData)
-      const summaryMessage = {
-        ...summaryMessagePartial,
-        id: `import_summary_${Date.now()}`,
-        timestamp: new Date(),
-      }
-      
-      // Add to conversation
-      actions.addMessage(summaryMessage)
-
-      // Persist to database (non-blocking)
-      const messageId = `import_summary_${Date.now()}`
-      conversationAPI.saveMessage({
-        reportId,
-        messageId,
-        role: summaryMessage.role || 'assistant',
-        type: summaryMessage.type,
-        content: summaryMessage.content,
-        metadata: summaryMessage.metadata || {},
-      }).catch((error) => {
-        chatLogger.warn('Failed to persist import summary message', {
+    try {
+      if (shouldGenerateImportSummary(sessionData, state.messages)) {
+        chatLogger.info('Generating import summary for manual → conversational switch', {
           reportId,
-          error: error instanceof Error ? error.message : String(error),
+          hasCompanyName: !!sessionData?.company_name,
+          hasRevenue: !!sessionData?.current_year_data?.revenue,
         })
-      })
 
-      hasGeneratedSummaryRef.current = true
+        // Generate summary message with unique ID
+        const messageId = `import_summary_${Date.now()}_${Math.random().toString(36).substring(7)}`
+        
+        // Failproof: Wrap in try-catch
+        let summaryMessagePartial
+        try {
+          summaryMessagePartial = generateImportSummaryMessage(sessionData)
+        } catch (error) {
+          chatLogger.error('Failed to generate import summary message', {
+            reportId,
+            error: error instanceof Error ? error.message : String(error),
+          })
+          return // Don't proceed if generation fails
+        }
+
+        const summaryMessage: Message = {
+          ...summaryMessagePartial,
+          id: messageId,
+          timestamp: new Date(),
+        }
+        
+        // Failproof: Validate message before adding
+        if (!summaryMessage.content || !summaryMessage.type) {
+          chatLogger.warn('Invalid summary message generated, skipping', {
+            reportId,
+            hasContent: !!summaryMessage.content,
+            hasType: !!summaryMessage.type,
+          })
+          return
+        }
+        
+        // Add to conversation
+        try {
+          actions.addMessage(summaryMessage)
+        } catch (error) {
+          chatLogger.error('Failed to add import summary message to conversation', {
+            reportId,
+            error: error instanceof Error ? error.message : String(error),
+          })
+          return // Don't proceed if adding fails
+        }
+
+        // Persist to database (non-blocking)
+        if (reportId && summaryMessage.id && summaryMessage.content) {
+          conversationAPI.saveMessage({
+            reportId,
+            messageId: summaryMessage.id,
+            role: summaryMessage.role || 'assistant',
+            type: summaryMessage.type,
+            content: summaryMessage.content,
+            metadata: summaryMessage.metadata || {},
+          }).catch((error) => {
+            chatLogger.warn('Failed to persist import summary message', {
+              reportId,
+              messageId: summaryMessage.id,
+              error: error instanceof Error ? error.message : String(error),
+            })
+            // Don't throw - persistence failure shouldn't break UI
+          })
+        }
+
+        hasGeneratedSummaryRef.current = true
+      }
+    } catch (error) {
+      // Failproof: Never let import summary generation break the app
+      chatLogger.error('Unexpected error generating import summary', {
+        reportId,
+        error: error instanceof Error ? error.message : String(error),
+        errorStack: error instanceof Error ? error.stack : undefined,
+      })
+      // Continue execution - don't break the flow
     }
   }, [
     restoration.state.isRestored,
@@ -226,6 +288,7 @@ const ConversationalLayoutInner: React.FC<ConversationalLayoutProps> = ({
     state.messages.length,
     reportId,
     actions,
+    session,
   ])
 
   // Reset summary generation flag when reportId changes

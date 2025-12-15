@@ -267,19 +267,31 @@ export function useStreamingCoordinator({
           } as Message)
 
           // CRITICAL: Persist message to database (non-blocking)
-          conversationAPI.saveMessage({
-            reportId: sessionId,
-            messageId: newMessage.id,
-            role: newMessage.role || (newMessage.type === 'ai' ? 'assistant' : 'user'),
-            type: newMessage.type,
-            content: newMessage.content,
-            metadata: newMessage.metadata || {},
-          }).catch((error) => {
-            chatLogger.warn('Failed to persist message to database', {
+          // Failproof: Validate all required fields before saving
+          if (sessionId && newMessage.id && newMessage.content) {
+            conversationAPI.saveMessage({
+              reportId: sessionId,
               messageId: newMessage.id,
-              error: error instanceof Error ? error.message : String(error),
+              role: newMessage.role || (newMessage.type === 'ai' ? 'assistant' : 'user'),
+              type: newMessage.type || 'user',
+              content: typeof newMessage.content === 'string' ? newMessage.content : String(newMessage.content),
+              metadata: newMessage.metadata || {},
+            }).catch((error) => {
+              chatLogger.warn('Failed to persist message to database', {
+                messageId: newMessage.id,
+                reportId: sessionId,
+                error: error instanceof Error ? error.message : String(error),
+                errorStack: error instanceof Error ? error.stack : undefined,
+              })
+              // Don't throw - non-blocking persistence
             })
-          })
+          } else {
+            chatLogger.warn('Skipping message persistence: missing required fields', {
+              hasSessionId: !!sessionId,
+              hasMessageId: !!newMessage.id,
+              hasContent: !!newMessage.content,
+            })
+          }
 
           // Mark as having unsaved conversation changes
           useValuationSessionStore.getState().updateSessionData({})
