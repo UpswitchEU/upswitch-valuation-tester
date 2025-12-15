@@ -263,17 +263,16 @@ export class RegistryService {
       const controller = new AbortController()
       const timeoutId = setTimeout(() => controller.abort(), this.timeout)
 
-      const response = await fetch(`${this.baseURL}/api/v1/registry/financials`, {
-        method: 'POST',
+      // Use GET endpoint: /api/v1/registry/company/{company_id}/financials?country_code={country}&years=3
+      const url = new URL(`${this.baseURL}/api/v1/registry/company/${encodeURIComponent(companyId)}/financials`)
+      url.searchParams.set('country_code', country)
+      url.searchParams.set('years', '3')
+      
+      const response = await fetch(url.toString(), {
+        method: 'GET',
         headers: {
-          'Content-Type': 'application/json',
           Accept: 'application/json',
         },
-        body: JSON.stringify({
-          company_id: companyId,
-          country_code: country,
-          years: 3,
-        }),
         signal: controller.signal,
       })
 

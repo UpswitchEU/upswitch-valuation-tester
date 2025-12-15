@@ -53,6 +53,19 @@ export const useValuationFormSubmission = (
     async (e: React.FormEvent) => {
       e.preventDefault()
 
+      generalLogger.info('Form submit triggered', {
+        isCalculating,
+        hasFormData: !!formData,
+        formDataKeys: Object.keys(formData || {}),
+        revenue: formData?.revenue,
+        ebitda: formData?.ebitda,
+        industry: formData?.industry,
+        country_code: formData?.country_code,
+        business_type: formData?.business_type,
+        number_of_owners: formData?.number_of_owners,
+        number_of_employees: formData?.number_of_employees,
+      })
+
       // Prevent double submission
       if (isCalculating) {
         generalLogger.warn('Calculation already in progress, ignoring duplicate submit')
@@ -67,14 +80,41 @@ export const useValuationFormSubmission = (
         formData.number_of_owners > 0 &&
         formData.number_of_employees === undefined
       ) {
-        setEmployeeCountError(
-          'Employee count is required when owner count is provided to calculate owner concentration risk. Enter 0 if there are no employees besides the owner-managers.'
-        )
+        const errorMsg = 'Employee count is required when owner count is provided to calculate owner concentration risk. Enter 0 if there are no employees besides the owner-managers.'
+        generalLogger.warn('Form validation failed: employee count required', {
+          business_type: formData.business_type,
+          number_of_owners: formData.number_of_owners,
+          number_of_employees: formData.number_of_employees,
+        })
+        setEmployeeCountError(errorMsg)
         return
       }
 
       // Clear validation error if validation passes
       setEmployeeCountError(null)
+
+      // Validate required fields
+      if (!formData.revenue || !formData.ebitda || !formData.industry || !formData.country_code) {
+        const missingFields = []
+        if (!formData.revenue) missingFields.push('revenue')
+        if (!formData.ebitda) missingFields.push('ebitda')
+        if (!formData.industry) missingFields.push('industry')
+        if (!formData.country_code) missingFields.push('country_code')
+        
+        generalLogger.warn('Form validation failed: missing required fields', {
+          missingFields,
+          formDataKeys: Object.keys(formData),
+        })
+        setEmployeeCountError(`Please fill in all required fields: ${missingFields.join(', ')}`)
+        return
+      }
+
+      generalLogger.info('Form validation passed, proceeding with calculation', {
+        revenue: formData.revenue,
+        ebitda: formData.ebitda,
+        industry: formData.industry,
+        country_code: formData.country_code,
+      })
 
       // CRITICAL: Sync all form data to session IMMEDIATELY before calculation
       // This ensures all data is saved even if calculation fails or user navigates away
@@ -172,8 +212,30 @@ export const useValuationFormSubmission = (
       }
 
       // Calculate valuation
+      let result
       const calculationStart = performance.now()
-      const result = await calculateValuation(request)
+      try {
+        generalLogger.info('Calling calculateValuation', {
+          requestKeys: Object.keys(request),
+          hasRevenue: !!request.current_year_data?.revenue,
+          hasEbitda: !!request.current_year_data?.ebitda,
+          industry: request.industry,
+          country_code: request.country_code,
+        })
+        result = await calculateValuation(request)
+        generalLogger.info('calculateValuation completed', {
+          hasResult: !!result,
+          resultKeys: result ? Object.keys(result) : [],
+        })
+      } catch (calcError) {
+        generalLogger.error('Valuation calculation failed', {
+          error: calcError instanceof Error ? calcError.message : String(calcError),
+          stack: calcError instanceof Error ? calcError.stack : undefined,
+          requestKeys: Object.keys(request),
+        })
+        // Re-throw to be caught by outer try-catch
+        throw calcError
+      }
       const calculationDuration = performance.now() - calculationStart
 
       if (result) {
@@ -344,7 +406,29 @@ export const useValuationFormSubmission = (
           valuationId: result.valuation_id,
           calculationDuration_ms: calculationDuration.toFixed(2),
         })
+      } else {
+        generalLogger.warn('Valuation calculation returned no result', {
+          calculationDuration_ms: calculationDuration.toFixed(2),
+        })
       }
+    } catch (error) {
+      // Catch any errors during submission and log them
+      generalLogger.error('Form submission failed with error', {
+        error: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined,
+        formDataKeys: Object.keys(formData || {}),
+        hasSession: !!session,
+        reportId: session?.reportId,
+      })
+      // Set employee count error to display to user (this is the only error display mechanism)
+      setEmployeeCountError(
+        error instanceof Error
+          ? `Calculation failed: ${error.message}`
+          : 'Calculation failed. Please check the console for details.'
+      )
+      // Re-throw to prevent silent failures
+      throw error
+    }
     },
     [
       formData,
