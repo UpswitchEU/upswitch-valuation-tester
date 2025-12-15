@@ -376,98 +376,157 @@ export const useValuationSessionStore = create<ValuationSessionStore>((set, get)
           // Not in cache or cache was removed (stale) - check backend
           storeLogger.debug('Session not found in cache or cache empty, checking backend', { reportId })
 
+          // CRITICAL: Try to load from backend with retries before assuming NEW
+          // This prevents 409 conflicts when the session exists but backend is slow/failing
+          let backendSession: any = null
+          let shouldCreateNew = false
+          
           try {
+            // Attempt 1: Direct load from backend
             const backendResponse = await backendAPI.getValuationSession(reportId)
             
             if (backendResponse?.session && hasMeaningfulSessionData(backendResponse.session.sessionData)) {
-              // Backend has session with meaningful data - use it (not NEW)
-              const existingSession = backendResponse.session
-              const updatedPartialData = mergePrefilledQuery(
-                existingSession.partialData,
-                prefilledQuery
-              )
-
-              const normalizedSession = normalizeSessionDates({
-                ...existingSession,
-                partialData: updatedPartialData,
-              })
-
-              // Cache for next time
-              globalSessionCache.set(reportId, normalizedSession)
-
-              set({
-                session: normalizedSession,
-                syncError: null,
-              })
-
-              // CRITICAL: Restore HTML reports and valuation results if available
-              const sessionData = existingSession.sessionData as any
-              const valuationResult = sessionData?.valuation_result || (existingSession as any).valuationResult
-              if (sessionData?.html_report || sessionData?.info_tab_html || valuationResult) {
-                storeLogger.info('Restoring HTML reports and valuation results from backend', {
-                  reportId,
-                  hasHtmlReport: !!sessionData?.html_report,
-                  hasInfoTabHtml: !!sessionData?.info_tab_html,
-                  hasValuationResult: !!valuationResult,
-                })
-
-                // Import the results store dynamically to avoid circular dependencies
-                const { useValuationResultsStore } = await import('./useValuationResultsStore')
-                const resultsStore = useValuationResultsStore.getState()
-
-                // Store HTML reports
-                if (sessionData?.html_report) {
-                  resultsStore.setHtmlReport(sessionData.html_report)
-                }
-                if (sessionData?.info_tab_html) {
-                  resultsStore.setInfoTabHtml(sessionData.info_tab_html)
-                }
-
-                // Store valuation result (merge HTML reports if not in result)
-                if (valuationResult) {
-                  const fullResult = {
-                    ...valuationResult,
-                    html_report: valuationResult.html_report || sessionData?.html_report,
-                    info_tab_html: valuationResult.info_tab_html || sessionData?.info_tab_html,
-                  }
-                  resultsStore.setResult(fullResult)
-                }
-              }
-              // Form data restoration is handled by useSessionRestoration hook (called in layouts)
-
-              storeLogger.info('Loaded existing session from backend and cached', {
+              backendSession = backendResponse.session
+              storeLogger.info('Loaded existing session from backend (attempt 1)', {
                 reportId,
-                currentView: existingSession.currentView,
-                hasRedisContext: !!(existingSession as any).redisContext,
-                dataSource: (existingSession as any).dataSource_info || 'db-only',
+                hasSessionData: !!backendSession.sessionData,
               })
             } else {
-              // Backend doesn't have session or session has no meaningful data - truly NEW
-              storeLogger.info('No existing session found in backend, creating NEW report optimistically', {
-                reportId,
-                currentView,
-              })
-
-              const optimisticSession = createSessionOptimistically(reportId, currentView, prefilledQuery)
-
-              set({
-                session: optimisticSession,
-                syncError: null,
-              })
-
-              // Sync to backend in background (non-blocking)
-              syncSessionToBackend(optimisticSession)
-
-              storeLogger.info('NEW report created optimistically', {
-                reportId,
-                currentView: optimisticSession.currentView,
-              })
+              // Backend returned empty session - might be truly NEW
+              shouldCreateNew = true
+              storeLogger.debug('Backend returned empty session, will create NEW', { reportId })
             }
           } catch (backendError) {
-            // Backend error - assume NEW (safer to create optimistically)
-            storeLogger.warn('Backend check failed, creating NEW report optimistically', {
+            const is404 = (backendError as any)?.response?.status === 404
+            
+            if (is404) {
+              // 404 could mean:
+              // 1. Session truly doesn't exist (NEW)
+              // 2. Session exists but backend is having issues
+              // CRITICAL: Try one more time with a short delay before creating NEW
+              storeLogger.warn('Backend returned 404, retrying once before creating NEW', {
+                reportId,
+              })
+              
+              try {
+                // Wait 500ms and try again
+                await new Promise(resolve => setTimeout(resolve, 500))
+                const retryResponse = await backendAPI.getValuationSession(reportId)
+                
+                if (retryResponse?.session && hasMeaningfulSessionData(retryResponse.session.sessionData)) {
+                  backendSession = retryResponse.session
+                  storeLogger.info('Loaded existing session from backend (retry after 404)', {
+                    reportId,
+                    hasSessionData: !!backendSession.sessionData,
+                  })
+                } else {
+                  // Still no session - truly NEW
+                  shouldCreateNew = true
+                  storeLogger.info('Backend confirmed no session exists (retry also 404), will create NEW', { reportId })
+                }
+              } catch (retryError) {
+                // Still failing - likely truly NEW
+                shouldCreateNew = true
+                storeLogger.warn('Backend retry also failed, assuming NEW report', {
+                  reportId,
+                  error: retryError instanceof Error ? retryError.message : String(retryError),
+                })
+              }
+            } else {
+              // Other backend error (network, timeout, 500, etc.)
+              // Don't create NEW - could cause 409 conflict
+              storeLogger.error('Backend check failed with non-404 error, will NOT create NEW', {
+                reportId,
+                error: backendError instanceof Error ? backendError.message : String(backendError),
+                statusCode: (backendError as any)?.response?.status,
+              })
+              
+              // Create a fallback local session but don't sync to backend
+              const fallbackSession = createFallbackSession(
+                reportId,
+                currentView,
+                prefilledQuery,
+                backendError
+              )
+              set({
+                session: fallbackSession,
+                syncError: 'Failed to load session from backend. Working in offline mode.',
+              })
+              
+              // Mark initialization as complete and return
+              initializationState.set(reportId, { status: 'ready' })
+              return
+            }
+          }
+
+          // At this point, we either have backendSession or shouldCreateNew is true
+          if (backendSession) {
+            // EXISTING session loaded from backend
+            const existingSession = backendSession
+            const updatedPartialData = mergePrefilledQuery(
+              existingSession.partialData,
+              prefilledQuery
+            )
+
+            const normalizedSession = normalizeSessionDates({
+              ...existingSession,
+              partialData: updatedPartialData,
+            })
+
+            // Cache for next time
+            globalSessionCache.set(reportId, normalizedSession)
+
+            set({
+              session: normalizedSession,
+              syncError: null,
+            })
+
+            // CRITICAL: Restore HTML reports and valuation results if available
+            const sessionData = existingSession.sessionData as any
+            const valuationResult = sessionData?.valuation_result || (existingSession as any).valuationResult
+            if (sessionData?.html_report || sessionData?.info_tab_html || valuationResult) {
+              storeLogger.info('Restoring HTML reports and valuation results from backend', {
+                reportId,
+                hasHtmlReport: !!sessionData?.html_report,
+                hasInfoTabHtml: !!sessionData?.info_tab_html,
+                hasValuationResult: !!valuationResult,
+              })
+
+              // Import the results store dynamically to avoid circular dependencies
+              const { useValuationResultsStore } = await import('./useValuationResultsStore')
+              const resultsStore = useValuationResultsStore.getState()
+
+              // Store HTML reports
+              if (sessionData?.html_report) {
+                resultsStore.setHtmlReport(sessionData.html_report)
+              }
+              if (sessionData?.info_tab_html) {
+                resultsStore.setInfoTabHtml(sessionData.info_tab_html)
+              }
+
+              // Store valuation result (merge HTML reports if not in result)
+              if (valuationResult) {
+                const fullResult = {
+                  ...valuationResult,
+                  html_report: valuationResult.html_report || sessionData?.html_report,
+                  info_tab_html: valuationResult.info_tab_html || sessionData?.info_tab_html,
+                }
+                resultsStore.setResult(fullResult)
+              }
+            }
+            // Form data restoration is handled by useSessionRestoration hook (called in layouts)
+
+            storeLogger.info('Loaded existing session from backend and cached', {
               reportId,
-              error: backendError instanceof Error ? backendError.message : String(backendError),
+              currentView: existingSession.currentView,
+              hasRedisContext: !!(existingSession as any).redisContext,
+              dataSource: (existingSession as any).dataSource_info || 'db-only',
+            })
+          } else if (shouldCreateNew) {
+            // NEW session - create optimistically
+            storeLogger.info('Creating NEW report optimistically (confirmed no existing session)', {
+              reportId,
+              currentView,
             })
 
             const optimisticSession = createSessionOptimistically(reportId, currentView, prefilledQuery)
@@ -480,7 +539,7 @@ export const useValuationSessionStore = create<ValuationSessionStore>((set, get)
             // Sync to backend in background (non-blocking)
             syncSessionToBackend(optimisticSession)
 
-            storeLogger.info('NEW report created optimistically after backend error', {
+            storeLogger.info('NEW report created optimistically', {
               reportId,
               currentView: optimisticSession.currentView,
             })

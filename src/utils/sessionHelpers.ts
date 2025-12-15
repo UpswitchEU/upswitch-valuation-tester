@@ -295,6 +295,52 @@ export function syncSessionToBackend(session: ValuationSession): void {
                   reportId,
                   currentView: backendSession.currentView,
                 })
+
+                // CRITICAL: Also restore HTML reports and valuation results
+                // This ensures the UI displays data after 409 conflict resolution
+                const sessionData = backendSession.sessionData as any
+                const valuationResult = sessionData?.valuation_result || (backendSession as any).valuationResult
+                
+                if (sessionData?.html_report || sessionData?.info_tab_html || valuationResult) {
+                  sessionHelpersLogger.info('Restoring HTML reports and valuation results after 409', {
+                    reportId,
+                    hasHtmlReport: !!sessionData?.html_report,
+                    hasInfoTabHtml: !!sessionData?.info_tab_html,
+                    hasValuationResult: !!valuationResult,
+                  })
+
+                  // Import dynamically to avoid circular dependencies
+                  import('../store/useValuationResultsStore').then(({ useValuationResultsStore }) => {
+                    const resultsStore = useValuationResultsStore.getState()
+
+                    // Store HTML reports
+                    if (sessionData?.html_report) {
+                      resultsStore.setHtmlReport(sessionData.html_report)
+                    }
+                    if (sessionData?.info_tab_html) {
+                      resultsStore.setInfoTabHtml(sessionData.info_tab_html)
+                    }
+
+                    // Store valuation result (merge HTML reports if not in result)
+                    if (valuationResult) {
+                      const fullResult = {
+                        ...valuationResult,
+                        html_report: valuationResult.html_report || sessionData?.html_report,
+                        info_tab_html: valuationResult.info_tab_html || sessionData?.info_tab_html,
+                      }
+                      resultsStore.setResult(fullResult)
+                    }
+
+                    sessionHelpersLogger.debug('HTML reports and valuation results restored after 409', {
+                      reportId,
+                    })
+                  }).catch((importError) => {
+                    sessionHelpersLogger.error('Failed to import ValuationResultsStore after 409', {
+                      reportId,
+                      error: importError instanceof Error ? importError.message : String(importError),
+                    })
+                  })
+                }
               } else {
                 sessionHelpersLogger.debug('Skipping store update - reportId mismatch', {
                   reportId,
