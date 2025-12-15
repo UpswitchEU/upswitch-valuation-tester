@@ -331,23 +331,37 @@ export const MessageItem = React.memo<MessageItemProps>(
                     {displayContent}
                   </div>
 
-                  {/* Suggestion chips */}
-                  {message.type === 'suggestion' && getMetadataValue<unknown[]>('suggestions') && (
-                    <div className="mt-4">
-                      <SuggestionChips
-                        suggestions={(getMetadataValue<unknown[]>('suggestions') || []).map(
-                          (s: unknown) => ({
-                            text: (s as any)?.text || '',
-                            confidence: (s as any)?.confidence || 0,
-                            reason: (s as any)?.reason || '',
-                          })
-                        )}
-                        originalValue={getMetadataString('originalValue', '')}
-                        onSelect={onSuggestionSelect}
-                        onDismiss={onSuggestionDismiss}
-                      />
-                    </div>
-                  )}
+                  {/* Suggestion chips - Show for AI messages with suggestions metadata */}
+                  {(() => {
+                    // Check for suggestions in metadata (backend sends as 'suggestions', frontend may store as 'options')
+                    const suggestions = getMetadataValue<unknown[]>('suggestions') || getMetadataValue<unknown[]>('options') || []
+                    const suggestionType = getMetadataString('suggestion_type')
+                    
+                    // Only show general suggestions (not business_type or kbo - those have their own components)
+                    if (suggestions.length > 0 && suggestionType !== 'business_type' && suggestionType !== 'kbo') {
+                      return (
+                        <div className="mt-4">
+                          <SuggestionChips
+                            suggestions={(suggestions || []).map((s: unknown) => {
+                              // Handle both string suggestions and object suggestions
+                              if (typeof s === 'string') {
+                                return { text: s, confidence: 0, reason: '' }
+                              }
+                              return {
+                                text: (s as any)?.text || (s as any)?.company_name || (s as any)?.title || String(s),
+                                confidence: (s as any)?.confidence || 0,
+                                reason: (s as any)?.reason || '',
+                              }
+                            })}
+                            originalValue={getMetadataString('originalValue', '')}
+                            onSelect={onSuggestionSelect}
+                            onDismiss={onSuggestionDismiss}
+                          />
+                        </div>
+                      )
+                    }
+                    return null
+                  })()}
 
                   {/* Business Type Suggestions List */}
                   {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}

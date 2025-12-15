@@ -123,7 +123,8 @@ export class UIHandlers {
         clarification_field: field,
         collected_field: field,
         input_type: inputType,
-        options,
+        suggestions: options, // Store as 'suggestions' for consistency with backend and MessageItem
+        options, // Keep for backward compatibility
         clarification_message: message,
       },
       isComplete: true,

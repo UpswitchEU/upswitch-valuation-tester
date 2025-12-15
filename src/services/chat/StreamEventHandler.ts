@@ -267,6 +267,33 @@ export class StreamEventHandler {
             }
           }
           
+          // CRITICAL FIX: Handle confirmation cards - create message if message_complete arrives
+          // with confirmation metadata but no message_start was sent
+          const metadata = (data.metadata || data.data || {}) as Record<string, unknown>
+          const hasConfirmationMetadata = 
+            metadata.is_business_type_confirmation === true ||
+            metadata.is_company_name_confirmation === true
+          
+          if (!streamingId && hasConfirmationMetadata) {
+            // Create message optimistically for confirmation cards
+            chatLogger.debug('Creating message for confirmation card (no message_start received)', {
+              sessionId: this.sessionId,
+              hasBusinessTypeConfirmation: metadata.is_business_type_confirmation === true,
+              hasCompanyNameConfirmation: metadata.is_company_name_confirmation === true,
+            })
+            const messageId = store.addMessage({
+              type: 'ai',
+              content: data.content || '', // May be empty for confirmation cards
+              isStreaming: false,
+              isComplete: true,
+              metadata: metadata,
+            })
+            store.setStreaming(false)
+            this.callbacks.setIsThinking?.(false)
+            this.callbacks.setIsTyping?.(false)
+            return
+          }
+          
           if (streamingId) {
             // Only update completion status and metadata, preserve accumulated content
             const currentMessage = store.messages.find((m) => m.id === streamingId)
@@ -276,7 +303,7 @@ export class StreamEventHandler {
                 content: currentMessage.content || data.content || '',
                 isComplete: true,
                 isStreaming: false,
-                metadata: { ...currentMessage.metadata, ...(data.metadata || data.data || {}) },
+                metadata: { ...currentMessage.metadata, ...metadata },
               }
               
               store.updateMessage(streamingId, completedMessage)
@@ -302,6 +329,7 @@ export class StreamEventHandler {
           } else {
             chatLogger.warn('Message complete received but no streaming message found', {
               sessionId: this.sessionId,
+              hasConfirmationMetadata,
             })
           }
           return
