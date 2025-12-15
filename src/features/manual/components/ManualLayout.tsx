@@ -221,7 +221,10 @@ export const ManualLayout: React.FC<ManualLayoutProps> = ({
           } h-full min-h-[400px] lg:min-h-0 w-full lg:w-auto border-t lg:border-t-0 border-zinc-800`}
           style={{ width: isMobile ? '100%' : `${100 - leftPanelWidth}%` }}
         >
-          <ReportPanel activeTab={activeTab} onTabChange={handleHookTabChange} />
+          <ReportPanel 
+            activeTab={activeTab as 'preview' | 'source' | 'info'} 
+            onTabChange={handleHookTabChange} 
+          />
         </div>
       </div>
 

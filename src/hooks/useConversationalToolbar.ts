@@ -162,14 +162,14 @@ export function useConversationalToolbar({
 
   return {
     // Toolbar state
-    activeTab,
+    activeTab: activeTab as 'preview' | 'source' | 'info',
     isFullScreen,
     isDownloading,
     
     // Toolbar actions
     handleRefresh,
     handleDownload,
-    handleTabChange,
+    handleTabChange: (tab: 'source' | 'preview' | 'info') => handleHookTabChange(tab),
     handleOpenFullscreen: handleHookOpenFullscreen,
     handleCloseFullscreen: handleHookCloseFullscreen,
   }
