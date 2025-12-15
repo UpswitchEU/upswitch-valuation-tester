@@ -69,7 +69,7 @@ export function validateSessionData(session: any): asserts session is ValuationS
       {
         reportId: session.reportId,
         currentView: session.currentView,
-      }
+      } as Record<string, unknown>
     )
   }
 
@@ -138,14 +138,14 @@ export function validateVersionData(version: any): void {
       'INVALID_VERSION_NUMBER',
       {
         versionNumber: version.versionNumber,
-      }
+      } as Record<string, unknown>
     )
   }
 
   if (!version.formData) {
     throw new ValidationError('Version missing formData', 'MISSING_FORM_DATA', {
       versionId: version.id,
-    })
+    } as Record<string, unknown>)
   }
 
   validationLogger.info('Version validation passed', {

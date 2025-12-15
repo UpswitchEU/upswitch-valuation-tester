@@ -76,7 +76,9 @@ export function VersionComparisonModal({
                   <p className="text-sm text-gray-600 mb-1">Previous Valuation</p>
                   <p className="text-2xl font-bold text-gray-900">
                     {formatCurrency(
-                      typeof versionA.valuationResult === 'object' && versionA.valuationResult?.valuation_summary?.final_valuation || 0,
+                      (typeof versionA.valuationResult === 'object' && versionA.valuationResult 
+                        ? (versionA.valuationResult as any).valuation_summary?.final_valuation 
+                        : null) || 0,
                       countryCode
                     )}
                   </p>
@@ -90,7 +92,9 @@ export function VersionComparisonModal({
                   <p className="text-sm text-gray-600 mb-1">New Valuation</p>
                   <p className="text-2xl font-bold text-gray-900">
                     {formatCurrency(
-                      typeof versionB.valuationResult === 'object' && versionB.valuationResult?.valuation_summary?.final_valuation || 0,
+                      (typeof versionB.valuationResult === 'object' && versionB.valuationResult 
+                        ? (versionB.valuationResult as any).valuation_summary?.final_valuation 
+                        : null) || 0,
                       countryCode
                     )}
                   </p>
@@ -320,7 +324,7 @@ function FieldRow({
     >
       <span className="text-gray-700">{label}</span>
       <span className={`font-medium ${isChanged ? 'text-amber-900' : 'text-gray-900'}`}>
-        {formatValue(value)}
+        {formatFieldValue(value)}
       </span>
     </div>
   )

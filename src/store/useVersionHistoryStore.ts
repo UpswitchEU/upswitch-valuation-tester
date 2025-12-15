@@ -210,12 +210,13 @@ export const useVersionHistoryStore = create<VersionHistoryStore>()(
             const reportVersions = get().versions[request.reportId] || []
             const nextVersionNumber = Math.max(0, ...reportVersions.map((v) => v.versionNumber)) + 1
 
+            const self = get()
             const localVersion: ValuationVersion = {
               id: generateVersionId(),
               reportId: request.reportId,
               versionNumber: nextVersionNumber,
               versionLabel:
-                request.versionLabel || this.generateAutoLabel(nextVersionNumber, request.changesSummary),
+                request.versionLabel || self.generateAutoLabel(nextVersionNumber, request.changesSummary),
               createdAt: new Date(),
               createdBy: null,
               formData: request.formData,
@@ -262,14 +263,14 @@ export const useVersionHistoryStore = create<VersionHistoryStore>()(
       },
 
       /**
-       * Generate auto-label from changes
+       * Generate auto-label from changes (Note: This is internal, use versionDiffDetection.generateAutoLabel for consistency)
        */
       generateAutoLabel(versionNumber: number, changes?: VersionChanges): string {
         if (!changes || changes.totalChanges === 0) {
           return `Version ${versionNumber}`
         }
 
-        const significant = changes.significantChanges
+        const significant = changes.significantChanges || []
         if (significant.length > 0) {
           return `v${versionNumber} - Adjusted ${significant.join(', ')}`
         }

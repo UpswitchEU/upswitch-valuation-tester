@@ -362,11 +362,13 @@ export class ValuationAuditService {
       .map((entry) => [
         entry.timestamp.toISOString(),
         entry.operation,
-        entry.metadata.field || '',
-        entry.metadata.oldValue || '',
-        entry.metadata.newValue || '',
-        entry.metadata.changeType || '',
-        entry.metadata.percentChange?.toFixed(2) || '',
+        (entry.metadata as any).field || '',
+        (entry.metadata as any).oldValue || '',
+        (entry.metadata as any).newValue || '',
+        (entry.metadata as any).changeType || '',
+        typeof (entry.metadata as any).percentChange === 'number' 
+          ? (entry.metadata as any).percentChange.toFixed(2) 
+          : '',
         entry.userId || 'guest',
       ])
 
