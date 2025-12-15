@@ -57,9 +57,28 @@ export function buildValuationRequest(
   // Normalize country code (2-letter uppercase)
   const countryCode = (formData.country_code || 'BE').toUpperCase().substring(0, 2)
 
-  // Normalize industry and business model (defaults)
-  const industry = formData.industry || 'services'
-  const businessModel = formData.business_model || 'services'
+  // Normalize industry and business model
+  // Priority: formData.industry > business_type metadata > default
+  // Note: When business_type_id is selected, industry should be set in formData
+  // by BasicInformationSection.tsx, but we ensure it's not empty here
+  let industry = formData.industry
+  let businessModel = formData.business_model
+
+  // If industry is missing but business_type_id is present, log warning
+  // (industry should have been set when business type was selected)
+  if (!industry && formData.business_type_id) {
+    console.warn(
+      '[buildValuationRequest] Industry missing despite business_type_id being set',
+      {
+        business_type_id: formData.business_type_id,
+        formDataKeys: Object.keys(formData),
+      }
+    )
+  }
+
+  // Apply defaults only if still missing
+  industry = industry || 'services'
+  businessModel = businessModel || 'services'
 
   // Normalize financial data
   const revenue = Math.max(
@@ -154,6 +173,22 @@ export function buildValuationRequest(
     business_type: formData.business_type,
     shares_for_sale: formData.shares_for_sale || 100,
     business_context: businessContext,
+  }
+
+  // BANK-GRADE: Log request structure for diagnostics (only in development)
+  if (typeof window !== 'undefined' && process.env.NODE_ENV === 'development') {
+    console.log('[buildValuationRequest] Request structure:', {
+      company_name: request.company_name,
+      industry: request.industry,
+      business_model: request.business_model,
+      business_type_id: request.business_type_id,
+      has_current_year_data: !!request.current_year_data,
+      current_year_revenue: request.current_year_data?.revenue,
+      current_year_ebitda: request.current_year_data?.ebitda,
+      has_historical_data: !!request.historical_years_data?.length,
+      number_of_employees: request.number_of_employees,
+      number_of_owners: request.number_of_owners,
+    })
   }
 
   return request
