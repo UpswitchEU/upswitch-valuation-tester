@@ -151,11 +151,11 @@ export function VersionComparisonModal({
                         <p className="font-medium text-gray-900 mb-2">{highlight.label}</p>
                         <div className="flex items-center gap-3 text-sm">
                           <span className="text-gray-600">
-                            {formatValue(highlight.oldValue)}
+                            {String(highlight.oldValue)}
                           </span>
                           <ArrowRight className="w-4 h-4 text-gray-400" />
                           <span className="text-gray-900 font-medium">
-                            {formatValue(highlight.newValue)}
+                            {String(highlight.newValue)}
                           </span>
                         </div>
                       </div>
@@ -306,13 +306,14 @@ function FieldRow({
   value?: number
   countryCode?: string
   isChanged?: boolean
-}) {
-  const formatValue = (val?: number) => {
-    if (val == null) return 'N/A'
-    if (countryCode && val > 1000) {
-      return formatCurrency(val, countryCode)
+}): React.ReactElement {
+  let displayText = 'N/A'
+  if (value != null) {
+    if (countryCode && value > 1000) {
+      displayText = formatCurrency(value, countryCode)
+    } else {
+      displayText = value.toLocaleString()
     }
-    return val.toLocaleString()
   }
 
   return (
@@ -324,7 +325,7 @@ function FieldRow({
     >
       <span className="text-gray-700">{label}</span>
       <span className={`font-medium ${isChanged ? 'text-amber-900' : 'text-gray-900'}`}>
-        {formatFieldValue(value)}
+        {displayText}
       </span>
     </div>
   )

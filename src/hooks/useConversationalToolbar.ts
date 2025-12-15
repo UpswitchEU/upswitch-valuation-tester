@@ -169,7 +169,7 @@ export function useConversationalToolbar({
     // Toolbar actions
     handleRefresh,
     handleDownload,
-    handleTabChange: handleHookTabChange,
+    handleTabChange,
     handleOpenFullscreen: handleHookOpenFullscreen,
     handleCloseFullscreen: handleHookCloseFullscreen,
   }

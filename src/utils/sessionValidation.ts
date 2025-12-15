@@ -35,22 +35,15 @@ const validationLogger = createContextLogger('SessionValidation')
 export function validateSessionData(session: any): asserts session is ValuationSession {
   // Critical IDs
   if (!session) {
-    throw new ValidationError('Session is null or undefined', 'SESSION_NULL')
+    throw new ValidationError('Session is null or undefined')
   }
 
   if (!session.reportId || typeof session.reportId !== 'string') {
-    throw new ValidationError('Session missing or invalid reportId', 'MISSING_REPORT_ID', {
-      hasReportId: !!session.reportId,
-      reportIdType: typeof session.reportId,
-    })
+    throw new ValidationError('Session missing or invalid reportId')
   }
 
   if (!session.sessionId || typeof session.sessionId !== 'string') {
-    throw new ValidationError('Session missing or invalid sessionId', 'MISSING_SESSION_ID', {
-      reportId: session.reportId,
-      hasSessionId: !!session.sessionId,
-      sessionIdType: typeof session.sessionId,
-    })
+    throw new ValidationError('Session missing or invalid sessionId')
   }
 
   // Validate currentView
@@ -63,14 +56,7 @@ export function validateSessionData(session: any): asserts session is ValuationS
   }
 
   if (session.currentView !== 'manual' && session.currentView !== 'conversational') {
-    throw new ValidationError(
-      `Invalid currentView: ${session.currentView}`,
-      'INVALID_CURRENT_VIEW',
-      {
-        reportId: session.reportId,
-        currentView: session.currentView,
-      } as Record<string, unknown>
-    )
+    throw new ValidationError(`Invalid currentView: ${session.currentView}`)
   }
 
   // Initialize missing data objects (auto-fix instead of throwing)
@@ -121,31 +107,23 @@ export function validateSessionData(session: any): asserts session is ValuationS
  */
 export function validateVersionData(version: any): void {
   if (!version) {
-    throw new ValidationError('Version is null or undefined', 'VERSION_NULL')
+    throw new ValidationError('Version is null or undefined')
   }
 
   if (!version.id || typeof version.id !== 'string') {
-    throw new ValidationError('Version missing or invalid id', 'MISSING_VERSION_ID')
+    throw new ValidationError('Version missing or invalid id')
   }
 
   if (!version.reportId || typeof version.reportId !== 'string') {
-    throw new ValidationError('Version missing or invalid reportId', 'MISSING_REPORT_ID')
+    throw new ValidationError('Version missing or invalid reportId')
   }
 
   if (typeof version.versionNumber !== 'number' || version.versionNumber < 1) {
-    throw new ValidationError(
-      'Version missing or invalid versionNumber',
-      'INVALID_VERSION_NUMBER',
-      {
-        versionNumber: version.versionNumber,
-      } as Record<string, unknown>
-    )
+    throw new ValidationError('Version missing or invalid versionNumber')
   }
 
   if (!version.formData) {
-    throw new ValidationError('Version missing formData', 'MISSING_FORM_DATA', {
-      versionId: version.id,
-    } as Record<string, unknown>)
+    throw new ValidationError('Version missing formData')
   }
 
   validationLogger.info('Version validation passed', {

@@ -9,7 +9,7 @@
 
 import { useCallback, useState } from 'react'
 
-export type ValuationTab = 'preview' | 'source' | 'info'
+export type ValuationTab = 'preview' | 'source' | 'info' | 'history'
 
 export interface UseValuationToolbarTabsReturn {
   activeTab: ValuationTab
