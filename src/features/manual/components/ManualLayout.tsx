@@ -90,9 +90,7 @@ export const ManualLayout: React.FC<ManualLayoutProps> = ({
         valuationId={result?.valuation_id}
         activeTab={activeTab}
         onTabChange={(tab) => {
-          if (tab !== 'history') {
-            handleHookTabChange(tab as 'preview' | 'info')
-          }
+          handleHookTabChange(tab as 'preview' | 'info' | 'history')
         }}
         companyName={result?.company_name}
       />

@@ -9,7 +9,9 @@
 'use client'
 
 import { ArrowRight, FileText } from 'lucide-react'
+import { useState } from 'react'
 import BusinessProfileCardV4 from '../../../components/business/BusinessProfileCardV4'
+import EditChoiceModal from '../../../components/modals/EditChoiceModal'
 import type { ValuationSession } from '../../../types/valuation'
 import {
   extractProfileData,
@@ -40,6 +42,40 @@ export function RecentReportsSection({
   onViewAll,
   user,
 }: RecentReportsSectionProps) {
+  // Modal state
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false)
+  const [selectedReport, setSelectedReport] = useState<ValuationSession | null>(null)
+
+  // Handle edit button click - open modal
+  const handleEditClick = (report: ValuationSession) => {
+    setSelectedReport(report)
+    setIsEditModalOpen(true)
+  }
+
+  // Handle edit report action
+  const handleEditReport = () => {
+    if (selectedReport?.reportId) {
+      onReportClick(selectedReport.reportId)
+    }
+  }
+
+  // Handle delete report action
+  const handleDeleteReport = async () => {
+    if (selectedReport?.reportId) {
+      try {
+        await onReportDelete(selectedReport.reportId)
+      } catch (error) {
+        console.error('Failed to delete report:', error)
+        // Error handling is done in parent component
+      }
+    }
+  }
+
+  // Close modal
+  const handleCloseModal = () => {
+    setIsEditModalOpen(false)
+    setSelectedReport(null)
+  }
   // Loading skeleton
   if (loading) {
     return (
@@ -66,7 +102,7 @@ export function RecentReportsSection({
   }
 
   // Filter reports with valuation results (stage 3 only)
-  const reportsWithValuations = reports.filter((report) => report.valuationResult)
+  const reportsWithValuations = reports.filter((report) => (report as any).valuationResult)
 
   // Empty state - only show if no reports with valuations
   if (reportsWithValuations.length === 0 && !loading) {
@@ -129,13 +165,13 @@ export function RecentReportsSection({
                           businessValue: valuationAmount,
                           method: 'DCF + Multiples',
                           confidence:
-                            (report.valuationResult as any)?.overall_confidence || 'high',
-                          date: report.calculatedAt || report.updatedAt,
+                            ((report as any).valuationResult as any)?.overall_confidence || 'high',
+                          date: (report as any).calculatedAt || report.updatedAt,
                         }
                       : null
                   }
                   profileCardData={profileData}
-                  onEdit={() => onReportClick(report.reportId)}
+                  onEdit={() => handleEditClick(report)}
                   onCreateValuation={() => onReportClick(report.reportId)}
                 />
               )
@@ -150,6 +186,19 @@ export function RecentReportsSection({
           </p>
         )}
       </div>
+
+      {/* Edit Choice Modal */}
+      <EditChoiceModal
+        isOpen={isEditModalOpen}
+        onClose={handleCloseModal}
+        onEditReport={handleEditReport}
+        onDeleteReport={handleDeleteReport}
+        reportName={
+          selectedReport
+            ? mapValuationSessionToBusinessInfo(selectedReport).name || 'this report'
+            : 'this report'
+        }
+      />
     </section>
   )
 }

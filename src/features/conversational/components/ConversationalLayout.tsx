@@ -411,9 +411,7 @@ const ConversationalLayoutInner: React.FC<ConversationalLayoutProps> = ({
           valuationId={result?.valuation_id || state.valuationResult?.valuation_id}
           activeTab={toolbar.activeTab}
           onTabChange={(tab: 'preview' | 'info' | 'history') => {
-            if (tab !== 'history') {
-              toolbar.handleTabChange(tab)
-            }
+            toolbar.handleTabChange(tab)
           }}
           companyName={state.businessProfile?.company_name || result?.company_name}
         />

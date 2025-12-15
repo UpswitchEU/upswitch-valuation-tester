@@ -24,7 +24,7 @@ export interface BusinessInfo {
 export function mapValuationSessionToBusinessInfo(session: ValuationSession): BusinessInfo {
   const sessionData = session.sessionData || {}
   const partialData = session.partialData || {}
-  const valuationResult = session.valuationResult as ValuationResponse | undefined
+  const valuationResult = (session as any).valuationResult as ValuationResponse | undefined
 
   // Extract company name
   const name =
@@ -42,11 +42,12 @@ export function mapValuationSessionToBusinessInfo(session: ValuationSession): Bu
     ''
 
   // Extract description
-  const description =
+  const descriptionValue =
     sessionData.business_context ||
     sessionData.business_description ||
     partialData.business_description ||
     ''
+  const description = typeof descriptionValue === 'string' ? descriptionValue : ''
 
   // Extract founding year
   const foundedYear =
@@ -74,8 +75,8 @@ export function mapValuationSessionToBusinessInfo(session: ValuationSession): Bu
   const location =
     sessionData.country_code ||
     partialData.country_code ||
-    sessionData.location ||
-    partialData.city ||
+    (sessionData as any).location ||
+    (partialData as any).city ||
     'Unknown'
 
   // Determine if remote (can be enhanced later)
@@ -105,7 +106,7 @@ export function mapValuationSessionToBusinessInfo(session: ValuationSession): Bu
  * Extract valuation amount from ValuationSession
  */
 export function extractValuationAmount(session: ValuationSession): number | null {
-  const valuationResult = session.valuationResult as ValuationResponse | undefined
+  const valuationResult = (session as any).valuationResult as ValuationResponse | undefined
 
   if (!valuationResult) {
     return null
