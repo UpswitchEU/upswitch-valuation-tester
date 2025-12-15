@@ -38,7 +38,7 @@ export type {
   CalculateOptionData,
   CollectedData,
   StreamingChatProps,
-  ValuationPreviewData
+  ValuationPreviewData,
 } from './StreamingChat.types'
 
 export const StreamingChat: React.FC<import('./StreamingChat.types').StreamingChatProps> = ({
@@ -147,8 +147,12 @@ export const StreamingChat: React.FC<import('./StreamingChat.types').StreamingCh
     onSectionComplete,
     onReportComplete,
     onHtmlPreviewUpdate,
-    trackModelPerformance: () => {}, // Placeholder implementation
-    trackConversationCompletion: () => {}, // Placeholder implementation
+    trackModelPerformance: () => {
+      // Placeholder implementation
+    },
+    trackConversationCompletion: () => {
+      // Placeholder implementation
+    },
   })
 
   // Extract stream submission logic - simplified version for new architecture
@@ -187,27 +191,28 @@ export const StreamingChat: React.FC<import('./StreamingChat.types').StreamingCh
           operation: 'stream_submission',
         })
 
-        // Type assertion since we know appError is an ApplicationError from convertToApplicationError
-        const errorDetails = appError as any
+        // Extract error properties before type narrowing
+        const errorMessageForLog = appError.message
+        const errorCodeForLog = appError.code
 
         if (isNetworkError(appError)) {
           chatLogger.error('Network error during stream submission', {
-            error: errorDetails.message,
-            code: errorDetails.code,
+            error: errorMessageForLog,
+            code: errorCodeForLog,
             sessionId,
             pythonSessionId,
           })
         } else if (isTimeoutError(appError)) {
           chatLogger.error('Timeout during stream submission', {
-            error: errorDetails.message,
-            code: errorDetails.code,
+            error: errorMessageForLog,
+            code: errorCodeForLog,
             sessionId,
             pythonSessionId,
           })
         } else {
           chatLogger.error('Stream submission failed', {
-            error: errorDetails.message,
-            code: errorDetails.code,
+            error: errorMessageForLog,
+            code: errorCodeForLog,
             sessionId,
             pythonSessionId,
           })
@@ -218,7 +223,7 @@ export const StreamingChat: React.FC<import('./StreamingChat.types').StreamingCh
 
         // Get user-friendly error message
         const errorMessage = getErrorMessage(appError)
-        
+
         // Determine error type and create helpful message
         let userMessage = errorMessage
         let errorDetailsText: string | undefined
@@ -240,7 +245,7 @@ export const StreamingChat: React.FC<import('./StreamingChat.types').StreamingCh
           isComplete: true,
           metadata: {
             error_type: 'error',
-            error_code: errorDetails.code,
+            error_code: appError.code,
             error_details: errorDetailsText,
             original_input: inputToSubmit.trim(),
             can_retry: isNetworkError(appError) || isTimeoutError(appError),
@@ -255,6 +260,7 @@ export const StreamingChat: React.FC<import('./StreamingChat.types').StreamingCh
       streamingCoordinator,
       messageManagement,
       sessionId,
+      pythonSessionId,
     ]
   )
 
@@ -392,27 +398,28 @@ export const StreamingChat: React.FC<import('./StreamingChat.types').StreamingCh
           operation: 'form_submission',
         })
 
-        // Type assertion since we know appError is an ApplicationError from convertToApplicationError
-        const errorDetails = appError as any
+        // Extract error properties before type narrowing
+        const errorMessageForLog = appError.message
+        const errorCodeForLog = appError.code
 
         if (isNetworkError(appError)) {
           chatLogger.error('Network error during form submission', {
-            error: errorDetails.message,
-            code: errorDetails.code,
+            error: errorMessageForLog,
+            code: errorCodeForLog,
             sessionId,
             pythonSessionId,
           })
         } else if (isTimeoutError(appError)) {
           chatLogger.error('Timeout during form submission', {
-            error: errorDetails.message,
-            code: errorDetails.code,
+            error: errorMessageForLog,
+            code: errorCodeForLog,
             sessionId,
             pythonSessionId,
           })
         } else {
           chatLogger.error('Form submission failed', {
-            error: errorDetails.message,
-            code: errorDetails.code,
+            error: errorMessageForLog,
+            code: errorCodeForLog,
             sessionId,
             pythonSessionId,
           })
@@ -420,7 +427,7 @@ export const StreamingChat: React.FC<import('./StreamingChat.types').StreamingCh
 
         // Get user-friendly error message
         const errorMessage = getErrorMessage(appError)
-        
+
         // Determine error type and create helpful message
         let userMessage = errorMessage
         let errorDetailsText: string | undefined
@@ -442,7 +449,7 @@ export const StreamingChat: React.FC<import('./StreamingChat.types').StreamingCh
           isComplete: true,
           metadata: {
             error_type: 'error',
-            error_code: errorDetails.code,
+            error_code: appError.code,
             error_details: errorDetailsText,
             original_input: state.input.trim(),
             can_retry: isNetworkError(appError) || isTimeoutError(appError),
@@ -488,7 +495,7 @@ export const StreamingChat: React.FC<import('./StreamingChat.types').StreamingCh
         
         // Remove the error message on success
         state.setMessages((prev) => prev.filter((m) => m.id !== messageId))
-      } catch (retryError) {
+      } catch {
         // Update error message to remove retrying state
         state.setMessages((prev) =>
           prev.map((m) =>

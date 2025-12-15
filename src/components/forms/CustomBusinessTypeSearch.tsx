@@ -322,7 +322,7 @@ export const CustomBusinessTypeSearch: React.FC<CustomBusinessTypeSearchProps> =
                               {type.short_description || type.description}
                             </div>
                             {type.popular && (
-                              <span className="inline-block mt-1.5 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide bg-accent-50 text-accent-600 rounded-full">
+                              <span className="inline-block mt-1.5 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide bg-harvest-100 text-harvest-700 border border-harvest-200 rounded-full">
                                 Popular
                               </span>
                             )}

@@ -112,7 +112,7 @@ export const MessageItem = React.memo<MessageItemProps>(
         return parseBusinessTypeSuggestions(message.content)
       }
       return null
-    }, [message.content, getMetadataString])
+    }, [message.content, message.metadata, getMetadataString])
 
     const hasBusinessTypeSuggestionsInMessage =
       businessTypeSuggestions !== null && businessTypeSuggestions.length > 0
@@ -144,7 +144,7 @@ export const MessageItem = React.memo<MessageItemProps>(
         return parseKBOSuggestions(message.content)
       }
       return null
-    }, [message.content, getMetadataString])
+    }, [message.content, message.metadata, getMetadataString])
 
     const hasKBOSuggestionsInMessage = kboSuggestions !== null && kboSuggestions.length > 0
 
