@@ -1,8 +1,9 @@
 /**
- * useStreamSubmission Hook
+ * useStreamSubmission Hook - DEPRECATED/UNUSED
  *
- * Single Responsibility: Handle stream submission logic
- * Extracted from StreamingChat.tsx to follow SRP
+ * @deprecated This hook is not currently used in the codebase. Stream submission
+ * is handled directly in StreamingChat component using useStreamingCoordinator.
+ * This file is kept for reference only and may be removed in a future version.
  *
  * @module hooks/chat/useStreamSubmission
  */
@@ -10,7 +11,6 @@
 import { useCallback } from 'react'
 import { StreamEventHandler } from '../../services/chat/StreamEventHandler'
 import { StreamingManager } from '../../services/chat/StreamingManager'
-import { MessageManager } from '../../utils/chat/MessageManager'
 import { chatLogger } from '../../utils/logger'
 import { InputValidator } from '../../utils/validation/InputValidator'
 import type { Message } from '../../types/message'
@@ -24,7 +24,6 @@ export interface UseStreamSubmissionOptions {
   streamingManager: StreamingManager
   eventHandler: StreamEventHandler
   inputValidator: InputValidator
-  messageManager: MessageManager
   messagesRef: React.MutableRefObject<Message[]>
   isRequestInProgressRef: React.MutableRefObject<boolean>
   setIsStreaming: (streaming: boolean) => void
@@ -62,7 +61,6 @@ export const useStreamSubmission = ({
   streamingManager,
   eventHandler,
   inputValidator,
-  messageManager,
   messagesRef,
   isRequestInProgressRef,
   setIsStreaming,

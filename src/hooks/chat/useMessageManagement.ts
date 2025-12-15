@@ -1,8 +1,11 @@
 /**
- * useMessageManagement - Extracted message management logic from StreamingChat
+ * useMessageManagement - DEPRECATED
  *
- * Handles message operations, deduplication, and streaming updates.
- * Follows Single Responsibility Principle by focusing only on message management.
+ * @deprecated This hook is no longer used. Message management is now handled directly
+ * by the Zustand store (useConversationStore). This file is kept for reference only
+ * and will be removed in a future version.
+ *
+ * Legacy code - DO NOT USE. Use useConversationStore instead.
  */
 
 import { useCallback, useMemo } from 'react'

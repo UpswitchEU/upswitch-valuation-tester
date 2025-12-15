@@ -255,7 +255,7 @@ export class StreamEventHandler {
             }
             
             // Note: onMessageComplete callback is handled by StreamingChat component
-            // via useMessageManagement hook (if still used) or directly in component
+            // via useEffect watching for completed messages in the store
           } else {
             chatLogger.warn('Message complete received but no streaming message found', {
               sessionId: this.sessionId,

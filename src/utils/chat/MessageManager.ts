@@ -1,8 +1,11 @@
 /**
- * MessageManager - Handles message CRUD operations for StreamingChat component
+ * MessageManager - DEPRECATED
  *
- * Extracted from StreamingChat.tsx to reduce component complexity and improve maintainability.
- * Centralizes all message-related operations in a single, testable class.
+ * @deprecated This class is no longer used. Message operations are now handled directly
+ * by the Zustand store (useConversationStore). This file is kept for reference only
+ * and will be removed in a future version.
+ *
+ * Legacy code - DO NOT USE. Use useConversationStore instead.
  */
 
 import type { Message } from '../../types/message'
