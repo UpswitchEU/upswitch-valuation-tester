@@ -60,11 +60,17 @@ export class HttpClient {
         if (guestSessionService.isGuest()) {
           try {
             const sessionId = await guestSessionService.getOrCreateSession()
-            if (sessionId && config.data) {
-              // Add guest_session_id to request body
-              config.data = {
-                ...config.data,
-                guest_session_id: sessionId,
+            if (sessionId) {
+              // Add guest_session_id to headers (works for all request types including GET)
+              config.headers = config.headers || {}
+              config.headers['x-guest-session-id'] = sessionId
+              
+              // Also add to request body if it exists (for POST/PUT/PATCH)
+              if (config.data) {
+                config.data = {
+                  ...config.data,
+                  guest_session_id: sessionId,
+                }
               }
             }
             // Update session activity (safe, throttled, and circuit-breaker protected)
