@@ -159,11 +159,10 @@ export const useConversationInitializer = (
       
       // CRITICAL: Create promise and store it immediately to prevent concurrent initialization
       // The promise is stored BEFORE execution so other calls can wait for it
-      const initPromise = async (): Promise<void> => {
-        try {
-          setIsInitializing(true)
+      const initPromise = (async (): Promise<void> => {
+        setIsInitializing(true)
 
-          // Get API base URL from config
+        // Get API base URL from config
         // FIX: Fallback should be Node.js backend (proxy), not Python engine directly
         const API_BASE_URL =
           process.env.NEXT_PUBLIC_BACKEND_URL ||
@@ -491,15 +490,13 @@ export const useConversationInitializer = (
             setIsInitializing(false)
           }
         }
-      }
+      })()
       
       // CRITICAL: Store promise BEFORE awaiting (allows other calls to wait for it)
       // The promise is created and stored immediately so concurrent calls can find it
-      const promise = initPromise()
-      setInitializationState(sessionId, { status: 'initializing', promise })
+      setInitializationState(sessionId, { status: 'initializing', promise: initPromise })
       
-      return promise
-    }
+      return initPromise
     },
     [sessionId, userId, callbacks, useFallbackMode, getInitializationState, setInitializationState, resetInitializationState]
   )
