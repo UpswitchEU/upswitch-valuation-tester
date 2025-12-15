@@ -217,6 +217,42 @@ export const useValuationSessionStore = create<ValuationSessionStore>((set, get)
                 syncError: null,
               })
 
+              // CRITICAL FIX: Restore HTML reports and valuation results from cache
+              // This ensures reports are displayed when navigating from home page
+              const cachedSessionData = cachedSession.sessionData as any
+              if (cachedSessionData?.html_report || cachedSessionData?.valuation_result || (cachedSession as any).valuationResult) {
+                storeLogger.info('Restoring HTML reports and valuation results from cache', {
+                  reportId,
+                  hasHtmlReport: !!cachedSessionData?.html_report,
+                  hasInfoTabHtml: !!cachedSessionData?.info_tab_html,
+                  hasValuationResult: !!cachedSessionData?.valuation_result || !!(cachedSession as any).valuationResult,
+                })
+
+                // Import the results store dynamically to avoid circular dependencies
+                const { useValuationResultsStore } = await import('./useValuationResultsStore')
+                const resultsStore = useValuationResultsStore.getState()
+
+                // Store HTML reports
+                if (cachedSessionData?.html_report) {
+                  resultsStore.setHtmlReport(cachedSessionData.html_report)
+                }
+                if (cachedSessionData?.info_tab_html) {
+                  resultsStore.setInfoTabHtml(cachedSessionData.info_tab_html)
+                }
+
+                // Store valuation result (check multiple possible locations)
+                const valuationResult = cachedSessionData?.valuation_result || (cachedSession as any).valuationResult
+                if (valuationResult) {
+                  // Merge HTML reports if not in result
+                  const fullResult = {
+                    ...valuationResult,
+                    html_report: valuationResult.html_report || cachedSessionData?.html_report,
+                    info_tab_html: valuationResult.info_tab_html || cachedSessionData?.info_tab_html,
+                  }
+                  resultsStore.setResult(fullResult)
+                }
+              }
+
               // Verify with backend in background (non-blocking)
               verifySessionInBackground(reportId, cachedSession)
 
@@ -256,12 +292,13 @@ export const useValuationSessionStore = create<ValuationSessionStore>((set, get)
 
                 // CRITICAL: Restore HTML reports and valuation results if available
                 const sessionData = existingSession.sessionData as any
-                if (sessionData?.html_report || sessionData?.valuation_result) {
-                  storeLogger.info('Restoring HTML reports and valuation results', {
+                const valuationResult = sessionData?.valuation_result || (existingSession as any).valuationResult
+                if (sessionData?.html_report || sessionData?.info_tab_html || valuationResult) {
+                  storeLogger.info('Restoring HTML reports and valuation results from backend', {
                     reportId,
-                    hasHtmlReport: !!sessionData.html_report,
-                    hasInfoTabHtml: !!sessionData.info_tab_html,
-                    hasValuationResult: !!sessionData.valuation_result,
+                    hasHtmlReport: !!sessionData?.html_report,
+                    hasInfoTabHtml: !!sessionData?.info_tab_html,
+                    hasValuationResult: !!valuationResult,
                   })
 
                   // Import the results store dynamically to avoid circular dependencies
@@ -269,16 +306,21 @@ export const useValuationSessionStore = create<ValuationSessionStore>((set, get)
                   const resultsStore = useValuationResultsStore.getState()
 
                   // Store HTML reports
-                  if (sessionData.html_report) {
+                  if (sessionData?.html_report) {
                     resultsStore.setHtmlReport(sessionData.html_report)
                   }
-                  if (sessionData.info_tab_html) {
+                  if (sessionData?.info_tab_html) {
                     resultsStore.setInfoTabHtml(sessionData.info_tab_html)
                   }
 
-                  // Store valuation result
-                  if (sessionData.valuation_result) {
-                    resultsStore.setValuationResult(sessionData.valuation_result)
+                  // Store valuation result (merge HTML reports if not in result)
+                  if (valuationResult) {
+                    const fullResult = {
+                      ...valuationResult,
+                      html_report: valuationResult.html_report || sessionData?.html_report,
+                      info_tab_html: valuationResult.info_tab_html || sessionData?.info_tab_html,
+                    }
+                    resultsStore.setResult(fullResult)
                   }
                 }
 
