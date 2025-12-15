@@ -184,21 +184,33 @@ export const useValuationSessionStore = create<ValuationSessionStore>((set, get)
 
         const errorMessage = getErrorMessage(appError)
 
-        // Create fallback local session if not a 409 conflict
-        if (!is409Conflict(error) && !isSessionConflictError(appError)) {
-          const fallbackSession = createFallbackSession(
+        // Create fallback local session for any error that reaches this catch block
+        // This ensures the UI can continue even when session creation/loading fails
+        const fallbackSession = createFallbackSession(
+          reportId,
+          currentView,
+          prefilledQuery,
+          error
+        )
+        set({
+          session: fallbackSession,
+          syncError: errorMessage,
+        })
+
+        // Log specific error types for debugging
+        if (isSessionConflictError(appError)) {
+          storeLogger.warn('Session conflict could not be resolved, created fallback session', {
             reportId,
-            currentView,
-            prefilledQuery,
-            error
-          )
-          set({
-            session: fallbackSession,
-            syncError: errorMessage,
+            error: errorMessage,
+            code: (appError as any).code,
+          })
+        } else if (is409Conflict(error)) {
+          storeLogger.warn('409 conflict during session creation, created fallback session', {
+            reportId,
+            error: errorMessage,
           })
         } else {
-          // 409 conflict but couldn't load - this shouldn't happen, but log it
-          storeLogger.error('Session conflict but failed to load existing session', {
+          storeLogger.error('Session initialization failed, created fallback session', {
             reportId,
             error: errorMessage,
             code: (appError as any).code,

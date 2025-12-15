@@ -252,6 +252,22 @@ export const StreamingChat: React.FC<import('./StreamingChat.types').StreamingCh
     }
   }, [initialMessages, sessionId, state.messages.length, state.setMessages])
 
+  // CRITICAL: Auto-send initial message when autoSend is true
+  const hasAutoSentRef = useRef(false)
+  const lastSessionIdRef = useRef<string | null>(null)
+
+  // Reset auto-send flag when sessionId changes
+  useEffect(() => {
+    if (lastSessionIdRef.current !== null && lastSessionIdRef.current !== sessionId) {
+      hasAutoSentRef.current = false
+      chatLogger.debug('Session ID changed, resetting auto-send flag', {
+        previousSessionId: lastSessionIdRef.current,
+        newSessionId: sessionId,
+      })
+    }
+    lastSessionIdRef.current = sessionId
+  }, [sessionId])
+
   // Use extracted conversation initializer
   const { isInitializing } = useConversationInitializer(sessionId, userId, {
     addMessage: messageManagement.addMessage,
@@ -266,6 +282,71 @@ export const StreamingChat: React.FC<import('./StreamingChat.types').StreamingCh
     isRestorationComplete,
     onSessionIdUpdate: setPythonSessionId,
   })
+
+  useEffect(() => {
+    // Only auto-send if:
+    // 1. autoSend is true
+    // 2. initialMessage is provided
+    // 3. We haven't already sent it
+    // 4. Not currently streaming
+    // 5. Initialization is complete (not initializing)
+    // 6. Session is initialized (or restoration is complete if restoration was needed)
+    // 7. There are no restored messages (conversation doesn't exist yet)
+    // 8. There are no existing user messages matching the initial message (to avoid duplicate sends)
+    const hasRestoredMessages = initialMessages && initialMessages.length > 0
+    const hasMatchingUserMessage = state.messages.some(
+      (m) => m.type === 'user' && m.content === initialMessage?.trim()
+    )
+
+    // Don't auto-send if conversation already exists (has restored messages)
+    if (hasRestoredMessages) {
+      return
+    }
+
+    // Session is ready when:
+    // - Session is initialized, OR
+    // - Restoration is complete (if restoration was attempted)
+    const sessionReady =
+      isSessionInitialized || (isRestorationComplete && !isRestoring)
+
+    const shouldAutoSend =
+      autoSend &&
+      initialMessage &&
+      initialMessage.trim() &&
+      !hasAutoSentRef.current &&
+      !state.isStreaming &&
+      !isInitializing &&
+      !hasMatchingUserMessage &&
+      sessionReady
+
+    if (shouldAutoSend) {
+      hasAutoSentRef.current = true
+      chatLogger.info('🚀 Auto-sending initial message', {
+        sessionId,
+        initialMessage: initialMessage.substring(0, 50),
+        isRestorationComplete,
+        isSessionInitialized,
+        isRestoring,
+        isInitializing,
+      })
+      // Use setTimeout to ensure state is fully settled before sending
+      setTimeout(() => {
+        submitStream(initialMessage.trim())
+      }, 100)
+    }
+  }, [
+    autoSend,
+    initialMessage,
+    isSessionInitialized,
+    isRestorationComplete,
+    isRestoring,
+    isInitializing,
+    state.isStreaming,
+    state.messages,
+    initialMessages,
+    submitStream,
+    sessionId,
+  ])
 
   // Use extracted metrics tracking
   const {
