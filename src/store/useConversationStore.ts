@@ -12,7 +12,7 @@
  */
 
 import { create } from 'zustand'
-import type { Message, MessageMetadata } from '../types/message'
+import type { Message } from '../types/message'
 import { storeLogger } from '../utils/logger'
 
 // Message window management constants
@@ -191,7 +191,38 @@ export const useConversationStore = create<ConversationStore>((set, get) => {
         }
 
         if (messageIndex === -1) {
-          storeLogger.warn('Cannot append to message - message not found', { messageId: id })
+          // CRITICAL: Try fallback search before giving up
+          const fallbackMessage = state.messages
+            .slice()
+            .reverse()
+            .find((msg) => msg.isStreaming && !msg.isComplete)
+          
+          if (fallbackMessage) {
+            storeLogger.debug('Found streaming message via fallback in appendToMessage', {
+              requestedId: id,
+              fallbackId: fallbackMessage.id,
+            })
+            // Update the fallback message instead
+            const fallbackIndex = state.messages.findIndex((m) => m.id === fallbackMessage.id)
+            if (fallbackIndex !== -1) {
+              const updatedMessages = [...state.messages]
+              updatedMessages[fallbackIndex] = {
+                ...updatedMessages[fallbackIndex],
+                content: updatedMessages[fallbackIndex].content + content,
+              }
+              return {
+                messages: updatedMessages,
+                currentStreamingMessageId: fallbackMessage.id, // Update ID if it wasn't set
+              }
+            }
+          }
+          
+          storeLogger.warn('Cannot append to message - message not found', { 
+            messageId: id,
+            availableMessageIds: state.messages.map((m) => m.id).slice(-5), // Last 5 IDs for debugging
+            currentStreamingId: state.currentStreamingMessageId,
+            streamingMessages: state.messages.filter((m) => m.isStreaming).map((m) => ({ id: m.id, isComplete: m.isComplete })),
+          })
           return state
         }
 
