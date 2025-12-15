@@ -1,106 +1,137 @@
-# Upswitch Valuation Tester - Documentation
+# UpSwitch Valuation Tester - Documentation
 
-## Executive Overview
-
-**Application**: Upswitch Valuation Tester
-**Purpose**: AI-powered business valuation testing interface
-**Status**: PRODUCTION READY ✅
-**Last Updated**: December 2025
-
-This React-based frontend application provides testing and beta interfaces for the Upswitch Valuation Engine, featuring AI conversational valuation and professional report generation.
+**Last Updated**: December 13, 2025
 
 ---
 
-## Documentation Structure
+## Documentation Index
 
-```
-docs/
-├── README.md                    # This overview
-├── PROJECT_STATUS.md           # Current project status
-├── architecture/
-│   └── SYSTEM_ARCHITECTURE.md  # Comprehensive system architecture
-├── strategy/                   # Strategic planning & roadmap
-├── development/                # Implementation & testing guides
-├── backlog/                    # Future development planning
-└── archive/                    # Historical/obsolete documentation
-```
+### Architecture
+
+- **[M&A Workflow Complete Architecture](./architecture/MA_WORKFLOW_COMPLETE.md)**
+  - Complete system architecture
+  - Component diagrams
+  - Data flow diagrams
+  - Performance considerations
+
+- **[Session Restoration Robustness Audit](./analysis/SESSION_RESTORATION_ROBUSTNESS_AUDIT.md)**
+  - Robustness gaps identified
+  - Fail-proof mechanisms implemented
+  - Testing requirements
+
+### Strategy
+
+- **[M&A Workflow Strategy](./strategy/MA_WORKFLOW_STRATEGY.md)**
+  - Business context
+  - User journey
+  - Feature prioritization
+  - Success metrics
+
+### Implementation
+
+- **[M&A Workflow Implementation Summary](./implementation/MA_WORKFLOW_IMPLEMENTATION_SUMMARY.md)**
+  - What was built
+  - Before/after comparison
+  - Backend requirements
+  - Migration strategy
+
+- **[Implementation Complete](./IMPLEMENTATION_COMPLETE.md)**
+  - Executive summary
+  - Features delivered
+  - Performance metrics
+  - Compliance validation
+
+### API
+
+- **[Versioning API Specification](./api/VERSIONING_API_SPEC.md)**
+  - Complete API reference
+  - Request/response formats
+  - Error handling
+  - Business logic
 
 ---
 
-## Key Documentation
-
-### 📊 **Project Status** ([PROJECT_STATUS.md](./PROJECT_STATUS.md))
-Current operational status, quality metrics, and deployment information.
-
-### 🏗️ **System Architecture** ([architecture/SYSTEM_ARCHITECTURE.md](./architecture/SYSTEM_ARCHITECTURE.md))
-Comprehensive technical architecture covering components, data flow, performance, and security.
-
-### 🎯 **Strategic Planning** (`strategy/`)
-- Business model, competitive analysis, go-to-market strategy
-- Phase-based implementation roadmaps
-- Future feature planning
-
-### 💻 **Development** (`development/`)
-- Testing guides and strategies
-- Implementation patterns and best practices
-- Code quality standards
-
-### 📋 **Backlog** (`backlog/`)
-- Future development planning
-- User stories and feature prioritization
-- Linear import guides for project management
-
----
-
-## Quick Start
+## Quick Links
 
 ### For Developers
-1. **Architecture**: [System Architecture](./architecture/SYSTEM_ARCHITECTURE.md)
-2. **Status**: [Project Status](./PROJECT_STATUS.md)
-3. **Testing**: [Testing Guide](./development/TESTING_GUIDE.md)
 
-### For Product Team
-1. **Current Status**: [Project Status](./PROJECT_STATUS.md)
-2. **Future Planning**: [Strategy Overview](./strategy/README.md)
-3. **Feature Backlog**: [Backlog Overview](./backlog/README.md)
+- [Frontend Architecture](./architecture/MA_WORKFLOW_COMPLETE.md#frontend-architecture)
+- [Backend Architecture](./architecture/MA_WORKFLOW_COMPLETE.md#backend-architecture)
+- [API Endpoints](./api/VERSIONING_API_SPEC.md)
 
----
+### For Product Managers
 
-## Related Documentation
+- [Strategy Overview](./strategy/MA_WORKFLOW_STRATEGY.md)
+- [User Journey](./strategy/MA_WORKFLOW_STRATEGY.md#user-journey)
+- [Success Metrics](./strategy/MA_WORKFLOW_STRATEGY.md#success-metrics)
 
-### Backend/Engine
-For valuation algorithms, API architecture, and backend systems:
-👉 **[upswitch-valuation-engine/docs/](../../upswitch-valuation-engine/docs/)**
+### For QA/Testing
 
-### Main Production Frontend
-For the main Upswitch application:
-👉 **[upswitch-frontend/](../../upswitch-frontend/)**
+- [Testing Strategy](./architecture/MA_WORKFLOW_COMPLETE.md#testing-strategy)
+- [Robustness Audit](./analysis/SESSION_RESTORATION_ROBUSTNESS_AUDIT.md)
 
 ---
 
-## Quality Standards
+## Getting Started
 
-### Documentation Principles
-- **Single Source of Truth**: No duplication across repositories
-- **Clear Scope Separation**: Frontend-only focus
-- **Current vs Historical**: Active docs vs archived materials
-- **Structured Organization**: Logical folder hierarchy
+### Frontend Development
 
-### Maintenance
-- **Review Cycle**: Monthly status updates
-- **Archive Policy**: Obsolete docs moved to `archive/`
-- **Version Control**: Git-based with clear commit messages
+```bash
+cd apps/upswitch-valuation-tester
+npm install
+npm run dev
+```
+
+### Backend Development
+
+```bash
+cd apps/upswitch-backend
+npm install
+npm run dev
+```
+
+### Database Migrations
+
+```bash
+cd apps/upswitch-backend
+psql $DATABASE_URL -f database/migrations/25_create_valuation_versions.sql
+psql $DATABASE_URL -f database/migrations/26_create_valuation_audit_log.sql
+```
 
 ---
 
-## Status Summary
+## Key Concepts
 
-**Overall Status**: 🟢 **PRODUCTION READY**
-**Quality Score**: A+ (94/100)
-**Architecture**: Solid, scalable, maintainable
-**Documentation**: Comprehensive, current, well-organized
+### M&A Workflow
+
+The M&A workflow enables iterative valuation refinement over weeks or months:
+
+1. **Create** → Start new valuation
+2. **Save** → Auto-save on changes
+3. **Return** → Resume anytime
+4. **Edit** → Adjust assumptions
+5. **Regenerate** → New version created
+6. **Compare** → See what changed
+
+### Version Management
+
+- **Auto-Versioning**: New version created on regeneration with significant changes
+- **Version History**: Complete timeline of all versions
+- **Version Comparison**: Side-by-side diff view
+- **Version Labels**: User-friendly labels (e.g., "Q4 2025 Final")
+
+### Session Robustness
+
+- **Fail-Proof Loading**: Request deduplication, retry, circuit breaker
+- **Session Caching**: localStorage cache for offline resilience
+- **Data Validation**: Auto-fix common data issues
+- **Audit Logging**: Complete operation history
 
 ---
 
-**Maintained by**: Frontend Engineering Team
-**Last Reviewed**: December 2025
+## Support
+
+For questions or issues:
+- Check [Architecture Documentation](./architecture/MA_WORKFLOW_COMPLETE.md)
+- Review [Implementation Summary](./implementation/MA_WORKFLOW_IMPLEMENTATION_SUMMARY.md)
+- See [API Specification](./api/VERSIONING_API_SPEC.md)

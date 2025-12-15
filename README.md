@@ -2,9 +2,9 @@
 
 **Standalone React application for testing the Upswitch Valuation Engine**
 
-**Version**: 1.0.0  
+**Version**: 2.0.0  
 **Status**: ✅ Production-Ready Frontend  
-**Tech Stack**: React 18 + TypeScript + Tailwind + Vite
+**Tech Stack**: React 18 + TypeScript + Tailwind + Next.js (App Router)
 
 ---
 
@@ -21,6 +21,27 @@ This is a **standalone React frontend application** for testing and demonstratin
 - ✅ **Registry-first approach** - Automatic data from Companies House, KBO/BCE
 - ✅ **AI-guided valuation** - Conversational valuation with intelligent triage
 - ✅ **Detailed calculation breakdown** - Real data display in Info tab
+- ✅ **M&A Workflow** - Persistent sessions with version history and audit trail
+
+---
+
+## 🆕 M&A Due Diligence Workflow
+
+**NEW**: Iterative valuation refinement over weeks or months
+
+The platform now supports **Lovable.dev-style project workflow** for valuations:
+
+- **Session Persistence** - Resume valuations anytime, anywhere
+- **Auto-Versioning** - New version created on every regeneration
+- **Version Comparison** - Side-by-side comparison of any two versions
+- **Audit Trail** - Compliance-ready operation logging
+- **Save Status Indicators** - Real-time feedback on data persistence
+
+**Documentation**:
+- 📖 [Complete Architecture](./docs/architecture/MA_WORKFLOW_COMPLETE.md)
+- 📋 [Strategy Overview](./docs/strategy/MA_WORKFLOW_STRATEGY.md)
+- 🚀 [Quick Start Guide](./docs/QUICK_START.md)
+- 📚 [Documentation Index](./docs/README.md)
 
 **📚 Backend Documentation**: For valuation engine documentation, see [../upswitch-valuation-engine/docs/](../upswitch-valuation-engine/docs/README.md)
 

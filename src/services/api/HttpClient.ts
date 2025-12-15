@@ -61,17 +61,21 @@ export class HttpClient {
           try {
             const sessionId = await guestSessionService.getOrCreateSession()
             if (sessionId) {
-              // Add guest_session_id to headers (works for all request types including GET)
-              config.headers = config.headers || {}
-              config.headers['x-guest-session-id'] = sessionId
-              
-              // Also add to request body if it exists (for POST/PUT/PATCH)
-              if (config.data) {
+              // For GET requests: add as query parameter (no CORS preflight needed)
+              // For POST/PUT/PATCH: add to request body
+              if (config.method === 'get' || config.method === 'GET') {
+                config.params = config.params || {}
+                config.params.guest_session_id = sessionId
+              } else if (config.data) {
                 config.data = {
                   ...config.data,
                   guest_session_id: sessionId,
                 }
               }
+              
+              // Also add to headers for backward compatibility (if backend supports it)
+              config.headers = config.headers || {}
+              config.headers['x-guest-session-id'] = sessionId
             }
             // Update session activity (safe, throttled, and circuit-breaker protected)
             guestSessionService.updateActivity().catch(() => {
