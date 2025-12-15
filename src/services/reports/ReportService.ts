@@ -9,6 +9,7 @@ import type { ValuationRequest, ValuationSession } from '../../types/valuation'
 import { createContextLogger } from '../../utils/logger'
 import { generateReportId } from '../../utils/reportIdGenerator'
 import { backendAPI } from '../backendApi'
+import { guestSessionService } from '../guestSessionService'
 
 const reportLogger = createContextLogger('ReportService')
 
@@ -62,18 +63,38 @@ class ReportServiceImpl implements ReportService {
       })
 
       // Call existing backend endpoint: GET /api/reports
-      // This endpoint requires auth currently, will return empty for guests until enhanced
+      // Include guest session ID header for guest users
       const baseURL =
         process.env.NEXT_PUBLIC_BACKEND_URL ||
         process.env.NEXT_PUBLIC_API_BASE_URL ||
         'https://web-production-8d00b.up.railway.app'
       const url = `${baseURL}/api/reports?limit=${limit}&offset=${offset}`
 
+      // Get guest session ID if user is a guest
+      const headers: HeadersInit = {
+        'Content-Type': 'application/json',
+      }
+
+      // Add guest session ID header for guest users
+      if (!userId || userId === 'guest') {
+        const { guestSessionService } = await import('../guestSessionService')
+        try {
+          const guestSessionId = guestSessionService.getGuestSessionId()
+          if (guestSessionId) {
+            headers['x-guest-session-id'] = guestSessionId
+            reportLogger.debug('Added guest session ID to request', {
+              guestSessionId: guestSessionId.substring(0, 15) + '...',
+            })
+          }
+        } catch (error) {
+          reportLogger.warn('Failed to get guest session ID', { error })
+          // Continue without guest session ID - backend will return empty
+        }
+      }
+
       const response = await fetch(url, {
         method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers,
         credentials: 'include', // Include cookies for auth
       })
 

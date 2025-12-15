@@ -16,6 +16,7 @@
  */
 
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { conversationAPI } from '../../../services/api/conversation/ConversationAPI'
 import { UtilityAPI } from '../../../services/api/utility/UtilityAPI'
 import { useValuationSessionStore } from '../../../store/useValuationSessionStore'
 import type { Message } from '../../../types/message'

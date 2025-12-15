@@ -359,25 +359,11 @@ export class HttpClient {
             htmlReportLength: (extractedData as any)?.html_report?.length || 0,
             rawResponseSample: JSON.stringify(rawData).substring(0, 1000),
           })
-          // Use structured logger instead of console.error to avoid "Object" spam
-          apiLogger.error('CRITICAL: info_tab_html MISSING in valuation response (console)', {
-            url: config.url,
-            hasExtractedData: !!extractedData,
-            extractedDataKeys: extractedData ? Object.keys(extractedData) : [],
-            hasNestedData: !!nestedData,
-            nestedDataKeys: nestedData ? Object.keys(nestedData) : [],
-            nestedDataHasInfoTabHtml: !!(nestedData as any)?.info_tab_html,
-            rawResponseSample: JSON.stringify(rawData).substring(0, 500),
-          })
         } else {
           apiLogger.info('SUCCESS: info_tab_html found in valuation response', {
             url: config.url,
             infoTabHtmlLength: (extractedData as any)?.info_tab_html?.length || 0,
             infoTabHtmlPreview: (extractedData as any)?.info_tab_html?.substring(0, 200),
-          })
-          // Use structured logger instead of console.log
-          apiLogger.debug('info_tab_html found in valuation response', {
-            infoTabHtmlLength: (extractedData as any)?.info_tab_html?.length || 0,
           })
         }
       }
