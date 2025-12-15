@@ -184,6 +184,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   /**
    * Check for existing session (simplified for subdomain integration)
+   * 
+   * SILENT BY DEFAULT: This function is called optimistically to check if
+   * there's an existing auth session. 401/404 responses are EXPECTED for guest
+   * users and should not be treated as errors.
    */
   const checkSession = useCallback(async () => {
 
@@ -191,7 +195,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const response = await fetch(`${API_URL}/api/auth/me`, {
         method: 'GET',
         credentials: 'include', // Send cookies
-        // Don't throw on 404 - it's expected for guest users
+        // Don't throw on 404/401 - they're expected for guest users
       })
 
       if (response.ok) {
@@ -238,19 +242,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           setUser(data.user)
           authLogger.info('Existing session found (data.user)', { userData: data.user })
         } else {
-          authLogger.info('No existing session - response', { data })
+          authLogger.debug('No existing session - response', { data })
           setUser(null)
         }
       } else if (response.status === 404 || response.status === 401) {
-        // Expected: No session exists (guest user or not authenticated)
-        authLogger.info('No active session - continuing as guest user')
+        // EXPECTED: No session exists (guest user or not authenticated)
+        // This is NOT an error - it's the normal guest flow
+        authLogger.debug('No active session (expected for guests)')
         setUser(null)
       } else {
-        authLogger.warn('Session check failed', { status: response.status })
+        // Unexpected status code - log as warning but continue
+        authLogger.debug('Unexpected session check response', { status: response.status })
         setUser(null)
       }
     } catch (err) {
-      authLogger.error('Session check error', {
+      // Network errors or other issues - log as debug, not error
+      // The app should continue to work for guests even if auth check fails
+      authLogger.debug('Session check failed (continuing as guest)', {
         error: err instanceof Error ? err.message : 'Unknown error',
       })
       setUser(null)
@@ -260,25 +268,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   /**
    * Initialize authentication flow
    * Checks for token in URL or existing session
+   * 
+   * GUEST-FIRST APPROACH:
+   * - Only check auth if there's a token in URL (user coming from upswitch.biz)
+   * - Otherwise, proceed directly as guest (no unnecessary 401 errors)
+   * - This follows SRP: auth checks only when auth is expected
    */
   const initAuth = useCallback(async () => {
     setIsLoading(true)
     setError(null)
 
     try {
-      // First, try to check for existing session cookie (cross-subdomain)
-      // This allows users already logged into upswitch.biz to be automatically authenticated
-      authLogger.debug('Checking for existing session cookie (cross-subdomain)')
-      await checkSession()
-
-      // If session check succeeded, we're done
-      if (user) {
-        authLogger.info('Existing session found via cookie - user already authenticated')
-        setIsLoading(false)
-        return
-      }
-
-      // If no session, check for token in URL parameters
+      // Check for token in URL parameters FIRST
+      // This is the primary auth flow - user coming from upswitch.biz
       const params = new URLSearchParams(window.location.search)
       const token = params.get('token')
 
@@ -293,6 +295,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         try {
           await exchangeToken(token)
           authLogger.info('Token exchange complete - user authenticated')
+          setIsLoading(false)
+          return
         } catch (tokenError) {
           authLogger.error('Token exchange failed', {
             error: tokenError instanceof Error ? tokenError.message : 'Unknown error',
@@ -300,20 +304,46 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           // Don't set error state for token exchange failures - continue as guest
           authLogger.info('Continuing as guest user after token exchange failure')
         }
-      } else {
-        // No token and no session - continue as guest
-        authLogger.info('No token or session - continuing as guest user')
+      }
 
-        // Initialize guest session tracking
+      // NO TOKEN: Check if there might be an existing session cookie (cross-subdomain)
+      // Only do this if:
+      // 1. We don't already have a guest session, OR
+      // 2. This is the first load
+      // This avoids unnecessary 401 errors for established guest users
+      const existingGuestSession = guestSessionService.getCurrentSessionId()
+      
+      if (!existingGuestSession) {
+        // No guest session yet - check if there's an auth session (silent check)
+        authLogger.debug('No guest session - checking for existing auth cookie')
         try {
-          const sessionId = await guestSessionService.getOrCreateSession()
-          authLogger.info('Guest session initialized', { session_id: sessionId })
-        } catch (guestError) {
-          authLogger.warn('Failed to initialize guest session', {
-            error: guestError instanceof Error ? guestError.message : 'Unknown error',
-          })
-          // Continue anyway - guest session is not critical
+          await checkSession()
+          
+          if (user) {
+            authLogger.info('Existing auth session found via cookie')
+            setIsLoading(false)
+            return
+          }
+        } catch (sessionError) {
+          // Silent failure - don't log errors, just continue as guest
+          authLogger.debug('No auth session found, proceeding as guest')
         }
+      } else {
+        authLogger.info('Existing guest session found - skipping auth check', {
+          guestSessionId: existingGuestSession.substring(0, 15) + '...'
+        })
+      }
+
+      // No token and no auth session - initialize guest session
+      authLogger.info('Initializing guest session')
+      try {
+        const sessionId = await guestSessionService.getOrCreateSession()
+        authLogger.info('Guest session initialized', { session_id: sessionId })
+      } catch (guestError) {
+        authLogger.warn('Failed to initialize guest session', {
+          error: guestError instanceof Error ? guestError.message : 'Unknown error',
+        })
+        // Continue anyway - guest session is not critical
       }
     } catch (err) {
       authLogger.error('Auth initialization error', {
