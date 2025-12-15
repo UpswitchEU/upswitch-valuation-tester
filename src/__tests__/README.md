@@ -133,3 +133,4 @@ it('should load data asynchronously', async () => {
 - [React Testing Library](https://testing-library.com/react)
 - [Next.js Testing Guide](https://nextjs.org/docs/app/building-your-application/testing)
 - [Testing Library Queries](https://testing-library.com/docs/queries/about/)
+

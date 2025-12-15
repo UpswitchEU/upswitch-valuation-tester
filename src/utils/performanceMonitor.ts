@@ -270,3 +270,4 @@ export const performanceThresholds: Record<string, PerformanceThresholds> = {
 
 // Global performance monitor instance
 export const globalPerformanceMonitor = new PerformanceMonitor()
+
