@@ -107,7 +107,7 @@ export function RecentReportsSection({
   // Empty state - only show if no reports with valuations
   if (reportsWithValuations.length === 0 && !loading) {
     return (
-      <section className="w-full bg-gradient-to-b from-black/5 to-transparent py-16">
+      <section className="w-full bg-gradient-to-b from-black/5 to-transparent py-8 md:py-12">
         <div className="container mx-auto px-4">
           <div className="flex items-center justify-between mb-8">
             <h2 className="text-3xl font-semibold text-white">Recent Valuations</h2>
@@ -129,7 +129,7 @@ export function RecentReportsSection({
 
   // Reports grid
   return (
-    <section className="w-full bg-gradient-to-b from-black/5 to-transparent py-16">
+    <section className="w-full bg-gradient-to-b from-black/5 to-transparent py-8 md:py-12">
       <div className="container mx-auto px-4">
         {/* Header */}
         <div className="flex items-center justify-between mb-8">

@@ -16,6 +16,7 @@ import { useAuth } from '../../../hooks/useAuth'
 import { useConversationalToolbar } from '../../../hooks/useConversationalToolbar'
 import { usePanelResize } from '../../../hooks/usePanelResize'
 import { useReportIdTracking } from '../../../hooks/useReportIdTracking'
+import { useSessionRestoration } from '../../../hooks/useSessionRestoration'
 import { conversationAPI } from '../../../services/api/conversation/ConversationAPI'
 import { guestCreditService } from '../../../services/guestCreditService'
 import { useValuationApiStore } from '../../../store/useValuationApiStore'
@@ -77,6 +78,11 @@ const ConversationalLayoutInner: React.FC<ConversationalLayoutProps> = ({
   const { isCalculating, error } = useValuationApiStore()
   const { result, setResult } = useValuationResultsStore()
   const { isSaving, lastSaved, hasUnsavedChanges, syncError, updateSessionData, session } = useValuationSessionStore()
+
+  // CRITICAL: Automatically restore form data, results, and versions from session
+  // This ensures smooth repopulation on reload/revisit
+  // Phase 4: Conversation state integration - works alongside useConversationRestoration
+  useSessionRestoration()
 
   // Mark conversation changes as unsaved (for save status indicator)
   useEffect(() => {

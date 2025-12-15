@@ -171,13 +171,13 @@ export const HomePage: React.FC = () => {
         disableKeyboardInteraction={true}
       />
 
-      <div className="min-h-screen relative pt-16 md:pt-20">
+      <div className="min-h-screen relative pt-12 md:pt-16">
         {/* Hero Section with Video Background */}
-        <section className="relative z-10 pt-20 md:pt-24 pb-8 md:pb-12 flex items-center justify-center min-h-screen">
+        <section className="relative z-10 pt-12 md:pt-16 pb-4 md:pb-6 flex items-center justify-center min-h-[85vh] md:min-h-[90vh]">
           <div className="w-full max-w-6xl mx-auto px-4">
-            <div className="text-center space-y-6">
+            <div className="text-center space-y-4 md:space-y-5">
               {/* Hero Content */}
-              <div className="space-y-6">
+              <div className="space-y-4 md:space-y-5">
                 <h1 className="text-5xl md:text-6xl lg:text-7xl xl:text-8xl font-bold leading-tight tracking-tight text-[#F4F1EA]">
                   Know the true value of
                   <br />

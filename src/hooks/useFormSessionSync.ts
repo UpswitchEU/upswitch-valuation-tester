@@ -7,7 +7,7 @@
  * @module hooks/useFormSessionSync
  */
 
-import React, { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import type { ValuationSessionStore } from '../store/useValuationSessionStore'
 import { debounce } from '../utils/debounce'
 import { generalLogger } from '../utils/logger'
@@ -55,20 +55,35 @@ export const useFormSessionSync = ({
   }, [session?.reportId, lastLoadedReportId])
 
   // Load session data into form when switching to manual view OR when report loads
+  // NOTE: useSessionRestoration hook (in layouts) handles comprehensive restoration
+  // This hook focuses on manual flow specific needs (prefilledQuery matching) and syncing changes TO session
   useEffect(() => {
     // CRITICAL: Load data if:
     // 1. Session exists
     // 2. Current view is manual (or we're loading from home page)
     // 3. Haven't loaded this report's data yet
+    // 4. Skip if useSessionRestoration has already loaded data (check if form has data)
     if (session && !hasLoadedSessionData) {
       const sessionData = getSessionData()
       const prefilledQuery = (session.partialData as any)?._prefilledQuery as string | undefined
+
+      // Check if form already has data (indicating useSessionRestoration already ran)
+      // If form has significant data, skip this load to avoid conflicts
+      const hasExistingFormData = formData?.company_name || formData?.revenue || formData?.business_type_id
+      if (hasExistingFormData && !prefilledQuery) {
+        generalLogger.debug('Skipping form load - useSessionRestoration already loaded data', {
+          reportId: session.reportId,
+        })
+        setHasLoadedSessionData(true) // Mark as loaded to prevent future loads
+        return
+      }
 
       generalLogger.info('Attempting to load session data into form', {
         reportId: session.reportId,
         currentView: session.currentView,
         hasSessionData: !!sessionData,
         hasPrefilledQuery: !!prefilledQuery,
+        hasExistingFormData,
       })
 
       // Convert ValuationRequest to ValuationFormData format
@@ -149,6 +164,7 @@ export const useFormSessionSync = ({
     businessTypes,
     matchBusinessType,
     session,
+    formData, // Add formData to check if restoration already happened
   ])
 
   // Debounced sync form data to session store (500ms delay)
