@@ -54,7 +54,7 @@ export interface UseConversationalToolbarReturn {
   // Toolbar actions
   handleRefresh: () => void
   handleDownload: () => Promise<void>
-  handleTabChange: (tab: 'source' | 'preview' | 'info') => void
+  handleTabChange: (tab: 'source' | 'preview' | 'info' | 'history') => void
   handleOpenFullscreen: () => void
   handleCloseFullscreen: () => void
 }
@@ -169,7 +169,7 @@ export function useConversationalToolbar({
     // Toolbar actions
     handleRefresh,
     handleDownload,
-    handleTabChange: (tab: 'source' | 'preview' | 'info') => handleHookTabChange(tab),
+    handleTabChange: (tab: 'source' | 'preview' | 'info' | 'history') => handleHookTabChange(tab),
     handleOpenFullscreen: handleHookOpenFullscreen,
     handleCloseFullscreen: handleHookCloseFullscreen,
   }

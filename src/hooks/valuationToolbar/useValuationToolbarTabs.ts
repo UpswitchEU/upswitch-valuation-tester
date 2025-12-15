@@ -11,13 +11,15 @@ import { useCallback, useState } from 'react'
 
 export type ValuationTab = 'preview' | 'source' | 'info' | 'history'
 
+export type ValuationTabWithoutHistory = 'preview' | 'source' | 'info'
+
 export interface UseValuationToolbarTabsReturn {
-  activeTab: ValuationTab
+  activeTab: ValuationTabWithoutHistory
   handleTabChange: (tab: ValuationTab) => void
 }
 
 export interface UseValuationToolbarTabsOptions {
-  initialTab?: ValuationTab
+  initialTab?: ValuationTabWithoutHistory
   onTabChange?: (tab: ValuationTab) => void
 }
 
@@ -32,11 +34,16 @@ export const useValuationToolbarTabs = (
 ): UseValuationToolbarTabsReturn => {
   const { initialTab = 'preview', onTabChange } = options
 
-  const [activeTab, setActiveTab] = useState<ValuationTab>(initialTab)
+  const [activeTab, setActiveTab] = useState<ValuationTabWithoutHistory>(initialTab)
 
   const handleTabChange = useCallback(
     (tab: ValuationTab) => {
-      setActiveTab(tab)
+      // Filter out 'history' tab for manual flow (only conversational flow supports it)
+      if (tab === 'history') {
+        onTabChange?.(tab) // Still call parent callback even if we don't set internal state
+        return
+      }
+      setActiveTab(tab as ValuationTabWithoutHistory)
       onTabChange?.(tab)
     },
     [onTabChange]

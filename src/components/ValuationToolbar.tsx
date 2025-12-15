@@ -130,13 +130,13 @@ export const ValuationToolbar: React.FC<ValuationToolbarProps> = ({
   // Tab management hook - use prop if provided (parent-controlled), otherwise use hook state
   const { activeTab: hookActiveTab, handleTabChange: handleHookTabChange } =
     useValuationToolbarTabs({
-      initialTab: activeTab,
+      initialTab: activeTab && activeTab !== 'history' ? activeTab : undefined,
       onTabChange,
     })
 
   // Use prop tab if provided (parent-controlled), otherwise use hook state
   const currentActiveTab = activeTab ?? hookActiveTab
-  const handleTabClick = (tab: 'preview' | 'source' | 'info') => {
+  const handleTabClick = (tab: 'preview' | 'source' | 'info' | 'history') => {
     // If parent provides onTabChange, use it (parent-controlled)
     // Otherwise use hook handler (self-controlled)
     if (onTabChange) {

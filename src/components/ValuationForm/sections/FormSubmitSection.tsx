@@ -29,6 +29,7 @@ export const FormSubmitSection: React.FC<FormSubmitSectionProps> = ({
   error,
   clearError,
   formData,
+  isRegenerationMode = false,
 }) => {
   const isFormValid =
     formData.revenue &&

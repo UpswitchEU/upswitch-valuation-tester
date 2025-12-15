@@ -18,11 +18,13 @@ import {
     useValuationToolbarFullscreen,
     useValuationToolbarRefresh,
     useValuationToolbarTabs,
+    type ValuationTab,
 } from '../../../hooks/valuationToolbar'
 import { RefreshService } from '../../../services/toolbar/refreshService'
 import UrlGeneratorService from '../../../services/urlGenerator'
 import { useValuationApiStore } from '../../../store/useValuationApiStore'
 import { useValuationResultsStore } from '../../../store/useValuationResultsStore'
+import { useValuationSessionStore } from '../../../store/useValuationSessionStore'
 import type { ValuationResponse } from '../../../types/valuation'
 import { generateReportId } from '../../../utils/reportIdGenerator'
 import { ReportPanel } from '../../conversational/components/ReportPanel'
@@ -51,6 +53,8 @@ interface ManualLayoutProps {
 export const ManualLayout: React.FC<ManualLayoutProps> = ({
   reportId,
   onComplete,
+  initialVersion,
+  initialMode = 'edit',
 }) => {
   const { user } = useAuth()
   const { isCalculating } = useValuationApiStore()
@@ -235,9 +239,11 @@ export const ManualLayout: React.FC<ManualLayoutProps> = ({
         >
           <ReportPanel 
             activeTab={activeTab as 'preview' | 'source' | 'info'} 
-            onTabChange={(tab) => {
+            onTabChange={(tab: 'preview' | 'source' | 'info' | 'history') => {
               if (tab !== 'history') {
-                handleHookTabChange(tab as 'preview' | 'source' | 'info')
+                handleHookTabChange(tab as ValuationTab)
+              } else {
+                // History tab not supported in manual flow - ignore
               }
             }} 
           />

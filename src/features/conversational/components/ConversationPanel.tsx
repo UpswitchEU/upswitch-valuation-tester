@@ -146,12 +146,13 @@ export const ConversationPanel: React.FC<ConversationPanelProps> = ({
           const previousVersion = getLatestVersion(reportId)
           
           // Convert result to ValuationRequest format for comparison
+          // Note: ValuationResponse doesn't include form fields, so we use empty defaults
           const newFormData = {
             company_name: result.company_name,
-            industry: result.industry,
-            revenue: result.revenue,
-            ebitda: result.ebitda,
-            country_code: result.country_code,
+            industry: (result as any).industry || '',
+            revenue: (result as any).revenue || 0,
+            ebitda: (result as any).ebitda || 0,
+            country_code: (result as any).country_code || '',
             // Map other fields from result to formData structure
           } as any
           
