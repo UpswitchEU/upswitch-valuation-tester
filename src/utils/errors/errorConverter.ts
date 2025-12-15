@@ -128,6 +128,18 @@ function convertNativeError(error: Error, context?: Record<string, unknown>): Ap
     stack: error.stack,
   }
 
+  // CRITICAL FIX: Check for HTTP status codes on error object (for fetch API errors)
+  const errorWithStatus = error as any
+  const status = errorWithStatus?.status || errorWithStatus?.statusCode || errorWithStatus?.response?.status
+  if (status) {
+    const message = error.message || 'Request failed'
+    return createErrorFromStatus(status, message, {
+      ...errorContext,
+      statusCode: status,
+      responseData: errorWithStatus?.body || errorWithStatus?.response?.data,
+    })
+  }
+
   // TypeError usually indicates network issues
   if (error instanceof TypeError) {
     if (

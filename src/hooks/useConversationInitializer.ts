@@ -9,6 +9,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { guestSessionService } from '../services/guestSessionService'
 import { chatLogger } from '../utils/logger'
 import type { Message } from '../types/message'
+import { useConversationStore } from '../store/useConversationStore'
 
 // Fallback questions for when backend is unavailable
 const FALLBACK_QUESTIONS = [
@@ -84,11 +85,15 @@ export const useConversationInitializer = (
   callbacks?: ConversationInitializerCallbacks
 ) => {
   const [isInitializing, setIsInitializing] = useState(true)
-  const hasInitializedRef = useRef(false)
   const abortControllerRef = useRef<AbortController | null>(null)
 
   // Track last pythonSessionId to detect changes
   const lastPythonSessionIdRef = useRef<string | null>(null)
+  
+  // CRITICAL: Use Zustand store for initialization state (prevents endless retries)
+  const getInitializationState = useConversationStore((state) => state.getInitializationState)
+  const setInitializationState = useConversationStore((state) => state.setInitializationState)
+  const resetInitializationState = useConversationStore((state) => state.resetInitializationState)
 
   /**
    * Fallback mode when backend is unavailable
@@ -125,15 +130,38 @@ export const useConversationInitializer = (
 
   /**
    * Initialize conversation with retry logic and comprehensive error handling
+   * CRITICAL: Uses Zustand store to prevent endless retries
    */
   const initializeWithRetry = useCallback(
     async (attempt = 1, maxAttempts = 3) => {
       if (!callbacks) return
 
-      const startTime = Date.now()
+      // CRITICAL: Check initialization state in Zustand store (prevents endless retries)
+      const initState = getInitializationState(sessionId)
+      
+      if (initState?.status === 'initializing' && initState.promise) {
+        // Already initializing - wait for existing promise (deduplication)
+        chatLogger.debug('Initialization already in progress, waiting for existing promise', {
+          sessionId,
+        })
+        await initState.promise
+        return
+      }
+      
+      if (initState?.status === 'ready') {
+        // Already initialized - skip
+        chatLogger.debug('Conversation already initialized, skipping', { sessionId })
+        setIsInitializing(false)
+        return
+      }
 
-      try {
-        setIsInitializing(true)
+      const startTime = Date.now()
+      
+      // CRITICAL: Create promise and store it immediately to prevent concurrent initialization
+      // The promise is stored BEFORE execution so other calls can wait for it
+      const initPromise = (async () => {
+        try {
+          setIsInitializing(true)
 
         // Get API base URL from config
         // FIX: Fallback should be Node.js backend (proxy), not Python engine directly
@@ -278,6 +306,11 @@ export const useConversationInitializer = (
           // CRITICAL FIX: Check if still mounted and not aborted before any state updates
           if (abortControllerRef.current?.signal.aborted) {
             chatLogger.debug('Initialization aborted - skipping state updates', { sessionId })
+            // CRITICAL: Clean up state when aborted
+            const currentState = getInitializationState(sessionId)
+            if (currentState?.status === 'initializing') {
+              resetInitializationState(sessionId)
+            }
             return
           }
 
@@ -350,38 +383,36 @@ export const useConversationInitializer = (
           // CRITICAL FIX: Set isInitializing to false only if not aborted
           if (!abortControllerRef.current?.signal.aborted) {
             setIsInitializing(false)
+            // Set state to 'ready' (atomic write)
+            setInitializationState(sessionId, { status: 'ready' })
           }
         } catch (error) {
           clearTimeout(timeoutId) // Clear timeout on error
 
+          // Handle AbortError (cancellation or timeout)
           if (error instanceof Error && error.name === 'AbortError') {
-            chatLogger.info('Initialization cancelled', { sessionId, userId })
-            return
-          }
-
-          // Handle timeout specifically
-          if (
-            error instanceof Error &&
-            error.name === 'AbortError' &&
-            abortControllerRef.current?.signal.aborted
-          ) {
-            chatLogger.warn('Initialization timed out', { sessionId, userId, timeoutMs: 10000 })
-
-            // Show timeout message
-            if (!abortControllerRef.current?.signal.aborted) {
-              const timeoutMessage: Omit<Message, 'id' | 'timestamp'> = {
-                type: 'ai',
-                content:
-                  'Sorry, the connection is taking too long. Let me start with a simple question: What is the name of your company?',
-                isComplete: true,
-                metadata: { collected_field: 'company_name' },
-              }
-              callbacks.addMessage(timeoutMessage)
+            chatLogger.info('Initialization cancelled or timed out', { sessionId, userId })
+            // CRITICAL: Clean up state when aborted (prevents stuck 'initializing' state)
+            const currentState = getInitializationState(sessionId)
+            if (currentState?.status === 'initializing') {
+              // Reset state to allow retry if needed
+              resetInitializationState(sessionId)
             }
             return
           }
 
           // Retry logic with exponential backoff
+          // CRITICAL: Check if still initializing in store before retrying (prevents race conditions)
+          const currentInitState = getInitializationState(sessionId)
+          if (currentInitState?.status !== 'initializing') {
+            chatLogger.warn('Initialization state changed during retry, aborting retry', {
+              sessionId,
+              currentStatus: currentInitState?.status,
+              attempt,
+            })
+            return // State changed (e.g., reset or new session), don't retry
+          }
+          
           if (attempt < maxAttempts) {
             const delay = Math.min(1000 * Math.pow(2, attempt - 1), 5000)
             chatLogger.warn(`Initialization attempt ${attempt} failed, retrying in ${delay}ms`, {
@@ -393,6 +424,18 @@ export const useConversationInitializer = (
             })
 
             await new Promise((resolve) => setTimeout(resolve, delay))
+            
+            // CRITICAL: Double-check state before retrying
+            const retryInitState = getInitializationState(sessionId)
+            if (retryInitState?.status !== 'initializing') {
+              chatLogger.warn('Initialization state changed during retry delay, aborting retry', {
+                sessionId,
+                currentStatus: retryInitState?.status,
+                attempt,
+              })
+              return // State changed, don't retry
+            }
+            
             return initializeWithRetry(attempt + 1, maxAttempts)
           }
 
@@ -439,35 +482,25 @@ export const useConversationInitializer = (
             }
             callbacks.addMessage(welcomeMessage)
           }
+          
+          // Set state to 'failed' (atomic write)
+          setInitializationState(sessionId, { status: 'failed' })
         } finally {
           clearTimeout(timeoutId) // Ensure timeout is always cleared
           if (!abortControllerRef.current?.signal.aborted) {
             setIsInitializing(false)
           }
         }
-      } catch (error) {
-        chatLogger.error('Unexpected error in initialization retry logic', {
-          error: error instanceof Error ? error.message : 'Unknown error',
-          sessionId,
-          userId,
-          stack: error instanceof Error ? error.stack : undefined,
-        })
-
-        // Final fallback
-        if (!abortControllerRef.current?.signal.aborted && callbacks) {
-          const finalFallbackMessage: Omit<Message, 'id' | 'timestamp'> = {
-            type: 'ai',
-            content:
-              'Welcome! Let me help you value your business. What type of business do you run?',
-            isComplete: true,
-            metadata: { collected_field: 'business_type' },
-          }
-          callbacks.addMessage(finalFallbackMessage)
-          setIsInitializing(false)
-        }
-      }
+      })()
+      
+      // CRITICAL: Store promise BEFORE awaiting (allows other calls to wait for it)
+      // The promise reference is set inside the async function, but we store it here
+      // so concurrent calls can find it immediately
+      setInitializationState(sessionId, { status: 'initializing', promise: initPromise })
+      
+      return initPromise
     },
-    [sessionId, userId, callbacks, useFallbackMode]
+    [sessionId, userId, callbacks, useFallbackMode, getInitializationState, setInitializationState, resetInitializationState]
   )
 
   /**
@@ -494,7 +527,8 @@ export const useConversationInitializer = (
         newSessionId: currentPythonSessionId,
         sessionId,
       })
-      hasInitializedRef.current = false
+      // CRITICAL: Reset initialization state in Zustand store
+      resetInitializationState(sessionId)
       setIsInitializing(true)
       lastPythonSessionIdRef.current = currentPythonSessionId
 
@@ -508,6 +542,9 @@ export const useConversationInitializer = (
     const currentMessages = callbacks.getCurrentMessages ? callbacks.getCurrentMessages() : []
     const hasMessages = currentMessages.length > 0
 
+    // CRITICAL: Get initialization state once (prevents duplicate calls)
+    const initState = getInitializationState(sessionId)
+    
     chatLogger.debug('useConversationInitializer: state check', {
       sessionId,
       pythonSessionId: currentPythonSessionId,
@@ -516,7 +553,7 @@ export const useConversationInitializer = (
       isRestoring: callbacks.isRestoring,
       isSessionInitialized: callbacks.isSessionInitialized,
       isRestorationComplete: callbacks.isRestorationComplete,
-      hasInitialized: hasInitializedRef.current,
+      initializationStatus: initState?.status,
       pythonSessionIdChanged,
     })
 
@@ -527,7 +564,8 @@ export const useConversationInitializer = (
         messageCount: currentMessages.length,
         pythonSessionId: currentPythonSessionId,
       })
-      hasInitializedRef.current = true
+      // CRITICAL: Mark as ready in Zustand store
+      setInitializationState(sessionId, { status: 'ready' })
       setIsInitializing(false)
       return
     }
@@ -550,11 +588,12 @@ export const useConversationInitializer = (
       return
     }
 
-    // RULE 5: Already initialized → skip
-    if (hasInitializedRef.current) {
-      chatLogger.debug('Already initialized - skipping', {
+    // RULE 5: Already initialized → skip (check Zustand store)
+    if (initState?.status === 'ready' || initState?.status === 'initializing') {
+      chatLogger.debug('Already initialized or initializing - skipping', {
         sessionId,
         pythonSessionId: currentPythonSessionId,
+        status: initState.status,
       })
       return
     }
@@ -568,9 +607,9 @@ export const useConversationInitializer = (
         pythonSessionId: currentPythonSessionId,
         initialMessage: callbacks.initialMessage.substring(0, 50),
       })
-      hasInitializedRef.current = true
       // Call initializeWithRetry but with a flag to skip adding the initial AI message
       // The initializeWithRetry function will handle calling /start to create the conversation
+      // CRITICAL: initializeWithRetry now handles state tracking internally
       initializeWithRetry()
       // Note: setIsInitializing(false) will be called by initializeWithRetry when it completes
       return
@@ -581,10 +620,12 @@ export const useConversationInitializer = (
       sessionId,
       pythonSessionId: currentPythonSessionId,
     })
-    hasInitializedRef.current = true
+    // CRITICAL: initializeWithRetry now handles state tracking internally
     initializeWithRetry()
 
     // CRITICAL FIX: Return cleanup function properly
+    // Note: We don't reset initialization state here because it should persist
+    // across re-renders. Only reset when pythonSessionId changes (handled above).
     return () => {
       if (abortControllerRef.current) {
         abortControllerRef.current.abort()
@@ -600,19 +641,23 @@ export const useConversationInitializer = (
     callbacks?.isRestorationComplete,
     callbacks?.pythonSessionId,
     callbacks?.getCurrentMessages,
+    getInitializationState,
+    setInitializationState,
+    resetInitializationState,
   ])
 
   /**
    * Reset initialization state (useful for testing or manual re-initialization)
    */
   const resetInitialization = useCallback(() => {
-    hasInitializedRef.current = false
+    // CRITICAL: Reset state in Zustand store
+    resetInitializationState(sessionId)
     setIsInitializing(true)
     if (abortControllerRef.current) {
       abortControllerRef.current.abort()
     }
     abortControllerRef.current = new AbortController()
-  }, [])
+  }, [sessionId, resetInitializationState])
 
   return {
     isInitializing,

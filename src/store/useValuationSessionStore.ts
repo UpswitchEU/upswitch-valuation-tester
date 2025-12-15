@@ -73,6 +73,10 @@ export interface ValuationSessionStore {
     status: 'idle' | 'initializing' | 'ready'
     promise?: Promise<void>
   }>
+
+  // URL sync state (prevent race conditions)
+  isUpdatingUrl: boolean
+  setUpdatingUrl: (updating: boolean) => void
 }
 
 export const useValuationSessionStore = create<ValuationSessionStore>((set, get) => {
@@ -102,6 +106,10 @@ export const useValuationSessionStore = create<ValuationSessionStore>((set, get)
 
     // Atomic initialization state
     initializationState,
+
+    // URL sync state
+    isUpdatingUrl: false,
+    setUpdatingUrl: (updating: boolean) => set({ isUpdatingUrl: updating }),
 
     /**
      * Initialize a new session or load existing one

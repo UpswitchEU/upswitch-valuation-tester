@@ -150,11 +150,12 @@ export const useStreamingChatState = (sessionId: string, userId?: string): Strea
   })
 
   // Refs for DOM elements and component state
+  // NOTE: hasInitializedRef is legacy - initialization state is now managed by useConversationStore
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const eventSourceRef = useRef<EventSource | null>(null)
   const currentStreamingMessageRef = useRef<Message | null>(null)
   const requestIdRef = useRef<string | null>(null)
-  const hasInitializedRef = useRef(false)
+  const hasInitializedRef = useRef(false) // LEGACY: Not used anymore - kept for type compatibility only
   const abortControllerRef = useRef<AbortController | null>(null)
 
   return {
