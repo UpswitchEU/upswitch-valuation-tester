@@ -19,6 +19,39 @@ export interface BusinessInfo {
 }
 
 /**
+ * Helper function to safely get nested value from multiple sources
+ */
+function getValueFromSources<T>(
+  sources: Array<Record<string, any>>,
+  paths: string[],
+  defaultValue: T
+): T {
+  for (const source of sources) {
+    if (!source || typeof source !== 'object') continue
+    
+    for (const path of paths) {
+      const keys = path.split('.')
+      let value: any = source
+      
+      for (const key of keys) {
+        if (value && typeof value === 'object' && key in value) {
+          value = value[key]
+        } else {
+          value = undefined
+          break
+        }
+      }
+      
+      if (value !== undefined && value !== null && value !== '') {
+        return value as T
+      }
+    }
+  }
+  
+  return defaultValue
+}
+
+/**
  * Map ValuationSession to BusinessInfo
  * 
  * Comprehensive mapping that extracts all business card fields from:
@@ -29,127 +62,96 @@ export interface BusinessInfo {
  */
 export function mapValuationSessionToBusinessInfo(session: ValuationSession): BusinessInfo {
   // Get all data sources (handle both object and nested structures)
-  const sessionData = session.sessionData || {}
-  const partialData = session.partialData || {}
+  // CRITICAL: Cast to any to allow access to all fields that may exist in session data
+  const sessionData = (session.sessionData || {}) as any
+  const partialData = (session.partialData || {}) as any
   const valuationResult = (session as any).valuationResult as ValuationResponse | undefined
   
   // Also check if data is nested in sessionData/partialData (backend may nest it)
-  const nestedSessionData = (sessionData as any)?.sessionData || sessionData
-  const nestedPartialData = (partialData as any)?.partialData || partialData
+  const nestedSessionData = sessionData?.sessionData || sessionData
+  const nestedPartialData = partialData?.partialData || partialData
+
+  // Create array of all data sources to search (priority order matters)
+  const allSources = [
+    valuationResult,
+    nestedSessionData,
+    nestedPartialData,
+    sessionData,
+    partialData,
+    session as any,
+  ].filter(Boolean) as Array<Record<string, any>>
 
   // Extract company name (priority: valuationResult > sessionData > partialData > top-level)
-  const name =
-    valuationResult?.company_name ||
-    nestedSessionData.company_name ||
-    nestedPartialData.company_name ||
-    sessionData.company_name ||
-    partialData.company_name ||
-    (session as any).company_name ||
+  const name = getValueFromSources(
+    allSources,
+    ['company_name'],
     'Untitled Business'
+  )
 
   // Extract business type ID (industry) - check multiple possible field names
-  const industry =
-    nestedSessionData.business_type_id ||
-    nestedPartialData.business_type_id ||
-    sessionData.business_type_id ||
-    partialData.business_type_id ||
-    nestedSessionData.business_type ||
-    nestedPartialData.business_type ||
-    sessionData.business_type ||
-    partialData.business_type ||
-    nestedSessionData.business_model ||
-    nestedPartialData.business_model ||
-    sessionData.business_model ||
-    partialData.business_model ||
-    nestedSessionData.industry ||
-    nestedPartialData.industry ||
-    sessionData.industry ||
-    partialData.industry ||
+  // Priority: business_type_id > industry > business_type > business_model
+  const industry = getValueFromSources(
+    allSources,
+    ['business_type_id', 'industry', 'business_type', 'business_model'],
     ''
+  ) || 'other' // Default to 'other' if not found
 
   // Extract description (check multiple field names)
-  const descriptionValue =
-    nestedSessionData.business_context ||
-    nestedPartialData.business_context ||
-    sessionData.business_context ||
-    partialData.business_context ||
-    nestedSessionData.business_description ||
-    nestedPartialData.business_description ||
-    sessionData.business_description ||
-    partialData.business_description ||
-    nestedSessionData.description ||
-    nestedPartialData.description ||
-    sessionData.description ||
-    partialData.description ||
-    nestedSessionData.company_description ||
-    nestedPartialData.company_description ||
-    sessionData.company_description ||
-    partialData.company_description ||
+  // NOTE: business_context is an object (not a string), so check for description property within it
+  const descriptionValue = getValueFromSources(
+    allSources,
+    [
+      'business_description',
+      'description',
+      'company_description',
+      'business_context.description', // Check nested property
+    ],
     ''
+  )
   const description = typeof descriptionValue === 'string' ? descriptionValue : ''
 
   // Extract founding year
-  const foundedYear =
-    nestedSessionData.founding_year ||
-    nestedPartialData.founding_year ||
-    sessionData.founding_year ||
-    partialData.founding_year ||
-    nestedSessionData.founded_year ||
-    nestedPartialData.founded_year ||
-    sessionData.founded_year ||
-    partialData.founded_year ||
+  const foundedYearRaw = getValueFromSources(
+    allSources,
+    ['founding_year', 'founded_year'],
     new Date().getFullYear()
+  )
+  const foundedYear = typeof foundedYearRaw === 'number' && 
+    foundedYearRaw > 1900 && 
+    foundedYearRaw <= new Date().getFullYear()
+    ? foundedYearRaw
+    : new Date().getFullYear()
 
   // Extract team size (check multiple field names)
-  const employees =
-    nestedSessionData.number_of_employees ||
-    nestedPartialData.number_of_employees ||
-    sessionData.number_of_employees ||
-    partialData.number_of_employees ||
-    nestedSessionData.employee_count ||
-    nestedPartialData.employee_count ||
-    sessionData.employee_count ||
-    partialData.employee_count ||
-    nestedSessionData.employees ||
-    nestedPartialData.employees ||
-    sessionData.employees ||
-    partialData.employees ||
+  const employees = getValueFromSources(
+    allSources,
+    ['number_of_employees', 'employee_count', 'employees'],
     null
-  
+  )
   const teamSize = employees 
     ? (typeof employees === 'number' ? employees.toString() : String(employees))
     : 'N/A'
 
   // Extract revenue (check nested current_year_data structure)
-  const revenue =
-    nestedSessionData.current_year_data?.revenue ||
-    nestedPartialData.current_year_data?.revenue ||
-    sessionData.current_year_data?.revenue ||
-    partialData.current_year_data?.revenue ||
-    nestedSessionData.revenue ||
-    nestedPartialData.revenue ||
-    sessionData.revenue ||
-    partialData.revenue ||
+  const revenueRaw = getValueFromSources(
+    allSources,
+    ['current_year_data.revenue', 'revenue'],
     0
+  )
+  const revenue = typeof revenueRaw === 'number' && revenueRaw >= 0 ? revenueRaw : 0
 
   // Extract location (city preferred, fallback to country_code)
-  const city =
-    nestedSessionData.city ||
-    nestedPartialData.city ||
-    sessionData.city ||
-    partialData.city ||
+  const city = getValueFromSources(
+    allSources,
+    ['city'],
     ''
+  )
   
-  const countryCode =
-    nestedSessionData.country_code ||
-    nestedPartialData.country_code ||
-    sessionData.country_code ||
-    partialData.country_code ||
-    nestedSessionData.country ||
-    nestedPartialData.country ||
-    sessionData.country ||
-    partialData.country ||
+  const countryCode = getValueFromSources(
+    allSources,
+    ['country_code', 'country'],
     ''
+  )
   
   // Combine city and country for location display
   const location = city 
@@ -157,16 +159,12 @@ export function mapValuationSessionToBusinessInfo(session: ValuationSession): Bu
     : (countryCode || 'Unknown')
 
   // Determine if remote (check is_remote field)
-  const isRemote =
-    nestedSessionData.is_remote ||
-    nestedPartialData.is_remote ||
-    sessionData.is_remote ||
-    partialData.is_remote ||
-    nestedSessionData.isRemote ||
-    nestedPartialData.isRemote ||
-    sessionData.isRemote ||
-    partialData.isRemote ||
+  const isRemoteRaw = getValueFromSources(
+    allSources,
+    ['is_remote', 'isRemote'],
     false
+  )
+  const isRemote = Boolean(isRemoteRaw)
 
   // Determine status based on completion and data presence
   const status: 'active' | 'inactive' | 'draft' = 
@@ -182,13 +180,11 @@ export function mapValuationSessionToBusinessInfo(session: ValuationSession): Bu
     name: name || 'Untitled Business',
     industry: industry || 'other', // Default to 'other' if no industry found
     description: description || '',
-    foundedYear: typeof foundedYear === 'number' && foundedYear > 1900 && foundedYear <= new Date().getFullYear()
-      ? foundedYear
-      : new Date().getFullYear(),
+    foundedYear, // Already validated above
     teamSize: teamSize || 'N/A',
-    revenue: typeof revenue === 'number' && revenue >= 0 ? revenue : 0,
+    revenue, // Already validated above
     location: location || 'Unknown',
-    isRemote: Boolean(isRemote),
+    isRemote, // Already converted to boolean above
     status: status || 'draft',
   }
 

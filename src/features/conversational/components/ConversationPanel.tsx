@@ -189,7 +189,7 @@ export const ConversationPanel: React.FC<ConversationPanelProps> = ({
           // CRITICAL FIX: Get complete formData from session, not just result
           // The result only has calculated fields, but formData needs all input fields
           const sessionStore = useValuationSessionStore.getState()
-          const sessionData = sessionStore.session?.sessionData || sessionStore.session?.partialData || {}
+          const sessionData = (sessionStore.session?.sessionData || sessionStore.session?.partialData || {}) as any
           
           // Build complete formData from session + result
           // Session has the collected data, result has calculated/computed fields
@@ -201,7 +201,7 @@ export const ConversationPanel: React.FC<ConversationPanelProps> = ({
             business_type_id: sessionData.business_type_id || '',
             industry: sessionData.industry || resultAny.industry || '',
             business_model: sessionData.business_model || '',
-            country_code: sessionData.country_code || result.country_code || 'BE',
+            country_code: sessionData.country_code || resultAny.country_code || 'BE',
             founding_year: sessionData.founding_year || 0,
             number_of_employees: sessionData.number_of_employees || 0,
             number_of_owners: sessionData.number_of_owners || 0,
