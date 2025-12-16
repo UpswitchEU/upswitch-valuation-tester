@@ -13,8 +13,7 @@ import {
 import { backendAPI } from '../../../services/backendApi'
 import { RefreshService } from '../../../services/toolbar/refreshService'
 import UrlGeneratorService from '../../../services/urlGenerator'
-import { useValuationResultsStore } from '../../../store/useValuationResultsStore'
-import { useValuationSessionStore } from '../../../store/useValuationSessionStore'
+import { useManualResultsStore, useManualSessionStore } from '../../../store/manual'
 import type { ValuationResponse } from '../../../types/valuation'
 import { generalLogger } from '../../../utils/logger'
 import { generateReportId } from '../../../utils/reportIdGenerator'
@@ -46,7 +45,7 @@ interface UseManualToolbarOptions {
  */
 export const useManualToolbar = ({ result }: UseManualToolbarOptions): UseManualToolbarReturn => {
   const { handleRefresh: handleHookRefresh } = useValuationToolbarRefresh()
-  const { session } = useValuationSessionStore()
+  const { session } = useManualSessionStore()
   const [isDownloading, setIsDownloading] = useState(false)
 
   const handleRefresh = useCallback(() => {
@@ -56,7 +55,7 @@ export const useManualToolbar = ({ result }: UseManualToolbarOptions): UseManual
   }, [handleHookRefresh])
 
   const handleDownload = useCallback(async () => {
-    const currentResult = result || useValuationResultsStore.getState().result
+    const currentResult = result || useManualResultsStore.getState().result
     const reportId = session?.reportId
 
     if (!currentResult || !currentResult.html_report) {

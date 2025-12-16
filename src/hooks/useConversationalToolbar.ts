@@ -10,7 +10,7 @@
 import { useCallback } from 'react'
 import { RefreshService } from '../services/toolbar/refreshService'
 import UrlGeneratorService from '../services/urlGenerator'
-import { useValuationResultsStore } from '../store/useValuationResultsStore'
+import { useConversationalResultsStore } from '../store/conversational'
 import { generateReportId } from '../utils/reportIdGenerator'
 import {
   useValuationToolbarDownload,
@@ -147,7 +147,7 @@ export function useConversationalToolbar({
    * - Methodology and confidence score
    */
   const handleDownload = useCallback(async () => {
-    const currentResult = result || useValuationResultsStore.getState().result
+    const currentResult = result || useConversationalResultsStore.getState().result
     if (currentResult?.html_report) {
       await handleHookDownload({
         companyName: state.businessProfile?.company_name || currentResult.company_name || 'Company',

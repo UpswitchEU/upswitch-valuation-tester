@@ -4,12 +4,14 @@
  * Single Responsibility: Handle progress updates, data collection, suggestions, and HTML previews
  * Extracted from StreamEventHandler to follow SRP
  *
+ * NOTE: This handler is flow-agnostic. Session updates should be handled through
+ * callbacks, which are provided by the appropriate flow (Manual or Conversational).
+ *
  * @module services/chat/handlers/ui/UIHandlers
  */
 
 import { chatLogger } from '../../../../utils/logger'
 import { StreamEventHandlerCallbacks } from '../../StreamEventHandler'
-import { useValuationSessionStore } from '../../../../store/useValuationSessionStore'
 import type { ValuationRequest } from '../../../../types/valuation'
 
 export class UIHandlers {
@@ -284,19 +286,13 @@ export class UIHandlers {
       [field]: value,
     }))
 
-    // CRITICAL: Auto-save collected data to session store
+    // CRITICAL: Auto-save collected data through callback
+    // NOTE: The callback should handle session store updates for the appropriate flow
     // Failproof: Handle all edge cases gracefully
     try {
-      const sessionStore = useValuationSessionStore.getState()
-      const session = sessionStore.session
-      
-      // Validate session exists and has reportId
-      if (!session?.reportId) {
-        chatLogger.warn('Cannot auto-save: session or reportId missing', {
-          field,
-          hasSession: !!session,
-          reportId: session?.reportId,
-        })
+      // Validate we have an onDataCollected callback
+      if (!this.callbacks.onDataCollected) {
+        chatLogger.debug('[Chat] No onDataCollected callback, skipping auto-save', { field })
         return
       }
       
@@ -320,7 +316,7 @@ export class UIHandlers {
 
         // Validate update object is not empty
         if (!sessionDataUpdate || Object.keys(sessionDataUpdate).length === 0) {
-          chatLogger.warn('Skipping auto-save: empty sessionDataUpdate', {
+          chatLogger.warn('[Chat] Skipping auto-save: empty sessionDataUpdate', {
             field,
             value,
             hasMetadata: !!collectedData.metadata,
@@ -329,24 +325,12 @@ export class UIHandlers {
           return
         }
 
-        // Auto-save to backend (debounced via updateSessionData)
-        sessionStore.updateSessionData(sessionDataUpdate).catch((error) => {
-          chatLogger.error('Failed to auto-save collected data', {
-            field,
-            reportId: session.reportId,
-            error: error instanceof Error ? error.message : String(error),
-            errorStack: error instanceof Error ? error.stack : undefined,
-          })
-          // Don't throw - non-blocking persistence
-        })
-
-        chatLogger.debug('Auto-saved collected data to session', {
+        chatLogger.debug('[Chat] Mapped collected data for auto-save', {
           field,
-          reportId: session.reportId,
           sessionDataKeys: Object.keys(sessionDataUpdate),
         })
       } else {
-        chatLogger.debug('Skipping auto-save: invalid field or value', {
+        chatLogger.debug('[Chat] Skipping auto-save: invalid field or value', {
           field,
           hasValue: value !== undefined,
           valueType: typeof value,
@@ -354,7 +338,7 @@ export class UIHandlers {
       }
     } catch (error) {
       // Failproof: Never let auto-save break the conversation flow
-      chatLogger.error('Unexpected error in auto-save', {
+      chatLogger.error('[Chat] Unexpected error in data collection', {
         field,
         error: error instanceof Error ? error.message : String(error),
         errorStack: error instanceof Error ? error.stack : undefined,
@@ -362,7 +346,7 @@ export class UIHandlers {
       // Continue conversation flow - don't throw
     }
 
-    // Call data collected callback
+    // Call data collected callback (which should handle session updates)
     this.callbacks.onDataCollected?.(collectedData)
   }
 

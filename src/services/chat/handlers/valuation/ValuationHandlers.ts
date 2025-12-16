@@ -4,11 +4,13 @@
  * Single Responsibility: Handle valuation previews, options, ready states, and completion
  * Extracted from StreamEventHandler to follow SRP
  *
+ * NOTE: This handler is flow-agnostic. The StreamEventHandler should pass the appropriate
+ * results store (Manual or Conversational) through callbacks.
+ *
  * @module services/chat/handlers/valuation/ValuationHandlers
  */
 
 import { chatLogger } from '../../../../utils/logger'
-import { useValuationResultsStore } from '../../../../store/useValuationResultsStore'
 import { StreamEventHandlerCallbacks } from '../../StreamEventHandler'
 
 export class ValuationHandlers {
@@ -73,12 +75,16 @@ export class ValuationHandlers {
 
   /**
    * Handle valuation complete events
+   * 
+   * NOTE: This handler is flow-agnostic. The results store update is handled
+   * through callbacks, which should be provided by the appropriate flow
+   * (Manual or Conversational).
    */
   handleValuationComplete(data: any): void {
     const result = data.result || data
     const valuationId = data.valuation_id || result?.valuation_id
     
-    chatLogger.info('Valuation completed', {
+    chatLogger.info('[Chat] Valuation completed', {
       hasResult: !!result,
       resultKeys: result ? Object.keys(result) : [],
       hasValuationId: !!valuationId,
@@ -89,33 +95,18 @@ export class ValuationHandlers {
       infoTabHtmlLength: (result?.info_tab_html || data.info_tab_html)?.length || 0,
     })
 
-    // CRITICAL: Update valuation results store with complete result including HTML reports
-    if (result || valuationId) {
-      const resultsStore = useValuationResultsStore.getState()
-      
-      // Merge html_report and info_tab_html from data if they exist separately
-      const completeResult = {
-        ...result,
-        ...(data.html_report && { html_report: data.html_report }),
-        ...(data.info_tab_html && { info_tab_html: data.info_tab_html }),
-        ...(valuationId && { valuation_id: valuationId }),
-      }
-      
-      resultsStore.setResult(completeResult)
-      
-      chatLogger.info('Valuation result stored in results store', {
-        valuationId,
-        hasHtmlReport: !!completeResult.html_report,
-        htmlReportLength: completeResult.html_report?.length || 0,
-        hasInfoTabHtml: !!completeResult.info_tab_html,
-        infoTabHtmlLength: completeResult.info_tab_html?.length || 0,
-      })
+    // Merge html_report and info_tab_html from data if they exist separately
+    const completeResult = {
+      ...result,
+      ...(data.html_report && { html_report: data.html_report }),
+      ...(data.info_tab_html && { info_tab_html: data.info_tab_html }),
+      ...(valuationId && { valuation_id: valuationId }),
     }
 
     // Track conversation completion with valuation
     this.callbacks.trackConversationCompletion?.(true, true)
 
-    // Call valuation complete callback
-    this.callbacks.onValuationComplete?.(result || data)
+    // Call valuation complete callback (which should update the appropriate store)
+    this.callbacks.onValuationComplete?.(completeResult)
   }
 }

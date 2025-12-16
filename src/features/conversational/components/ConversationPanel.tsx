@@ -10,7 +10,7 @@
 import React, { useCallback, useMemo } from 'react'
 import { StreamingChat } from '../../../components/StreamingChat'
 import { valuationAuditService } from '../../../services/audit/ValuationAuditService'
-import { valuationService, sessionService } from '../../../services'
+import { ValuationService, ReportService } from '../../../services'
 import { useConversationalResultsStore, useConversationalSessionStore, useConversationalChatStore } from '../../../store/conversational'
 import { useVersionHistoryStore } from '../../../store/useVersionHistoryStore'
 import type { Message } from '../../../types/message'
@@ -127,7 +127,7 @@ export const ConversationPanel: React.FC<ConversationPanelProps> = ({
   )
 
   // Handle valuation complete - sync to context and conversational results store
-  const { setResult, trySetCalculating, setCalculating } = useConversationalResultsStore()
+  const { isCalculating, setResult, trySetCalculating, setCalculating } = useConversationalResultsStore()
   const { session } = useConversationalSessionStore()
   const { createVersion, getLatestVersion } = useVersionHistoryStore()
 
@@ -151,8 +151,8 @@ export const ConversationPanel: React.FC<ConversationPanelProps> = ({
 
       if (session?.reportId) {
         try {
-          // Atomic save: all data in one operation (using sessionService)
-          await sessionService.saveReportAssets(session.reportId, {
+          // Atomic save: all data in one operation (using ReportService)
+          await ReportService.saveReportAssets(session.reportId, {
             valuationResult: result,
             htmlReport: result.html_report || '',
             infoTabHtml: result.info_tab_html || '',
@@ -359,22 +359,21 @@ export const ConversationPanel: React.FC<ConversationPanelProps> = ({
   // Handle manual calculate action (same as manual flow)
   const handleManualCalculate = useCallback(async () => {
     if (!session?.sessionData) {
-      chatLogger.warn('Cannot calculate: no session data')
+      chatLogger.warn('[Conversational] Cannot calculate: no session data')
       return
     }
 
-    // CRITICAL: Set loading state IMMEDIATELY
-    const { setCalculating } = useValuationApiStore.getState()
-    const currentState = useValuationApiStore.getState()
-    if (!currentState.isCalculating) {
-      setCalculating(true)
-      chatLogger.info('Loading state set to true (conversational flow)', {
-        wasCalculating: currentState.isCalculating,
-      })
+    // CRITICAL: Use atomic check-and-set (Conversational flow)
+    const wasSet = trySetCalculating()
+    if (!wasSet) {
+      chatLogger.warn('[Conversational] Calculation already in progress')
+      return
     }
 
+    chatLogger.info('[Conversational] Loading state set atomically', { wasSet })
+
     try {
-      chatLogger.info('Manual calculate triggered from conversational flow', {
+      chatLogger.info('[Conversational] Manual calculate triggered', {
         sessionId,
         hasSessionData: !!session.sessionData,
       })
@@ -425,15 +424,15 @@ export const ConversationPanel: React.FC<ConversationPanelProps> = ({
         if (!request.industry) missingFields.push('Industry')
         if (!request.country_code) missingFields.push('Country')
 
-        chatLogger.warn('Cannot calculate: missing required fields', { missingFields })
+        chatLogger.warn('[Conversational] Cannot calculate: missing required fields', { missingFields })
         actions.setError(`Please provide: ${missingFields.join(', ')}`)
         actions.setGenerating(false)
         setCalculating(false) // Reset on validation error
         return
       }
 
-      // Calculate valuation (same API call as manual flow)
-      const result = await calculateValuation(request)
+      // Calculate valuation using service (Conversational flow)
+      const result = await ValuationService.calculateValuation(request)
 
       if (result) {
         // Call handleValuationComplete directly (it's already defined above)
@@ -442,13 +441,13 @@ export const ConversationPanel: React.FC<ConversationPanelProps> = ({
         setCalculating(false)
         actions.setGenerating(false)
       } else {
-        chatLogger.error('Manual calculate returned no result')
+        chatLogger.error('[Conversational] Manual calculate returned no result')
         actions.setError('Calculation failed')
         actions.setGenerating(false)
         setCalculating(false) // Reset on failure
       }
     } catch (error) {
-      chatLogger.error('Manual calculate failed', { error })
+      chatLogger.error('[Conversational] Manual calculate failed', { error })
       actions.setError(
         error instanceof Error ? `Calculation failed: ${error.message}` : 'Calculation failed. Please try again.'
       )
@@ -457,16 +456,16 @@ export const ConversationPanel: React.FC<ConversationPanelProps> = ({
     } finally {
       // CRITICAL: Always reset loading state, even if handleValuationComplete throws
       // This ensures the UI doesn't get stuck in loading state
-      const finalState = useValuationApiStore.getState()
+      const finalState = useConversationalResultsStore.getState()
       if (finalState.isCalculating) {
         setCalculating(false)
-        chatLogger.debug('Loading state reset in finally block (conversational flow)')
+        chatLogger.debug('[Conversational] Loading state reset in finally block')
       }
     }
   }, [
     session,
     sessionId,
-    calculateValuation,
+    trySetCalculating,
     handleValuationComplete,
     actions,
     onValuationStart,
