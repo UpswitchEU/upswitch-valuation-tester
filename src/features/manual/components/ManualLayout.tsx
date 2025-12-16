@@ -68,25 +68,31 @@ export const ManualLayout: React.FC<ManualLayoutProps> = ({
     renderTimestampRef.current = now
   }
   
-  // If we're rendering more than 100 times in 5 seconds, we have a render loop
-  if (renderCountRef.current > 100) {
-    generalLogger.error('[ManualLayout] RENDER LOOP DETECTED - Throwing error to break loop', {
-      reportId,
-      renderCount: renderCountRef.current,
-      timeWindow: now - renderTimestampRef.current,
-    })
-    throw new Error(
-      `Render loop detected in ManualLayout (${renderCountRef.current} renders in ${now - renderTimestampRef.current}ms). Please contact support.`
-    )
-  }
-  
-  // Log excessive renders
+  // Log excessive renders (synchronous warning is fine)
   if (renderCountRef.current > 50) {
     generalLogger.warn('[ManualLayout] High render count detected', {
       reportId,
       renderCount: renderCountRef.current,
     })
   }
+  
+  // Check for render loop asynchronously to avoid inconsistent state during render
+  useEffect(() => {
+    if (renderCountRef.current > 100) {
+      const timeWindow = performance.now() - renderTimestampRef.current
+      generalLogger.error('[ManualLayout] RENDER LOOP DETECTED - Throwing error to break loop', {
+        reportId,
+        renderCount: renderCountRef.current,
+        timeWindow,
+      })
+      // Throw asynchronously via setTimeout to ensure error boundary catches it properly
+      setTimeout(() => {
+        throw new Error(
+          `Render loop detected in ManualLayout (${renderCountRef.current} renders in ${timeWindow.toFixed(0)}ms). Please contact support.`
+        )
+      }, 0)
+    }
+  })
 
   const { user } = useAuth()
   const { isCalculating, error, result, setResult } = useManualResultsStore()

@@ -59,8 +59,8 @@ export const ValuationSessionManager: React.FC<ValuationSessionManagerProps> = R
     const prefilledQuery = searchParams?.get('prefilledQuery') || null
     const autoSend = searchParams?.get('autoSend') === 'true'
     
-    // Optimistic rendering: Always show data-entry (UI renders immediately)
-    const stage: Stage = 'data-entry'
+    // Dynamic stage based on loading state
+    const stage: Stage = isLoading && !session ? 'loading' : 'data-entry'
     
     // Load session when reportId changes (promise cache prevents duplicates)
     useEffect(() => {

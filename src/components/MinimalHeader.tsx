@@ -78,6 +78,7 @@ export const MinimalHeader: React.FC = () => {
                   objectFit: 'contain',
                   visibility: 'visible',
                   display: 'block',
+                  marginTop: '1px',
                 }}
               />
               {/* Hover logo (dark variant) - desktop only */}

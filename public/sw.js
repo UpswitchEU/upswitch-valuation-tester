@@ -82,8 +82,10 @@ self.addEventListener('activate', (event) => {
     caches.keys().then((cacheNames) => {
       return Promise.all(
         cacheNames.map((cacheName) => {
+          // Keep only current version caches
+          // Delete old versioned caches (e.g., upswitch-valuation-v1.0.1 when current is v1.0.2)
           if (cacheName !== CACHE_NAME && cacheName !== RUNTIME_CACHE) {
-            console.log('[ServiceWorker] Deleting old cache:', cacheName)
+            console.log('[ServiceWorker] Deleting old cache:', cacheName, 'Current:', CACHE_NAME)
             return caches.delete(cacheName)
           }
         })

@@ -141,8 +141,9 @@ export class SessionService {
       )
 
       // Create timeout promise that rejects after ABSOLUTE_TIMEOUT
+      let timeoutId: NodeJS.Timeout | null = null
       const timeoutPromise = new Promise<never>((_, reject) => {
-        setTimeout(() => {
+        timeoutId = setTimeout(() => {
           const elapsed = performance.now() - startTime
           logger.error('Session load exceeded absolute timeout', {
             reportId,
@@ -160,7 +161,15 @@ export class SessionService {
       })
 
       // Race between load and timeout
-      const session = await Promise.race([loadPromise, timeoutPromise])
+      let session: ValuationSession | null
+      try {
+        session = await Promise.race([loadPromise, timeoutPromise])
+      } finally {
+        // Clean up timeout to prevent memory leak
+        if (timeoutId !== null) {
+          clearTimeout(timeoutId)
+        }
+      }
 
       const duration = performance.now() - startTime
 
