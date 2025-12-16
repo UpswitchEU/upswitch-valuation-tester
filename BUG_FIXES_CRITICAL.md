@@ -1,18 +1,19 @@
 # 🐛 Critical Bug Fixes - Session Architecture
 
 **Date**: December 16, 2025  
-**Status**: ✅ **ALL FIXED & VERIFIED**
+**Status**: ✅ **ALL 5 BUGS FIXED & VERIFIED**
 
 ---
 
 ## 🎯 Executive Summary
 
-Fixed 4 critical bugs identified in the simplified session architecture:
+Fixed 5 critical bugs identified in the simplified session architecture:
 
 1. ✅ **Render loop detector** - Fixed synchronous error throwing during render
-2. ✅ **Memory leak** - Fixed setTimeout cleanup in Promise.race
+2. ✅ **Memory leak (SessionService)** - Fixed setTimeout cleanup in Promise.race
 3. ✅ **Cache growth** - Fixed service worker cache versioning
 4. ✅ **Loading UX** - Fixed hardcoded stage preventing loading skeleton
+5. ✅ **Memory leak (StreamingManager)** - Fixed setTimeout cleanup in streaming Promise.race
 
 **Build Status**: ✅ PASS  
 **Type Check**: ✅ PASS (pre-existing test errors unrelated)  
@@ -204,14 +205,69 @@ const stage: Stage = isLoading && !session ? 'loading' : 'data-entry'
 
 ---
 
+## 🐛 Bug 5: Memory Leak in StreamingManager Promise.race
+
+### Problem
+```typescript
+// ❌ BAD: setTimeout never cleaned up (same pattern as Bug #2)
+const timeoutPromise = new Promise<void>((_, reject) => {
+  setTimeout(() => {  // No reference stored!
+    reject(new Error('Stream timeout'))
+  }, 30000)
+})
+
+await Promise.race([
+  this.streamWithAsyncGenerator(...),
+  timeoutPromise,  // If stream wins, setTimeout still fires 30s later! ⚠️
+])
+```
+
+**Impact**:
+- Memory leak: timeout callback remains scheduled for every stream
+- Spurious timeout errors 30 seconds after successful streams
+- With 100 conversations/day, that's 100 orphaned timers
+
+### Fix
+```typescript
+// ✅ GOOD: Store timeoutId and clean up in finally block
+let timeoutId: NodeJS.Timeout | null = null
+const timeoutPromise = new Promise<void>((_, reject) => {
+  timeoutId = setTimeout(() => {
+    reject(new Error('Stream timeout'))
+  }, 30000)
+})
+
+try {
+  await Promise.race([
+    this.streamWithAsyncGenerator(...),
+    timeoutPromise,
+  ])
+} finally {
+  // Clean up timeout to prevent memory leak
+  if (timeoutId !== null) {
+    clearTimeout(timeoutId)  // ✅ Always cleaned up
+  }
+}
+```
+
+**Benefits**:
+- ✅ No memory leaks in conversational streaming
+- ✅ No spurious timeout errors
+- ✅ Timeout cleaned up immediately after race completes
+
+**File**: `src/services/chat/StreamingManager.ts` (lines 178-271)
+
+---
+
 ## 📊 Impact Summary
 
 | Bug | Severity | User Impact | Status |
 |-----|----------|-------------|--------|
 | #1 Render Loop | 🔴 HIGH | App crashes incorrectly | ✅ FIXED |
-| #2 Memory Leak | 🟡 MEDIUM | Resource waste, spurious errors | ✅ FIXED |
+| #2 Memory Leak (Session) | 🟡 MEDIUM | Resource waste, spurious errors | ✅ FIXED |
 | #3 Cache Growth | 🔴 HIGH | Storage exhaustion on mobile | ✅ FIXED |
 | #4 Loading UX | 🟡 MEDIUM | Blank screen, poor UX | ✅ FIXED |
+| #5 Memory Leak (Streaming) | 🟡 MEDIUM | Resource waste in chat, spurious errors | ✅ FIXED |
 
 ---
 

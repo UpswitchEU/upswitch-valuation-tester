@@ -81,7 +81,7 @@ export const useStreamSubmission = ({
 
       const userInput = input.trim()
 
-      // CRITICAL DEBUG: Log ALL state BEFORE any checks to diagnose blocking
+      // DEBUG: Log state before checks to diagnose blocking
       chatLogger.debug('handleSubmit ENTRY - Lock State Check', {
         isRequestInProgress: isRequestInProgressRef.current,
         isStreaming: false, // Will be set below
@@ -92,7 +92,7 @@ export const useStreamSubmission = ({
         timestamp: new Date().toISOString(),
       })
 
-      // CRITICAL DEBUG: Log ALL state BEFORE any checks to diagnose blocking
+      // DEBUG: Log state before checks to diagnose blocking
       chatLogger.debug('handleSubmit ENTRY - Lock State Check', {
         isRequestInProgress: isRequestInProgressRef.current,
         hasInput: !!userInput,

@@ -177,8 +177,9 @@ export class StreamingManager {
 
     // Add timeout detection
     const timeoutMs = 30000 // 30 seconds
+    let timeoutId: NodeJS.Timeout | null = null
     const timeoutPromise = new Promise<void>((_, reject) => {
-      setTimeout(() => {
+      timeoutId = setTimeout(() => {
         reject(new Error(`Stream timeout after ${timeoutMs}ms - no response from backend`))
       }, timeoutMs)
     })
@@ -268,6 +269,11 @@ export class StreamingManager {
 
       onError(error instanceof Error ? error : new Error('Unknown streaming error'))
     } finally {
+      // Clean up timeout to prevent memory leak
+      if (timeoutId !== null) {
+        clearTimeout(timeoutId)
+      }
+      
       // CRITICAL FIX: Robust lock release in finally block
       // This is the safety net - ensures locks are ALWAYS released
       // Even if catch block is somehow bypassed
