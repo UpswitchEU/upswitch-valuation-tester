@@ -87,6 +87,10 @@ export const ValuationSessionManager: React.FC<ValuationSessionManagerProps> = R
     // Track if we've already transitioned to prevent infinite loops
     const hasTransitionedRef = useRef(false)
     
+    // CRITICAL: Track initialization to prevent duplicate loads
+    // Ref is checked synchronously BEFORE any async operations start
+    const hasInitializedRef = useRef<string | null>(null)
+    
     // Initialize session function (flow-aware)
     // Memoized with empty deps - stable reference, uses Zustand promise cache internally
     const initializeSession = useCallback(
@@ -382,10 +386,17 @@ export const ValuationSessionManager: React.FC<ValuationSessionManagerProps> = R
     }, [reportId, router])
 
     // Initialize session when reportId changes
-    // Uses Zustand state directly for guards (prevents unnecessary calls)
-    // Reads flow from ref to avoid dependency on searchParams changes
+    // CRITICAL: Single initialization per reportId using ref guard
+    // Ref is checked synchronously BEFORE any async operations
     useEffect(() => {
       if (!reportId) {
+        return
+      }
+
+      // GUARD 1: Ref-based initialization check (synchronous, immediate)
+      // Prevents duplicate initialization during same render cycle
+      if (hasInitializedRef.current === reportId) {
+        generalLogger.debug('[ValuationSessionManager] Already initialized, skipping', { reportId })
         return
       }
 
@@ -394,22 +405,22 @@ export const ValuationSessionManager: React.FC<ValuationSessionManagerProps> = R
       const flowParam = currentSearchParams?.get('flow') || 'manual'
       const currentIsManualFlow = flowParam === 'manual'
 
-      // GUARD: Check Zustand state directly - if session already exists, skip
+      // GUARD 2: Check Zustand state - if session already exists, skip
       const manualState = useManualSessionStore.getState()
       const conversationalState = useConversationalSessionStore.getState()
       const currentSession = currentIsManualFlow ? manualState.session : conversationalState.session
       
       if (currentSession?.reportId === reportId) {
-        generalLogger.debug('Session already exists, skipping initialization', { reportId })
+        generalLogger.debug('[ValuationSessionManager] Session already exists, skipping initialization', { reportId })
+        hasInitializedRef.current = reportId // Mark as initialized
         if (!hasTransitionedRef.current) {
           hasTransitionedRef.current = true
-          setStageWithLogging('data-entry') // ✅ Set stage before returning
+          setStageWithLogging('data-entry')
         }
         return
       }
 
-      // GUARD: Check if already loading (Zustand promise cache)
-      // Check promise directly - more reliable than isLoading flag
+      // GUARD 3: Check if already loading (Zustand promise cache)
       const activeLoadPromise = currentIsManualFlow
         ? manualState.loadPromise
         : conversationalState.loadPromise
@@ -418,16 +429,22 @@ export const ValuationSessionManager: React.FC<ValuationSessionManagerProps> = R
         : conversationalState.loadingReportId
       
       if (activeLoadPromise && activeLoadingReportId === reportId) {
-        generalLogger.debug('Session already loading, skipping initialization', { reportId })
+        generalLogger.debug('[ValuationSessionManager] Session already loading, skipping', { reportId })
+        hasInitializedRef.current = reportId // Mark as initialized
         return
       }
 
+      // Mark as initialized BEFORE starting async operation
+      hasInitializedRef.current = reportId
+      
+      generalLogger.info('[ValuationSessionManager] Initializing session', { reportId })
       initializeSessionForReport(reportId)
     }, [reportId, initializeSessionForReport, setStageWithLogging]) // Removed isManualFlow - read from ref instead
 
-    // Reset transition flag when reportId changes (atomic, no race conditions)
+    // Reset flags when reportId changes (atomic, no race conditions)
     useEffect(() => {
       hasTransitionedRef.current = false
+      hasInitializedRef.current = null
     }, [reportId])
 
     // ⚠️ REMOVED: Stage transition logic - we start optimistically at 'data-entry'
