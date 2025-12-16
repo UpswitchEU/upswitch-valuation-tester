@@ -27,7 +27,13 @@ import { createContextLogger } from '../../utils/logger'
 import { retrySessionOperation } from '../../utils/retryWithBackoff'
 import { sessionCircuitBreaker } from '../../utils/circuitBreaker'
 import { validateSessionData } from '../../utils/sessionValidation'
-import { convertToApplicationError, getErrorMessage } from '../../utils/errors/errorConverter'
+import { getErrorMessage } from '../../utils/errors/errorConverter'
+import {
+  ValidationError,
+  NetworkError,
+  NotFoundError,
+  ApplicationError,
+} from '../../types/errors'
 
 const logger = createContextLogger('SessionService')
 
@@ -146,16 +152,38 @@ export class SessionService {
       return session
     } catch (error) {
       const duration = performance.now() - startTime
-      const appError = convertToApplicationError(error, { reportId })
 
-      logger.error('Failed to load session', {
-        error: getErrorMessage(appError),
-        reportId,
-        duration_ms: duration.toFixed(2),
-      })
-
-      // Return null instead of throwing - let caller decide how to handle
-      return null
+      // Use instanceof checks for specific error handling
+      if (error instanceof NotFoundError) {
+        logger.info('Session not found - returning null', {
+          reportId,
+          resourceType: error.resourceType,
+          duration_ms: duration.toFixed(2),
+        })
+        return null // Not found is expected, return null
+      } else if (error instanceof NetworkError && error.retryable) {
+        logger.warn('Failed to load session - network error (retryable)', {
+          error: error.message,
+          reportId,
+          duration_ms: duration.toFixed(2),
+        })
+        return null // Return null for retryable network errors
+      } else if (error instanceof ValidationError) {
+        logger.error('Failed to load session - validation error', {
+          error: error.message,
+          field: error.field,
+          reportId,
+          duration_ms: duration.toFixed(2),
+        })
+        return null
+      } else {
+        logger.error('Failed to load session - unknown error', {
+          error: getErrorMessage(error),
+          reportId,
+          duration_ms: duration.toFixed(2),
+        })
+        return null
+      }
     }
   }
 
@@ -213,15 +241,49 @@ export class SessionService {
       return mergedSession
     } catch (error) {
       const duration = performance.now() - startTime
-      const appError = convertToApplicationError(error, { reportId, updates })
 
-      logger.error('Failed to save session', {
-        error: getErrorMessage(appError),
-        reportId,
-        duration_ms: duration.toFixed(2),
-      })
-
-      throw appError
+      // Use instanceof checks for specific error handling
+      if (error instanceof ValidationError) {
+        logger.warn('Failed to save session - validation error', {
+          error: error.message,
+          field: error.field,
+          reportId,
+          duration_ms: duration.toFixed(2),
+        })
+        throw error // Re-throw for caller to handle
+      } else if (error instanceof NetworkError && error.retryable) {
+        logger.warn('Failed to save session - network error (retryable)', {
+          error: error.message,
+          reportId,
+          duration_ms: duration.toFixed(2),
+        })
+        throw error // Re-throw for potential retry
+      } else if (error instanceof NotFoundError) {
+        logger.error('Failed to save session - resource not found', {
+          error: error.message,
+          resourceType: error.resourceType,
+          resourceId: error.resourceId,
+          reportId,
+          duration_ms: duration.toFixed(2),
+        })
+        throw error
+      } else {
+        logger.error('Failed to save session - unknown error', {
+          error: getErrorMessage(error),
+          reportId,
+          duration_ms: duration.toFixed(2),
+        })
+        throw new ApplicationError(
+          `Failed to save session: ${getErrorMessage(error)}`,
+          'SESSION_SAVE_FAILED',
+          {
+            originalError: error,
+            reportId,
+            updateKeys: Object.keys(updates),
+            duration_ms: duration.toFixed(2),
+          }
+        )
+      }
     }
   }
 
@@ -319,15 +381,39 @@ export class SessionService {
       })
     } catch (error) {
       const duration = performance.now() - startTime
-      const appError = convertToApplicationError(error, { reportId })
 
-      logger.error('Failed to save complete session', {
-        error: getErrorMessage(appError),
-        reportId,
-        duration_ms: duration.toFixed(2),
-      })
-
-      throw appError
+      // Use instanceof checks for specific error handling
+      if (error instanceof ValidationError) {
+        logger.warn('Failed to save complete session - validation error', {
+          error: error.message,
+          field: error.field,
+          reportId,
+          duration_ms: duration.toFixed(2),
+        })
+        throw error
+      } else if (error instanceof NetworkError && error.retryable) {
+        logger.warn('Failed to save complete session - network error (retryable)', {
+          error: error.message,
+          reportId,
+          duration_ms: duration.toFixed(2),
+        })
+        throw error
+      } else {
+        logger.error('Failed to save complete session - unknown error', {
+          error: getErrorMessage(error),
+          reportId,
+          duration_ms: duration.toFixed(2),
+        })
+        throw new ApplicationError(
+          `Failed to save complete session: ${getErrorMessage(error)}`,
+          'SESSION_SAVE_COMPLETE_FAILED',
+          {
+            originalError: error,
+            reportId,
+            duration_ms: duration.toFixed(2),
+          }
+        )
+      }
     }
   }
 

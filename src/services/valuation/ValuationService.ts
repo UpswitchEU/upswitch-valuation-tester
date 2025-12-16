@@ -20,12 +20,14 @@
 import { backendAPI } from '../backendApi'
 import type { ValuationRequest, ValuationResponse } from '../../types/valuation'
 import { createContextLogger } from '../../utils/logger'
-import { convertToApplicationError, getErrorMessage } from '../../utils/errors/errorConverter'
+import { getErrorMessage } from '../../utils/errors/errorConverter'
 import {
-  isNetworkError,
-  isValidationError,
-  isRetryable as isRetryableError,
-} from '../../utils/errors/errorGuards'
+  ValidationError,
+  NetworkError,
+  CalculationError,
+  NotFoundError,
+  ApplicationError,
+} from '../../types/errors'
 
 const logger = createContextLogger('ValuationService')
 
@@ -58,10 +60,14 @@ export class ValuationService {
    * Handles errors and provides detailed logging.
    *
    * @param request - Valuation request data
+   * @param progressCallback - Optional callback for progress updates (0-100)
    * @returns Valuation response with results and HTML reports
    * @throws ApplicationError on failure
    */
-  async calculateValuation(request: ValuationRequest): Promise<ValuationResponse> {
+  async calculateValuation(
+    request: ValuationRequest,
+    progressCallback?: (progress: number, message?: string) => void
+  ): Promise<ValuationResponse> {
     const startTime = performance.now()
 
     try {
@@ -71,8 +77,14 @@ export class ValuationService {
         businessModel: request.business_model,
       })
 
+      // Progress: Starting calculation
+      progressCallback?.(10, 'Starting calculation...')
+
       // Call backend API
       const response = await backendAPI.calculateValuation(request)
+
+      // Progress: Calculation complete
+      progressCallback?.(90, 'Processing results...')
 
       const duration = performance.now() - startTime
 
@@ -101,43 +113,62 @@ export class ValuationService {
       return response
     } catch (error) {
       const duration = performance.now() - startTime
-      const appError = convertToApplicationError(error, {
-        companyName: request.company_name,
-        industry: request.industry,
-      })
 
-      // Log with specific error type
-      if (isValidationError(appError)) {
-        logger.error('Valuation calculation failed - validation error', {
-          error: getErrorMessage(appError),
-          code: (appError as any).code,
+      // Use instanceof checks for specific error handling
+      if (error instanceof ValidationError) {
+        logger.warn('Valuation calculation failed - validation error', {
+          error: error.message,
+          field: error.field,
+          code: error.code,
           duration_ms: duration.toFixed(2),
-          context: (appError as any).context,
+          context: error.context,
         })
-      } else if (isNetworkError(appError)) {
-        logger.error('Valuation calculation failed - network error', {
-          error: getErrorMessage(appError),
-          code: (appError as any).code,
+        throw error // Re-throw with context
+      } else if (error instanceof NetworkError && error.retryable) {
+        logger.warn('Valuation calculation failed - network error (retryable)', {
+          error: error.message,
+          code: error.code,
           duration_ms: duration.toFixed(2),
-          context: (appError as any).context,
+          context: error.context,
         })
-      } else if (isRetryableError(appError)) {
-        logger.warn('Valuation calculation failed - retryable error', {
-          error: getErrorMessage(appError),
-          code: (appError as any).code,
+        // TODO: Implement retry logic with exponential backoff
+        throw error
+      } else if (error instanceof CalculationError) {
+        logger.error('Valuation calculation failed - calculation error', {
+          error: error.message,
+          reportId: error.reportId,
+          code: error.code,
           duration_ms: duration.toFixed(2),
-          context: (appError as any).context,
+          context: error.context,
+          companyName: request.company_name,
         })
+        throw error
+      } else if (error instanceof NotFoundError) {
+        logger.error('Valuation calculation failed - resource not found', {
+          error: error.message,
+          resourceType: error.resourceType,
+          resourceId: error.resourceId,
+          code: error.code,
+          duration_ms: duration.toFixed(2),
+        })
+        throw error
       } else {
-        logger.error('Valuation calculation failed', {
-          error: getErrorMessage(appError),
-          code: (appError as any).code,
+        // Handle unknown errors
+        logger.error('Valuation calculation failed - unknown error', {
+          error: getErrorMessage(error),
           duration_ms: duration.toFixed(2),
-          context: (appError as any).context,
+          companyName: request.company_name,
         })
+        throw new ApplicationError(
+          `Valuation calculation failed: ${getErrorMessage(error)}`,
+          'VALUATION_CALCULATION_FAILED',
+          {
+            originalError: error,
+            companyName: request.company_name,
+            duration_ms: duration.toFixed(2),
+          }
+        )
       }
-
-      throw appError
     }
   }
 }

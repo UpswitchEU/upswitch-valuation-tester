@@ -367,12 +367,15 @@ export class SessionAPI extends HttpClient {
   }
 
   /**
-   * Save valuation result to session
-   * Persists valuation result, HTML report, and info tab HTML for restoration
+   * Save complete valuation package to session
+   * Persists sessionData (input fields), valuation result, HTML report, and info tab HTML for restoration
+   * 
+   * ATOMIC SAVE: All data saved in single API call to ensure consistency
    */
   async saveValuationResult(
     reportId: string,
     data: {
+      sessionData?: any  // ✅ NEW: Input data (form fields or collected data)
       valuationResult: any
       htmlReport?: string
       infoTabHtml?: string
@@ -384,16 +387,26 @@ export class SessionAPI extends HttpClient {
         {
           method: 'PUT',
           url: `/api/valuation-sessions/${reportId}/result`,
-          data,
+          data: {
+            sessionData: data.sessionData,  // ✅ NEW: Send input data
+            valuationResult: data.valuationResult,
+            htmlReport: data.htmlReport,
+            infoTabHtml: data.infoTabHtml,
+          },
           headers: {},
         } as any,
         options
       )
 
-      apiLogger.info('Valuation result saved to session', {
+      apiLogger.info('Complete valuation package saved to session', {
         reportId,
+        hasSessionData: !!data.sessionData,
+        sessionDataKeys: data.sessionData ? Object.keys(data.sessionData) : [],
+        hasValuationResult: !!data.valuationResult,
         hasHtmlReport: !!data.htmlReport,
+        htmlReportLength: data.htmlReport?.length || 0,
         hasInfoTabHtml: !!data.infoTabHtml,
+        infoTabHtmlLength: data.infoTabHtml?.length || 0,
       })
 
       return response

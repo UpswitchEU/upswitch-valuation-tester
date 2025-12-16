@@ -44,6 +44,9 @@ interface ConversationalResultsStore {
   // Use this for immediate UI feedback (< 16ms)
   trySetCalculating: () => boolean
   setCalculating: (isCalculating: boolean) => void
+
+  // Async optimized methods (non-blocking, parallel execution)
+  calculateInBackground: (request: any) => Promise<ValuationResponse | null>
 }
 
 export const useConversationalResultsStore = create<ConversationalResultsStore>((set, get) => ({
@@ -255,6 +258,80 @@ export const useConversationalResultsStore = create<ConversationalResultsStore>(
         isCalculating,
       }
     })
+  },
+
+  // Async optimized: Calculate with progress tracking
+  // Non-blocking, runs in background, immediate UI feedback
+  calculateInBackground: async (request: any) => {
+    const { trySetCalculating, setResult, setCalculationProgress, setError, setCalculating } = get()
+
+    // Step 1: Immediate UI feedback (< 16ms) via trySetCalculating
+    const wasSet = trySetCalculating()
+    if (!wasSet) {
+      storeLogger.warn('[Conversational] Calculation already in progress, skipping')
+      return null
+    }
+
+    try {
+      // Step 2: Background calculation with progress tracking
+      storeLogger.info('[Conversational] Starting background calculation', {
+        companyName: request.company_name,
+      })
+
+      const startTime = performance.now()
+
+      // Import ValuationService dynamically
+      const { valuationService } = await import('../../services')
+
+      // Calculate with progress callback
+      const result = await valuationService.calculateValuation(
+        request,
+        (progress, message) => {
+          // Update progress in real-time
+          setCalculationProgress(progress)
+          storeLogger.debug('[Conversational] Calculation progress', { progress, message })
+        }
+      )
+
+      // Step 3: Atomic state update
+      set((state) => ({
+        ...state,
+        result,
+        htmlReport: result.html_report || null,
+        infoTabHtml: result.info_tab_html || null,
+        isCalculating: false,
+        calculationProgress: 100,
+        error: null,
+      }))
+
+      const duration = performance.now() - startTime
+
+      storeLogger.info('[Conversational] Calculation completed successfully (background)', {
+        valuationId: result.valuation_id,
+        duration_ms: duration.toFixed(2),
+        hasHtmlReport: !!result.html_report,
+        hasInfoTabHtml: !!result.info_tab_html,
+      })
+
+      return result
+    } catch (error) {
+      // Error handling (non-blocking)
+      const errorMessage = error instanceof Error ? error.message : 'Calculation failed'
+
+      set((state) => ({
+        ...state,
+        isCalculating: false,
+        calculationProgress: 0,
+        error: errorMessage,
+      }))
+
+      storeLogger.error('[Conversational] Calculation failed (background)', {
+        error: errorMessage,
+        companyName: request.company_name,
+      })
+
+      throw error
+    }
   },
 }))
 

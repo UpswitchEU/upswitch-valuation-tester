@@ -135,8 +135,12 @@ export function useSessionRestoration() {
           })
         })
 
-      generalLogger.info('Session restoration completed', {
+      generalLogger.info('Session restoration completed successfully', {
         reportId: session.reportId,
+        restoredFormData: true,
+        restoredValuationResult: !!sessionData?.valuation_result,
+        restoredHtmlReport: !!sessionData?.html_report,
+        restoredInfoTabHtml: !!sessionData?.info_tab_html,
       })
 
       // Show success toast

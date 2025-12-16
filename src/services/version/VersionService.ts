@@ -30,7 +30,13 @@ import type {
   VersionStatistics,
 } from '../../types/ValuationVersion'
 import { createContextLogger } from '../../utils/logger'
-import { convertToApplicationError, getErrorMessage } from '../../utils/errors/errorConverter'
+import { getErrorMessage } from '../../utils/errors/errorConverter'
+import {
+  ValidationError,
+  NetworkError,
+  NotFoundError,
+  ApplicationError,
+} from '../../types/errors'
 
 const logger = createContextLogger('VersionService')
 
@@ -86,18 +92,38 @@ export class VersionService {
       return response
     } catch (error) {
       const duration = performance.now() - startTime
-      const appError = convertToApplicationError(error, { reportId })
 
-      logger.error('Failed to fetch versions', {
-        error: getErrorMessage(appError),
-        reportId,
-        duration_ms: duration.toFixed(2),
-      })
-
-      // Return empty list instead of throwing - let caller decide how to handle
-      return {
-        versions: [],
-        activeVersion: 1,
+      // Use instanceof checks for specific error handling
+      if (error instanceof NotFoundError) {
+        logger.info('No versions found - returning empty list', {
+          reportId,
+          duration_ms: duration.toFixed(2),
+        })
+        return {
+          versions: [],
+          activeVersion: 1,
+        }
+      } else if (error instanceof NetworkError && error.retryable) {
+        logger.warn('Failed to fetch versions - network error (retryable)', {
+          error: error.message,
+          reportId,
+          duration_ms: duration.toFixed(2),
+        })
+        return {
+          versions: [],
+          activeVersion: 1,
+        }
+      } else {
+        logger.error('Failed to fetch versions - unknown error', {
+          error: getErrorMessage(error),
+          reportId,
+          duration_ms: duration.toFixed(2),
+        })
+        // Return empty list instead of throwing - let caller decide how to handle
+        return {
+          versions: [],
+          activeVersion: 1,
+        }
       }
     }
   }
@@ -136,15 +162,39 @@ export class VersionService {
       return version
     } catch (error) {
       const duration = performance.now() - startTime
-      const appError = convertToApplicationError(error, { reportId: request.reportId })
 
-      logger.error('Failed to create version', {
-        error: getErrorMessage(appError),
-        reportId: request.reportId,
-        duration_ms: duration.toFixed(2),
-      })
-
-      throw appError
+      // Use instanceof checks for specific error handling
+      if (error instanceof ValidationError) {
+        logger.warn('Failed to create version - validation error', {
+          error: error.message,
+          field: error.field,
+          reportId: request.reportId,
+          duration_ms: duration.toFixed(2),
+        })
+        throw error
+      } else if (error instanceof NetworkError && error.retryable) {
+        logger.warn('Failed to create version - network error (retryable)', {
+          error: error.message,
+          reportId: request.reportId,
+          duration_ms: duration.toFixed(2),
+        })
+        throw error
+      } else {
+        logger.error('Failed to create version - unknown error', {
+          error: getErrorMessage(error),
+          reportId: request.reportId,
+          duration_ms: duration.toFixed(2),
+        })
+        throw new ApplicationError(
+          `Failed to create version: ${getErrorMessage(error)}`,
+          'VERSION_CREATE_FAILED',
+          {
+            originalError: error,
+            reportId: request.reportId,
+            duration_ms: duration.toFixed(2),
+          }
+        )
+      }
     }
   }
 
@@ -183,16 +233,53 @@ export class VersionService {
       })
     } catch (error) {
       const duration = performance.now() - startTime
-      const appError = convertToApplicationError(error, { reportId, versionNumber })
 
-      logger.error('Failed to update version', {
-        error: getErrorMessage(appError),
-        reportId,
-        versionNumber,
-        duration_ms: duration.toFixed(2),
-      })
-
-      throw appError
+      // Use instanceof checks for specific error handling
+      if (error instanceof ValidationError) {
+        logger.warn('Failed to update version - validation error', {
+          error: error.message,
+          field: error.field,
+          reportId,
+          versionNumber,
+          duration_ms: duration.toFixed(2),
+        })
+        throw error
+      } else if (error instanceof NotFoundError) {
+        logger.error('Failed to update version - not found', {
+          error: error.message,
+          resourceType: error.resourceType,
+          resourceId: error.resourceId,
+          reportId,
+          versionNumber,
+          duration_ms: duration.toFixed(2),
+        })
+        throw error
+      } else if (error instanceof NetworkError && error.retryable) {
+        logger.warn('Failed to update version - network error (retryable)', {
+          error: error.message,
+          reportId,
+          versionNumber,
+          duration_ms: duration.toFixed(2),
+        })
+        throw error
+      } else {
+        logger.error('Failed to update version - unknown error', {
+          error: getErrorMessage(error),
+          reportId,
+          versionNumber,
+          duration_ms: duration.toFixed(2),
+        })
+        throw new ApplicationError(
+          `Failed to update version: ${getErrorMessage(error)}`,
+          'VERSION_UPDATE_FAILED',
+          {
+            originalError: error,
+            reportId,
+            versionNumber,
+            duration_ms: duration.toFixed(2),
+          }
+        )
+      }
     }
   }
 
@@ -225,16 +312,44 @@ export class VersionService {
       })
     } catch (error) {
       const duration = performance.now() - startTime
-      const appError = convertToApplicationError(error, { reportId, versionNumber })
 
-      logger.error('Failed to delete version', {
-        error: getErrorMessage(appError),
-        reportId,
-        versionNumber,
-        duration_ms: duration.toFixed(2),
-      })
-
-      throw appError
+      // Use instanceof checks for specific error handling
+      if (error instanceof NotFoundError) {
+        logger.error('Failed to delete version - not found', {
+          error: error.message,
+          resourceType: error.resourceType,
+          resourceId: error.resourceId,
+          reportId,
+          versionNumber,
+          duration_ms: duration.toFixed(2),
+        })
+        throw error
+      } else if (error instanceof NetworkError && error.retryable) {
+        logger.warn('Failed to delete version - network error (retryable)', {
+          error: error.message,
+          reportId,
+          versionNumber,
+          duration_ms: duration.toFixed(2),
+        })
+        throw error
+      } else {
+        logger.error('Failed to delete version - unknown error', {
+          error: getErrorMessage(error),
+          reportId,
+          versionNumber,
+          duration_ms: duration.toFixed(2),
+        })
+        throw new ApplicationError(
+          `Failed to delete version: ${getErrorMessage(error)}`,
+          'VERSION_DELETE_FAILED',
+          {
+            originalError: error,
+            reportId,
+            versionNumber,
+            duration_ms: duration.toFixed(2),
+          }
+        )
+      }
     }
   }
 
@@ -267,16 +382,32 @@ export class VersionService {
       return version
     } catch (error) {
       const duration = performance.now() - startTime
-      const appError = convertToApplicationError(error, { reportId, versionNumber })
 
-      logger.error('Failed to get version', {
-        error: getErrorMessage(appError),
-        reportId,
-        versionNumber,
-        duration_ms: duration.toFixed(2),
-      })
-
-      return null
+      // Use instanceof checks for specific error handling
+      if (error instanceof NotFoundError) {
+        logger.info('Version not found - returning null', {
+          reportId,
+          versionNumber,
+          duration_ms: duration.toFixed(2),
+        })
+        return null
+      } else if (error instanceof NetworkError && error.retryable) {
+        logger.warn('Failed to get version - network error (retryable)', {
+          error: error.message,
+          reportId,
+          versionNumber,
+          duration_ms: duration.toFixed(2),
+        })
+        return null
+      } else {
+        logger.error('Failed to get version - unknown error', {
+          error: getErrorMessage(error),
+          reportId,
+          versionNumber,
+          duration_ms: duration.toFixed(2),
+        })
+        return null
+      }
     }
   }
 
@@ -317,17 +448,38 @@ export class VersionService {
       return comparison
     } catch (error) {
       const duration = performance.now() - startTime
-      const appError = convertToApplicationError(error, { reportId, versionA, versionB })
 
-      logger.error('Failed to compare versions', {
-        error: getErrorMessage(appError),
-        reportId,
-        versionA,
-        versionB,
-        duration_ms: duration.toFixed(2),
-      })
-
-      return null
+      // Use instanceof checks for specific error handling
+      if (error instanceof NotFoundError) {
+        logger.warn('Failed to compare versions - version not found', {
+          error: error.message,
+          resourceType: error.resourceType,
+          resourceId: error.resourceId,
+          reportId,
+          versionA,
+          versionB,
+          duration_ms: duration.toFixed(2),
+        })
+        return null
+      } else if (error instanceof NetworkError && error.retryable) {
+        logger.warn('Failed to compare versions - network error (retryable)', {
+          error: error.message,
+          reportId,
+          versionA,
+          versionB,
+          duration_ms: duration.toFixed(2),
+        })
+        return null
+      } else {
+        logger.error('Failed to compare versions - unknown error', {
+          error: getErrorMessage(error),
+          reportId,
+          versionA,
+          versionB,
+          duration_ms: duration.toFixed(2),
+        })
+        return null
+      }
     }
   }
 
@@ -356,13 +508,26 @@ export class VersionService {
       return stats
     } catch (error) {
       const duration = performance.now() - startTime
-      const appError = convertToApplicationError(error, { reportId })
 
-      logger.error('Failed to get statistics', {
-        error: getErrorMessage(appError),
-        reportId,
-        duration_ms: duration.toFixed(2),
-      })
+      // Use instanceof checks for specific error handling
+      if (error instanceof NotFoundError) {
+        logger.info('No statistics found - returning defaults', {
+          reportId,
+          duration_ms: duration.toFixed(2),
+        })
+      } else if (error instanceof NetworkError && error.retryable) {
+        logger.warn('Failed to get statistics - network error (retryable)', {
+          error: error.message,
+          reportId,
+          duration_ms: duration.toFixed(2),
+        })
+      } else {
+        logger.error('Failed to get statistics - unknown error', {
+          error: getErrorMessage(error),
+          reportId,
+          duration_ms: duration.toFixed(2),
+        })
+      }
 
       // Return default stats instead of throwing
       // Return empty statistics on error

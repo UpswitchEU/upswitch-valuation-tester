@@ -151,23 +151,36 @@ export const ConversationPanel: React.FC<ConversationPanelProps> = ({
 
       if (session?.reportId) {
         try {
-          // Atomic save: all data in one operation (using reportService)
+          // Get collected data from session for restoration
+          const sessionStore = useConversationalSessionStore.getState()
+          const sessionData = sessionStore.session?.sessionData || {}
+
+          // ATOMIC SAVE: Save complete package in single API call
+          // - sessionData: Collected data from conversation for restoration
+          // - valuationResult: Calculation result
+          // - htmlReport: Main report HTML
+          // - infoTabHtml: Info tab HTML
           await reportService.saveReportAssets(session.reportId, {
+            sessionData: sessionData,  // ✅ NEW: Include collected data
             valuationResult: result,
             htmlReport: result.html_report || '',
             infoTabHtml: result.info_tab_html || '',
           })
 
-          chatLogger.info('[Conversational] Complete session saved atomically', {
+          chatLogger.info('[Conversational] Complete report package saved atomically', {
             reportId: session.reportId,
+            hasSessionData: !!sessionData,
+            sessionDataKeys: sessionData ? Object.keys(sessionData) : [],
             hasResult: !!result,
             hasHtmlReport: !!result.html_report,
+            htmlReportLength: result.html_report?.length || 0,
             hasInfoTabHtml: !!result.info_tab_html,
+            infoTabHtmlLength: result.info_tab_html?.length || 0,
           })
 
           markSaved()
         } catch (error) {
-          chatLogger.error('[Conversational] Failed to save complete session', {
+          chatLogger.error('[Conversational] Failed to save complete report package', {
             reportId: session.reportId,
             error: error instanceof Error ? error.message : String(error),
           })

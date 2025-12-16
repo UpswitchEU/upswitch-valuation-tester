@@ -141,9 +141,12 @@ export class RateLimitError extends ValuationError {
  * Error thrown when network connectivity fails
  */
 export class NetworkError extends ValuationError {
-  constructor(message: string, context?: Record<string, any>) {
-    super(message, 'NETWORK_ERROR', true, context)
+  public readonly retryable: boolean
+
+  constructor(message: string, retryable: boolean = true, context?: Record<string, any>) {
+    super(message, 'NETWORK_ERROR', retryable, { ...context, retryable })
     this.name = 'NetworkError'
+    this.retryable = retryable
   }
 }
 
@@ -154,6 +157,49 @@ export class ConversationStateError extends ValuationError {
   constructor(message: string, context?: Record<string, any>) {
     super(message, 'CONVERSATION_STATE_ERROR', true, context)
     this.name = 'ConversationStateError'
+  }
+}
+
+/**
+ * Error thrown when calculation fails (500 errors)
+ */
+export class CalculationError extends ValuationError {
+  public readonly reportId?: string
+
+  constructor(message: string, reportId?: string, context?: Record<string, any>) {
+    super(message, 'CALCULATION_ERROR', true, { ...context, reportId })
+    this.name = 'CalculationError'
+    this.reportId = reportId
+  }
+}
+
+/**
+ * Error thrown when a resource is not found (404 errors)
+ */
+export class NotFoundError extends ValuationError {
+  public readonly resourceType?: string
+  public readonly resourceId?: string
+
+  constructor(
+    message: string,
+    resourceType?: string,
+    resourceId?: string,
+    context?: Record<string, any>
+  ) {
+    super(message, 'NOT_FOUND_ERROR', false, { ...context, resourceType, resourceId })
+    this.name = 'NotFoundError'
+    this.resourceType = resourceType
+    this.resourceId = resourceId
+  }
+}
+
+/**
+ * Generic application error for unexpected failures
+ */
+export class ApplicationError extends ValuationError {
+  constructor(message: string, code: string, context?: Record<string, any>) {
+    super(message, code, true, context)
+    this.name = 'ApplicationError'
   }
 }
 

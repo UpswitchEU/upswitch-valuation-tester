@@ -9,7 +9,7 @@
 
 import { useCallback } from 'react'
 import { valuationAuditService } from '../../../services/audit/ValuationAuditService'
-import { valuationService, sessionService } from '../../../services'
+import { valuationService, sessionService, reportService } from '../../../services'
 import { useManualFormStore, useManualSessionStore, useManualResultsStore } from '../../../store/manual'
 import { useVersionHistoryStore } from '../../../store/useVersionHistoryStore'
 import { buildValuationRequest } from '../../../utils/buildValuationRequest'
@@ -391,25 +391,32 @@ export const useValuationFormSubmission = (
 
         if (session?.reportId) {
           try {
-            // Atomic save: all data in one operation using service layer
-            await sessionService.saveCompleteSession(session.reportId, {
-              formData,
+            // ATOMIC SAVE: Save complete package in single API call
+            // - sessionData: Original form inputs for restoration
+            // - valuationResult: Calculation result
+            // - htmlReport: Main report HTML
+            // - infoTabHtml: Info tab HTML
+            await reportService.saveReportAssets(session.reportId, {
+              sessionData: formData,  // ✅ NEW: Include input data
               valuationResult: result,
               htmlReport: result.html_report,
               infoTabHtml: result.info_tab_html,
             })
 
-            generalLogger.info('[Manual] Complete session saved atomically after calculation', {
+            generalLogger.info('[Manual] Complete report package saved atomically after calculation', {
               reportId: session.reportId,
-              hasFormData: !!formData,
+              hasSessionData: !!formData,
+              sessionDataKeys: formData ? Object.keys(formData) : [],
               hasResult: !!result,
               hasHtmlReport: !!result.html_report,
+              htmlReportLength: result.html_report?.length || 0,
               hasInfoTabHtml: !!result.info_tab_html,
+              infoTabHtmlLength: result.info_tab_html?.length || 0,
             })
 
             markSaved()
           } catch (saveError) {
-            generalLogger.error('[Manual] Failed to save complete session', {
+            generalLogger.error('[Manual] Failed to save complete report package', {
               reportId: session.reportId,
               error: saveError instanceof Error ? saveError.message : String(saveError),
             })
