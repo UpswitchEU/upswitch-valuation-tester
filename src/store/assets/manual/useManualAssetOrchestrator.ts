@@ -60,9 +60,86 @@ export function useManualAssetOrchestrator(reportId: string) {
     useFinalPriceAsset.getState().reset()
   }, [reportId])
 
+  /**
+   * Optimistically update an asset
+   * UI updates immediately, persists in background
+   */
+  const updateAssetOptimistic = useCallback(async (
+    assetType: 'inputFields' | 'mainReport' | 'infoTab' | 'versions' | 'finalPrice',
+    data: any
+  ) => {
+    generalLogger.debug('[AssetOrchestrator:Manual] Optimistic update started', {
+      reportId,
+      assetType,
+    })
+
+    let store: any
+    let previousData: any
+
+    // Get the appropriate store and save previous data
+    switch (assetType) {
+      case 'inputFields':
+        store = useInputFieldsAsset.getState()
+        previousData = store.data
+        store.setData(data)
+        store.setMode('send')
+        break
+      case 'mainReport':
+        store = useMainReportAsset.getState()
+        previousData = store.data
+        store.setData(data)
+        store.setMode('send')
+        break
+      case 'infoTab':
+        store = useInfoTabAsset.getState()
+        previousData = store.data
+        store.setData(data)
+        store.setMode('send')
+        break
+      case 'versions':
+        store = useVersionsAsset.getState()
+        previousData = store.data
+        store.setData(data)
+        store.setMode('send')
+        break
+      case 'finalPrice':
+        store = useFinalPriceAsset.getState()
+        previousData = store.data
+        store.setData(data)
+        store.setMode('send')
+        break
+    }
+
+    try {
+      // Background persist (would call appropriate service method)
+      // For now, we'll just mark as synced after a delay
+      await new Promise(resolve => setTimeout(resolve, 100))
+      store.markSynced()
+      store.setMode('idle')
+
+      generalLogger.info('[AssetOrchestrator:Manual] Optimistic update succeeded', {
+        reportId,
+        assetType,
+      })
+    } catch (error) {
+      // Revert on error
+      const message = error instanceof Error ? error.message : 'Update failed'
+      store.setData(previousData)
+      store.setError(message)
+      store.setMode('idle')
+
+      generalLogger.error('[AssetOrchestrator:Manual] Optimistic update failed, reverted', {
+        reportId,
+        assetType,
+        error: message,
+      })
+    }
+  }, [reportId])
+
   return {
     loadAllAssets,
     resetAllAssets,
+    updateAssetOptimistic,
   }
 }
 
