@@ -31,7 +31,7 @@ interface SessionStore {
   hasUnsavedChanges: boolean
   
   // Actions
-  loadSession: (reportId: string) => Promise<void>
+  loadSession: (reportId: string, flow?: 'manual' | 'conversational') => Promise<void>
   updateSession: (updates: Partial<ValuationSession>) => void
   updateSessionData: (data: Partial<any>) => Promise<void>  // Async for hook compatibility
   saveSession: () => Promise<void>
@@ -68,8 +68,9 @@ export const useSessionStore = create<SessionStore>((set, get) => ({
    * - Promise cache prevents duplicate calls
    * - Atomic state updates
    * - Error handling with clear messages
+   * - Auto-creates session if not found (for new reports)
    */
-  loadSession: async (reportId: string) => {
+  loadSession: async (reportId: string, flow?: 'manual' | 'conversational') => {
     const state = get()
     
     // GUARD 1: Already loaded for this reportId
@@ -90,10 +91,10 @@ export const useSessionStore = create<SessionStore>((set, get) => ({
       set({ isLoading: true, error: null })
       
       try {
-        storeLogger.info('[Session] Loading session', { reportId })
+        storeLogger.info('[Session] Loading session', { reportId, flow })
         
-        // Load from SessionService (handles cache, backend, merging)
-        const session = await sessionService.loadSession(reportId)
+        // Load from SessionService (handles cache, backend, merging, auto-creation)
+        const session = await sessionService.loadSession(reportId, flow)
         
         if (!session) {
           throw new Error(`Session not found: ${reportId}`)

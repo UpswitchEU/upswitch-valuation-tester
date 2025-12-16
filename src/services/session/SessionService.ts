@@ -68,14 +68,15 @@ export class SessionService {
    * 5. Cache for next time
    *
    * @param reportId - Report identifier
+   * @param flow - Optional flow type ('manual' | 'conversational') for new session creation
    * @returns Session object or null if not found
    */
-  async loadSession(reportId: string): Promise<ValuationSession | null> {
+  async loadSession(reportId: string, flow?: 'manual' | 'conversational'): Promise<ValuationSession | null> {
     const startTime = performance.now()
     const ABSOLUTE_TIMEOUT = 12000 // 12 seconds max
 
     try {
-      logger.info('Loading session', { reportId })
+      logger.info('Loading session', { reportId, flow })
 
       // CACHE-FIRST: Check localStorage cache BEFORE backend API call
       const cachedSession = globalSessionCache.get(reportId)
@@ -105,7 +106,43 @@ export class SessionService {
             const sessionResponse = await backendAPI.getValuationSession(reportId)
 
             if (!sessionResponse?.session) {
-              return null
+              // Session doesn't exist - create it automatically
+              logger.info('Session not found, creating new session', { reportId, flow })
+              
+              try {
+                // Create minimal session on backend
+                const createResponse = await backendAPI.createValuationSession({
+                  reportId,
+                  currentView: flow || 'manual', // Use provided flow or default to manual
+                  sessionData: {},
+                })
+                
+                if (!createResponse?.session) {
+                  logger.error('Failed to create new session', { reportId })
+                  return null
+                }
+                
+                logger.info('New session created successfully', {
+                  reportId,
+                  currentView: createResponse.session.currentView,
+                })
+                
+                // Validate and normalize the new session
+                validateSessionData(createResponse.session)
+                const normalizedSession = normalizeSessionDates(createResponse.session)
+                const mergedSession = mergeSessionFields(normalizedSession)
+                
+                // Cache the new session
+                globalSessionCache.set(reportId, mergedSession)
+                
+                return mergedSession
+              } catch (createError) {
+                logger.error('Error creating new session', {
+                  reportId,
+                  error: createError instanceof Error ? createError.message : String(createError),
+                })
+                return null
+              }
             }
 
             // Validate session data

@@ -58,20 +58,23 @@ export const ValuationSessionManager: React.FC<ValuationSessionManagerProps> = R
     // Extract URL params
     const prefilledQuery = searchParams?.get('prefilledQuery') || null
     const autoSend = searchParams?.get('autoSend') === 'true'
+    const flowParam = searchParams?.get('flow') as 'manual' | 'conversational' | null
+    const detectedFlow = flowParam || 'manual'
     
     // Dynamic stage based on loading state
     const stage: Stage = isLoading && !session ? 'loading' : 'data-entry'
     
     // Load session when reportId changes (promise cache prevents duplicates)
     useEffect(() => {
-      generalLogger.info('[SessionManager] Loading session', { reportId })
-      loadSession(reportId).catch(err => {
+      generalLogger.info('[SessionManager] Loading session', { reportId, flow: detectedFlow })
+      loadSession(reportId, detectedFlow).catch(err => {
         generalLogger.error('[SessionManager] Load failed', {
           reportId,
+          flow: detectedFlow,
           error: err.message
         })
       })
-    }, [reportId, loadSession])
+    }, [reportId, loadSession, detectedFlow])
     
     // Retry: Clear error and reload
     const handleRetry = useCallback(() => {
