@@ -98,95 +98,113 @@ export const ManualLayout: React.FC<ManualLayoutProps> = ({
   const { updateFormData } = useManualFormStore()
   const { showToast } = useToast()
 
-  // NEW: Asset orchestrator for progressive loading
-  const { loadAllAssets, resetAllAssets } = useManualAssetOrchestrator(reportId)
+  // Asset orchestrator for cleanup only
+  // Note: loadAllAssets removed - assets now populate reactively from store subscriptions
+  const { resetAllAssets } = useManualAssetOrchestrator(reportId)
 
-  // CRITICAL: Load and restore session data on mount (Manual flow)
-  // Uses flow-isolated stores + asset orchestrator for progressive loading
-  // NOTE: Session loading is handled by ValuationSessionManager - this only loads assets
+  // CRITICAL: Reactive session data restoration
+  // Single subscription-based approach - no explicit loading calls
+  // Assets populate automatically when session data arrives in store
   useEffect(() => {
-    if (reportId) {
-      // Load all assets in parallel (progressive loading)
-      loadAllAssets().catch((error) => {
-        generalLogger.error('[Manual] Asset load failed', {
-          reportId,
-          error: error instanceof Error ? error.message : String(error),
-        })
-      })
-
-      // Session loading is handled by ValuationSessionManager via Zustand promise cache
-      // No need to call loadSessionAsync here - it would be redundant and could cause conflicts
-      // The promise cache in the store prevents duplicate loads anyway, but this avoids unnecessary calls
-    }
-
-    // Cleanup on unmount
-    return () => {
-      resetAllAssets()
-    }
-  }, [reportId, loadAllAssets, resetAllAssets]) // Removed session and loadSessionAsync - session managed by ValuationSessionManager
-
-  // Track if we've already restored data to prevent repeated restorations
-  const hasRestoredDataRef = useRef<string | null>(null)
-  
-  // Restore form data and results from session when it loads
-  // ⚠️ CRITICAL FIX: Only depend on sessionReportId to prevent render loop
-  // The loop was caused by sessionData/sessionValuationResult changing references
-  useEffect(() => {
-    // Early return if no session or already restored for this reportId
-    if (!sessionReportId || hasRestoredDataRef.current === sessionReportId) {
+    if (!sessionReportId) {
+      generalLogger.debug('[ManualLayout] No session yet, waiting for load', { reportId })
       return
     }
 
-    // Get current values directly from store (not from selectors that cause re-renders)
+    // Subscribe to session store changes
+    // This is the ONLY place that reacts to session data updates
+    let previousSessionData: any = null
+    let previousValuationResult: any = null
+    
+    const unsubscribe = useManualSessionStore.subscribe(
+      (state) => {
+        // Skip if no session
+        if (!state.session || state.session.reportId !== sessionReportId) {
+          return
+        }
+        
+        const sessionDataObj = state.session.sessionData as any
+        const sessionValResult = state.session.valuationResult
+        
+        // Check if sessionData actually changed (compare reference)
+        if (sessionDataObj && sessionDataObj !== previousSessionData) {
+          previousSessionData = sessionDataObj
+          
+          // Restore form data if it has meaningful data
+          if (sessionDataObj.company_name || sessionDataObj.revenue) {
+            const currentFormData = useManualFormStore.getState().formData
+            const hasChanges = 
+              (sessionDataObj.company_name && sessionDataObj.company_name !== currentFormData.company_name) ||
+              (sessionDataObj.revenue !== undefined && sessionDataObj.revenue !== currentFormData.revenue)
+            
+            if (hasChanges) {
+              generalLogger.debug('[ManualLayout] Restoring form data from session', {
+                reportId: sessionReportId,
+              })
+              updateFormData(sessionDataObj)
+            }
+          }
+        }
+        
+        // Check if valuationResult actually changed (compare reference)
+        if (sessionValResult && sessionValResult !== previousValuationResult) {
+          previousValuationResult = sessionValResult
+          
+          const currentResult = useManualResultsStore.getState().result
+          if (!currentResult || currentResult.valuation_id !== sessionValResult.valuation_id) {
+            generalLogger.debug('[ManualLayout] Restoring valuation result from session', {
+              reportId: sessionReportId,
+            })
+            setResult(sessionValResult as any)
+          }
+        }
+      }
+    )
+    
+    // Also restore immediately if session data already exists (initial load)
     const currentState = useManualSessionStore.getState()
-    const sessionDataObj = currentState.session?.sessionData as any
-    const sessionValResult = currentState.session?.valuationResult
-    
-    // Restore form data (if exists and different from current)
-    if (sessionDataObj && (sessionDataObj.company_name || sessionDataObj.revenue)) {
-      // Get current form data to avoid unnecessary updates
-      const currentFormData = useManualFormStore.getState().formData
-      const hasChanges = 
-        (sessionDataObj.company_name && sessionDataObj.company_name !== currentFormData.company_name) ||
-        (sessionDataObj.revenue !== undefined && sessionDataObj.revenue !== currentFormData.revenue)
+    if (currentState.session?.reportId === sessionReportId) {
+      const sessionDataObj = currentState.session.sessionData as any
+      const sessionValResult = currentState.session.valuationResult
       
-      if (hasChanges) {
-        generalLogger.debug('[ManualLayout] Restoring form data from session', {
-          reportId: sessionReportId,
-        })
-        updateFormData(sessionDataObj)
+      if (sessionDataObj && (sessionDataObj.company_name || sessionDataObj.revenue)) {
+        const currentFormData = useManualFormStore.getState().formData
+        const hasChanges = 
+          (sessionDataObj.company_name && sessionDataObj.company_name !== currentFormData.company_name) ||
+          (sessionDataObj.revenue !== undefined && sessionDataObj.revenue !== currentFormData.revenue)
+        
+        if (hasChanges) {
+          generalLogger.debug('[ManualLayout] Initial restore of form data', {
+            reportId: sessionReportId,
+          })
+          updateFormData(sessionDataObj)
+        }
+      }
+      
+      if (sessionValResult) {
+        const currentResult = useManualResultsStore.getState().result
+        if (!currentResult || currentResult.valuation_id !== sessionValResult.valuation_id) {
+          generalLogger.debug('[ManualLayout] Initial restore of valuation result', {
+            reportId: sessionReportId,
+          })
+          setResult(sessionValResult as any)
+        }
       }
     }
-
-    // Restore results (if exists and different from current)
-    if (sessionValResult) {
-      const currentResult = useManualResultsStore.getState().result
-      // Only update if result is different (compare by valuation_id or structure)
-      if (!currentResult || currentResult.valuation_id !== sessionValResult.valuation_id) {
-        generalLogger.debug('[ManualLayout] Restoring valuation result from session', {
-          reportId: sessionReportId,
-        })
-        setResult(sessionValResult as any)
-      }
-    }
-
-    // Mark as restored for this reportId (AFTER all restore operations)
-    hasRestoredDataRef.current = sessionReportId
     
-    generalLogger.info('[ManualLayout] Session restoration complete', {
+    generalLogger.info('[ManualLayout] Session reactive subscription active', {
       reportId: sessionReportId,
     })
-  }, [
-    sessionReportId, // ⚠️ ONLY depend on reportId - prevents render loop!
-    // updateFormData and setResult are stable, but include for correctness
-    updateFormData,
-    setResult
-  ])
-  
-  // Reset restoration flag when reportId changes
+    
+    return unsubscribe
+  }, [sessionReportId, reportId, updateFormData, setResult])
+
+  // Cleanup assets on unmount
   useEffect(() => {
-    hasRestoredDataRef.current = null
-  }, [reportId])
+    return () => {
+      resetAllAssets()
+    }
+  }, [reportId, resetAllAssets])
 
   // Panel resize hook
   const { leftPanelWidth, handleResize, isMobile, mobileActivePanel, setMobileActivePanel } =
