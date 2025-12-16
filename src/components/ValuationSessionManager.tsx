@@ -62,9 +62,19 @@ export const ValuationSessionManager: React.FC<ValuationSessionManagerProps> = R
     const flowParam = searchParams?.get('flow') || 'manual'
     const isManualFlow = flowParam === 'manual'
     
+    // For rendering: use full session object (needed by children)
     const manualSession = useManualSessionStore((state) => state.session)
     const conversationalSession = useConversationalSessionStore((state) => state.session)
     const session = isManualFlow ? manualSession : conversationalSession
+    
+    // Optimized selectors for transition logic: only subscribe to fields we need
+    // Subscribe to both flows since flow can change, but Zustand selectors are efficient
+    const manualSessionReportId = useManualSessionStore((state) => state.session?.reportId)
+    const manualSessionIsLoading = useManualSessionStore((state) => state.isLoading)
+    const manualSessionError = useManualSessionStore((state) => state.error)
+    const conversationalSessionReportId = useConversationalSessionStore((state) => state.session?.reportId)
+    const conversationalSessionIsLoading = useConversationalSessionStore((state) => state.isLoading)
+    const conversationalSessionError = useConversationalSessionStore((state) => state.error)
     
     // URL update tracking (prevents re-initialization during URL updates)
     const isUpdatingUrlRef = useRef(false)
@@ -248,89 +258,41 @@ export const ValuationSessionManager: React.FC<ValuationSessionManagerProps> = R
     }, [reportId])
 
     // Watch for session availability and transition stage atomically
-    // Single effect that handles all transition logic to avoid race conditions
+    // Uses optimized selectors to prevent unnecessary re-renders
     useEffect(() => {
       // Early return guards (atomic checks)
       if (stage !== 'loading' || !reportId || hasTransitionedRef.current) return
 
-      // Atomic transition function - checks state and transitions in one operation
-      const attemptTransition = (): boolean => {
-        // Double-check guards (prevent race conditions from concurrent calls)
-        if (hasTransitionedRef.current) return false
-
-        // Get current flow from ref (stable, doesn't cause re-renders)
-        const currentSearchParams = searchParamsRef.current
-        const flowParam = currentSearchParams?.get('flow') || 'manual'
-        const currentIsManualFlow = flowParam === 'manual'
-        
-        // Get fresh state from Zustand (atomic read)
-        const manualState = useManualSessionStore.getState()
-        const conversationalState = useConversationalSessionStore.getState()
-        const currentSession = currentIsManualFlow ? manualState.session : conversationalState.session
-        const currentError = currentIsManualFlow ? manualState.error : conversationalState.error
-        const isLoading = currentIsManualFlow ? manualState.isLoading : conversationalState.isLoading
-
-        // Check if session is ready (atomic condition check)
-        const sessionReady = currentSession?.reportId === reportId && !isLoading
-        const sessionReadyWithError = currentSession?.reportId === reportId && currentError
-
-        if (sessionReady || sessionReadyWithError) {
-          // Atomic transition: set flag first, then update stage
-          // This prevents multiple transitions even if setStage is called multiple times
-          if (hasTransitionedRef.current) return false // Another call already transitioned
-          
-          hasTransitionedRef.current = true
-          generalLogger.debug('Session available, transitioning to data-entry', { 
-            reportId,
-            hasError: !!currentError,
-            sessionExists: !!currentSession,
-            sessionReady,
-            sessionReadyWithError
-          })
-          setStage('data-entry')
-          return true
-        }
-
-        return false
-      }
-
-      // Attempt transition immediately (no delay - avoids race conditions)
-      if (attemptTransition()) return
-
-      // Clear any existing interval first (prevent multiple intervals)
-      if (transitionIntervalRef.current) {
-        clearInterval(transitionIntervalRef.current)
-        transitionIntervalRef.current = null
-      }
+      // Get current flow from ref (stable, doesn't cause re-renders)
+      const currentSearchParams = searchParamsRef.current
+      const flowParam = currentSearchParams?.get('flow') || 'manual'
+      const currentIsManualFlow = flowParam === 'manual'
       
-      // Set up a single check interval (not multiple timeouts)
-      // This is more efficient and avoids race conditions from multiple timers
-      transitionIntervalRef.current = setInterval(() => {
-        // Check if we should stop (already transitioned)
-        if (hasTransitionedRef.current) {
-          if (transitionIntervalRef.current) {
-            clearInterval(transitionIntervalRef.current)
-            transitionIntervalRef.current = null
-          }
-          return
-        }
+      // Use optimized selectors (already subscribed, no need to call getState)
+      const currentSessionReportId = currentIsManualFlow ? manualSessionReportId : conversationalSessionReportId
+      const isLoading = currentIsManualFlow ? manualSessionIsLoading : conversationalSessionIsLoading
+      const currentError = currentIsManualFlow ? manualSessionError : conversationalSessionError
 
-        if (attemptTransition()) {
-          if (transitionIntervalRef.current) {
-            clearInterval(transitionIntervalRef.current)
-            transitionIntervalRef.current = null
-          }
-        }
-      }, 200) // Check every 200ms until transition succeeds
+      // Check if session is ready (atomic condition check)
+      const sessionReady = currentSessionReportId === reportId && !isLoading
+      const sessionReadyWithError = currentSessionReportId === reportId && currentError
 
-      // Cleanup: clear interval on unmount or when dependencies change
-      return () => {
-        if (transitionIntervalRef.current) {
-          clearInterval(transitionIntervalRef.current)
-          transitionIntervalRef.current = null
-        }
+      if (sessionReady || sessionReadyWithError) {
+        // Atomic transition: set flag first, then update stage
+        // This prevents multiple transitions even if setStage is called multiple times
+        if (hasTransitionedRef.current) return // Another call already transitioned
+        
+        hasTransitionedRef.current = true
+        generalLogger.debug('Session available, transitioning to data-entry', { 
+          reportId,
+          hasError: !!currentError,
+          sessionExists: !!currentSessionReportId,
+          sessionReady,
+          sessionReadyWithError
+        })
+        setStage('data-entry')
       }
-    }, [reportId, stage]) // Minimal dependencies - check session state inside effect
+    }, [reportId, stage, manualSessionReportId, manualSessionIsLoading, manualSessionError, conversationalSessionReportId, conversationalSessionIsLoading, conversationalSessionError]) // React to specific session fields - no intervals needed
 
     // Timeout fallback: Force transition after 10 seconds if still loading
     // This is a safety net, separate from the main transition logic
