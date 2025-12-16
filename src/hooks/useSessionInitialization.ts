@@ -65,3 +65,4 @@ export function useSessionInitialization(): void {
       })
   }, [ensureSession, isAuthenticated, authLoading])
 }
+

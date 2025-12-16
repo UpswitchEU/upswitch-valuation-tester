@@ -101,10 +101,16 @@ export class HttpClient {
         // Update session activity (safe, throttled, and circuit-breaker protected)
         // Fire and forget - don't await to avoid blocking requests
         // Note: Still using service for activity updates (non-critical, already throttled)
-        const { guestSessionService } = await import('../guestSessionService')
-        guestSessionService.updateActivity().catch(() => {
-          // Errors are handled internally by updateActivity - this is just a safety net
-        })
+        import('../guestSessionService')
+          .then(({ guestSessionService }) => {
+            guestSessionService.updateActivity().catch(() => {
+              // Errors are handled internally by updateActivity - this is just a safety net
+            })
+          })
+          .catch((error) => {
+            // Silently fail if module import fails - activity tracking is non-critical
+            apiLogger.debug('Failed to import guestSessionService for activity tracking', { error })
+          })
 
         return config
       },

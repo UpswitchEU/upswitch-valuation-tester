@@ -150,11 +150,35 @@ export const useGuestSessionStore = create<GuestSessionState>((set, get) => ({
         })
 
         return null
+      } finally {
+        // Clear promise cache on completion (only if still active)
+        set((currentState) => {
+          if (currentState.initializationPromise === initPromise) {
+            return { ...currentState, initializationPromise: null }
+          }
+          return currentState
+        })
       }
     })()
 
-    // Store promise for reuse
-    set({ initializationPromise: initPromise })
+    // ATOMIC: Store promise using functional update (same pattern as manual/conversational stores)
+    // This atomically checks if another promise was set, and only sets if none exists
+    let cachedPromise: Promise<string | null> | null = null
+    set((currentState) => {
+      // Double-check: if another promise was set between check and set, use that one
+      if (currentState.initializationPromise) {
+        cachedPromise = currentState.initializationPromise
+        return currentState // No change needed
+      }
+      // Set our promise atomically
+      return { ...currentState, initializationPromise: initPromise }
+    })
+
+    // If another promise was cached (race condition), return that instead
+    if (cachedPromise) {
+      guestSessionLogger.debug('Another initialization started concurrently, using that promise')
+      return cachedPromise
+    }
 
     return initPromise
   },
@@ -198,3 +222,4 @@ export const useGuestSessionStore = create<GuestSessionState>((set, get) => ({
     guestSessionLogger.info('Guest session cleared')
   },
 }))
+

@@ -28,6 +28,10 @@ interface ConversationalSessionStore {
   lastSaved: Date | null
   hasUnsavedChanges: boolean
 
+  // Promise cache (Zustand pattern - prevents duplicate loads)
+  loadPromise: Promise<void> | null
+  loadingReportId: string | null // Track which reportId is being loaded
+
   // Actions (all atomic with functional updates)
   setSession: (session: ValuationSession | null) => void
   setLoading: (isLoading: boolean) => void
@@ -54,6 +58,8 @@ export const useConversationalSessionStore = create<ConversationalSessionStore>(
   error: null,
   lastSaved: null,
   hasUnsavedChanges: false,
+  loadPromise: null,
+  loadingReportId: null,
 
   // Set session (atomic)
   setSession: (session: ValuationSession | null) => {
@@ -140,6 +146,8 @@ export const useConversationalSessionStore = create<ConversationalSessionStore>(
       error: null,
       lastSaved: null,
       hasUnsavedChanges: false,
+      loadPromise: null, // Clear promise cache
+      loadingReportId: null,
     }))
 
     storeLogger.info('[Conversational] Session cleared')
@@ -159,16 +167,34 @@ export const useConversationalSessionStore = create<ConversationalSessionStore>(
 
   // Async optimized: Load session with parallel asset loading
   // Non-blocking, runs in background, immediate UI feedback
+  // Uses Zustand promise cache pattern to prevent duplicate loads (atomic state)
   loadSessionAsync: async (reportId: string) => {
-    const { setSession, setLoading, setError } = get()
+    const state = get()
 
-    // Step 1: Immediate UI feedback (< 16ms)
-    setLoading(true)
-    setError(null)
+    // GUARD: If session already exists for this reportId, skip load
+    if (state.session?.reportId === reportId && !state.error) {
+      storeLogger.debug('[Conversational] Session already loaded, skipping duplicate load', { reportId })
+      return
+    }
 
-    try {
-      // Step 2: Parallel background loading (non-blocking)
-      storeLogger.info('[Conversational] Starting parallel session load', { reportId })
+    // GUARD: If already loading the same reportId, return existing promise (Zustand pattern)
+    // Atomic check - prevents race conditions
+    if (state.loadPromise && state.loadingReportId === reportId) {
+      storeLogger.debug('[Conversational] Session already loading, reusing promise', { reportId })
+      return state.loadPromise
+    }
+
+    // Create load promise
+    const loadPromise = (async () => {
+      const { setSession, setLoading, setError } = get()
+
+      // Step 1: Immediate UI feedback (< 16ms)
+      setLoading(true)
+      setError(null)
+
+      try {
+        // Step 2: Parallel background loading (non-blocking)
+        storeLogger.info('[Conversational] Starting parallel session load', { reportId })
       
       const startTime = performance.now()
       
@@ -223,7 +249,38 @@ export const useConversationalSessionStore = create<ConversationalSessionStore>(
         reportId,
         error: errorMessage,
       })
+      } finally {
+        // Clear promise cache on completion (success or error)
+        // Only clear if this is still the active promise (prevents clearing newer loads)
+        set((currentState) => {
+          if (currentState.loadPromise === loadPromise) {
+            return { ...currentState, loadPromise: null, loadingReportId: null }
+          }
+          return currentState
+        })
+      }
+    })()
+
+    // ATOMIC: Store promise and reportId using functional update
+    // This atomically checks if another promise was set, and only sets if none exists
+    let cachedPromise: Promise<void> | null = null
+    set((currentState) => {
+      // Double-check: if another promise was set between check and set, use that one
+      if (currentState.loadPromise && currentState.loadingReportId === reportId) {
+        cachedPromise = currentState.loadPromise
+        return currentState // No change needed
+      }
+      // Set our promise atomically
+      return { ...currentState, loadPromise, loadingReportId: reportId }
+    })
+
+    // If another promise was cached (race condition), return that instead
+    if (cachedPromise) {
+      storeLogger.debug('[Conversational] Another load started concurrently, using that promise', { reportId })
+      return cachedPromise
     }
+
+    return loadPromise
   },
 
   // Save session (for compatibility)

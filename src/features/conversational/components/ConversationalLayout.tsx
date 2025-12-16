@@ -24,6 +24,8 @@ import type { Message } from '../../../types/message'
 import type { ValuationResponse } from '../../../types/valuation'
 import { chatLogger } from '../../../utils/logger'
 import { CreditGuard } from '../../auth/components/CreditGuard'
+import { useConversationalAssetOrchestrator } from '../../../store/assets/conversational/useConversationalAssetOrchestrator'
+import { AssetInspector } from '../../../components/debug/AssetInspector'
 import {
     ConversationProvider,
     useConversationActions,
@@ -76,11 +78,31 @@ const ConversationalLayoutInner: React.FC<ConversationalLayoutProps> = ({
   const { isSaving, lastSaved, hasUnsavedChanges, error: syncError, session } = useConversationalSessionStore()
   const { collectedData, updateCollectedData } = useConversationalChatStore()
 
+  // NEW: Asset orchestrator for progressive loading
+  const { loadAllAssets, resetAllAssets } = useConversationalAssetOrchestrator(reportId)
+
   // CRITICAL: Load and restore session data on mount (Conversational flow)
-  // Uses flow-isolated stores for robust state management
+  // Uses flow-isolated stores + asset orchestrator for progressive loading
   // Note: Conversation messages are restored separately by useConversationRestoration
   useEffect(() => {
-    // Restore results from session when it loads
+    if (reportId) {
+      // Load all assets in parallel (progressive loading)
+      loadAllAssets().catch((error) => {
+        chatLogger.error('[Conversational] Asset load failed', {
+          reportId,
+          error: error instanceof Error ? error.message : String(error),
+        })
+      })
+    }
+
+    // Cleanup on unmount
+    return () => {
+      resetAllAssets()
+    }
+  }, [reportId, loadAllAssets, resetAllAssets])
+
+  // Restore results from session when it loads
+  useEffect(() => {
     if (session?.valuationResult && !result) {
       setResult(session.valuationResult as any)
       chatLogger.info('[Conversational] Restored valuation result from session', {
@@ -593,6 +615,9 @@ const ConversationalLayoutInner: React.FC<ConversationalLayoutProps> = ({
             onClearError={clearError}
           />
         </FullScreenModal>
+
+        {/* Asset Inspector (dev only) */}
+        <AssetInspector />
       </div>
     </CreditGuard>
   )

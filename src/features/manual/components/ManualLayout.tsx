@@ -8,17 +8,19 @@
  */
 
 import React, { useEffect, useRef } from 'react'
+import { AssetInspector } from '../../../components/debug/AssetInspector'
 import { ResizableDivider } from '../../../components/ResizableDivider'
 import { ValuationForm } from '../../../components/ValuationForm'
 import { ValuationToolbar } from '../../../components/ValuationToolbar'
 import { useAuth } from '../../../hooks/useAuth'
 import { useToast } from '../../../hooks/useToast'
 import {
-    useValuationToolbarFullscreen,
-    useValuationToolbarTabs,
-    type ValuationTab,
+  useValuationToolbarFullscreen,
+  useValuationToolbarTabs,
+  type ValuationTab,
 } from '../../../hooks/valuationToolbar'
-import { useManualResultsStore, useManualSessionStore, useManualFormStore } from '../../../store/manual'
+import { useManualAssetOrchestrator } from '../../../store/assets/manual/useManualAssetOrchestrator'
+import { useManualFormStore, useManualResultsStore, useManualSessionStore } from '../../../store/manual'
 import type { ValuationResponse } from '../../../types/valuation'
 import { generalLogger } from '../../../utils/logger'
 import { ReportPanel } from '../../conversational/components/ReportPanel'
@@ -58,20 +60,35 @@ export const ManualLayout: React.FC<ManualLayoutProps> = ({
   const { updateFormData } = useManualFormStore()
   const { showToast } = useToast()
 
+  // NEW: Asset orchestrator for progressive loading
+  const { loadAllAssets, resetAllAssets } = useManualAssetOrchestrator(reportId)
+
   // CRITICAL: Load and restore session data on mount (Manual flow)
-  // Uses flow-isolated stores for robust state management
+  // Uses flow-isolated stores + asset orchestrator for progressive loading
+  // NOTE: Session loading is handled by ValuationSessionManager - this only loads assets
   useEffect(() => {
-    if (reportId && !session) {
-      // Load session asynchronously (non-blocking)
-      loadSessionAsync(reportId).catch((error) => {
-        generalLogger.error('[Manual] Failed to load session', {
+    if (reportId) {
+      // Load all assets in parallel (progressive loading)
+      loadAllAssets().catch((error) => {
+        generalLogger.error('[Manual] Asset load failed', {
           reportId,
           error: error instanceof Error ? error.message : String(error),
         })
       })
+
+      // Session loading is handled by ValuationSessionManager via Zustand promise cache
+      // No need to call loadSessionAsync here - it would be redundant and could cause conflicts
+      // The promise cache in the store prevents duplicate loads anyway, but this avoids unnecessary calls
     }
 
-    // Restore form data and results from session when it loads
+    // Cleanup on unmount
+    return () => {
+      resetAllAssets()
+    }
+  }, [reportId, loadAllAssets, resetAllAssets]) // Removed session and loadSessionAsync - session managed by ValuationSessionManager
+
+  // Restore form data and results from session when it loads
+  useEffect(() => {
     if (session?.sessionData) {
       const sessionData = session.sessionData as any
       
@@ -85,7 +102,7 @@ export const ManualLayout: React.FC<ManualLayoutProps> = ({
         setResult(session.valuationResult as any)
       }
     }
-  }, [reportId, session, loadSessionAsync, updateFormData, setResult])
+  }, [session, updateFormData, setResult])
 
   // Panel resize hook
   const { leftPanelWidth, handleResize, isMobile, mobileActivePanel, setMobileActivePanel } =
@@ -224,6 +241,9 @@ export const ManualLayout: React.FC<ManualLayoutProps> = ({
       {isMobile && (
         <MobilePanelSwitcher activePanel={mobileActivePanel} onPanelChange={setMobileActivePanel} />
       )}
+
+      {/* Asset Inspector (dev only) */}
+      <AssetInspector />
     </div>
   )
 }

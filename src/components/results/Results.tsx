@@ -2,6 +2,8 @@ import React, { memo, useEffect } from 'react'
 import type { ValuationResponse } from '../../types/valuation'
 import { HTMLProcessor } from '../../utils/htmlProcessor'
 import { generalLogger } from '../../utils/logger'
+import { useMainReportAsset, useMainReportStatus } from '../../store/assets/shared/useMainReportAsset'
+import { ReportSkeleton } from '../skeletons/ReportSkeleton'
 
 interface ResultsComponentProps {
   result?: ValuationResponse | null
@@ -25,6 +27,11 @@ interface ResultsComponentProps {
  * NOTE: This component is now prop-driven (no direct store access) for flow isolation
  */
 const ResultsComponent: React.FC<ResultsComponentProps> = ({ result }) => {
+  // Asset store state for progressive loading
+  const mainReportStatus = useMainReportStatus()
+  const mainReportData = useMainReportAsset((state) => state.data)
+  const mainReportProgress = useMainReportAsset((state) => state.progress)
+  const mainReportError = useMainReportAsset((state) => state.error)
 
   // Verification logging: Track when result changes
   useEffect(() => {
@@ -34,13 +41,52 @@ const ResultsComponent: React.FC<ResultsComponentProps> = ({ result }) => {
         valuationId: result.valuation_id,
         hasHtmlReport: !!result.html_report,
         htmlReportLength: result.html_report?.length || 0,
+        assetStatus: mainReportStatus,
+        assetProgress: mainReportProgress,
       })
     } else {
       generalLogger.warn('Results component has no result', {
         hasResult: false,
+        assetStatus: mainReportStatus,
       })
     }
-  }, [result])
+  }, [result, mainReportStatus, mainReportProgress])
+
+  // Show loading skeleton while asset is loading
+  if (mainReportStatus === 'loading') {
+    return (
+      <div className="flex flex-col items-center justify-center h-full min-h-[400px] space-y-4">
+        <div className="w-16 h-16 border-4 border-blue-500 border-t-transparent rounded-full animate-spin" />
+        <p className="text-gray-600 font-medium">Loading report... {mainReportProgress}%</p>
+        <ReportSkeleton />
+      </div>
+    )
+  }
+
+  // Show error state from asset store
+  if (mainReportStatus === 'error' && mainReportError) {
+    return (
+      <div className="flex items-center justify-center h-full min-h-[400px]">
+        <div className="text-center text-red-600 max-w-md">
+          <svg
+            className="w-16 h-16 mx-auto mb-4"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+            />
+          </svg>
+          <p className="font-medium text-lg">Failed to load report</p>
+          <p className="text-sm text-gray-600 mt-2">{mainReportError}</p>
+        </div>
+      </div>
+    )
+  }
 
   // Remove "Complete Valuation Report" header if present
   React.useEffect(() => {
@@ -71,8 +117,11 @@ const ResultsComponent: React.FC<ResultsComponentProps> = ({ result }) => {
     return null
   }
 
-  // If html_report is not available, show loading/error
-  if (!result.html_report) {
+  // Use asset data if available, fallback to prop
+  const htmlReport = mainReportData?.htmlReport || result?.html_report
+
+  // If html_report is not available, show placeholder
+  if (!htmlReport) {
     return (
       <div className="flex items-center justify-center h-full min-h-[400px]">
         <div className="text-center text-gray-500">
@@ -98,7 +147,7 @@ const ResultsComponent: React.FC<ResultsComponentProps> = ({ result }) => {
 
   // BANK-GRADE: Sanitize HTML before rendering to prevent XSS attacks
   // HTML is server-generated from templates (not user input), but we sanitize for defense-in-depth
-  const sanitizedHtml = HTMLProcessor.sanitize(result.html_report)
+  const sanitizedHtml = HTMLProcessor.sanitize(htmlReport)
 
   return (
     <div className="h-full overflow-y-auto valuation-report-preview">
