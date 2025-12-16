@@ -69,6 +69,9 @@ export const ValuationSessionManager: React.FC<ValuationSessionManagerProps> = R
     // URL update tracking (prevents re-initialization during URL updates)
     const isUpdatingUrlRef = useRef(false)
     
+    // Track if we've already transitioned to prevent infinite loops
+    const hasTransitionedRef = useRef(false)
+    
     // Initialize session function (flow-aware)
     // Memoized with empty deps - stable reference, uses Zustand promise cache internally
     const initializeSession = useCallback(
@@ -216,7 +219,10 @@ export const ValuationSessionManager: React.FC<ValuationSessionManagerProps> = R
       
       if (currentSession?.reportId === reportId) {
         generalLogger.debug('Session already exists, skipping initialization', { reportId })
-        setStage('data-entry') // ✅ Set stage before returning
+        if (!hasTransitionedRef.current) {
+          hasTransitionedRef.current = true
+          setStage('data-entry') // ✅ Set stage before returning
+        }
         return
       }
 
@@ -233,22 +239,82 @@ export const ValuationSessionManager: React.FC<ValuationSessionManagerProps> = R
       initializeSessionForReport(reportId)
     }, [reportId, initializeSessionForReport]) // Removed isManualFlow - read from ref instead
 
+    // Timeout fallback: If stage is still 'loading' after 10 seconds, force transition
+    // This prevents infinite loading screens
+    useEffect(() => {
+      if (stage !== 'loading' || !reportId || hasTransitionedRef.current) return
+
+      const timeout = setTimeout(() => {
+        // Check current stage again (might have changed)
+        const currentSearchParams = searchParamsRef.current
+        const flowParam = currentSearchParams?.get('flow') || 'manual'
+        const currentIsManualFlow = flowParam === 'manual'
+        
+        const manualState = useManualSessionStore.getState()
+        const conversationalState = useConversationalSessionStore.getState()
+        const currentSession = currentIsManualFlow ? manualState.session : conversationalState.session
+
+        // Only force transition if still loading and haven't transitioned
+        if (!hasTransitionedRef.current) {
+          generalLogger.warn('Stage transition timeout - forcing transition to data-entry', {
+            reportId,
+            hasSession: !!currentSession,
+            sessionReportId: currentSession?.reportId
+          })
+          
+          hasTransitionedRef.current = true // Prevent multiple transitions
+          setStage('data-entry')
+        }
+      }, 10000) // 10 second timeout
+
+      return () => clearTimeout(timeout)
+    }, [stage, reportId])
+
+    // Reset transition flag when reportId changes
+    useEffect(() => {
+      hasTransitionedRef.current = false
+    }, [reportId])
+
     // Watch for session availability and transition stage
     // This ensures stage transitions even if initialization completes asynchronously
+    // Uses React selector for reactivity (simpler and avoids subscription loops)
     useEffect(() => {
-      if (stage === 'loading' && session && session.reportId === reportId && !error) {
-        generalLogger.debug('Session available, transitioning to data-entry', { reportId })
-        setStage('data-entry')
-      }
-    }, [session, reportId, stage, error])
+      if (stage !== 'loading' || !reportId || hasTransitionedRef.current) return
 
-    // Also transition if we have session but error state (allow user to continue)
-    useEffect(() => {
-      if (stage === 'loading' && session && session.reportId === reportId && error) {
-        generalLogger.debug('Session available despite errors, transitioning to data-entry', { reportId })
+      // Check Zustand state directly (more reliable than selector)
+      const currentSearchParams = searchParamsRef.current
+      const flowParam = currentSearchParams?.get('flow') || 'manual'
+      const currentIsManualFlow = flowParam === 'manual'
+      
+      const manualState = useManualSessionStore.getState()
+      const conversationalState = useConversationalSessionStore.getState()
+      const currentSession = currentIsManualFlow ? manualState.session : conversationalState.session
+      const currentError = currentIsManualFlow ? manualState.error : conversationalState.error
+      const isLoading = currentIsManualFlow ? manualState.isLoading : conversationalState.isLoading
+
+      // Transition if session exists and matches reportId
+      if (currentSession?.reportId === reportId && !isLoading) {
+        generalLogger.debug('Session available, transitioning to data-entry', { 
+          reportId,
+          hasError: !!currentError,
+          sessionExists: !!currentSession
+        })
+        hasTransitionedRef.current = true // Prevent multiple transitions
         setStage('data-entry')
+        return
       }
-    }, [session, reportId, stage, error])
+
+      // Also check if session was just created (even if error exists)
+      if (currentSession?.reportId === reportId && currentError) {
+        generalLogger.debug('Session available despite errors, transitioning to data-entry', { 
+          reportId,
+          error: currentError
+        })
+        hasTransitionedRef.current = true // Prevent multiple transitions
+        setStage('data-entry')
+        return
+      }
+    }, [session, reportId, stage, error]) // React to session changes from selector
 
     // Sync URL with current view - simple and robust
     useEffect(() => {
