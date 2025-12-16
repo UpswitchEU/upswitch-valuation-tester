@@ -193,7 +193,7 @@ export const ReportPanel: React.FC<ReportPanelProps> = React.memo(
                 <PreviewLoadingState />
               ) : result?.html_report ? (
                 <Suspense fallback={<PreviewLoadingState />}>
-                  <Results />
+                  <Results result={result} />
                 </Suspense>
               ) : error ? (
                 <PreviewErrorState error={error} onRetry={handleRetry} />

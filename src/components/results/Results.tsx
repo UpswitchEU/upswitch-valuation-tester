@@ -1,7 +1,11 @@
 import React, { memo, useEffect } from 'react'
-import { useValuationResultsStore } from '../../store/useValuationResultsStore'
+import type { ValuationResponse } from '../../types/valuation'
 import { HTMLProcessor } from '../../utils/htmlProcessor'
 import { generalLogger } from '../../utils/logger'
+
+interface ResultsComponentProps {
+  result?: ValuationResponse | null
+}
 
 /**
  * Results Component - Displays Accountant View HTML Report (Preview Tab)
@@ -17,9 +21,10 @@ import { generalLogger } from '../../utils/logger'
  * This component does NOT render any React components - it only displays the HTML report.
  *
  * PERFORMANCE: Memoized to prevent unnecessary re-renders
+ *
+ * NOTE: This component is now prop-driven (no direct store access) for flow isolation
  */
-const ResultsComponent: React.FC = () => {
-  const { result } = useValuationResultsStore()
+const ResultsComponent: React.FC<ResultsComponentProps> = ({ result }) => {
 
   // Verification logging: Track when result changes
   useEffect(() => {

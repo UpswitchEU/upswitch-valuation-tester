@@ -1,6 +1,5 @@
 'use client'
 
-import type { Metadata } from 'next'
 import { use } from 'react'
 import { ValuationReport } from '../../../src/components/ValuationReport'
 
@@ -29,34 +28,8 @@ interface ValuationReportPageProps {
       }
 }
 
-/**
- * Generate metadata for the valuation report page
- * This provides SEO and social sharing metadata
- * 
- * Note: In Next.js 14+, params are always a Promise in generateMetadata
- */
-export async function generateMetadata({
-  params,
-}: {
-  params: Promise<{ id: string }>
-}): Promise<Metadata> {
-  const resolvedParams = await params
-  const reportId = resolvedParams?.id || 'unknown'
-
-  return {
-    title: `Valuation Report ${reportId}`,
-    description: `View and edit your business valuation report. Analyze your business value with detailed financial insights and market analysis.`,
-    robots: {
-      index: false, // Individual reports should not be indexed
-      follow: false,
-    },
-    openGraph: {
-      title: `Valuation Report ${reportId}`,
-      description: 'View your business valuation report',
-      type: 'website',
-    },
-  }
-}
+// Note: generateMetadata removed - cannot be used in client components
+// Metadata is handled via document head in ValuationReport component
 
 /**
  * Valuation Report Page

@@ -2,10 +2,9 @@ import React, { useEffect } from 'react'
 import type { ValuationResponse } from '../types/valuation'
 import { HTMLProcessor } from '../utils/htmlProcessor'
 import { componentLogger } from '../utils/logger'
-import { useValuationResultsStore } from '../store/useValuationResultsStore'
 
 interface ValuationInfoPanelProps {
-  result?: ValuationResponse
+  result?: ValuationResponse | null
 }
 
 /**
@@ -22,12 +21,13 @@ interface ValuationInfoPanelProps {
  * - Benefits: 50-70% payload reduction, consistent rendering, single source of truth
  *
  * PERFORMANCE: Memoized to prevent unnecessary re-renders when result hasn't changed
+ *
+ * NOTE: This component is now prop-driven (no direct store access) for flow isolation
  */
 export const ValuationInfoPanel: React.FC<ValuationInfoPanelProps> = React.memo(
   ({ result: resultProp }) => {
-    // Fallback to store if prop is missing (fail-safe restoration)
-    const { result: resultStore } = useValuationResultsStore()
-    const result = resultProp || resultStore
+    // Use prop only (prop-driven component for flow isolation)
+    const result = resultProp
 
     // Early return if no result available
     if (!result) {

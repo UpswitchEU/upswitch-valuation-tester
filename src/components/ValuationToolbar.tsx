@@ -23,7 +23,8 @@ import {
   useValuationToolbarRefresh,
   useValuationToolbarTabs,
 } from '../hooks/valuationToolbar'
-import { useValuationSessionStore } from '../store/useValuationSessionStore'
+import { useManualSessionStore } from '../store/manual'
+import { useConversationalSessionStore } from '../store/conversational'
 import { useVersionHistoryStore } from '../store/useVersionHistoryStore'
 import { ValuationToolbarProps } from '../types/valuation'
 import { FlowSwitchWarningModal } from './FlowSwitchWarningModal'
@@ -45,14 +46,32 @@ export const ValuationToolbar: React.FC<ValuationToolbarProps> = ({
   activeVersion,
   onVersionSelect,
 }) => {
-  const {
-    session,
-    pendingFlowSwitch,
-    isSaving,
-    lastSaved,
-    hasUnsavedChanges,
-    syncError,
-  } = useValuationSessionStore()
+  // Flow-aware: Detect which flow is active by checking which store has a session
+  // This allows ValuationToolbar to work in both Manual and Conversational flows
+  const manualSession = useManualSessionStore((state) => state.session)
+  const conversationalSession = useConversationalSessionStore((state) => state.session)
+  
+  // Determine active flow and get session data
+  const isManualFlow = !!manualSession
+  const isConversationalFlow = !!conversationalSession
+  
+  // Get session data from appropriate store
+  const session = manualSession || conversationalSession
+  const isSaving = isManualFlow 
+    ? useManualSessionStore((state) => state.isSaving)
+    : useConversationalSessionStore((state) => state.isSaving)
+  const lastSaved = isManualFlow
+    ? useManualSessionStore((state) => state.lastSaved)
+    : useConversationalSessionStore((state) => state.lastSaved)
+  const hasUnsavedChanges = isManualFlow
+    ? useManualSessionStore((state) => state.hasUnsavedChanges)
+    : useConversationalSessionStore((state) => state.hasUnsavedChanges)
+  const syncError = isManualFlow
+    ? useManualSessionStore((state) => state.error)
+    : useConversationalSessionStore((state) => state.error)
+  
+  // Flow switching not supported in new architecture (flows are isolated)
+  const pendingFlowSwitch = false
   const {
     versions: storeVersions,
     getActiveVersion,
@@ -119,9 +138,19 @@ export const ValuationToolbar: React.FC<ValuationToolbarProps> = ({
   const handleRetrySave = async () => {
     if (!syncError || !session) return
     
-    const { updateSessionData } = useValuationSessionStore.getState()
-    // Force retry by calling updateSessionData with empty object
-    // This triggers the save flow (sets hasUnsavedChanges, calls backend API)
+    // Flow-aware retry: Use appropriate store's updateSessionData
+    if (isManualFlow) {
+      const { updateSessionData } = useManualSessionStore.getState()
+      // Force retry by calling updateSessionData with empty object
+      // This triggers the save flow (sets hasUnsavedChanges, calls backend API)
+      await updateSessionData({})
+    } else if (isConversationalFlow) {
+      const { saveSession } = useConversationalSessionStore.getState()
+      // For conversational flow, trigger save if we have session data
+      if (session?.reportId) {
+        await saveSession(session.reportId, {})
+      }
+    }
     // The deep merge will use existing session data, effectively retrying the save
     await updateSessionData({})
   }

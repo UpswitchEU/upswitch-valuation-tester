@@ -14,7 +14,8 @@ import React, { useCallback, useEffect, useState } from 'react'
 import { useAuth } from '../hooks/useAuth'
 import { guestCreditService } from '../services/guestCreditService'
 import UrlGeneratorService from '../services/urlGenerator'
-import { useValuationSessionStore } from '../store/useValuationSessionStore'
+import { useManualSessionStore } from '../store/manual'
+import { useConversationalSessionStore } from '../store/conversational'
 import type { ValuationSession } from '../types/valuation'
 import { generalLogger } from '../utils/logger'
 import { OutOfCreditsModal } from './OutOfCreditsModal'
@@ -48,7 +49,27 @@ export const ValuationSessionManager: React.FC<ValuationSessionManagerProps> = R
     const router = useRouter()
     const { isAuthenticated } = useAuth()
 
-    const { session, initializeSession, isUpdatingUrl, setUpdatingUrl } = useValuationSessionStore()
+    // Flow-aware: Use appropriate store based on flow parameter
+    const flowParam = searchParams?.get('flow') || 'manual'
+    const isManualFlow = flowParam === 'manual'
+    
+    const manualSession = useManualSessionStore((state) => state.session)
+    const conversationalSession = useConversationalSessionStore((state) => state.session)
+    const session = isManualFlow ? manualSession : conversationalSession
+    
+    // For now, use manual store's methods (this component needs refactoring for full flow isolation)
+    const { loadSessionAsync } = useManualSessionStore()
+    const isUpdatingUrl = false // Not used in new architecture
+    const setUpdatingUrl = () => {} // Not used in new architecture
+    
+    // Initialize session function (flow-aware)
+    const initializeSession = async (reportId: string, view: 'manual' | 'conversational', prefilledQuery?: string | null) => {
+      if (view === 'manual') {
+        await useManualSessionStore.getState().loadSessionAsync(reportId)
+      } else {
+        await useConversationalSessionStore.getState().loadSessionAsync(reportId)
+      }
+    }
     const [stage, setStage] = useState<Stage>('loading')
     const [error, setError] = useState<string | null>(null)
     const [showOutOfCreditsModal, setShowOutOfCreditsModal] = useState(false)
@@ -98,9 +119,16 @@ export const ValuationSessionManager: React.FC<ValuationSessionManagerProps> = R
               const businessCard = await businessCardService.fetchBusinessCard(tokenParam)
               const prefilledData = businessCardService.transformToValuationRequest(businessCard)
 
-              // Update session with prefilled data
-              const { updateSessionData } = useValuationSessionStore.getState()
-              await updateSessionData(prefilledData)
+              // Update session with prefilled data (flow-aware)
+              if (isManualFlow) {
+                const { updateSessionData } = useManualSessionStore.getState()
+                await updateSessionData(prefilledData)
+              } else {
+                const { saveSession } = useConversationalSessionStore.getState()
+                if (session?.reportId) {
+                  await saveSession(session.reportId, prefilledData)
+                }
+              }
 
               generalLogger.info('Business card data prefilled', {
                 reportId,
@@ -140,10 +168,8 @@ export const ValuationSessionManager: React.FC<ValuationSessionManagerProps> = R
         return
       }
 
-      // Check if session is initialized
-      const { initializationState } = useValuationSessionStore.getState()
-      const initState = initializationState.get(session.reportId)
-      if (initState?.status !== 'ready') {
+      // Session is ready if it exists (new architecture doesn't track initialization state separately)
+      if (!session) {
         return
       }
 
@@ -219,8 +245,9 @@ export const ValuationSessionManager: React.FC<ValuationSessionManagerProps> = R
           onTryManual={async () => {
             setShowOutOfCreditsModal(false)
             if (session) {
-              // Skip confirmation for out-of-credits flow (user explicitly chose manual)
-              await useValuationSessionStore.getState().switchView('manual', true, true)
+              // Flow switching not supported in new architecture (flows are isolated)
+              // User will need to navigate to manual flow URL
+              router.push(`/reports/${reportId}?flow=manual`)
             }
           }}
         />

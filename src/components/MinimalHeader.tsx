@@ -66,14 +66,15 @@ export const MinimalHeader: React.FC = () => {
         <div className="flex basis-0 flex-row flex-grow flex-nowrap justify-start bg-transparent items-center no-underline text-medium whitespace-nowrap box-border">
           <Link className="flex items-center gap-1 sm:gap-1.5 flex-shrink-0 group" href="/">
             {/* Logo container with hover animation - desktop only */}
-            <div className="relative h-6 sm:h-6 flex-shrink-0">
+            <div className="relative h-6 sm:h-6 flex-shrink-0" style={{ width: '93.5px' }}>
               {/* Default logo (white variant) */}
               <img
                 src="/logo_upswitch_white_var2.svg"
                 alt="Upswitch Logo"
-                className="h-6 sm:h-6 flex-shrink-0 transition-opacity duration-300 ease-in-out lg:group-hover:opacity-0"
+                className="h-6 sm:h-6 w-full flex-shrink-0 transition-opacity duration-300 ease-in-out lg:group-hover:opacity-0"
                 style={{
-                  width: 'auto',
+                  width: '100%',
+                  height: '24px',
                   objectFit: 'contain',
                   opacity: 1,
                   visibility: 'visible',
@@ -84,9 +85,10 @@ export const MinimalHeader: React.FC = () => {
               <img
                 src="/logo_upswitch_dark.svg"
                 alt="Upswitch Logo"
-                className="absolute top-0 left-0 h-6 sm:h-6 flex-shrink-0 transition-opacity duration-300 ease-in-out opacity-0 lg:group-hover:opacity-100"
+                className="absolute top-0 left-0 h-6 sm:h-6 w-full flex-shrink-0 transition-opacity duration-300 ease-in-out opacity-0 lg:group-hover:opacity-100 pointer-events-none"
                 style={{
-                  width: 'auto',
+                  width: '100%',
+                  height: '24px',
                   objectFit: 'contain',
                   visibility: 'visible',
                   display: 'block',
