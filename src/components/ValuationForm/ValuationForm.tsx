@@ -4,9 +4,9 @@
  * Main form for entering business valuation data.
  * Single Responsibility: Form orchestration and state management.
  *
- * Uses Manual flow stores (Phase 2 migration):
+ * Uses Manual flow stores:
  * - useManualFormStore for form data state
- * - useManualSessionStore for session sync
+ * - useSessionStore for session sync (unified)
  * - useManualResultsStore for calculation state
  * - useFormSessionSync hook for syncing with session
  *
@@ -18,9 +18,9 @@ import { useAuth } from '../../hooks/useAuth'
 import { useBusinessTypes } from '../../hooks/useBusinessTypes'
 import { useFormSessionSync } from '../../hooks/useFormSessionSync'
 import type { BusinessType } from '../../services/businessTypesApi'
-import { useManualFormStore, useManualSessionStore, useManualResultsStore } from '../../store/manual'
+import { useManualFormStore, useManualResultsStore } from '../../store/manual'
+import { useSessionStore } from '../../store/useSessionStore'
 import { useVersionHistoryStore } from '../../store/useVersionHistoryStore'
-import { debounce } from '../../utils/debounce'
 import { generalLogger } from '../../utils/logger'
 import { useValuationFormSubmission } from './hooks/useValuationFormSubmission'
 import { BasicInformationSection } from './sections/BasicInformationSection'
@@ -28,7 +28,6 @@ import { FinancialDataSection } from './sections/FinancialDataSection'
 import { FormSubmitSection } from './sections/FormSubmitSection'
 import { HistoricalDataSection } from './sections/HistoricalDataSection'
 import { OwnershipStructureSection } from './sections/OwnershipStructureSection'
-import { convertFormDataToDataResponses } from './utils/convertFormDataToDataResponses'
 
 export interface ValuationFormProps {
   /** Initial version to load (for M&A workflow - edit previous versions) */
@@ -53,7 +52,8 @@ export const ValuationForm: React.FC<ValuationFormProps> = ({
   isRegenerationMode = false,
 }) => {
   const { formData, updateFormData, prefillFromBusinessCard } = useManualFormStore()
-  const { session, updateSessionData } = useManualSessionStore()
+  const session = useSessionStore((state) => state.session)
+  const updateSessionData = useSessionStore((state) => state.updateSessionData)
   const { businessTypes } = useBusinessTypes()
   const { businessCard, isAuthenticated } = useAuth()
   const { getVersion } = useVersionHistoryStore()

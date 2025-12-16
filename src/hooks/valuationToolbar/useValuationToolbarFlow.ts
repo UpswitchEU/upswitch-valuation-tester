@@ -7,9 +7,7 @@
  * @module hooks/valuationToolbar/useValuationToolbarFlow
  */
 
-import { useEffect, useState } from 'react'
-import { useManualSessionStore } from '../../store/manual'
-import { useConversationalSessionStore } from '../../store/conversational'
+import { useState } from 'react'
 
 export interface UseValuationToolbarFlowReturn {
   showSwitchConfirmation: boolean

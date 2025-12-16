@@ -8,9 +8,10 @@
  */
 
 import { useCallback } from 'react'
+import { reportService, sessionService, valuationService } from '../../../services'
 import { valuationAuditService } from '../../../services/audit/ValuationAuditService'
-import { valuationService, sessionService, reportService } from '../../../services'
-import { useManualFormStore, useManualSessionStore, useManualResultsStore } from '../../../store/manual'
+import { useManualFormStore, useManualResultsStore } from '../../../store/manual'
+import { useSessionStore } from '../../../store/useSessionStore'
 import { useVersionHistoryStore } from '../../../store/useVersionHistoryStore'
 import { buildValuationRequest } from '../../../utils/buildValuationRequest'
 import { generalLogger } from '../../../utils/logger'
@@ -19,7 +20,6 @@ import {
     detectVersionChanges,
     generateAutoLabel,
 } from '../../../utils/versionDiffDetection'
-import { convertFormDataToDataResponses } from '../utils/convertFormDataToDataResponses'
 
 interface UseValuationFormSubmissionReturn {
   handleSubmit: (e: React.FormEvent) => Promise<void>
@@ -43,7 +43,7 @@ export const useValuationFormSubmission = (
 ): UseValuationFormSubmissionReturn => {
   const { formData } = useManualFormStore()
   const { trySetCalculating, setCalculating, isCalculating, setResult } = useManualResultsStore()
-  const { session } = useManualSessionStore()
+  const session = useSessionStore((state) => state.session)
   const { createVersion, getLatestVersion, fetchVersions } = useVersionHistoryStore()
 
   const handleSubmit = useCallback(
@@ -386,8 +386,7 @@ export const useValuationFormSubmission = (
 
         // CRITICAL: Save complete session atomically (form data + results + HTML reports)
         // This ensures everything can be restored when user returns later
-        const { setSaving, markSaved } = useManualSessionStore.getState()
-        setSaving(true)
+        // Note: Saving handled by unified session store
 
         if (session?.reportId) {
           try {
@@ -414,18 +413,16 @@ export const useValuationFormSubmission = (
               infoTabHtmlLength: result.info_tab_html?.length || 0,
             })
 
-            markSaved()
+            useSessionStore.getState().markSaved()
           } catch (saveError) {
             generalLogger.error('[Manual] Failed to save complete report package', {
               reportId: session.reportId,
               error: saveError instanceof Error ? saveError.message : String(saveError),
             })
-            const { setError } = useManualSessionStore.getState()
-            setError(saveError instanceof Error ? saveError.message : 'Save failed')
-            // Continue - don't block user even if save fails
+            // Error logged, continue - don't block user even if save fails
           }
         } else {
-          markSaved()
+          useSessionStore.getState().markSaved()
         }
 
         generalLogger.info('Valuation calculated successfully', {

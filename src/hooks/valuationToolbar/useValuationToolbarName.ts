@@ -9,8 +9,7 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { backendAPI } from '../../services/backendApi'
-import { useManualSessionStore } from '../../store/manual'
-import { useConversationalSessionStore } from '../../store/conversational'
+import { useSessionStore } from '../../store/useSessionStore'
 import { generalLogger } from '../../utils/logger'
 import { NameGenerator } from '../../utils/nameGenerator'
 
@@ -40,11 +39,8 @@ export const useValuationToolbarName = (
 ): UseValuationToolbarNameReturn => {
   const { initialName = 'Valuation test123', companyName, reportId } = options
   
-  // Flow-aware: Check which store has a session
-  const manualSession = useManualSessionStore((state) => state.session)
-  const conversationalSession = useConversationalSessionStore((state) => state.session)
-  const session = manualSession || conversationalSession
-  
+  // Read from unified session store
+  const session = useSessionStore((state) => state.session)
   const actualReportId = reportId || session?.reportId
 
   const [isEditingName, setIsEditingName] = useState(false)

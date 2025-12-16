@@ -12,8 +12,7 @@
  * - Error handling and retry logic
  *
  * Used by:
- * - Manual Flow (useManualSessionStore)
- * - Conversational Flow (useConversationalSessionStore)
+ * - Unified Session Store (useSessionStore)
  *
  * @module services/session/SessionService
  */

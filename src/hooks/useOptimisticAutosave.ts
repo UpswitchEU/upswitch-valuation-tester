@@ -14,7 +14,7 @@
  */
 
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { useManualSessionStore } from '../store/manual'
+import { useSessionStore } from '../store/useSessionStore'
 import { generalLogger } from '../utils/logger'
 
 export interface OptimisticAutosaveOptions {
@@ -72,7 +72,8 @@ export function useOptimisticAutosave(
   })
 
   // Session store for actual persistence
-  const { saveSessionOptimistic, session } = useManualSessionStore()
+  const session = useSessionStore((state) => state.session)
+  const saveSession = useSessionStore((state) => state.saveSession)
 
   // Ref to store pending changes
   const pendingChangesRef = useRef<Partial<any>>({})
@@ -146,7 +147,10 @@ export function useOptimisticAutosave(
         })
 
         try {
-          await saveSessionOptimistic(reportId, changesToSave)
+          // Update session data and save
+          const { updateSessionData, saveSession: save } = useSessionStore.getState()
+          updateSessionData(changesToSave)
+          await save()
 
           if (!isMountedRef.current) return
 
@@ -185,7 +189,7 @@ export function useOptimisticAutosave(
         }
       }, debounceMs)
     },
-    [reportId, debounceMs, saveSessionOptimistic, onSaveSuccess, onSaveError]
+    [reportId, debounceMs, onSaveSuccess, onSaveError]
   )
 
   /**
@@ -237,7 +241,10 @@ export function useOptimisticAutosave(
         })
 
         try {
-          await saveSessionOptimistic(reportId, changesToSave)
+          // Update session data and save
+          const { updateSessionData, saveSession: save } = useSessionStore.getState()
+          updateSessionData(changesToSave)
+          await save()
 
           if (!isMountedRef.current) return
 
@@ -275,7 +282,7 @@ export function useOptimisticAutosave(
         }
       }, debounceMs)
     },
-    [reportId, debounceMs, saveSessionOptimistic, onSaveSuccess, onSaveError]
+    [reportId, debounceMs, onSaveSuccess, onSaveError]
   )
 
   /**
@@ -310,7 +317,10 @@ export function useOptimisticAutosave(
     })
 
     try {
-      await saveSessionOptimistic(reportId, changesToSave)
+      // Update and save session
+      const { updateSessionData, saveSession: save } = useSessionStore.getState()
+      updateSessionData(changesToSave)
+      await save()
 
       if (!isMountedRef.current) return
 
@@ -344,7 +354,7 @@ export function useOptimisticAutosave(
         error: errorMessage,
       })
     }
-  }, [reportId, saveSessionOptimistic, onSaveSuccess, onSaveError])
+  }, [reportId, onSaveSuccess, onSaveError])
 
   return {
     // State

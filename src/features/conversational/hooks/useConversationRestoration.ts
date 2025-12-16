@@ -18,15 +18,15 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { conversationAPI } from '../../../services/api/conversation/ConversationAPI'
 import { UtilityAPI } from '../../../services/api/utility/UtilityAPI'
-import { useConversationalSessionStore } from '../../../store/conversational'
+import { useSessionStore } from '../../../store/useSessionStore'
 import type { Message } from '../../../types/message'
 import { CorrelationPrefixes, createCorrelationId } from '../../../utils/correlationId'
 import { convertToApplicationError, getErrorMessage } from '../../../utils/errors/errorConverter'
 import {
-  isNetworkError,
-  isRestorationError,
-  isRetryable,
-  isTimeoutError,
+    isNetworkError,
+    isRestorationError,
+    isRetryable,
+    isTimeoutError,
 } from '../../../utils/errors/errorGuards'
 import { chatLogger } from '../../../utils/logger'
 import { globalSessionMetrics } from '../../../utils/metrics/sessionMetrics'
@@ -41,11 +41,10 @@ const utilityAPI = new UtilityAPI()
  */
 async function ensureSessionExists(reportId: string): Promise<void> {
   try {
-    const { loadSessionAsync } = useConversationalSessionStore.getState()
-    const currentSession = useConversationalSessionStore.getState().session
+    const { loadSession, session } = useSessionStore.getState()
 
     // If session already exists in store, no need to create
-    if (currentSession && currentSession.reportId === reportId) {
+    if (session && session.reportId === reportId) {
       chatLogger.debug('Session already exists in store', { reportId })
       return
     }
@@ -54,13 +53,13 @@ async function ensureSessionExists(reportId: string): Promise<void> {
     const cachedSession = globalSessionCache.get(reportId)
     if (cachedSession) {
       chatLogger.debug('Session found in cache, using cached session', { reportId })
-      // Session will be loaded by initializeSession's cache-first logic
+      // Session will be loaded by loadSession's cache-first logic
       // No need to skip initialization - it will use cache
     }
 
     // Load session (will use cache if available, or load from backend if not)
     chatLogger.info('Ensuring session exists', { reportId })
-    await loadSessionAsync(reportId)
+    await loadSession(reportId)
     chatLogger.info('Session ensured', { reportId })
   } catch (error) {
     // Log error but don't throw - session creation failure shouldn't block restoration

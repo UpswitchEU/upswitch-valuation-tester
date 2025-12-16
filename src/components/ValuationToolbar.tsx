@@ -1,36 +1,35 @@
 import {
-  AlertCircle,
-  Check,
-  Download,
-  Edit3,
-  Eye,
-  GitBranch,
-  History,
-  Info,
-  Loader2,
-  Maximize,
-  MessageSquare,
-  RefreshCw,
-  Save,
+    AlertCircle,
+    Check,
+    Download,
+    Edit3,
+    Eye,
+    GitBranch,
+    History,
+    Info,
+    Loader2,
+    Maximize,
+    MessageSquare,
+    RefreshCw,
+    Save,
 } from 'lucide-react'
 import React from 'react'
 import {
-  useValuationToolbarAuth,
-  useValuationToolbarDownload,
-  useValuationToolbarFlow,
-  useValuationToolbarFullscreen,
-  useValuationToolbarName,
-  useValuationToolbarRefresh,
-  useValuationToolbarTabs,
+    useValuationToolbarAuth,
+    useValuationToolbarDownload,
+    useValuationToolbarFlow,
+    useValuationToolbarFullscreen,
+    useValuationToolbarName,
+    useValuationToolbarRefresh,
+    useValuationToolbarTabs,
 } from '../hooks/valuationToolbar'
-import { useManualSessionStore } from '../store/manual'
-import { useConversationalSessionStore } from '../store/conversational'
+import { useSessionStore } from '../store/useSessionStore'
 import { useVersionHistoryStore } from '../store/useVersionHistoryStore'
 import { ValuationToolbarProps } from '../types/valuation'
+import { formatVersionLabel } from '../utils/formatters'
 import { FlowSwitchWarningModal } from './FlowSwitchWarningModal'
 import { UserDropdown } from './UserDropdown'
 import { Tooltip } from './ui/Tooltip'
-import { formatVersionLabel } from '../utils/formatters'
 
 export const ValuationToolbar: React.FC<ValuationToolbarProps> = ({
   onRefresh,
@@ -46,29 +45,16 @@ export const ValuationToolbar: React.FC<ValuationToolbarProps> = ({
   activeVersion,
   onVersionSelect,
 }) => {
-  // Flow-aware: Detect which flow is active by checking which store has a session
-  // This allows ValuationToolbar to work in both Manual and Conversational flows
-  const manualSession = useManualSessionStore((state) => state.session)
-  const conversationalSession = useConversationalSessionStore((state) => state.session)
+  // Read from unified session store
+  const session = useSessionStore((state) => state.session)
+  const isSaving = useSessionStore((state) => state.isSaving)
+  const lastSaved = useSessionStore((state) => state.lastSaved)
+  const hasUnsavedChanges = useSessionStore((state) => state.hasUnsavedChanges)
+  const syncError = useSessionStore((state) => state.error)
   
-  // Determine active flow and get session data
-  const isManualFlow = !!manualSession
-  const isConversationalFlow = !!conversationalSession
-  
-  // Get session data from appropriate store
-  const session = manualSession || conversationalSession
-  const isSaving = isManualFlow 
-    ? useManualSessionStore((state) => state.isSaving)
-    : useConversationalSessionStore((state) => state.isSaving)
-  const lastSaved = isManualFlow
-    ? useManualSessionStore((state) => state.lastSaved)
-    : useConversationalSessionStore((state) => state.lastSaved)
-  const hasUnsavedChanges = isManualFlow
-    ? useManualSessionStore((state) => state.hasUnsavedChanges)
-    : useConversationalSessionStore((state) => state.hasUnsavedChanges)
-  const syncError = isManualFlow
-    ? useManualSessionStore((state) => state.error)
-    : useConversationalSessionStore((state) => state.error)
+  // Flow detection from session
+  const isManualFlow = session?.currentView === 'manual'
+  const isConversationalFlow = session?.currentView === 'conversational'
   
   // Flow switching not supported in new architecture (flows are isolated)
   const pendingFlowSwitch = false
@@ -138,18 +124,10 @@ export const ValuationToolbar: React.FC<ValuationToolbarProps> = ({
   const handleRetrySave = async () => {
     if (!syncError || !session) return
     
-    // Flow-aware retry: Use appropriate store's updateSessionData
-    if (isManualFlow) {
-      const { updateSessionData } = useManualSessionStore.getState()
-      // Force retry by calling updateSessionData with empty object
-      // This triggers the save flow (sets hasUnsavedChanges, calls backend API)
-      await updateSessionData({})
-    } else if (isConversationalFlow) {
-      const { saveSession } = useConversationalSessionStore.getState()
-      // For conversational flow, trigger save if we have session data
-      if (session?.reportId) {
-        await saveSession(session.reportId, {})
-      }
+    // Trigger save using unified store
+    if (session?.reportId) {
+      const { saveSession: save } = useSessionStore.getState()
+      await save()
     }
   }
 

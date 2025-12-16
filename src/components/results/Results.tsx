@@ -1,8 +1,8 @@
 import React, { memo, useEffect } from 'react'
+import { useSessionStore } from '../../store/useSessionStore'
 import type { ValuationResponse } from '../../types/valuation'
 import { HTMLProcessor } from '../../utils/htmlProcessor'
 import { generalLogger } from '../../utils/logger'
-import { useMainReportAsset, useMainReportStatus } from '../../store/assets/shared/useMainReportAsset'
 import { ReportSkeleton } from '../skeletons/ReportSkeleton'
 
 interface ResultsComponentProps {
@@ -27,11 +27,13 @@ interface ResultsComponentProps {
  * NOTE: This component is now prop-driven (no direct store access) for flow isolation
  */
 const ResultsComponent: React.FC<ResultsComponentProps> = ({ result }) => {
-  // Asset store state for progressive loading
-  const mainReportStatus = useMainReportStatus()
-  const mainReportData = useMainReportAsset((state) => state.data)
-  const mainReportProgress = useMainReportAsset((state) => state.progress)
-  const mainReportError = useMainReportAsset((state) => state.error)
+  // Read from unified session store
+  const session = useSessionStore((state) => state.session)
+  const isLoading = useSessionStore((state) => state.isLoading)
+  const error = useSessionStore((state) => state.error)
+  
+  // Get HTML report from session
+  const htmlReport = session?.htmlReport || result?.html_report
 
   // Verification logging: Track when result changes
   useEffect(() => {
@@ -39,32 +41,29 @@ const ResultsComponent: React.FC<ResultsComponentProps> = ({ result }) => {
       generalLogger.info('Results component received result', {
         hasResult: true,
         valuationId: result.valuation_id,
-        hasHtmlReport: !!result.html_report,
-        htmlReportLength: result.html_report?.length || 0,
-        assetStatus: mainReportStatus,
-        assetProgress: mainReportProgress,
+        hasHtmlReport: !!htmlReport,
+        htmlReportLength: htmlReport?.length || 0,
       })
     } else {
       generalLogger.warn('Results component has no result', {
         hasResult: false,
-        assetStatus: mainReportStatus,
       })
     }
-  }, [result, mainReportStatus, mainReportProgress])
+  }, [result, htmlReport])
 
-  // Show loading skeleton while asset is loading
-  if (mainReportStatus === 'loading') {
+  // Show loading skeleton while loading
+  if (isLoading && !htmlReport) {
     return (
       <div className="flex flex-col items-center justify-center h-full min-h-[400px] space-y-4">
         <div className="w-16 h-16 border-4 border-blue-500 border-t-transparent rounded-full animate-spin" />
-        <p className="text-gray-600 font-medium">Loading report... {mainReportProgress}%</p>
+        <p className="text-gray-600 font-medium">Loading report...</p>
         <ReportSkeleton />
       </div>
     )
   }
 
-  // Show error state from asset store
-  if (mainReportStatus === 'error' && mainReportError) {
+  // Show error state
+  if (error) {
     return (
       <div className="flex items-center justify-center h-full min-h-[400px]">
         <div className="text-center text-red-600 max-w-md">
@@ -82,7 +81,7 @@ const ResultsComponent: React.FC<ResultsComponentProps> = ({ result }) => {
             />
           </svg>
           <p className="font-medium text-lg">Failed to load report</p>
-          <p className="text-sm text-gray-600 mt-2">{mainReportError}</p>
+          <p className="text-sm text-gray-600 mt-2">{error}</p>
         </div>
       </div>
     )
@@ -116,9 +115,6 @@ const ResultsComponent: React.FC<ResultsComponentProps> = ({ result }) => {
   if (!result) {
     return null
   }
-
-  // Use asset data if available, fallback to prop
-  const htmlReport = mainReportData?.htmlReport || result?.html_report
 
   // If html_report is not available, show placeholder
   if (!htmlReport) {

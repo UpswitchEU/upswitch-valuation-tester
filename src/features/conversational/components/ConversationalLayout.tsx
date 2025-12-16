@@ -8,6 +8,7 @@
  */
 
 import React, { Suspense, useCallback, useEffect, useRef, useState } from 'react'
+import { AssetInspector } from '../../../components/debug/AssetInspector'
 import { FullScreenModal } from '../../../components/FullScreenModal'
 import { ResizableDivider } from '../../../components/ResizableDivider'
 import { ValuationToolbar } from '../../../components/ValuationToolbar'
@@ -19,13 +20,12 @@ import { useReportIdTracking } from '../../../hooks/useReportIdTracking'
 import { useToast } from '../../../hooks/useToast'
 import { conversationAPI } from '../../../services/api/conversation/ConversationAPI'
 import { guestCreditService } from '../../../services/guestCreditService'
-import { useConversationalResultsStore, useConversationalSessionStore, useConversationalChatStore } from '../../../store/conversational'
+import { useConversationalChatStore, useConversationalResultsStore } from '../../../store/conversational'
+import { useSessionStore } from '../../../store/useSessionStore'
 import type { Message } from '../../../types/message'
 import type { ValuationResponse } from '../../../types/valuation'
 import { chatLogger } from '../../../utils/logger'
 import { CreditGuard } from '../../auth/components/CreditGuard'
-import { useConversationalAssetOrchestrator } from '../../../store/assets/conversational/useConversationalAssetOrchestrator'
-import { AssetInspector } from '../../../components/debug/AssetInspector'
 import {
     ConversationProvider,
     useConversationActions,
@@ -95,31 +95,18 @@ const ConversationalLayoutInner: React.FC<ConversationalLayoutProps> = ({
 
   // Use Conversational Flow isolated stores
   const { isCalculating, error, result, setResult, clearError } = useConversationalResultsStore()
-  const { isSaving, lastSaved, hasUnsavedChanges, error: syncError, session } = useConversationalSessionStore()
   const { collectedData, updateCollectedData } = useConversationalChatStore()
+  
+  // Unified session store
+  const session = useSessionStore((state) => state.session)
+  const isSaving = useSessionStore((state) => state.isSaving)
+  const lastSaved = useSessionStore((state) => state.lastSaved)
+  const hasUnsavedChanges = useSessionStore((state) => state.hasUnsavedChanges)
+  const syncError = useSessionStore((state) => state.error)
 
   // NEW: Asset orchestrator for progressive loading
-  const { loadAllAssets, resetAllAssets } = useConversationalAssetOrchestrator(reportId)
-
-  // CRITICAL: Load and restore session data on mount (Conversational flow)
-  // Uses flow-isolated stores + asset orchestrator for progressive loading
-  // Note: Conversation messages are restored separately by useConversationRestoration
-  useEffect(() => {
-    if (reportId) {
-      // Load all assets in parallel (progressive loading)
-      loadAllAssets().catch((error) => {
-        chatLogger.error('[Conversational] Asset load failed', {
-          reportId,
-          error: error instanceof Error ? error.message : String(error),
-        })
-      })
-    }
-
-    // Cleanup on unmount
-    return () => {
-      resetAllAssets()
-    }
-  }, [reportId, loadAllAssets, resetAllAssets])
+  // Asset orchestration removed - data loaded directly from session store
+  // Session loads via SessionManager, data populates reactively
 
   // Restore results from session when it loads
   useEffect(() => {
@@ -134,9 +121,7 @@ const ConversationalLayoutInner: React.FC<ConversationalLayoutProps> = ({
   // Mark conversation changes as unsaved (for save status indicator)
   useEffect(() => {
     if (state.messages.length > 0) {
-      // Mark as having unsaved conversation data (Conversational flow)
-      const { markUnsaved } = useConversationalSessionStore.getState()
-      markUnsaved()
+      useSessionStore.getState().markUnsaved()
     }
   }, [state.messages.length])
 
@@ -448,11 +433,6 @@ const ConversationalLayoutInner: React.FC<ConversationalLayoutProps> = ({
   // Handle valuation completion
   const handleValuationComplete = useCallback(
     async (result: ValuationResponse) => {
-      const { setSaving, markSaved, setError } = useConversationalSessionStore.getState()
-
-      // Mark as saving during completion process
-      setSaving(true)
-
       try {
         actions.setValuationResult(result)
         actions.setGenerating(false)
@@ -463,16 +443,17 @@ const ConversationalLayoutInner: React.FC<ConversationalLayoutProps> = ({
         // Call parent completion handler (may be async)
         await onComplete(result)
 
-        // Mark save as completed - report is automatically saved after generation
-        markSaved()
+        // Mark as saved in unified store
+        useSessionStore.getState().markSaved()
 
         // Update frontend credit count for guests
         if (!user && (result as any).creditsRemaining !== undefined) {
           guestCreditService.setCredits((result as any).creditsRemaining)
         }
       } catch (error) {
-        // Mark save as failed
-        setError(error instanceof Error ? error.message : 'Save failed')
+        chatLogger.error('[Conversational] Completion handler failed', {
+          error: error instanceof Error ? error.message : String(error),
+        })
         throw error
       }
     },

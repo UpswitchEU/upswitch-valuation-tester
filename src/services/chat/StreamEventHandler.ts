@@ -6,9 +6,9 @@
  */
 
 import { BUSINESS_TYPES_FALLBACK, BusinessTypeOption } from '../../config/businessTypes'
-import { useConversationStore } from '../../store/useConversationStore'
 import { useConversationalResultsStore } from '../../store/conversational'
-import { useConversationalSessionStore } from '../../store/conversational'
+import { useConversationStore } from '../../store/useConversationStore'
+import { useSessionStore } from '../../store/useSessionStore'
 import type { Message, MessageMetadata } from '../../types/message'
 import { chatLogger } from '../../utils/logger'
 import { ReportHandlers, UIHandlers, ValuationHandlers } from './handlers'
@@ -409,8 +409,7 @@ export class StreamEventHandler {
             // Use dynamic import in background (non-blocking)
             import('../api/session/SessionAPI').then(({ SessionAPI }) => {
               const sessionAPI = new SessionAPI()
-              const sessionStore = useConversationalSessionStore.getState()
-              const session = sessionStore.session
+              const session = useSessionStore.getState().session
 
               if (session?.reportId) {
                 // Get current result to merge with HTML report
@@ -496,8 +495,7 @@ export class StreamEventHandler {
             // Use dynamic import in background (non-blocking)
             import('../api/session/SessionAPI').then(({ SessionAPI }) => {
               const sessionAPI = new SessionAPI()
-              const sessionStore = useConversationalSessionStore.getState()
-              const session = sessionStore.session
+              const session = useSessionStore.getState().session
 
               if (session?.reportId) {
                 // Get current result to merge with info tab HTML

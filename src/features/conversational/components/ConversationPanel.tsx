@@ -9,18 +9,19 @@
 
 import React, { useCallback, useMemo } from 'react'
 import { StreamingChat } from '../../../components/StreamingChat'
+import { reportService, valuationService } from '../../../services'
 import { valuationAuditService } from '../../../services/audit/ValuationAuditService'
-import { valuationService, reportService } from '../../../services'
-import { useConversationalResultsStore, useConversationalSessionStore, useConversationalChatStore } from '../../../store/conversational'
+import { useConversationalChatStore, useConversationalResultsStore } from '../../../store/conversational'
+import { useSessionStore } from '../../../store/useSessionStore'
 import { useVersionHistoryStore } from '../../../store/useVersionHistoryStore'
 import type { Message } from '../../../types/message'
 import type { ValuationResponse } from '../../../types/valuation'
 import { buildValuationRequest } from '../../../utils/buildValuationRequest'
 import { chatLogger } from '../../../utils/logger'
 import {
-  areChangesSignificant,
-  detectVersionChanges,
-  generateAutoLabel,
+    areChangesSignificant,
+    detectVersionChanges,
+    generateAutoLabel,
 } from '../../../utils/versionDiffDetection'
 import { ComponentErrorBoundary } from '../../shared/components/ErrorBoundary'
 import { useConversationActions, useConversationState } from '../context/ConversationContext'
@@ -128,7 +129,7 @@ export const ConversationPanel: React.FC<ConversationPanelProps> = ({
 
   // Handle valuation complete - sync to context and conversational results store
   const { isCalculating, setResult, trySetCalculating, setCalculating } = useConversationalResultsStore()
-  const { session } = useConversationalSessionStore()
+  const session = useSessionStore((state) => state.session)
   const { createVersion, getLatestVersion } = useVersionHistoryStore()
 
   const handleValuationComplete = useCallback(
@@ -144,15 +145,13 @@ export const ConversationPanel: React.FC<ConversationPanelProps> = ({
       // Sync to results store (same as manual flow)
       setResult(result)
 
-      // CRITICAL: Save complete session atomically (using Conversational flow stores)
-      // Uses sessionService for consistency with Manual flow
-      const { setSaving, markSaved, setError: setSessionError } = useConversationalSessionStore.getState()
-      setSaving(true)
-
+      // CRITICAL: Save complete session atomically (using unified store)
+      // Uses sessionService for consistency across flows
+      const sessionStore = useSessionStore.getState()
+      
       if (session?.reportId) {
         try {
           // Get collected data from session for restoration
-          const sessionStore = useConversationalSessionStore.getState()
           const sessionData = sessionStore.session?.sessionData || {}
 
           // ATOMIC SAVE: Save complete package in single API call
@@ -178,16 +177,16 @@ export const ConversationPanel: React.FC<ConversationPanelProps> = ({
             infoTabHtmlLength: result.info_tab_html?.length || 0,
           })
 
-          markSaved()
+          sessionStore.markSaved()
         } catch (error) {
           chatLogger.error('[Conversational] Failed to save complete report package', {
             reportId: session.reportId,
             error: error instanceof Error ? error.message : String(error),
           })
-          setSessionError(error instanceof Error ? error.message : 'Save failed')
+          // Error handled by store
         }
       } else {
-        markSaved()
+        sessionStore.markSaved()
       }
 
       // M&A Workflow: Create new version if this is a regeneration (conversational flow)
@@ -198,8 +197,7 @@ export const ConversationPanel: React.FC<ConversationPanelProps> = ({
 
           // CRITICAL FIX: Get complete formData from session, not just result
           // The result only has calculated fields, but formData needs all input fields
-          const sessionStore = useConversationalSessionStore.getState()
-          const sessionData = (sessionStore.session?.sessionData || sessionStore.session?.partialData || {}) as any
+          const sessionData = (useSessionStore.getState().session?.sessionData || {}) as any
           
           // Build complete formData from session + result
           // Session has the collected data, result has calculated/computed fields

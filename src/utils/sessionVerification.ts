@@ -8,11 +8,11 @@
  */
 
 import { backendAPI } from '../services/backendApi'
+import type { ValuationSession } from '../types/valuation'
 import { createContextLogger } from '../utils/logger'
 import { globalSessionCache } from './sessionCacheManager'
 import { normalizeSessionDates } from './sessionHelpers'
 import { validateSessionData } from './sessionValidation'
-import type { ValuationSession } from '../types/valuation'
 
 const VERIFICATION_LOGGER = createContextLogger('SessionVerification')
 
@@ -99,18 +99,10 @@ export function verifySessionInBackground(
           // CRITICAL: Invalidate stale cache
           globalSessionCache.remove(reportId)
           
-          // Re-initialize to check backend properly and create NEW if needed
-          // Import dynamically to avoid circular dependencies
-          // Flow-aware: Use appropriate store based on currentView
-          if (cachedSession.currentView === 'manual') {
-            const { useManualSessionStore } = await import('../store/manual')
-            const { loadSessionAsync } = useManualSessionStore.getState()
-            await loadSessionAsync(reportId)
-          } else {
-            const { useConversationalSessionStore } = await import('../store/conversational')
-            const { loadSessionAsync } = useConversationalSessionStore.getState()
-            await loadSessionAsync(reportId)
-          }
+          // Re-initialize using unified store
+          const { useSessionStore } = await import('../store/useSessionStore')
+          const { loadSession } = useSessionStore.getState()
+          await loadSession(reportId)
           
           return
         }
@@ -160,17 +152,11 @@ export function verifySessionInBackground(
           // Remove stale cache
           globalSessionCache.remove(reportId)
           
-          // Re-initialize as NEW (flow-aware)
+          // Re-initialize using unified store
           try {
-            if (cachedSession.currentView === 'manual') {
-              const { useManualSessionStore } = await import('../store/manual')
-              const { loadSessionAsync } = useManualSessionStore.getState()
-              await loadSessionAsync(reportId)
-            } else {
-              const { useConversationalSessionStore } = await import('../store/conversational')
-              const { loadSessionAsync } = useConversationalSessionStore.getState()
-              await loadSessionAsync(reportId)
-            }
+            const { useSessionStore } = await import('../store/useSessionStore')
+            const { loadSession } = useSessionStore.getState()
+            await loadSession(reportId)
           } catch (reinitError) {
             VERIFICATION_LOGGER.error('Failed to re-initialize after 404', {
               reportId,

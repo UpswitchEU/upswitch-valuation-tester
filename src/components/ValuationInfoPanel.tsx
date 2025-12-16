@@ -1,8 +1,8 @@
 import React, { useEffect } from 'react'
+import { useSessionStore } from '../store/useSessionStore'
 import type { ValuationResponse } from '../types/valuation'
 import { HTMLProcessor } from '../utils/htmlProcessor'
 import { componentLogger } from '../utils/logger'
-import { useInfoTabAsset, useInfoTabStatus } from '../store/assets/shared/useInfoTabAsset'
 import { InfoTabSkeleton } from './skeletons/InfoTabSkeleton'
 
 interface ValuationInfoPanelProps {
@@ -28,28 +28,30 @@ interface ValuationInfoPanelProps {
  */
 export const ValuationInfoPanel: React.FC<ValuationInfoPanelProps> = React.memo(
   ({ result: resultProp }) => {
-    // Asset store state for progressive loading
-    const infoTabStatus = useInfoTabStatus()
-    const infoTabData = useInfoTabAsset((state) => state.data)
-    const infoTabProgress = useInfoTabAsset((state) => state.progress)
-    const infoTabError = useInfoTabAsset((state) => state.error)
-
+    // Read from unified session store
+    const session = useSessionStore((state) => state.session)
+    const isLoading = useSessionStore((state) => state.isLoading)
+    const error = useSessionStore((state) => state.error)
+    
     // Use prop only (prop-driven component for flow isolation)
     const result = resultProp
+    
+    // Get info tab HTML from session
+    const infoTabHtml = session?.infoTabHtml || result?.info_tab_html
 
-    // Show loading skeleton while asset is loading
-    if (infoTabStatus === 'loading') {
+    // Show loading skeleton while loading
+    if (isLoading && !infoTabHtml) {
       return (
         <div className="flex flex-col items-center justify-center h-full space-y-4 p-8">
           <div className="w-16 h-16 border-4 border-purple-500 border-t-transparent rounded-full animate-spin" />
-          <p className="text-gray-600 font-medium">Loading info tab... {infoTabProgress}%</p>
+          <p className="text-gray-600 font-medium">Loading info tab...</p>
           <InfoTabSkeleton />
         </div>
       )
     }
 
-    // Show error state from asset store
-    if (infoTabStatus === 'error' && infoTabError) {
+    // Show error state
+    if (error) {
       return (
         <div className="h-full flex flex-col items-center justify-center p-8">
           <div className="text-center max-w-md">
@@ -67,14 +69,11 @@ export const ValuationInfoPanel: React.FC<ValuationInfoPanelProps> = React.memo(
               />
             </svg>
             <h3 className="text-lg font-semibold text-red-900 mb-2">Failed to Load Info Tab</h3>
-            <p className="text-sm text-red-600 mb-4">{infoTabError}</p>
+            <p className="text-sm text-red-600 mb-4">{error}</p>
           </div>
         </div>
       )
     }
-
-    // Use asset data if available, fallback to prop
-    const infoTabHtml = infoTabData?.infoTabHtml || result?.info_tab_html
 
     // Early return if no result available
     if (!infoTabHtml) {
@@ -100,7 +99,6 @@ export const ValuationInfoPanel: React.FC<ValuationInfoPanelProps> = React.memo(
           valuationId: result?.valuation_id || 'unknown',
           htmlLength: infoTabHtml?.length || 0,
           renderingMode: 'server-html',
-          assetStatus: infoTabStatus,
         })
       } else {
         componentLogger.error('ValuationInfoPanel: info_tab_html not available', {
@@ -111,10 +109,9 @@ export const ValuationInfoPanel: React.FC<ValuationInfoPanelProps> = React.memo(
           resultKeys: result ? Object.keys(result) : [],
           renderingMode: 'error',
           reason: infoTabHtml ? 'HTML too short' : 'HTML not present',
-          assetStatus: infoTabStatus,
         })
       }
-    }, [infoTabHtml, result, infoTabStatus])
+    }, [infoTabHtml, result])
 
     // Server-generated HTML (required)
     if (infoTabHtml && infoTabHtml.length > 0) {

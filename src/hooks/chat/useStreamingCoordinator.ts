@@ -7,28 +7,28 @@
 
 import { useCallback, useEffect, useRef } from 'react'
 import type {
-  CalculateOptionData,
-  CollectedData,
-  ValuationPreviewData,
+    CalculateOptionData,
+    CollectedData,
+    ValuationPreviewData,
 } from '../../components/StreamingChat.types'
+import { conversationAPI } from '../../services/api/conversation/ConversationAPI'
 import { ModelPerformanceMetrics, StreamEventHandler } from '../../services/chat/StreamEventHandler'
 import type { StreamEvent } from '../../services/chat/streamingChatService'
 import {
-  StreamingManager,
-  type StreamingManagerCallbacks,
+    StreamingManager,
+    type StreamingManagerCallbacks,
 } from '../../services/chat/StreamingManager'
+import { useConversationStore } from '../../store/useConversationStore'
+import { useSessionStore } from '../../store/useSessionStore'
+import type { Message } from '../../types/message'
 import type { ValuationResponse } from '../../types/valuation'
 import {
-  extractBusinessModelFromInput,
-  extractFoundingYearFromInput,
+    extractBusinessModelFromInput,
+    extractFoundingYearFromInput,
 } from '../../utils/businessExtractionUtils'
 import { convertToApplicationError, getErrorMessage } from '../../utils/errors/errorConverter'
 import { isNetworkError, isTimeoutError } from '../../utils/errors/errorGuards'
 import { chatLogger } from '../../utils/logger'
-import type { Message } from '../../types/message'
-import { useConversationStore } from '../../store/useConversationStore'
-import { useConversationalSessionStore } from '../../store/conversational'
-import { conversationAPI } from '../../services/api/conversation/ConversationAPI'
 
 export interface UseStreamingCoordinatorOptions {
   sessionId: string
@@ -293,9 +293,8 @@ export function useStreamingCoordinator({
             })
           }
 
-          // Mark as having unsaved conversation changes (Conversational flow)
-          const { markUnsaved } = useConversationalSessionStore.getState()
-          markUnsaved()
+          // Mark as having unsaved conversation changes
+          useSessionStore.getState().markUnsaved()
 
           return { updatedMessages: store.messages, newMessage }
         },

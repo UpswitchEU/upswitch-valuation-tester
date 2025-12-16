@@ -13,7 +13,8 @@ import {
 import { backendAPI } from '../../../services/backendApi'
 import { RefreshService } from '../../../services/toolbar/refreshService'
 import UrlGeneratorService from '../../../services/urlGenerator'
-import { useManualResultsStore, useManualSessionStore } from '../../../store/manual'
+import { useManualResultsStore } from '../../../store/manual'
+import { useSessionStore } from '../../../store/useSessionStore'
 import type { ValuationResponse } from '../../../types/valuation'
 import { generalLogger } from '../../../utils/logger'
 import { generateReportId } from '../../../utils/reportIdGenerator'
@@ -45,9 +46,8 @@ interface UseManualToolbarOptions {
  */
 export const useManualToolbar = ({ result }: UseManualToolbarOptions): UseManualToolbarReturn => {
   const { handleRefresh: handleHookRefresh } = useValuationToolbarRefresh()
-  // ⚠️ CRITICAL FIX: Only subscribe to reportId, not entire session
-  // Subscribing to full session caused 100+ render loop
-  const sessionReportId = useManualSessionStore((state) => state.session?.reportId)
+  // Read from unified session store
+  const sessionReportId = useSessionStore((state) => state.session?.reportId)
   const [isDownloading, setIsDownloading] = useState(false)
 
   const handleRefresh = useCallback(() => {

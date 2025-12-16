@@ -1,44 +1,28 @@
 /**
- * Asset Inspector
+ * Session Inspector
  * 
- * Developer tool for inspecting asset store states in real-time.
+ * Developer tool for inspecting session store state in real-time.
  * Only visible in development mode.
  * 
- * Shows for each asset:
- * - Status (idle, loading, loaded, error)
- * - Mode (send, receive, idle)
- * - Progress (0-100%)
- * - Error messages if any
+ * Shows:
+ * - Session data (reportId, currentView, sessionData)
+ * - Loading state
+ * - Error state
+ * - Save status
  * 
  * @module components/debug/AssetInspector
  */
 
 'use client'
 
-import React, { useState } from 'react'
-import { useInputFieldsAsset } from '../../store/assets/manual/useInputFieldsAsset'
-import { useMainReportAsset } from '../../store/assets/shared/useMainReportAsset'
-import { useInfoTabAsset } from '../../store/assets/shared/useInfoTabAsset'
-import { useVersionsAsset } from '../../store/assets/shared/useVersionsAsset'
-import { useFinalPriceAsset } from '../../store/assets/shared/useFinalPriceAsset'
-import { useChatMessagesAsset } from '../../store/assets/conversational/useChatMessagesAsset'
-import { useSummaryAsset } from '../../store/assets/conversational/useSummaryAsset'
-import { useCollectedDataAsset } from '../../store/assets/conversational/useCollectedDataAsset'
-import type { AssetStore } from '../../store/assets/createAssetStore'
+import { useState } from 'react'
+import { useSessionStore } from '../../store/useSessionStore'
 
 export function AssetInspector() {
   const [isOpen, setIsOpen] = useState(false)
-  const [selectedFlow, setSelectedFlow] = useState<'manual' | 'conversational' | 'shared'>('manual')
   
-  // Get all asset stores
-  const inputFields = useInputFieldsAsset()
-  const mainReport = useMainReportAsset()
-  const infoTab = useInfoTabAsset()
-  const versions = useVersionsAsset()
-  const finalPrice = useFinalPriceAsset()
-  const chatMessages = useChatMessagesAsset()
-  const summary = useSummaryAsset()
-  const collectedData = useCollectedDataAsset()
+  // Get unified session store
+  const { session, isLoading, error, isSaving, lastSaved, hasUnsavedChanges } = useSessionStore()
   
   // Only show in development
   if (process.env.NODE_ENV !== 'development') {
@@ -51,7 +35,7 @@ export function AssetInspector() {
         onClick={() => setIsOpen(true)}
         className="fixed bottom-4 right-4 bg-gray-900 text-white px-4 py-2 rounded-lg shadow-xl hover:bg-gray-800 transition-colors z-50 text-sm font-medium"
       >
-        🔍 Asset Inspector
+        🔍 Session Inspector
       </button>
     )
   }
@@ -60,7 +44,7 @@ export function AssetInspector() {
     <div className="fixed bottom-4 right-4 bg-white shadow-2xl rounded-lg w-96 max-h-[600px] overflow-hidden z-50 border border-gray-200">
       {/* Header */}
       <div className="bg-gray-900 text-white px-4 py-3 flex items-center justify-between">
-        <h3 className="font-bold text-sm">🔍 Asset Inspector</h3>
+        <h3 className="font-bold text-sm">🔍 Session Inspector</h3>
         <button
           onClick={() => setIsOpen(false)}
           className="text-gray-400 hover:text-white transition-colors"
@@ -69,136 +53,94 @@ export function AssetInspector() {
         </button>
       </div>
       
-      {/* Flow selector */}
-      <div className="flex border-b border-gray-200">
-        <button
-          onClick={() => setSelectedFlow('manual')}
-          className={`flex-1 px-4 py-2 text-sm font-medium transition-colors ${
-            selectedFlow === 'manual'
-              ? 'bg-blue-50 text-blue-700 border-b-2 border-blue-700'
-              : 'text-gray-600 hover:bg-gray-50'
-          }`}
-        >
-          Manual
-        </button>
-        <button
-          onClick={() => setSelectedFlow('conversational')}
-          className={`flex-1 px-4 py-2 text-sm font-medium transition-colors ${
-            selectedFlow === 'conversational'
-              ? 'bg-purple-50 text-purple-700 border-b-2 border-purple-700'
-              : 'text-gray-600 hover:bg-gray-50'
-          }`}
-        >
-          Conversational
-        </button>
-        <button
-          onClick={() => setSelectedFlow('shared')}
-          className={`flex-1 px-4 py-2 text-sm font-medium transition-colors ${
-            selectedFlow === 'shared'
-              ? 'bg-green-50 text-green-700 border-b-2 border-green-700'
-              : 'text-gray-600 hover:bg-gray-50'
-          }`}
-        >
-          Shared
-        </button>
-      </div>
-      
-      {/* Asset list */}
-      <div className="overflow-y-auto max-h-[480px]">
-        {selectedFlow === 'manual' && (
-          <div className="p-3 space-y-2">
-            <AssetStatus name="Input Fields" asset={inputFields} />
-          </div>
-        )}
-        
-        {selectedFlow === 'conversational' && (
-          <div className="p-3 space-y-2">
-            <AssetStatus name="Chat Messages" asset={chatMessages} />
-            <AssetStatus name="Summary" asset={summary} />
-            <AssetStatus name="Collected Data" asset={collectedData} />
-          </div>
-        )}
-        
-        {selectedFlow === 'shared' && (
-          <div className="p-3 space-y-2">
-            <AssetStatus name="Main Report" asset={mainReport} />
-            <AssetStatus name="Info Tab" asset={infoTab} />
-            <AssetStatus name="Versions" asset={versions} />
-            <AssetStatus name="Final Price" asset={finalPrice} />
-          </div>
-        )}
-      </div>
-    </div>
-  )
-}
-
-interface AssetStatusProps {
-  name: string
-  asset: AssetStore<any>
-}
-
-function AssetStatus({ name, asset }: AssetStatusProps) {
-  const statusColors = {
-    idle: 'bg-gray-100 text-gray-700',
-    loading: 'bg-blue-100 text-blue-700',
-    loaded: 'bg-green-100 text-green-700',
-    error: 'bg-red-100 text-red-700',
-  }
-  
-  const modeColors = {
-    idle: 'text-gray-500',
-    send: 'text-blue-600',
-    receive: 'text-purple-600',
-  }
-  
-  return (
-    <div className="border border-gray-200 rounded-lg p-3 space-y-2 bg-white hover:shadow-sm transition-shadow">
-      <div className="flex justify-between items-center">
-        <span className="font-medium text-sm text-gray-900">{name}</span>
-        <span className={`text-xs px-2 py-1 rounded font-medium ${statusColors[asset.status]}`}>
-          {asset.status}
-        </span>
-      </div>
-      
-      <div className="flex items-center justify-between text-xs text-gray-600">
-        <div className="flex items-center gap-1">
-          <span className="text-gray-500">Mode:</span>
-          <span className={`font-medium ${modeColors[asset.mode]}`}>
-            {asset.mode === 'send' && '→ Send'}
-            {asset.mode === 'receive' && '← Receive'}
-            {asset.mode === 'idle' && '⚪ Idle'}
-          </span>
-        </div>
-        <div className="flex items-center gap-1">
-          <span className="text-gray-500">Progress:</span>
-          <span className="font-medium">{asset.progress}%</span>
-        </div>
-      </div>
-      
-      {asset.status === 'loading' && asset.progress > 0 && (
-        <div className="w-full bg-gray-200 rounded-full h-1.5">
-          <div
-            className="bg-blue-500 h-1.5 rounded-full transition-all duration-300"
-            style={{ width: `${asset.progress}%` }}
-          />
-        </div>
-      )}
-      
-      {asset.error && (
-        <div className="text-xs text-red-600 bg-red-50 rounded px-2 py-1 border border-red-200">
-          {asset.error}
-        </div>
-      )}
-      
-      {asset.data && (
-        <div className="text-xs text-gray-500">
-          {asset.lastSyncedAt && (
-            <div>
-              Synced: {new Date(asset.lastSyncedAt).toLocaleTimeString()}
+      {/* Session state */}
+      <div className="p-4 space-y-3 overflow-y-auto max-h-[520px]">
+        {/* Status */}
+        <div className="border border-gray-200 rounded-lg p-3 bg-white">
+          <div className="font-medium text-sm text-gray-900 mb-2">Status</div>
+          <div className="space-y-1 text-xs">
+            <div className="flex justify-between">
+              <span className="text-gray-600">Loading:</span>
+              <span className={isLoading ? 'text-blue-600 font-medium' : 'text-gray-500'}>
+                {isLoading ? 'Yes' : 'No'}
+              </span>
             </div>
-          )}
+            <div className="flex justify-between">
+              <span className="text-gray-600">Saving:</span>
+              <span className={isSaving ? 'text-blue-600 font-medium' : 'text-gray-500'}>
+                {isSaving ? 'Yes' : 'No'}
+              </span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-gray-600">Has Changes:</span>
+              <span className={hasUnsavedChanges ? 'text-amber-600 font-medium' : 'text-gray-500'}>
+                {hasUnsavedChanges ? 'Yes' : 'No'}
+              </span>
+            </div>
+            {lastSaved && (
+              <div className="flex justify-between">
+                <span className="text-gray-600">Last Saved:</span>
+                <span className="text-gray-900">{lastSaved.toLocaleTimeString()}</span>
+              </div>
+            )}
+          </div>
         </div>
-      )}
+        
+        {/* Session Data */}
+        {session && (
+          <div className="border border-gray-200 rounded-lg p-3 bg-white">
+            <div className="font-medium text-sm text-gray-900 mb-2">Session</div>
+            <div className="space-y-1 text-xs">
+              <div className="flex justify-between">
+                <span className="text-gray-600">Report ID:</span>
+                <span className="text-gray-900 font-mono">{session.reportId?.slice(-8)}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-600">View:</span>
+                <span className="text-gray-900">{session.currentView}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-600">Session Data:</span>
+                <span className={session.sessionData ? 'text-green-600' : 'text-gray-400'}>
+                  {session.sessionData ? '✓' : '✗'}
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-600">HTML Report:</span>
+                <span className={session.htmlReport ? 'text-green-600' : 'text-gray-400'}>
+                  {session.htmlReport ? '✓' : '✗'}
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-600">Info Tab:</span>
+                <span className={session.infoTabHtml ? 'text-green-600' : 'text-gray-400'}>
+                  {session.infoTabHtml ? '✓' : '✗'}
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-600">Result:</span>
+                <span className={session.valuationResult ? 'text-green-600' : 'text-gray-400'}>
+                  {session.valuationResult ? '✓' : '✗'}
+                </span>
+              </div>
+            </div>
+          </div>
+        )}
+        
+        {/* Error */}
+        {error && (
+          <div className="border border-red-200 rounded-lg p-3 bg-red-50">
+            <div className="font-medium text-sm text-red-900 mb-2">Error</div>
+            <div className="text-xs text-red-700">{error}</div>
+          </div>
+        )}
+        
+        {!session && !isLoading && (
+          <div className="text-center text-gray-500 text-sm py-4">
+            No session loaded
+          </div>
+        )}
+      </div>
     </div>
   )
 }

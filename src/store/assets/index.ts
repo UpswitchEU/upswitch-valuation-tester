@@ -11,28 +11,21 @@
 
 // Factory
 export { createAssetStore } from './createAssetStore'
-export type { AssetStatus, AssetMode, AssetState, AssetActions, AssetStore } from './createAssetStore'
+export type { AssetActions, AssetMode, AssetState, AssetStatus, AssetStore } from './createAssetStore'
 
 // Manual Flow Assets
-export { useInputFieldsAsset, useInputFieldsData, useInputFieldsStatus, useInputFieldsMode, useInputFieldsError, useInputFieldsProgress } from './manual/useInputFieldsAsset'
+// NOTE: Asset stores removed - use session store directly
 
 // Conversational Flow Assets
-export { useChatMessagesAsset, useChatMessages, useChatSessionId, useChatMessagesStatus, useChatMessagesError, useChatMessagesProgress } from './conversational/useChatMessagesAsset'
-export { useSummaryAsset, useSummaryCollectedData, useSummaryCompletion, useSummaryStatus, useSummaryError, useSummaryProgress } from './conversational/useSummaryAsset'
-export { useCollectedDataAsset, useCollectedData, useCollectedDataCompletion, useCollectedDataStatus, useCollectedDataError, useCollectedDataProgress } from './conversational/useCollectedDataAsset'
+export { useChatMessages, useChatMessagesAsset, useChatMessagesError, useChatMessagesProgress, useChatMessagesStatus, useChatSessionId } from './conversational/useChatMessagesAsset'
+export { useCollectedData, useCollectedDataAsset, useCollectedDataCompletion, useCollectedDataError, useCollectedDataProgress, useCollectedDataStatus } from './conversational/useCollectedDataAsset'
+export { useSummaryAsset, useSummaryCollectedData, useSummaryCompletion, useSummaryError, useSummaryProgress, useSummaryStatus } from './conversational/useSummaryAsset'
 
 // Shared Assets
-export { useMainReportAsset, useMainReportHtml, useMainReportStatus, useMainReportError, useMainReportProgress } from './shared/useMainReportAsset'
-export { useInfoTabAsset, useInfoTabHtml, useInfoTabStatus, useInfoTabError, useInfoTabProgress } from './shared/useInfoTabAsset'
-export { useVersionsAsset, useVersionsList, useActiveVersion, useVersionsStatus, useVersionsError, useVersionsProgress } from './shared/useVersionsAsset'
-export { useFinalPriceAsset, useFinalPriceValues, useFinalPriceStatus, useFinalPriceError, useFinalPriceProgress } from './shared/useFinalPriceAsset'
+// NOTE: Shared asset stores removed - use session store directly
 
-// Type exports
-export type { MainReportData } from './shared/useMainReportAsset'
-export type { InfoTabData } from './shared/useInfoTabAsset'
-export type { VersionsData } from './shared/useVersionsAsset'
-export type { FinalPriceData } from './shared/useFinalPriceAsset'
+// Type exports (conversational only)
 export type { ChatMessagesData } from './conversational/useChatMessagesAsset'
-export type { SummaryData } from './conversational/useSummaryAsset'
 export type { CollectedDataInfo } from './conversational/useCollectedDataAsset'
+export type { SummaryData } from './conversational/useSummaryAsset'
 

@@ -16,7 +16,8 @@
  */
 
 import { useEffect, useRef } from 'react'
-import { useManualFormStore, useManualResultsStore, useManualSessionStore } from '../store/manual'
+import { useManualFormStore, useManualResultsStore } from '../store/manual'
+import { useSessionStore } from '../store/useSessionStore'
 import { useVersionHistoryStore } from '../store/useVersionHistoryStore'
 import { generalLogger } from '../utils/logger'
 import { hasMeaningfulSessionData } from '../utils/sessionDataUtils'
@@ -42,8 +43,8 @@ import { useToast } from './useToast'
  * Kept for backwards compatibility but should be removed in future.
  */
 export function useSessionRestoration() {
-  // Use Manual flow stores (this hook is only used in Manual flow context)
-  const { session, getSessionData } = useManualSessionStore()
+  // Use unified session store
+  const session = useSessionStore((state) => state.session)
   const { updateFormData } = useManualFormStore()
   const { setResult, setHtmlReport, setInfoTabHtml } = useManualResultsStore()
   const { fetchVersions } = useVersionHistoryStore()

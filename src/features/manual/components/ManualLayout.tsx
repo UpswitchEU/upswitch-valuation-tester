@@ -20,8 +20,8 @@ import {
   useValuationToolbarTabs,
   type ValuationTab,
 } from '../../../hooks/valuationToolbar'
-import { useManualAssetOrchestrator } from '../../../store/assets/manual/useManualAssetOrchestrator'
-import { useManualFormStore, useManualResultsStore, useManualSessionStore } from '../../../store/manual'
+import { useManualFormStore, useManualResultsStore } from '../../../store/manual'
+import { useSessionStore } from '../../../store/useSessionStore'
 import type { ValuationResponse } from '../../../types/valuation'
 import { generalLogger } from '../../../utils/logger'
 import { ReportPanel } from '../../conversational/components/ReportPanel'
@@ -90,121 +90,37 @@ export const ManualLayout: React.FC<ManualLayoutProps> = ({
 
   const { user } = useAuth()
   const { isCalculating, error, result, setResult } = useManualResultsStore()
-  // CRITICAL: Use optimized selectors to subscribe only to specific fields
-  // This prevents re-renders when session object reference changes but data is the same
-  const sessionReportId = useManualSessionStore((state) => state.session?.reportId)
-  // ⚠️ CRITICAL: Removed ALL other useManualSessionStore subscriptions
-  // They were causing 100+ renders. These fields are accessed via getState() in effects instead
   const { updateFormData } = useManualFormStore()
   const { showToast } = useToast()
-
-  // Asset orchestrator for cleanup only
-  // Note: loadAllAssets removed - assets now populate reactively from store subscriptions
-  const { resetAllAssets } = useManualAssetOrchestrator(reportId)
-
-  // CRITICAL: Reactive session data restoration
-  // Single subscription-based approach - no explicit loading calls
-  // Assets populate automatically when session data arrives in store
+  
+  // Unified store: Simple subscriptions (2 total)
+  const session = useSessionStore((state) => state.session)
+  const sessionReportId = session?.reportId
+  
+  // Simple restoration: Read directly from session when it changes
   useEffect(() => {
-    if (!sessionReportId) {
-      generalLogger.debug('[ManualLayout] No session yet, waiting for load', { reportId })
+    if (!session || session.reportId !== reportId) {
       return
     }
-
-    // Subscribe to session store changes
-    // This is the ONLY place that reacts to session data updates
-    let previousSessionData: any = null
-    let previousValuationResult: any = null
     
-    const unsubscribe = useManualSessionStore.subscribe(
-      (state) => {
-        // Skip if no session
-        if (!state.session || state.session.reportId !== sessionReportId) {
-          return
-        }
-        
-        const sessionDataObj = state.session.sessionData as any
-        const sessionValResult = state.session.valuationResult
-        
-        // Check if sessionData actually changed (compare reference)
-        if (sessionDataObj && sessionDataObj !== previousSessionData) {
-          previousSessionData = sessionDataObj
-          
-          // Restore form data if it has meaningful data
-          if (sessionDataObj.company_name || sessionDataObj.revenue) {
-            const currentFormData = useManualFormStore.getState().formData
-            const hasChanges = 
-              (sessionDataObj.company_name && sessionDataObj.company_name !== currentFormData.company_name) ||
-              (sessionDataObj.revenue !== undefined && sessionDataObj.revenue !== currentFormData.revenue)
-            
-            if (hasChanges) {
-              generalLogger.debug('[ManualLayout] Restoring form data from session', {
-                reportId: sessionReportId,
-              })
-              updateFormData(sessionDataObj)
-            }
-          }
-        }
-        
-        // Check if valuationResult actually changed (compare reference)
-        if (sessionValResult && sessionValResult !== previousValuationResult) {
-          previousValuationResult = sessionValResult
-          
-          const currentResult = useManualResultsStore.getState().result
-          if (!currentResult || currentResult.valuation_id !== sessionValResult.valuation_id) {
-            generalLogger.debug('[ManualLayout] Restoring valuation result from session', {
-              reportId: sessionReportId,
-            })
-            setResult(sessionValResult as any)
-          }
-        }
-      }
-    )
-    
-    // Also restore immediately if session data already exists (initial load)
-    const currentState = useManualSessionStore.getState()
-    if (currentState.session?.reportId === sessionReportId) {
-      const sessionDataObj = currentState.session.sessionData as any
-      const sessionValResult = currentState.session.valuationResult
-      
-      if (sessionDataObj && (sessionDataObj.company_name || sessionDataObj.revenue)) {
-        const currentFormData = useManualFormStore.getState().formData
-        const hasChanges = 
-          (sessionDataObj.company_name && sessionDataObj.company_name !== currentFormData.company_name) ||
-          (sessionDataObj.revenue !== undefined && sessionDataObj.revenue !== currentFormData.revenue)
-        
-        if (hasChanges) {
-          generalLogger.debug('[ManualLayout] Initial restore of form data', {
-            reportId: sessionReportId,
-          })
-          updateFormData(sessionDataObj)
-        }
-      }
-      
-      if (sessionValResult) {
-        const currentResult = useManualResultsStore.getState().result
-        if (!currentResult || currentResult.valuation_id !== sessionValResult.valuation_id) {
-          generalLogger.debug('[ManualLayout] Initial restore of valuation result', {
-            reportId: sessionReportId,
-          })
-          setResult(sessionValResult as any)
-        }
+    // Restore form data
+    if (session.sessionData) {
+      const sessionDataObj = session.sessionData as any
+      if (sessionDataObj.company_name || sessionDataObj.revenue) {
+        generalLogger.debug('[ManualLayout] Restoring form data', { reportId })
+        updateFormData(sessionDataObj)
       }
     }
     
-    generalLogger.info('[ManualLayout] Session reactive subscription active', {
-      reportId: sessionReportId,
-    })
-    
-    return unsubscribe
-  }, [sessionReportId, reportId, updateFormData, setResult])
-
-  // Cleanup assets on unmount
-  useEffect(() => {
-    return () => {
-      resetAllAssets()
+    // Restore results
+    if (session.valuationResult) {
+      const currentResult = useManualResultsStore.getState().result
+      if (!currentResult || currentResult.valuation_id !== session.valuationResult.valuation_id) {
+        generalLogger.debug('[ManualLayout] Restoring result', { reportId })
+        setResult(session.valuationResult as any)
+      }
     }
-  }, [reportId, resetAllAssets])
+  }, [sessionReportId, reportId, updateFormData, setResult, session])
 
   // Panel resize hook
   const { leftPanelWidth, handleResize, isMobile, mobileActivePanel, setMobileActivePanel } =
@@ -226,88 +142,17 @@ export const ManualLayout: React.FC<ManualLayoutProps> = ({
     }
   }, [result, onComplete])
 
-  // Track previous hasUnsavedChanges to detect when save happens after user changes
-  const prevHasUnsavedChangesRef = useRef<boolean>(false)
-  // Track initial load to prevent showing "saved" toast during initialization
-  const isInitialLoadRef = useRef<boolean>(true)
-  
-  // Mark initial load as complete after first render and when session is ready
+  // Simplified save toast: Subscribe to unified store
   useEffect(() => {
-    // Wait a bit to ensure initialization is complete
-    const timer = setTimeout(() => {
-      isInitialLoadRef.current = false
-    }, 3000) // 3 seconds should be enough for initialization
+    let lastSavedTime: Date | null = null
     
-    return () => clearTimeout(timer)
-  }, [])
-  
-  // Show success toast when save completes (only if there were unsaved changes)
-  // ⚠️ CRITICAL FIX: Use Zustand subscribe API to listen for changes without causing re-renders
-  // This prevents render loops while still reacting to save state changes
-  useEffect(() => {
-    let previousState = {
-      isSaving: useManualSessionStore.getState().isSaving,
-      lastSaved: useManualSessionStore.getState().lastSaved,
-      hasUnsavedChanges: useManualSessionStore.getState().hasUnsavedChanges,
-      error: useManualSessionStore.getState().error,
-    }
-    
-    // Subscribe to store changes - listener receives the selected state
-    // This doesn't cause component re-renders, only triggers our callback
-    const unsubscribe = useManualSessionStore.subscribe(
-      (state) => {
-        // Extract only the fields we care about
-        const currentState = {
-          isSaving: state.isSaving,
-          lastSaved: state.lastSaved,
-          hasUnsavedChanges: state.hasUnsavedChanges,
-          error: state.error,
-        }
-        
-        // Skip if values haven't actually changed
-        if (
-          previousState.isSaving === currentState.isSaving &&
-          previousState.lastSaved === currentState.lastSaved &&
-          previousState.hasUnsavedChanges === currentState.hasUnsavedChanges &&
-          previousState.error === currentState.error
-        ) {
-          return
-        }
-        
-        // Don't show toast during initial load
-        if (isInitialLoadRef.current) {
-          previousState = currentState
-          return
-        }
-        
-        const { isSaving, lastSaved, hasUnsavedChanges, error: syncError } = currentState
-        
-        // Check previous state BEFORE updating ref
-        const hadUnsavedChanges = prevHasUnsavedChangesRef.current
-        
-        // Update ref to track current state for next check
-        prevHasUnsavedChangesRef.current = hasUnsavedChanges
-        
-        // Only show toast if:
-        // 1. Save just completed (lastSaved is recent)
-        // 2. There were unsaved changes before the save (hadUnsavedChanges was true)
-        // This prevents showing "saved" toast on initial page load when no changes were made
-        if (lastSaved && !isSaving && !syncError && hadUnsavedChanges) {
-          const timeAgo = Math.floor((Date.now() - lastSaved.getTime()) / 1000)
-          // Only show toast for recent saves (within last 2 seconds)
-          if (timeAgo < 2) {
-            showToast(
-              'Valuation report saved successfully! All data has been persisted.',
-              'success',
-              4000
-            )
-          }
-        }
-        
-        // Update previous state for next comparison
-        previousState = currentState
+    const unsubscribe = useSessionStore.subscribe((state) => {
+      // Show toast when save completes
+      if (state.lastSaved && state.lastSaved !== lastSavedTime && !state.isSaving) {
+        lastSavedTime = state.lastSaved
+        showToast('Valuation saved successfully', 'success', 3000)
       }
-    )
+    })
     
     return unsubscribe
   }, [showToast])
