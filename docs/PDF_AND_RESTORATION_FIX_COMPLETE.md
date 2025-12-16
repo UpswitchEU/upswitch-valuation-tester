@@ -180,3 +180,4 @@ Both PDF download and report restoration now work correctly:
 - Restoration re-runs when session data loads from backend
 - Users receive clear feedback via toast notifications
 
+

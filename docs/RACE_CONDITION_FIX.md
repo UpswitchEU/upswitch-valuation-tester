@@ -155,3 +155,4 @@ updateTimeoutRef.current = setTimeout(() => {
 **File**: `apps/upswitch-valuation-tester/src/components/ValuationSessionManager.tsx`  
 **Lines**: 141-237
 
+

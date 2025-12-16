@@ -57,3 +57,4 @@ The code hangs after validation, before the `calculateValuation` call. This sugg
 3. Verify autosave toast appears after successful calculation
 4. Test conversational flow as well
 
+

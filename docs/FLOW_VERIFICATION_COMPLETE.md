@@ -289,3 +289,4 @@ useEffect(() => {
 ✅ **Conversational Flow**: Summary + messages + generation all work  
 ✅ **Build**: Passing with no errors
 
+

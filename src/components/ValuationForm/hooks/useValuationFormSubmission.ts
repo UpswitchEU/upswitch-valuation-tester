@@ -44,7 +44,7 @@ export const useValuationFormSubmission = (
   setEmployeeCountError: (error: string | null) => void
 ): UseValuationFormSubmissionReturn => {
   const { formData, setCollectedData } = useValuationFormStore()
-  const { calculateValuation, isCalculating, setCalculating } = useValuationApiStore()
+  const { calculateValuation, isCalculating, setCalculating, trySetCalculating } = useValuationApiStore()
   const { setResult } = useValuationResultsStore()
   const { session } = useValuationSessionStore()
   const { createVersion, getLatestVersion, fetchVersions } = useVersionHistoryStore()
@@ -55,8 +55,30 @@ export const useValuationFormSubmission = (
 
       try {
         // Log submission
+        generalLogger.info('Form onSubmit handler called', {
+          hasHandleSubmit: true,
+          isSubmitting: false,
+        })
+
+        // CRITICAL: Use atomic check-and-set to set loading state IMMEDIATELY
+        // This ensures the UI shows loading right away, before any async operations
+        // Returns false if already calculating (prevents double submission)
+        const wasSet = trySetCalculating()
+        if (!wasSet) {
+          generalLogger.warn('Calculation already in progress, preventing double submission', {
+            storeState: useValuationApiStore.getState().isCalculating,
+            hookValue: isCalculating,
+          })
+          return // Don't reset - let existing calculation finish
+        }
+
+        generalLogger.info('Loading state set to true immediately', {
+          wasCalculating: false,
+        })
+
+        // Log that we're proceeding with calculation
         generalLogger.info('Form submit triggered', {
-          isCalculating: useValuationApiStore.getState().isCalculating,
+          isCalculating: true,
           hasFormData: !!formData,
           formDataKeys: Object.keys(formData || {}),
           revenue: formData?.revenue,
@@ -66,25 +88,6 @@ export const useValuationFormSubmission = (
           business_type: formData?.business_type,
           number_of_owners: formData?.number_of_owners,
           number_of_employees: formData?.number_of_employees,
-        })
-
-        // Prevent double submission - CHECK FIRST before setting loading state
-        // CRITICAL FIX: Only check store state, not hook value
-        // Hook values are stale until re-render, but store state is synchronous
-        const checkState = useValuationApiStore.getState()
-        if (checkState.isCalculating) {
-          generalLogger.warn('Calculation already in progress, preventing double submission', {
-            storeState: checkState.isCalculating,
-            hookValue: isCalculating, // Logged for debugging but not used in check
-          })
-          return // Don't reset - let existing calculation finish
-        }
-
-        // CRITICAL: Set loading state IMMEDIATELY (AFTER double-submission check)
-        // This ensures the loading spinner shows up right away
-        setCalculating(true)
-        generalLogger.info('Loading state set to true immediately', {
-          wasCalculating: checkState.isCalculating,
         })
 
         // Validate employee count when owner count is provided
@@ -102,7 +105,7 @@ export const useValuationFormSubmission = (
             number_of_employees: formData.number_of_employees,
           })
           setEmployeeCountError(errorMsg)
-          setCalculating(false) // Reset on validation error
+          setCalculating(false) // Reset loading state on validation error
           return
         }
 
@@ -226,6 +229,9 @@ export const useValuationFormSubmission = (
       }
 
       // Calculate valuation
+      // NOTE: isCalculating is already set to true by trySetCalculating above
+      // calculateValuation will check and skip if already calculating, but since we already
+      // set it atomically, it will proceed. It will reset isCalculating on completion/error.
       let result
       const calculationStart = performance.now()
       try {
@@ -237,6 +243,17 @@ export const useValuationFormSubmission = (
           country_code: request.country_code,
         })
         result = await calculateValuation(request)
+        
+        if (!result) {
+          // calculateValuation returned null - this shouldn't happen since we already checked
+          // but handle it gracefully
+          generalLogger.warn('calculateValuation returned null unexpectedly', {
+            storeState: useValuationApiStore.getState().isCalculating,
+          })
+          setCalculating(false) // Ensure state is reset
+          return // Exit early - don't proceed with saving or versioning
+        }
+        
         generalLogger.info('calculateValuation completed', {
           hasResult: !!result,
           resultKeys: result ? Object.keys(result) : [],
@@ -247,6 +264,8 @@ export const useValuationFormSubmission = (
           stack: calcError instanceof Error ? calcError.stack : undefined,
           requestKeys: Object.keys(request),
         })
+        // calculateValuation should have reset isCalculating, but ensure it's reset
+        setCalculating(false)
         // Re-throw to be caught by outer try-catch
         throw calcError
       }
@@ -432,9 +451,12 @@ export const useValuationFormSubmission = (
             ? `Calculation failed: ${error.message}`
             : 'Calculation failed. Please check the console for details.'
         )
-      } finally {
-        setCalculating(false) // Always reset in finally block
+        // CRITICAL: Reset isCalculating on error
+        // calculateValuation should have reset it, but ensure it's reset here too
+        setCalculating(false)
       }
+      // NOTE: calculateValuation handles resetting isCalculating on success,
+      // but we ensure it's reset on error in the catch block above
     },
     [
       formData,
@@ -447,6 +469,7 @@ export const useValuationFormSubmission = (
       createVersion,
       fetchVersions,
       setCalculating,
+      trySetCalculating,
       isCalculating,
     ]
   )

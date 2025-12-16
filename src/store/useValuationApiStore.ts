@@ -24,6 +24,8 @@ interface ValuationApiStore {
   // Actions
   calculateValuation: (request: ValuationRequest) => Promise<ValuationResponse | null>
   setCalculating: (isCalculating: boolean) => void
+  // Atomic check-and-set: returns true if state was set, false if already calculating
+  trySetCalculating: () => boolean
   clearError: () => void
 }
 
@@ -36,20 +38,28 @@ export const useValuationApiStore = create<ValuationApiStore>((set, get) => ({
   calculateValuation: async (request: ValuationRequest): Promise<ValuationResponse | null> => {
     // CRITICAL: Use functional update to atomically check and set isCalculating
     // This prevents race conditions if multiple calculations are triggered simultaneously
+    // NOTE: If isCalculating is already true (set by trySetCalculating), we still proceed
+    // because the caller has already ensured atomicity. We just ensure it stays true.
     let shouldProceed = false
     set((state) => {
       if (state.isCalculating) {
-        storeLogger.warn('Calculation already in progress, skipping duplicate call', {
-          companyName: request.company_name,
-        })
-        return state // No change - calculation already in progress
+        // If already calculating, check if this is from a previous call or current call
+        // Since trySetCalculating is called before calculateValuation, if isCalculating is true,
+        // it's likely from the current call. We proceed to allow the calculation to run.
+        // However, if calculateValuation is called again while already calculating from a different
+        // source, we should still prevent it. The trySetCalculating check in the caller prevents this.
+        shouldProceed = true // Proceed - likely from current call via trySetCalculating
+        return state // No change needed - already set
       }
       shouldProceed = true
       return { ...state, isCalculating: true, error: null }
     })
     
-    // If calculation was already in progress, return null
+    // This should never be false, but check anyway for safety
     if (!shouldProceed) {
+      storeLogger.warn('Unexpected state: shouldProceed is false', {
+        companyName: request.company_name,
+      })
       return null
     }
     
@@ -123,6 +133,20 @@ export const useValuationApiStore = create<ValuationApiStore>((set, get) => ({
       }
       return { ...state, isCalculating }
     })
+  },
+  
+  // Atomic check-and-set: returns true if state was set, false if already calculating
+  // Use this before calling calculateValuation to ensure immediate UI feedback
+  trySetCalculating: () => {
+    let wasSet = false
+    set((state) => {
+      if (state.isCalculating) {
+        return state // Already calculating, don't change
+      }
+      wasSet = true
+      return { ...state, isCalculating: true, error: null }
+    })
+    return wasSet
   },
   
   // Clear error
