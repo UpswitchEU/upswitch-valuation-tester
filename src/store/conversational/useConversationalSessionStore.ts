@@ -184,8 +184,8 @@ export const useConversationalSessionStore = create<ConversationalSessionStore>(
 
       storeLogger.info('[Conversational] Session loaded successfully', {
         reportId,
-        hasSessionData: !!session.sessionData,
-        hasValuationResult: !!session.valuationResult,
+        hasSessionData: !!session?.sessionData,
+        hasValuationResult: !!session?.valuationResult,
       })
     } catch (error) {
       // Error handling (non-blocking)

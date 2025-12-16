@@ -66,7 +66,7 @@ export const MinimalHeader: React.FC = () => {
         <div className="flex basis-0 flex-row flex-grow flex-nowrap justify-start bg-transparent items-center no-underline text-medium whitespace-nowrap box-border">
           <Link className="flex items-center gap-1 sm:gap-1.5 flex-shrink-0 group" href="/">
             {/* Logo container with hover animation - desktop only */}
-            <div className="relative h-6 sm:h-6 flex-shrink-0" style={{ width: '93.5px' }}>
+            <div className="relative h-6 sm:h-6 flex-shrink-0" style={{ width: '81.6px' }}>
               {/* Default logo (white variant) */}
               <img
                 src="/logo_upswitch_white_var2.svg"

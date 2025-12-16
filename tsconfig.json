@@ -54,6 +54,7 @@
     "**/*.cy.ts",
     "**/*.cy.tsx",
     ".next",
-    "vitest.config.ts"
+    "vitest.config.ts",
+    "src/store/_archived/**/*"
   ]
 }

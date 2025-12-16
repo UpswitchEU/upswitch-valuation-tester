@@ -16,9 +16,7 @@
  */
 
 import { useEffect, useRef } from 'react'
-import { useManualFormStore } from '../store/manual'
-import { useManualResultsStore } from '../store/manual'
-import { useManualSessionStore } from '../store/manual'
+import { useManualFormStore, useManualResultsStore, useManualSessionStore } from '../store/manual'
 import { useVersionHistoryStore } from '../store/useVersionHistoryStore'
 import { generalLogger } from '../utils/logger'
 import { hasMeaningfulSessionData } from '../utils/sessionDataUtils'

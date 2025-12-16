@@ -27,6 +27,7 @@ import type {
   UpdateVersionRequest,
   VersionComparison,
   VersionChanges,
+  VersionStatistics,
 } from '../../types/ValuationVersion'
 import { createContextLogger } from '../../utils/logger'
 import { convertToApplicationError, getErrorMessage } from '../../utils/errors/errorConverter'
@@ -336,12 +337,7 @@ export class VersionService {
    * @param reportId - Report identifier
    * @returns Statistics about version history
    */
-  async getStatistics(reportId: string): Promise<{
-    totalVersions: number
-    activeVersion: number
-    pinnedVersions: number
-    lastCreated: Date | null
-  }> {
+  async getStatistics(reportId: string): Promise<VersionStatistics> {
     const startTime = performance.now()
 
     try {
@@ -369,11 +365,20 @@ export class VersionService {
       })
 
       // Return default stats instead of throwing
+      // Return empty statistics on error
       return {
         totalVersions: 0,
-        activeVersion: 1,
-        pinnedVersions: 0,
-        lastCreated: null,
+        averageTimeBetweenVersions_hours: 0,
+        mostChangedFields: [],
+        averageValuationChange_percent: 0,
+        firstVersion: {
+          number: 1,
+          createdAt: new Date(),
+        },
+        latestVersion: {
+          number: 1,
+          createdAt: new Date(),
+        },
       }
     }
   }

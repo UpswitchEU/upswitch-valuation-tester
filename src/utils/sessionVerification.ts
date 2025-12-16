@@ -101,9 +101,16 @@ export function verifySessionInBackground(
           
           // Re-initialize to check backend properly and create NEW if needed
           // Import dynamically to avoid circular dependencies
-          const { useValuationSessionStore } = await import('../store/useValuationSessionStore')
-          const { initializeSession } = useValuationSessionStore.getState()
-          await initializeSession(reportId, cachedSession.currentView)
+          // Flow-aware: Use appropriate store based on currentView
+          if (cachedSession.currentView === 'manual') {
+            const { useManualSessionStore } = await import('../store/manual')
+            const { loadSessionAsync } = useManualSessionStore.getState()
+            await loadSessionAsync(reportId)
+          } else {
+            const { useConversationalSessionStore } = await import('../store/conversational')
+            const { loadSessionAsync } = useConversationalSessionStore.getState()
+            await loadSessionAsync(reportId)
+          }
           
           return
         }
@@ -153,11 +160,17 @@ export function verifySessionInBackground(
           // Remove stale cache
           globalSessionCache.remove(reportId)
           
-          // Re-initialize as NEW
+          // Re-initialize as NEW (flow-aware)
           try {
-            const { useValuationSessionStore } = await import('../store/useValuationSessionStore')
-            const { initializeSession } = useValuationSessionStore.getState()
-            await initializeSession(reportId, cachedSession.currentView)
+            if (cachedSession.currentView === 'manual') {
+              const { useManualSessionStore } = await import('../store/manual')
+              const { loadSessionAsync } = useManualSessionStore.getState()
+              await loadSessionAsync(reportId)
+            } else {
+              const { useConversationalSessionStore } = await import('../store/conversational')
+              const { loadSessionAsync } = useConversationalSessionStore.getState()
+              await loadSessionAsync(reportId)
+            }
           } catch (reinitError) {
             VERIFICATION_LOGGER.error('Failed to re-initialize after 404', {
               reportId,

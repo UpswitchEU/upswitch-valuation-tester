@@ -285,7 +285,11 @@ export class SessionService {
 
       // Update session data first
       if (Object.keys(sessionUpdate).length > 0) {
-        await backendAPI.updateValuationSession(reportId, sessionUpdate)
+        // Convert ValuationRequest to sessionData format
+        const sessionUpdates: Partial<ValuationSession> = {
+          sessionData: sessionUpdate as any,
+        }
+        await backendAPI.updateValuationSession(reportId, sessionUpdates)
         logger.debug('Session data updated', { reportId })
       }
 

@@ -233,8 +233,8 @@ export const useManualSessionStore = create<ManualSessionStore>((set, get) => ({
 
       storeLogger.info('[Manual] Session loaded successfully', {
         reportId,
-        hasSessionData: !!session.sessionData,
-        hasValuationResult: !!session.valuationResult,
+        hasSessionData: !!session?.sessionData,
+        hasValuationResult: !!session?.valuationResult,
       })
     } catch (error) {
       // Error handling (non-blocking)

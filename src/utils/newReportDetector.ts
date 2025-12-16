@@ -7,7 +7,8 @@
  * @module utils/newReportDetector
  */
 
-import { useValuationSessionStore } from '../store/useValuationSessionStore'
+import { useManualSessionStore } from '../store/manual'
+import { useConversationalSessionStore } from '../store/conversational'
 import { createContextLogger } from './logger'
 import { checkReportExists } from './reportExistenceCache'
 
@@ -42,12 +43,15 @@ const detectorLogger = createContextLogger('NewReportDetector')
  */
 export function isNewReport(reportId: string): boolean {
   try {
-    // Check Zustand store (single source of truth)
-    const { session } = useValuationSessionStore.getState()
-    if (session?.reportId === reportId) {
-      detectorLogger.debug('Report exists in Zustand store', {
+    // Check flow-specific stores (flow-aware)
+    const manualSession = useManualSessionStore.getState().session
+    const conversationalSession = useConversationalSessionStore.getState().session
+    
+    if (manualSession?.reportId === reportId || conversationalSession?.reportId === reportId) {
+      detectorLogger.debug('Report exists in flow store', {
         reportId,
-        currentView: session.currentView,
+        inManual: manualSession?.reportId === reportId,
+        inConversational: conversationalSession?.reportId === reportId,
       })
       return false // Not new - already in store
     }
