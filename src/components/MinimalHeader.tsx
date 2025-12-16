@@ -67,11 +67,11 @@ export const MinimalHeader: React.FC = () => {
           <Link className="flex items-center gap-1 sm:gap-1.5 flex-shrink-0 group" href="/">
             {/* Logo container with hover animation - desktop only */}
             <div className="relative h-6 sm:h-6 flex-shrink-0" style={{ width: '81.6px' }}>
-              {/* Default logo (white variant) */}
+              {/* Default logo (dark for transparent nav) */}
               <img
-                src="/logo_upswitch_white_var2.svg"
+                src="/logo_upswitch_dark.svg"
                 alt="Upswitch Logo"
-                className="h-6 sm:h-6 w-full flex-shrink-0 transition-opacity duration-300 ease-in-out opacity-100 lg:group-hover:opacity-0"
+                className="absolute top-0 left-0 h-6 sm:h-6 w-full flex-shrink-0 transition-opacity duration-300 ease-in-out opacity-100 lg:group-hover:opacity-0 pointer-events-none"
                 style={{
                   width: '100%',
                   height: '24px',
@@ -81,17 +81,18 @@ export const MinimalHeader: React.FC = () => {
                   marginTop: '1px',
                 }}
               />
-              {/* Hover logo (dark variant) - desktop only */}
+              {/* Hover logo (white var2 variant) - desktop only */}
               <img
-                src="/logo_upswitch_dark.svg"
+                src="/logo_upswitch_white_var2.svg"
                 alt="Upswitch Logo"
-                className="absolute top-0 left-0 h-6 sm:h-6 w-full flex-shrink-0 transition-opacity duration-300 ease-in-out opacity-0 lg:group-hover:opacity-100 pointer-events-none"
+                className="h-6 sm:h-6 w-full flex-shrink-0 transition-opacity duration-300 ease-in-out opacity-0 lg:group-hover:opacity-100"
                 style={{
                   width: '100%',
                   height: '24px',
                   objectFit: 'contain',
                   visibility: 'visible',
                   display: 'block',
+                  marginTop: '1px',
                 }}
               />
             </div>
