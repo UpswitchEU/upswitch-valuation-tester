@@ -19,24 +19,6 @@ import { globalSessionCache } from './sessionCacheManager'
 const sessionHelpersLogger = createContextLogger('SessionHelpers')
 
 /**
- * Generates a unique session ID
- *
- * Format: session_{timestamp}_{random_string}
- * Example: session_1765751208459_v8q7owfvtv
- *
- * @returns Unique session identifier
- *
- * @example
- * ```typescript
- * const sessionId = generateSessionId()
- * console.log(sessionId) // "session_1765751208459_v8q7owfvtv"
- * ```
- */
-export function generateSessionId(): string {
-  return `session_${Date.now()}_${Math.random().toString(36).substring(2, 15)}`
-}
-
-/**
  * Creates a base ValuationSession object with default values
  *
  * Single source of truth for session structure.
@@ -60,12 +42,10 @@ export function generateSessionId(): string {
  */
 export function createBaseSession(
   reportId: string,
-  sessionId: string,
   currentView: 'manual' | 'conversational',
   prefilledQuery?: string | null
 ): ValuationSession {
   return {
-    sessionId,
     reportId,
     currentView,
     dataSource: currentView,
@@ -182,8 +162,7 @@ export function createSessionOptimistically(
   currentView: 'manual' | 'conversational',
   prefilledQuery?: string | null
 ): ValuationSession {
-  const sessionId = generateSessionId()
-  const session = createBaseSession(reportId, sessionId, currentView, prefilledQuery)
+  const session = createBaseSession(reportId, currentView, prefilledQuery)
 
   // Cache immediately for instant retrieval
   globalSessionCache.set(reportId, session)
@@ -193,7 +172,6 @@ export function createSessionOptimistically(
 
   sessionHelpersLogger.info('Created session optimistically', {
     reportId,
-    sessionId,
     currentView,
     hasPrefilledQuery: !!prefilledQuery,
   })
@@ -239,7 +217,6 @@ export function syncSessionToBackend(session: ValuationSession): void {
           await backendAPI.createValuationSession(session)
           sessionHelpersLogger.debug('Background sync completed successfully', {
             reportId,
-            sessionId: session.sessionId,
           })
           // Success - cache already updated by createSessionOptimistically
           return // Exit early on success
@@ -280,7 +257,6 @@ export function syncSessionToBackend(session: ValuationSession): void {
 
           sessionHelpersLogger.debug('Background sync completed successfully after retries', {
           reportId,
-          sessionId: session.sessionId,
         })
         }
       } catch (error) {

@@ -14,9 +14,9 @@ import BusinessProfileCardV4 from '../../../components/business/BusinessProfileC
 import EditChoiceModal from '../../../components/modals/EditChoiceModal'
 import type { ValuationSession } from '../../../types/valuation'
 import {
-  extractProfileData,
-  extractValuationAmount,
-  mapValuationSessionToBusinessInfo,
+    extractProfileData,
+    extractValuationAmount,
+    mapValuationSessionToBusinessInfo,
 } from '../../../utils/valuationSessionMapper'
 
 export interface RecentReportsSectionProps {
@@ -176,7 +176,7 @@ export function RecentReportsSection({
 
             return (
               <BusinessProfileCardV4
-                key={report.reportId || report.sessionId}
+                key={report.reportId}
                 businessInfo={businessInfo}
                 reportId={report.reportId}
                 hasValuationReports={!!(report as any).valuationResult}

@@ -29,11 +29,10 @@ import { globalRequestDeduplicator } from './requestDeduplication'
 import { retrySessionOperation } from './retryWithBackoff'
 import { globalAuditTrail } from './sessionAuditTrail'
 import {
-  createBaseSession,
-  generateSessionId,
-  mergePrefilledQuery,
-  mergeSessionFields,
-  normalizeSessionDates,
+    createBaseSession,
+    mergePrefilledQuery,
+    mergeSessionFields,
+    normalizeSessionDates,
 } from './sessionHelpers'
 
 /**
@@ -186,15 +185,12 @@ export function createFallbackSession(
   prefilledQuery?: string | null,
   error?: unknown
 ): ValuationSession {
-  const sessionId = generateSessionId()
-
   storeLogger.warn('Created local session (backend sync failed)', {
     reportId,
-    sessionId,
     error: extractErrorMessage(error),
   })
 
-  return createBaseSession(reportId, sessionId, currentView, prefilledQuery)
+  return createBaseSession(reportId, currentView, prefilledQuery)
 }
 
 /**
@@ -248,10 +244,8 @@ export async function createOrLoadSession(
               async () => {
                 // Execute through circuit breaker
                 return await sessionCircuitBreaker.execute(async () => {
-                  const sessionId = generateSessionId()
                   const newSession = createBaseSession(
                     reportId,
-                    sessionId,
                     currentView,
                     prefilledQuery
                   )
@@ -263,7 +257,6 @@ export async function createOrLoadSession(
 
                   storeLogger.info('Created new session', {
                     reportId,
-                    sessionId,
                     currentView,
                     hasPrefilledQuery: !!prefilledQuery,
                     correlationId,
@@ -310,7 +303,7 @@ export async function createOrLoadSession(
       metadata: {
         currentView,
         hasPrefilledQuery: !!prefilledQuery,
-        sessionId: session.sessionId,
+        reportId: session.reportId,
       },
     })
 
@@ -339,7 +332,7 @@ export async function createOrLoadSession(
           correlationId,
           metadata: {
             resolved: 'loaded_existing',
-            sessionId: existingSession.sessionId,
+            reportId: existingSession.reportId,
           },
         })
 

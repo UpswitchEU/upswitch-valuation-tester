@@ -126,7 +126,6 @@ class ReportServiceImpl implements ReportService {
         }
 
         return {
-          sessionId: report.id || report.report_id || report.session_id, // Use report ID as session ID for now
           reportId: report.id || report.report_id,
           currentView: report.flow_type === 'ai-guided' || report.current_view === 'ai-guided' ? 'conversational' : 'manual',
           dataSource: report.flow_type === 'ai-guided' || report.data_source === 'ai-guided' ? 'conversational' : 'manual',
@@ -194,7 +193,6 @@ class ReportServiceImpl implements ReportService {
    */
   async createReport(initialData?: Partial<ValuationRequest>): Promise<ValuationSession> {
     const reportId = generateReportId()
-    const sessionId = `session_${Date.now()}_${Math.random().toString(36).substring(2, 15)}`
 
     try {
       reportLogger.info('Creating new report', {
@@ -204,7 +202,6 @@ class ReportServiceImpl implements ReportService {
 
       // Create session object matching ValuationSession interface
       const newSession: ValuationSession = {
-        sessionId,
         reportId,
         currentView: 'manual',
         dataSource: 'manual',
@@ -218,7 +215,6 @@ class ReportServiceImpl implements ReportService {
 
       reportLogger.info('Report created successfully', {
         reportId,
-        sessionId: response.session.sessionId,
       })
 
       return response.session

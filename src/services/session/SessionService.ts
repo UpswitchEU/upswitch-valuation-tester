@@ -363,7 +363,6 @@ export class SessionService {
             retriesAttempted: maxRetries
           })
           mergedSession = {
-            sessionId: reportId,
             reportId,
             currentView: (currentView as 'manual' | 'conversational') || 'manual',
             dataSource: (currentView === 'conversational' ? 'conversational' : 'manual') as 'manual' | 'conversational' | 'mixed',

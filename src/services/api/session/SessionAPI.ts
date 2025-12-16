@@ -9,17 +9,17 @@
 
 import { CreateValuationSessionRequest, UpdateValuationSessionRequest } from '../../../types/api'
 import type {
-  CreateValuationSessionResponse,
-  SwitchViewResponse,
-  UpdateValuationSessionResponse,
-  ValuationSessionResponse,
+    CreateValuationSessionResponse,
+    SwitchViewResponse,
+    UpdateValuationSessionResponse,
+    ValuationSessionResponse,
 } from '../../../types/api-responses'
 import { APIError, AuthenticationError } from '../../../types/errors'
 import { convertToApplicationError } from '../../../utils/errors/errorConverter'
 import {
-  isNetworkError,
-  isSessionConflictError,
-  isValidationError,
+    isNetworkError,
+    isSessionConflictError,
+    isValidationError,
 } from '../../../utils/errors/errorGuards'
 import { apiLogger } from '../../../utils/logger'
 import { APIRequestConfig, HttpClient } from '../HttpClient'
@@ -103,8 +103,6 @@ export class SessionAPI extends HttpClient {
             (session.currentView === 'conversational' ? 'ai-guided' : 'manual')
 
       const backendSession = {
-        // Include sessionId if present (required by backend)
-        ...(sessionAny.sessionId && { sessionId: sessionAny.sessionId }),
         reportId: session.reportId,
         currentView: mappedCurrentView,
         dataSource: mappedDataSource,
@@ -114,7 +112,8 @@ export class SessionAPI extends HttpClient {
       }
 
       // Backend endpoint: /api/valuation-sessions (POST)
-      const response = await this.executeRequest<{ success: boolean; data: any }>(
+      // Note: executeRequest already unwraps response.data.data, so response IS the session data
+      const sessionData = await this.executeRequest<any>(
         {
           method: 'POST',
           url: '/api/valuation-sessions',
@@ -123,10 +122,6 @@ export class SessionAPI extends HttpClient {
         } as any,
         options
       )
-
-      // Backend returns { success: true, data: {...} }
-      // Transform to { success: true, session: {...}, sessionId, reportId }
-      const sessionData = response.data
 
       // CRITICAL: Validate sessionData exists before accessing properties
       if (!sessionData) {
@@ -143,16 +138,15 @@ export class SessionAPI extends HttpClient {
         }
 
       // CRITICAL: Validate required fields exist
-      if (!sessionData.sessionId || !sessionData.reportId) {
+      if (!sessionData.reportId) {
         throw new Error(
-          `Backend returned incomplete session data: missing ${!sessionData.sessionId ? 'sessionId' : ''} ${!sessionData.reportId ? 'reportId' : ''}`
+          `Backend returned incomplete session data: missing reportId`
         )
       }
 
       return {
-        success: response.success,
+        success: true,
         session: sessionData,
-        sessionId: sessionData.sessionId,
         reportId: sessionData.reportId,
       }
     } catch (error) {

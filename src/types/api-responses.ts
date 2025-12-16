@@ -16,7 +16,6 @@ export interface ValuationSessionResponse {
 }
 
 export interface CreateValuationSessionResponse extends ValuationSessionResponse {
-  sessionId: string
   reportId: string
 }
 
