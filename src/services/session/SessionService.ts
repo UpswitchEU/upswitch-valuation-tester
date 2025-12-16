@@ -219,8 +219,19 @@ export class SessionService {
 
       // Convert ValuationRequest updates to sessionData format for backend
       // Backend expects sessionData structure, not raw ValuationRequest
+      // Extract currentView if present (needed for session creation)
+      const updatesAny = updates as any
+      
+      // Extract currentView separately (it's a top-level session property, not part of sessionData)
+      const currentView = updatesAny.currentView
+      
+      // sessionData should contain the actual form data (everything except currentView)
+      const { currentView: _, ...sessionDataWithoutView } = updatesAny
+      const sessionData = updatesAny.sessionData || sessionDataWithoutView
+      
       const sessionUpdates: Partial<ValuationSession> = {
-        sessionData: updates as any, // Store ValuationRequest as sessionData
+        sessionData: sessionData as any,
+        ...(currentView && { currentView }),
       }
 
       // Update backend
@@ -234,15 +245,48 @@ export class SessionService {
         mergedSession = mergeSessionFields(normalizedSession)
       } else {
         // Backend didn't return session data (common when creating new session)
-        // Reload the session to get the created session
+        // Clear cache and reload with retry (backend may need a moment to persist)
         logger.debug('Backend did not return session data, reloading session', { reportId })
-        const reloadedSession = await this.loadSession(reportId)
         
-        if (!reloadedSession) {
-          throw new Error('Failed to reload session after save')
+        // Clear cache to ensure fresh data
+        globalSessionCache.remove(reportId)
+        
+        // Retry loading with exponential backoff (backend may need time to persist)
+        let reloadedSession: ValuationSession | null = null
+        const maxRetries = 3
+        const initialDelay = 100
+        
+        for (let attempt = 0; attempt < maxRetries; attempt++) {
+          if (attempt > 0) {
+            const delay = initialDelay * Math.pow(2, attempt - 1)
+            await new Promise(resolve => setTimeout(resolve, delay))
+          }
+          
+          reloadedSession = await this.loadSession(reportId)
+          if (reloadedSession) {
+            break
+          }
+          
+          logger.debug(`Reload attempt ${attempt + 1} failed, retrying...`, { reportId })
         }
         
-        mergedSession = reloadedSession
+        if (!reloadedSession) {
+          // If reload still fails, create a minimal session object from what we saved
+          // This prevents errors and allows the UI to continue
+          logger.warn('Failed to reload session after save, creating minimal session object', { reportId })
+          mergedSession = {
+            sessionId: reportId,
+            reportId,
+            currentView: (currentView as 'manual' | 'conversational') || 'manual',
+            dataSource: (currentView === 'conversational' ? 'conversational' : 'manual') as 'manual' | 'conversational' | 'mixed',
+            sessionData: sessionData || {},
+            partialData: {},
+            createdAt: new Date(),
+            updatedAt: new Date(),
+          }
+        } else {
+          mergedSession = reloadedSession
+        }
       }
 
       // Update cache
