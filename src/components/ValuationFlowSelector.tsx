@@ -142,7 +142,7 @@ export const ValuationFlowSelector: React.FC<ValuationFlowSelectorProps> = React
 
     if (stage === 'data-entry') {
       // FIX: Handle both session and no-session cases in one block to avoid unreachable code
-      if (!session) {
+      if (!session || !session.reportId) {
         return (
           <div className="flex items-center justify-center h-full">
             <div className="max-w-md mx-auto text-center">
@@ -168,7 +168,7 @@ export const ValuationFlowSelector: React.FC<ValuationFlowSelectorProps> = React
           {/* Render unified flow component based on session view */}
           {/* Smooth fade-in animation when component mounts */}
           <div key={flowKey} className="absolute inset-0 animate-in fade-in duration-200 ease-out">
-            <Suspense fallback={null}>
+            <Suspense fallback={<LoadingState steps={INITIALIZATION_STEPS} variant="dark" />}>
               <ValuationFlow
                 reportId={session.reportId}
                 flowType={flowType}

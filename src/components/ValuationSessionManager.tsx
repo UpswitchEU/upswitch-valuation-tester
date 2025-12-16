@@ -65,7 +65,15 @@ export const ValuationSessionManager: React.FC<ValuationSessionManagerProps> = R
     // For rendering: use full session object (needed by children)
     const manualSession = useManualSessionStore((state) => state.session)
     const conversationalSession = useConversationalSessionStore((state) => state.session)
-    const session = isManualFlow ? manualSession : conversationalSession
+    let session = isManualFlow ? manualSession : conversationalSession
+    
+    // CRITICAL: Fallback to direct store read if selector returns null
+    // This ensures session is available even if selector hasn't updated yet
+    if (!session) {
+      const manualState = useManualSessionStore.getState()
+      const conversationalState = useConversationalSessionStore.getState()
+      session = isManualFlow ? manualState.session : conversationalState.session
+    }
     
     // Optimized selectors for transition logic: only subscribe to fields we need
     // Subscribe to both flows since flow can change, but Zustand selectors are efficient
@@ -291,6 +299,12 @@ export const ValuationSessionManager: React.FC<ValuationSessionManagerProps> = R
         }
       }
 
+      // CRITICAL: Also check that the full session object exists (not just reportId)
+      // This prevents transitioning when session object hasn't been set yet
+      const manualState = useManualSessionStore.getState()
+      const conversationalState = useConversationalSessionStore.getState()
+      const currentSession = currentIsManualFlow ? manualState.session : conversationalState.session
+      
       // Debug logging to understand why transition might not happen
       generalLogger.debug('[ValuationSessionManager] Checking stage transition', {
         reportId,
@@ -300,15 +314,18 @@ export const ValuationSessionManager: React.FC<ValuationSessionManagerProps> = R
         isLoading,
         hasError: !!currentError,
         hasTransitioned: hasTransitionedRef.current,
+        sessionObjectExists: !!currentSession,
+        sessionReportIdMatches: currentSessionReportId === reportId,
         manualSessionReportId,
         manualSessionIsLoading,
         conversationalSessionReportId,
         conversationalSessionIsLoading,
       })
-
+      
       // Check if session is ready (atomic condition check)
-      const sessionReady = currentSessionReportId === reportId && !isLoading
-      const sessionReadyWithError = currentSessionReportId === reportId && currentError
+      // CRITICAL: Must check that session object exists, not just reportId matches
+      const sessionReady = currentSessionReportId === reportId && !isLoading && !!currentSession
+      const sessionReadyWithError = currentSessionReportId === reportId && currentError && !!currentSession
 
       if (sessionReady || sessionReadyWithError) {
         // Atomic transition: set flag first, then update stage
@@ -323,6 +340,7 @@ export const ValuationSessionManager: React.FC<ValuationSessionManagerProps> = R
           reportId,
           hasError: !!currentError,
           sessionExists: !!currentSessionReportId,
+          sessionObjectExists: !!currentSession,
           sessionReady,
           sessionReadyWithError
         })
@@ -358,19 +376,30 @@ export const ValuationSessionManager: React.FC<ValuationSessionManagerProps> = R
         const conversationalState = useConversationalSessionStore.getState()
         const currentSession = currentIsManualFlow ? manualState.session : conversationalState.session
         const currentIsLoading = currentIsManualFlow ? manualState.isLoading : conversationalState.isLoading
+        const currentSessionReportId = currentSession?.reportId
 
-        // Force transition as last resort if session exists (even if reportId doesn't match or still loading)
-        // This prevents infinite black screen
-        if (currentSession || !currentIsLoading) {
+        // Force transition as last resort if session exists and matches reportId
+        // This prevents infinite black screen, but only if we have a valid session
+        if (currentSession && currentSessionReportId === reportId && !currentIsLoading) {
           hasTransitionedRef.current = true
           generalLogger.warn('[ValuationSessionManager] Stage transition timeout - forcing transition to data-entry', {
             reportId,
             hasSession: !!currentSession,
-            sessionReportId: currentSession?.reportId,
+            sessionReportId: currentSessionReportId,
             isLoading: currentIsLoading,
             expectedReportId: reportId,
+            reportIdMatches: currentSessionReportId === reportId,
           })
           setStage('data-entry')
+        } else {
+          generalLogger.warn('[ValuationSessionManager] Stage transition timeout - cannot force transition', {
+            reportId,
+            hasSession: !!currentSession,
+            sessionReportId: currentSessionReportId,
+            isLoading: currentIsLoading,
+            expectedReportId: reportId,
+            reportIdMatches: currentSessionReportId === reportId,
+          })
         }
       }, 3000) // 3 second timeout (reduced from 10s for faster recovery)
 
