@@ -45,7 +45,9 @@ interface UseManualToolbarOptions {
  */
 export const useManualToolbar = ({ result }: UseManualToolbarOptions): UseManualToolbarReturn => {
   const { handleRefresh: handleHookRefresh } = useValuationToolbarRefresh()
-  const { session } = useManualSessionStore()
+  // ⚠️ CRITICAL FIX: Only subscribe to reportId, not entire session
+  // Subscribing to full session caused 100+ render loop
+  const sessionReportId = useManualSessionStore((state) => state.session?.reportId)
   const [isDownloading, setIsDownloading] = useState(false)
 
   const handleRefresh = useCallback(() => {
@@ -56,7 +58,7 @@ export const useManualToolbar = ({ result }: UseManualToolbarOptions): UseManual
 
   const handleDownload = useCallback(async () => {
     const currentResult = result || useManualResultsStore.getState().result
-    const reportId = session?.reportId
+    const reportId = sessionReportId // Use stable reportId from selector
 
     if (!currentResult || !currentResult.html_report) {
       generalLogger.warn('Cannot download PDF: No valuation result or HTML report available', {
@@ -68,8 +70,7 @@ export const useManualToolbar = ({ result }: UseManualToolbarOptions): UseManual
 
     if (!reportId) {
       generalLogger.error('Cannot download PDF: Report ID not available', {
-        hasSession: !!session,
-        reportId: session?.reportId,
+        reportId,
       })
       return
     }
@@ -124,7 +125,7 @@ export const useManualToolbar = ({ result }: UseManualToolbarOptions): UseManual
     } finally {
       setIsDownloading(false)
     }
-  }, [result, session])
+  }, [result, sessionReportId]) // ⚠️ Use stable reportId, not entire session
 
   return {
     handleRefresh,

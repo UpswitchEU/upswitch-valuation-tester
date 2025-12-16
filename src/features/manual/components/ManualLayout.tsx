@@ -93,10 +93,8 @@ export const ManualLayout: React.FC<ManualLayoutProps> = ({
   // CRITICAL: Use optimized selectors to subscribe only to specific fields
   // This prevents re-renders when session object reference changes but data is the same
   const sessionReportId = useManualSessionStore((state) => state.session?.reportId)
-  // ⚠️ REMOVED sessionData and sessionValuationResult selectors - they caused render loops
-  // These are accessed directly from store in the restoration useEffect instead
-  // Still need full session for other uses (isSaving, lastSaved, etc.)
-  const { isSaving, lastSaved, hasUnsavedChanges, error: syncError, loadSessionAsync } = useManualSessionStore()
+  // ⚠️ CRITICAL: Removed ALL other useManualSessionStore subscriptions
+  // They were causing 100+ renders. These fields are accessed via getState() in effects instead
   const { updateFormData } = useManualFormStore()
   const { showToast } = useToast()
 
@@ -226,16 +224,22 @@ export const ManualLayout: React.FC<ManualLayoutProps> = ({
   }, [])
   
   // Show success toast when save completes (only if there were unsaved changes)
+  // ⚠️ CRITICAL FIX: Access store directly instead of subscribing
+  // This prevents render loops caused by frequent store updates
   useEffect(() => {
     // Don't show toast during initial load
     if (isInitialLoadRef.current) {
       return
     }
     
+    // Get current store state directly (no subscription = no re-renders!)
+    const storeState = useManualSessionStore.getState()
+    const { isSaving, lastSaved, hasUnsavedChanges, error: syncError } = storeState
+    
     // Check previous state BEFORE updating ref
     const hadUnsavedChanges = prevHasUnsavedChangesRef.current
     
-    // Update ref to track current state for next render
+    // Update ref to track current state for next check
     prevHasUnsavedChangesRef.current = hasUnsavedChanges
     
     // Only show toast if:
@@ -253,7 +257,7 @@ export const ManualLayout: React.FC<ManualLayoutProps> = ({
         )
       }
     }
-  }, [lastSaved, isSaving, syncError, hasUnsavedChanges, showToast])
+  }, [showToast]) // ⚠️ ONLY depend on showToast - prevents render loop!
 
   return (
     <div className="flex flex-col h-full overflow-hidden">
