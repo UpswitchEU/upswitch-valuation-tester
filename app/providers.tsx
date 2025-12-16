@@ -19,20 +19,25 @@ import '../src/utils/performance/rum'
  */
 export function Providers({ children }: { children: React.ReactNode }) {
   useEffect(() => {
-    // HOTFIX: Unregister service worker (causing UI freeze)
-    // Service worker was aggressively caching API calls, causing infinite loops
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.getRegistrations().then((registrations) => {
-        registrations.forEach((registration) => {
-          registration.unregister()
-          console.log('[App] Service worker unregistered (hotfix)')
-        })
+    // Register service worker for offline support (production only)
+    if (process.env.NODE_ENV === 'production') {
+      registerServiceWorker({
+        onUpdate: (registration) => {
+          console.log('[ServiceWorker] New version available! Please refresh.')
+          // Optional: Show toast notification to user
+        },
+        onSuccess: () => {
+          console.log('[ServiceWorker] App is ready for offline use')
+        },
+        onError: (error) => {
+          console.error('[ServiceWorker] Registration failed:', error)
+        },
       })
     }
 
-    console.log('[App] Service worker disabled - RUM active')
     // RUM is automatically initialized on import
     // Core Web Vitals are collected in the background
+    // No action needed - metrics are tracked automatically
   }, [])
 
   return (
