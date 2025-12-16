@@ -239,91 +239,104 @@ export const ValuationSessionManager: React.FC<ValuationSessionManagerProps> = R
       initializeSessionForReport(reportId)
     }, [reportId, initializeSessionForReport]) // Removed isManualFlow - read from ref instead
 
-    // Timeout fallback: If stage is still 'loading' after 10 seconds, force transition
-    // This prevents infinite loading screens
-    useEffect(() => {
-      if (stage !== 'loading' || !reportId || hasTransitionedRef.current) return
-
-      const timeout = setTimeout(() => {
-        // Check current stage again (might have changed)
-        const currentSearchParams = searchParamsRef.current
-        const flowParam = currentSearchParams?.get('flow') || 'manual'
-        const currentIsManualFlow = flowParam === 'manual'
-        
-        const manualState = useManualSessionStore.getState()
-        const conversationalState = useConversationalSessionStore.getState()
-        const currentSession = currentIsManualFlow ? manualState.session : conversationalState.session
-
-        // Only force transition if still loading and haven't transitioned
-        if (!hasTransitionedRef.current) {
-          generalLogger.warn('Stage transition timeout - forcing transition to data-entry', {
-            reportId,
-            hasSession: !!currentSession,
-            sessionReportId: currentSession?.reportId
-          })
-          
-          hasTransitionedRef.current = true // Prevent multiple transitions
-          setStage('data-entry')
-        }
-      }, 10000) // 10 second timeout
-
-      return () => clearTimeout(timeout)
-    }, [stage, reportId])
-
-    // Reset transition flag when reportId changes
+    // Reset transition flag when reportId changes (atomic, no race conditions)
     useEffect(() => {
       hasTransitionedRef.current = false
     }, [reportId])
 
-    // Watch for session availability and transition stage
-    // This ensures stage transitions even if initialization completes asynchronously
-    // Uses a ref-based check to avoid dependency on frequently-changing session state
+    // Watch for session availability and transition stage atomically
+    // Single effect that handles all transition logic to avoid race conditions
     useEffect(() => {
-      // Early return if already transitioned or not in loading state
+      // Early return guards (atomic checks)
       if (stage !== 'loading' || !reportId || hasTransitionedRef.current) return
 
-      // Use a small delay to batch state checks and avoid rapid re-runs
-      const checkTimer = setTimeout(() => {
-        // Double-check stage hasn't changed (might have transitioned in the meantime)
-        if (hasTransitionedRef.current) return
+      // Atomic transition function - checks state and transitions in one operation
+      const attemptTransition = (): boolean => {
+        // Double-check guards (prevent race conditions from concurrent calls)
+        if (hasTransitionedRef.current || stage !== 'loading') return false
 
-        // Check Zustand state directly (more reliable than selector)
+        // Get current flow from ref (stable, doesn't cause re-renders)
         const currentSearchParams = searchParamsRef.current
         const flowParam = currentSearchParams?.get('flow') || 'manual'
         const currentIsManualFlow = flowParam === 'manual'
         
+        // Get fresh state from Zustand (atomic read)
         const manualState = useManualSessionStore.getState()
         const conversationalState = useConversationalSessionStore.getState()
         const currentSession = currentIsManualFlow ? manualState.session : conversationalState.session
         const currentError = currentIsManualFlow ? manualState.error : conversationalState.error
         const isLoading = currentIsManualFlow ? manualState.isLoading : conversationalState.isLoading
 
-        // Transition if session exists and matches reportId
-        if (currentSession?.reportId === reportId && !isLoading) {
+        // Check if session is ready (atomic condition check)
+        const sessionReady = currentSession?.reportId === reportId && !isLoading
+        const sessionReadyWithError = currentSession?.reportId === reportId && currentError
+
+        if (sessionReady || sessionReadyWithError) {
+          // Atomic transition: set flag first, then update stage
+          // This prevents multiple transitions even if setStage is called multiple times
+          if (hasTransitionedRef.current) return false // Another call already transitioned
+          
+          hasTransitionedRef.current = true
           generalLogger.debug('Session available, transitioning to data-entry', { 
             reportId,
             hasError: !!currentError,
-            sessionExists: !!currentSession
+            sessionExists: !!currentSession,
+            sessionReady,
+            sessionReadyWithError
           })
-          hasTransitionedRef.current = true // Prevent multiple transitions
           setStage('data-entry')
-          return
+          return true
         }
 
-        // Also check if session was just created (even if error exists)
-        if (currentSession?.reportId === reportId && currentError) {
-          generalLogger.debug('Session available despite errors, transitioning to data-entry', { 
-            reportId,
-            error: currentError
-          })
-          hasTransitionedRef.current = true // Prevent multiple transitions
-          setStage('data-entry')
-          return
-        }
-      }, 100) // Small delay to batch checks
+        return false
+      }
 
-      return () => clearTimeout(checkTimer)
-    }, [reportId, stage]) // Only depend on reportId and stage - check session state directly inside
+      // Attempt transition immediately (no delay - avoids race conditions)
+      if (attemptTransition()) return
+
+      // If not ready, set up a single check interval (not multiple timeouts)
+      // This is more efficient and avoids race conditions from multiple timers
+      const checkInterval = setInterval(() => {
+        if (attemptTransition()) {
+          clearInterval(checkInterval)
+        }
+      }, 200) // Check every 200ms until transition succeeds
+
+      // Cleanup: clear interval on unmount or when dependencies change
+      return () => {
+        clearInterval(checkInterval)
+      }
+    }, [reportId, stage]) // Minimal dependencies - check session state inside effect
+
+    // Timeout fallback: Force transition after 10 seconds if still loading
+    // This is a safety net, separate from the main transition logic
+    useEffect(() => {
+      if (stage !== 'loading' || !reportId || hasTransitionedRef.current) return
+
+      const timeout = setTimeout(() => {
+        // Atomic check: only transition if still in loading state
+        if (hasTransitionedRef.current || stage !== 'loading') return
+
+        const currentSearchParams = searchParamsRef.current
+        const flowParam = currentSearchParams?.get('flow') || 'manual'
+        const currentIsManualFlow = flowParam === 'manual'
+        
+        const manualState = useManualSessionStore.getState()
+        const conversationalState = useConversationalSessionStore.getState()
+        const currentSession = currentIsManualFlow ? manualState.session : conversationalState.session
+
+        // Force transition as last resort
+        hasTransitionedRef.current = true
+        generalLogger.warn('Stage transition timeout - forcing transition to data-entry', {
+          reportId,
+          hasSession: !!currentSession,
+          sessionReportId: currentSession?.reportId
+        })
+        setStage('data-entry')
+      }, 10000) // 10 second timeout
+
+      return () => clearTimeout(timeout)
+    }, [stage, reportId])
 
     // Sync URL with current view - simple and robust
     useEffect(() => {
