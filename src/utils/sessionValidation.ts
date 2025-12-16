@@ -17,7 +17,7 @@ const validationLogger = createContextLogger('SessionValidation')
  * Validate session data structure and required fields
  *
  * Ensures loaded session has:
- * - Required IDs (reportId, sessionId)
+ * - Required ID (reportId)
  * - Valid currentView
  * - Initialized data objects
  * - Valid timestamps
@@ -40,10 +40,6 @@ export function validateSessionData(session: any): asserts session is ValuationS
 
   if (!session.reportId || typeof session.reportId !== 'string') {
     throw new ValidationError('Session missing or invalid reportId')
-  }
-
-  if (!session.sessionId || typeof session.sessionId !== 'string') {
-    throw new ValidationError('Session missing or invalid sessionId')
   }
 
   // Validate currentView
@@ -94,7 +90,6 @@ export function validateSessionData(session: any): asserts session is ValuationS
 
   validationLogger.info('Session validation passed', {
     reportId: session.reportId,
-    sessionId: session.sessionId,
     currentView: session.currentView,
   })
 }
@@ -157,7 +152,6 @@ export function isSessionRestorable(session: ValuationSession): boolean {
 export function sanitizeSessionData(session: any): ValuationSession {
   const sanitized = {
     reportId: String(session.reportId || ''),
-    sessionId: String(session.sessionId || ''),
     currentView: session.currentView === 'conversational' ? 'conversational' : 'manual',
     partialData: session.partialData || {},
     sessionData: session.sessionData || {},
