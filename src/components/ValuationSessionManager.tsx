@@ -277,44 +277,53 @@ export const ValuationSessionManager: React.FC<ValuationSessionManagerProps> = R
 
     // Watch for session availability and transition stage
     // This ensures stage transitions even if initialization completes asynchronously
-    // Uses React selector for reactivity (simpler and avoids subscription loops)
+    // Uses a ref-based check to avoid dependency on frequently-changing session state
     useEffect(() => {
+      // Early return if already transitioned or not in loading state
       if (stage !== 'loading' || !reportId || hasTransitionedRef.current) return
 
-      // Check Zustand state directly (more reliable than selector)
-      const currentSearchParams = searchParamsRef.current
-      const flowParam = currentSearchParams?.get('flow') || 'manual'
-      const currentIsManualFlow = flowParam === 'manual'
-      
-      const manualState = useManualSessionStore.getState()
-      const conversationalState = useConversationalSessionStore.getState()
-      const currentSession = currentIsManualFlow ? manualState.session : conversationalState.session
-      const currentError = currentIsManualFlow ? manualState.error : conversationalState.error
-      const isLoading = currentIsManualFlow ? manualState.isLoading : conversationalState.isLoading
+      // Use a small delay to batch state checks and avoid rapid re-runs
+      const checkTimer = setTimeout(() => {
+        // Double-check stage hasn't changed (might have transitioned in the meantime)
+        if (hasTransitionedRef.current) return
 
-      // Transition if session exists and matches reportId
-      if (currentSession?.reportId === reportId && !isLoading) {
-        generalLogger.debug('Session available, transitioning to data-entry', { 
-          reportId,
-          hasError: !!currentError,
-          sessionExists: !!currentSession
-        })
-        hasTransitionedRef.current = true // Prevent multiple transitions
-        setStage('data-entry')
-        return
-      }
+        // Check Zustand state directly (more reliable than selector)
+        const currentSearchParams = searchParamsRef.current
+        const flowParam = currentSearchParams?.get('flow') || 'manual'
+        const currentIsManualFlow = flowParam === 'manual'
+        
+        const manualState = useManualSessionStore.getState()
+        const conversationalState = useConversationalSessionStore.getState()
+        const currentSession = currentIsManualFlow ? manualState.session : conversationalState.session
+        const currentError = currentIsManualFlow ? manualState.error : conversationalState.error
+        const isLoading = currentIsManualFlow ? manualState.isLoading : conversationalState.isLoading
 
-      // Also check if session was just created (even if error exists)
-      if (currentSession?.reportId === reportId && currentError) {
-        generalLogger.debug('Session available despite errors, transitioning to data-entry', { 
-          reportId,
-          error: currentError
-        })
-        hasTransitionedRef.current = true // Prevent multiple transitions
-        setStage('data-entry')
-        return
-      }
-    }, [session, reportId, stage, error]) // React to session changes from selector
+        // Transition if session exists and matches reportId
+        if (currentSession?.reportId === reportId && !isLoading) {
+          generalLogger.debug('Session available, transitioning to data-entry', { 
+            reportId,
+            hasError: !!currentError,
+            sessionExists: !!currentSession
+          })
+          hasTransitionedRef.current = true // Prevent multiple transitions
+          setStage('data-entry')
+          return
+        }
+
+        // Also check if session was just created (even if error exists)
+        if (currentSession?.reportId === reportId && currentError) {
+          generalLogger.debug('Session available despite errors, transitioning to data-entry', { 
+            reportId,
+            error: currentError
+          })
+          hasTransitionedRef.current = true // Prevent multiple transitions
+          setStage('data-entry')
+          return
+        }
+      }, 100) // Small delay to batch checks
+
+      return () => clearTimeout(checkTimer)
+    }, [reportId, stage]) // Only depend on reportId and stage - check session state directly inside
 
     // Sync URL with current view - simple and robust
     useEffect(() => {
