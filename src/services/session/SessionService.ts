@@ -226,13 +226,24 @@ export class SessionService {
       // Update backend
       const response = await backendAPI.updateValuationSession(reportId, sessionUpdates)
 
-      if (!response?.session) {
-        throw new Error('Backend returned empty session data')
-      }
+      let mergedSession: ValuationSession
 
-      // Normalize and merge
-      const normalizedSession = normalizeSessionDates(response.session)
-      const mergedSession = mergeSessionFields(normalizedSession)
+      if (response?.session) {
+        // Backend returned session data - use it
+        const normalizedSession = normalizeSessionDates(response.session)
+        mergedSession = mergeSessionFields(normalizedSession)
+      } else {
+        // Backend didn't return session data (common when creating new session)
+        // Reload the session to get the created session
+        logger.debug('Backend did not return session data, reloading session', { reportId })
+        const reloadedSession = await this.loadSession(reportId)
+        
+        if (!reloadedSession) {
+          throw new Error('Failed to reload session after save')
+        }
+        
+        mergedSession = reloadedSession
+      }
 
       // Update cache
       globalSessionCache.set(reportId, mergedSession)
