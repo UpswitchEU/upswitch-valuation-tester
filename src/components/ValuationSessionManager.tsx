@@ -60,7 +60,7 @@ export const ValuationSessionManager: React.FC<ValuationSessionManagerProps> = R
     // For now, use manual store's methods (this component needs refactoring for full flow isolation)
     const { loadSessionAsync } = useManualSessionStore()
     const isUpdatingUrl = false // Not used in new architecture
-    const setUpdatingUrl = () => {} // Not used in new architecture
+    const setUpdatingUrl = (_value: boolean) => {} // Not used in new architecture
     
     // Initialize session function (flow-aware)
     const initializeSession = async (reportId: string, view: 'manual' | 'conversational', prefilledQuery?: string | null) => {

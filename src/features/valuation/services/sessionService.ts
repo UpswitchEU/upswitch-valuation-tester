@@ -3,9 +3,11 @@
  *
  * Concrete implementation of ISessionService interface.
  * Provides session management and persistence with DIP compliance.
+ * 
+ * NOTE: This is a legacy service. Use the shared SessionService from services/session/SessionService.ts instead.
  */
 
-import { useValuationSessionStore } from '../../../store/useValuationSessionStore'
+import { sessionService as sharedSessionService } from '../../../services/session/SessionService'
 import type { ValuationRequest, ValuationSession } from '../../../types/valuation'
 import { generalLogger } from '../../../utils/logger'
 import { ISessionService } from './interfaces'
@@ -28,19 +30,35 @@ export class SessionService implements ISessionService {
     try {
       generalLogger.info('Creating new valuation session', { reportId, flow })
 
-      // Use existing store to create session
-      await useValuationSessionStore.getState().initializeSession(reportId, flow, initialData)
-
-      // Get the created session from the store
-      const session = useValuationSessionStore.getState().session
-
+      // Use shared SessionService - create by saving initial data
+      // SessionService.loadSession will create if it doesn't exist
+      const session = await sharedSessionService.loadSession(reportId)
+      
       if (!session) {
-        throw new Error('Failed to create session - session is null')
+        // If session doesn't exist, save initial data to create it
+        await sharedSessionService.saveSession(reportId, {
+          currentView: flow,
+          sessionData: initialData || {},
+        } as any)
+        
+        // Load the newly created session
+        const newSession = await sharedSessionService.loadSession(reportId)
+        if (!newSession) {
+          throw new Error('Failed to create session')
+        }
+        
+        generalLogger.info('Session created successfully', {
+          reportId,
+          sessionId: newSession.reportId,
+          flow: newSession.currentView,
+        })
+        
+        return newSession
       }
 
-      generalLogger.info('Session created successfully', {
+      generalLogger.info('Session already exists', {
         reportId,
-        sessionId: session.reportId, // ValuationSession uses reportId, not sessionId
+        sessionId: session.reportId,
         flow: session.currentView,
       })
 
@@ -58,16 +76,14 @@ export class SessionService implements ISessionService {
     try {
       generalLogger.debug('Loading session', { reportId })
 
-      // Get current session from store
-      const { session } = useValuationSessionStore.getState()
+      // Use shared SessionService
+      const session = await sharedSessionService.loadSession(reportId)
 
-      if (session?.reportId === reportId) {
-        generalLogger.debug('Session found in store', { reportId })
+      if (session) {
+        generalLogger.debug('Session loaded successfully', { reportId })
         return session
       }
 
-      // If not in store, try to load from local storage or backend
-      // For now, return null - this would need backend integration
       generalLogger.debug('Session not found', { reportId })
       return null
     } catch (error) {
@@ -84,11 +100,16 @@ export class SessionService implements ISessionService {
       generalLogger.debug('Updating session', { reportId, updates: Object.keys(updates) })
 
       // Convert ValuationSession updates to ValuationRequest format
-      // Extract partialData fields if present
       const requestUpdates: Partial<ValuationRequest> = {}
+      
+      // Map sessionData if present
+      if (updates.sessionData && typeof updates.sessionData === 'object') {
+        Object.assign(requestUpdates, updates.sessionData)
+      }
+      
+      // Map other fields
       if (updates.partialData && typeof updates.partialData === 'object') {
         const partialData = updates.partialData as Record<string, unknown>
-        // Map common fields
         if ('company_name' in partialData) {
           requestUpdates.company_name = partialData.company_name as string
         }
@@ -98,11 +119,10 @@ export class SessionService implements ISessionService {
         if ('number_of_employees' in partialData) {
           requestUpdates.number_of_employees = partialData.number_of_employees as number
         }
-        // Add other fields as needed based on ValuationRequest interface
       }
 
-      // Use existing store to update session
-      await useValuationSessionStore.getState().updateSessionData(requestUpdates)
+      // Use shared SessionService
+      await sharedSessionService.saveSession(reportId, requestUpdates)
 
       generalLogger.debug('Session updated successfully', { reportId })
     } catch (error) {
@@ -118,10 +138,9 @@ export class SessionService implements ISessionService {
     try {
       generalLogger.info('Deleting session', { reportId })
 
-      // Use existing store to clear session
-      useValuationSessionStore.getState().clearSession()
-
-      generalLogger.info('Session deleted successfully', { reportId })
+      // Note: Session deletion not implemented in shared SessionService
+      // Sessions are managed by backend, clearing is handled by stores
+      generalLogger.info('Session deletion requested (handled by backend)', { reportId })
     } catch (error) {
       generalLogger.error('Failed to delete session', { reportId, error })
       throw error instanceof Error ? error : new Error('Failed to delete session')

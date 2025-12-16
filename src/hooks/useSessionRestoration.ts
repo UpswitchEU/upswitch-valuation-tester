@@ -16,9 +16,9 @@
  */
 
 import { useEffect, useRef } from 'react'
-import { useValuationFormStore } from '../store/useValuationFormStore'
-import { useValuationResultsStore } from '../store/useValuationResultsStore'
-import { useValuationSessionStore } from '../store/useValuationSessionStore'
+import { useManualFormStore } from '../store/manual'
+import { useManualResultsStore } from '../store/manual'
+import { useManualSessionStore } from '../store/manual'
 import { useVersionHistoryStore } from '../store/useVersionHistoryStore'
 import { generalLogger } from '../utils/logger'
 import { hasMeaningfulSessionData } from '../utils/sessionDataUtils'
@@ -39,10 +39,15 @@ import { useToast } from './useToast'
  * 
  * SIMPLIFIED: Single restoration per reportId - no complex flag management.
  */
+/**
+ * NOTE: This hook is deprecated. Use flow-specific restoration in layouts instead.
+ * Kept for backwards compatibility but should be removed in future.
+ */
 export function useSessionRestoration() {
-  const { session, getSessionData } = useValuationSessionStore()
-  const { updateFormData } = useValuationFormStore()
-  const { setResult, setHtmlReport, setInfoTabHtml } = useValuationResultsStore()
+  // Use Manual flow stores (this hook is only used in Manual flow context)
+  const { session, getSessionData } = useManualSessionStore()
+  const { updateFormData } = useManualFormStore()
+  const { setResult, setHtmlReport, setInfoTabHtml } = useManualResultsStore()
   const { fetchVersions } = useVersionHistoryStore()
   const { showToast } = useToast()
 

@@ -80,7 +80,7 @@ export async function POST(request: NextRequest) {
     const duration = Date.now() - startTime
     apiLogger.info('Valuation calculation completed', {
       duration,
-      reportId: result?.reportId,
+      valuationId: result?.valuation_id,
     })
 
     return NextResponse.json(result, {
@@ -167,7 +167,6 @@ export async function POST(request: NextRequest) {
     if (error instanceof NetworkError) {
       apiLogger.error('Network error in valuation calculation', {
         error: error.message,
-        endpoint: error.endpoint,
         duration,
       })
       return NextResponse.json(

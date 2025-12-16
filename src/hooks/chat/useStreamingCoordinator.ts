@@ -27,7 +27,7 @@ import { isNetworkError, isTimeoutError } from '../../utils/errors/errorGuards'
 import { chatLogger } from '../../utils/logger'
 import type { Message } from '../../types/message'
 import { useConversationStore } from '../../store/useConversationStore'
-import { useValuationSessionStore } from '../../store/useValuationSessionStore'
+import { useConversationalSessionStore } from '../../store/conversational'
 import { conversationAPI } from '../../services/api/conversation/ConversationAPI'
 
 export interface UseStreamingCoordinatorOptions {
@@ -293,8 +293,9 @@ export function useStreamingCoordinator({
             })
           }
 
-          // Mark as having unsaved conversation changes
-          useValuationSessionStore.getState().updateSessionData({})
+          // Mark as having unsaved conversation changes (Conversational flow)
+          const { markUnsaved } = useConversationalSessionStore.getState()
+          markUnsaved()
 
           return { updatedMessages: store.messages, newMessage }
         },

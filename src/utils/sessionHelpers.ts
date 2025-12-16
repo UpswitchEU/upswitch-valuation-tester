@@ -8,7 +8,6 @@
  */
 
 import { backendAPI } from '../services/backendApi'
-import { useValuationSessionStore } from '../store/useValuationSessionStore'
 import type { ValuationSession } from '../types/valuation'
 import { is409Conflict } from './errorDetection'
 import { isRetryable } from './errors/errorGuards'
@@ -225,9 +224,9 @@ export function createSessionOptimistically(
  */
 export function syncSessionToBackend(session: ValuationSession): void {
   const { reportId } = session
-  const store = useValuationSessionStore.getState()
 
   // Background sync (no status tracking needed)
+  // NOTE: Store updates are handled by SessionService in the new architecture
 
   // Sync in background (non-blocking) with retry logic
   Promise.resolve()
@@ -322,34 +321,15 @@ export function syncSessionToBackend(session: ValuationSession): void {
               // Update cache with backend version
               globalSessionCache.set(reportId, backendSession)
 
-              // CRITICAL FIX: Update Zustand store with backend version immediately using functional update
-              // This ensures atomic state update and prevents race conditions
-              useValuationSessionStore.setState((state) => {
-                const currentSession = state.session
-                
-                // Only update if the reportId matches (prevents overwriting a different session)
-                if (currentSession?.reportId === reportId) {
-                  sessionHelpersLogger.debug('Updated store session after 409 conflict resolution', {
-                    reportId,
-                    currentView: backendSession.currentView,
-                  })
-
-                  // Restoration is now handled by useSessionRestoration hook
-                  // The session store update above will trigger useSessionRestoration automatically
-                  
-                  return {
-                    ...state,
-                    session: backendSession,
-                    syncError: null,
-                  }
-                } else {
-                  sessionHelpersLogger.debug('Skipping store update - reportId mismatch', {
-                    reportId,
-                    currentReportId: currentSession?.reportId,
-                  })
-                  return state // No change
-                }
+              // NOTE: Store updates are handled by SessionService in the new architecture
+              // The cache update above ensures SessionService.loadSession() will use cached data
+              sessionHelpersLogger.debug('Updated cache after 409 conflict resolution', {
+                reportId,
+                currentView: backendSession.currentView,
               })
+
+              // Store updates will be handled by SessionService when loadSession is called
+              // This maintains flow isolation (Manual vs Conversational stores)
 
               sessionHelpersLogger.debug('Loaded existing session from backend after 409', {
                 reportId,

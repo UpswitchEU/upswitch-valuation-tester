@@ -9,7 +9,7 @@ import {
   X,
 } from 'lucide-react'
 import React, { useState } from 'react'
-import { useValuationFormStore } from '../../store/useValuationFormStore'
+import { useManualFormStore } from '../../store/manual'
 import type { CompanyFinancialData, FinancialFilingYear } from '../../types/registry'
 
 interface RegistryDataPreviewProps {
@@ -21,7 +21,7 @@ export const RegistryDataPreview: React.FC<RegistryDataPreviewProps> = ({
   companyData,
   onCalculateValuation,
 }) => {
-  const { updateFormData } = useValuationFormStore()
+  const { updateFormData } = useManualFormStore()
   const [isEditing, setIsEditing] = useState(false)
   const [editedData, setEditedData] = useState<FinancialFilingYear>(
     companyData.filing_history[0] || {

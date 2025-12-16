@@ -10,14 +10,13 @@
  */
 
 import { useCallback, useEffect } from 'react'
-import type { ValuationSessionStore } from '../store/useValuationSessionStore'
 import { debounce } from '../utils/debounce'
 import { generalLogger } from '../utils/logger'
 
 interface UseFormSessionSyncOptions {
   session: any
   formData: any
-  updateSessionData: ValuationSessionStore['updateSessionData']
+  updateSessionData: (data: Partial<any>) => Promise<void>
 }
 
 /**

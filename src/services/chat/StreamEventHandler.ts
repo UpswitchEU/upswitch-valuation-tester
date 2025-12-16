@@ -7,8 +7,8 @@
 
 import { BUSINESS_TYPES_FALLBACK, BusinessTypeOption } from '../../config/businessTypes'
 import { useConversationStore } from '../../store/useConversationStore'
-import { useValuationResultsStore } from '../../store/useValuationResultsStore'
-import { useValuationSessionStore } from '../../store/useValuationSessionStore'
+import { useConversationalResultsStore } from '../../store/conversational'
+import { useConversationalSessionStore } from '../../store/conversational'
 import type { Message, MessageMetadata } from '../../types/message'
 import { chatLogger } from '../../utils/logger'
 import { ReportHandlers, UIHandlers, ValuationHandlers } from './handlers'
@@ -372,8 +372,8 @@ export class StreamEventHandler {
             hasValuationId: !!valuationId,
           })
           
-          // Update valuation results store with html_report
-          const resultsStore = useValuationResultsStore.getState()
+          // Update valuation results store with html_report (Conversational flow)
+          const resultsStore = useConversationalResultsStore.getState()
           const currentResult = resultsStore.result
           
           if (currentResult && valuationId && currentResult.valuation_id === valuationId) {
@@ -409,7 +409,7 @@ export class StreamEventHandler {
             // Use dynamic import in background (non-blocking)
             import('../api/session/SessionAPI').then(({ SessionAPI }) => {
               const sessionAPI = new SessionAPI()
-              const sessionStore = useValuationSessionStore.getState()
+              const sessionStore = useConversationalSessionStore.getState()
               const session = sessionStore.session
 
               if (session?.reportId) {
@@ -459,8 +459,8 @@ export class StreamEventHandler {
             hasValuationId: !!valuationId,
           })
           
-          // Update valuation results store with info_tab_html
-          const resultsStore = useValuationResultsStore.getState()
+          // Update valuation results store with info_tab_html (Conversational flow)
+          const resultsStore = useConversationalResultsStore.getState()
           const currentResult = resultsStore.result
           
           if (currentResult && valuationId && currentResult.valuation_id === valuationId) {
@@ -496,7 +496,7 @@ export class StreamEventHandler {
             // Use dynamic import in background (non-blocking)
             import('../api/session/SessionAPI').then(({ SessionAPI }) => {
               const sessionAPI = new SessionAPI()
-              const sessionStore = useValuationSessionStore.getState()
+              const sessionStore = useConversationalSessionStore.getState()
               const session = sessionStore.session
 
               if (session?.reportId) {

@@ -151,8 +151,6 @@ export const ValuationToolbar: React.FC<ValuationToolbarProps> = ({
         await saveSession(session.reportId, {})
       }
     }
-    // The deep merge will use existing session data, effectively retrying the save
-    await updateSessionData({})
   }
 
   // Use focused hooks for business logic

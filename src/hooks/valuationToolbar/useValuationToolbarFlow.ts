@@ -8,7 +8,8 @@
  */
 
 import { useEffect, useState } from 'react'
-import { useValuationSessionStore } from '../../store/useValuationSessionStore'
+import { useManualSessionStore } from '../../store/manual'
+import { useConversationalSessionStore } from '../../store/conversational'
 
 export interface UseValuationToolbarFlowReturn {
   showSwitchConfirmation: boolean
@@ -20,55 +21,35 @@ export interface UseValuationToolbarFlowReturn {
 
 /**
  * Hook for managing flow switching in ValuationToolbar
+ * 
+ * NOTE: Flow switching is not supported in the new flow-isolated architecture.
+ * Flows are completely isolated and cannot be switched. Users must navigate
+ * to the appropriate flow URL.
  */
 export const useValuationToolbarFlow = (): UseValuationToolbarFlowReturn => {
-  const { session, switchView, pendingFlowSwitch, setPendingFlowSwitch, isSyncing } =
-    useValuationSessionStore()
   const [showSwitchConfirmation, setShowSwitchConfirmation] = useState(false)
 
-  // Sync modal visibility with pendingFlowSwitch state
-  useEffect(() => {
-    if (pendingFlowSwitch) {
-      setShowSwitchConfirmation(true)
-    } else {
-      setShowSwitchConfirmation(false)
-    }
-  }, [pendingFlowSwitch])
-
-  // Handler for flow toggle icon clicks
+  // Flow switching disabled in new architecture
   const handleFlowIconClick = async (flow: 'manual' | 'conversational') => {
-    if (!session || session.currentView === flow) return // Already in this flow or no session
-
-    // Attempt to switch - preserve data when switching flows (resetData=false)
-    // Both flows share the same session data
-    const result = await switchView(flow, false, false) // resetData=false, skipConfirmation=false
-
-    // If confirmation is needed, show modal
-    // Note: With the updated logic, this should always return needsConfirmation=true for user-initiated switches
-    if (result?.needsConfirmation) {
-      setShowSwitchConfirmation(true)
-    }
+    // Flow switching not supported - flows are isolated
+    // User should navigate to appropriate flow URL instead
+    console.warn('[Toolbar] Flow switching not supported in flow-isolated architecture')
   }
 
   const handleConfirmSwitch = async () => {
-    if (!pendingFlowSwitch) return
-
-    // Execute the switch with confirmation skipped - preserve data
-    await switchView(pendingFlowSwitch, false, true) // resetData=false, skipConfirmation=true
+    // Flow switching not supported
     setShowSwitchConfirmation(false)
-    setPendingFlowSwitch(null)
   }
 
   const handleCancelSwitch = () => {
     setShowSwitchConfirmation(false)
-    setPendingFlowSwitch(null) // Clear pending switch when user cancels
   }
 
   return {
-    showSwitchConfirmation,
+    showSwitchConfirmation: false, // Always false - flow switching disabled
     handleFlowIconClick,
     handleConfirmSwitch,
     handleCancelSwitch,
-    isSyncing,
+    isSyncing: false, // No syncing needed - flows are isolated
   }
 }
