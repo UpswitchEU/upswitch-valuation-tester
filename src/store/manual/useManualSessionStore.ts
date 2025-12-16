@@ -216,17 +216,23 @@ export const useManualSessionStore = create<ManualSessionStore>((set, get) => ({
   loadSessionAsync: async (reportId: string) => {
     const state = get()
 
-    // GUARD: If session already exists for this reportId, skip load
+    // GUARD 1: If session already loaded successfully for this reportId, skip
     if (state.session?.reportId === reportId && !state.error) {
       storeLogger.debug('[Manual] Session already loaded, skipping duplicate load', { reportId })
       return
     }
 
-    // GUARD: If already loading the same reportId, return existing promise (Zustand pattern)
-    // Atomic check - prevents race conditions
+    // GUARD 2: If already loading this reportId, return existing promise (prevents duplicates)
     if (state.loadPromise && state.loadingReportId === reportId) {
       storeLogger.debug('[Manual] Session already loading, reusing promise', { reportId })
       return state.loadPromise
+    }
+
+    // GUARD 3: If there's an error for this reportId, don't auto-retry (prevents infinite loops)
+    // User must explicitly clear error (via clearSession) to retry
+    if (state.error && state.session?.reportId === reportId) {
+      storeLogger.debug('[Manual] Session has error, skipping retry. Clear error to retry.', { reportId, error: state.error })
+      return
     }
 
     // Create load promise
@@ -254,7 +260,7 @@ export const useManualSessionStore = create<ManualSessionStore>((set, get) => ({
       setLoadProgress(25) // Services loaded
 
       // Load session data and versions in parallel
-      const [session, versionsResult] = await Promise.all([
+      const [loadedSession, versionsResult] = await Promise.all([
         sessionService.loadSession(reportId),
         versionService.fetchVersions(reportId).catch((error) => {
           // Versions are non-critical, log but don't fail
@@ -266,7 +272,17 @@ export const useManualSessionStore = create<ManualSessionStore>((set, get) => ({
         }),
       ])
 
-      setLoadProgress(75) // Data loaded
+      setLoadProgress(50) // Initial load complete
+
+      // If session doesn't exist, create it
+      let session = loadedSession
+      if (!session) {
+        storeLogger.info('[Manual] Session not found, creating new session', { reportId })
+        session = await sessionService.createSession(reportId, 'manual', {})
+        storeLogger.info('[Manual] New session created', { reportId })
+      }
+
+      setLoadProgress(75) // Session ready
 
       // Step 3: Atomic state update
       set((state) => ({
@@ -287,17 +303,29 @@ export const useManualSessionStore = create<ManualSessionStore>((set, get) => ({
         duration_ms: duration.toFixed(2),
       })
     } catch (error) {
-      // Error handling (non-blocking)
-      const errorMessage = error instanceof Error ? error.message : 'Load failed'
+      // Error handling: Only genuine errors (network, server errors, etc.)
+      // 404s are handled by createSession above
+      const errorMessage = error instanceof Error ? error.message : 'Failed to load or create session'
+      
+      // Store error with minimal session stub to prevent retries
+      const errorSession: ValuationSession = {
+        reportId,
+        sessionData: {},
+        valuationResult: null,
+        currentView: 'manual',
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      }
       
       set((state) => ({
         ...state,
+        session: errorSession, // Store reportId to prevent auto-retry
         isLoading: false,
         loadProgress: 0,
         error: errorMessage,
       }))
 
-      storeLogger.error('[Manual] Session load failed', {
+      storeLogger.error('[Manual] Session load/create failed', {
         reportId,
         error: errorMessage,
       })

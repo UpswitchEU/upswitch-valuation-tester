@@ -48,6 +48,7 @@ interface ConversationalSessionStore {
   // Async optimized methods (non-blocking, parallel execution)
   loadSessionAsync: (reportId: string) => Promise<void>
   saveSession: (reportId: string, data: Partial<any>) => Promise<void>
+  saveSessionOptimistic: (reportId: string, data: Partial<any>) => Promise<void>
 }
 
 export const useConversationalSessionStore = create<ConversationalSessionStore>((set, get) => ({
@@ -171,17 +172,23 @@ export const useConversationalSessionStore = create<ConversationalSessionStore>(
   loadSessionAsync: async (reportId: string) => {
     const state = get()
 
-    // GUARD: If session already exists for this reportId, skip load
+    // GUARD 1: If session already loaded successfully for this reportId, skip
     if (state.session?.reportId === reportId && !state.error) {
       storeLogger.debug('[Conversational] Session already loaded, skipping duplicate load', { reportId })
       return
     }
 
-    // GUARD: If already loading the same reportId, return existing promise (Zustand pattern)
-    // Atomic check - prevents race conditions
+    // GUARD 2: If already loading this reportId, return existing promise (prevents duplicates)
     if (state.loadPromise && state.loadingReportId === reportId) {
       storeLogger.debug('[Conversational] Session already loading, reusing promise', { reportId })
       return state.loadPromise
+    }
+
+    // GUARD 3: If there's an error for this reportId, don't auto-retry (prevents infinite loops)
+    // User must explicitly clear error (via clearSession) to retry
+    if (state.error && state.session?.reportId === reportId) {
+      storeLogger.debug('[Conversational] Session has error, skipping retry. Clear error to retry.', { reportId, error: state.error })
+      return
     }
 
     // Create load promise
@@ -206,7 +213,7 @@ export const useConversationalSessionStore = create<ConversationalSessionStore>(
       ])
 
       // Load session data and versions in parallel
-      const [session, versionsResult] = await Promise.all([
+      const [loadedSession, versionsResult] = await Promise.all([
         sessionService.loadSession(reportId),
         versionService.fetchVersions(reportId).catch((error) => {
           // Versions are non-critical, log but don't fail
@@ -217,6 +224,14 @@ export const useConversationalSessionStore = create<ConversationalSessionStore>(
           return { versions: [], activeVersion: 1 }
         }),
       ])
+
+      // If session doesn't exist, create it
+      let session = loadedSession
+      if (!session) {
+        storeLogger.info('[Conversational] Session not found, creating new session', { reportId })
+        session = await sessionService.createSession(reportId, 'conversational', {})
+        storeLogger.info('[Conversational] New session created', { reportId })
+      }
 
       // Step 3: Atomic state update
       set((state) => ({
@@ -236,16 +251,28 @@ export const useConversationalSessionStore = create<ConversationalSessionStore>(
         duration_ms: duration.toFixed(2),
       })
     } catch (error) {
-      // Error handling (non-blocking)
-      const errorMessage = error instanceof Error ? error.message : 'Load failed'
+      // Error handling: Only genuine errors (network, server errors, etc.)
+      // 404s are handled by createSession above
+      const errorMessage = error instanceof Error ? error.message : 'Failed to load or create session'
+      
+      // Store error with minimal session stub to prevent retries
+      const errorSession: ValuationSession = {
+        reportId,
+        sessionData: {},
+        valuationResult: null,
+        currentView: 'conversational',
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      }
       
       set((state) => ({
         ...state,
+        session: errorSession, // Store reportId to prevent auto-retry
         isLoading: false,
         error: errorMessage,
       }))
 
-      storeLogger.error('[Conversational] Session load failed', {
+      storeLogger.error('[Conversational] Session load/create failed', {
         reportId,
         error: errorMessage,
       })
@@ -310,6 +337,55 @@ export const useConversationalSessionStore = create<ConversationalSessionStore>(
       }))
 
       storeLogger.error('[Conversational] Session save failed', {
+        reportId,
+        error: errorMessage,
+      })
+    }
+  },
+
+  // Async optimized: Save with optimistic update
+  // UI updates immediately, save runs in background
+  saveSessionOptimistic: async (reportId: string, data: Partial<any>) => {
+    const previousSession = get().session
+    const { setError, markSaved } = get()
+
+    // Step 1: Optimistic update (immediate UI feedback)
+    set((state) => ({
+      ...state,
+      session: state.session ? { ...state.session, ...data } : null,
+      hasUnsavedChanges: false,
+      lastSaved: new Date(),
+      isSaving: true,
+    }))
+
+    storeLogger.debug('[Conversational] Optimistic save started', {
+      reportId,
+      fieldsUpdated: Object.keys(data).length,
+    })
+
+    // Step 2: Background save (non-blocking)
+    try {
+      await import('../../services').then(({ sessionService }) =>
+        sessionService.saveSession(reportId, data)
+      )
+
+      // Success - keep optimistic state
+      markSaved()
+      
+      storeLogger.info('[Conversational] Background save succeeded', { reportId })
+    } catch (error) {
+      // Step 3: Revert on error
+      const errorMessage = error instanceof Error ? error.message : 'Save failed'
+      
+      set((state) => ({
+        ...state,
+        session: previousSession,
+        hasUnsavedChanges: true,
+        isSaving: false,
+        error: errorMessage,
+      }))
+
+      storeLogger.error('[Conversational] Background save failed, reverted', {
         reportId,
         error: errorMessage,
       })
