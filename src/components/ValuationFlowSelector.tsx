@@ -42,11 +42,36 @@ interface ValuationFlowSelectorProps {
   initialVersion?: number
 }
 
-// Lazy load unified flow component
+// Lazy load unified flow component (Next.js compatible)
 const ValuationFlow = lazy(() =>
-  import('@/features/valuation/components/ValuationFlow').then((module) => ({
-    default: module.ValuationFlow,
-  }))
+  import('@/features/valuation/components/ValuationFlow')
+    .then((module) => ({
+      default: module.ValuationFlow,
+    }))
+    .catch((error) => {
+      console.error('[ValuationFlowSelector] Failed to load ValuationFlow component', error)
+      // Return a fallback component that shows an error
+      return {
+        default: () => (
+          <div className="flex items-center justify-center h-full">
+            <div className="max-w-md mx-auto text-center">
+              <div className="bg-rust-500/20 border border-rust-500/30 rounded-lg p-6">
+                <h3 className="text-lg font-semibold text-rust-400 mb-2">Loading Error</h3>
+                <p className="text-rust-300 mb-4">
+                  Failed to load valuation flow component. Please refresh the page.
+                </p>
+                <button
+                  onClick={() => window.location.reload()}
+                  className="px-4 py-2 bg-rust-600 hover:bg-rust-700 text-white rounded-lg transition-colors"
+                >
+                  Reload Page
+                </button>
+              </div>
+            </div>
+          </div>
+        ),
+      }
+    })
 )
 
 /**
