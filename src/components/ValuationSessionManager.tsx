@@ -37,6 +37,7 @@ interface ValuationSessionManagerProps {
     autoSend: boolean
     onRetry: () => void
     onStartOver: () => void
+    reportId: string // ⚠️ Pass reportId for optimistic rendering
   }) => React.ReactNode
 }
 
@@ -104,7 +105,10 @@ export const ValuationSessionManager: React.FC<ValuationSessionManagerProps> = R
       },
       [] // Empty deps - function is stable, stores handle state internally
     )
-    const [stage, setStage] = useState<Stage>('loading')
+    // ⚠️ CRITICAL UX FIX: Start with 'data-entry' immediately (optimistic rendering)
+    // This allows UI to render immediately while session loads in background
+    // Session data will populate reactively via Zustand subscriptions
+    const [stage, setStage] = useState<Stage>('data-entry')
     const [error, setError] = useState<string | null>(null)
     const [showOutOfCreditsModal, setShowOutOfCreditsModal] = useState(false)
 
@@ -426,149 +430,12 @@ export const ValuationSessionManager: React.FC<ValuationSessionManagerProps> = R
       hasTransitionedRef.current = false
     }, [reportId])
 
-    // Watch for session availability and transition stage atomically
-    // Uses optimized selectors to prevent unnecessary re-renders
-    useEffect(() => {
-      // Early return guards (atomic checks)
-      if (stage !== 'loading' || !reportId || hasTransitionedRef.current) return
+    // ⚠️ REMOVED: Stage transition logic - we start optimistically at 'data-entry'
+    // Session loads asynchronously in background and UI updates reactively via Zustand subscriptions
+    // No need to wait for session before rendering UI - that defeats the async/optimistic pattern
 
-      // Get current flow from ref (stable, doesn't cause re-renders)
-      const currentSearchParams = searchParamsRef.current
-      const flowParam = currentSearchParams?.get('flow') || 'manual'
-      const currentIsManualFlow = flowParam === 'manual'
-      
-      // Use optimized selectors (already subscribed, no need to call getState)
-      const currentSessionReportId = currentIsManualFlow
-        ? manualSessionReportId
-        : conversationalSessionReportId
-      const isLoading = currentIsManualFlow
-        ? manualSessionIsLoading
-        : conversationalSessionIsLoading
-      const currentError = currentIsManualFlow ? manualSessionError : conversationalSessionError
-
-      // Check if session is ready (atomic condition check)
-      const sessionReady = currentSessionReportId === reportId && !isLoading
-      const sessionReadyWithError = currentSessionReportId === reportId && currentError
-
-      if (sessionReady || sessionReadyWithError) {
-        // CRITICAL GUARD: Check if already transitioned BEFORE doing anything
-        if (hasTransitionedRef.current) {
-          generalLogger.debug('[ValuationSessionManager] Already transitioned - skipping duplicate', {
-            reportId,
-            hasTransitionedRef: hasTransitionedRef.current,
-          })
-          return // Another call already transitioned
-        }
-
-        // Atomic transition: set flag first, then update stage
-        hasTransitionedRef.current = true
-        
-        generalLogger.debug('Session available, transitioning to data-entry', { 
-          reportId,
-          hasError: !!currentError,
-          sessionExists: !!currentSessionReportId,
-          sessionReady,
-          sessionReadyWithError,
-        })
-        setStageWithLogging('data-entry')
-      }
-    }, [
-      reportId,
-      stage,
-      manualSessionReportId,
-      manualSessionIsLoading,
-      manualSessionError,
-      conversationalSessionReportId,
-      conversationalSessionIsLoading,
-      conversationalSessionError,
-      setStageWithLogging,
-    ]) // React to specific session fields - no intervals needed
-
-    // Aggressive timeout: 15-second absolute deadline with interval-based checking
-    // This prevents tab freeze by ensuring we ALWAYS transition or show error
-    // ⚠️ CRITICAL: Only depend on reportId to prevent re-runs during state updates
-    useEffect(() => {
-      // Use ref for stage check to avoid re-running effect on stage changes
-      const stageRef = { current: stage }
-      
-      if (stageRef.current !== 'loading' || !reportId || hasTransitionedRef.current) return
-
-      const absoluteDeadline = Date.now() + 15000 // 15 seconds from now
-      const startTime = Date.now()
-
-      generalLogger.info('[ValuationSessionManager] Starting absolute deadline timer', {
-        reportId,
-        deadlineSeconds: 15,
-        startTime,
-      })
-
-      const checkDeadline = () => {
-        const now = Date.now()
-        const elapsed = now - startTime
-
-        // Check if deadline exceeded AND still hasn't transitioned (use ref, not state!)
-        if (now >= absoluteDeadline && !hasTransitionedRef.current) {
-          generalLogger.error('[ValuationSessionManager] ABSOLUTE DEADLINE EXCEEDED', {
-            reportId,
-            elapsedMs: elapsed,
-            hasTransitionedRef: hasTransitionedRef.current,
-          })
-
-        const currentSearchParams = searchParamsRef.current
-        const flowParam = currentSearchParams?.get('flow') || 'manual'
-        const currentIsManualFlow = flowParam === 'manual'
-        
-        const manualState = useManualSessionStore.getState()
-        const conversationalState = useConversationalSessionStore.getState()
-          const currentSession = currentIsManualFlow
-            ? manualState.session
-            : conversationalState.session
-
-          // Mark as transitioned to prevent other transitions (BEFORE setStage!)
-        hasTransitionedRef.current = true
-
-          // Show error recovery UI to user (prevents infinite loading)
-          if (!currentSession) {
-            generalLogger.warn('[ValuationSessionManager] No session after deadline - showing error', {
-              reportId,
-              elapsedMs: elapsed,
-            })
-            setError(
-              'Session initialization exceeded maximum time limit. Please retry or start over.'
-            )
-          } else {
-            // Session exists, force transition to data-entry
-            generalLogger.warn(
-              '[ValuationSessionManager] Session exists after deadline - forcing transition',
-              {
-                reportId,
-                sessionReportId: currentSession?.reportId,
-                elapsedMs: elapsed,
-              }
-            )
-            setStage('data-entry') // Use setStage directly to avoid circular deps
-          }
-        }
-      }
-
-      // Check every second to ensure we catch the deadline reliably
-      const intervalId = setInterval(checkDeadline, 1000)
-
-      // Also set a timeout for the exact deadline (belt and suspenders)
-      const timeoutId = setTimeout(() => {
-        checkDeadline()
-        clearInterval(intervalId)
-      }, 15000)
-
-      return () => {
-        clearTimeout(timeoutId)
-        clearInterval(intervalId)
-        generalLogger.info('[ValuationSessionManager] Deadline timer cleaned up', {
-          reportId,
-          elapsedMs: Date.now() - startTime,
-        })
-      }
-    }, [reportId]) // ⚠️ ONLY reportId - prevents re-runs on state changes
+    // ⚠️ REMOVED: Deadline timer - not needed with optimistic rendering
+    // UI renders immediately, session loads in background, errors handled reactively
 
     // Sync URL with current view - simple and robust
     useEffect(() => {
@@ -634,6 +501,7 @@ export const ValuationSessionManager: React.FC<ValuationSessionManagerProps> = R
           autoSend,
           onRetry: handleRetry,
           onStartOver: handleStartOver,
+          reportId, // ⚠️ Pass reportId for optimistic rendering
         })}
 
         {/* Out of Credits Modal */}

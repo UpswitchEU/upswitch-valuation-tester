@@ -123,6 +123,7 @@ export const ValuationReport: React.FC<ValuationReportProps> = React.memo(
                 initialVersion={initialVersion}
                 onRetry={onRetry}
                 onStartOver={onStartOver}
+                reportId={reportId}
               />
             )}
           </ValuationSessionManager>

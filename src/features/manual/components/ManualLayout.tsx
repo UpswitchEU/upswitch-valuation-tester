@@ -224,40 +224,75 @@ export const ManualLayout: React.FC<ManualLayoutProps> = ({
   }, [])
   
   // Show success toast when save completes (only if there were unsaved changes)
-  // ⚠️ CRITICAL FIX: Access store directly instead of subscribing
-  // This prevents render loops caused by frequent store updates
+  // ⚠️ CRITICAL FIX: Use Zustand subscribe API to listen for changes without causing re-renders
+  // This prevents render loops while still reacting to save state changes
   useEffect(() => {
-    // Don't show toast during initial load
-    if (isInitialLoadRef.current) {
-      return
+    let previousState = {
+      isSaving: useManualSessionStore.getState().isSaving,
+      lastSaved: useManualSessionStore.getState().lastSaved,
+      hasUnsavedChanges: useManualSessionStore.getState().hasUnsavedChanges,
+      error: useManualSessionStore.getState().error,
     }
     
-    // Get current store state directly (no subscription = no re-renders!)
-    const storeState = useManualSessionStore.getState()
-    const { isSaving, lastSaved, hasUnsavedChanges, error: syncError } = storeState
-    
-    // Check previous state BEFORE updating ref
-    const hadUnsavedChanges = prevHasUnsavedChangesRef.current
-    
-    // Update ref to track current state for next check
-    prevHasUnsavedChangesRef.current = hasUnsavedChanges
-    
-    // Only show toast if:
-    // 1. Save just completed (lastSaved is recent)
-    // 2. There were unsaved changes before the save (hadUnsavedChanges was true)
-    // This prevents showing "saved" toast on initial page load when no changes were made
-    if (lastSaved && !isSaving && !syncError && hadUnsavedChanges) {
-      const timeAgo = Math.floor((Date.now() - lastSaved.getTime()) / 1000)
-      // Only show toast for recent saves (within last 2 seconds)
-      if (timeAgo < 2) {
-        showToast(
-          'Valuation report saved successfully! All data has been persisted.',
-          'success',
-          4000
-        )
+    // Subscribe to store changes - listener receives the selected state
+    // This doesn't cause component re-renders, only triggers our callback
+    const unsubscribe = useManualSessionStore.subscribe(
+      (state) => {
+        // Extract only the fields we care about
+        const currentState = {
+          isSaving: state.isSaving,
+          lastSaved: state.lastSaved,
+          hasUnsavedChanges: state.hasUnsavedChanges,
+          error: state.error,
+        }
+        
+        // Skip if values haven't actually changed
+        if (
+          previousState.isSaving === currentState.isSaving &&
+          previousState.lastSaved === currentState.lastSaved &&
+          previousState.hasUnsavedChanges === currentState.hasUnsavedChanges &&
+          previousState.error === currentState.error
+        ) {
+          return
+        }
+        
+        // Don't show toast during initial load
+        if (isInitialLoadRef.current) {
+          previousState = currentState
+          return
+        }
+        
+        const { isSaving, lastSaved, hasUnsavedChanges, error: syncError } = currentState
+        
+        // Check previous state BEFORE updating ref
+        const hadUnsavedChanges = prevHasUnsavedChangesRef.current
+        
+        // Update ref to track current state for next check
+        prevHasUnsavedChangesRef.current = hasUnsavedChanges
+        
+        // Only show toast if:
+        // 1. Save just completed (lastSaved is recent)
+        // 2. There were unsaved changes before the save (hadUnsavedChanges was true)
+        // This prevents showing "saved" toast on initial page load when no changes were made
+        if (lastSaved && !isSaving && !syncError && hadUnsavedChanges) {
+          const timeAgo = Math.floor((Date.now() - lastSaved.getTime()) / 1000)
+          // Only show toast for recent saves (within last 2 seconds)
+          if (timeAgo < 2) {
+            showToast(
+              'Valuation report saved successfully! All data has been persisted.',
+              'success',
+              4000
+            )
+          }
+        }
+        
+        // Update previous state for next comparison
+        previousState = currentState
       }
-    }
-  }, [showToast]) // ⚠️ ONLY depend on showToast - prevents render loop!
+    )
+    
+    return unsubscribe
+  }, [showToast])
 
   return (
     <div className="flex flex-col h-full overflow-hidden">

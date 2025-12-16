@@ -14,8 +14,9 @@
  */
 
 import { useCallback } from 'react'
-import { sessionService, versionService } from '../../../services'
+import { versionService } from '../../../services'
 import { generalLogger } from '../../../utils/logger'
+import { useManualSessionStore } from '../../manual'
 import { useFinalPriceAsset } from '../shared/useFinalPriceAsset'
 import { useInfoTabAsset } from '../shared/useInfoTabAsset'
 import { useMainReportAsset } from '../shared/useMainReportAsset'
@@ -23,8 +24,9 @@ import { useVersionsAsset } from '../shared/useVersionsAsset'
 import { useInputFieldsAsset } from './useInputFieldsAsset'
 
 export function useManualAssetOrchestrator(reportId: string) {
-  // NOTE: Removed unused session/result subscriptions to prevent unnecessary re-renders
-  // Each asset loader calls sessionService.loadSession directly, so no need to subscribe here
+  // ⚠️ CRITICAL OPTIMIZATION: Asset loaders read from Zustand session store
+  // Session is already loaded by ValuationSessionManager - no redundant backend calls!
+  // This eliminates the 5x session load waterfall that caused tab freezes
 
   /**
    * Load all manual flow assets from backend
@@ -144,6 +146,8 @@ export function useManualAssetOrchestrator(reportId: string) {
 
 /**
  * Load input fields from session_data
+ * ⚠️ CRITICAL OPTIMIZATION: Read from Zustand session store (already loaded)
+ * Previously called sessionService.loadSession() - caused 5x redundant backend calls!
  */
 async function loadInputFieldsAsset(reportId: string) {
   const store = useInputFieldsAsset.getState()
@@ -152,12 +156,14 @@ async function loadInputFieldsAsset(reportId: string) {
     store.startLoading()
     store.setMode('receive')
     
-    const session = await sessionService.loadSession(reportId)
+    // Read from Zustand store (session already loaded by ValuationSessionManager)
+    // NO backend call = instant, no waterfall!
+    const session = useManualSessionStore.getState().session
     
     if (session?.sessionData) {
       store.setData(session.sessionData as any)
       store.markSynced()
-      generalLogger.info('[AssetOrchestrator:Manual] Input fields loaded', { reportId })
+      generalLogger.info('[AssetOrchestrator:Manual] Input fields loaded from store', { reportId })
     } else {
       // Don't set data if not available - leave as null
       generalLogger.debug('[AssetOrchestrator:Manual] No input fields data', { reportId })
@@ -174,6 +180,7 @@ async function loadInputFieldsAsset(reportId: string) {
 
 /**
  * Load main HTML report
+ * ⚠️ CRITICAL OPTIMIZATION: Read from Zustand session store (already loaded)
  */
 async function loadMainReportAsset(reportId: string) {
   const store = useMainReportAsset.getState()
@@ -183,7 +190,8 @@ async function loadMainReportAsset(reportId: string) {
     store.setMode('receive')
     store.setProgress(10)
     
-    const session = await sessionService.loadSession(reportId)
+    // Read from Zustand store (session already loaded by ValuationSessionManager)
+    const session = useManualSessionStore.getState().session
     store.setProgress(50)
     
     if (session?.htmlReport) {
@@ -193,7 +201,7 @@ async function loadMainReportAsset(reportId: string) {
         generatedAt: session.calculatedAt ? new Date(session.calculatedAt) : new Date(),
       })
       store.markSynced()
-      generalLogger.info('[AssetOrchestrator:Manual] Main report loaded', {
+      generalLogger.info('[AssetOrchestrator:Manual] Main report loaded from store', {
         reportId,
         size: session.htmlReport.length,
       })
@@ -213,6 +221,7 @@ async function loadMainReportAsset(reportId: string) {
 
 /**
  * Load info tab HTML
+ * ⚠️ CRITICAL OPTIMIZATION: Read from Zustand session store (already loaded)
  */
 async function loadInfoTabAsset(reportId: string) {
   const store = useInfoTabAsset.getState()
@@ -222,7 +231,8 @@ async function loadInfoTabAsset(reportId: string) {
     store.setMode('receive')
     store.setProgress(10)
     
-    const session = await sessionService.loadSession(reportId)
+    // Read from Zustand store (session already loaded by ValuationSessionManager)
+    const session = useManualSessionStore.getState().session
     store.setProgress(50)
     
     if (session?.infoTabHtml) {
@@ -232,7 +242,7 @@ async function loadInfoTabAsset(reportId: string) {
         generatedAt: session.calculatedAt ? new Date(session.calculatedAt) : new Date(),
       })
       store.markSynced()
-      generalLogger.info('[AssetOrchestrator:Manual] Info tab loaded', {
+      generalLogger.info('[AssetOrchestrator:Manual] Info tab loaded from store', {
         reportId,
         size: session.infoTabHtml.length,
       })
@@ -284,6 +294,7 @@ async function loadVersionsAsset(reportId: string) {
 
 /**
  * Load final price calculations
+ * ⚠️ CRITICAL OPTIMIZATION: Read from Zustand session store (already loaded)
  */
 async function loadFinalPriceAsset(reportId: string) {
   const store = useFinalPriceAsset.getState()
@@ -293,7 +304,8 @@ async function loadFinalPriceAsset(reportId: string) {
     store.setMode('receive')
     store.setProgress(10)
     
-    const session = await sessionService.loadSession(reportId)
+    // Read from Zustand store (session already loaded by ValuationSessionManager)
+    const session = useManualSessionStore.getState().session
     store.setProgress(50)
     
     if (session?.valuationResult) {
@@ -307,7 +319,7 @@ async function loadFinalPriceAsset(reportId: string) {
       })
       store.markSynced()
       
-      generalLogger.info('[AssetOrchestrator:Manual] Final price loaded', {
+      generalLogger.info('[AssetOrchestrator:Manual] Final price loaded from store', {
         reportId,
         mid: session.valuationResult.equity_value_mid,
       })

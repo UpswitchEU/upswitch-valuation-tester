@@ -44,6 +44,8 @@ interface ValuationFlowSelectorProps {
   onRetry?: () => void
   /** Callback to start over (return to homepage) */
   onStartOver?: () => void
+  /** Report ID for optimistic rendering (when session not loaded yet) */
+  reportId: string
 }
 
 // Lazy load unified flow component (Next.js compatible)
@@ -136,6 +138,7 @@ export const ValuationFlowSelector: React.FC<ValuationFlowSelectorProps> = React
     initialVersion,
     onRetry,
     onStartOver,
+    reportId,
   }) => {
     // Debug logging to understand rendering
     useEffect(() => {
@@ -202,27 +205,19 @@ export const ValuationFlowSelector: React.FC<ValuationFlowSelectorProps> = React
     }
 
     if (stage === 'data-entry') {
-      // FIX: Handle both session and no-session cases in one block to avoid unreachable code
-      if (!session || !session.reportId) {
-        return (
-          <div className="flex items-center justify-center h-full">
-            <div className="max-w-md mx-auto text-center">
-              <div className="bg-rust-500/20 border border-rust-500/30 rounded-lg p-6">
-                <h3 className="text-lg font-semibold text-rust-400 mb-2">Session Error</h3>
-                <p className="text-rust-300 mb-4">
-                  Failed to initialize session. Please try again.
-                </p>
-                <button
-                  onClick={() => window.location.reload()}
-                  className="px-4 py-2 bg-rust-600 hover:bg-rust-700 text-white rounded-lg transition-colors"
-                >
-                  Reload Page
-                </button>
-              </div>
-            </div>
-          </div>
-        )
-      }
+      // ⚠️ OPTIMISTIC RENDERING: Render UI immediately even if session not loaded yet
+      // Session will load asynchronously and UI will update reactively via Zustand subscriptions
+      // Use reportId from props (always available) for optimistic rendering
+      const effectiveReportId = session?.reportId || reportId
+      
+      // Determine flow type optimistically - use session if available, otherwise infer from URL
+      const optimisticFlowType = session?.currentView === 'manual' 
+        ? 'manual' 
+        : (session?.currentView === 'conversational' 
+          ? 'conversational' 
+          : (typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('flow') === 'conversational' 
+            ? 'conversational' 
+            : 'manual'))
 
       return (
         <div className="relative h-full w-full">
@@ -231,8 +226,8 @@ export const ValuationFlowSelector: React.FC<ValuationFlowSelectorProps> = React
           <div key={flowKey} className="absolute inset-0 animate-in fade-in duration-200 ease-out">
             <Suspense fallback={<LoadingState steps={INITIALIZATION_STEPS} variant="dark" />}>
               <ValuationFlow
-                reportId={session.reportId}
-                flowType={flowType}
+                reportId={effectiveReportId}
+                flowType={optimisticFlowType}
                 onComplete={onComplete}
                 initialQuery={prefilledQuery}
                 autoSend={autoSend}
