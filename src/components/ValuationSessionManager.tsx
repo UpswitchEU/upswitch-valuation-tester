@@ -74,13 +74,15 @@ export const ValuationSessionManager: React.FC<ValuationSessionManagerProps> = R
           error: err.message
         })
       })
-    }, [reportId, loadSession, detectedFlow])
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [reportId, detectedFlow])  // loadSession is stable - don't include in deps
     
     // Retry: Clear error and reload
     const handleRetry = useCallback(() => {
       generalLogger.info('[SessionManager] Retrying load', { reportId, flow: detectedFlow })
       loadSession(reportId, detectedFlow)
-    }, [reportId, loadSession, detectedFlow])
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [reportId, detectedFlow])  // loadSession is stable - don't include in deps
     
     // Start over: Clear and navigate home
     const handleStartOver = useCallback(() => {
