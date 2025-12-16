@@ -108,24 +108,94 @@ export const ValuationSessionManager: React.FC<ValuationSessionManagerProps> = R
     const [error, setError] = useState<string | null>(null)
     const [showOutOfCreditsModal, setShowOutOfCreditsModal] = useState(false)
 
+    // Performance monitoring: Track component lifecycle
+    useEffect(() => {
+      performance.mark(`vsm-start-${reportId}`)
+      generalLogger.warn('[ValuationSessionManager] Component mounted', {
+        reportId,
+        timestamp: Date.now(),
+      })
+
+      // Add breadcrumb for component mount
+      const breadcrumb = `[${new Date().toISOString()}] Component mounted - reportId: ${reportId}`
+      console.log(`[BREADCRUMB] ${breadcrumb}`)
+      try {
+        const existingBreadcrumbs = sessionStorage.getItem(`vsm-breadcrumbs-${reportId}`)
+        const breadcrumbs = existingBreadcrumbs ? JSON.parse(existingBreadcrumbs) : []
+        breadcrumbs.push(breadcrumb)
+        sessionStorage.setItem(`vsm-breadcrumbs-${reportId}`, JSON.stringify(breadcrumbs))
+      } catch (e) {
+        // Ignore sessionStorage errors
+      }
+
+      return () => {
+        performance.mark(`vsm-end-${reportId}`)
+        try {
+          performance.measure(
+            `vsm-lifetime-${reportId}`,
+            `vsm-start-${reportId}`,
+            `vsm-end-${reportId}`
+          )
+          const measure = performance.getEntriesByName(`vsm-lifetime-${reportId}`)[0]
+          generalLogger.warn('[ValuationSessionManager] Component unmounted', {
+            reportId,
+            lifetimeMs: measure?.duration,
+          })
+        } catch (e) {
+          // Ignore measurement errors
+        }
+      }
+    }, [reportId])
+
     // Track stage changes to debug rendering issues
     React.useEffect(() => {
+      const breadcrumb = `[${new Date().toISOString()}] Stage changed: ${stage} (hasTransitioned: ${hasTransitionedRef.current})`
+      console.log(`[BREADCRUMB] ${breadcrumb}`)
+      
       generalLogger.info('[ValuationSessionManager] Stage state changed', {
         reportId,
         stage,
         hasTransitioned: hasTransitionedRef.current,
       })
+
+      // Store breadcrumb in sessionStorage
+      try {
+        const existingBreadcrumbs = sessionStorage.getItem(`vsm-breadcrumbs-${reportId}`)
+        const breadcrumbs = existingBreadcrumbs ? JSON.parse(existingBreadcrumbs) : []
+        breadcrumbs.push(breadcrumb)
+        sessionStorage.setItem(`vsm-breadcrumbs-${reportId}`, JSON.stringify(breadcrumbs))
+      } catch (e) {
+        // Ignore sessionStorage errors
+      }
     }, [stage, reportId])
 
-    // Wrapper for setStage with logging to track state updates
+    // Wrapper for setStage with logging and performance monitoring
     const setStageWithLogging = React.useCallback(
       (newStage: Stage) => {
+        // Performance mark for stage transition
+        performance.mark(`vsm-stage-${newStage}-${reportId}`)
+        
+        const breadcrumb = `[${new Date().toISOString()}] Stage transition: ${stage} → ${newStage}`
+        console.log(`[BREADCRUMB] ${breadcrumb}`)
+
         generalLogger.info('[ValuationSessionManager] Calling setStage', {
           reportId,
           from: stage,
           to: newStage,
           hasTransitioned: hasTransitionedRef.current,
+          timestamp: Date.now(),
         })
+
+        // Store breadcrumb in sessionStorage
+        try {
+          const existingBreadcrumbs = sessionStorage.getItem(`vsm-breadcrumbs-${reportId}`)
+          const breadcrumbs = existingBreadcrumbs ? JSON.parse(existingBreadcrumbs) : []
+          breadcrumbs.push(breadcrumb)
+          sessionStorage.setItem(`vsm-breadcrumbs-${reportId}`, JSON.stringify(breadcrumbs))
+        } catch (e) {
+          // Ignore sessionStorage errors
+        }
+
         setStage(newStage)
       },
       [reportId, stage]
@@ -144,6 +214,18 @@ export const ValuationSessionManager: React.FC<ValuationSessionManagerProps> = R
     // Stable callback - reads searchParams from ref (prevents recreation on param changes)
     const initializeSessionForReport = useCallback(
       async (reportId: string) => {
+        // Breadcrumb: Start of initialization
+        const breadcrumb = `[${new Date().toISOString()}] initializeSessionForReport called - reportId: ${reportId}`
+        console.log(`[BREADCRUMB] ${breadcrumb}`)
+        try {
+          const existingBreadcrumbs = sessionStorage.getItem(`vsm-breadcrumbs-${reportId}`)
+          const breadcrumbs = existingBreadcrumbs ? JSON.parse(existingBreadcrumbs) : []
+          breadcrumbs.push(breadcrumb)
+          sessionStorage.setItem(`vsm-breadcrumbs-${reportId}`, JSON.stringify(breadcrumbs))
+        } catch (e) {
+          // Ignore
+        }
+
         // Don't re-initialize if we're updating URL ourselves
         if (isUpdatingUrlRef.current) {
           return // URL update in progress, don't re-initialize
@@ -384,52 +466,88 @@ export const ValuationSessionManager: React.FC<ValuationSessionManagerProps> = R
       setStageWithLogging,
     ]) // React to specific session fields - no intervals needed
 
-    // Timeout fallback: Show error recovery UI after 10 seconds if still loading
-    // This is a safety net, separate from the main transition logic
+    // Aggressive timeout: 15-second absolute deadline with interval-based checking
+    // This prevents tab freeze by ensuring we ALWAYS transition or show error
     useEffect(() => {
-      if (stage !== 'loading' || !reportId || hasTransitionedRef.current) return
+      if (stage !== 'loading' || !reportId) return
 
-      const timeout = setTimeout(() => {
-        // Atomic check: only transition if still in loading state
-        if (hasTransitionedRef.current || stage !== 'loading') return
+      const absoluteDeadline = Date.now() + 15000 // 15 seconds from now
+      const startTime = Date.now()
 
-        const currentSearchParams = searchParamsRef.current
-        const flowParam = currentSearchParams?.get('flow') || 'manual'
-        const currentIsManualFlow = flowParam === 'manual'
+      generalLogger.info('[ValuationSessionManager] Starting absolute deadline timer', {
+        reportId,
+        deadlineSeconds: 15,
+        startTime,
+      })
 
-        const manualState = useManualSessionStore.getState()
-        const conversationalState = useConversationalSessionStore.getState()
-        const currentSession = currentIsManualFlow
-          ? manualState.session
-          : conversationalState.session
+      const checkDeadline = () => {
+        const now = Date.now()
+        const elapsed = now - startTime
 
-        // Show error recovery UI to user (better UX than silent timeout)
-        if (!currentSession) {
-          hasTransitionedRef.current = true
-          generalLogger.warn('Stage transition timeout - showing error recovery', {
+        // Check if deadline exceeded AND still in loading state
+        if (now >= absoluteDeadline && stage === 'loading' && !hasTransitionedRef.current) {
+          generalLogger.error('[ValuationSessionManager] ABSOLUTE DEADLINE EXCEEDED', {
             reportId,
-            hasSession: !!currentSession,
-            timeoutSeconds: 10,
+            elapsedMs: elapsed,
+            stage,
+            hasSession: !!session,
           })
-          setError(
-            'Session initialization is taking longer than expected. Please retry or start over.'
-          )
-        } else {
-          // Session exists, force transition
-          hasTransitionedRef.current = true
-          generalLogger.warn(
-            'Stage transition timeout - forcing transition with existing session',
-            {
-              reportId,
-              sessionReportId: currentSession?.reportId,
-            }
-          )
-          setStageWithLogging('data-entry')
-        }
-      }, 10000) // 10 second timeout
 
-      return () => clearTimeout(timeout)
-    }, [stage, reportId, setStageWithLogging])
+          const currentSearchParams = searchParamsRef.current
+          const flowParam = currentSearchParams?.get('flow') || 'manual'
+          const currentIsManualFlow = flowParam === 'manual'
+
+          const manualState = useManualSessionStore.getState()
+          const conversationalState = useConversationalSessionStore.getState()
+          const currentSession = currentIsManualFlow
+            ? manualState.session
+            : conversationalState.session
+
+          // Mark as transitioned to prevent other transitions
+          hasTransitionedRef.current = true
+
+          // Show error recovery UI to user (prevents infinite loading)
+          if (!currentSession) {
+            generalLogger.warn('[ValuationSessionManager] No session after deadline - showing error', {
+              reportId,
+              elapsedMs: elapsed,
+            })
+            setError(
+              'Session initialization exceeded maximum time limit. Please retry or start over.'
+            )
+          } else {
+            // Session exists, force transition to data-entry
+            generalLogger.warn(
+              '[ValuationSessionManager] Session exists after deadline - forcing transition',
+              {
+                reportId,
+                sessionReportId: currentSession?.reportId,
+                elapsedMs: elapsed,
+              }
+            )
+            setStageWithLogging('data-entry')
+          }
+        }
+      }
+
+      // Check every second to ensure we catch the deadline reliably
+      const intervalId = setInterval(checkDeadline, 1000)
+
+      // Also set a timeout for the exact deadline (belt and suspenders)
+      const timeoutId = setTimeout(() => {
+        checkDeadline()
+        clearInterval(intervalId)
+      }, 15000)
+
+      return () => {
+        clearTimeout(timeoutId)
+        clearInterval(intervalId)
+        generalLogger.info('[ValuationSessionManager] Deadline timer cleaned up', {
+          reportId,
+          elapsedMs: Date.now() - startTime,
+        })
+      }
+    }, [reportId, stage, session, setStageWithLogging]) // Include all dependencies
 
     // Sync URL with current view - simple and robust
     useEffect(() => {

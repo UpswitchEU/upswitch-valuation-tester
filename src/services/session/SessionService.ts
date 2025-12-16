@@ -73,6 +73,7 @@ export class SessionService {
    */
   async loadSession(reportId: string): Promise<ValuationSession | null> {
     const startTime = performance.now()
+    const ABSOLUTE_TIMEOUT = 12000 // 12 seconds max
 
     try {
       logger.info('Loading session', { reportId })
@@ -98,8 +99,8 @@ export class SessionService {
 
       logger.debug('Cache miss - loading from backend', { reportId })
 
-      // Load from backend with retry logic
-      const session = await retrySessionOperation(
+      // Wrap the entire load operation with an absolute timeout
+      const loadPromise = retrySessionOperation(
         async () => {
           return await sessionCircuitBreaker.execute(async () => {
             const sessionResponse = await backendAPI.getValuationSession(reportId)
@@ -139,6 +140,28 @@ export class SessionService {
           },
         }
       )
+
+      // Create timeout promise that rejects after ABSOLUTE_TIMEOUT
+      const timeoutPromise = new Promise<never>((_, reject) => {
+        setTimeout(() => {
+          const elapsed = performance.now() - startTime
+          logger.error('Session load exceeded absolute timeout', {
+            reportId,
+            elapsedMs: elapsed,
+            timeoutMs: ABSOLUTE_TIMEOUT,
+          })
+          reject(
+            new ApplicationError('Session load exceeded absolute timeout', 'SESSION_LOAD_TIMEOUT', {
+              reportId,
+              elapsedMs: elapsed,
+              timeoutMs: ABSOLUTE_TIMEOUT,
+            })
+          )
+        }, ABSOLUTE_TIMEOUT)
+      })
+
+      // Race between load and timeout
+      const session = await Promise.race([loadPromise, timeoutPromise])
 
       const duration = performance.now() - startTime
 

@@ -1,165 +1,255 @@
-import { AlertTriangle } from 'lucide-react'
-import React, { Component, ErrorInfo, ReactNode } from 'react'
-import { componentLogger } from '../utils/logger'
+/**
+ * ErrorBoundary Component
+ *
+ * Production-grade error boundary that catches React render errors
+ * and provides user-facing recovery UI with Retry and Start Over options.
+ *
+ * @module components/ErrorBoundary
+ */
 
-interface Props {
+'use client'
+
+import { useRouter } from 'next/navigation'
+import { Component, type ErrorInfo, type ReactNode } from 'react'
+import { generalLogger } from '../utils/logger'
+
+interface ErrorBoundaryProps {
   children: ReactNode
-  fallback?: ReactNode
-  componentName?: string
+  fallback?: (props: {
+    error: Error
+    errorInfo: ErrorInfo | null
+    onRetry: () => void
+    onStartOver: () => void
+  }) => ReactNode
 }
 
-interface State {
+interface ErrorBoundaryState {
   hasError: boolean
   error: Error | null
-  retryCount: number
+  errorInfo: ErrorInfo | null
+}
+
+/**
+ * Default error UI with recovery options
+ */
+function DefaultErrorFallback({
+  error,
+  errorInfo,
+  onRetry,
+  onStartOver,
+}: {
+  error: Error
+  errorInfo: ErrorInfo | null
+  onRetry: () => void
+  onStartOver: () => void
+}) {
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-black flex items-center justify-center px-4">
+      <div className="max-w-2xl w-full">
+        {/* Error Card */}
+        <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-8 shadow-2xl">
+          {/* Icon */}
+          <div className="flex items-center justify-center mb-6">
+            <div className="w-16 h-16 bg-red-500/10 rounded-full flex items-center justify-center">
+              <svg
+                className="w-8 h-8 text-red-400"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+                />
+              </svg>
+            </div>
+          </div>
+
+          {/* Title */}
+          <h1 className="text-2xl font-bold text-white text-center mb-2">
+            Something went wrong
+          </h1>
+
+          {/* Description */}
+          <p className="text-gray-400 text-center mb-6">
+            We encountered an unexpected error. You can try again or start over with a new
+            valuation.
+          </p>
+
+          {/* Error Details (collapsible, for debugging) */}
+          <details className="mb-6 bg-white/5 rounded-lg p-4">
+            <summary className="text-sm text-gray-400 cursor-pointer hover:text-gray-300 transition-colors">
+              Technical Details (for debugging)
+            </summary>
+            <div className="mt-4 space-y-2">
+              <div className="text-xs text-red-400 font-mono bg-red-900/20 p-3 rounded border border-red-500/20 overflow-auto">
+                <strong className="block mb-2">Error Message:</strong>
+                {error.message}
+              </div>
+              {errorInfo && (
+                <div className="text-xs text-gray-500 font-mono bg-white/5 p-3 rounded border border-white/10 overflow-auto max-h-40">
+                  <strong className="block mb-2">Component Stack:</strong>
+                  {errorInfo.componentStack}
+                </div>
+              )}
+            </div>
+          </details>
+
+          {/* Action Buttons */}
+          <div className="flex flex-col sm:flex-row gap-3">
+            <button
+              onClick={onRetry}
+              className="flex-1 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-gray-900"
+            >
+              <div className="flex items-center justify-center gap-2">
+                <svg
+                  className="w-5 h-5"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                  />
+                </svg>
+                <span>Retry</span>
+              </div>
+            </button>
+            <button
+              onClick={onStartOver}
+              className="flex-1 px-6 py-3 bg-white/10 hover:bg-white/20 text-white font-medium rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-white/50 focus:ring-offset-2 focus:ring-offset-gray-900 border border-white/10"
+            >
+              <div className="flex items-center justify-center gap-2">
+                <svg
+                  className="w-5 h-5"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"
+                  />
+                </svg>
+                <span>Start Over</span>
+              </div>
+            </button>
+          </div>
+        </div>
+
+        {/* Help Text */}
+        <p className="text-center text-gray-500 text-sm mt-6">
+          If this issue persists, please contact support
+        </p>
+      </div>
+    </div>
+  )
 }
 
 /**
  * Error Boundary Component
  *
- * Catches JavaScript errors anywhere in the child component tree,
- * logs those errors, and displays a fallback UI instead of crashing.
- *
- * Usage:
- * <ErrorBoundary componentName="ValuationMethods">
- *   <SomeComponent />
- * </ErrorBoundary>
+ * Catches React errors and displays recovery UI.
+ * Logs errors with full context for debugging.
  */
-export class ErrorBoundary extends Component<Props, State> {
-  constructor(props: Props) {
+export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
+  constructor(props: ErrorBoundaryProps) {
     super(props)
-    this.state = { hasError: false, error: null, retryCount: 0 }
+    this.state = {
+      hasError: false,
+      error: null,
+      errorInfo: null,
+    }
   }
 
-  static getDerivedStateFromError(error: Error): Partial<State> {
+  static getDerivedStateFromError(error: Error): Partial<ErrorBoundaryState> {
     // Update state so the next render will show the fallback UI
-    // Note: We preserve retryCount by only updating hasError and error
-    return { hasError: true, error }
+    return {
+      hasError: true,
+      error,
+    }
   }
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo) {
-    const componentName = this.props.componentName || 'Unknown'
+    // Log error with full context
+    generalLogger.error('[ErrorBoundary] React error caught', {
+      error: error.message,
+      stack: error.stack,
+      componentStack: errorInfo.componentStack,
+      timestamp: new Date().toISOString(),
+    })
 
-    // Log error with structured logging
-    componentLogger.error(
-      `Error caught by ErrorBoundary in ${componentName}`,
-      {
-        componentName,
-        errorMessage: error.message,
-        errorName: error.name,
-        errorStack: error.stack,
+    // Update state with error info
+    this.setState({
+      errorInfo,
+    })
+
+    // Store in sessionStorage for debugging (persists even after reload)
+    try {
+      const errorRecord = {
+        message: error.message,
+        stack: error.stack,
         componentStack: errorInfo.componentStack,
-        retryCount: this.state.retryCount,
-      },
-      error
-    )
-
-    // Also log to console in development for easier debugging
-    if (process.env.NODE_ENV === 'development') {
-      console.error('Error caught by ErrorBoundary:', error, errorInfo)
+        timestamp: new Date().toISOString(),
+      }
+      sessionStorage.setItem('last-error', JSON.stringify(errorRecord))
+    } catch (e) {
+      // Ignore sessionStorage errors
+      console.error('Failed to store error in sessionStorage:', e)
     }
-
-    // In production, you could log to an error reporting service
-    // Example: Sentry.captureException(error, { contexts: { react: errorInfo } });
   }
 
-  handleReset = () => {
-    this.setState((prevState) => ({
+  handleRetry = () => {
+    generalLogger.info('[ErrorBoundary] User clicked retry')
+
+    // Reset error state
+    this.setState({
       hasError: false,
       error: null,
-      retryCount: prevState.retryCount + 1,
-    }))
+      errorInfo: null,
+    })
+
+    // Force page reload to reset all state
+    if (typeof window !== 'undefined') {
+      window.location.reload()
+    }
+  }
+
+  handleStartOver = () => {
+    generalLogger.info('[ErrorBoundary] User clicked start over')
+
+    // Navigate to homepage
+    if (typeof window !== 'undefined') {
+      window.location.href = '/'
+    }
   }
 
   render() {
-    if (this.state.hasError) {
-      // Custom fallback UI provided
+    if (this.state.hasError && this.state.error) {
+      // Use custom fallback if provided, otherwise use default
       if (this.props.fallback) {
-        return this.props.fallback
+        return this.props.fallback({
+          error: this.state.error,
+          errorInfo: this.state.errorInfo,
+          onRetry: this.handleRetry,
+          onStartOver: this.handleStartOver,
+        })
       }
 
-      // Default fallback UI
-      const componentName = this.props.componentName || 'Component'
-      const { retryCount } = this.state
-      const MAX_RETRIES = 2
-      const canRetry = retryCount < MAX_RETRIES
-
       return (
-        <div className="bg-accent-600/10 border-2 border-accent-600/30 rounded-lg p-6 backdrop-blur-sm">
-          <div className="flex items-start gap-3">
-            <AlertTriangle className="w-6 h-6 text-accent-500 flex-shrink-0 mt-0.5" />
-            <div className="flex-1">
-              <h3 className="text-lg font-semibold text-accent-200 mb-2">{componentName} Error</h3>
-              <p className="text-sm text-zinc-200 mb-3">
-                An unexpected error occurred while rendering this component.
-                {this.state.error && (
-                  <>
-                    {' '}
-                    <span className="font-mono text-xs bg-accent-600/20 px-2 py-1 rounded text-zinc-300">
-                      {this.state.error.message}
-                    </span>
-                  </>
-                )}
-              </p>
-
-              {/* Retry count warning */}
-              {retryCount > 0 && canRetry && (
-                <div className="mb-3 text-xs text-harvest-200 bg-harvest-600/10 p-2 rounded border border-harvest-600/30">
-                  <strong>
-                    ⚠️ This error has occurred {retryCount} time{retryCount > 1 ? 's' : ''}.
-                  </strong>{' '}
-                  If it persists after another attempt, please reload the page.
-                </div>
-              )}
-
-              {/* Max retries reached warning */}
-              {!canRetry && (
-                <div className="mb-3 text-xs text-accent-200 bg-accent-600/20 p-2 rounded border border-accent-600/30">
-                  <strong>❌ Maximum retry attempts reached ({MAX_RETRIES}).</strong> This appears
-                  to be a persistent error. Please reload the page or contact support if the issue
-                  continues.
-                </div>
-              )}
-
-              <div className="flex gap-3">
-                {canRetry ? (
-                  <button
-                    onClick={this.handleReset}
-                    className="px-4 py-2 bg-harvest-600 text-white rounded hover:bg-harvest-500 text-sm font-medium transition-colors"
-                  >
-                    Try Again {retryCount > 0 && `(${retryCount}/${MAX_RETRIES})`}
-                  </button>
-                ) : (
-                  <button
-                    onClick={this.handleReset}
-                    disabled
-                    className="px-4 py-2 bg-zinc-700 text-zinc-400 rounded cursor-not-allowed text-sm font-medium"
-                    title="Maximum retry attempts reached"
-                  >
-                    Try Again (Max Reached)
-                  </button>
-                )}
-                <button
-                  onClick={() => window.location.reload()}
-                  className="px-4 py-2 bg-zinc-700 text-zinc-200 rounded hover:bg-zinc-600 text-sm font-medium transition-colors"
-                >
-                  Reload Page
-                </button>
-              </div>
-
-              {process.env.NODE_ENV === 'development' && this.state.error && (
-                <details className="mt-4">
-                  <summary className="text-xs text-accent-400 cursor-pointer hover:text-accent-300">
-                    Show Error Details (Development Only)
-                  </summary>
-                  <pre className="mt-2 text-xs bg-accent-600/20 p-3 rounded overflow-auto max-h-64 border border-accent-600/30 text-zinc-300">
-                    {this.state.error.stack}
-                  </pre>
-                </details>
-              )}
-            </div>
-          </div>
-        </div>
+        <DefaultErrorFallback
+          error={this.state.error}
+          errorInfo={this.state.errorInfo}
+          onRetry={this.handleRetry}
+          onStartOver={this.handleStartOver}
+        />
       )
     }
 
@@ -168,18 +258,35 @@ export class ErrorBoundary extends Component<Props, State> {
 }
 
 /**
- * Hook-based error boundary wrapper for functional components
- *
- * Usage:
- * const SafeComponent = withErrorBoundary(MyComponent, 'MyComponent');
+ * Hook-based wrapper for functional components
+ * (for use with router, etc.)
  */
-export function withErrorBoundary<P extends object>(
-  Component: React.ComponentType<P>,
-  componentName?: string
-): React.FC<P> {
-  return (props: P) => (
-    <ErrorBoundary componentName={componentName || Component.displayName || Component.name}>
-      <Component {...props} />
-    </ErrorBoundary>
-  )
+export function ErrorBoundaryWrapper({
+  children,
+  fallback,
+}: {
+  children: ReactNode
+  fallback?: ErrorBoundaryProps['fallback']
+}) {
+  const router = useRouter()
+
+  const customFallback: ErrorBoundaryProps['fallback'] = fallback
+    ? fallback
+    : ({ error, errorInfo, onRetry }) => {
+        const handleStartOver = () => {
+          generalLogger.info('[ErrorBoundary] User clicked start over (with router)')
+          router.push('/')
+        }
+
+        return (
+          <DefaultErrorFallback
+            error={error}
+            errorInfo={errorInfo}
+            onRetry={onRetry}
+            onStartOver={handleStartOver}
+          />
+        )
+      }
+
+  return <ErrorBoundary fallback={customFallback}>{children}</ErrorBoundary>
 }

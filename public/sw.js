@@ -12,8 +12,12 @@
  * @module sw
  */
 
-const CACHE_NAME = 'upswitch-valuation-v1'
-const RUNTIME_CACHE = 'upswitch-runtime-v1'
+// Version tracking for debugging (increment on each deploy)
+const SW_VERSION = '1.0.2'
+const CACHE_NAME = `upswitch-valuation-v${SW_VERSION}`
+const RUNTIME_CACHE = `upswitch-runtime-v${SW_VERSION}`
+
+console.log(`[ServiceWorker] Version ${SW_VERSION} initializing`)
 
 // Assets to cache on install
 const PRECACHE_ASSETS = [
@@ -108,13 +112,17 @@ self.addEventListener('fetch', (event) => {
   event.respondWith(
     caches.match(request).then((cachedResponse) => {
       if (cachedResponse) {
-        console.log('[ServiceWorker] Serving from cache:', request.url)
+        console.log(`[ServiceWorker v${SW_VERSION}] Serving from cache:`, request.url)
         return cachedResponse
       }
 
       // Not in cache, fetch from network
+      console.log(`[ServiceWorker v${SW_VERSION}] Fetching from network:`, request.url)
       return fetch(request)
         .then((response) => {
+          // Log successful network fetch
+          console.log(`[ServiceWorker v${SW_VERSION}] Fetch finished loading:`, request.method, JSON.stringify(request.url))
+          
           // Cache successful responses
           if (response && response.status === 200 && response.type === 'basic') {
             const responseToCache = response.clone()
@@ -127,7 +135,7 @@ self.addEventListener('fetch', (event) => {
           return response
         })
         .catch((error) => {
-          console.error('[ServiceWorker] Fetch failed:', error)
+          console.error(`[ServiceWorker v${SW_VERSION}] Fetch failed:`, request.url, error)
 
           // Return offline page for navigation requests
           if (request.mode === 'navigate') {

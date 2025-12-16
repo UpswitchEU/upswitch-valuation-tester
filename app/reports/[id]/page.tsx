@@ -1,6 +1,7 @@
 'use client'
 
 import { use } from 'react'
+import { ErrorBoundary } from '../../../src/components/ErrorBoundary'
 import { ValuationReport } from '../../../src/components/ValuationReport'
 
 interface ValuationReportPageProps {
@@ -75,5 +76,9 @@ export default function ValuationReportPage({ params, searchParams }: ValuationR
       : undefined
   }
 
-  return <ValuationReport reportId={id} initialMode={mode} initialVersion={versionNumber} />
+  return (
+    <ErrorBoundary>
+      <ValuationReport reportId={id} initialMode={mode} initialVersion={versionNumber} />
+    </ErrorBoundary>
+  )
 }
