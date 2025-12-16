@@ -269,9 +269,42 @@ export const ValuationSessionManager: React.FC<ValuationSessionManagerProps> = R
       const currentIsManualFlow = flowParam === 'manual'
       
       // Use optimized selectors (already subscribed, no need to call getState)
-      const currentSessionReportId = currentIsManualFlow ? manualSessionReportId : conversationalSessionReportId
-      const isLoading = currentIsManualFlow ? manualSessionIsLoading : conversationalSessionIsLoading
-      const currentError = currentIsManualFlow ? manualSessionError : conversationalSessionError
+      let currentSessionReportId = currentIsManualFlow ? manualSessionReportId : conversationalSessionReportId
+      let isLoading = currentIsManualFlow ? manualSessionIsLoading : conversationalSessionIsLoading
+      let currentError = currentIsManualFlow ? manualSessionError : conversationalSessionError
+
+      // Fallback: If selectors return undefined/null, read directly from store
+      // This ensures we catch session updates even if selectors don't trigger properly
+      if (!currentSessionReportId || isLoading === undefined) {
+        const manualState = useManualSessionStore.getState()
+        const conversationalState = useConversationalSessionStore.getState()
+        const fallbackState = currentIsManualFlow ? manualState : conversationalState
+        
+        if (!currentSessionReportId) {
+          currentSessionReportId = fallbackState.session?.reportId
+        }
+        if (isLoading === undefined) {
+          isLoading = fallbackState.isLoading
+        }
+        if (!currentError) {
+          currentError = fallbackState.error
+        }
+      }
+
+      // Debug logging to understand why transition might not happen
+      generalLogger.debug('[ValuationSessionManager] Checking stage transition', {
+        reportId,
+        stage,
+        currentIsManualFlow,
+        currentSessionReportId,
+        isLoading,
+        hasError: !!currentError,
+        hasTransitioned: hasTransitionedRef.current,
+        manualSessionReportId,
+        manualSessionIsLoading,
+        conversationalSessionReportId,
+        conversationalSessionIsLoading,
+      })
 
       // Check if session is ready (atomic condition check)
       const sessionReady = currentSessionReportId === reportId && !isLoading
@@ -280,10 +313,13 @@ export const ValuationSessionManager: React.FC<ValuationSessionManagerProps> = R
       if (sessionReady || sessionReadyWithError) {
         // Atomic transition: set flag first, then update stage
         // This prevents multiple transitions even if setStage is called multiple times
-        if (hasTransitionedRef.current) return // Another call already transitioned
+        if (hasTransitionedRef.current) {
+          generalLogger.debug('[ValuationSessionManager] Already transitioned, skipping', { reportId })
+          return // Another call already transitioned
+        }
         
         hasTransitionedRef.current = true
-        generalLogger.debug('Session available, transitioning to data-entry', { 
+        generalLogger.info('[ValuationSessionManager] Session available, transitioning to data-entry', { 
           reportId,
           hasError: !!currentError,
           sessionExists: !!currentSessionReportId,
@@ -291,10 +327,21 @@ export const ValuationSessionManager: React.FC<ValuationSessionManagerProps> = R
           sessionReadyWithError
         })
         setStage('data-entry')
+      } else {
+        // Log why transition didn't happen for debugging
+        generalLogger.debug('[ValuationSessionManager] Session not ready yet', {
+          reportId,
+          currentSessionReportId,
+          expectedReportId: reportId,
+          reportIdMatches: currentSessionReportId === reportId,
+          isLoading,
+          sessionReady,
+          sessionReadyWithError,
+        })
       }
     }, [reportId, stage, manualSessionReportId, manualSessionIsLoading, manualSessionError, conversationalSessionReportId, conversationalSessionIsLoading, conversationalSessionError]) // React to specific session fields - no intervals needed
 
-    // Timeout fallback: Force transition after 10 seconds if still loading
+    // Timeout fallback: Force transition after 3 seconds if still loading
     // This is a safety net, separate from the main transition logic
     useEffect(() => {
       if (stage !== 'loading' || !reportId || hasTransitionedRef.current) return
@@ -310,16 +357,22 @@ export const ValuationSessionManager: React.FC<ValuationSessionManagerProps> = R
         const manualState = useManualSessionStore.getState()
         const conversationalState = useConversationalSessionStore.getState()
         const currentSession = currentIsManualFlow ? manualState.session : conversationalState.session
+        const currentIsLoading = currentIsManualFlow ? manualState.isLoading : conversationalState.isLoading
 
-        // Force transition as last resort
-        hasTransitionedRef.current = true
-        generalLogger.warn('Stage transition timeout - forcing transition to data-entry', {
-          reportId,
-          hasSession: !!currentSession,
-          sessionReportId: currentSession?.reportId
-        })
-        setStage('data-entry')
-      }, 10000) // 10 second timeout
+        // Force transition as last resort if session exists (even if reportId doesn't match or still loading)
+        // This prevents infinite black screen
+        if (currentSession || !currentIsLoading) {
+          hasTransitionedRef.current = true
+          generalLogger.warn('[ValuationSessionManager] Stage transition timeout - forcing transition to data-entry', {
+            reportId,
+            hasSession: !!currentSession,
+            sessionReportId: currentSession?.reportId,
+            isLoading: currentIsLoading,
+            expectedReportId: reportId,
+          })
+          setStage('data-entry')
+        }
+      }, 3000) // 3 second timeout (reduced from 10s for faster recovery)
 
       return () => clearTimeout(timeout)
     }, [stage, reportId])
