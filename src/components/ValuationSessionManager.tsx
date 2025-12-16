@@ -170,8 +170,19 @@ export const ValuationSessionManager: React.FC<ValuationSessionManagerProps> = R
     }, [stage, reportId])
 
     // Wrapper for setStage with logging and performance monitoring
+    // ⚠️ GUARD: Prevents duplicate transitions
     const setStageWithLogging = React.useCallback(
       (newStage: Stage) => {
+        // GUARD: Prevent transition if already transitioned to this stage
+        if (stage === newStage) {
+          generalLogger.debug('[ValuationSessionManager] Skipping duplicate stage transition', {
+            reportId,
+            stage: newStage,
+            hasTransitioned: hasTransitionedRef.current,
+          })
+          return
+        }
+
         // Performance mark for stage transition
         performance.mark(`vsm-stage-${newStage}-${reportId}`)
         
@@ -440,11 +451,18 @@ export const ValuationSessionManager: React.FC<ValuationSessionManagerProps> = R
       const sessionReadyWithError = currentSessionReportId === reportId && currentError
 
       if (sessionReady || sessionReadyWithError) {
-        // Atomic transition: set flag first, then update stage
-        // This prevents multiple transitions even if setStage is called multiple times
-        if (hasTransitionedRef.current) return // Another call already transitioned
+        // CRITICAL GUARD: Check if already transitioned BEFORE doing anything
+        if (hasTransitionedRef.current) {
+          generalLogger.debug('[ValuationSessionManager] Already transitioned - skipping duplicate', {
+            reportId,
+            hasTransitionedRef: hasTransitionedRef.current,
+          })
+          return // Another call already transitioned
+        }
 
+        // Atomic transition: set flag first, then update stage
         hasTransitionedRef.current = true
+        
         generalLogger.debug('Session available, transitioning to data-entry', {
           reportId,
           hasError: !!currentError,
@@ -468,8 +486,12 @@ export const ValuationSessionManager: React.FC<ValuationSessionManagerProps> = R
 
     // Aggressive timeout: 15-second absolute deadline with interval-based checking
     // This prevents tab freeze by ensuring we ALWAYS transition or show error
+    // ⚠️ CRITICAL: Only depend on reportId to prevent re-runs during state updates
     useEffect(() => {
-      if (stage !== 'loading' || !reportId) return
+      // Use ref for stage check to avoid re-running effect on stage changes
+      const stageRef = { current: stage }
+      
+      if (stageRef.current !== 'loading' || !reportId || hasTransitionedRef.current) return
 
       const absoluteDeadline = Date.now() + 15000 // 15 seconds from now
       const startTime = Date.now()
@@ -484,13 +506,12 @@ export const ValuationSessionManager: React.FC<ValuationSessionManagerProps> = R
         const now = Date.now()
         const elapsed = now - startTime
 
-        // Check if deadline exceeded AND still in loading state
-        if (now >= absoluteDeadline && stage === 'loading' && !hasTransitionedRef.current) {
+        // Check if deadline exceeded AND still hasn't transitioned (use ref, not state!)
+        if (now >= absoluteDeadline && !hasTransitionedRef.current) {
           generalLogger.error('[ValuationSessionManager] ABSOLUTE DEADLINE EXCEEDED', {
             reportId,
             elapsedMs: elapsed,
-            stage,
-            hasSession: !!session,
+            hasTransitionedRef: hasTransitionedRef.current,
           })
 
           const currentSearchParams = searchParamsRef.current
@@ -503,7 +524,7 @@ export const ValuationSessionManager: React.FC<ValuationSessionManagerProps> = R
             ? manualState.session
             : conversationalState.session
 
-          // Mark as transitioned to prevent other transitions
+          // Mark as transitioned to prevent other transitions (BEFORE setStage!)
           hasTransitionedRef.current = true
 
           // Show error recovery UI to user (prevents infinite loading)
@@ -525,7 +546,7 @@ export const ValuationSessionManager: React.FC<ValuationSessionManagerProps> = R
                 elapsedMs: elapsed,
               }
             )
-            setStageWithLogging('data-entry')
+            setStage('data-entry') // Use setStage directly to avoid circular deps
           }
         }
       }
@@ -547,7 +568,7 @@ export const ValuationSessionManager: React.FC<ValuationSessionManagerProps> = R
           elapsedMs: Date.now() - startTime,
         })
       }
-    }, [reportId, stage, session, setStageWithLogging]) // Include all dependencies
+    }, [reportId]) // ⚠️ ONLY reportId - prevents re-runs on state changes
 
     // Sync URL with current view - simple and robust
     useEffect(() => {

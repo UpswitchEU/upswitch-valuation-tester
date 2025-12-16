@@ -55,6 +55,39 @@ export const ManualLayout: React.FC<ManualLayoutProps> = ({
   initialVersion,
   initialMode = 'edit',
 }) => {
+  // EMERGENCY: Render loop detector to prevent tab freeze
+  const renderCountRef = useRef(0)
+  const renderTimestampRef = useRef(Date.now())
+  
+  renderCountRef.current += 1
+  const now = Date.now()
+  
+  // Reset counter every 5 seconds
+  if (now - renderTimestampRef.current > 5000) {
+    renderCountRef.current = 1
+    renderTimestampRef.current = now
+  }
+  
+  // If we're rendering more than 100 times in 5 seconds, we have a render loop
+  if (renderCountRef.current > 100) {
+    generalLogger.error('[ManualLayout] RENDER LOOP DETECTED - Throwing error to break loop', {
+      reportId,
+      renderCount: renderCountRef.current,
+      timeWindow: now - renderTimestampRef.current,
+    })
+    throw new Error(
+      `Render loop detected in ManualLayout (${renderCountRef.current} renders in ${now - renderTimestampRef.current}ms). Please contact support.`
+    )
+  }
+  
+  // Log excessive renders
+  if (renderCountRef.current > 50) {
+    generalLogger.warn('[ManualLayout] High render count detected', {
+      reportId,
+      renderCount: renderCountRef.current,
+    })
+  }
+
   const { user } = useAuth()
   const { isCalculating, error, result, setResult } = useManualResultsStore()
   // CRITICAL: Use optimized selectors to subscribe only to specific fields
