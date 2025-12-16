@@ -51,7 +51,7 @@ export const ValuationSessionManager: React.FC<ValuationSessionManagerProps> = R
     const searchParams = useSearchParams()
     const router = useRouter()
     const { isAuthenticated } = useAuth()
-
+    
     // Use ref to store latest searchParams (prevents callback recreation)
     // This makes initializeSessionForReport stable while still accessing latest params
     const searchParamsRef = useRef(searchParams)
@@ -63,12 +63,12 @@ export const ValuationSessionManager: React.FC<ValuationSessionManagerProps> = R
     // Read from searchParams for current render, but use ref in callbacks
     const flowParam = searchParams?.get('flow') || 'manual'
     const isManualFlow = flowParam === 'manual'
-
+    
     // For rendering: use full session object (needed by children)
     const manualSession = useManualSessionStore((state) => state.session)
     const conversationalSession = useConversationalSessionStore((state) => state.session)
     const session = isManualFlow ? manualSession : conversationalSession
-
+    
     // Optimized selectors for transition logic: only subscribe to fields we need
     // Subscribe to both flows since flow can change, but Zustand selectors are efficient
     const manualSessionReportId = useManualSessionStore((state) => state.session?.reportId)
@@ -79,10 +79,10 @@ export const ValuationSessionManager: React.FC<ValuationSessionManagerProps> = R
     )
     const conversationalSessionIsLoading = useConversationalSessionStore((state) => state.isLoading)
     const conversationalSessionError = useConversationalSessionStore((state) => state.error)
-
+    
     // URL update tracking (prevents re-initialization during URL updates)
     const isUpdatingUrlRef = useRef(false)
-
+    
     // Track if we've already transitioned to prevent infinite loops
     const hasTransitionedRef = useRef(false)
     
@@ -146,7 +146,7 @@ export const ValuationSessionManager: React.FC<ValuationSessionManagerProps> = R
         }
       }
     }, [reportId])
-
+    
     // Track stage changes to debug rendering issues
     React.useEffect(() => {
       const breadcrumb = `[${new Date().toISOString()}] Stage changed: ${stage} (hasTransitioned: ${hasTransitionedRef.current})`
@@ -168,7 +168,7 @@ export const ValuationSessionManager: React.FC<ValuationSessionManagerProps> = R
         // Ignore sessionStorage errors
       }
     }, [stage, reportId])
-
+    
     // Wrapper for setStage with logging and performance monitoring
     // ⚠️ GUARD: Prevents duplicate transitions
     const setStageWithLogging = React.useCallback(
@@ -189,13 +189,13 @@ export const ValuationSessionManager: React.FC<ValuationSessionManagerProps> = R
         const breadcrumb = `[${new Date().toISOString()}] Stage transition: ${stage} → ${newStage}`
         console.log(`[BREADCRUMB] ${breadcrumb}`)
 
-        generalLogger.info('[ValuationSessionManager] Calling setStage', {
-          reportId,
-          from: stage,
-          to: newStage,
-          hasTransitioned: hasTransitionedRef.current,
+      generalLogger.info('[ValuationSessionManager] Calling setStage', {
+        reportId,
+        from: stage,
+        to: newStage,
+        hasTransitioned: hasTransitionedRef.current,
           timestamp: Date.now(),
-        })
+      })
 
         // Store breadcrumb in sessionStorage
         try {
@@ -207,7 +207,7 @@ export const ValuationSessionManager: React.FC<ValuationSessionManagerProps> = R
           // Ignore sessionStorage errors
         }
 
-        setStage(newStage)
+      setStage(newStage)
       },
       [reportId, stage]
     )
@@ -253,7 +253,7 @@ export const ValuationSessionManager: React.FC<ValuationSessionManagerProps> = R
           const flowParam = currentSearchParams.get('flow')
           const initialView =
             flowParam === 'manual' || flowParam === 'conversational' ? flowParam : 'manual'
-
+          
           // Determine flow type from params (not from closure)
           const currentIsManualFlow = initialView === 'manual'
 
@@ -325,7 +325,7 @@ export const ValuationSessionManager: React.FC<ValuationSessionManagerProps> = R
         } catch (error) {
           generalLogger.error('Failed to initialize session', { error, reportId })
           setError('Failed to initialize valuation session')
-
+          
           // Even if initialization fails, if we have a session, allow user to continue
           const currentManualSession = useManualSessionStore.getState().session
           const currentConversationalSession = useConversationalSessionStore.getState().session
@@ -335,7 +335,7 @@ export const ValuationSessionManager: React.FC<ValuationSessionManagerProps> = R
           const currentSession = currentIsManualFlow
             ? currentManualSession
             : currentConversationalSession
-
+          
           if (currentSession?.reportId === reportId) {
             generalLogger.debug(
               'Session exists despite initialization error, transitioning to data-entry',
@@ -394,7 +394,7 @@ export const ValuationSessionManager: React.FC<ValuationSessionManagerProps> = R
       const manualState = useManualSessionStore.getState()
       const conversationalState = useConversationalSessionStore.getState()
       const currentSession = currentIsManualFlow ? manualState.session : conversationalState.session
-
+      
       if (currentSession?.reportId === reportId) {
         generalLogger.debug('Session already exists, skipping initialization', { reportId })
         if (!hasTransitionedRef.current) {
@@ -412,7 +412,7 @@ export const ValuationSessionManager: React.FC<ValuationSessionManagerProps> = R
       const activeLoadingReportId = currentIsManualFlow
         ? manualState.loadingReportId
         : conversationalState.loadingReportId
-
+      
       if (activeLoadPromise && activeLoadingReportId === reportId) {
         generalLogger.debug('Session already loading, skipping initialization', { reportId })
         return
@@ -436,7 +436,7 @@ export const ValuationSessionManager: React.FC<ValuationSessionManagerProps> = R
       const currentSearchParams = searchParamsRef.current
       const flowParam = currentSearchParams?.get('flow') || 'manual'
       const currentIsManualFlow = flowParam === 'manual'
-
+      
       // Use optimized selectors (already subscribed, no need to call getState)
       const currentSessionReportId = currentIsManualFlow
         ? manualSessionReportId
@@ -463,7 +463,7 @@ export const ValuationSessionManager: React.FC<ValuationSessionManagerProps> = R
         // Atomic transition: set flag first, then update stage
         hasTransitionedRef.current = true
         
-        generalLogger.debug('Session available, transitioning to data-entry', {
+        generalLogger.debug('Session available, transitioning to data-entry', { 
           reportId,
           hasError: !!currentError,
           sessionExists: !!currentSessionReportId,
@@ -514,18 +514,18 @@ export const ValuationSessionManager: React.FC<ValuationSessionManagerProps> = R
             hasTransitionedRef: hasTransitionedRef.current,
           })
 
-          const currentSearchParams = searchParamsRef.current
-          const flowParam = currentSearchParams?.get('flow') || 'manual'
-          const currentIsManualFlow = flowParam === 'manual'
-
-          const manualState = useManualSessionStore.getState()
-          const conversationalState = useConversationalSessionStore.getState()
+        const currentSearchParams = searchParamsRef.current
+        const flowParam = currentSearchParams?.get('flow') || 'manual'
+        const currentIsManualFlow = flowParam === 'manual'
+        
+        const manualState = useManualSessionStore.getState()
+        const conversationalState = useConversationalSessionStore.getState()
           const currentSession = currentIsManualFlow
             ? manualState.session
             : conversationalState.session
 
           // Mark as transitioned to prevent other transitions (BEFORE setStage!)
-          hasTransitionedRef.current = true
+        hasTransitionedRef.current = true
 
           // Show error recovery UI to user (prevents infinite loading)
           if (!currentSession) {
@@ -585,7 +585,7 @@ export const ValuationSessionManager: React.FC<ValuationSessionManagerProps> = R
       const targetFlow = session.currentView
 
       // Normalize: treat null/undefined/invalid as mismatch (will update to valid flow)
-      const normalizedCurrentFlow =
+      const normalizedCurrentFlow = 
         currentFlow === 'manual' || currentFlow === 'conversational' ? currentFlow : null
 
       // Only update if different (handles both directions: manual↔conversational)
@@ -604,20 +604,20 @@ export const ValuationSessionManager: React.FC<ValuationSessionManagerProps> = R
 
       // Extract existing params and update flow
       const params: Record<string, string> = {}
-      searchParams.forEach((value, key) => {
+        searchParams.forEach((value, key) => {
         if (key !== 'flow') {
           params[key] = value
         }
-      })
+        })
       params.flow = targetFlow
 
       const newUrl = UrlGeneratorService.reportById(session.reportId, params)
 
       // Update URL
-      router.replace(newUrl, { scroll: false })
+        router.replace(newUrl, { scroll: false })
 
       // Reset flag after Next.js updates (simple delay)
-      setTimeout(() => {
+        setTimeout(() => {
         isUpdatingUrlRef.current = false
       }, 100)
     }, [session?.currentView, session?.reportId, searchParams, router])

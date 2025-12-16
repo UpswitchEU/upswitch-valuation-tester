@@ -66,7 +66,7 @@ self.addEventListener('install', (event) => {
       })
       
       // Don't fail install even if some assets couldn't be cached
-      return Promise.resolve()
+        return Promise.resolve()
     })
   )
 

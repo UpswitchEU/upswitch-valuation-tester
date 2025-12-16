@@ -187,12 +187,12 @@ export const ValuationFlowSelector: React.FC<ValuationFlowSelectorProps> = React
                   </button>
                 )}
                 {!onRetry && !onStartOver && (
-                  <button
-                    onClick={() => window.location.reload()}
+              <button
+                onClick={() => window.location.reload()}
                     className="px-6 py-2.5 bg-rust-600 hover:bg-rust-700 text-white rounded-lg transition-colors font-medium"
-                  >
-                    Reload Page
-                  </button>
+              >
+                Reload Page
+              </button>
                 )}
               </div>
             </div>
