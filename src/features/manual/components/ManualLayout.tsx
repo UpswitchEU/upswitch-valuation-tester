@@ -93,8 +93,8 @@ export const ManualLayout: React.FC<ManualLayoutProps> = ({
   // CRITICAL: Use optimized selectors to subscribe only to specific fields
   // This prevents re-renders when session object reference changes but data is the same
   const sessionReportId = useManualSessionStore((state) => state.session?.reportId)
-  const sessionData = useManualSessionStore((state) => state.session?.sessionData)
-  const sessionValuationResult = useManualSessionStore((state) => state.session?.valuationResult)
+  // ⚠️ REMOVED sessionData and sessionValuationResult selectors - they caused render loops
+  // These are accessed directly from store in the restoration useEffect instead
   // Still need full session for other uses (isSaving, lastSaved, etc.)
   const { isSaving, lastSaved, hasUnsavedChanges, error: syncError, loadSessionAsync } = useManualSessionStore()
   const { updateFormData } = useManualFormStore()
@@ -131,15 +131,18 @@ export const ManualLayout: React.FC<ManualLayoutProps> = ({
   const hasRestoredDataRef = useRef<string | null>(null)
   
   // Restore form data and results from session when it loads
-  // CRITICAL: Use optimized selectors (sessionReportId, sessionData, sessionValuationResult)
-  // This prevents re-render loops when session object reference changes but data is the same
+  // ⚠️ CRITICAL FIX: Only depend on sessionReportId to prevent render loop
+  // The loop was caused by sessionData/sessionValuationResult changing references
   useEffect(() => {
     // Early return if no session or already restored for this reportId
     if (!sessionReportId || hasRestoredDataRef.current === sessionReportId) {
       return
     }
 
-    const sessionDataObj = sessionData as any
+    // Get current values directly from store (not from selectors that cause re-renders)
+    const currentState = useManualSessionStore.getState()
+    const sessionDataObj = currentState.session?.sessionData as any
+    const sessionValResult = currentState.session?.valuationResult
     
     // Restore form data (if exists and different from current)
     if (sessionDataObj && (sessionDataObj.company_name || sessionDataObj.revenue)) {
@@ -150,25 +153,34 @@ export const ManualLayout: React.FC<ManualLayoutProps> = ({
         (sessionDataObj.revenue !== undefined && sessionDataObj.revenue !== currentFormData.revenue)
       
       if (hasChanges) {
+        generalLogger.debug('[ManualLayout] Restoring form data from session', {
+          reportId: sessionReportId,
+        })
         updateFormData(sessionDataObj)
       }
     }
 
     // Restore results (if exists and different from current)
-    if (sessionValuationResult) {
+    if (sessionValResult) {
       const currentResult = useManualResultsStore.getState().result
       // Only update if result is different (compare by valuation_id or structure)
-      if (!currentResult || currentResult.valuation_id !== sessionValuationResult.valuation_id) {
-        setResult(sessionValuationResult as any)
+      if (!currentResult || currentResult.valuation_id !== sessionValResult.valuation_id) {
+        generalLogger.debug('[ManualLayout] Restoring valuation result from session', {
+          reportId: sessionReportId,
+        })
+        setResult(sessionValResult as any)
       }
     }
 
-    // Mark as restored for this reportId
+    // Mark as restored for this reportId (AFTER all restore operations)
     hasRestoredDataRef.current = sessionReportId
+    
+    generalLogger.info('[ManualLayout] Session restoration complete', {
+      reportId: sessionReportId,
+    })
   }, [
-    sessionReportId, // Only depend on reportId from selector
-    sessionData, // Depend on sessionData from selector
-    sessionValuationResult, // Depend on valuationResult from selector
+    sessionReportId, // ⚠️ ONLY depend on reportId - prevents render loop!
+    // updateFormData and setResult are stable, but include for correctness
     updateFormData,
     setResult
   ])
