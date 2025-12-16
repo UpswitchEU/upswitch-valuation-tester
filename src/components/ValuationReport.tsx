@@ -39,42 +39,17 @@ export const ValuationReport: React.FC<ValuationReportProps> = React.memo(
     const router = useRouter()
 
     // Handle valuation completion
+    // NOTE: saveCompleteSession is already called in useValuationFormSubmission
+    // This callback only handles report API completion for credit tracking
     const handleValuationComplete = async (result: ValuationResponse) => {
-      const { markReportSaving, markReportSaved, markReportSaveFailed, session } = useValuationSessionStore.getState()
+      const { markReportSaving, markReportSaved, markReportSaveFailed } = useValuationSessionStore.getState()
 
       // Mark as saving during completion process
       markReportSaving()
 
-      // CRITICAL: Save valuation result to session for restoration (same as conversational flow)
-      // This ensures HTML reports and results are persisted for later restoration
-      const { SessionAPI } = await import('../services/api/session/SessionAPI')
-      const sessionAPI = new SessionAPI()
-
       try {
-        // Save to session store first (for restoration)
-        if (session?.reportId) {
-          try {
-            await sessionAPI.saveValuationResult(session.reportId, {
-              valuationResult: result,
-              htmlReport: result.html_report,
-              infoTabHtml: result.info_tab_html,
-            })
-
-            generalLogger.info('Valuation result saved to session', {
-              reportId: session.reportId,
-              hasHtmlReport: !!result.html_report,
-              hasInfoTabHtml: !!result.info_tab_html,
-            })
-          } catch (sessionError) {
-            generalLogger.error('Failed to save valuation result to session', {
-              reportId: session.reportId,
-              error: sessionError instanceof Error ? sessionError.message : String(sessionError),
-            })
-            // Continue - don't block if session save fails
-          }
-        }
-
-        // Also save via report API (for credit tracking and other persistence)
+        // Save via report API (for credit tracking and other persistence)
+        // NOTE: Session save is already handled by saveCompleteSession in useValuationFormSubmission
         await reportApiService.completeReport(reportId, result)
         generalLogger.info('Valuation report saved successfully', {
           reportId,

@@ -34,7 +34,24 @@ export const useValuationApiStore = create<ValuationApiStore>((set, get) => ({
   
   // Calculate valuation
   calculateValuation: async (request: ValuationRequest): Promise<ValuationResponse | null> => {
-    set({ isCalculating: true, error: null })
+    // CRITICAL: Use functional update to atomically check and set isCalculating
+    // This prevents race conditions if multiple calculations are triggered simultaneously
+    let shouldProceed = false
+    set((state) => {
+      if (state.isCalculating) {
+        storeLogger.warn('Calculation already in progress, skipping duplicate call', {
+          companyName: request.company_name,
+        })
+        return state // No change - calculation already in progress
+      }
+      shouldProceed = true
+      return { ...state, isCalculating: true, error: null }
+    })
+    
+    // If calculation was already in progress, return null
+    if (!shouldProceed) {
+      return null
+    }
     
     try {
       storeLogger.info('Calculating valuation', {
@@ -96,8 +113,16 @@ export const useValuationApiStore = create<ValuationApiStore>((set, get) => ({
   },
   
   // Set calculating state (for immediate UI feedback)
+  // Uses functional update to ensure atomic state changes
   setCalculating: (isCalculating: boolean) => {
-    set({ isCalculating })
+    set((state) => {
+      // If trying to set to true but already calculating, don't change state
+      if (isCalculating && state.isCalculating) {
+        storeLogger.debug('Already calculating, skipping duplicate setCalculating(true)')
+        return state
+      }
+      return { ...state, isCalculating }
+    })
   },
   
   // Clear error

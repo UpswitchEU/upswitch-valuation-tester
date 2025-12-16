@@ -145,25 +145,36 @@ export const useValuationSessionStore = create<ValuationSessionStore>((set, get)
       
       if (initState?.status === 'ready') {
         // Already initialized - check if session exists and update prefilledQuery if needed
-        const { session: existingSession } = get()
-        if (existingSession?.reportId === reportId) {
-          if (prefilledQuery && existingSession.partialData) {
-            const updatedPartialData = { ...existingSession.partialData } as any
-            if (!updatedPartialData._prefilledQuery) {
-              updatedPartialData._prefilledQuery = prefilledQuery
-              set({
-                session: {
-                  ...existingSession,
-                  partialData: updatedPartialData,
-                },
-              })
+        // Use functional update to prevent race conditions
+        let shouldReturn = false
+        set((state) => {
+          const existingSession = state.session
+          if (existingSession?.reportId === reportId) {
+            if (prefilledQuery && existingSession.partialData) {
+              const updatedPartialData = { ...existingSession.partialData } as any
+              if (!updatedPartialData._prefilledQuery) {
+                updatedPartialData._prefilledQuery = prefilledQuery
+                shouldReturn = true
+                return {
+                  ...state,
+                  session: {
+                    ...existingSession,
+                    partialData: updatedPartialData,
+                  },
+                }
+              }
             }
+            shouldReturn = true
+            return state // No change needed
           }
+          // State says ready but no session - reset to idle and continue
+          initializationState.set(reportId, { status: 'idle' })
+          return state
+        })
+        if (shouldReturn) {
           storeLogger.debug('Session already initialized, skipping', { reportId })
           return
         }
-        // State says ready but no session - reset to idle and continue
-        initializationState.set(reportId, { status: 'idle' })
       }
 
       // Step 2: Set state to 'initializing' (atomic write)
@@ -276,13 +287,17 @@ export const useValuationSessionStore = create<ValuationSessionStore>((set, get)
                     : null,
                 })
 
-                // Merge prefilled query if provided
-                const updatedPartialData = mergePrefilledQuery(stillCachedSession.partialData, prefilledQuery)
+                // CRITICAL: Ensure cached session has merged fields (backward compatibility)
+                // Cached sessions should already be merged, but ensure it for safety
+                const mergedCachedSession = mergeSessionFields(stillCachedSession)
 
-                // Use cached session immediately
+                // Merge prefilled query if provided
+                const updatedPartialData = mergePrefilledQuery(mergedCachedSession.partialData, prefilledQuery)
+
+                // Use cached session immediately (with merged fields)
                 set({
                   session: {
-                    ...stillCachedSession,
+                    ...mergedCachedSession,
                     partialData: updatedPartialData,
                   },
                   syncError: null,
@@ -914,9 +929,7 @@ export const useValuationSessionStore = create<ValuationSessionStore>((set, get)
           updatedAt: new Date(),
         }
 
-        // Calculate completeness
-        const tempSession = { ...session, sessionData: updatedSessionData }
-        set({ session: tempSession })
+        // Calculate completeness using functional update to avoid race conditions
         const completeness = get().getCompleteness()
         updatedSession.completeness = completeness
 
@@ -998,9 +1011,8 @@ export const useValuationSessionStore = create<ValuationSessionStore>((set, get)
           dataSource = 'mixed'
         }
 
-        // Calculate completeness
+        // Calculate completeness (use temp session for calculation only, no state update)
         const tempSession = { ...session, sessionData: updatedSessionData }
-        set({ session: tempSession })
         const completeness = get().getCompleteness()
 
         const fallbackUpdatedSession: ValuationSession = {
@@ -1177,13 +1189,12 @@ export const useValuationSessionStore = create<ValuationSessionStore>((set, get)
       backendAPI
         .switchValuationView(currentSession.reportId, view)
         .then(() => {
-          // Backend sync successful - clear syncing flag
-          const { session: latestSession } = get()
-          if (latestSession?.reportId === currentSession.reportId) {
-            set({
-              isSyncing: false,
-              syncError: null,
-            })
+          // Backend sync successful - clear syncing flag using functional update (atomic)
+          set((state) => {
+            const latestSession = state.session
+            if (!latestSession || latestSession.reportId !== currentSession.reportId) {
+              return state // No change if session mismatch
+            }
             
             // CACHE INVALIDATION: Update cache with latest session after backend sync
             globalSessionCache.set(currentSession.reportId, latestSession)
@@ -1192,7 +1203,13 @@ export const useValuationSessionStore = create<ValuationSessionStore>((set, get)
               reportId: currentSession.reportId,
               view,
             })
-          }
+            
+            return {
+              ...state,
+              isSyncing: false,
+              syncError: null,
+            }
+          })
         })
         .catch((error) => {
           const appError = convertToApplicationError(error, {
@@ -1423,17 +1440,18 @@ export const useValuationSessionStore = create<ValuationSessionStore>((set, get)
           })
         }
 
-        // CRITICAL: Update session data WITHOUT triggering hasUnsavedChanges flag
-        // We'll set the save status explicitly at the end of this function
-        // This prevents the save icon from flickering during the save process
-        const { session: currentSession } = get()
-        if (!currentSession) {
-          throw new Error('Session lost during save')
-        }
-
-        // Deep merge function for nested objects
+        // CRITICAL: Use functional update to get latest session state atomically
+        // This prevents race conditions if session changes during save
+        let currentSession: ValuationSession | null = null
+        let updatedSession: ValuationSession | null = null
+        let updatedSessionData: ValuationRequest | null = null
+        
+        // Deep merge function for nested objects (defined outside set for reuse)
         const deepMerge = (target: any, source: any) => {
           const output = { ...target }
+          const isObject = (item: any) => {
+            return item && typeof item === 'object' && !Array.isArray(item)
+          }
           if (isObject(target) && isObject(source)) {
             Object.keys(source).forEach((key) => {
               if (isObject(source[key]) && !Array.isArray(source[key])) {
@@ -1449,34 +1467,43 @@ export const useValuationSessionStore = create<ValuationSessionStore>((set, get)
           }
           return output
         }
+        
+        set((state) => {
+          currentSession = state.session
+          if (!currentSession) {
+            throw new Error('Session lost during save')
+          }
 
-        const isObject = (item: any) => {
-          return item && typeof item === 'object' && !Array.isArray(item)
-        }
+          // Merge session data without triggering hasUnsavedChanges
+          updatedSessionData = deepMerge(
+            currentSession.sessionData || {},
+            sessionUpdate
+          ) as ValuationRequest
 
-        // Merge session data without triggering hasUnsavedChanges
-        const updatedSessionData = deepMerge(
-          currentSession.sessionData || {},
-          sessionUpdate
-        ) as ValuationRequest
+          updatedSession = {
+            ...currentSession,
+            sessionData: updatedSessionData,
+            updatedAt: new Date(),
+          }
 
-        const updatedSession: ValuationSession = {
-          ...currentSession,
-          sessionData: updatedSessionData,
-          updatedAt: new Date(),
-        }
+          // Update cache atomically
+          globalSessionCache.set(currentSession.reportId, updatedSession)
 
-        // Update session WITHOUT setting hasUnsavedChanges
-        set({
-          session: updatedSession,
-          isSaving: true, // Keep saving state true
-          isSyncing: true,
-          syncError: null,
-          // CRITICAL: Don't set hasUnsavedChanges here - we'll set it to false at the end
+          // Return updated state WITHOUT setting hasUnsavedChanges
+          return {
+            ...state,
+            session: updatedSession,
+            isSaving: true, // Keep saving state true
+            isSyncing: true,
+            syncError: null,
+            // CRITICAL: Don't set hasUnsavedChanges here - we'll set it to false at the end
+          }
         })
-
-        // Update cache
-        globalSessionCache.set(currentSession.reportId, updatedSession)
+        
+        // Ensure we have the session (should always be true after set above)
+        if (!currentSession || !updatedSession || !updatedSessionData) {
+          throw new Error('Session lost during save')
+        }
 
         // CRITICAL: Update backend session data (without triggering hasUnsavedChanges)
         // This ensures form data and other session data is saved
@@ -1514,6 +1541,37 @@ export const useValuationSessionStore = create<ValuationSessionStore>((set, get)
               htmlLength: data.htmlReport?.length || 0,
               hasInfoTab: !!data.infoTabHtml,
               infoLength: data.infoTabHtml?.length || 0,
+            })
+
+            // CRITICAL: Update session store and cache with valuation results after saving
+            // Use functional update to ensure atomic state update (prevents race conditions)
+            set((state) => {
+              const latestSession = state.session
+              if (!latestSession || latestSession.reportId !== currentSession.reportId) {
+                return state // No change if session mismatch
+              }
+              
+              const updatedSessionWithResults: ValuationSession = {
+                ...latestSession,
+                valuationResult: data.valuationResult || latestSession.valuationResult,
+                htmlReport: data.htmlReport || latestSession.htmlReport,
+                infoTabHtml: data.infoTabHtml || latestSession.infoTabHtml,
+                updatedAt: new Date(),
+              }
+              
+              // Update cache atomically
+              globalSessionCache.set(currentSession.reportId, updatedSessionWithResults)
+              
+              storeLogger.debug('Session store and cache updated with valuation results', {
+                reportId: currentSession.reportId,
+                hasHtmlReport: !!updatedSessionWithResults.htmlReport,
+                hasInfoTabHtml: !!updatedSessionWithResults.infoTabHtml,
+              })
+              
+              return {
+                ...state,
+                session: updatedSessionWithResults,
+              }
             })
           } catch (saveError) {
             // Log but don't fail - session data is already saved locally

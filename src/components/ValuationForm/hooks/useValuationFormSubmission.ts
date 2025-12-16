@@ -53,16 +53,6 @@ export const useValuationFormSubmission = (
     async (e: React.FormEvent) => {
       e.preventDefault()
 
-      // CRITICAL: Set loading state IMMEDIATELY (BEFORE any checks)
-      // This ensures the loading spinner shows up right away
-      const currentState = useValuationApiStore.getState()
-      if (!currentState.isCalculating) {
-        setCalculating(true)
-        generalLogger.info('Loading state set to true immediately', {
-          wasCalculating: currentState.isCalculating,
-        })
-      }
-
       try {
         // Log submission
         generalLogger.info('Form submit triggered', {
@@ -78,12 +68,9 @@ export const useValuationFormSubmission = (
           number_of_employees: formData?.number_of_employees,
         })
 
-        // Prevent double submission
+        // Prevent double submission - CHECK FIRST before setting loading state
         // CRITICAL FIX: Only check store state, not hook value
         // Hook values are stale until re-render, but store state is synchronous
-        // After setCalculating(true) on line 60, checkState.isCalculating is true immediately
-        // but isCalculating hook value is still false until component re-renders
-        // Checking both would allow concurrent submissions: true && false = false
         const checkState = useValuationApiStore.getState()
         if (checkState.isCalculating) {
           generalLogger.warn('Calculation already in progress, preventing double submission', {
@@ -92,6 +79,13 @@ export const useValuationFormSubmission = (
           })
           return // Don't reset - let existing calculation finish
         }
+
+        // CRITICAL: Set loading state IMMEDIATELY (AFTER double-submission check)
+        // This ensures the loading spinner shows up right away
+        setCalculating(true)
+        generalLogger.info('Loading state set to true immediately', {
+          wasCalculating: checkState.isCalculating,
+        })
 
         // Validate employee count when owner count is provided
         // NOTE: 0 employees is valid when there are only owner-managers (no other staff)

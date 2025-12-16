@@ -322,30 +322,34 @@ export function syncSessionToBackend(session: ValuationSession): void {
               // Update cache with backend version
               globalSessionCache.set(reportId, backendSession)
 
-              // CRITICAL FIX: Update Zustand store with backend version immediately
-              // This ensures the store has the correct session data after 409 conflict resolution
-              const store = useValuationSessionStore.getState()
-              const currentSession = store.session
-              
-              // Only update if the reportId matches (prevents overwriting a different session)
-              if (currentSession?.reportId === reportId) {
-                useValuationSessionStore.setState({
-                  session: backendSession,
-                  syncError: null,
-                })
-                sessionHelpersLogger.debug('Updated store session after 409 conflict resolution', {
-                  reportId,
-                  currentView: backendSession.currentView,
-                })
+              // CRITICAL FIX: Update Zustand store with backend version immediately using functional update
+              // This ensures atomic state update and prevents race conditions
+              useValuationSessionStore.setState((state) => {
+                const currentSession = state.session
+                
+                // Only update if the reportId matches (prevents overwriting a different session)
+                if (currentSession?.reportId === reportId) {
+                  sessionHelpersLogger.debug('Updated store session after 409 conflict resolution', {
+                    reportId,
+                    currentView: backendSession.currentView,
+                  })
 
-                // Restoration is now handled by useSessionRestoration hook
-                // The session store update above will trigger useSessionRestoration automatically
-              } else {
-                sessionHelpersLogger.debug('Skipping store update - reportId mismatch', {
-                  reportId,
-                  currentReportId: currentSession?.reportId,
-                })
-              }
+                  // Restoration is now handled by useSessionRestoration hook
+                  // The session store update above will trigger useSessionRestoration automatically
+                  
+                  return {
+                    ...state,
+                    session: backendSession,
+                    syncError: null,
+                  }
+                } else {
+                  sessionHelpersLogger.debug('Skipping store update - reportId mismatch', {
+                    reportId,
+                    currentReportId: currentSession?.reportId,
+                  })
+                  return state // No change
+                }
+              })
 
               sessionHelpersLogger.debug('Loaded existing session from backend after 409', {
                 reportId,
