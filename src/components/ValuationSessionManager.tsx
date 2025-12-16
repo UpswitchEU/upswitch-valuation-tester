@@ -72,6 +72,9 @@ export const ValuationSessionManager: React.FC<ValuationSessionManagerProps> = R
     // Track if we've already transitioned to prevent infinite loops
     const hasTransitionedRef = useRef(false)
     
+    // Track interval ID to prevent multiple intervals running simultaneously
+    const transitionIntervalRef = useRef<NodeJS.Timeout | null>(null)
+    
     // Initialize session function (flow-aware)
     // Memoized with empty deps - stable reference, uses Zustand promise cache internally
     const initializeSession = useCallback(
@@ -253,7 +256,7 @@ export const ValuationSessionManager: React.FC<ValuationSessionManagerProps> = R
       // Atomic transition function - checks state and transitions in one operation
       const attemptTransition = (): boolean => {
         // Double-check guards (prevent race conditions from concurrent calls)
-        if (hasTransitionedRef.current || stage !== 'loading') return false
+        if (hasTransitionedRef.current) return false
 
         // Get current flow from ref (stable, doesn't cause re-renders)
         const currentSearchParams = searchParamsRef.current
@@ -294,17 +297,38 @@ export const ValuationSessionManager: React.FC<ValuationSessionManagerProps> = R
       // Attempt transition immediately (no delay - avoids race conditions)
       if (attemptTransition()) return
 
-      // If not ready, set up a single check interval (not multiple timeouts)
+      // Clear any existing interval first (prevent multiple intervals)
+      if (transitionIntervalRef.current) {
+        clearInterval(transitionIntervalRef.current)
+        transitionIntervalRef.current = null
+      }
+      
+      // Set up a single check interval (not multiple timeouts)
       // This is more efficient and avoids race conditions from multiple timers
-      const checkInterval = setInterval(() => {
+      transitionIntervalRef.current = setInterval(() => {
+        // Check if we should stop (already transitioned)
+        if (hasTransitionedRef.current) {
+          if (transitionIntervalRef.current) {
+            clearInterval(transitionIntervalRef.current)
+            transitionIntervalRef.current = null
+          }
+          return
+        }
+
         if (attemptTransition()) {
-          clearInterval(checkInterval)
+          if (transitionIntervalRef.current) {
+            clearInterval(transitionIntervalRef.current)
+            transitionIntervalRef.current = null
+          }
         }
       }, 200) // Check every 200ms until transition succeeds
 
       // Cleanup: clear interval on unmount or when dependencies change
       return () => {
-        clearInterval(checkInterval)
+        if (transitionIntervalRef.current) {
+          clearInterval(transitionIntervalRef.current)
+          transitionIntervalRef.current = null
+        }
       }
     }, [reportId, stage]) // Minimal dependencies - check session state inside effect
 
