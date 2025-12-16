@@ -9,7 +9,7 @@
 
 import React, { useCallback, useEffect, useState } from 'react'
 import { backendAPI } from '../services/backendApi'
-import { guestSessionService } from '../services/guestSessionService'
+import { useGuestSessionStore } from '../store/useGuestSessionStore'
 import { authLogger } from '../utils/logger'
 import { AuthContext, AuthContextType, User } from './AuthContextTypes'
 
@@ -310,7 +310,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       // 1. We don't already have a guest session, OR
       // 2. This is the first load
       // This avoids unnecessary 401 errors for established guest users
-      const existingGuestSession = guestSessionService.getCurrentSessionId()
+      const { getSessionId, initializeSession } = useGuestSessionStore.getState()
+      const existingGuestSession = getSessionId()
 
       if (!existingGuestSession) {
         // No guest session yet - check if there's an auth session (silent check)
@@ -320,6 +321,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
           if (user) {
             authLogger.info('Existing auth session found via cookie')
+            // Ensure authenticated user has a session (for API tracking consistency)
+            const { ensureSession } = useGuestSessionStore.getState()
+            try {
+              await ensureSession()
+            } catch (sessionError) {
+              // Silent failure - don't block auth flow
+              authLogger.debug('Failed to ensure authenticated session', {
+                error: sessionError instanceof Error ? sessionError.message : 'Unknown error',
+              })
+            }
             setIsLoading(false)
             return
           }
@@ -327,22 +338,40 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           // Silent failure - don't log errors, just continue as guest
           authLogger.debug('No auth session found, proceeding as guest')
         }
+
+        // No guest session and no auth session - initialize guest session
+        // Use Zustand store for atomic initialization (prevents race conditions)
+        authLogger.info('Initializing guest session via Zustand store')
+        try {
+          const sessionId = await initializeSession()
+          authLogger.info('Guest session initialized', { 
+            session_id: sessionId ? sessionId.substring(0, 15) + '...' : null 
+          })
+        } catch (guestError) {
+          authLogger.warn('Failed to initialize guest session', {
+            error: guestError instanceof Error ? guestError.message : 'Unknown error',
+          })
+          // Continue anyway - guest session is not critical
+        }
       } else {
-        authLogger.info('Existing guest session found - skipping auth check', {
+        // Existing guest session found - verify it's still valid (optimized, won't call backend if expires in >1 hour)
+        authLogger.info('Existing guest session found - verifying validity', {
           guestSessionId: existingGuestSession.substring(0, 15) + '...',
         })
-      }
-
-      // No token and no auth session - initialize guest session
-      authLogger.info('Initializing guest session')
-      try {
-        const sessionId = await guestSessionService.getOrCreateSession()
-        authLogger.info('Guest session initialized', { session_id: sessionId })
-      } catch (guestError) {
-        authLogger.warn('Failed to initialize guest session', {
-          error: guestError instanceof Error ? guestError.message : 'Unknown error',
-        })
-        // Continue anyway - guest session is not critical
+        try {
+          // This will return immediately if session expires in >1 hour (trusts localStorage)
+          // Only calls backend if session is close to expiration
+          // Uses Zustand store for atomic operations
+          const sessionId = await initializeSession()
+          authLogger.debug('Guest session verified', { 
+            session_id: sessionId ? sessionId.substring(0, 15) + '...' : null 
+          })
+        } catch (guestError) {
+          authLogger.warn('Failed to verify guest session, will create new one on next request', {
+            error: guestError instanceof Error ? guestError.message : 'Unknown error',
+          })
+          // Continue anyway - session will be recreated on next API call if needed
+        }
       }
     } catch (err) {
       authLogger.error('Auth initialization error', {
@@ -435,7 +464,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
         // Migrate guest session data to authenticated user
         try {
-          const guestSessionId = guestSessionService.getCurrentSessionId()
+          const { getSessionId, clearSession } = useGuestSessionStore.getState()
+          const guestSessionId = getSessionId()
           if (guestSessionId) {
             authLogger.info('Attempting to migrate guest data', { guestSessionId })
 
@@ -447,11 +477,27 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
               hasErrors: migrationResult.errors && migrationResult.errors.length > 0,
             })
 
-            // Clear guest session after successful migration
-            guestSessionService.clearSession()
+            // Clear guest session after successful migration (uses Zustand store)
+            clearSession()
             authLogger.info('Guest session cleared after migration')
           } else {
             authLogger.info('No guest session to migrate')
+          }
+
+          // Ensure authenticated user has a session (for API tracking consistency)
+          // Authenticated users also need session IDs for backend tracking
+          const { ensureSession } = useGuestSessionStore.getState()
+          try {
+            const authenticatedSessionId = await ensureSession()
+            authLogger.info('Authenticated session ensured', {
+              session_id: authenticatedSessionId ? authenticatedSessionId.substring(0, 15) + '...' : null,
+            })
+          } catch (sessionError) {
+            // Don't fail authentication if session creation fails
+            authLogger.warn('Failed to ensure authenticated session, but authentication succeeded', {
+              error: sessionError instanceof Error ? sessionError.message : 'Unknown error',
+            })
+            // Continue - backend will use user_id from auth cookie if session fails
           }
         } catch (migrationError) {
           // Don't fail authentication if migration fails
@@ -459,6 +505,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             error: migrationError instanceof Error ? migrationError.message : 'Unknown error',
           })
           // Continue with authentication - user can still use the app
+          
+          // Still try to ensure session even if migration failed
+          try {
+            const { ensureSession } = useGuestSessionStore.getState()
+            await ensureSession()
+          } catch (sessionError) {
+            authLogger.warn('Failed to ensure authenticated session', {
+              error: sessionError instanceof Error ? sessionError.message : 'Unknown error',
+            })
+          }
         }
       } else {
         throw new Error('Invalid response from token exchange')

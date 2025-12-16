@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation'
 import React, { useContext, useEffect, useRef, useState } from 'react'
 import { AuthContext } from '../../contexts/AuthContextTypes'
 import { RecentReportsSection } from '../../features/reports'
+import { useSessionInitialization } from '../../hooks/useSessionInitialization'
 import { type BusinessCardData, businessCardService } from '../../services/businessCard'
 import UrlGeneratorService from '../../services/urlGenerator'
 import { useReportsStore } from '../../store/useReportsStore'
@@ -25,6 +26,10 @@ export const HomePage: React.FC = () => {
 
   // Reports store
   const { reports, loading: reportsLoading, fetchReports, deleteReport } = useReportsStore()
+
+  // Ensure guest session is initialized on home page (works for both guest and authenticated users)
+  // Uses Zustand store with promise caching to prevent race conditions
+  useSessionInitialization()
 
   // Fetch business card if token is present from main platform
   useEffect(() => {

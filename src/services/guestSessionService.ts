@@ -15,6 +15,7 @@ const ACTIVITY_UPDATE_THROTTLE = 10000 // 10 seconds minimum between updates (in
 class GuestSessionService {
   private apiUrl: string
   private lastActivityUpdate: number = 0
+  private sessionCreationPromise: Promise<string> | null = null
 
   constructor() {
     this.apiUrl =
@@ -33,44 +34,76 @@ class GuestSessionService {
   }
 
   /**
-   * Get or create guest session (with retry logic)
+   * Get or create guest session (with promise cache to prevent race conditions)
+   * Optimized to trust localStorage when session is far from expiration
    */
   async getOrCreateSession(): Promise<string> {
-    try {
-      // Check if we have a stored session ID
-      const storedSessionId = localStorage.getItem(GUEST_SESSION_KEY)
-      const storedExpiresAt = localStorage.getItem(GUEST_SESSION_EXPIRES_KEY)
+    // Return existing promise if session creation is in progress (prevents race conditions)
+    if (this.sessionCreationPromise) {
+      return this.sessionCreationPromise
+    }
 
-      // Check if stored session is still valid
-      if (storedSessionId && storedExpiresAt) {
-        const expiresAt = new Date(storedExpiresAt)
-        if (expiresAt > new Date()) {
-          // Verify session exists on backend (with retry)
-          try {
-            const response = await retry(
-              () =>
-                fetch(`${this.apiUrl}/api/guest/session/${storedSessionId}`, {
-                  method: 'GET',
-                  headers: { 'Content-Type': 'application/json' },
-                }),
-              3,
-              1000
-            )
+    // Check localStorage first (synchronous check)
+    const storedSessionId = localStorage.getItem(GUEST_SESSION_KEY)
+    const storedExpiresAt = localStorage.getItem(GUEST_SESSION_EXPIRES_KEY)
 
-            if (response.ok) {
-              const data = await response.json()
-              if (data.success) {
-                localStorage.setItem(GUEST_SESSION_EXPIRES_KEY, data.data.expires_at)
-                return storedSessionId
-              }
-            }
-          } catch (error) {
-            generalLogger.warn('Failed to verify existing session, creating new one', { error })
-          }
-        }
+    // If we have a stored session that expires in more than 1 hour, trust it without verification
+    // This reduces backend calls significantly
+    if (storedSessionId && storedExpiresAt) {
+      const expiresAt = new Date(storedExpiresAt)
+      const oneHourFromNow = new Date(Date.now() + 60 * 60 * 1000)
+      
+      if (expiresAt > oneHourFromNow) {
+        // Session is valid for more than 1 hour - trust localStorage without verification
+        generalLogger.debug('Using cached session (expires in more than 1 hour)', {
+          sessionId: storedSessionId.substring(0, 15) + '...',
+          expiresAt
+        })
+        return storedSessionId
       }
 
-      // Create new session (with retry)
+      // Session expires soon or is expired - verify on backend
+      if (expiresAt > new Date()) {
+        // Session not expired yet, but close to expiration - verify it exists
+        try {
+          const response = await retry(
+            () =>
+              fetch(`${this.apiUrl}/api/guest/session/${storedSessionId}`, {
+                method: 'GET',
+                headers: { 'Content-Type': 'application/json' },
+              }),
+            1, // Reduced from 3 to 1 retry
+            1000
+          )
+
+          if (response.ok) {
+            const data = await response.json()
+            if (data.success) {
+              localStorage.setItem(GUEST_SESSION_EXPIRES_KEY, data.data.expires_at)
+              return storedSessionId
+            }
+          }
+        } catch (error) {
+          generalLogger.warn('Failed to verify existing session, creating new one', { error })
+        }
+      }
+    }
+
+    // Create new session (with promise cache to prevent multiple simultaneous creations)
+    this.sessionCreationPromise = this._createSession()
+    try {
+      const sessionId = await this.sessionCreationPromise
+      return sessionId
+    } finally {
+      this.sessionCreationPromise = null
+    }
+  }
+
+  /**
+   * Internal method to create a new guest session
+   */
+  private async _createSession(): Promise<string> {
+    try {
       const sessionId = this.generateSessionId()
       const response = await retry(
         () =>
@@ -79,7 +112,7 @@ class GuestSessionService {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ session_id: sessionId }),
           }),
-        3,
+        1, // Reduced from 3 to 1 retry
         1000
       )
 
@@ -103,7 +136,7 @@ class GuestSessionService {
 
       return data.data.session_id
     } catch (error) {
-      generalLogger.error('Failed to get or create guest session', { error })
+      generalLogger.error('Failed to create guest session', { error })
       // Fallback: use client-generated session ID
       const fallbackSessionId = this.generateSessionId()
       localStorage.setItem(GUEST_SESSION_KEY, fallbackSessionId)

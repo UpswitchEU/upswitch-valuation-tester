@@ -12,10 +12,11 @@
 import { useRouter, useSearchParams } from 'next/navigation'
 import React, { useCallback, useEffect, useState } from 'react'
 import { useAuth } from '../hooks/useAuth'
+import { useSessionInitialization } from '../hooks/useSessionInitialization'
 import { guestCreditService } from '../services/guestCreditService'
 import UrlGeneratorService from '../services/urlGenerator'
-import { useManualSessionStore } from '../store/manual'
 import { useConversationalSessionStore } from '../store/conversational'
+import { useManualSessionStore } from '../store/manual'
 import type { ValuationSession } from '../types/valuation'
 import { generalLogger } from '../utils/logger'
 import { OutOfCreditsModal } from './OutOfCreditsModal'
@@ -73,6 +74,11 @@ export const ValuationSessionManager: React.FC<ValuationSessionManagerProps> = R
     const [stage, setStage] = useState<Stage>('loading')
     const [error, setError] = useState<string | null>(null)
     const [showOutOfCreditsModal, setShowOutOfCreditsModal] = useState(false)
+
+    // Ensure guest session is initialized on any page (home or report)
+    // This works for both guest and authenticated users
+    // Uses Zustand store with promise caching to prevent race conditions
+    useSessionInitialization()
 
     // Extract prefilled query from URL search params (Next.js App Router)
     const prefilledQuery = searchParams?.get('prefilledQuery') || null

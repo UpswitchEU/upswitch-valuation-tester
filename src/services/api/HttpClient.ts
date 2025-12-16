@@ -8,9 +8,9 @@
  */
 
 import axios, { AxiosInstance, AxiosResponse, InternalAxiosRequestConfig } from 'axios'
+import { useGuestSessionStore } from '../../store/useGuestSessionStore'
 import { env } from '../../utils/env'
 import { apiLogger, extractCorrelationId, setCorrelationFromResponse } from '../../utils/logger'
-import { guestSessionService } from '../guestSessionService'
 
 export interface APIRequestConfig {
   timeout?: number
@@ -56,36 +56,56 @@ export class HttpClient {
     // Request interceptor for guest session tracking
     this.client.interceptors.request.use(
       async (config: InternalAxiosRequestConfig) => {
-        // Add guest session ID to requests if user is a guest
-        if (guestSessionService.isGuest()) {
+        // Use Zustand store for atomic session access
+        const { getSessionId, ensureSession } = useGuestSessionStore.getState()
+        
+        // Check synchronously first (Zustand store syncs with localStorage)
+        let sessionId = getSessionId()
+        
+        // If no session exists, ensure one is created (atomic operation via Zustand)
+        // This prevents race conditions when multiple requests fire simultaneously
+        if (!sessionId) {
           try {
-            const sessionId = await guestSessionService.getOrCreateSession()
-            if (sessionId) {
-              // For GET requests: add as query parameter (no CORS preflight needed)
-              // For POST/PUT/PATCH: add to request body
-              if (config.method === 'get' || config.method === 'GET') {
-                config.params = config.params || {}
-                config.params.guest_session_id = sessionId
-              } else if (config.data) {
-                config.data = {
-                  ...config.data,
-                  guest_session_id: sessionId,
-                }
-              }
+            sessionId = await ensureSession()
+          } catch (error) {
+            apiLogger.warn('Failed to ensure guest session', { error })
+            // Don't block request if session creation fails
+            return config
+          }
+        }
 
-              // Also add to headers for backward compatibility (if backend supports it)
-              config.headers = config.headers || {}
-              config.headers['x-guest-session-id'] = sessionId
+        // Add session ID to request if we have one
+        if (sessionId) {
+          try {
+            // For GET requests: add as query parameter (no CORS preflight needed)
+            // For POST/PUT/PATCH: add to request body
+            if (config.method === 'get' || config.method === 'GET') {
+              config.params = config.params || {}
+              config.params.guest_session_id = sessionId
+            } else if (config.data) {
+              config.data = {
+                ...config.data,
+                guest_session_id: sessionId,
+              }
             }
-            // Update session activity (safe, throttled, and circuit-breaker protected)
-            guestSessionService.updateActivity().catch(() => {
-              // Errors are handled internally by updateActivity - this is just a safety net
-            })
+
+            // Also add to headers for backward compatibility (if backend supports it)
+            config.headers = config.headers || {}
+            config.headers['x-guest-session-id'] = sessionId
           } catch (error) {
             apiLogger.warn('Failed to add guest session to request', { error })
             // Don't block request if session tracking fails
           }
         }
+
+        // Update session activity (safe, throttled, and circuit-breaker protected)
+        // Fire and forget - don't await to avoid blocking requests
+        // Note: Still using service for activity updates (non-critical, already throttled)
+        const { guestSessionService } = await import('../guestSessionService')
+        guestSessionService.updateActivity().catch(() => {
+          // Errors are handled internally by updateActivity - this is just a safety net
+        })
+
         return config
       },
       (error) => Promise.reject(error)
