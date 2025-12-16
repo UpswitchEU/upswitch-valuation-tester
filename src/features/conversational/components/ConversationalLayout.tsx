@@ -27,14 +27,14 @@ import { useValuationSessionStore } from '../../../store/useValuationSessionStor
 import type { Message } from '../../../types/message'
 import type { ValuationResponse } from '../../../types/valuation'
 import { chatLogger } from '../../../utils/logger'
-import { generateImportSummaryMessage, shouldGenerateImportSummary } from '../utils/generateImportSummary'
 import { CreditGuard } from '../../auth/components/CreditGuard'
 import {
-  ConversationProvider,
-  useConversationActions,
-  useConversationState,
+    ConversationProvider,
+    useConversationActions,
+    useConversationState,
 } from '../context/ConversationContext'
 import { useConversationRestoration } from '../hooks'
+import { generateImportSummaryMessage, shouldGenerateImportSummary } from '../utils/generateImportSummary'
 import { BusinessProfileSection } from './BusinessProfileSection'
 import { ConversationPanel } from './ConversationPanel'
 import { ErrorDisplay } from './ErrorDisplay'
@@ -94,9 +94,39 @@ const ConversationalLayoutInner: React.FC<ConversationalLayoutProps> = ({
     }
   }, [state.messages.length])
 
-  // Show success toast when save completes
+  // Track previous hasUnsavedChanges to detect when save happens after user changes
+  const prevHasUnsavedChangesRef = useRef<boolean>(false)
+  // Track initial load to prevent showing "saved" toast during initialization
+  const isInitialLoadRef = useRef<boolean>(true)
+  
+  // Mark initial load as complete after first render and when session is ready
   useEffect(() => {
-    if (lastSaved && !isSaving && !syncError) {
+    // Wait a bit to ensure initialization is complete
+    const timer = setTimeout(() => {
+      isInitialLoadRef.current = false
+    }, 3000) // 3 seconds should be enough for initialization
+    
+    return () => clearTimeout(timer)
+  }, [])
+  
+  // Show success toast when save completes (only if there were unsaved changes)
+  useEffect(() => {
+    // Don't show toast during initial load
+    if (isInitialLoadRef.current) {
+      return
+    }
+    
+    // Check previous state BEFORE updating ref
+    const hadUnsavedChanges = prevHasUnsavedChangesRef.current
+    
+    // Update ref to track current state for next render
+    prevHasUnsavedChangesRef.current = hasUnsavedChanges
+    
+    // Only show toast if:
+    // 1. Save just completed (lastSaved is recent)
+    // 2. There were unsaved changes before the save (hadUnsavedChanges was true)
+    // This prevents showing "saved" toast on initial page load when no changes were made
+    if (lastSaved && !isSaving && !syncError && hadUnsavedChanges) {
       const timeAgo = Math.floor((Date.now() - lastSaved.getTime()) / 1000)
       // Only show toast for recent saves (within last 2 seconds)
       if (timeAgo < 2) {
@@ -107,7 +137,7 @@ const ConversationalLayoutInner: React.FC<ConversationalLayoutProps> = ({
         )
       }
     }
-  }, [lastSaved, isSaving, syncError, showToast])
+  }, [lastSaved, isSaving, syncError, hasUnsavedChanges, showToast])
 
   // Restore conversation from Python backend
   // FIX: Use refs to stabilize callbacks and prevent infinite loops

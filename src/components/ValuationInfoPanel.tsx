@@ -2,9 +2,10 @@ import React, { useEffect } from 'react'
 import type { ValuationResponse } from '../types/valuation'
 import { HTMLProcessor } from '../utils/htmlProcessor'
 import { componentLogger } from '../utils/logger'
+import { useValuationResultsStore } from '../store/useValuationResultsStore'
 
 interface ValuationInfoPanelProps {
-  result: ValuationResponse
+  result?: ValuationResponse
 }
 
 /**
@@ -23,7 +24,25 @@ interface ValuationInfoPanelProps {
  * PERFORMANCE: Memoized to prevent unnecessary re-renders when result hasn't changed
  */
 export const ValuationInfoPanel: React.FC<ValuationInfoPanelProps> = React.memo(
-  ({ result }) => {
+  ({ result: resultProp }) => {
+    // Fallback to store if prop is missing (fail-safe restoration)
+    const { result: resultStore } = useValuationResultsStore()
+    const result = resultProp || resultStore
+
+    // Early return if no result available
+    if (!result) {
+      return (
+        <div className="h-full flex flex-col items-center justify-center p-8">
+          <div className="text-center max-w-md">
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">No Valuation Result Available</h3>
+            <p className="text-sm text-gray-600 mb-4">
+              Generate a valuation report first to see the detailed calculation breakdown.
+            </p>
+          </div>
+        </div>
+      )
+    }
+
     // Log rendering mode for monitoring
     useEffect(() => {
       const hasServerHtml = !!(result.info_tab_html && result.info_tab_html.length > 0)
@@ -79,6 +98,9 @@ export const ValuationInfoPanel: React.FC<ValuationInfoPanelProps> = React.memo(
   },
   (prevProps, nextProps) => {
     // Only re-render if result actually changed
+    // Handle optional result prop
+    if (!prevProps.result && !nextProps.result) return true
+    if (!prevProps.result || !nextProps.result) return false
     return (
       prevProps.result.valuation_id === nextProps.result.valuation_id &&
       prevProps.result.info_tab_html === nextProps.result.info_tab_html

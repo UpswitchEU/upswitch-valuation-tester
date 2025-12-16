@@ -20,6 +20,7 @@ import { createFallbackSession, createOrLoadSession } from '../utils/sessionErro
 import {
     createSessionOptimistically,
     mergePrefilledQuery,
+    mergeSessionFields,
     normalizeSessionDates,
     syncSessionToBackend,
 } from '../utils/sessionHelpers'
@@ -48,8 +49,7 @@ export interface ValuationSessionStore {
   getSessionData: () => ValuationRequest | null
   clearSession: () => void
 
-  // Sync methods for cross-flow data sharing
-  syncFromManualForm: () => Promise<void>
+  // Get session completeness (percentage of required fields filled)
   getCompleteness: () => number
   
   // Save complete session (all data atomically)
@@ -211,23 +211,14 @@ export const useValuationSessionStore = create<ValuationSessionStore>((set, get)
                 } else {
                   // Backend has it - use backend version (fresher than cache)
                   const existingSession = backendResponse.session
-                  const updatedPartialData = mergePrefilledQuery(
-                    existingSession.partialData,
-                    prefilledQuery
-                  )
+                  // Merge top-level fields into sessionData (SINGLE SOURCE OF TRUTH)
+                  const mergedSession = mergeSessionFields(existingSession)
 
-                  // CRITICAL: Merge top-level fields (valuationResult, htmlReport, infoTabHtml) into sessionData
-                  // Backend stores these separately, but we need them in sessionData for consistent access
-                  const mergedSessionData = {
-                    ...(existingSession.sessionData || {}),
-                    ...(existingSession.valuationResult && { valuation_result: existingSession.valuationResult }),
-                    ...(existingSession.htmlReport && { html_report: existingSession.htmlReport }),
-                    ...(existingSession.infoTabHtml && { info_tab_html: existingSession.infoTabHtml }),
-                  }
+                  // Merge prefilled query if provided
+                  const updatedPartialData = mergePrefilledQuery(mergedSession.partialData, prefilledQuery)
 
                   const normalizedSession = normalizeSessionDates({
-                    ...existingSession,
-                    sessionData: mergedSessionData,  // Use merged version
+                    ...mergedSession,
                     partialData: updatedPartialData,
                   })
 
@@ -239,39 +230,8 @@ export const useValuationSessionStore = create<ValuationSessionStore>((set, get)
                     syncError: null,
                   })
 
-                  // CRITICAL: Restore HTML reports and valuation results from MERGED data
-                  // Use mergedSessionData (which includes top-level fields) and top-level fields directly
-                  const valuationResult = mergedSessionData?.valuation_result || existingSession.valuationResult
-                  const htmlReport = mergedSessionData?.html_report || existingSession.htmlReport
-                  const infoTabHtml = mergedSessionData?.info_tab_html || existingSession.infoTabHtml
-                  
-                  if (htmlReport || infoTabHtml || valuationResult) {
-                    storeLogger.info('Restoring HTML reports and valuation results from backend', {
-                      reportId,
-                      hasHtmlReport: !!htmlReport,
-                      hasInfoTabHtml: !!infoTabHtml,
-                      hasValuationResult: !!valuationResult,
-                    })
-
-                    const { useValuationResultsStore } = await import('./useValuationResultsStore')
-                    const resultsStore = useValuationResultsStore.getState()
-
-                    if (htmlReport) {
-                      resultsStore.setHtmlReport(htmlReport)
-                    }
-                    if (infoTabHtml) {
-                      resultsStore.setInfoTabHtml(infoTabHtml)
-                    }
-
-                    if (valuationResult) {
-                      const fullResult = {
-                        ...valuationResult,
-                        html_report: valuationResult.html_report || htmlReport,
-                        info_tab_html: valuationResult.info_tab_html || infoTabHtml,
-                      }
-                      resultsStore.setResult(fullResult)
-                    }
-                  }
+                  // Restoration is now handled by useSessionRestoration hook
+                  // No need for direct restoration here - prevents race conditions
 
                   storeLogger.info('Loaded session from backend (cache was old)', {
                     reportId,
@@ -328,43 +288,8 @@ export const useValuationSessionStore = create<ValuationSessionStore>((set, get)
                   syncError: null,
                 })
 
-                // CRITICAL FIX: Restore HTML reports and valuation results from cache
-                // Check both merged sessionData AND top-level fields (for backward compatibility)
-                const cachedSessionData = stillCachedSession.sessionData as any
-                const valuationResult = cachedSessionData?.valuation_result || (stillCachedSession as any).valuationResult
-                const htmlReport = cachedSessionData?.html_report || (stillCachedSession as any).htmlReport
-                const infoTabHtml = cachedSessionData?.info_tab_html || (stillCachedSession as any).infoTabHtml
-                
-                if (htmlReport || infoTabHtml || valuationResult) {
-                  storeLogger.info('Restoring HTML reports and valuation results from cache', {
-                    reportId,
-                    hasHtmlReport: !!htmlReport,
-                    hasInfoTabHtml: !!infoTabHtml,
-                    hasValuationResult: !!valuationResult,
-                  })
-
-                  // Import the results store dynamically to avoid circular dependencies
-                  const { useValuationResultsStore } = await import('./useValuationResultsStore')
-                  const resultsStore = useValuationResultsStore.getState()
-
-                  // Store HTML reports
-                  if (htmlReport) {
-                    resultsStore.setHtmlReport(htmlReport)
-                  }
-                  if (infoTabHtml) {
-                    resultsStore.setInfoTabHtml(infoTabHtml)
-                  }
-
-                  // Store valuation result (merge HTML reports if not in result)
-                  if (valuationResult) {
-                    const fullResult = {
-                      ...valuationResult,
-                      html_report: valuationResult.html_report || htmlReport,
-                      info_tab_html: valuationResult.info_tab_html || infoTabHtml,
-                    }
-                    resultsStore.setResult(fullResult)
-                  }
-                }
+                // Restoration is now handled by useSessionRestoration hook
+                // No need for direct restoration here - prevents race conditions
 
                 // Verify with backend in background (non-blocking)
                 // Only verify if cache is fresh (< 5 minutes), otherwise we just verified above
@@ -478,23 +403,14 @@ export const useValuationSessionStore = create<ValuationSessionStore>((set, get)
           if (backendSession) {
             // EXISTING session loaded from backend
             const existingSession = backendSession
-            const updatedPartialData = mergePrefilledQuery(
-              existingSession.partialData,
-              prefilledQuery
-            )
+            // Merge top-level fields into sessionData (SINGLE SOURCE OF TRUTH)
+            const mergedSession = mergeSessionFields(existingSession)
 
-            // CRITICAL: Merge top-level fields (valuationResult, htmlReport, infoTabHtml) into sessionData
-            // Backend stores these separately, but we need them in sessionData for consistent access
-            const mergedSessionData = {
-              ...(existingSession.sessionData || {}),
-              ...(existingSession.valuationResult && { valuation_result: existingSession.valuationResult }),
-              ...(existingSession.htmlReport && { html_report: existingSession.htmlReport }),
-              ...(existingSession.infoTabHtml && { info_tab_html: existingSession.infoTabHtml }),
-            }
+            // Merge prefilled query if provided
+            const updatedPartialData = mergePrefilledQuery(mergedSession.partialData, prefilledQuery)
 
             const normalizedSession = normalizeSessionDates({
-              ...existingSession,
-              sessionData: mergedSessionData,  // Use merged version
+              ...mergedSession,
               partialData: updatedPartialData,
             })
 
@@ -506,43 +422,8 @@ export const useValuationSessionStore = create<ValuationSessionStore>((set, get)
               syncError: null,
             })
 
-            // CRITICAL: Restore HTML reports and valuation results from MERGED data
-            // Use mergedSessionData (which includes top-level fields) and top-level fields directly
-            const valuationResult = mergedSessionData?.valuation_result || existingSession.valuationResult
-            const htmlReport = mergedSessionData?.html_report || existingSession.htmlReport
-            const infoTabHtml = mergedSessionData?.info_tab_html || existingSession.infoTabHtml
-            
-            if (htmlReport || infoTabHtml || valuationResult) {
-              storeLogger.info('Restoring HTML reports and valuation results from backend', {
-                reportId,
-                hasHtmlReport: !!htmlReport,
-                hasInfoTabHtml: !!infoTabHtml,
-                hasValuationResult: !!valuationResult,
-              })
-
-              // Import the results store dynamically to avoid circular dependencies
-              const { useValuationResultsStore } = await import('./useValuationResultsStore')
-              const resultsStore = useValuationResultsStore.getState()
-
-              // Store HTML reports
-              if (htmlReport) {
-                resultsStore.setHtmlReport(htmlReport)
-              }
-              if (infoTabHtml) {
-                resultsStore.setInfoTabHtml(infoTabHtml)
-              }
-
-              // Store valuation result (merge HTML reports if not in result)
-              if (valuationResult) {
-                const fullResult = {
-                  ...valuationResult,
-                  html_report: valuationResult.html_report || htmlReport,
-                  info_tab_html: valuationResult.info_tab_html || infoTabHtml,
-                }
-                resultsStore.setResult(fullResult)
-              }
-            }
-            // Form data restoration is handled by useSessionRestoration hook (called in layouts)
+            // Restoration is now handled by useSessionRestoration hook
+            // No need for direct restoration here - prevents race conditions
 
             storeLogger.info('Loaded existing session from backend and cached', {
               reportId,
@@ -1459,97 +1340,6 @@ export const useValuationSessionStore = create<ValuationSessionStore>((set, get)
         syncError: null,
       })
       storeLogger.info('Session cleared')
-    },
-
-    /**
-     * Sync data from manual form to session
-     * Reads current form data from useValuationFormStore and updates session
-     */
-    syncFromManualForm: async () => {
-      const { session } = get()
-
-      if (!session) {
-        storeLogger.warn('Cannot sync from manual form: no active session')
-        return
-      }
-
-      try {
-        // Import dynamically to avoid circular dependency
-        const { useValuationFormStore } = await import('./useValuationFormStore')
-        const manualFormData = useValuationFormStore.getState().formData
-
-        storeLogger.debug('Syncing from manual form to session', {
-          reportId: session.reportId,
-          fieldsPresent: Object.keys(manualFormData).length,
-        })
-
-        // Convert form data to ValuationRequest format
-        const sessionUpdate: Partial<ValuationRequest> = {
-          company_name: manualFormData.company_name,
-          country_code: manualFormData.country_code,
-          industry: manualFormData.industry,
-          business_model: manualFormData.business_model,
-          founding_year: manualFormData.founding_year,
-          current_year_data: manualFormData.current_year_data,
-          historical_years_data: manualFormData.historical_years_data,
-          number_of_employees: manualFormData.number_of_employees,
-          number_of_owners: manualFormData.number_of_owners,
-          recurring_revenue_percentage: manualFormData.recurring_revenue_percentage,
-          shares_for_sale: manualFormData.shares_for_sale,
-          business_type_id: manualFormData.business_type_id,
-          business_context: manualFormData.business_context,
-          comparables: manualFormData.comparables,
-        }
-
-        // Remove undefined values
-        Object.keys(sessionUpdate).forEach((key) => {
-          if (sessionUpdate[key as keyof typeof sessionUpdate] === undefined) {
-            delete sessionUpdate[key as keyof typeof sessionUpdate]
-          }
-        })
-
-        // Update session with merged data
-        await get().updateSessionData(sessionUpdate)
-
-        // Update lastSyncedAt
-        const syncedSession: ValuationSession = {
-          ...session,
-          lastSyncedAt: new Date(),
-        }
-        
-        set({
-          session: syncedSession,
-        })
-        
-        // CACHE INVALIDATION: Update cache after sync
-        globalSessionCache.set(session.reportId, syncedSession)
-
-        storeLogger.info('Synced from manual form to session', {
-          reportId: session.reportId,
-          fieldsUpdated: Object.keys(sessionUpdate).length,
-        })
-      } catch (error) {
-        const appError = convertToApplicationError(error, {
-          reportId: session.reportId,
-        })
-
-        // Log with specific error type
-        if (isNetworkError(appError)) {
-          storeLogger.error('Failed to sync from manual form - network error', {
-            error: (appError as any).message,
-            code: (appError as any).code,
-            reportId: session.reportId,
-            context: (appError as any).context,
-          })
-        } else {
-          storeLogger.error('Failed to sync from manual form', {
-            error: (appError as any).message,
-            code: (appError as any).code,
-            reportId: session.reportId,
-            context: (appError as any).context,
-          })
-        }
-      }
     },
 
     /**

@@ -40,6 +40,8 @@ export const useValuationResultsStore = create<ValuationResultsStore>((set, get)
         resultKeys: Object.keys(result),
         htmlReportInKeys: 'html_report' in result,
         infoTabHtmlInKeys: 'info_tab_html' in result,
+        // Add stack trace to see who's calling this
+        callerStack: new Error().stack?.split('\n').slice(2, 5).join(' << '),
       })
       
       // Warn if html_report is missing

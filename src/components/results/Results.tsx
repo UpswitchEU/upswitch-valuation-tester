@@ -1,6 +1,7 @@
-import React, { memo } from 'react'
+import React, { memo, useEffect } from 'react'
 import { useValuationResultsStore } from '../../store/useValuationResultsStore'
 import { HTMLProcessor } from '../../utils/htmlProcessor'
+import { generalLogger } from '../../utils/logger'
 
 /**
  * Results Component - Displays Accountant View HTML Report (Preview Tab)
@@ -20,7 +21,21 @@ import { HTMLProcessor } from '../../utils/htmlProcessor'
 const ResultsComponent: React.FC = () => {
   const { result } = useValuationResultsStore()
 
-  // Note: Result state logging removed - HTML report rendering is handled by dangerouslySetInnerHTML
+  // Verification logging: Track when result changes
+  useEffect(() => {
+    if (result) {
+      generalLogger.info('Results component received result', {
+        hasResult: true,
+        valuationId: result.valuation_id,
+        hasHtmlReport: !!result.html_report,
+        htmlReportLength: result.html_report?.length || 0,
+      })
+    } else {
+      generalLogger.warn('Results component has no result', {
+        hasResult: false,
+      })
+    }
+  }, [result])
 
   // Remove "Complete Valuation Report" header if present
   React.useEffect(() => {

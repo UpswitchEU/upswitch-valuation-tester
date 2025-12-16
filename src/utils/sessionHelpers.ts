@@ -100,6 +100,45 @@ export function mergePrefilledQuery(partialData: any, prefilledQuery?: string | 
 }
 
 /**
+ * Merge top-level session fields (valuationResult, htmlReport, infoTabHtml) into sessionData
+ *
+ * Backend stores these separately as top-level fields, but frontend needs them in sessionData
+ * for consistent access across restoration and UI components.
+ *
+ * This is the SINGLE SOURCE OF TRUTH for data merging - all code paths should use this function
+ * to ensure consistent data structure.
+ *
+ * @param session - Session object from backend or cache
+ * @returns Session with merged fields in sessionData
+ *
+ * @example
+ * ```typescript
+ * const backendSession = await backendAPI.getValuationSession(reportId)
+ * const mergedSession = mergeSessionFields(backendSession.session)
+ * // mergedSession.sessionData now contains:
+ * // - All original sessionData fields
+ * // - valuation_result (from session.valuationResult)
+ * // - html_report (from session.htmlReport)
+ * // - info_tab_html (from session.infoTabHtml)
+ * ```
+ */
+export function mergeSessionFields(session: ValuationSession): ValuationSession {
+  if (!session) return session
+
+  const mergedSessionData = {
+    ...(session.sessionData || {}),
+    ...(session.valuationResult && { valuation_result: session.valuationResult }),
+    ...(session.htmlReport && { html_report: session.htmlReport }),
+    ...(session.infoTabHtml && { info_tab_html: session.infoTabHtml }),
+  }
+
+  return {
+    ...session,
+    sessionData: mergedSessionData,
+  }
+}
+
+/**
  * Normalizes session dates from backend (strings to Date objects)
  *
  * @param session - Session from backend with string dates
@@ -275,21 +314,10 @@ export function syncSessionToBackend(session: ValuationSession): void {
             )
 
             if (backendSessionResponse?.session) {
-              const existingSession = backendSessionResponse.session
-
-              // CRITICAL: Merge top-level fields (valuationResult, htmlReport, infoTabHtml) into sessionData
-              // Backend stores these separately, but we need them in sessionData for consistent access
-              const mergedSessionData = {
-                ...(existingSession.sessionData || {}),
-                ...(existingSession.valuationResult && { valuation_result: existingSession.valuationResult }),
-                ...(existingSession.htmlReport && { html_report: existingSession.htmlReport }),
-                ...(existingSession.infoTabHtml && { info_tab_html: existingSession.infoTabHtml }),
-              }
-
-              const backendSession = normalizeSessionDates({
-                ...existingSession,
-                sessionData: mergedSessionData,  // Use merged version
-              })
+              // Merge top-level fields into sessionData (SINGLE SOURCE OF TRUTH)
+              const mergedSession = mergeSessionFields(backendSessionResponse.session)
+              
+              const backendSession = normalizeSessionDates(mergedSession)
 
               // Update cache with backend version
               globalSessionCache.set(reportId, backendSession)
@@ -310,53 +338,8 @@ export function syncSessionToBackend(session: ValuationSession): void {
                   currentView: backendSession.currentView,
                 })
 
-                // CRITICAL: Also restore HTML reports and valuation results from MERGED data
-                // backendSession.sessionData already has merged top-level fields, but check both for safety
-                const sessionData = backendSession.sessionData as any
-                const valuationResult = sessionData?.valuation_result || backendSession.valuationResult
-                const htmlReport = sessionData?.html_report || backendSession.htmlReport
-                const infoTabHtml = sessionData?.info_tab_html || backendSession.infoTabHtml
-                
-                if (htmlReport || infoTabHtml || valuationResult) {
-                  sessionHelpersLogger.info('Restoring HTML reports and valuation results after 409', {
-                    reportId,
-                    hasHtmlReport: !!htmlReport,
-                    hasInfoTabHtml: !!infoTabHtml,
-                    hasValuationResult: !!valuationResult,
-                  })
-
-                  // Import dynamically to avoid circular dependencies
-                  import('../store/useValuationResultsStore').then(({ useValuationResultsStore }) => {
-                    const resultsStore = useValuationResultsStore.getState()
-
-                    // Store HTML reports
-                    if (htmlReport) {
-                      resultsStore.setHtmlReport(htmlReport)
-                    }
-                    if (infoTabHtml) {
-                      resultsStore.setInfoTabHtml(infoTabHtml)
-                    }
-
-                    // Store valuation result (merge HTML reports if not in result)
-                    if (valuationResult) {
-                      const fullResult = {
-                        ...valuationResult,
-                        html_report: valuationResult.html_report || htmlReport,
-                        info_tab_html: valuationResult.info_tab_html || infoTabHtml,
-                      }
-                      resultsStore.setResult(fullResult)
-                    }
-
-                    sessionHelpersLogger.debug('HTML reports and valuation results restored after 409', {
-                      reportId,
-                    })
-                  }).catch((importError) => {
-                    sessionHelpersLogger.error('Failed to import ValuationResultsStore after 409', {
-                      reportId,
-                      error: importError instanceof Error ? importError.message : String(importError),
-                    })
-                  })
-                }
+                // Restoration is now handled by useSessionRestoration hook
+                // The session store update above will trigger useSessionRestoration automatically
               } else {
                 sessionHelpersLogger.debug('Skipping store update - reportId mismatch', {
                   reportId,

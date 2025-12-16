@@ -51,7 +51,7 @@ export function useSessionRestoration() {
   const restoredReports = useRef<Set<string>>(new Set())
   const lastSessionDataHash = useRef<string>('')
 
-  // Single restoration effect - runs when reportId or sessionData changes
+  // Single restoration effect - runs when session object changes
   useEffect(() => {
     if (!session?.reportId) {
       return
@@ -98,9 +98,17 @@ export function useSessionRestoration() {
       hasSessionData: !!sessionData,
       sessionDataKeys: Object.keys(sessionData || {}),
       dataJustLoaded,
+      // CRITICAL: Log what we're about to restore
       hasHtmlReport: !!sessionData?.html_report,
+      htmlReportLength: sessionData?.html_report?.length || 0,
       hasInfoTabHtml: !!sessionData?.info_tab_html,
+      infoTabHtmlLength: sessionData?.info_tab_html?.length || 0,
       hasValuationResult: !!sessionData?.valuation_result,
+      valuationResultKeys: Object.keys(sessionData?.valuation_result || {}),
+      // Also check fallback top-level fields
+      hasTopLevelHtmlReport: !!session?.htmlReport,
+      hasTopLevelInfoTabHtml: !!session?.infoTabHtml,
+      hasTopLevelValuationResult: !!session?.valuationResult,
     })
 
     try {
@@ -141,7 +149,19 @@ export function useSessionRestoration() {
       // Show error toast
       showToast('Failed to load report data. Please refresh the page.', 'error', 5000)
     }
-  }, [session?.reportId, session?.sessionData, updateFormData, setResult, setHtmlReport, setInfoTabHtml, fetchVersions, showToast])
+  }, [session, updateFormData, setResult, setHtmlReport, setInfoTabHtml, fetchVersions, showToast])
+
+  // Cleanup: Allow re-restoration if component remounts
+  useEffect(() => {
+    return () => {
+      if (session?.reportId) {
+        restoredReports.current.delete(session.reportId)
+        generalLogger.debug('Cleared restoration tracking on unmount', {
+          reportId: session.reportId,
+        })
+      }
+    }
+  }, [session?.reportId])
 }
 
 /**

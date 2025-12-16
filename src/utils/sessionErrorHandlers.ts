@@ -32,6 +32,7 @@ import {
   createBaseSession,
   generateSessionId,
   mergePrefilledQuery,
+  mergeSessionFields,
   normalizeSessionDates,
 } from './sessionHelpers'
 
@@ -93,30 +94,21 @@ export async function handle409Conflict(
 
       const existingSessionResponse = await backendAPI.getValuationSession(reportId)
       if (existingSessionResponse?.session) {
-        const existingSession = existingSessionResponse.session
+        // Merge top-level fields into sessionData (SINGLE SOURCE OF TRUTH)
+        const mergedSession = mergeSessionFields(existingSessionResponse.session)
 
         // Merge prefilled query if provided
-        const updatedPartialData = mergePrefilledQuery(existingSession.partialData, prefilledQuery)
-
-        // CRITICAL: Merge top-level fields (valuationResult, htmlReport, infoTabHtml) into sessionData
-        // Backend stores these separately, but we need them in sessionData for consistent access
-        const mergedSessionData = {
-          ...(existingSession.sessionData || {}),
-          ...(existingSession.valuationResult && { valuation_result: existingSession.valuationResult }),
-          ...(existingSession.htmlReport && { html_report: existingSession.htmlReport }),
-          ...(existingSession.infoTabHtml && { info_tab_html: existingSession.infoTabHtml }),
-        }
+        const updatedPartialData = mergePrefilledQuery(mergedSession.partialData, prefilledQuery)
 
         storeLogger.info('Loaded existing session after conflict', {
           reportId,
-          currentView: existingSession.currentView,
+          currentView: mergedSession.currentView,
           attempt: attempt + 1,
         })
 
         // Normalize dates and return
         return normalizeSessionDates({
-          ...existingSession,
-          sessionData: mergedSessionData,  // Use merged version
+          ...mergedSession,
           partialData: updatedPartialData,
         })
       }

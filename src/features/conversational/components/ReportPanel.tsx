@@ -12,6 +12,7 @@ import { AuditTrailPanel } from '../../../components/AuditTrailPanel'
 import { Results } from '../../../components/results/Results'
 import { ValuationInfoPanel } from '../../../components/ValuationInfoPanel'
 import { useValuationApiStore } from '../../../store/useValuationApiStore'
+import { useValuationResultsStore } from '../../../store/useValuationResultsStore'
 import type { ValuationResponse } from '../../../types/valuation'
 
 export interface ReportPanelProps {
@@ -161,10 +162,13 @@ export const ReportPanel: React.FC<ReportPanelProps> = React.memo(
     onTabChange,
     isCalculating = false,
     error = null,
-    result = null,
+    result: resultProp = null,
     reportId,
   }) => {
     const { clearError } = useValuationApiStore()
+    // Fallback to store if prop is missing (fail-safe restoration)
+    const { result: resultStore } = useValuationResultsStore()
+    const result = resultProp || resultStore
     
     const handleRetry = () => {
       // Clear the error from the store
