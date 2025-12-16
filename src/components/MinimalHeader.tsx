@@ -71,12 +71,11 @@ export const MinimalHeader: React.FC = () => {
               <img
                 src="/logo_upswitch_white_var2.svg"
                 alt="Upswitch Logo"
-                className="h-6 sm:h-6 w-full flex-shrink-0 transition-opacity duration-300 ease-in-out lg:group-hover:opacity-0"
+                className="h-6 sm:h-6 w-full flex-shrink-0 transition-opacity duration-300 ease-in-out opacity-100 lg:group-hover:opacity-0"
                 style={{
                   width: '100%',
                   height: '24px',
                   objectFit: 'contain',
-                  opacity: 1,
                   visibility: 'visible',
                   display: 'block',
                 }}

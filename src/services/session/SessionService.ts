@@ -183,8 +183,14 @@ export class SessionService {
         updateKeys: Object.keys(updates),
       })
 
+      // Convert ValuationRequest updates to sessionData format for backend
+      // Backend expects sessionData structure, not raw ValuationRequest
+      const sessionUpdates: Partial<ValuationSession> = {
+        sessionData: updates as any, // Store ValuationRequest as sessionData
+      }
+
       // Update backend
-      const response = await backendAPI.updateValuationSession(reportId, updates)
+      const response = await backendAPI.updateValuationSession(reportId, sessionUpdates)
 
       if (!response?.session) {
         throw new Error('Backend returned empty session data')

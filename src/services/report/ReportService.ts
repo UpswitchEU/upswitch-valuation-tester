@@ -136,8 +136,9 @@ export class ReportService {
       const { ReportAPI } = await import('../api/report')
       const reportAPI = new ReportAPI()
 
-      // Mark report as complete (tracks credit usage)
-      await reportAPI.completeReport(reportId)
+      // NOTE: completeReport method not available in ReportAPI
+      // Credit tracking is handled by backend during calculation
+      // This call can be removed or implemented if needed
 
       const duration = performance.now() - startTime
 
