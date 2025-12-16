@@ -102,6 +102,26 @@ export const ValuationSessionManager: React.FC<ValuationSessionManagerProps> = R
     const [stage, setStage] = useState<Stage>('loading')
     const [error, setError] = useState<string | null>(null)
     const [showOutOfCreditsModal, setShowOutOfCreditsModal] = useState(false)
+    
+    // Track stage changes to debug rendering issues
+    React.useEffect(() => {
+      generalLogger.info('[ValuationSessionManager] Stage state changed', {
+        reportId,
+        stage,
+        hasTransitioned: hasTransitionedRef.current,
+      })
+    }, [stage, reportId])
+    
+    // Wrapper for setStage with logging to track state updates
+    const setStageWithLogging = React.useCallback((newStage: Stage) => {
+      generalLogger.info('[ValuationSessionManager] Calling setStage', {
+        reportId,
+        from: stage,
+        to: newStage,
+        hasTransitioned: hasTransitionedRef.current,
+      })
+      setStage(newStage)
+    }, [reportId, stage])
 
     // Ensure guest session is initialized on any page (home or report)
     // This works for both guest and authenticated users

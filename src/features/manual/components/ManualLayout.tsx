@@ -62,13 +62,8 @@ export const ManualLayout: React.FC<ManualLayoutProps> = ({
   const sessionReportId = useManualSessionStore((state) => state.session?.reportId)
   const sessionData = useManualSessionStore((state) => state.session?.sessionData)
   const sessionValuationResult = useManualSessionStore((state) => state.session?.valuationResult)
-  // CRITICAL: Use individual selectors instead of destructuring entire store
-  // This prevents re-renders when other store fields change
-  const isSaving = useManualSessionStore((state) => state.isSaving)
-  const lastSaved = useManualSessionStore((state) => state.lastSaved)
-  const hasUnsavedChanges = useManualSessionStore((state) => state.hasUnsavedChanges)
-  const syncError = useManualSessionStore((state) => state.error)
-  // loadSessionAsync is stable (doesn't change), so we can get it from store directly when needed
+  // Still need full session for other uses (isSaving, lastSaved, etc.)
+  const { isSaving, lastSaved, hasUnsavedChanges, error: syncError, loadSessionAsync } = useManualSessionStore()
   const { updateFormData } = useManualFormStore()
   const { showToast } = useToast()
 
@@ -101,9 +96,6 @@ export const ManualLayout: React.FC<ManualLayoutProps> = ({
 
   // Track if we've already restored data to prevent repeated restorations
   const hasRestoredDataRef = useRef<string | null>(null)
-  // Track previous sessionData and valuationResult to prevent unnecessary updates
-  const prevSessionDataRef = useRef<any>(null)
-  const prevValuationResultIdRef = useRef<string | null>(null)
   
   // Restore form data and results from session when it loads
   // CRITICAL: Use optimized selectors (sessionReportId, sessionData, sessionValuationResult)
@@ -115,20 +107,9 @@ export const ManualLayout: React.FC<ManualLayoutProps> = ({
     }
 
     const sessionDataObj = sessionData as any
-    const valuationResultId = sessionValuationResult?.valuation_id || null
-    
-    // Check if data actually changed (prevent unnecessary updates)
-    const sessionDataChanged = 
-      sessionDataObj && 
-      (prevSessionDataRef.current?.company_name !== sessionDataObj.company_name ||
-       prevSessionDataRef.current?.revenue !== sessionDataObj.revenue)
-    
-    const valuationResultChanged = 
-      valuationResultId && 
-      prevValuationResultIdRef.current !== valuationResultId
     
     // Restore form data (if exists and different from current)
-    if (sessionDataChanged && (sessionDataObj.company_name || sessionDataObj.revenue)) {
+    if (sessionDataObj && (sessionDataObj.company_name || sessionDataObj.revenue)) {
       // Get current form data to avoid unnecessary updates
       const currentFormData = useManualFormStore.getState().formData
       const hasChanges = 
@@ -137,17 +118,15 @@ export const ManualLayout: React.FC<ManualLayoutProps> = ({
       
       if (hasChanges) {
         updateFormData(sessionDataObj)
-        prevSessionDataRef.current = sessionDataObj
       }
     }
 
     // Restore results (if exists and different from current)
-    if (valuationResultChanged && sessionValuationResult) {
+    if (sessionValuationResult) {
       const currentResult = useManualResultsStore.getState().result
       // Only update if result is different (compare by valuation_id or structure)
       if (!currentResult || currentResult.valuation_id !== sessionValuationResult.valuation_id) {
         setResult(sessionValuationResult as any)
-        prevValuationResultIdRef.current = valuationResultId
       }
     }
 
@@ -161,11 +140,9 @@ export const ManualLayout: React.FC<ManualLayoutProps> = ({
     setResult
   ])
   
-  // Reset restoration flag and previous data refs when reportId changes
+  // Reset restoration flag when reportId changes
   useEffect(() => {
     hasRestoredDataRef.current = null
-    prevSessionDataRef.current = null
-    prevValuationResultIdRef.current = null
   }, [reportId])
 
   // Panel resize hook
