@@ -126,7 +126,8 @@ export const ManualLayout: React.FC<ManualLayoutProps> = ({
         setResult(session.valuationResult as any)
       }
     }
-  }, [sessionReportId, reportId, updateFormData, setResult, session])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sessionReportId, reportId])  // Only trigger when reportId changes, not when session object changes
 
   // Panel resize hook
   const { leftPanelWidth, handleResize, isMobile, mobileActivePanel, setMobileActivePanel } =
