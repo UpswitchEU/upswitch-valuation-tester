@@ -539,48 +539,50 @@ const ConversationalLayoutInner: React.FC<ConversationalLayoutProps> = ({
             }}
           >
             <div className="flex-1 overflow-y-auto">
-              <ConversationPanel
-                sessionId={state.sessionId || reportId}
-                userId={user?.id}
-                restoredMessages={
-                  restoration.state.messages.length > 0
-                    ? restoration.state.messages.filter(
-                        (m: import('../../../types/message').Message) => m.isComplete
-                      )
-                    : state.messages.filter(
-                        (m: import('../../../types/message').Message) => m.isComplete
-                      )
-                }
-                isRestoring={restoration.state.isRestoring}
-                isRestorationComplete={restoration.state.isRestored && state.isRestored}
-                isSessionInitialized={restoration.state.isRestored && state.isInitialized}
-                pythonSessionId={restoration.state.pythonSessionId || state.pythonSessionId}
-                onPythonSessionIdReceived={handlePythonSessionIdReceived}
-                onValuationComplete={handleValuationComplete}
-                onValuationStart={() => actions.setGenerating(true)}
-                onReportUpdate={() => {}}
-                onDataCollected={(data) => {
-                  // Handle data collection - sync to form store
-                  if (data.field && data.value !== undefined) {
-                    chatLogger.debug('Data collected from conversational flow', {
-                      field: data.field,
-                      value: data.value,
-                    })
-                    // Data will be synced through StreamingChat's onDataCollected callback
+              <Suspense fallback={<ChatSkeleton />}>
+                <ConversationPanel
+                  sessionId={state.sessionId || reportId}
+                  userId={user?.id}
+                  restoredMessages={
+                    restoration.state.messages.length > 0
+                      ? restoration.state.messages.filter(
+                          (m: import('../../../types/message').Message) => m.isComplete
+                        )
+                      : state.messages.filter(
+                          (m: import('../../../types/message').Message) => m.isComplete
+                        )
                   }
-                }}
-                onValuationPreview={() => {}}
-                onCalculateOptionAvailable={() => {}}
-                onProgressUpdate={() => {}}
-                onReportSectionUpdate={() => {}}
-                onSectionLoading={() => {}}
-                onSectionComplete={() => {}}
-                onReportComplete={() => {}}
-                onContextUpdate={() => {}}
-                onHtmlPreviewUpdate={() => {}}
-                initialMessage={initialQuery}
-                autoSend={autoSend}
-              />
+                  isRestoring={restoration.state.isRestoring}
+                  isRestorationComplete={restoration.state.isRestored && state.isRestored}
+                  isSessionInitialized={restoration.state.isRestored && state.isInitialized}
+                  pythonSessionId={restoration.state.pythonSessionId || state.pythonSessionId}
+                  onPythonSessionIdReceived={handlePythonSessionIdReceived}
+                  onValuationComplete={handleValuationComplete}
+                  onValuationStart={() => actions.setGenerating(true)}
+                  onReportUpdate={() => {}}
+                  onDataCollected={(data) => {
+                    // Handle data collection - sync to form store
+                    if (data.field && data.value !== undefined) {
+                      chatLogger.debug('Data collected from conversational flow', {
+                        field: data.field,
+                        value: data.value,
+                      })
+                      // Data will be synced through StreamingChat's onDataCollected callback
+                    }
+                  }}
+                  onValuationPreview={() => {}}
+                  onCalculateOptionAvailable={() => {}}
+                  onProgressUpdate={() => {}}
+                  onReportSectionUpdate={() => {}}
+                  onSectionLoading={() => {}}
+                  onSectionComplete={() => {}}
+                  onReportComplete={() => {}}
+                  onContextUpdate={() => {}}
+                  onHtmlPreviewUpdate={() => {}}
+                  initialMessage={initialQuery}
+                  autoSend={autoSend}
+                />
+              </Suspense>
             </div>
           </div>
 

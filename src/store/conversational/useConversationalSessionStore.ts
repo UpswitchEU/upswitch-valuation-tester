@@ -225,11 +225,20 @@ export const useConversationalSessionStore = create<ConversationalSessionStore>(
         }),
       ])
 
-      // If session doesn't exist, create it
+      // If session doesn't exist, create it by saving initial data
       let session = loadedSession
       if (!session) {
         storeLogger.info('[Conversational] Session not found, creating new session', { reportId })
-        session = await sessionService.createSession(reportId, 'conversational', {})
+        // Create session by saving initial data (saveSession creates if doesn't exist)
+        await sessionService.saveSession(reportId, {
+          currentView: 'conversational',
+          sessionData: {},
+        } as any)
+        // Load the newly created session
+        session = await sessionService.loadSession(reportId)
+        if (!session) {
+          throw new Error('Failed to create session')
+        }
         storeLogger.info('[Conversational] New session created', { reportId })
       }
 
@@ -257,12 +266,14 @@ export const useConversationalSessionStore = create<ConversationalSessionStore>(
       
       // Store error with minimal session stub to prevent retries
       const errorSession: ValuationSession = {
+        sessionId: reportId,
         reportId,
         sessionData: {},
-        valuationResult: null,
+        partialData: {},
         currentView: 'conversational',
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
+        dataSource: 'conversational',
+        createdAt: new Date(),
+        updatedAt: new Date(),
       }
       
       set((state) => ({
