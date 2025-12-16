@@ -78,9 +78,9 @@ export const ValuationSessionManager: React.FC<ValuationSessionManagerProps> = R
     
     // Retry: Clear error and reload
     const handleRetry = useCallback(() => {
-      generalLogger.info('[SessionManager] Retrying load', { reportId })
-      loadSession(reportId)
-    }, [reportId, loadSession])
+      generalLogger.info('[SessionManager] Retrying load', { reportId, flow: detectedFlow })
+      loadSession(reportId, detectedFlow)
+    }, [reportId, loadSession, detectedFlow])
     
     // Start over: Clear and navigate home
     const handleStartOver = useCallback(() => {
