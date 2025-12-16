@@ -14,18 +14,17 @@
  */
 
 import { useCallback } from 'react'
-import { useManualSessionStore, useManualResultsStore } from '../../manual'
-import { useInputFieldsAsset } from './useInputFieldsAsset'
-import { useMainReportAsset } from '../shared/useMainReportAsset'
-import { useInfoTabAsset } from '../shared/useInfoTabAsset'
-import { useVersionsAsset } from '../shared/useVersionsAsset'
-import { useFinalPriceAsset } from '../shared/useFinalPriceAsset'
 import { sessionService, versionService } from '../../../services'
 import { generalLogger } from '../../../utils/logger'
+import { useFinalPriceAsset } from '../shared/useFinalPriceAsset'
+import { useInfoTabAsset } from '../shared/useInfoTabAsset'
+import { useMainReportAsset } from '../shared/useMainReportAsset'
+import { useVersionsAsset } from '../shared/useVersionsAsset'
+import { useInputFieldsAsset } from './useInputFieldsAsset'
 
 export function useManualAssetOrchestrator(reportId: string) {
-  const session = useManualSessionStore((state) => state.session)
-  const result = useManualResultsStore((state) => state.result)
+  // NOTE: Removed unused session/result subscriptions to prevent unnecessary re-renders
+  // Each asset loader calls sessionService.loadSession directly, so no need to subscribe here
 
   /**
    * Load all manual flow assets from backend

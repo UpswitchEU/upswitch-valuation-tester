@@ -10,9 +10,9 @@
 import React, { Suspense, useEffect, useRef } from 'react'
 import { AssetInspector } from '../../../components/debug/AssetInspector'
 import { ResizableDivider } from '../../../components/ResizableDivider'
+import { InputFieldsSkeleton } from '../../../components/skeletons'
 import { ValuationForm } from '../../../components/ValuationForm'
 import { ValuationToolbar } from '../../../components/ValuationToolbar'
-import { InputFieldsSkeleton } from '../../../components/skeletons'
 import { useAuth } from '../../../hooks/useAuth'
 import { useToast } from '../../../hooks/useToast'
 import {
@@ -57,7 +57,13 @@ export const ManualLayout: React.FC<ManualLayoutProps> = ({
 }) => {
   const { user } = useAuth()
   const { isCalculating, error, result, setResult } = useManualResultsStore()
-  const { session, isSaving, lastSaved, hasUnsavedChanges, error: syncError, loadSessionAsync } = useManualSessionStore()
+  // CRITICAL: Use optimized selectors to subscribe only to specific fields
+  // This prevents re-renders when session object reference changes but data is the same
+  const sessionReportId = useManualSessionStore((state) => state.session?.reportId)
+  const sessionData = useManualSessionStore((state) => state.session?.sessionData)
+  const sessionValuationResult = useManualSessionStore((state) => state.session?.valuationResult)
+  // Still need full session for other uses (isSaving, lastSaved, etc.)
+  const { isSaving, lastSaved, hasUnsavedChanges, error: syncError, loadSessionAsync } = useManualSessionStore()
   const { updateFormData } = useManualFormStore()
   const { showToast } = useToast()
 
@@ -88,22 +94,56 @@ export const ManualLayout: React.FC<ManualLayoutProps> = ({
     }
   }, [reportId, loadAllAssets, resetAllAssets]) // Removed session and loadSessionAsync - session managed by ValuationSessionManager
 
+  // Track if we've already restored data to prevent repeated restorations
+  const hasRestoredDataRef = useRef<string | null>(null)
+  
   // Restore form data and results from session when it loads
+  // CRITICAL: Use optimized selectors (sessionReportId, sessionData, sessionValuationResult)
+  // This prevents re-render loops when session object reference changes but data is the same
   useEffect(() => {
-    if (session?.sessionData) {
-      const sessionData = session.sessionData as any
-      
-      // Restore form data (if exists)
-      if (sessionData.company_name || sessionData.revenue) {
-        updateFormData(sessionData)
-      }
+    // Early return if no session or already restored for this reportId
+    if (!sessionReportId || hasRestoredDataRef.current === sessionReportId) {
+      return
+    }
 
-      // Restore results (if exists)
-      if (session.valuationResult) {
-        setResult(session.valuationResult as any)
+    const sessionDataObj = sessionData as any
+    
+    // Restore form data (if exists and different from current)
+    if (sessionDataObj && (sessionDataObj.company_name || sessionDataObj.revenue)) {
+      // Get current form data to avoid unnecessary updates
+      const currentFormData = useManualFormStore.getState().formData
+      const hasChanges = 
+        (sessionDataObj.company_name && sessionDataObj.company_name !== currentFormData.company_name) ||
+        (sessionDataObj.revenue !== undefined && sessionDataObj.revenue !== currentFormData.revenue)
+      
+      if (hasChanges) {
+        updateFormData(sessionDataObj)
       }
     }
-  }, [session, updateFormData, setResult])
+
+    // Restore results (if exists and different from current)
+    if (sessionValuationResult) {
+      const currentResult = useManualResultsStore.getState().result
+      // Only update if result is different (compare by valuation_id or structure)
+      if (!currentResult || currentResult.valuation_id !== sessionValuationResult.valuation_id) {
+        setResult(sessionValuationResult as any)
+      }
+    }
+
+    // Mark as restored for this reportId
+    hasRestoredDataRef.current = sessionReportId
+  }, [
+    sessionReportId, // Only depend on reportId from selector
+    sessionData, // Depend on sessionData from selector
+    sessionValuationResult, // Depend on valuationResult from selector
+    updateFormData,
+    setResult
+  ])
+  
+  // Reset restoration flag when reportId changes
+  useEffect(() => {
+    hasRestoredDataRef.current = null
+  }, [reportId])
 
   // Panel resize hook
   const { leftPanelWidth, handleResize, isMobile, mobileActivePanel, setMobileActivePanel } =
