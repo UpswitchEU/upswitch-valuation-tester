@@ -98,7 +98,7 @@ export const ManualLayout: React.FC<ManualLayoutProps> = ({
   const { isCalculating, error, result, setResult } = useManualResultsStore()
   const { updateFormData } = useManualFormStore()
   const { showToast } = useToast()
-  
+
   // Unified store: Simple subscriptions (2 total)
   const session = useSessionStore((state) => state.session)
   const sessionReportId = session?.reportId
@@ -108,7 +108,7 @@ export const ManualLayout: React.FC<ManualLayoutProps> = ({
     if (!session || session.reportId !== reportId) {
       return
     }
-    
+
     // Restore form data
     if (session.sessionData) {
       const sessionDataObj = session.sessionData as any
@@ -117,7 +117,7 @@ export const ManualLayout: React.FC<ManualLayoutProps> = ({
         updateFormData(sessionDataObj)
       }
     }
-    
+
     // Restore results
     if (session.valuationResult) {
       const currentResult = useManualResultsStore.getState().result

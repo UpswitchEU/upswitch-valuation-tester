@@ -54,7 +54,7 @@ export const ValuationSessionManager: React.FC<ValuationSessionManagerProps> = R
     
     // Unified store (replaces manual + conversational stores)
     const { session, isLoading, error, loadSession, clearSession } = useSessionStore()
-    
+
     // Extract URL params
     const prefilledQuery = searchParams?.get('prefilledQuery') || null
     const autoSend = searchParams?.get('autoSend') === 'true'
@@ -88,16 +88,16 @@ export const ValuationSessionManager: React.FC<ValuationSessionManagerProps> = R
       clearSession()
       router.push('/')
     }, [reportId, clearSession, router])
-    
+
     // Simplified render: Optimistic UI (no loading screen)
     return children({
-      session,
-      stage,
-      error,
+          session,
+          stage,
+          error,
       showOutOfCreditsModal: false, // TODO: Re-implement if needed
       onCloseModal: () => {}, // No-op
-      prefilledQuery,
-      autoSend,
+          prefilledQuery,
+          autoSend,
       onRetry: handleRetry,
       onStartOver: handleStartOver,
       reportId,

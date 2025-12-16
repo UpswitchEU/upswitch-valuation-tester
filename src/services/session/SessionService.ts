@@ -119,7 +119,7 @@ export class SessionService {
                 
                 if (!createResponse?.session) {
                   logger.error('Failed to create new session', { reportId })
-                  return null
+              return null
                 }
                 
                 logger.info('New session created successfully', {
