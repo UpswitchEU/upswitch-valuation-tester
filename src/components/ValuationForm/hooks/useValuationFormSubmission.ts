@@ -9,10 +9,8 @@
 
 import { useCallback } from 'react'
 import { valuationAuditService } from '../../../services/audit/ValuationAuditService'
-import { useValuationApiStore } from '../../../store/useValuationApiStore'
-import { useValuationFormStore } from '../../../store/useValuationFormStore'
-import { useValuationResultsStore } from '../../../store/useValuationResultsStore'
-import { useValuationSessionStore } from '../../../store/useValuationSessionStore'
+import { valuationService, sessionService } from '../../../services'
+import { useManualFormStore, useManualSessionStore, useManualResultsStore } from '../../../store/manual'
 import { useVersionHistoryStore } from '../../../store/useVersionHistoryStore'
 import { buildValuationRequest } from '../../../utils/buildValuationRequest'
 import { generalLogger } from '../../../utils/logger'
@@ -43,10 +41,9 @@ interface UseValuationFormSubmissionReturn {
 export const useValuationFormSubmission = (
   setEmployeeCountError: (error: string | null) => void
 ): UseValuationFormSubmissionReturn => {
-  const { formData, setCollectedData } = useValuationFormStore()
-  const { calculateValuation, isCalculating, setCalculating, trySetCalculating } = useValuationApiStore()
-  const { setResult } = useValuationResultsStore()
-  const { session } = useValuationSessionStore()
+  const { formData } = useManualFormStore()
+  const { trySetCalculating, setCalculating, isCalculating, setResult } = useManualResultsStore()
+  const { session } = useManualSessionStore()
   const { createVersion, getLatestVersion, fetchVersions } = useVersionHistoryStore()
 
   const handleSubmit = useCallback(
@@ -139,67 +136,57 @@ export const useValuationFormSubmission = (
       // CRITICAL: Sync all form data to session IMMEDIATELY before calculation
       // This ensures all data is saved even if calculation fails or user navigates away
       // NOTE: We use fire-and-forget to avoid blocking calculation if backend is slow
-      const { updateSessionData } = useValuationSessionStore.getState()
-      try {
-        // Convert formData to session format and update directly
-        const sessionUpdate: Partial<any> = {
-          company_name: formData.company_name,
-          country_code: formData.country_code,
-          industry: formData.industry,
-          business_model: formData.business_model,
-          founding_year: formData.founding_year,
-          current_year_data: {
-            year: formData.current_year_data?.year || new Date().getFullYear(),
-            revenue: formData.revenue || formData.current_year_data?.revenue || 0,
-            ebitda: formData.ebitda || formData.current_year_data?.ebitda || 0,
-            ...(formData.current_year_data?.total_assets && {
-              total_assets: formData.current_year_data.total_assets,
-            }),
-            ...(formData.current_year_data?.total_debt && {
-              total_debt: formData.current_year_data.total_debt,
-            }),
-            ...(formData.current_year_data?.cash && { cash: formData.current_year_data.cash }),
-          },
-          historical_years_data: formData.historical_years_data,
-          number_of_employees: formData.number_of_employees,
-          number_of_owners: formData.number_of_owners,
-          recurring_revenue_percentage: formData.recurring_revenue_percentage,
-          comparables: formData.comparables,
-          business_type_id: formData.business_type_id,
-          business_type: formData.business_type,
-          shares_for_sale: formData.shares_for_sale,
-          business_context: formData.business_context,
-        }
-        
-        // Fire-and-forget: Don't await to avoid blocking calculation
-        // The sync will happen in the background, and data will be saved after calculation anyway
-        updateSessionData(sessionUpdate).catch((syncError) => {
-          generalLogger.warn('Background sync failed before calculation, continuing anyway', {
-            error: syncError instanceof Error ? syncError.message : String(syncError),
-            reportId: session?.reportId,
+      if (session?.reportId) {
+        try {
+          // Convert formData to session format
+          const sessionUpdate: Partial<any> = {
+            company_name: formData.company_name,
+            country_code: formData.country_code,
+            industry: formData.industry,
+            business_model: formData.business_model,
+            founding_year: formData.founding_year,
+            current_year_data: {
+              year: formData.current_year_data?.year || new Date().getFullYear(),
+              revenue: formData.revenue || formData.current_year_data?.revenue || 0,
+              ebitda: formData.ebitda || formData.current_year_data?.ebitda || 0,
+              ...(formData.current_year_data?.total_assets && {
+                total_assets: formData.current_year_data.total_assets,
+              }),
+              ...(formData.current_year_data?.total_debt && {
+                total_debt: formData.current_year_data.total_debt,
+              }),
+              ...(formData.current_year_data?.cash && { cash: formData.current_year_data.cash }),
+            },
+            historical_years_data: formData.historical_years_data,
+            number_of_employees: formData.number_of_employees,
+            number_of_owners: formData.number_of_owners,
+            recurring_revenue_percentage: formData.recurring_revenue_percentage,
+            comparables: formData.comparables,
+            business_type_id: formData.business_type_id,
+            business_type: formData.business_type,
+            shares_for_sale: formData.shares_for_sale,
+            business_context: formData.business_context,
+          }
+          
+          // Fire-and-forget: Don't await to avoid blocking calculation
+          // The sync will happen in the background, and data will be saved after calculation anyway
+          sessionService.saveSession(session.reportId, sessionUpdate).catch((syncError) => {
+            generalLogger.warn('[Manual] Background sync failed before calculation, continuing anyway', {
+              error: syncError instanceof Error ? syncError.message : String(syncError),
+              reportId: session.reportId,
+            })
           })
-        })
-        
-        generalLogger.info('Form data sync initiated (non-blocking) before calculation', {
-          reportId: session?.reportId,
-        })
-      } catch (syncError) {
-        generalLogger.warn('Failed to initiate sync before calculation, continuing anyway', {
-          error: syncError instanceof Error ? syncError.message : String(syncError),
-        })
-        // Continue with calculation even if sync fails - data will be saved after calculation
+          
+          generalLogger.info('[Manual] Form data sync initiated (non-blocking) before calculation', {
+            reportId: session.reportId,
+          })
+        } catch (syncError) {
+          generalLogger.warn('[Manual] Failed to initiate sync before calculation, continuing anyway', {
+            error: syncError instanceof Error ? syncError.message : String(syncError),
+          })
+          // Continue with calculation even if sync fails - data will be saved after calculation
+        }
       }
-
-      // Convert formData to DataResponse[] for unified pipeline
-      const dataResponses = convertFormDataToDataResponses(formData)
-
-      // Sync to store (unified pipeline - both flows use this)
-      setCollectedData(dataResponses)
-
-      generalLogger.info('Form data converted to DataResponse[] and synced to store', {
-        responseCount: dataResponses.length,
-        fields: dataResponses.map((r) => r.fieldId),
-      })
 
       // Build ValuationRequest using unified function
       const request = buildValuationRequest(formData)
@@ -228,43 +215,41 @@ export const useValuationFormSubmission = (
         }
       }
 
-      // Calculate valuation
+      // Calculate valuation using service layer
       // NOTE: isCalculating is already set to true by trySetCalculating above
-      // calculateValuation will check and skip if already calculating, but since we already
-      // set it atomically, it will proceed. It will reset isCalculating on completion/error.
       let result
       const calculationStart = performance.now()
       try {
-        generalLogger.info('Calling calculateValuation', {
+        generalLogger.info('[Manual] Calling valuation service', {
           requestKeys: Object.keys(request),
           hasRevenue: !!request.current_year_data?.revenue,
           hasEbitda: !!request.current_year_data?.ebitda,
           industry: request.industry,
           country_code: request.country_code,
         })
-        result = await calculateValuation(request)
+        result = await valuationService.calculateValuation(request)
         
         if (!result) {
-          // calculateValuation returned null - this shouldn't happen since we already checked
-          // but handle it gracefully
-          generalLogger.warn('calculateValuation returned null unexpectedly', {
-            storeState: useValuationApiStore.getState().isCalculating,
-          })
+          // Service returned null - shouldn't happen with proper error handling
+          generalLogger.warn('[Manual] Valuation service returned null unexpectedly')
           setCalculating(false) // Ensure state is reset
           return // Exit early - don't proceed with saving or versioning
         }
         
-        generalLogger.info('calculateValuation completed', {
+        generalLogger.info('[Manual] Valuation calculation completed', {
           hasResult: !!result,
           resultKeys: result ? Object.keys(result) : [],
         })
+        
+        // Reset calculating state on success
+        setCalculating(false)
       } catch (calcError) {
-        generalLogger.error('Valuation calculation failed', {
+        generalLogger.error('[Manual] Valuation calculation failed', {
           error: calcError instanceof Error ? calcError.message : String(calcError),
           stack: calcError instanceof Error ? calcError.stack : undefined,
           requestKeys: Object.keys(request),
         })
-        // calculateValuation should have reset isCalculating, but ensure it's reset
+        // Ensure calculating state is reset on error
         setCalculating(false)
         // Re-throw to be caught by outer try-catch
         throw calcError
@@ -401,20 +386,20 @@ export const useValuationFormSubmission = (
 
         // CRITICAL: Save complete session atomically (form data + results + HTML reports)
         // This ensures everything can be restored when user returns later
-        const { saveCompleteSession, markReportSaving, markReportSaved, markReportSaveFailed } = useValuationSessionStore.getState()
-        markReportSaving()
+        const { setSaving, markSaved } = useManualSessionStore.getState()
+        setSaving(true)
 
         if (session?.reportId) {
           try {
-            // Atomic save: all data in one operation
-            await saveCompleteSession({
+            // Atomic save: all data in one operation using service layer
+            await sessionService.saveCompleteSession(session.reportId, {
               formData,
               valuationResult: result,
               htmlReport: result.html_report,
               infoTabHtml: result.info_tab_html,
             })
 
-            generalLogger.info('Complete session saved atomically after calculation', {
+            generalLogger.info('[Manual] Complete session saved atomically after calculation', {
               reportId: session.reportId,
               hasFormData: !!formData,
               hasResult: !!result,
@@ -422,17 +407,18 @@ export const useValuationFormSubmission = (
               hasInfoTabHtml: !!result.info_tab_html,
             })
 
-            markReportSaved()
+            markSaved()
           } catch (saveError) {
-            generalLogger.error('Failed to save complete session', {
+            generalLogger.error('[Manual] Failed to save complete session', {
               reportId: session.reportId,
               error: saveError instanceof Error ? saveError.message : String(saveError),
             })
-            markReportSaveFailed(saveError instanceof Error ? saveError.message : 'Save failed')
+            const { setError } = useManualSessionStore.getState()
+            setError(saveError instanceof Error ? saveError.message : 'Save failed')
             // Continue - don't block user even if save fails
           }
         } else {
-          markReportSaved()
+          markSaved()
         }
 
         generalLogger.info('Valuation calculated successfully', {
@@ -460,10 +446,8 @@ export const useValuationFormSubmission = (
     },
     [
       formData,
-      calculateValuation,
       setResult,
       setEmployeeCountError,
-      setCollectedData,
       session,
       getLatestVersion,
       createVersion,

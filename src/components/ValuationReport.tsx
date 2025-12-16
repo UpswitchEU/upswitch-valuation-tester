@@ -2,9 +2,8 @@
 
 import { useRouter } from 'next/navigation'
 import React, { Suspense } from 'react'
-import { reportApiService } from '../services/reportApi'
+import { reportService } from '../services'
 import UrlGeneratorService from '../services/urlGenerator'
-import { useValuationSessionStore } from '../store/useValuationSessionStore'
 import type { ValuationResponse } from '../types/valuation'
 import { generalLogger } from '../utils/logger'
 import { generateReportId, isValidReportId } from '../utils/reportIdGenerator'
@@ -16,6 +15,11 @@ import { ValuationSessionManager } from './ValuationSessionManager'
  *
  * Single Responsibility: Route validation and delegation.
  * Handles URL parameter validation and delegates to session/flow management.
+ *
+ * Architecture: Flow-agnostic (shared by Manual and Conversational)
+ * - Uses service layer for backend operations
+ * - No direct store access (stores are flow-specific)
+ * - Delegates to flow-specific components via ValuationFlowSelector
  *
  * Enhanced for M&A workflow:
  * - Supports edit/view mode switching
@@ -42,41 +46,35 @@ export const ValuationReport: React.FC<ValuationReportProps> = React.memo(
     // NOTE: saveCompleteSession is already called in useValuationFormSubmission
     // This callback only handles report API completion for credit tracking
     const handleValuationComplete = async (result: ValuationResponse) => {
-      const { markReportSaving, markReportSaved, markReportSaveFailed } = useValuationSessionStore.getState()
-
-      // Mark as saving during completion process
-      markReportSaving()
-
       try {
-        // Save via report API (for credit tracking and other persistence)
-        // NOTE: Session save is already handled by saveCompleteSession in useValuationFormSubmission
-        await reportApiService.completeReport(reportId, result)
-        generalLogger.info('Valuation report saved successfully', {
+        // Complete report via service layer (for credit tracking and persistence)
+        // NOTE: Session save is already handled by sessionService in useValuationFormSubmission
+        const sessionId = result.valuation_id // Use valuation_id as session identifier
+        await reportService.completeReport(reportId, sessionId, result)
+        
+        generalLogger.info('Valuation report completed successfully', {
           reportId,
           valuationId: result.valuation_id,
         })
-
-        // Mark save as completed - report is automatically saved after generation
-        markReportSaved()
       } catch (error) {
-        // Mark save as failed
-        markReportSaveFailed(error instanceof Error ? error.message : 'Save failed')
-        // BANK-GRADE: Specific error handling - report save failure
+        // BANK-GRADE: Specific error handling - report completion failure
         // Don't show error to user as the valuation is already complete locally
+        // Report completion is for credit tracking, not critical for user experience
         if (error instanceof Error) {
-          generalLogger.error('Failed to save completed valuation', {
+          generalLogger.error('Failed to complete valuation report', {
             error: error.message,
             stack: error.stack,
             reportId,
             valuationId: result.valuation_id,
           })
         } else {
-          generalLogger.error('Failed to save completed valuation', {
+          generalLogger.error('Failed to complete valuation report', {
             error: String(error),
             reportId,
             valuationId: result.valuation_id,
           })
         }
+        // Continue - don't block user even if completion fails
       }
     }
 

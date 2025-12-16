@@ -20,10 +20,7 @@ import { useSessionRestoration } from '../../../hooks/useSessionRestoration'
 import { useToast } from '../../../hooks/useToast'
 import { conversationAPI } from '../../../services/api/conversation/ConversationAPI'
 import { guestCreditService } from '../../../services/guestCreditService'
-import { useValuationApiStore } from '../../../store/useValuationApiStore'
-import { useValuationFormStore } from '../../../store/useValuationFormStore'
-import { useValuationResultsStore } from '../../../store/useValuationResultsStore'
-import { useValuationSessionStore } from '../../../store/useValuationSessionStore'
+import { useConversationalResultsStore, useConversationalSessionStore, useConversationalChatStore } from '../../../store/conversational'
 import type { Message } from '../../../types/message'
 import type { ValuationResponse } from '../../../types/valuation'
 import { chatLogger } from '../../../utils/logger'
@@ -75,11 +72,10 @@ const ConversationalLayoutInner: React.FC<ConversationalLayoutProps> = ({
   const actions = useConversationActions()
   const { showToast } = useToast()
 
-  // Use split stores instead of monolithic useValuationStore
-  const { setCollectedData } = useValuationFormStore()
-  const { isCalculating, error } = useValuationApiStore()
-  const { result, setResult } = useValuationResultsStore()
-  const { isSaving, lastSaved, hasUnsavedChanges, syncError, updateSessionData, session } = useValuationSessionStore()
+  // Use Conversational Flow isolated stores
+  const { isCalculating, error, result, setResult, clearError } = useConversationalResultsStore()
+  const { isSaving, lastSaved, hasUnsavedChanges, error: syncError, session } = useConversationalSessionStore()
+  const { collectedData, updateCollectedData } = useConversationalChatStore()
 
   // CRITICAL: Automatically restore form data, results, and versions from session
   // This ensures smooth repopulation on reload/revisit
@@ -89,8 +85,9 @@ const ConversationalLayoutInner: React.FC<ConversationalLayoutProps> = ({
   // Mark conversation changes as unsaved (for save status indicator)
   useEffect(() => {
     if (state.messages.length > 0) {
-      // Mark as having unsaved conversation data
-      useValuationSessionStore.setState({ hasUnsavedChanges: true })
+      // Mark as having unsaved conversation data (Conversational flow)
+      const { markUnsaved } = useConversationalSessionStore.getState()
+      markUnsaved()
     }
   }, [state.messages.length])
 
@@ -402,23 +399,23 @@ const ConversationalLayoutInner: React.FC<ConversationalLayoutProps> = ({
   // Handle valuation completion
   const handleValuationComplete = useCallback(
     async (result: ValuationResponse) => {
-      const { markReportSaving, markReportSaved, markReportSaveFailed } = useValuationSessionStore.getState()
+      const { setSaving, markSaved, setError } = useConversationalSessionStore.getState()
 
       // Mark as saving during completion process
-      markReportSaving()
+      setSaving(true)
 
       try {
         actions.setValuationResult(result)
         actions.setGenerating(false)
 
-        // Store in results store (same as manual flow)
+        // Store in results store (Conversational flow)
         setResult(result)
 
         // Call parent completion handler (may be async)
         await onComplete(result)
 
         // Mark save as completed - report is automatically saved after generation
-        markReportSaved()
+        markSaved()
 
         // Update frontend credit count for guests
         if (!user && (result as any).creditsRemaining !== undefined) {
@@ -426,7 +423,7 @@ const ConversationalLayoutInner: React.FC<ConversationalLayoutProps> = ({
         }
       } catch (error) {
         // Mark save as failed
-        markReportSaveFailed(error instanceof Error ? error.message : 'Save failed')
+        setError(error instanceof Error ? error.message : 'Save failed')
         throw error
       }
     },
@@ -559,6 +556,7 @@ const ConversationalLayoutInner: React.FC<ConversationalLayoutProps> = ({
               isCalculating={isGeneratingState}
               error={error}
               result={result || state.valuationResult || null}
+              onClearError={clearError}
             />
           </div>
         </div>
@@ -585,6 +583,7 @@ const ConversationalLayoutInner: React.FC<ConversationalLayoutProps> = ({
             isCalculating={isGeneratingState}
             error={error}
             result={result || state.valuationResult || null}
+            onClearError={clearError}
           />
         </FullScreenModal>
       </div>

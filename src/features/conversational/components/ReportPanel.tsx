@@ -4,6 +4,11 @@
  * Single Responsibility: Display valuation reports in tabbed interface (Preview/Source/Info)
  * SOLID Principles: SRP - Only handles report display and tab management
  *
+ * Architecture: Pure presentational component (prop-driven)
+ * - No direct store access (flow-agnostic)
+ * - All state passed via props from parent
+ * - Shared by Manual and Conversational flows
+ *
  * @module features/conversational/components/ReportPanel
  */
 
@@ -11,8 +16,6 @@ import React, { Suspense } from 'react'
 import { AuditTrailPanel } from '../../../components/AuditTrailPanel'
 import { Results } from '../../../components/results/Results'
 import { ValuationInfoPanel } from '../../../components/ValuationInfoPanel'
-import { useValuationApiStore } from '../../../store/useValuationApiStore'
-import { useValuationResultsStore } from '../../../store/useValuationResultsStore'
 import type { ValuationResponse } from '../../../types/valuation'
 
 export interface ReportPanelProps {
@@ -23,6 +26,7 @@ export interface ReportPanelProps {
   error?: string | null
   result?: ValuationResponse | null
   reportId: string
+  onClearError?: () => void // Callback to clear errors (optional)
 }
 
 /**
@@ -156,23 +160,21 @@ const HistoryEmptyState: React.FC = () => (
  * PERFORMANCE: Memoized to prevent unnecessary re-renders when props haven't changed
  */
 export const ReportPanel: React.FC<ReportPanelProps> = React.memo(
-  ({ 
+  ({
     className = '', 
     activeTab = 'preview', 
     onTabChange,
     isCalculating = false,
     error = null,
-    result: resultProp = null,
+    result = null,
     reportId,
+    onClearError,
   }) => {
-    const { clearError } = useValuationApiStore()
-    // Fallback to store if prop is missing (fail-safe restoration)
-    const { result: resultStore } = useValuationResultsStore()
-    const result = resultProp || resultStore
-    
     const handleRetry = () => {
-      // Clear the error from the store
-      clearError()
+      // Clear the error via callback (parent handles store updates)
+      if (onClearError) {
+        onClearError()
+      }
       // Ensure we're on the preview tab
       if (onTabChange) {
         onTabChange('preview')

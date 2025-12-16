@@ -4,10 +4,10 @@
  * Main form for entering business valuation data.
  * Single Responsibility: Form orchestration and state management.
  *
- * Uses refactored stores:
- * - useValuationFormStore for form data state
- * - useValuationSessionStore for session sync
- * - useValuationApiStore for calculation
+ * Uses Manual flow stores (Phase 2 migration):
+ * - useManualFormStore for form data state
+ * - useManualSessionStore for session sync
+ * - useManualResultsStore for calculation state
  * - useFormSessionSync hook for syncing with session
  *
  * @module components/ValuationForm/ValuationForm
@@ -18,9 +18,7 @@ import { useAuth } from '../../hooks/useAuth'
 import { useBusinessTypes } from '../../hooks/useBusinessTypes'
 import { useFormSessionSync } from '../../hooks/useFormSessionSync'
 import type { BusinessType } from '../../services/businessTypesApi'
-import { useValuationApiStore } from '../../store/useValuationApiStore'
-import { useValuationFormStore } from '../../store/useValuationFormStore'
-import { useValuationSessionStore } from '../../store/useValuationSessionStore'
+import { useManualFormStore, useManualSessionStore, useManualResultsStore } from '../../store/manual'
 import { useVersionHistoryStore } from '../../store/useVersionHistoryStore'
 import { debounce } from '../../utils/debounce'
 import { generalLogger } from '../../utils/logger'
@@ -54,9 +52,8 @@ export const ValuationForm: React.FC<ValuationFormProps> = ({
   initialVersion,
   isRegenerationMode = false,
 }) => {
-  const { formData, updateFormData, prefillFromBusinessCard, setCollectedData } =
-    useValuationFormStore()
-  const { session, updateSessionData, getSessionData } = useValuationSessionStore()
+  const { formData, updateFormData, prefillFromBusinessCard } = useManualFormStore()
+  const { session } = useManualSessionStore()
   const { businessTypes } = useBusinessTypes()
   const { businessCard, isAuthenticated } = useAuth()
   const { getVersion } = useVersionHistoryStore()
@@ -447,9 +444,9 @@ export const ValuationForm: React.FC<ValuationFormProps> = ({
   // Get business types loading/error state
   const { loading: businessTypesLoading, error: businessTypesError } = useBusinessTypes()
 
-  // Get API errors from store
-  const apiError = useValuationApiStore((state) => state.error)
-  const clearApiErrorFromStore = useValuationApiStore((state) => state.clearError)
+  // Get API errors from store (Manual flow)
+  const apiError = useManualResultsStore((state) => state.error)
+  const clearApiErrorFromStore = useManualResultsStore((state) => state.clearError)
 
   // Combine all errors: employeeCountError (validation) + apiError (API failures)
   const displayError = employeeCountError || apiError || null
@@ -472,9 +469,9 @@ export const ValuationForm: React.FC<ValuationFormProps> = ({
           clearAllErrors()
           await handleSubmit(e)
         } catch (error) {
-          generalLogger.error('Form submission error', { error })
+          generalLogger.error('[Manual] Form submission error', { error })
           // Reset loading state on unexpected error
-          const { setCalculating } = useValuationApiStore.getState()
+          const { setCalculating } = useManualResultsStore.getState()
           setCalculating(false)
         }
       }}

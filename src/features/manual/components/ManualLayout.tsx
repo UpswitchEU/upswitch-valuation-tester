@@ -19,9 +19,7 @@ import {
     useValuationToolbarTabs,
     type ValuationTab,
 } from '../../../hooks/valuationToolbar'
-import { useValuationApiStore } from '../../../store/useValuationApiStore'
-import { useValuationResultsStore } from '../../../store/useValuationResultsStore'
-import { useValuationSessionStore } from '../../../store/useValuationSessionStore'
+import { useManualResultsStore, useManualSessionStore } from '../../../store/manual'
 import type { ValuationResponse } from '../../../types/valuation'
 import { ReportPanel } from '../../conversational/components/ReportPanel'
 import { useManualPanelResize, useManualToolbar } from '../hooks'
@@ -55,9 +53,8 @@ export const ManualLayout: React.FC<ManualLayoutProps> = ({
   initialMode = 'edit',
 }) => {
   const { user } = useAuth()
-  const { isCalculating, error } = useValuationApiStore()
-  const { result, setResult } = useValuationResultsStore()
-  const { isSaving, lastSaved, hasUnsavedChanges, syncError } = useValuationSessionStore()
+  const { isCalculating, error, result, setResult } = useManualResultsStore()
+  const { isSaving, lastSaved, hasUnsavedChanges, error: syncError } = useManualSessionStore()
   const { showToast } = useToast()
 
   // CRITICAL: Automatically restore form data and results from session
@@ -189,6 +186,10 @@ export const ManualLayout: React.FC<ManualLayoutProps> = ({
             isCalculating={isCalculating}
             error={error}
             result={result}
+            onClearError={() => {
+              const { clearError } = useManualResultsStore.getState()
+              clearError()
+            }}
           />
         </div>
       </div>

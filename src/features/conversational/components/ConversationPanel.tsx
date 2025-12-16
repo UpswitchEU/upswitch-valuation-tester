@@ -10,10 +10,8 @@
 import React, { useCallback, useMemo } from 'react'
 import { StreamingChat } from '../../../components/StreamingChat'
 import { valuationAuditService } from '../../../services/audit/ValuationAuditService'
-import { useValuationApiStore } from '../../../store/useValuationApiStore'
-import { useValuationFormStore } from '../../../store/useValuationFormStore'
-import { useValuationResultsStore } from '../../../store/useValuationResultsStore'
-import { useValuationSessionStore } from '../../../store/useValuationSessionStore'
+import { valuationService, sessionService } from '../../../services'
+import { useConversationalResultsStore, useConversationalSessionStore, useConversationalChatStore } from '../../../store/conversational'
 import { useVersionHistoryStore } from '../../../store/useVersionHistoryStore'
 import type { Message } from '../../../types/message'
 import type { ValuationResponse } from '../../../types/valuation'
@@ -104,35 +102,34 @@ export const ConversationPanel: React.FC<ConversationPanelProps> = ({
 }) => {
   const state = useConversationState()
   const actions = useConversationActions()
-  const { setCollectedData } = useValuationFormStore()
+  const { updateCollectedData } = useConversationalChatStore()
 
-  // Handle data collection - sync to form store
+  // Handle data collection - sync to conversational chat store
   const handleDataCollected = useCallback(
     (data: { field: string; value: unknown }) => {
-      chatLogger.debug('ConversationPanel: Data collected', {
+      chatLogger.debug('[Conversational] Data collected', {
         field: data.field,
         value: data.value,
       })
 
-      // Sync to form store if field and value are present
+      // Sync to conversational chat store if field and value are present
       // Note: StreamingChat manages its own collectedData state internally
       // This callback is for external notification, but we can also sync here if needed
       if (data.field && data.value !== undefined) {
         // Call parent callback (used by ConversationalLayout for logging)
         onDataCollected?.(data)
 
-        // Data will be synced to session store through StreamingChat's internal mechanisms
-        // When valuation is triggered, the collected data will be used
+        // Update collected data in conversational store
+        updateCollectedData({ [data.field]: data.value })
       }
     },
-    [onDataCollected]
+    [onDataCollected, updateCollectedData]
   )
 
-  // Handle valuation complete - sync to context and results store
-  const { setResult } = useValuationResultsStore()
-  const { session } = useValuationSessionStore()
+  // Handle valuation complete - sync to context and conversational results store
+  const { setResult, trySetCalculating, setCalculating } = useConversationalResultsStore()
+  const { session } = useConversationalSessionStore()
   const { createVersion, getLatestVersion } = useVersionHistoryStore()
-  const { calculateValuation, isCalculating, setCalculating } = useValuationApiStore()
 
   const handleValuationComplete = useCallback(
     async (result: ValuationResponse) => {
@@ -147,37 +144,37 @@ export const ConversationPanel: React.FC<ConversationPanelProps> = ({
       // Sync to results store (same as manual flow)
       setResult(result)
 
-      // CRITICAL: Save complete session atomically (unified with manual flow)
-      // Uses the same saveCompleteSession() method for consistency
-      const { saveCompleteSession, markReportSaving, markReportSaved, markReportSaveFailed } = useValuationSessionStore.getState()
-      markReportSaving()
+      // CRITICAL: Save complete session atomically (using Conversational flow stores)
+      // Uses sessionService for consistency with Manual flow
+      const { setSaving, markSaved, setError: setSessionError } = useConversationalSessionStore.getState()
+      setSaving(true)
 
       if (session?.reportId) {
         try {
-          // Atomic save: all data in one operation
-          await saveCompleteSession({
+          // Atomic save: all data in one operation (using sessionService)
+          await sessionService.saveReportAssets(session.reportId, {
             valuationResult: result,
-            htmlReport: result.html_report,
-            infoTabHtml: result.info_tab_html,
+            htmlReport: result.html_report || '',
+            infoTabHtml: result.info_tab_html || '',
           })
 
-          chatLogger.info('Complete session saved atomically (conversational flow)', {
+          chatLogger.info('[Conversational] Complete session saved atomically', {
             reportId: session.reportId,
             hasResult: !!result,
             hasHtmlReport: !!result.html_report,
             hasInfoTabHtml: !!result.info_tab_html,
           })
 
-          markReportSaved()
+          markSaved()
         } catch (error) {
-          chatLogger.error('Failed to save complete session', {
+          chatLogger.error('[Conversational] Failed to save complete session', {
             reportId: session.reportId,
             error: error instanceof Error ? error.message : String(error),
           })
-          markReportSaveFailed(error instanceof Error ? error.message : 'Save failed')
+          setSessionError(error instanceof Error ? error.message : 'Save failed')
         }
       } else {
-        markReportSaved()
+        markSaved()
       }
 
       // M&A Workflow: Create new version if this is a regeneration (conversational flow)
@@ -188,7 +185,7 @@ export const ConversationPanel: React.FC<ConversationPanelProps> = ({
 
           // CRITICAL FIX: Get complete formData from session, not just result
           // The result only has calculated fields, but formData needs all input fields
-          const sessionStore = useValuationSessionStore.getState()
+          const sessionStore = useConversationalSessionStore.getState()
           const sessionData = (sessionStore.session?.sessionData || sessionStore.session?.partialData || {}) as any
           
           // Build complete formData from session + result
@@ -313,8 +310,8 @@ export const ConversationPanel: React.FC<ConversationPanelProps> = ({
     // We can add to context if needed for cross-component access
   }, [])
 
-  // Get valuation data for summary block
-  const valuationResult = useValuationResultsStore((state) => state.result)
+  // Get valuation data for summary block (Conversational flow)
+  const valuationResult = useConversationalResultsStore((state) => state.result)
 
   // Determine if we should show summary block
   const showSummaryBlock = useMemo(() => {
