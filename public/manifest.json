@@ -14,14 +14,30 @@
       "sizes": "any"
     },
     {
-      "src": "apple-touch-icon.png",
-      "type": "image/png",
+      "src": "favicon-16x16.svg",
+      "type": "image/svg+xml",
+      "sizes": "16x16"
+    },
+    {
+      "src": "favicon-32x32.svg",
+      "type": "image/svg+xml",
+      "sizes": "32x32"
+    },
+    {
+      "src": "apple-touch-icon.svg",
+      "type": "image/svg+xml",
       "sizes": "180x180"
     },
     {
-      "src": "favicon-dark-square-var1.svg",
-      "sizes": "192x192",
+      "src": "android-chrome-192x192.svg",
       "type": "image/svg+xml",
+      "sizes": "192x192",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "android-chrome-512x512.svg",
+      "type": "image/svg+xml",
+      "sizes": "512x512",
       "purpose": "any maskable"
     }
   ],

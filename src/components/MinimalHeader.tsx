@@ -65,9 +65,9 @@ export const MinimalHeader: React.FC = () => {
         {/* Logo and Title */}
         <div className="flex basis-0 flex-row flex-grow flex-nowrap justify-start bg-transparent items-center no-underline text-medium whitespace-nowrap box-border">
           <Link className="flex items-center gap-1 sm:gap-1.5 flex-shrink-0" href="/">
-            {/* Upswitch Logo - Using dark logo */}
+            {/* Upswitch Logo - Using white variant */}
             <img
-              src="/logo_upswitch_dark.svg"
+              src="/logo_upswitch_white_var2.svg"
               alt="Upswitch Logo"
               className="h-6 sm:h-6 flex-shrink-0 transition-opacity hover:opacity-80"
               style={{

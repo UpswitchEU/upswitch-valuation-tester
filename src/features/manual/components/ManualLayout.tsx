@@ -12,15 +12,15 @@ import { ResizableDivider } from '../../../components/ResizableDivider'
 import { ValuationForm } from '../../../components/ValuationForm'
 import { ValuationToolbar } from '../../../components/ValuationToolbar'
 import { useAuth } from '../../../hooks/useAuth'
-import { useSessionRestoration } from '../../../hooks/useSessionRestoration'
 import { useToast } from '../../../hooks/useToast'
 import {
     useValuationToolbarFullscreen,
     useValuationToolbarTabs,
     type ValuationTab,
 } from '../../../hooks/valuationToolbar'
-import { useManualResultsStore, useManualSessionStore } from '../../../store/manual'
+import { useManualResultsStore, useManualSessionStore, useManualFormStore } from '../../../store/manual'
 import type { ValuationResponse } from '../../../types/valuation'
+import { generalLogger } from '../../../utils/logger'
 import { ReportPanel } from '../../conversational/components/ReportPanel'
 import { useManualPanelResize, useManualToolbar } from '../hooks'
 import { MobilePanelSwitcher } from './MobilePanelSwitcher'
@@ -54,12 +54,38 @@ export const ManualLayout: React.FC<ManualLayoutProps> = ({
 }) => {
   const { user } = useAuth()
   const { isCalculating, error, result, setResult } = useManualResultsStore()
-  const { isSaving, lastSaved, hasUnsavedChanges, error: syncError } = useManualSessionStore()
+  const { session, isSaving, lastSaved, hasUnsavedChanges, error: syncError, loadSessionAsync } = useManualSessionStore()
+  const { updateFormData } = useManualFormStore()
   const { showToast } = useToast()
 
-  // CRITICAL: Automatically restore form data and results from session
-  // This ensures smooth repopulation on reload/revisit
-  useSessionRestoration()
+  // CRITICAL: Load and restore session data on mount (Manual flow)
+  // Uses flow-isolated stores for robust state management
+  useEffect(() => {
+    if (reportId && !session) {
+      // Load session asynchronously (non-blocking)
+      loadSessionAsync(reportId).catch((error) => {
+        generalLogger.error('[Manual] Failed to load session', {
+          reportId,
+          error: error instanceof Error ? error.message : String(error),
+        })
+      })
+    }
+
+    // Restore form data and results from session when it loads
+    if (session?.sessionData) {
+      const sessionData = session.sessionData as any
+      
+      // Restore form data (if exists)
+      if (sessionData.company_name || sessionData.revenue) {
+        updateFormData(sessionData)
+      }
+
+      // Restore results (if exists)
+      if (session.valuationResult) {
+        setResult(session.valuationResult as any)
+      }
+    }
+  }, [reportId, session, loadSessionAsync, updateFormData, setResult])
 
   // Panel resize hook
   const { leftPanelWidth, handleResize, isMobile, mobileActivePanel, setMobileActivePanel } =

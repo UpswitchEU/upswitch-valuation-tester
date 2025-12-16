@@ -1,5 +1,4 @@
 import fs from 'fs'
-import path from 'path'
 
 // Simple HTML to PNG converter using canvas-like approach
 // This is a fallback - in production you'd use Puppeteer or similar
@@ -43,24 +42,15 @@ const htmlContent = `<!DOCTYPE html>
         .logo-container {
             display: flex;
             align-items: center;
-            gap: 32px;
+            justify-content: center;
             margin-bottom: 48px;
         }
         
         .logo-image {
-            width: 120px;
-            height: 120px;
+            width: 200px;
+            height: auto;
             object-fit: contain;
             filter: drop-shadow(0 8px 16px rgba(0,0,0,0.08));
-        }
-        
-        .logo-text {
-            font-size: 96px;
-            font-weight: 800;
-            color: #1F2937;
-            font-family: 'DM Sans', 'Inter', sans-serif;
-            letter-spacing: -0.03em;
-            line-height: 0.9;
         }
         
         .tagline {
@@ -182,12 +172,11 @@ const htmlContent = `<!DOCTYPE html>
     
     <div class="card-content">
         <div class="logo-container">
-            <img src="/upswitch_logo.svg" alt="Upswitch Logo" class="logo-image" />
-            <div class="logo-text">Upswitch</div>
+            <img src="/logo_upswitch_white_var2.svg" alt="Upswitch Logo" class="logo-image" />
         </div>
-        <div class="tagline">European SME M&A Platform</div>
-        <div class="description">Buy, sell, and value businesses across Europe with professional support and secure transactions</div>
-        <div class="value-prop">Trusted by 10,000+ European SMEs</div>
+        <div class="tagline">UpSwitch Valuation Tester</div>
+        <div class="description">Professional business valuation platform for testing and demonstration</div>
+        <div class="value-prop">Test your business valuation with advanced AI-powered tools</div>
     </div>
 </body>
 </html>`

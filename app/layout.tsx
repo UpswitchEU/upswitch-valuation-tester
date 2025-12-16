@@ -18,6 +18,32 @@ export const metadata: Metadata = {
     telephone: false,
   },
   metadataBase: new URL(process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3001'),
+  icons: {
+    icon: [
+      {
+        url: '/favicon-dark-square-var1.svg',
+        type: 'image/svg+xml',
+      },
+      {
+        url: '/favicon-16x16.svg',
+        type: 'image/svg+xml',
+        sizes: '16x16',
+      },
+      {
+        url: '/favicon-32x32.svg',
+        type: 'image/svg+xml',
+        sizes: '32x32',
+      },
+    ],
+    apple: [
+      {
+        url: '/apple-touch-icon.svg',
+        type: 'image/svg+xml',
+        sizes: '180x180',
+      },
+    ],
+    shortcut: '/favicon-dark-square-var1.svg',
+  },
   openGraph: {
     type: 'website',
     locale: 'en_US',
@@ -50,9 +76,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en">
       <head>
-        <link rel="icon" type="image/svg+xml" href="/favicon-dark-square-var1.svg" />
-        <link rel="icon" type="image/x-icon" href="/favicon.ico" />
-        <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+        {/* Manifest is still referenced here as it's not part of metadata API */}
         <link rel="manifest" href="/manifest.json" />
       </head>
       <body className="bg-zinc-950 text-white antialiased">

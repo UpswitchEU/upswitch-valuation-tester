@@ -16,7 +16,6 @@ import { useAuth } from '../../../hooks/useAuth'
 import { useConversationalToolbar } from '../../../hooks/useConversationalToolbar'
 import { usePanelResize } from '../../../hooks/usePanelResize'
 import { useReportIdTracking } from '../../../hooks/useReportIdTracking'
-import { useSessionRestoration } from '../../../hooks/useSessionRestoration'
 import { useToast } from '../../../hooks/useToast'
 import { conversationAPI } from '../../../services/api/conversation/ConversationAPI'
 import { guestCreditService } from '../../../services/guestCreditService'
@@ -77,10 +76,18 @@ const ConversationalLayoutInner: React.FC<ConversationalLayoutProps> = ({
   const { isSaving, lastSaved, hasUnsavedChanges, error: syncError, session } = useConversationalSessionStore()
   const { collectedData, updateCollectedData } = useConversationalChatStore()
 
-  // CRITICAL: Automatically restore form data, results, and versions from session
-  // This ensures smooth repopulation on reload/revisit
-  // Phase 4: Conversation state integration - works alongside useConversationRestoration
-  useSessionRestoration()
+  // CRITICAL: Load and restore session data on mount (Conversational flow)
+  // Uses flow-isolated stores for robust state management
+  // Note: Conversation messages are restored separately by useConversationRestoration
+  useEffect(() => {
+    // Restore results from session when it loads
+    if (session?.valuationResult && !result) {
+      setResult(session.valuationResult as any)
+      chatLogger.info('[Conversational] Restored valuation result from session', {
+        reportId: session.reportId,
+      })
+    }
+  }, [session, result, setResult])
 
   // Mark conversation changes as unsaved (for save status indicator)
   useEffect(() => {

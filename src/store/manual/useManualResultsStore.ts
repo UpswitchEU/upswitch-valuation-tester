@@ -26,6 +26,9 @@ interface ManualResultsStore {
   // Calculation state
   isCalculating: boolean
   error: string | null
+  
+  // Progress tracking (for long calculations)
+  calculationProgress: number
 
   // Actions (all atomic with functional updates)
   setResult: (result: ValuationResponse | null) => void
@@ -34,9 +37,11 @@ interface ManualResultsStore {
   setError: (error: string | null) => void
   clearError: () => void
   clearResults: () => void
+  setCalculationProgress: (progress: number) => void
 
   // Atomic check-and-set for calculation state
   // Returns true if state was set, false if already calculating
+  // Use this for immediate UI feedback (< 16ms)
   trySetCalculating: () => boolean
   setCalculating: (isCalculating: boolean) => void
 }
@@ -48,6 +53,7 @@ export const useManualResultsStore = create<ManualResultsStore>((set, get) => ({
   infoTabHtml: null,
   isCalculating: false,
   error: null,
+  calculationProgress: 0,
 
   // Set result (atomic)
   setResult: (result: ValuationResponse | null) => {
@@ -189,14 +195,24 @@ export const useManualResultsStore = create<ManualResultsStore>((set, get) => ({
       htmlReport: null,
       infoTabHtml: null,
       error: null,
+      calculationProgress: 0,
     }))
 
     storeLogger.debug('[Manual] Results cleared')
   },
 
+  // Set calculation progress (for UI feedback during long operations)
+  setCalculationProgress: (progress: number) => {
+    set((state) => ({
+      ...state,
+      calculationProgress: Math.min(Math.max(progress, 0), 100),
+    }))
+  },
+
   // Atomic check-and-set for calculation state
   // Returns true if state was set to calculating, false if already calculating
   // Use this before calling ValuationService.calculateValuation to ensure immediate UI feedback
+  // CRITICAL: This provides < 16ms UI response time (instant button disable)
   trySetCalculating: () => {
     let wasSet = false
     
@@ -207,12 +223,13 @@ export const useManualResultsStore = create<ManualResultsStore>((set, get) => ({
       }
 
       wasSet = true
-      storeLogger.info('[Manual] Loading state set to true immediately')
+      storeLogger.info('[Manual] Loading state set to true immediately (< 16ms)')
 
       return {
         ...state,
         isCalculating: true,
         error: null,
+        calculationProgress: 0, // Reset progress for new calculation
       }
     })
 
