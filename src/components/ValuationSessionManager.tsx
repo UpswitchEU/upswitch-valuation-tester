@@ -63,16 +63,22 @@ export const ValuationSessionManager: React.FC<ValuationSessionManagerProps> = R
     const isManualFlow = flowParam === 'manual'
     
     // For rendering: use full session object (needed by children)
+    // CRITICAL: Always subscribe to both stores to ensure re-renders when session changes
+    // Even if we only use one, subscribing to both ensures we catch updates
     const manualSession = useManualSessionStore((state) => state.session)
     const conversationalSession = useConversationalSessionStore((state) => state.session)
-    let session = isManualFlow ? manualSession : conversationalSession
+    
+    // Select session based on flow - this will trigger re-renders when either changes
+    const session = isManualFlow ? manualSession : conversationalSession
     
     // CRITICAL: Fallback to direct store read if selector returns null
     // This ensures session is available even if selector hasn't updated yet
-    if (!session) {
+    // But we still subscribe above to ensure re-renders when session is set
+    let finalSession = session
+    if (!finalSession) {
       const manualState = useManualSessionStore.getState()
       const conversationalState = useConversationalSessionStore.getState()
-      session = isManualFlow ? manualState.session : conversationalState.session
+      finalSession = isManualFlow ? manualState.session : conversationalState.session
     }
     
     // Optimized selectors for transition logic: only subscribe to fields we need
@@ -458,10 +464,21 @@ export const ValuationSessionManager: React.FC<ValuationSessionManagerProps> = R
       }, 100)
     }, [session?.currentView, session?.reportId, searchParams, router])
 
+    // Debug logging to track stage and session state
+    React.useEffect(() => {
+      generalLogger.debug('[ValuationSessionManager] Rendering with state', {
+        reportId,
+        stage,
+        hasSession: !!finalSession,
+        sessionReportId: finalSession?.reportId,
+        error,
+      })
+    }, [reportId, stage, finalSession, error])
+
     return (
       <>
         {children({
-          session,
+          session: finalSession,
           stage,
           error,
           showOutOfCreditsModal,

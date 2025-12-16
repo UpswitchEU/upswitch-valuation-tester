@@ -9,8 +9,8 @@
 
 'use client'
 
-// Dynamic imports are handled with lazy in Vite
-import React, { lazy, Suspense, useMemo } from 'react'
+// Dynamic imports using React.lazy for code splitting (Next.js compatible)
+import React, { lazy, Suspense, useEffect, useMemo } from 'react'
 import type { ValuationResponse, ValuationSession } from '../types/valuation'
 import { LoadingState } from './LoadingState'
 import { INITIALIZATION_STEPS } from './LoadingState.constants'
@@ -106,6 +106,16 @@ export const ValuationFlowSelector: React.FC<ValuationFlowSelectorProps> = React
     initialMode,
     initialVersion,
   }) => {
+    // Debug logging to understand rendering
+    useEffect(() => {
+      console.log('[ValuationFlowSelector] Render', {
+        stage,
+        hasSession: !!session,
+        sessionReportId: session?.reportId,
+        sessionCurrentView: session?.currentView,
+      })
+    }, [stage, session])
+
     // Memoize flow type calculation
     const flowType = useMemo(() => {
       return session?.currentView === 'manual' ? 'manual' : 'conversational'
@@ -186,6 +196,33 @@ export const ValuationFlowSelector: React.FC<ValuationFlowSelectorProps> = React
 
     // Fallback - should not normally reach here
     return <LoadingState steps={INITIALIZATION_STEPS} variant="dark" />
+  },
+  // Custom comparison: Always re-render if stage changes (critical for UI updates)
+  (prevProps, nextProps) => {
+    // Re-render if stage changes (most important)
+    if (prevProps.stage !== nextProps.stage) {
+      return false // Re-render
+    }
+    // Re-render if session changes (from null to object or vice versa)
+    if (!!prevProps.session !== !!nextProps.session) {
+      return false // Re-render
+    }
+    // Re-render if session reportId changes
+    if (prevProps.session?.reportId !== nextProps.session?.reportId) {
+      return false // Re-render
+    }
+    // Re-render if error changes
+    if (prevProps.error !== nextProps.error) {
+      return false // Re-render
+    }
+    // Otherwise, use default shallow comparison for other props
+    return (
+      prevProps.prefilledQuery === nextProps.prefilledQuery &&
+      prevProps.autoSend === nextProps.autoSend &&
+      prevProps.onComplete === nextProps.onComplete &&
+      prevProps.initialMode === nextProps.initialMode &&
+      prevProps.initialVersion === nextProps.initialVersion
+    )
   }
 )
 
