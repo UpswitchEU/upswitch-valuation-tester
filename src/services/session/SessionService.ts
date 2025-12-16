@@ -251,29 +251,49 @@ export class SessionService {
         // Clear cache to ensure fresh data
         globalSessionCache.remove(reportId)
         
-        // Retry loading with exponential backoff (backend may need time to persist)
+        // Retry loading with exponential backoff + jitter (backend may need time to persist)
         let reloadedSession: ValuationSession | null = null
-        const maxRetries = 3
-        const initialDelay = 100
+        const maxRetries = 5
+        const initialDelay = 200
+        const maxDelay = 2000
         
         for (let attempt = 0; attempt < maxRetries; attempt++) {
           if (attempt > 0) {
-            const delay = initialDelay * Math.pow(2, attempt - 1)
-            await new Promise(resolve => setTimeout(resolve, delay))
+            // Exponential backoff: 200ms, 400ms, 800ms, 1600ms, 2000ms (capped)
+            const delay = Math.min(initialDelay * Math.pow(2, attempt - 1), maxDelay)
+            // Add jitter (±20%) to prevent thundering herd
+            const jitter = delay * 0.2 * (Math.random() - 0.5)
+            const finalDelay = Math.max(0, delay + jitter)
+            
+            logger.debug(`Waiting ${finalDelay.toFixed(0)}ms before retry attempt ${attempt + 1}`, { 
+              reportId,
+              baseDelay: delay,
+              jitter: jitter.toFixed(0)
+            })
+            
+            await new Promise(resolve => setTimeout(resolve, finalDelay))
           }
           
           reloadedSession = await this.loadSession(reportId)
           if (reloadedSession) {
+            logger.info('Session reloaded successfully after save', { 
+              reportId, 
+              attempt: attempt + 1,
+              totalRetries: maxRetries
+            })
             break
           }
           
-          logger.debug(`Reload attempt ${attempt + 1} failed, retrying...`, { reportId })
+          logger.debug(`Reload attempt ${attempt + 1}/${maxRetries} failed, retrying...`, { reportId })
         }
         
         if (!reloadedSession) {
           // If reload still fails, create a minimal session object from what we saved
           // This prevents errors and allows the UI to continue
-          logger.warn('Failed to reload session after save, creating minimal session object', { reportId })
+          logger.warn('Failed to reload session after save, creating minimal session object', { 
+            reportId,
+            retriesAttempted: maxRetries
+          })
           mergedSession = {
             sessionId: reportId,
             reportId,
@@ -283,7 +303,13 @@ export class SessionService {
             partialData: {},
             createdAt: new Date(),
             updatedAt: new Date(),
-          }
+            // ✅ ADD: Fields required by flow components (graceful degradation)
+            valuationResult: undefined, // Not calculated yet (undefined to match type)
+            htmlContent: undefined, // Not generated yet (undefined to match type)
+            isComplete: false, // Session just created
+            stage: 1, // Data entry stage
+            status: 'draft', // Draft status
+          } as unknown as ValuationSession
         } else {
           mergedSession = reloadedSession
         }

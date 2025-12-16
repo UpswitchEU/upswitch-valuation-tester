@@ -40,6 +40,10 @@ interface ValuationFlowSelectorProps {
   initialMode?: 'edit' | 'view'
   /** Initial version for M&A workflow */
   initialVersion?: number
+  /** Callback to retry session initialization */
+  onRetry?: () => void
+  /** Callback to start over (return to homepage) */
+  onStartOver?: () => void
 }
 
 // Lazy load unified flow component (Next.js compatible)
@@ -130,6 +134,8 @@ export const ValuationFlowSelector: React.FC<ValuationFlowSelectorProps> = React
     onComplete,
     initialMode,
     initialVersion,
+    onRetry,
+    onStartOver,
   }) => {
     // Debug logging to understand rendering
     useEffect(() => {
@@ -161,14 +167,34 @@ export const ValuationFlowSelector: React.FC<ValuationFlowSelectorProps> = React
         <div className="flex items-center justify-center h-full">
           <div className="max-w-md mx-auto text-center">
             <div className="bg-rust-500/20 border border-rust-500/30 rounded-lg p-6">
-              <h3 className="text-lg font-semibold text-rust-400 mb-2">Error</h3>
-              <p className="text-rust-300 mb-4">{error}</p>
-              <button
-                onClick={() => window.location.reload()}
-                className="px-4 py-2 bg-rust-600 hover:bg-rust-700 text-white rounded-lg transition-colors"
-              >
-                Reload Page
-              </button>
+              <h3 className="text-lg font-semibold text-rust-400 mb-2">Session Error</h3>
+              <p className="text-rust-300 mb-6">{error}</p>
+              <div className="flex flex-col sm:flex-row gap-3 justify-center">
+                {onRetry && (
+                  <button
+                    onClick={onRetry}
+                    className="px-6 py-2.5 bg-rust-600 hover:bg-rust-700 text-white rounded-lg transition-colors font-medium"
+                  >
+                    Retry
+                  </button>
+                )}
+                {onStartOver && (
+                  <button
+                    onClick={onStartOver}
+                    className="px-6 py-2.5 bg-zinc-700 hover:bg-zinc-600 text-white rounded-lg transition-colors font-medium"
+                  >
+                    Start Over
+                  </button>
+                )}
+                {!onRetry && !onStartOver && (
+                  <button
+                    onClick={() => window.location.reload()}
+                    className="px-6 py-2.5 bg-rust-600 hover:bg-rust-700 text-white rounded-lg transition-colors font-medium"
+                  >
+                    Reload Page
+                  </button>
+                )}
+              </div>
             </div>
           </div>
         </div>
@@ -246,7 +272,9 @@ export const ValuationFlowSelector: React.FC<ValuationFlowSelectorProps> = React
       prevProps.autoSend === nextProps.autoSend &&
       prevProps.onComplete === nextProps.onComplete &&
       prevProps.initialMode === nextProps.initialMode &&
-      prevProps.initialVersion === nextProps.initialVersion
+      prevProps.initialVersion === nextProps.initialVersion &&
+      prevProps.onRetry === nextProps.onRetry &&
+      prevProps.onStartOver === nextProps.onStartOver
     )
   }
 )

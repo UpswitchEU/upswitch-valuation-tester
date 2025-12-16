@@ -51,7 +51,7 @@ export const ValuationReport: React.FC<ValuationReportProps> = React.memo(
         // NOTE: Session save is already handled by sessionService in useValuationFormSubmission
         const sessionId = result.valuation_id // Use valuation_id as session identifier
         await reportService.completeReport(reportId, sessionId, result)
-        
+
         generalLogger.info('Valuation report completed successfully', {
           reportId,
           valuationId: result.valuation_id,
@@ -109,6 +109,8 @@ export const ValuationReport: React.FC<ValuationReportProps> = React.memo(
               onCloseModal,
               prefilledQuery,
               autoSend,
+              onRetry,
+              onStartOver,
             }) => (
               <ValuationFlowSelector
                 session={session}
@@ -119,6 +121,8 @@ export const ValuationReport: React.FC<ValuationReportProps> = React.memo(
                 onComplete={handleValuationComplete}
                 initialMode={initialMode}
                 initialVersion={initialVersion}
+                onRetry={onRetry}
+                onStartOver={onStartOver}
               />
             )}
           </ValuationSessionManager>

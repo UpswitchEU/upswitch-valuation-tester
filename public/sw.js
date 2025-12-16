@@ -27,13 +27,42 @@ self.addEventListener('install', (event) => {
   console.log('[ServiceWorker] Install event')
 
   event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => {
+    caches.open(CACHE_NAME).then(async (cache) => {
       console.log('[ServiceWorker] Precaching assets')
-      return cache.addAll(PRECACHE_ASSETS).catch((error) => {
-        console.error('[ServiceWorker] Precache failed:', error)
-        // Don't fail install if some assets fail
-        return Promise.resolve()
+      
+      // Selective precache with error handling per asset
+      // Uses Promise.allSettled to allow partial success
+      const cachePromises = PRECACHE_ASSETS.map(async (url) => {
+        try {
+          const response = await fetch(url)
+          if (response.ok) {
+            await cache.put(url, response)
+            console.log('[ServiceWorker] Cached successfully:', url)
+            return { success: true, url }
+          } else {
+            console.warn('[ServiceWorker] Skipping cache (not ok):', url, response.status)
+            return { success: false, url, reason: `HTTP ${response.status}` }
+          }
+        } catch (error) {
+          console.warn('[ServiceWorker] Failed to cache:', url, error.message || error)
+          return { success: false, url, reason: error.message || 'fetch failed' }
+        }
       })
+      
+      const results = await Promise.allSettled(cachePromises)
+      
+      // Log summary
+      const successful = results.filter(r => r.status === 'fulfilled' && r.value.success).length
+      const failed = results.length - successful
+      
+      console.log('[ServiceWorker] Precache completed:', {
+        total: PRECACHE_ASSETS.length,
+        successful,
+        failed,
+      })
+      
+      // Don't fail install even if some assets couldn't be cached
+      return Promise.resolve()
     })
   )
 

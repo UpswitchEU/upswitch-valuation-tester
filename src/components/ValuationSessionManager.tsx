@@ -35,6 +35,8 @@ interface ValuationSessionManagerProps {
     onCloseModal: () => void
     prefilledQuery: string | null
     autoSend: boolean
+    onRetry: () => void
+    onStartOver: () => void
   }) => React.ReactNode
 }
 
@@ -49,7 +51,7 @@ export const ValuationSessionManager: React.FC<ValuationSessionManagerProps> = R
     const searchParams = useSearchParams()
     const router = useRouter()
     const { isAuthenticated } = useAuth()
-    
+
     // Use ref to store latest searchParams (prevents callback recreation)
     // This makes initializeSessionForReport stable while still accessing latest params
     const searchParamsRef = useRef(searchParams)
@@ -61,34 +63,37 @@ export const ValuationSessionManager: React.FC<ValuationSessionManagerProps> = R
     // Read from searchParams for current render, but use ref in callbacks
     const flowParam = searchParams?.get('flow') || 'manual'
     const isManualFlow = flowParam === 'manual'
-    
+
     // For rendering: use full session object (needed by children)
     const manualSession = useManualSessionStore((state) => state.session)
     const conversationalSession = useConversationalSessionStore((state) => state.session)
     const session = isManualFlow ? manualSession : conversationalSession
-    
+
     // Optimized selectors for transition logic: only subscribe to fields we need
     // Subscribe to both flows since flow can change, but Zustand selectors are efficient
     const manualSessionReportId = useManualSessionStore((state) => state.session?.reportId)
     const manualSessionIsLoading = useManualSessionStore((state) => state.isLoading)
     const manualSessionError = useManualSessionStore((state) => state.error)
-    const conversationalSessionReportId = useConversationalSessionStore((state) => state.session?.reportId)
+    const conversationalSessionReportId = useConversationalSessionStore(
+      (state) => state.session?.reportId
+    )
     const conversationalSessionIsLoading = useConversationalSessionStore((state) => state.isLoading)
     const conversationalSessionError = useConversationalSessionStore((state) => state.error)
-    
+
     // URL update tracking (prevents re-initialization during URL updates)
     const isUpdatingUrlRef = useRef(false)
-    
+
     // Track if we've already transitioned to prevent infinite loops
     const hasTransitionedRef = useRef(false)
-    
-    // Track interval ID to prevent multiple intervals running simultaneously
-    const transitionIntervalRef = useRef<NodeJS.Timeout | null>(null)
     
     // Initialize session function (flow-aware)
     // Memoized with empty deps - stable reference, uses Zustand promise cache internally
     const initializeSession = useCallback(
-      async (reportId: string, view: 'manual' | 'conversational', prefilledQuery?: string | null) => {
+      async (
+        reportId: string,
+        view: 'manual' | 'conversational',
+        prefilledQuery?: string | null
+      ) => {
         // Zustand stores handle duplicate prevention via promise cache
         // No need for guards here - store is the source of truth
         if (view === 'manual') {
@@ -102,7 +107,7 @@ export const ValuationSessionManager: React.FC<ValuationSessionManagerProps> = R
     const [stage, setStage] = useState<Stage>('loading')
     const [error, setError] = useState<string | null>(null)
     const [showOutOfCreditsModal, setShowOutOfCreditsModal] = useState(false)
-    
+
     // Track stage changes to debug rendering issues
     React.useEffect(() => {
       generalLogger.info('[ValuationSessionManager] Stage state changed', {
@@ -111,17 +116,20 @@ export const ValuationSessionManager: React.FC<ValuationSessionManagerProps> = R
         hasTransitioned: hasTransitionedRef.current,
       })
     }, [stage, reportId])
-    
+
     // Wrapper for setStage with logging to track state updates
-    const setStageWithLogging = React.useCallback((newStage: Stage) => {
-      generalLogger.info('[ValuationSessionManager] Calling setStage', {
-        reportId,
-        from: stage,
-        to: newStage,
-        hasTransitioned: hasTransitionedRef.current,
-      })
-      setStage(newStage)
-    }, [reportId, stage])
+    const setStageWithLogging = React.useCallback(
+      (newStage: Stage) => {
+        generalLogger.info('[ValuationSessionManager] Calling setStage', {
+          reportId,
+          from: stage,
+          to: newStage,
+          hasTransitioned: hasTransitionedRef.current,
+        })
+        setStage(newStage)
+      },
+      [reportId, stage]
+    )
 
     // Ensure guest session is initialized on any page (home or report)
     // This works for both guest and authenticated users
@@ -152,7 +160,7 @@ export const ValuationSessionManager: React.FC<ValuationSessionManagerProps> = R
           const flowParam = currentSearchParams.get('flow')
           const initialView =
             flowParam === 'manual' || flowParam === 'conversational' ? flowParam : 'manual'
-          
+
           // Determine flow type from params (not from closure)
           const currentIsManualFlow = initialView === 'manual'
 
@@ -162,7 +170,11 @@ export const ValuationSessionManager: React.FC<ValuationSessionManagerProps> = R
             if (!hasCredits) {
               setShowOutOfCreditsModal(true)
               // Initialize session with manual view instead
-              await initializeSession(reportId, 'manual', currentSearchParams.get('prefilledQuery') || null)
+              await initializeSession(
+                reportId,
+                'manual',
+                currentSearchParams.get('prefilledQuery') || null
+              )
               setStageWithLogging('data-entry')
               return
             }
@@ -170,7 +182,11 @@ export const ValuationSessionManager: React.FC<ValuationSessionManagerProps> = R
 
           // Store handles all initialization logic atomically (NEW vs EXISTING)
           // Zustand promise cache prevents duplicate loads
-          await initializeSession(reportId, initialView, currentSearchParams.get('prefilledQuery') || null)
+          await initializeSession(
+            reportId,
+            initialView,
+            currentSearchParams.get('prefilledQuery') || null
+          )
 
           // Handle business card prefill if token present
           const tokenParam = currentSearchParams.get('token')
@@ -184,7 +200,9 @@ export const ValuationSessionManager: React.FC<ValuationSessionManagerProps> = R
               // Read session fresh from store (not from closure)
               const currentManualSession = useManualSessionStore.getState().session
               const currentConversationalSession = useConversationalSessionStore.getState().session
-              const currentSession = currentIsManualFlow ? currentManualSession : currentConversationalSession
+              const currentSession = currentIsManualFlow
+                ? currentManualSession
+                : currentConversationalSession
 
               if (currentIsManualFlow) {
                 const { updateSessionData } = useManualSessionStore.getState()
@@ -210,27 +228,61 @@ export const ValuationSessionManager: React.FC<ValuationSessionManagerProps> = R
             }
           }
 
-          setStage('data-entry')
+          setStageWithLogging('data-entry')
         } catch (error) {
           generalLogger.error('Failed to initialize session', { error, reportId })
           setError('Failed to initialize valuation session')
-          
+
           // Even if initialization fails, if we have a session, allow user to continue
           const currentManualSession = useManualSessionStore.getState().session
           const currentConversationalSession = useConversationalSessionStore.getState().session
           const currentSearchParams = searchParamsRef.current
           const flowParam = currentSearchParams?.get('flow') || 'manual'
           const currentIsManualFlow = flowParam === 'manual'
-          const currentSession = currentIsManualFlow ? currentManualSession : currentConversationalSession
-          
+          const currentSession = currentIsManualFlow
+            ? currentManualSession
+            : currentConversationalSession
+
           if (currentSession?.reportId === reportId) {
-            generalLogger.debug('Session exists despite initialization error, transitioning to data-entry', { reportId })
-            setStage('data-entry')
+            generalLogger.debug(
+              'Session exists despite initialization error, transitioning to data-entry',
+              { reportId }
+            )
+            setStageWithLogging('data-entry')
           }
         }
       },
-      [isAuthenticated, initializeSession] // Stable deps - searchParams and flow read from ref, isUpdatingUrl now in ref
+      [isAuthenticated, initializeSession, setStageWithLogging] // Stable deps - searchParams and flow read from ref, isUpdatingUrl now in ref
     )
+
+    // Retry callback: Reset state and re-initialize session
+    const handleRetry = useCallback(() => {
+      generalLogger.info('[ValuationSessionManager] User triggered retry', { reportId })
+
+      // Reset transition flag
+      hasTransitionedRef.current = false
+
+      // Clear error
+      setError(null)
+
+      // Reset to loading stage
+      setStage('loading')
+
+      // Re-initialize session
+      initializeSessionForReport(reportId)
+    }, [reportId, initializeSessionForReport])
+
+    // Start over callback: Clear session and return to homepage
+    const handleStartOver = useCallback(() => {
+      generalLogger.info('[ValuationSessionManager] User triggered start over', { reportId })
+
+      // Clear session from stores
+      useManualSessionStore.getState().clearSession()
+      useConversationalSessionStore.getState().clearSession()
+
+      // Navigate to homepage
+      router.push('/')
+    }, [reportId, router])
 
     // Initialize session when reportId changes
     // Uses Zustand state directly for guards (prevents unnecessary calls)
@@ -249,28 +301,32 @@ export const ValuationSessionManager: React.FC<ValuationSessionManagerProps> = R
       const manualState = useManualSessionStore.getState()
       const conversationalState = useConversationalSessionStore.getState()
       const currentSession = currentIsManualFlow ? manualState.session : conversationalState.session
-      
+
       if (currentSession?.reportId === reportId) {
         generalLogger.debug('Session already exists, skipping initialization', { reportId })
         if (!hasTransitionedRef.current) {
           hasTransitionedRef.current = true
-          setStage('data-entry') // ✅ Set stage before returning
+          setStageWithLogging('data-entry') // ✅ Set stage before returning
         }
         return
       }
 
       // GUARD: Check if already loading (Zustand promise cache)
       // Check promise directly - more reliable than isLoading flag
-      const activeLoadPromise = currentIsManualFlow ? manualState.loadPromise : conversationalState.loadPromise
-      const activeLoadingReportId = currentIsManualFlow ? manualState.loadingReportId : conversationalState.loadingReportId
-      
+      const activeLoadPromise = currentIsManualFlow
+        ? manualState.loadPromise
+        : conversationalState.loadPromise
+      const activeLoadingReportId = currentIsManualFlow
+        ? manualState.loadingReportId
+        : conversationalState.loadingReportId
+
       if (activeLoadPromise && activeLoadingReportId === reportId) {
         generalLogger.debug('Session already loading, skipping initialization', { reportId })
         return
       }
 
       initializeSessionForReport(reportId)
-    }, [reportId, initializeSessionForReport]) // Removed isManualFlow - read from ref instead
+    }, [reportId, initializeSessionForReport, setStageWithLogging]) // Removed isManualFlow - read from ref instead
 
     // Reset transition flag when reportId changes (atomic, no race conditions)
     useEffect(() => {
@@ -287,10 +343,14 @@ export const ValuationSessionManager: React.FC<ValuationSessionManagerProps> = R
       const currentSearchParams = searchParamsRef.current
       const flowParam = currentSearchParams?.get('flow') || 'manual'
       const currentIsManualFlow = flowParam === 'manual'
-      
+
       // Use optimized selectors (already subscribed, no need to call getState)
-      const currentSessionReportId = currentIsManualFlow ? manualSessionReportId : conversationalSessionReportId
-      const isLoading = currentIsManualFlow ? manualSessionIsLoading : conversationalSessionIsLoading
+      const currentSessionReportId = currentIsManualFlow
+        ? manualSessionReportId
+        : conversationalSessionReportId
+      const isLoading = currentIsManualFlow
+        ? manualSessionIsLoading
+        : conversationalSessionIsLoading
       const currentError = currentIsManualFlow ? manualSessionError : conversationalSessionError
 
       // Check if session is ready (atomic condition check)
@@ -301,20 +361,30 @@ export const ValuationSessionManager: React.FC<ValuationSessionManagerProps> = R
         // Atomic transition: set flag first, then update stage
         // This prevents multiple transitions even if setStage is called multiple times
         if (hasTransitionedRef.current) return // Another call already transitioned
-        
+
         hasTransitionedRef.current = true
-        generalLogger.debug('Session available, transitioning to data-entry', { 
+        generalLogger.debug('Session available, transitioning to data-entry', {
           reportId,
           hasError: !!currentError,
           sessionExists: !!currentSessionReportId,
           sessionReady,
-          sessionReadyWithError
+          sessionReadyWithError,
         })
-        setStage('data-entry')
+        setStageWithLogging('data-entry')
       }
-    }, [reportId, stage, manualSessionReportId, manualSessionIsLoading, manualSessionError, conversationalSessionReportId, conversationalSessionIsLoading, conversationalSessionError]) // React to specific session fields - no intervals needed
+    }, [
+      reportId,
+      stage,
+      manualSessionReportId,
+      manualSessionIsLoading,
+      manualSessionError,
+      conversationalSessionReportId,
+      conversationalSessionIsLoading,
+      conversationalSessionError,
+      setStageWithLogging,
+    ]) // React to specific session fields - no intervals needed
 
-    // Timeout fallback: Force transition after 10 seconds if still loading
+    // Timeout fallback: Show error recovery UI after 10 seconds if still loading
     // This is a safety net, separate from the main transition logic
     useEffect(() => {
       if (stage !== 'loading' || !reportId || hasTransitionedRef.current) return
@@ -326,23 +396,40 @@ export const ValuationSessionManager: React.FC<ValuationSessionManagerProps> = R
         const currentSearchParams = searchParamsRef.current
         const flowParam = currentSearchParams?.get('flow') || 'manual'
         const currentIsManualFlow = flowParam === 'manual'
-        
+
         const manualState = useManualSessionStore.getState()
         const conversationalState = useConversationalSessionStore.getState()
-        const currentSession = currentIsManualFlow ? manualState.session : conversationalState.session
+        const currentSession = currentIsManualFlow
+          ? manualState.session
+          : conversationalState.session
 
-        // Force transition as last resort
-        hasTransitionedRef.current = true
-        generalLogger.warn('Stage transition timeout - forcing transition to data-entry', {
-          reportId,
-          hasSession: !!currentSession,
-          sessionReportId: currentSession?.reportId
-        })
-        setStage('data-entry')
+        // Show error recovery UI to user (better UX than silent timeout)
+        if (!currentSession) {
+          hasTransitionedRef.current = true
+          generalLogger.warn('Stage transition timeout - showing error recovery', {
+            reportId,
+            hasSession: !!currentSession,
+            timeoutSeconds: 10,
+          })
+          setError(
+            'Session initialization is taking longer than expected. Please retry or start over.'
+          )
+        } else {
+          // Session exists, force transition
+          hasTransitionedRef.current = true
+          generalLogger.warn(
+            'Stage transition timeout - forcing transition with existing session',
+            {
+              reportId,
+              sessionReportId: currentSession?.reportId,
+            }
+          )
+          setStageWithLogging('data-entry')
+        }
       }, 10000) // 10 second timeout
 
       return () => clearTimeout(timeout)
-    }, [stage, reportId])
+    }, [stage, reportId, setStageWithLogging])
 
     // Sync URL with current view - simple and robust
     useEffect(() => {
@@ -359,7 +446,7 @@ export const ValuationSessionManager: React.FC<ValuationSessionManagerProps> = R
       const targetFlow = session.currentView
 
       // Normalize: treat null/undefined/invalid as mismatch (will update to valid flow)
-      const normalizedCurrentFlow = 
+      const normalizedCurrentFlow =
         currentFlow === 'manual' || currentFlow === 'conversational' ? currentFlow : null
 
       // Only update if different (handles both directions: manual↔conversational)
@@ -378,20 +465,20 @@ export const ValuationSessionManager: React.FC<ValuationSessionManagerProps> = R
 
       // Extract existing params and update flow
       const params: Record<string, string> = {}
-        searchParams.forEach((value, key) => {
+      searchParams.forEach((value, key) => {
         if (key !== 'flow') {
           params[key] = value
         }
-        })
+      })
       params.flow = targetFlow
 
       const newUrl = UrlGeneratorService.reportById(session.reportId, params)
 
       // Update URL
-        router.replace(newUrl, { scroll: false })
+      router.replace(newUrl, { scroll: false })
 
       // Reset flag after Next.js updates (simple delay)
-        setTimeout(() => {
+      setTimeout(() => {
         isUpdatingUrlRef.current = false
       }, 100)
     }, [session?.currentView, session?.reportId, searchParams, router])
@@ -406,6 +493,8 @@ export const ValuationSessionManager: React.FC<ValuationSessionManagerProps> = R
           onCloseModal: () => setShowOutOfCreditsModal(false),
           prefilledQuery,
           autoSend,
+          onRetry: handleRetry,
+          onStartOver: handleStartOver,
         })}
 
         {/* Out of Credits Modal */}
