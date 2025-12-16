@@ -178,6 +178,19 @@ export const ValuationSessionManager: React.FC<ValuationSessionManagerProps> = R
         } catch (error) {
           generalLogger.error('Failed to initialize session', { error, reportId })
           setError('Failed to initialize valuation session')
+          
+          // Even if initialization fails, if we have a session, allow user to continue
+          const currentManualSession = useManualSessionStore.getState().session
+          const currentConversationalSession = useConversationalSessionStore.getState().session
+          const currentSearchParams = searchParamsRef.current
+          const flowParam = currentSearchParams?.get('flow') || 'manual'
+          const currentIsManualFlow = flowParam === 'manual'
+          const currentSession = currentIsManualFlow ? currentManualSession : currentConversationalSession
+          
+          if (currentSession?.reportId === reportId) {
+            generalLogger.debug('Session exists despite initialization error, transitioning to data-entry', { reportId })
+            setStage('data-entry')
+          }
         }
       },
       [isAuthenticated, initializeSession] // Stable deps - searchParams and flow read from ref, isUpdatingUrl now in ref
@@ -203,6 +216,7 @@ export const ValuationSessionManager: React.FC<ValuationSessionManagerProps> = R
       
       if (currentSession?.reportId === reportId) {
         generalLogger.debug('Session already exists, skipping initialization', { reportId })
+        setStage('data-entry') // ✅ Set stage before returning
         return
       }
 
@@ -218,6 +232,23 @@ export const ValuationSessionManager: React.FC<ValuationSessionManagerProps> = R
 
       initializeSessionForReport(reportId)
     }, [reportId, initializeSessionForReport]) // Removed isManualFlow - read from ref instead
+
+    // Watch for session availability and transition stage
+    // This ensures stage transitions even if initialization completes asynchronously
+    useEffect(() => {
+      if (stage === 'loading' && session && session.reportId === reportId && !error) {
+        generalLogger.debug('Session available, transitioning to data-entry', { reportId })
+        setStage('data-entry')
+      }
+    }, [session, reportId, stage, error])
+
+    // Also transition if we have session but error state (allow user to continue)
+    useEffect(() => {
+      if (stage === 'loading' && session && session.reportId === reportId && error) {
+        generalLogger.debug('Session available despite errors, transitioning to data-entry', { reportId })
+        setStage('data-entry')
+      }
+    }, [session, reportId, stage, error])
 
     // Sync URL with current view - simple and robust
     useEffect(() => {
