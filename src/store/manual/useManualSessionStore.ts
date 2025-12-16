@@ -40,6 +40,7 @@ interface ManualSessionStore {
   // Session data helpers
   getReportId: () => string | null
   getSessionData: () => any | null
+  updateSessionData: (data: Partial<any>) => Promise<void>
 }
 
 export const useManualSessionStore = create<ManualSessionStore>((set, get) => ({
@@ -151,6 +152,37 @@ export const useManualSessionStore = create<ManualSessionStore>((set, get) => ({
   getSessionData: () => {
     const { session } = get()
     return session?.sessionData || null
+  },
+
+  // Update session data (for form sync compatibility)
+  // Note: This is a lightweight update that doesn't persist to backend immediately
+  // Full persistence happens through SessionService when saving
+  updateSessionData: async (data: Partial<any>) => {
+    set((state) => {
+      if (!state.session) {
+        storeLogger.warn('[Manual] Cannot update session data: no active session')
+        return state
+      }
+
+      const updatedSession = {
+        ...state.session,
+        sessionData: {
+          ...state.session.sessionData,
+          ...data,
+        },
+      }
+
+      storeLogger.debug('[Manual] Session data updated (in-memory)', {
+        reportId: state.session.reportId,
+        fieldsUpdated: Object.keys(data).length,
+      })
+
+      return {
+        ...state,
+        session: updatedSession,
+        hasUnsavedChanges: true,
+      }
+    })
   },
 }))
 

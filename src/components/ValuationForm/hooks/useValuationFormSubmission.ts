@@ -62,8 +62,8 @@ export const useValuationFormSubmission = (
         // Returns false if already calculating (prevents double submission)
         const wasSet = trySetCalculating()
         if (!wasSet) {
-          generalLogger.warn('Calculation already in progress, preventing double submission', {
-            storeState: useValuationApiStore.getState().isCalculating,
+          generalLogger.warn('[Manual] Calculation already in progress, preventing double submission', {
+            storeState: useManualResultsStore.getState().isCalculating,
             hookValue: isCalculating,
           })
           return // Don't reset - let existing calculation finish

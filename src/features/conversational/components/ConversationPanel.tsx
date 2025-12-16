@@ -10,7 +10,7 @@
 import React, { useCallback, useMemo } from 'react'
 import { StreamingChat } from '../../../components/StreamingChat'
 import { valuationAuditService } from '../../../services/audit/ValuationAuditService'
-import { ValuationService, ReportService } from '../../../services'
+import { valuationService, reportService } from '../../../services'
 import { useConversationalResultsStore, useConversationalSessionStore, useConversationalChatStore } from '../../../store/conversational'
 import { useVersionHistoryStore } from '../../../store/useVersionHistoryStore'
 import type { Message } from '../../../types/message'
@@ -151,8 +151,8 @@ export const ConversationPanel: React.FC<ConversationPanelProps> = ({
 
       if (session?.reportId) {
         try {
-          // Atomic save: all data in one operation (using ReportService)
-          await ReportService.saveReportAssets(session.reportId, {
+          // Atomic save: all data in one operation (using reportService)
+          await reportService.saveReportAssets(session.reportId, {
             valuationResult: result,
             htmlReport: result.html_report || '',
             infoTabHtml: result.info_tab_html || '',
@@ -432,7 +432,7 @@ export const ConversationPanel: React.FC<ConversationPanelProps> = ({
       }
 
       // Calculate valuation using service (Conversational flow)
-      const result = await ValuationService.calculateValuation(request)
+      const result = await valuationService.calculateValuation(request)
 
       if (result) {
         // Call handleValuationComplete directly (it's already defined above)

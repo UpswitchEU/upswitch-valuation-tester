@@ -53,7 +53,7 @@ export const ValuationForm: React.FC<ValuationFormProps> = ({
   isRegenerationMode = false,
 }) => {
   const { formData, updateFormData, prefillFromBusinessCard } = useManualFormStore()
-  const { session } = useManualSessionStore()
+  const { session, updateSessionData } = useManualSessionStore()
   const { businessTypes } = useBusinessTypes()
   const { businessCard, isAuthenticated } = useAuth()
   const { getVersion } = useVersionHistoryStore()
@@ -191,43 +191,12 @@ export const ValuationForm: React.FC<ValuationFormProps> = ({
     updateSessionData,
   })
 
-  // Sync formData to DataResponse[] format (unified pipeline)
-  // Debounced to avoid excessive updates during typing
-  const debouncedSyncToDataCollection = useCallback(
-    debounce(async (data: typeof formData) => {
-      if (!data || Object.keys(data).length === 0) {
-        return
-      }
+  // NOTE: DataResponse[] syncing is not needed for Manual flow
+  // Manual flow uses formData directly, conversational flow uses collected data
+  // This keeps the flows isolated and prevents confusion
 
-      try {
-        const dataResponses = convertFormDataToDataResponses(data)
-        setCollectedData(dataResponses)
-        generalLogger.debug('Synced formData to DataResponse[]', {
-          responseCount: dataResponses.length,
-        })
-      } catch (err) {
-        // BANK-GRADE: Specific error handling - form sync failure
-        if (err instanceof Error) {
-          generalLogger.warn('Failed to sync formData to DataResponse[]', {
-            error: err.message,
-            stack: err.stack,
-          })
-        } else {
-          generalLogger.warn('Failed to sync formData to DataResponse[]', {
-            error: String(err),
-          })
-        }
-      }
-    }, 500),
-    [setCollectedData]
-  )
-
-  // Sync formData to DataResponse[] whenever it changes (debounced)
-  useEffect(() => {
-    if (formData && Object.keys(formData).length > 0) {
-      debouncedSyncToDataCollection(formData)
-    }
-  }, [formData, debouncedSyncToDataCollection])
+  // NOTE: Manual flow doesn't need DataResponse[] syncing
+  // Form data is used directly in form submission
 
   // Convert historicalInputs to formData.historical_years_data
   // Backend requires chronological order (oldest first), but UI shows most recent first
