@@ -7,11 +7,12 @@
  * @module features/manual/components/ManualLayout
  */
 
-import React, { useEffect, useRef } from 'react'
+import React, { Suspense, useEffect, useRef } from 'react'
 import { AssetInspector } from '../../../components/debug/AssetInspector'
 import { ResizableDivider } from '../../../components/ResizableDivider'
 import { ValuationForm } from '../../../components/ValuationForm'
 import { ValuationToolbar } from '../../../components/ValuationToolbar'
+import { InputFieldsSkeleton } from '../../../components/skeletons'
 import { useAuth } from '../../../hooks/useAuth'
 import { useToast } from '../../../hooks/useToast'
 import {
@@ -202,11 +203,13 @@ export const ManualLayout: React.FC<ManualLayoutProps> = ({
           }}
         >
           <div className="flex-1 p-6">
-            {/* ValuationForm - Main form inputs */}
-            <ValuationForm
-              initialVersion={initialVersion}
-              isRegenerationMode={initialMode === 'edit' && !!initialVersion}
-            />
+            {/* ValuationForm - Main form inputs with Suspense boundary */}
+            <Suspense fallback={<InputFieldsSkeleton />}>
+              <ValuationForm
+                initialVersion={initialVersion}
+                isRegenerationMode={initialMode === 'edit' && !!initialVersion}
+              />
+            </Suspense>
           </div>
         </div>
 

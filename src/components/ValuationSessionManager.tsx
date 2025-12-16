@@ -66,9 +66,8 @@ export const ValuationSessionManager: React.FC<ValuationSessionManagerProps> = R
     const conversationalSession = useConversationalSessionStore((state) => state.session)
     const session = isManualFlow ? manualSession : conversationalSession
     
-    // For now, use manual store's methods (this component needs refactoring for full flow isolation)
-    const isUpdatingUrl = false // Not used in new architecture
-    const setUpdatingUrl = (_value: boolean) => {} // Not used in new architecture
+    // URL update tracking (prevents re-initialization during URL updates)
+    const isUpdatingUrlRef = useRef(false)
     
     // Initialize session function (flow-aware)
     // Memoized with empty deps - stable reference, uses Zustand promise cache internally
@@ -102,7 +101,7 @@ export const ValuationSessionManager: React.FC<ValuationSessionManagerProps> = R
     const initializeSessionForReport = useCallback(
       async (reportId: string) => {
         // Don't re-initialize if we're updating URL ourselves
-        if (isUpdatingUrl) {
+        if (isUpdatingUrlRef.current) {
           return // URL update in progress, don't re-initialize
         }
 
@@ -181,7 +180,7 @@ export const ValuationSessionManager: React.FC<ValuationSessionManagerProps> = R
           setError('Failed to initialize valuation session')
         }
       },
-      [isAuthenticated, initializeSession, isUpdatingUrl] // Stable deps - searchParams and flow read from ref
+      [isAuthenticated, initializeSession] // Stable deps - searchParams and flow read from ref, isUpdatingUrl now in ref
     )
 
     // Initialize session when reportId changes
@@ -240,17 +239,17 @@ export const ValuationSessionManager: React.FC<ValuationSessionManagerProps> = R
 
       // Only update if different (handles both directions: manual↔conversational)
       if (normalizedCurrentFlow === targetFlow) {
-        setUpdatingUrl(false)
+        isUpdatingUrlRef.current = false
         return
       }
 
-      // Skip if already updating (prevents race conditions via Zustand)
-      if (isUpdatingUrl) {
+      // Skip if already updating (prevents race conditions)
+      if (isUpdatingUrlRef.current) {
         return
       }
 
-      // Set flag atomically via Zustand
-      setUpdatingUrl(true)
+      // Set flag
+      isUpdatingUrlRef.current = true
 
       // Extract existing params and update flow
       const params: Record<string, string> = {}
@@ -268,9 +267,9 @@ export const ValuationSessionManager: React.FC<ValuationSessionManagerProps> = R
 
       // Reset flag after Next.js updates (simple delay)
         setTimeout(() => {
-        setUpdatingUrl(false)
+        isUpdatingUrlRef.current = false
       }, 100)
-    }, [session?.currentView, session?.reportId, searchParams, router, isUpdatingUrl, setUpdatingUrl])
+    }, [session?.currentView, session?.reportId, searchParams, router])
 
     return (
       <>

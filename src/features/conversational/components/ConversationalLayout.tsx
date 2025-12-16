@@ -7,7 +7,7 @@
  * @module features/conversational/components/ConversationalLayout
  */
 
-import React, { useCallback, useEffect, useRef, useState } from 'react'
+import React, { Suspense, useCallback, useEffect, useRef, useState } from 'react'
 import { FullScreenModal } from '../../../components/FullScreenModal'
 import { ResizableDivider } from '../../../components/ResizableDivider'
 import { ValuationToolbar } from '../../../components/ValuationToolbar'
@@ -38,6 +38,26 @@ import { ConversationPanel } from './ConversationPanel'
 import { ErrorDisplay } from './ErrorDisplay'
 import { MobilePanelSwitcher } from './MobilePanelSwitcher'
 import { ReportPanel } from './ReportPanel'
+
+// Chat skeleton component
+const ChatSkeleton: React.FC = () => (
+  <div className="flex flex-col h-full p-4 space-y-4">
+    <div className="flex items-start space-x-2">
+      <div className="w-8 h-8 rounded-full bg-zinc-700 animate-pulse" />
+      <div className="flex-1 space-y-2">
+        <div className="h-4 bg-zinc-700 rounded w-3/4 animate-pulse" />
+        <div className="h-4 bg-zinc-700 rounded w-1/2 animate-pulse" />
+      </div>
+    </div>
+    <div className="flex items-start space-x-2 justify-end">
+      <div className="flex-1 space-y-2 items-end flex flex-col">
+        <div className="h-4 bg-zinc-700 rounded w-2/3 animate-pulse" />
+        <div className="h-4 bg-zinc-700 rounded w-1/2 animate-pulse" />
+      </div>
+      <div className="w-8 h-8 rounded-full bg-zinc-700 animate-pulse" />
+    </div>
+  </div>
+)
 
 /**
  * Conversational Layout Component Props

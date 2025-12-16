@@ -18,22 +18,21 @@
  * @module services/session/SessionService
  */
 
-import { backendAPI } from '../backendApi'
-import type { ValuationSession, ValuationRequest } from '../../types/valuation'
-import { globalSessionCache } from '../../utils/sessionCacheManager'
-import { mergeSessionFields, normalizeSessionDates } from '../../utils/sessionHelpers'
-import { hasMeaningfulSessionData } from '../../utils/sessionDataUtils'
+import {
+    ApplicationError,
+    NetworkError,
+    NotFoundError,
+    ValidationError,
+} from '../../types/errors'
+import type { ValuationRequest, ValuationSession } from '../../types/valuation'
+import { sessionCircuitBreaker } from '../../utils/circuitBreaker'
+import { getErrorMessage } from '../../utils/errors/errorConverter'
 import { createContextLogger } from '../../utils/logger'
 import { retrySessionOperation } from '../../utils/retryWithBackoff'
-import { sessionCircuitBreaker } from '../../utils/circuitBreaker'
+import { globalSessionCache } from '../../utils/sessionCacheManager'
+import { mergeSessionFields, normalizeSessionDates } from '../../utils/sessionHelpers'
 import { validateSessionData } from '../../utils/sessionValidation'
-import { getErrorMessage } from '../../utils/errors/errorConverter'
-import {
-  ValidationError,
-  NetworkError,
-  NotFoundError,
-  ApplicationError,
-} from '../../types/errors'
+import { backendAPI } from '../backendApi'
 
 const logger = createContextLogger('SessionService')
 
@@ -143,11 +142,18 @@ export class SessionService {
 
       const duration = performance.now() - startTime
 
-      logger.info('Session loaded successfully', {
-        reportId,
-        duration_ms: duration.toFixed(2),
-        fromCache: false,
-      })
+      if (session) {
+        logger.info('Session loaded successfully', {
+          reportId,
+          duration_ms: duration.toFixed(2),
+          fromCache: false,
+        })
+      } else {
+        logger.debug('Session not found (404)', {
+          reportId,
+          duration_ms: duration.toFixed(2),
+        })
+      }
 
       return session
     } catch (error) {

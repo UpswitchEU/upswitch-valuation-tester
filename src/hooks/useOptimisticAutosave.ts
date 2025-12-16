@@ -1,0 +1,359 @@
+/**
+ * Optimistic Autosave Hook
+ * 
+ * Provides instant "saved" feedback by updating UI immediately,
+ * then persisting changes in the background with debouncing.
+ * 
+ * Features:
+ * - Immediate UI feedback (<16ms)
+ * - Debounced persistence (500ms default)
+ * - Automatic rollback on error
+ * - Progress tracking (Saving... → Saved)
+ * 
+ * @module hooks/useOptimisticAutosave
+ */
+
+import { useCallback, useEffect, useRef, useState } from 'react'
+import { useManualSessionStore } from '../store/manual'
+import { generalLogger } from '../utils/logger'
+
+export interface OptimisticAutosaveOptions {
+  /**
+   * Debounce delay in milliseconds
+   * Default: 500ms
+   */
+  debounceMs?: number
+
+  /**
+   * Callback when save succeeds
+   */
+  onSaveSuccess?: () => void
+
+  /**
+   * Callback when save fails
+   */
+  onSaveError?: (error: Error) => void
+}
+
+export interface OptimisticAutosaveState {
+  /**
+   * True if currently saving in background
+   */
+  isSaving: boolean
+
+  /**
+   * True if there are unsaved changes
+   */
+  hasUnsavedChanges: boolean
+
+  /**
+   * Last save timestamp
+   */
+  lastSaved: Date | null
+
+  /**
+   * Error message if save failed
+   */
+  error: string | null
+}
+
+export function useOptimisticAutosave(
+  reportId: string,
+  options: OptimisticAutosaveOptions = {}
+) {
+  const { debounceMs = 500, onSaveSuccess, onSaveError } = options
+
+  // Local state for UI feedback
+  const [state, setState] = useState<OptimisticAutosaveState>({
+    isSaving: false,
+    hasUnsavedChanges: false,
+    lastSaved: null,
+    error: null,
+  })
+
+  // Session store for actual persistence
+  const { saveSessionOptimistic, session } = useManualSessionStore()
+
+  // Ref to store pending changes
+  const pendingChangesRef = useRef<Partial<any>>({})
+  const timeoutRef = useRef<NodeJS.Timeout | null>(null)
+  const isMountedRef = useRef(true)
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      isMountedRef.current = false
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current)
+      }
+    }
+  }, [])
+
+  /**
+   * Update a single field with optimistic autosave
+   * 
+   * Flow:
+   * 1. Update UI immediately (show "Saved")
+   * 2. Accumulate changes in pendingChangesRef
+   * 3. Debounce (wait 500ms for more changes)
+   * 4. Persist all accumulated changes in background
+   * 5. Revert on error
+   */
+  const updateField = useCallback(
+    (fieldName: string, value: any) => {
+      if (!reportId) {
+        generalLogger.warn('[OptimisticAutosave] No reportId, skipping autosave')
+        return
+      }
+
+      // Step 1: Immediate UI feedback (< 16ms)
+      setState((prev) => ({
+        ...prev,
+        hasUnsavedChanges: false, // Optimistic: mark as "saved"
+        lastSaved: new Date(),
+        error: null,
+      }))
+
+      // Step 2: Accumulate changes
+      pendingChangesRef.current = {
+        ...pendingChangesRef.current,
+        [fieldName]: value,
+      }
+
+      generalLogger.debug('[OptimisticAutosave] Field updated (optimistic)', {
+        reportId,
+        fieldName,
+        pendingChangesCount: Object.keys(pendingChangesRef.current).length,
+      })
+
+      // Step 3: Debounce - clear previous timeout and set new one
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current)
+      }
+
+      timeoutRef.current = setTimeout(async () => {
+        if (!isMountedRef.current) return
+
+        // Step 4: Background persistence
+        const changesToSave = { ...pendingChangesRef.current }
+        pendingChangesRef.current = {} // Clear pending changes
+
+        setState((prev) => ({ ...prev, isSaving: true }))
+
+        generalLogger.info('[OptimisticAutosave] Starting background save', {
+          reportId,
+          fieldsCount: Object.keys(changesToSave).length,
+        })
+
+        try {
+          await saveSessionOptimistic(reportId, changesToSave)
+
+          if (!isMountedRef.current) return
+
+          setState((prev) => ({
+            ...prev,
+            isSaving: false,
+            hasUnsavedChanges: false,
+            lastSaved: new Date(),
+            error: null,
+          }))
+
+          onSaveSuccess?.()
+
+          generalLogger.info('[OptimisticAutosave] Background save succeeded', {
+            reportId,
+          })
+        } catch (error) {
+          if (!isMountedRef.current) return
+
+          // Step 5: Error handling (revert is handled by saveSessionOptimistic)
+          const errorMessage = error instanceof Error ? error.message : 'Save failed'
+
+          setState((prev) => ({
+            ...prev,
+            isSaving: false,
+            hasUnsavedChanges: true,
+            error: errorMessage,
+          }))
+
+          onSaveError?.(error instanceof Error ? error : new Error(errorMessage))
+
+          generalLogger.error('[OptimisticAutosave] Background save failed', {
+            reportId,
+            error: errorMessage,
+          })
+        }
+      }, debounceMs)
+    },
+    [reportId, debounceMs, saveSessionOptimistic, onSaveSuccess, onSaveError]
+  )
+
+  /**
+   * Update multiple fields at once
+   */
+  const updateFields = useCallback(
+    (fields: Record<string, any>) => {
+      if (!reportId) {
+        generalLogger.warn('[OptimisticAutosave] No reportId, skipping autosave')
+        return
+      }
+
+      // Step 1: Immediate UI feedback
+      setState((prev) => ({
+        ...prev,
+        hasUnsavedChanges: false,
+        lastSaved: new Date(),
+        error: null,
+      }))
+
+      // Step 2: Accumulate changes
+      pendingChangesRef.current = {
+        ...pendingChangesRef.current,
+        ...fields,
+      }
+
+      generalLogger.debug('[OptimisticAutosave] Multiple fields updated (optimistic)', {
+        reportId,
+        fieldsCount: Object.keys(fields).length,
+        pendingChangesCount: Object.keys(pendingChangesRef.current).length,
+      })
+
+      // Step 3: Debounce
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current)
+      }
+
+      timeoutRef.current = setTimeout(async () => {
+        if (!isMountedRef.current) return
+
+        const changesToSave = { ...pendingChangesRef.current }
+        pendingChangesRef.current = {}
+
+        setState((prev) => ({ ...prev, isSaving: true }))
+
+        generalLogger.info('[OptimisticAutosave] Starting background save (multiple fields)', {
+          reportId,
+          fieldsCount: Object.keys(changesToSave).length,
+        })
+
+        try {
+          await saveSessionOptimistic(reportId, changesToSave)
+
+          if (!isMountedRef.current) return
+
+          setState((prev) => ({
+            ...prev,
+            isSaving: false,
+            hasUnsavedChanges: false,
+            lastSaved: new Date(),
+            error: null,
+          }))
+
+          onSaveSuccess?.()
+
+          generalLogger.info('[OptimisticAutosave] Background save succeeded (multiple fields)', {
+            reportId,
+          })
+        } catch (error) {
+          if (!isMountedRef.current) return
+
+          const errorMessage = error instanceof Error ? error.message : 'Save failed'
+
+          setState((prev) => ({
+            ...prev,
+            isSaving: false,
+            hasUnsavedChanges: true,
+            error: errorMessage,
+          }))
+
+          onSaveError?.(error instanceof Error ? error : new Error(errorMessage))
+
+          generalLogger.error('[OptimisticAutosave] Background save failed (multiple fields)', {
+            reportId,
+            error: errorMessage,
+          })
+        }
+      }, debounceMs)
+    },
+    [reportId, debounceMs, saveSessionOptimistic, onSaveSuccess, onSaveError]
+  )
+
+  /**
+   * Force immediate save (bypass debounce)
+   */
+  const forceSave = useCallback(async () => {
+    if (!reportId) {
+      generalLogger.warn('[OptimisticAutosave] No reportId, skipping force save')
+      return
+    }
+
+    // Clear debounce timeout
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current)
+      timeoutRef.current = null
+    }
+
+    // If no pending changes, return
+    if (Object.keys(pendingChangesRef.current).length === 0) {
+      generalLogger.debug('[OptimisticAutosave] Force save: no pending changes')
+      return
+    }
+
+    const changesToSave = { ...pendingChangesRef.current }
+    pendingChangesRef.current = {}
+
+    setState((prev) => ({ ...prev, isSaving: true }))
+
+    generalLogger.info('[OptimisticAutosave] Force save started', {
+      reportId,
+      fieldsCount: Object.keys(changesToSave).length,
+    })
+
+    try {
+      await saveSessionOptimistic(reportId, changesToSave)
+
+      if (!isMountedRef.current) return
+
+      setState((prev) => ({
+        ...prev,
+        isSaving: false,
+        hasUnsavedChanges: false,
+        lastSaved: new Date(),
+        error: null,
+      }))
+
+      onSaveSuccess?.()
+
+      generalLogger.info('[OptimisticAutosave] Force save succeeded', { reportId })
+    } catch (error) {
+      if (!isMountedRef.current) return
+
+      const errorMessage = error instanceof Error ? error.message : 'Save failed'
+
+      setState((prev) => ({
+        ...prev,
+        isSaving: false,
+        hasUnsavedChanges: true,
+        error: errorMessage,
+      }))
+
+      onSaveError?.(error instanceof Error ? error : new Error(errorMessage))
+
+      generalLogger.error('[OptimisticAutosave] Force save failed', {
+        reportId,
+        error: errorMessage,
+      })
+    }
+  }, [reportId, saveSessionOptimistic, onSaveSuccess, onSaveError])
+
+  return {
+    // State
+    ...state,
+
+    // Actions
+    updateField,
+    updateFields,
+    forceSave,
+  }
+}
+
