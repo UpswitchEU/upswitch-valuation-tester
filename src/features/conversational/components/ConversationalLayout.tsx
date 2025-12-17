@@ -108,15 +108,32 @@ const ConversationalLayoutInner: React.FC<ConversationalLayoutProps> = ({
   // Asset orchestration removed - data loaded directly from session store
   // Session loads via SessionManager, data populates reactively
 
-  // Restore results from session when it loads
+  // Restore results from session when reportId changes (new session loaded)
+  const lastRestoredReportIdRef = useRef<string | null>(null)
   useEffect(() => {
-    if (session?.valuationResult && !result) {
-      setResult(session.valuationResult as any)
+    const currentSession = useSessionStore.getState().session
+    if (!currentSession?.reportId) {
+      return
+    }
+
+    const reportId = currentSession.reportId
+
+    // Only restore once per reportId (when new session loads)
+    if (lastRestoredReportIdRef.current === reportId) {
+      return
+    }
+
+    // Update tracked reportId
+    lastRestoredReportIdRef.current = reportId
+
+    // Restore results if session has them and we don't have a result yet
+    if (currentSession.valuationResult && !result) {
+      setResult(currentSession.valuationResult as any)
       chatLogger.info('[Conversational] Restored valuation result from session', {
-        reportId: session.reportId,
+        reportId,
       })
     }
-  }, [session, result, setResult])
+  }, [session?.reportId, result, setResult])
 
   // Mark conversation changes as unsaved (for save status indicator)
   useEffect(() => {
@@ -273,14 +290,15 @@ const ConversationalLayoutInner: React.FC<ConversationalLayoutProps> = ({
       return
     }
 
-    // Failproof: Validate session exists
-    if (!session) {
+    // Read session from store inside effect to avoid dependency on session object
+    const currentSession = useSessionStore.getState().session
+    if (!currentSession) {
       chatLogger.debug('Skipping import summary: session not available', { reportId })
       return
     }
 
     // Check if we should generate an import summary
-    const sessionData = session.sessionData
+    const sessionData = currentSession.sessionData
     if (!sessionData) {
       chatLogger.debug('Skipping import summary: no session data', { reportId })
       return
@@ -368,11 +386,10 @@ const ConversationalLayoutInner: React.FC<ConversationalLayoutProps> = ({
     }
   }, [
     restoration.state.isRestored,
-    session?.sessionData,
+    session?.reportId, // Only depend on reportId, read sessionData inside effect
     state.messages.length,
     reportId,
     actions,
-    session,
   ])
 
   // Reset summary generation flag when reportId changes

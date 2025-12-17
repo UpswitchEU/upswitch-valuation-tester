@@ -7,7 +7,7 @@
  * @module features/manual/components/ManualLayout
  */
 
-import React, { Suspense, useCallback, useEffect, useMemo, useRef } from 'react'
+import React, { Suspense, useEffect, useRef } from 'react'
 import { AssetInspector } from '../../../components/debug/AssetInspector'
 import { ResizableDivider } from '../../../components/ResizableDivider'
 import { InputFieldsSkeleton } from '../../../components/skeletons'
@@ -106,52 +106,21 @@ export const ManualLayout: React.FC<ManualLayoutProps> = ({
   // Track restoration to prevent loops
   const restorationRef = useRef<{
     lastRestoredReportId: string | null
-    lastRestoredFormDataHash: string | null
-    lastRestoredResultId: string | null
-    lastSeenSessionDataHash: string | null
     isRestoring: boolean
-    lastFormDataHash: string | null // Track last form data hash to detect form sync
   }>({
     lastRestoredReportId: null,
-    lastRestoredFormDataHash: null,
-    lastRestoredResultId: null,
-    lastSeenSessionDataHash: null,
     isRestoring: false,
-    lastFormDataHash: null,
   })
   
-  // Helper to create a simple hash of form data for comparison
-  const getFormDataHash = useCallback((data: any): string => {
-    if (!data) return ''
-    // Create hash from key fields that indicate meaningful data
-    const key = `${data.company_name || ''}_${data.revenue || ''}_${data.industry || ''}_${data.founding_year || ''}`
-    return key
-  }, [])
-  
-  // Track last computed hash to prevent unnecessary recalculations
-  const lastSessionDataHashRef = useRef<string | null>(null)
-  
-  // Memoize session data hash to prevent unnecessary effect runs
-  // Only update when the hash value actually changes, not just the object reference
-  const sessionDataHash = useMemo(() => {
-    if (!session?.sessionData) {
-      lastSessionDataHashRef.current = null
-      return null
-    }
-    const hash = getFormDataHash(session.sessionData as any)
-    // Only update if hash actually changed (prevents unnecessary effect runs)
-    if (hash !== lastSessionDataHashRef.current) {
-      lastSessionDataHashRef.current = hash
-    }
-    return lastSessionDataHashRef.current
-  }, [session?.sessionData, getFormDataHash])
-  
-  // Simple restoration: Read directly from session when it changes
+  // Simple restoration: Only restore on reportId change (new session loaded)
   useEffect(() => {
-    // Read session from store inside effect to avoid dependency on session object reference
     const currentSession = useSessionStore.getState().session
     if (!currentSession || currentSession.reportId !== reportId) {
-      restorationRef.current.isRestoring = false
+      return
+    }
+
+    // Only restore once per reportId (when new session loads)
+    if (restorationRef.current.lastRestoredReportId === reportId) {
       return
     }
 
@@ -160,101 +129,42 @@ export const ManualLayout: React.FC<ManualLayoutProps> = ({
       return
     }
 
-    // Check if reportId changed (new session loaded)
-    const reportIdChanged = restorationRef.current.lastRestoredReportId !== reportId
-    
-    // Get current form data hash (read from store to avoid dependency on formData prop)
-    const currentFormData = useManualFormStore.getState().formData
-    const currentFormDataHash = getFormDataHash(currentFormData)
-    
-    // Track form data hash changes to detect when user is actively editing
-    const formDataChanged = currentFormDataHash !== restorationRef.current.lastFormDataHash
-    if (formDataChanged) {
-      restorationRef.current.lastFormDataHash = currentFormDataHash
-    }
-    
-    // Detect if form sync is happening: if session hash matches current form hash,
-    // it means the session was updated by form sync (not external source)
-    const formSyncDetected = sessionDataHash !== null && 
-                             sessionDataHash === currentFormDataHash
-    
-    // Check if session data changed from external source (not from form sync)
-    // Skip restoration if:
-    // 1. Session hash matches current form hash (form sync case) - most important check
-    // 2. We've already seen this session hash (no actual change)
-    // Only restore if session hash changed AND doesn't match current form (external change)
-    const sessionDataChanged = sessionDataHash !== null && 
-                               sessionDataHash !== restorationRef.current.lastSeenSessionDataHash &&
-                               !formSyncDetected // Don't restore if it matches current form (form sync case)
-
-    // Only restore if reportId changed (new session) OR session data changed from external source
-    if (!reportIdChanged && !sessionDataChanged) {
-      // Still track the session data hash we're seeing (even if we skip restoration)
-      // This prevents false positives on subsequent checks
-      if (sessionDataHash !== null) {
-        restorationRef.current.lastSeenSessionDataHash = sessionDataHash
-      }
-      return
-    }
-
-    // If reportId changed, reset restoration tracking
-    if (reportIdChanged) {
-      restorationRef.current.lastRestoredFormDataHash = null
-      restorationRef.current.lastRestoredResultId = null
-      restorationRef.current.lastSeenSessionDataHash = null
-      restorationRef.current.lastFormDataHash = null
-    }
-
-    // Mark as restoring to prevent re-entry
+    // Mark as restoring
     restorationRef.current.isRestoring = true
 
     try {
-      // Read store functions inside effect to avoid dependency on function references
       const { updateFormData: updateFormDataFn } = useManualFormStore.getState()
       const { setResult: setResultFn } = useManualResultsStore.getState()
+      const currentFormData = useManualFormStore.getState().formData
 
-      // Restore form data
+      // Restore form data if session has data and form is empty/different
       if (currentSession.sessionData) {
         const sessionDataObj = currentSession.sessionData as any
-        if (sessionDataObj.company_name || sessionDataObj.revenue) {
-          const formDataHash = getFormDataHash(sessionDataObj)
-          
-          // Only restore if data is actually different from current form data
-          // and we haven't already restored this exact data
-          if (formDataHash !== currentFormDataHash && 
-              formDataHash !== restorationRef.current.lastRestoredFormDataHash) {
-            generalLogger.debug('[ManualLayout] Restoring form data', { reportId, formDataHash, currentFormDataHash })
-            restorationRef.current.lastRestoredFormDataHash = formDataHash
-            // Track the session data hash we restored
-            if (sessionDataHash !== null) {
-              restorationRef.current.lastSeenSessionDataHash = sessionDataHash
-            }
-            updateFormDataFn(sessionDataObj)
-          }
+        // Only restore if form is empty or session has different data
+        const formIsEmpty = !currentFormData.company_name && !currentFormData.revenue
+        const hasSessionData = sessionDataObj.company_name || sessionDataObj.revenue
+        
+        if (hasSessionData && formIsEmpty) {
+          generalLogger.debug('[ManualLayout] Restoring form data', { reportId })
+          updateFormDataFn(sessionDataObj)
         }
       }
 
       // Restore results
       if (currentSession.valuationResult) {
         const currentResult = useManualResultsStore.getState().result
-        const resultId = currentSession.valuationResult.valuation_id
-        
-        // Only restore if result is different and we haven't restored this one already
-        if ((!currentResult || currentResult.valuation_id !== resultId) && 
-            resultId !== restorationRef.current.lastRestoredResultId) {
+        if (!currentResult || currentResult.valuation_id !== currentSession.valuationResult.valuation_id) {
           generalLogger.debug('[ManualLayout] Restoring result', { reportId })
-          restorationRef.current.lastRestoredResultId = resultId
           setResultFn(currentSession.valuationResult as any)
         }
       }
-      
+
       // Mark this reportId as restored
       restorationRef.current.lastRestoredReportId = reportId
     } finally {
-      // Always clear restoring flag, even if there's an error
       restorationRef.current.isRestoring = false
     }
-  }, [sessionReportId, reportId, sessionDataHash, getFormDataHash])
+  }, [reportId]) // Only depends on reportId - no sessionDataHash!
 
   // Panel resize hook
   const { leftPanelWidth, handleResize, isMobile, mobileActivePanel, setMobileActivePanel } =

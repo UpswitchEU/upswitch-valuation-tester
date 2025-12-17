@@ -51,57 +51,53 @@ export function useSessionRestoration() {
   const { showToast } = useToast()
 
   // Track restored reports using a Set (simple and efficient)
-  // Also track the last sessionData hash to detect when data changes from empty to populated
   const restoredReports = useRef<Set<string>>(new Set())
-  const lastSessionDataHash = useRef<string>('')
+  const lastReportIdRef = useRef<string | null>(null)
 
-  // Single restoration effect - runs when session object changes
+  // Single restoration effect - only runs when reportId changes (new session loaded)
   useEffect(() => {
-    if (!session?.reportId) {
+    const currentSession = useSessionStore.getState().session
+    if (!currentSession?.reportId) {
       return
     }
+
+    const reportId = currentSession.reportId
+
+    // Only restore once per reportId (when new session loads)
+    if (restoredReports.current.has(reportId)) {
+      return
+    }
+
+    // Check if reportId changed (new session loaded)
+    if (lastReportIdRef.current === reportId) {
+      return
+    }
+
+    // Update tracked reportId
+    lastReportIdRef.current = reportId
 
     // CRITICAL: Use session.sessionData directly (merged with top-level fields)
     // NOT getSessionData() which filters to form fields only
     // We need access to html_report, info_tab_html, valuation_result for restoration
-    const sessionData = session.sessionData as any
-    
-    // Create a hash of sessionData to detect changes
-    const sessionDataHash = JSON.stringify(sessionData || {})
-    
-    // Check if sessionData changed from empty to populated
-    const wasEmpty = !lastSessionDataHash.current || lastSessionDataHash.current === '{}'
-    const isNowPopulated = hasMeaningfulSessionData(sessionData, session)
-    const dataJustLoaded = wasEmpty && isNowPopulated
-
-    // Update hash
-    lastSessionDataHash.current = sessionDataHash
-
-    // Skip if already restored this report AND data hasn't changed from empty to populated
-    if (restoredReports.current.has(session.reportId) && !dataJustLoaded) {
-      return
-    }
+    const sessionData = currentSession.sessionData as any
 
     // CRITICAL: Skip restoration for NEW reports (empty sessionData)
-    if (!sessionData || !hasMeaningfulSessionData(sessionData, session)) {
+    if (!sessionData || !hasMeaningfulSessionData(sessionData, currentSession)) {
       generalLogger.debug('Skipping restoration - NEW report (empty sessionData)', {
-        reportId: session.reportId,
+        reportId,
       })
-      // Mark as restored to prevent re-checking (but allow re-check if data loads later)
-      if (!dataJustLoaded) {
-        restoredReports.current.add(session.reportId)
-      }
+      // Mark as restored to prevent re-checking
+      restoredReports.current.add(reportId)
       return
     }
 
     // Mark as restoring immediately to prevent duplicates
-    restoredReports.current.add(session.reportId)
+    restoredReports.current.add(reportId)
 
     generalLogger.info('Starting session restoration', {
-      reportId: session.reportId,
+      reportId,
       hasSessionData: !!sessionData,
       sessionDataKeys: Object.keys(sessionData || {}),
-      dataJustLoaded,
       // CRITICAL: Log what we're about to restore
       hasHtmlReport: !!sessionData?.html_report,
       htmlReportLength: sessionData?.html_report?.length || 0,
@@ -110,34 +106,34 @@ export function useSessionRestoration() {
       hasValuationResult: !!sessionData?.valuation_result,
       valuationResultKeys: Object.keys(sessionData?.valuation_result || {}),
       // Also check fallback top-level fields
-      hasTopLevelHtmlReport: !!session?.htmlReport,
-      hasTopLevelInfoTabHtml: !!session?.infoTabHtml,
-      hasTopLevelValuationResult: !!session?.valuationResult,
+      hasTopLevelHtmlReport: !!currentSession?.htmlReport,
+      hasTopLevelInfoTabHtml: !!currentSession?.infoTabHtml,
+      hasTopLevelValuationResult: !!currentSession?.valuationResult,
     })
 
     try {
       // STEP 1: Restore form data (from merged sessionData)
-      restoreFormData(session.reportId, sessionData, updateFormData)
+      restoreFormData(reportId, sessionData, updateFormData)
 
       // STEP 2: Restore valuation results (from merged sessionData which includes top-level fields)
-      restoreResults(session.reportId, sessionData, session, setResult, setHtmlReport, setInfoTabHtml)
+      restoreResults(reportId, sessionData, currentSession, setResult, setHtmlReport, setInfoTabHtml)
 
       // STEP 3: Fetch version history (async, non-blocking)
-      fetchVersions(session.reportId)
+      fetchVersions(reportId)
         .then(() => {
           generalLogger.info('Version history fetched', {
-            reportId: session.reportId,
+            reportId,
           })
         })
         .catch((error) => {
           generalLogger.warn('Failed to fetch versions (non-blocking)', {
             error: error instanceof Error ? error.message : String(error),
-            reportId: session.reportId,
+            reportId,
           })
         })
 
       generalLogger.info('Session restoration completed successfully', {
-        reportId: session.reportId,
+        reportId,
         restoredFormData: true,
         restoredValuationResult: !!sessionData?.valuation_result,
         restoredHtmlReport: !!sessionData?.html_report,
@@ -149,21 +145,23 @@ export function useSessionRestoration() {
     } catch (error) {
       generalLogger.error('Session restoration failed', {
         error: error instanceof Error ? error.message : String(error),
-        reportId: session.reportId,
+        reportId,
       })
       // Remove from restored set to allow retry on next mount
-      restoredReports.current.delete(session.reportId)
+      restoredReports.current.delete(reportId)
+      lastReportIdRef.current = null // Reset to allow retry
       
       // Show error toast
       showToast('Failed to load report data. Please refresh the page.', 'error', 5000)
     }
-  }, [session, updateFormData, setResult, setHtmlReport, setInfoTabHtml, fetchVersions, showToast])
+  }, [session?.reportId, updateFormData, setResult, setHtmlReport, setInfoTabHtml, fetchVersions, showToast])
 
   // Cleanup: Allow re-restoration if component remounts
   useEffect(() => {
     return () => {
       if (session?.reportId) {
         restoredReports.current.delete(session.reportId)
+        lastReportIdRef.current = null
         generalLogger.debug('Cleared restoration tracking on unmount', {
           reportId: session.reportId,
         })
