@@ -133,7 +133,9 @@ export const ManualLayout: React.FC<ManualLayoutProps> = ({
   
   // Simple restoration: Read directly from session when it changes
   useEffect(() => {
-    if (!session || session.reportId !== reportId) {
+    // Read session from store inside effect to avoid dependency on session object reference
+    const currentSession = useSessionStore.getState().session
+    if (!currentSession || currentSession.reportId !== reportId) {
       restorationRef.current.isRestoring = false
       return
     }
@@ -156,13 +158,13 @@ export const ManualLayout: React.FC<ManualLayoutProps> = ({
                                sessionDataHash !== restorationRef.current.lastSeenSessionDataHash &&
                                sessionDataHash !== currentFormDataHash // Don't restore if it matches current form (form sync case)
 
-    // Track the session data hash we're seeing
-    if (sessionDataHash !== null) {
-      restorationRef.current.lastSeenSessionDataHash = sessionDataHash
-    }
-
     // Only restore if reportId changed (new session) OR session data changed from external source
     if (!reportIdChanged && !sessionDataChanged) {
+      // Still track the session data hash we're seeing (even if we skip restoration)
+      // This prevents false positives on subsequent checks
+      if (sessionDataHash !== null) {
+        restorationRef.current.lastSeenSessionDataHash = sessionDataHash
+      }
       return
     }
 
@@ -170,15 +172,20 @@ export const ManualLayout: React.FC<ManualLayoutProps> = ({
     if (reportIdChanged) {
       restorationRef.current.lastRestoredFormDataHash = null
       restorationRef.current.lastRestoredResultId = null
+      restorationRef.current.lastSeenSessionDataHash = null
     }
 
     // Mark as restoring to prevent re-entry
     restorationRef.current.isRestoring = true
 
     try {
+      // Read store functions inside effect to avoid dependency on function references
+      const { updateFormData: updateFormDataFn } = useManualFormStore.getState()
+      const { setResult: setResultFn } = useManualResultsStore.getState()
+
       // Restore form data
-      if (session.sessionData) {
-        const sessionDataObj = session.sessionData as any
+      if (currentSession.sessionData) {
+        const sessionDataObj = currentSession.sessionData as any
         if (sessionDataObj.company_name || sessionDataObj.revenue) {
           const formDataHash = getFormDataHash(sessionDataObj)
           
@@ -188,22 +195,26 @@ export const ManualLayout: React.FC<ManualLayoutProps> = ({
               formDataHash !== restorationRef.current.lastRestoredFormDataHash) {
             generalLogger.debug('[ManualLayout] Restoring form data', { reportId, formDataHash, currentFormDataHash })
             restorationRef.current.lastRestoredFormDataHash = formDataHash
-            updateFormData(sessionDataObj)
+            // Track the session data hash we restored
+            if (sessionDataHash !== null) {
+              restorationRef.current.lastSeenSessionDataHash = sessionDataHash
+            }
+            updateFormDataFn(sessionDataObj)
           }
         }
       }
 
       // Restore results
-      if (session.valuationResult) {
+      if (currentSession.valuationResult) {
         const currentResult = useManualResultsStore.getState().result
-        const resultId = session.valuationResult.valuation_id
+        const resultId = currentSession.valuationResult.valuation_id
         
         // Only restore if result is different and we haven't restored this one already
         if ((!currentResult || currentResult.valuation_id !== resultId) && 
             resultId !== restorationRef.current.lastRestoredResultId) {
           generalLogger.debug('[ManualLayout] Restoring result', { reportId })
           restorationRef.current.lastRestoredResultId = resultId
-          setResult(session.valuationResult as any)
+          setResultFn(currentSession.valuationResult as any)
         }
       }
       
@@ -213,7 +224,7 @@ export const ManualLayout: React.FC<ManualLayoutProps> = ({
       // Always clear restoring flag, even if there's an error
       restorationRef.current.isRestoring = false
     }
-  }, [sessionReportId, reportId, sessionDataHash, getFormDataHash, session, updateFormData, setResult])
+  }, [sessionReportId, reportId, sessionDataHash, getFormDataHash])
 
   // Panel resize hook
   const { leftPanelWidth, handleResize, isMobile, mobileActivePanel, setMobileActivePanel } =
