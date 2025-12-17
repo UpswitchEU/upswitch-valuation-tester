@@ -23,4 +23,3 @@ export interface ConversationMetrics {
   estimated_cost_usd: number
   feedback_provided: boolean
 }
-

@@ -16,9 +16,9 @@ import { useVersionHistoryStore } from '../../../store/useVersionHistoryStore'
 import { buildValuationRequest } from '../../../utils/buildValuationRequest'
 import { generalLogger } from '../../../utils/logger'
 import {
-    areChangesSignificant,
-    detectVersionChanges,
-    generateAutoLabel,
+  areChangesSignificant,
+  detectVersionChanges,
+  generateAutoLabel,
 } from '../../../utils/versionDiffDetection'
 
 interface UseValuationFormSubmissionReturn {
@@ -64,10 +64,13 @@ export const useValuationFormSubmission = (
         // Returns false if already calculating (prevents double submission)
         const wasSet = trySetCalculating()
         if (!wasSet) {
-          generalLogger.warn('[Manual] Calculation already in progress, preventing double submission', {
-            storeState: useManualResultsStore.getState().isCalculating,
-            hookValue: isCalculating,
-          })
+          generalLogger.warn(
+            '[Manual] Calculation already in progress, preventing double submission',
+            {
+              storeState: useManualResultsStore.getState().isCalculating,
+              hookValue: isCalculating,
+            }
+          )
           return // Don't reset - let existing calculation finish
         }
 
@@ -97,7 +100,8 @@ export const useValuationFormSubmission = (
           formData.number_of_owners > 0 &&
           formData.number_of_employees === undefined
         ) {
-          const errorMsg = 'Employee count is required when owner count is provided to calculate owner concentration risk. Enter 0 if there are no employees besides the owner-managers.'
+          const errorMsg =
+            'Employee count is required when owner count is provided to calculate owner concentration risk. Enter 0 if there are no employees besides the owner-managers.'
           generalLogger.warn('Form validation failed: employee count required', {
             business_type: formData.business_type,
             number_of_owners: formData.number_of_owners,
@@ -111,352 +115,369 @@ export const useValuationFormSubmission = (
         // Clear validation error
         setEmployeeCountError(null)
 
-      // Validate required fields
-      if (!formData.revenue || !formData.ebitda || !formData.industry || !formData.country_code) {
-        const missingFields = []
-        if (!formData.revenue) missingFields.push('revenue')
-        if (!formData.ebitda) missingFields.push('ebitda')
-        if (!formData.industry) missingFields.push('industry')
-        if (!formData.country_code) missingFields.push('country_code')
-        
-        generalLogger.warn('Form validation failed: missing required fields', {
-          missingFields,
-          formDataKeys: Object.keys(formData),
+        // Validate required fields
+        if (!formData.revenue || !formData.ebitda || !formData.industry || !formData.country_code) {
+          const missingFields = []
+          if (!formData.revenue) missingFields.push('revenue')
+          if (!formData.ebitda) missingFields.push('ebitda')
+          if (!formData.industry) missingFields.push('industry')
+          if (!formData.country_code) missingFields.push('country_code')
+
+          generalLogger.warn('Form validation failed: missing required fields', {
+            missingFields,
+            formDataKeys: Object.keys(formData),
+          })
+          setEmployeeCountError(`Please fill in all required fields: ${missingFields.join(', ')}`)
+          setCalculating(false) // Reset loading state on validation error
+          return
+        }
+
+        generalLogger.info('Form validation passed, proceeding with calculation', {
+          revenue: formData.revenue,
+          ebitda: formData.ebitda,
+          industry: formData.industry,
+          country_code: formData.country_code,
         })
-        setEmployeeCountError(`Please fill in all required fields: ${missingFields.join(', ')}`)
-        setCalculating(false) // Reset loading state on validation error
-        return
-      }
 
-      generalLogger.info('Form validation passed, proceeding with calculation', {
-        revenue: formData.revenue,
-        ebitda: formData.ebitda,
-        industry: formData.industry,
-        country_code: formData.country_code,
-      })
+        // CRITICAL: Sync all form data to session IMMEDIATELY before calculation
+        // This ensures all data is saved even if calculation fails or user navigates away
+        // NOTE: We use fire-and-forget to avoid blocking calculation if backend is slow
+        if (reportId) {
+          try {
+            // Convert formData to session format
+            const sessionUpdate: Partial<any> = {
+              company_name: formData.company_name,
+              country_code: formData.country_code,
+              industry: formData.industry,
+              business_model: formData.business_model,
+              founding_year: formData.founding_year,
+              current_year_data: {
+                year: formData.current_year_data?.year || new Date().getFullYear(),
+                revenue: formData.revenue || formData.current_year_data?.revenue || 0,
+                ebitda: formData.ebitda || formData.current_year_data?.ebitda || 0,
+                ...(formData.current_year_data?.total_assets && {
+                  total_assets: formData.current_year_data.total_assets,
+                }),
+                ...(formData.current_year_data?.total_debt && {
+                  total_debt: formData.current_year_data.total_debt,
+                }),
+                ...(formData.current_year_data?.cash && { cash: formData.current_year_data.cash }),
+              },
+              historical_years_data: formData.historical_years_data,
+              number_of_employees: formData.number_of_employees,
+              number_of_owners: formData.number_of_owners,
+              recurring_revenue_percentage: formData.recurring_revenue_percentage,
+              comparables: formData.comparables,
+              business_type_id: formData.business_type_id,
+              business_type: formData.business_type,
+              shares_for_sale: formData.shares_for_sale,
+              business_context: formData.business_context,
+            }
 
-      // CRITICAL: Sync all form data to session IMMEDIATELY before calculation
-      // This ensures all data is saved even if calculation fails or user navigates away
-      // NOTE: We use fire-and-forget to avoid blocking calculation if backend is slow
-      if (reportId) {
-        try {
-          // Convert formData to session format
-          const sessionUpdate: Partial<any> = {
-            company_name: formData.company_name,
-            country_code: formData.country_code,
-            industry: formData.industry,
-            business_model: formData.business_model,
-            founding_year: formData.founding_year,
-            current_year_data: {
-              year: formData.current_year_data?.year || new Date().getFullYear(),
-              revenue: formData.revenue || formData.current_year_data?.revenue || 0,
-              ebitda: formData.ebitda || formData.current_year_data?.ebitda || 0,
-              ...(formData.current_year_data?.total_assets && {
-                total_assets: formData.current_year_data.total_assets,
-              }),
-              ...(formData.current_year_data?.total_debt && {
-                total_debt: formData.current_year_data.total_debt,
-              }),
-              ...(formData.current_year_data?.cash && { cash: formData.current_year_data.cash }),
-            },
-            historical_years_data: formData.historical_years_data,
-            number_of_employees: formData.number_of_employees,
-            number_of_owners: formData.number_of_owners,
-            recurring_revenue_percentage: formData.recurring_revenue_percentage,
-            comparables: formData.comparables,
-            business_type_id: formData.business_type_id,
-            business_type: formData.business_type,
-            shares_for_sale: formData.shares_for_sale,
-            business_context: formData.business_context,
-          }
-          
-          // Fire-and-forget: Don't await to avoid blocking calculation
-          // The sync will happen in the background, and data will be saved after calculation anyway
-          sessionService.saveSession(reportId, sessionUpdate).catch((syncError) => {
-            generalLogger.warn('[Manual] Background sync failed before calculation, continuing anyway', {
-              error: syncError instanceof Error ? syncError.message : String(syncError),
-              reportId,
+            // Fire-and-forget: Don't await to avoid blocking calculation
+            // The sync will happen in the background, and data will be saved after calculation anyway
+            sessionService.saveSession(reportId, sessionUpdate).catch((syncError) => {
+              generalLogger.warn(
+                '[Manual] Background sync failed before calculation, continuing anyway',
+                {
+                  error: syncError instanceof Error ? syncError.message : String(syncError),
+                  reportId,
+                }
+              )
             })
-          })
-          
-          generalLogger.info('[Manual] Form data sync initiated (non-blocking) before calculation', {
-            reportId,
-          })
-        } catch (syncError) {
-          generalLogger.warn('[Manual] Failed to initiate sync before calculation, continuing anyway', {
-            error: syncError instanceof Error ? syncError.message : String(syncError),
-          })
-          // Continue with calculation even if sync fails - data will be saved after calculation
+
+            generalLogger.info(
+              '[Manual] Form data sync initiated (non-blocking) before calculation',
+              {
+                reportId,
+              }
+            )
+          } catch (syncError) {
+            generalLogger.warn(
+              '[Manual] Failed to initiate sync before calculation, continuing anyway',
+              {
+                error: syncError instanceof Error ? syncError.message : String(syncError),
+              }
+            )
+            // Continue with calculation even if sync fails - data will be saved after calculation
+          }
         }
-      }
 
-      // Build ValuationRequest using unified function
-      const request = buildValuationRequest(formData)
-      
-      // Explicitly set dataSource for manual flow
-      // This ensures backend knows this is a manual (FREE) calculation
-      ;(request as any).dataSource = 'manual'
+        // Build ValuationRequest using unified function
+        const request = buildValuationRequest(formData)
 
-      // M&A Workflow: Check if this is a regeneration
-      let previousVersion: any = null
-      let changes: any = null
+        // Explicitly set dataSource for manual flow
+        // This ensures backend knows this is a manual (FREE) calculation
+        ;(request as any).dataSource = 'manual'
 
-      if (reportId) {
-        previousVersion = getLatestVersion(reportId)
-        if (previousVersion) {
-          // Detect changes from previous version
-          changes = detectVersionChanges(previousVersion.formData, request)
+        // M&A Workflow: Check if this is a regeneration
+        let previousVersion: any = null
+        let changes: any = null
 
-          generalLogger.info('Regeneration detected', {
-            reportId,
-            previousVersion: previousVersion.versionNumber,
-            totalChanges: changes.totalChanges,
-            significantChanges: changes.significantChanges,
+        if (reportId) {
+          previousVersion = getLatestVersion(reportId)
+          if (previousVersion) {
+            // Detect changes from previous version
+            changes = detectVersionChanges(previousVersion.formData, request)
+
+            generalLogger.info('Regeneration detected', {
+              reportId,
+              previousVersion: previousVersion.versionNumber,
+              totalChanges: changes.totalChanges,
+              significantChanges: changes.significantChanges,
+            })
+          }
+        }
+
+        // Calculate valuation using service layer
+        // NOTE: isCalculating is already set to true by trySetCalculating above
+        let result
+        const calculationStart = performance.now()
+        try {
+          generalLogger.info('[Manual] Calling valuation service', {
+            requestKeys: Object.keys(request),
+            hasRevenue: !!request.current_year_data?.revenue,
+            hasEbitda: !!request.current_year_data?.ebitda,
+            industry: request.industry,
+            country_code: request.country_code,
           })
-        }
-      }
+          result = await valuationService.calculateValuation(request)
 
-      // Calculate valuation using service layer
-      // NOTE: isCalculating is already set to true by trySetCalculating above
-      let result
-      const calculationStart = performance.now()
-      try {
-        generalLogger.info('[Manual] Calling valuation service', {
-          requestKeys: Object.keys(request),
-          hasRevenue: !!request.current_year_data?.revenue,
-          hasEbitda: !!request.current_year_data?.ebitda,
-          industry: request.industry,
-          country_code: request.country_code,
-        })
-        result = await valuationService.calculateValuation(request)
-        
-        if (!result) {
-          // Service returned null - shouldn't happen with proper error handling
-          generalLogger.warn('[Manual] Valuation service returned null unexpectedly')
-          setCalculating(false) // Ensure state is reset
-          return // Exit early - don't proceed with saving or versioning
-        }
-        
-        generalLogger.info('[Manual] Valuation calculation completed', {
-          hasResult: !!result,
-          resultKeys: result ? Object.keys(result) : [],
-        })
-        
-        // Reset calculating state on success
-        setCalculating(false)
-      } catch (calcError) {
-        generalLogger.error('[Manual] Valuation calculation failed', {
-          error: calcError instanceof Error ? calcError.message : String(calcError),
-          stack: calcError instanceof Error ? calcError.stack : undefined,
-          requestKeys: Object.keys(request),
-        })
-        // Ensure calculating state is reset on error
-        setCalculating(false)
-        // Re-throw to be caught by outer try-catch
-        throw calcError
-      }
-      const calculationDuration = performance.now() - calculationStart
+          if (!result) {
+            // Service returned null - shouldn't happen with proper error handling
+            generalLogger.warn('[Manual] Valuation service returned null unexpectedly')
+            setCalculating(false) // Ensure state is reset
+            return // Exit early - don't proceed with saving or versioning
+          }
 
-      if (result) {
-        // CRITICAL: Log html_report presence before storing
-        generalLogger.info('Valuation calculation completed - checking html_report', {
-          valuationId: result.valuation_id,
-          hasHtmlReport: !!result.html_report,
-          htmlReportLength: result.html_report?.length || 0,
-          hasInfoTabHtml: !!result.info_tab_html,
-          infoTabHtmlLength: result.info_tab_html?.length || 0,
-          resultKeys: Object.keys(result),
-          htmlReportPreview: result.html_report?.substring(0, 200) || 'N/A',
-          calculationDuration: `${calculationDuration.toFixed(2)}ms`,
-        })
-        
-        // Use structured logger instead of console.log to avoid "Object" spam
-        generalLogger.debug('Before setResult: checking html_report and info_tab_html', {
-          hasHtmlReport: !!result.html_report,
-          htmlReportLength: result.html_report?.length || 0,
-          hasInfoTabHtml: !!result.info_tab_html,
-          infoTabHtmlLength: result.info_tab_html?.length || 0,
-          resultKeys: Object.keys(result).join(','),
-        })
-        
-        // Warn if html_report is missing
-        if (!result.html_report || result.html_report.trim().length === 0) {
-          generalLogger.error('CRITICAL: html_report missing or empty in valuation result', {
+          generalLogger.info('[Manual] Valuation calculation completed', {
+            hasResult: !!result,
+            resultKeys: result ? Object.keys(result) : [],
+          })
+
+          // Reset calculating state on success
+          setCalculating(false)
+        } catch (calcError) {
+          generalLogger.error('[Manual] Valuation calculation failed', {
+            error: calcError instanceof Error ? calcError.message : String(calcError),
+            stack: calcError instanceof Error ? calcError.stack : undefined,
+            requestKeys: Object.keys(request),
+          })
+          // Ensure calculating state is reset on error
+          setCalculating(false)
+          // Re-throw to be caught by outer try-catch
+          throw calcError
+        }
+        const calculationDuration = performance.now() - calculationStart
+
+        if (result) {
+          // CRITICAL: Log html_report presence before storing
+          generalLogger.info('Valuation calculation completed - checking html_report', {
             valuationId: result.valuation_id,
             hasHtmlReport: !!result.html_report,
             htmlReportLength: result.html_report?.length || 0,
-            resultKeys: Object.keys(result),
-            resultType: typeof result,
-            resultStringified: JSON.stringify(result).substring(0, 500),
-          })
-        }
-        
-        // CRITICAL: Warn if info_tab_html is missing
-        if (!result.info_tab_html || result.info_tab_html.trim().length === 0) {
-          generalLogger.error('CRITICAL: info_tab_html missing or empty in valuation result', {
-            valuationId: result.valuation_id,
             hasInfoTabHtml: !!result.info_tab_html,
             infoTabHtmlLength: result.info_tab_html?.length || 0,
             resultKeys: Object.keys(result),
-            infoTabHtmlInKeys: 'info_tab_html' in result,
-            resultType: typeof result,
-            resultStringified: JSON.stringify(result).substring(0, 1000),
+            htmlReportPreview: result.html_report?.substring(0, 200) || 'N/A',
+            calculationDuration: `${calculationDuration.toFixed(2)}ms`,
           })
-        } else {
-          generalLogger.debug('info_tab_html present before setResult', {
-            infoTabHtmlLength: result.info_tab_html.length,
+
+          // Use structured logger instead of console.log to avoid "Object" spam
+          generalLogger.debug('Before setResult: checking html_report and info_tab_html', {
+            hasHtmlReport: !!result.html_report,
+            htmlReportLength: result.html_report?.length || 0,
+            hasInfoTabHtml: !!result.info_tab_html,
+            infoTabHtmlLength: result.info_tab_html?.length || 0,
+            resultKeys: Object.keys(result).join(','),
           })
-        }
-        
-        // Store result in results store
-        setResult(result)
 
-        // M&A Workflow: Create version for first calculation or regeneration
-        if (reportId) {
-          try {
-            if (previousVersion && changes && areChangesSignificant(changes)) {
-              // Regeneration - create new version with changes
-            const newVersion = await createVersion({
-              reportId,
-              formData: request,
-              valuationResult: result,
-              htmlReport: result.html_report || undefined,
-              infoTabHtml: result.info_tab_html || undefined,
-              changesSummary: changes,
-              versionLabel: generateAutoLabel(previousVersion.versionNumber + 1, changes),
-            })
-
-            generalLogger.info('New version created on regeneration', {
-              reportId,
-              versionNumber: newVersion.versionNumber,
-              versionLabel: newVersion.versionLabel,
-            })
-
-            // Log regeneration to audit trail
-            valuationAuditService.logRegeneration(
-              reportId,
-              newVersion.versionNumber,
-              changes,
-              calculationDuration
-            )
-
-            // ✅ FIX: Don't refetch versions immediately - version is already in local state
-            // Versions will be synced when version history panel opens or on next mount
-            } else if (!previousVersion) {
-              // First calculation - create initial version
-              const firstVersion = await createVersion({
-                reportId,
-                formData: request,
-                valuationResult: result,
-                htmlReport: result.html_report || undefined,
-                infoTabHtml: result.info_tab_html || undefined,
-                changesSummary: { totalChanges: 0, significantChanges: [] },
-                versionLabel: 'v1 - Initial valuation',
-              })
-
-              generalLogger.info('Initial version created on first calculation', {
-                reportId,
-                versionNumber: firstVersion.versionNumber,
-                versionLabel: firstVersion.versionLabel,
-              })
-
-              // ✅ FIX: Don't refetch versions immediately - version is already in local state
-              // Versions will be synced when version history panel opens or on next mount
-            }
-          } catch (versionError) {
-            // Don't fail the valuation if versioning fails
-            // BANK-GRADE: Specific error handling - version creation failure
-            if (versionError instanceof Error) {
-              generalLogger.error('Failed to create version', {
-                reportId,
-                error: versionError.message,
-                stack: versionError.stack,
-                isFirstVersion: !previousVersion,
-              })
-            } else {
-              generalLogger.error('Failed to create version', {
-                reportId,
-                error: String(versionError),
-                isFirstVersion: !previousVersion,
-              })
-            }
-          }
-        }
-
-        // CRITICAL: Save complete session atomically (form data + results + HTML reports)
-        // This ensures everything can be restored when user returns later
-        // Note: Saving handled by unified session store
-
-        // DIAGNOSTIC: Check if reportId exists
-        console.log('[Manual] DIAGNOSTIC: About to save report assets', {
-          hasReportId: !!reportId,
-          reportId,
-          hasResult: !!result,
-          hasHtmlReport: !!result?.html_report,
-          htmlReportLength: result?.html_report?.length || 0,
-          hasInfoTabHtml: !!result?.info_tab_html,
-          infoTabHtmlLength: result?.info_tab_html?.length || 0,
-        })
-
-        if (reportId) {
-          try {
-            console.log('[Manual] DIAGNOSTIC: Calling reportService.saveReportAssets', { reportId })
-            
-            // ATOMIC SAVE: Save complete package in single API call
-            // - sessionData: Original form inputs for restoration
-            // - valuationResult: Calculation result
-            // - htmlReport: Main report HTML
-            // - infoTabHtml: Info tab HTML
-            // - name: Custom valuation name (e.g., "Amadeus report")
-            await reportService.saveReportAssets(reportId, {
-              sessionData: formData,  // ✅ NEW: Include input data
-              valuationResult: result,
-              htmlReport: result.html_report,
-              infoTabHtml: result.info_tab_html,
-              name: sessionName, // ✅ NEW: Include custom valuation name
-            })
-
-            console.log('[Manual] DIAGNOSTIC: reportService.saveReportAssets completed successfully', { reportId })
-
-            generalLogger.info('[Manual] Complete report package saved atomically after calculation', {
-              reportId,
-              hasSessionData: !!formData,
-              sessionDataKeys: formData ? Object.keys(formData) : [],
-              hasResult: !!result,
+          // Warn if html_report is missing
+          if (!result.html_report || result.html_report.trim().length === 0) {
+            generalLogger.error('CRITICAL: html_report missing or empty in valuation result', {
+              valuationId: result.valuation_id,
               hasHtmlReport: !!result.html_report,
               htmlReportLength: result.html_report?.length || 0,
+              resultKeys: Object.keys(result),
+              resultType: typeof result,
+              resultStringified: JSON.stringify(result).substring(0, 500),
+            })
+          }
+
+          // CRITICAL: Warn if info_tab_html is missing
+          if (!result.info_tab_html || result.info_tab_html.trim().length === 0) {
+            generalLogger.error('CRITICAL: info_tab_html missing or empty in valuation result', {
+              valuationId: result.valuation_id,
               hasInfoTabHtml: !!result.info_tab_html,
               infoTabHtmlLength: result.info_tab_html?.length || 0,
+              resultKeys: Object.keys(result),
+              infoTabHtmlInKeys: 'info_tab_html' in result,
+              resultType: typeof result,
+              resultStringified: JSON.stringify(result).substring(0, 1000),
             })
-
-            useSessionStore.getState().markSaved()
-          } catch (saveError) {
-            console.error('[Manual] DIAGNOSTIC: reportService.saveReportAssets FAILED', {
-              reportId,
-              error: saveError,
-              errorMessage: saveError instanceof Error ? saveError.message : String(saveError),
+          } else {
+            generalLogger.debug('info_tab_html present before setResult', {
+              infoTabHtmlLength: result.info_tab_html.length,
             })
-            
-            generalLogger.error('[Manual] Failed to save complete report package', {
-              reportId,
-              error: saveError instanceof Error ? saveError.message : String(saveError),
-            })
-            // Error logged, continue - don't block user even if save fails
           }
-        } else {
-          console.warn('[Manual] DIAGNOSTIC: No reportId, skipping save')
-          useSessionStore.getState().markSaved()
-        }
 
-        generalLogger.info('Valuation calculated successfully', {
-          valuationId: result.valuation_id,
-          calculationDuration_ms: calculationDuration.toFixed(2),
-        })
-      } else {
-        generalLogger.warn('Valuation calculation returned no result', {
-          calculationDuration_ms: calculationDuration.toFixed(2),
-        })
-      }
+          // Store result in results store
+          setResult(result)
+
+          // M&A Workflow: Create version for first calculation or regeneration
+          if (reportId) {
+            try {
+              if (previousVersion && changes && areChangesSignificant(changes)) {
+                // Regeneration - create new version with changes
+                const newVersion = await createVersion({
+                  reportId,
+                  formData: request,
+                  valuationResult: result,
+                  htmlReport: result.html_report || undefined,
+                  infoTabHtml: result.info_tab_html || undefined,
+                  changesSummary: changes,
+                  versionLabel: generateAutoLabel(previousVersion.versionNumber + 1, changes),
+                })
+
+                generalLogger.info('New version created on regeneration', {
+                  reportId,
+                  versionNumber: newVersion.versionNumber,
+                  versionLabel: newVersion.versionLabel,
+                })
+
+                // Log regeneration to audit trail
+                valuationAuditService.logRegeneration(
+                  reportId,
+                  newVersion.versionNumber,
+                  changes,
+                  calculationDuration
+                )
+
+                // ✅ FIX: Don't refetch versions immediately - version is already in local state
+                // Versions will be synced when version history panel opens or on next mount
+              } else if (!previousVersion) {
+                // First calculation - create initial version
+                const firstVersion = await createVersion({
+                  reportId,
+                  formData: request,
+                  valuationResult: result,
+                  htmlReport: result.html_report || undefined,
+                  infoTabHtml: result.info_tab_html || undefined,
+                  changesSummary: { totalChanges: 0, significantChanges: [] },
+                  versionLabel: 'v1 - Initial valuation',
+                })
+
+                generalLogger.info('Initial version created on first calculation', {
+                  reportId,
+                  versionNumber: firstVersion.versionNumber,
+                  versionLabel: firstVersion.versionLabel,
+                })
+
+                // ✅ FIX: Don't refetch versions immediately - version is already in local state
+                // Versions will be synced when version history panel opens or on next mount
+              }
+            } catch (versionError) {
+              // Don't fail the valuation if versioning fails
+              // BANK-GRADE: Specific error handling - version creation failure
+              if (versionError instanceof Error) {
+                generalLogger.error('Failed to create version', {
+                  reportId,
+                  error: versionError.message,
+                  stack: versionError.stack,
+                  isFirstVersion: !previousVersion,
+                })
+              } else {
+                generalLogger.error('Failed to create version', {
+                  reportId,
+                  error: String(versionError),
+                  isFirstVersion: !previousVersion,
+                })
+              }
+            }
+          }
+
+          // CRITICAL: Save complete session atomically (form data + results + HTML reports)
+          // This ensures everything can be restored when user returns later
+          // Note: Saving handled by unified session store
+
+          // DIAGNOSTIC: Check if reportId exists
+          console.log('[Manual] DIAGNOSTIC: About to save report assets', {
+            hasReportId: !!reportId,
+            reportId,
+            hasResult: !!result,
+            hasHtmlReport: !!result?.html_report,
+            htmlReportLength: result?.html_report?.length || 0,
+            hasInfoTabHtml: !!result?.info_tab_html,
+            infoTabHtmlLength: result?.info_tab_html?.length || 0,
+          })
+
+          if (reportId) {
+            try {
+              console.log('[Manual] DIAGNOSTIC: Calling reportService.saveReportAssets', {
+                reportId,
+              })
+
+              // ATOMIC SAVE: Save complete package in single API call
+              // - sessionData: Original form inputs for restoration
+              // - valuationResult: Calculation result
+              // - htmlReport: Main report HTML
+              // - infoTabHtml: Info tab HTML
+              // - name: Custom valuation name (e.g., "Amadeus report")
+              await reportService.saveReportAssets(reportId, {
+                sessionData: formData, // ✅ NEW: Include input data
+                valuationResult: result,
+                htmlReport: result.html_report,
+                infoTabHtml: result.info_tab_html,
+                name: sessionName, // ✅ NEW: Include custom valuation name
+              })
+
+              console.log(
+                '[Manual] DIAGNOSTIC: reportService.saveReportAssets completed successfully',
+                { reportId }
+              )
+
+              generalLogger.info(
+                '[Manual] Complete report package saved atomically after calculation',
+                {
+                  reportId,
+                  hasSessionData: !!formData,
+                  sessionDataKeys: formData ? Object.keys(formData) : [],
+                  hasResult: !!result,
+                  hasHtmlReport: !!result.html_report,
+                  htmlReportLength: result.html_report?.length || 0,
+                  hasInfoTabHtml: !!result.info_tab_html,
+                  infoTabHtmlLength: result.info_tab_html?.length || 0,
+                }
+              )
+
+              useSessionStore.getState().markSaved()
+            } catch (saveError) {
+              console.error('[Manual] DIAGNOSTIC: reportService.saveReportAssets FAILED', {
+                reportId,
+                error: saveError,
+                errorMessage: saveError instanceof Error ? saveError.message : String(saveError),
+              })
+
+              generalLogger.error('[Manual] Failed to save complete report package', {
+                reportId,
+                error: saveError instanceof Error ? saveError.message : String(saveError),
+              })
+              // Error logged, continue - don't block user even if save fails
+            }
+          } else {
+            console.warn('[Manual] DIAGNOSTIC: No reportId, skipping save')
+            useSessionStore.getState().markSaved()
+          }
+
+          generalLogger.info('Valuation calculated successfully', {
+            valuationId: result.valuation_id,
+            calculationDuration_ms: calculationDuration.toFixed(2),
+          })
+        } else {
+          generalLogger.warn('Valuation calculation returned no result', {
+            calculationDuration_ms: calculationDuration.toFixed(2),
+          })
+        }
       } catch (error) {
         generalLogger.error('Form submission failed', { error })
         setEmployeeCountError(

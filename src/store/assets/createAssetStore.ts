@@ -1,13 +1,13 @@
 /**
  * Asset Store Factory
- * 
+ *
  * Generic factory for creating component-level asset stores with:
  * - Loading states (idle, loading, loaded, error)
  * - Data flow tracking (send, receive, idle)
  * - Progress tracking (0-100%)
  * - Timestamps for cache validation
  * - Type-safe with TypeScript generics
- * 
+ *
  * @module store/assets/createAssetStore
  */
 
@@ -42,25 +42,22 @@ export type AssetStore<T> = AssetState<T> & AssetActions<T>
 
 /**
  * Create a typed asset store for a specific data type
- * 
+ *
  * @param name - Store name for devtools
  * @param initialData - Initial data (usually null)
  * @returns Zustand store with asset management capabilities
- * 
+ *
  * @example
  * ```typescript
  * const useMyAsset = createAssetStore<MyData>('MyAsset', null)
- * 
+ *
  * // In component:
  * const data = useMyAsset((state) => state.data)
  * const status = useMyAsset((state) => state.status)
  * const setData = useMyAsset((state) => state.setData)
  * ```
  */
-export function createAssetStore<T>(
-  name: string,
-  initialData: T | null = null
-) {
+export function createAssetStore<T>(name: string, initialData: T | null = null) {
   return create<AssetStore<T>>()(
     devtools(
       (set) => ({
@@ -139,4 +136,3 @@ export function createAssetStore<T>(
     )
   )
 }
-

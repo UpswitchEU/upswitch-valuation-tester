@@ -1,9 +1,9 @@
 /**
  * Data Transform Worker Client
- * 
+ *
  * TypeScript wrapper for the Data Transform Web Worker.
  * Provides a Promise-based API for background data processing.
- * 
+ *
  * @module utils/dataTransformWorker
  */
 
@@ -60,10 +60,13 @@ export interface StatsResult {
 class DataTransformWorkerClient {
   private worker: Worker | null = null
   private messageId = 0
-  private pendingRequests = new Map<number, {
-    resolve: (result: any) => void
-    reject: (error: Error) => void
-  }>()
+  private pendingRequests = new Map<
+    number,
+    {
+      resolve: (result: any) => void
+      reject: (error: Error) => void
+    }
+  >()
 
   /**
    * Initialize the worker
@@ -293,4 +296,3 @@ class DataTransformWorkerClient {
 
 // Export singleton instance
 export const dataTransformWorker = new DataTransformWorkerClient()
-

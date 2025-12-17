@@ -1,15 +1,15 @@
 /**
  * Performance Metrics Collection
- * 
+ *
  * Collects and tracks performance metrics for async operations and UI feedback.
  * Ensures all operations meet performance targets (<16ms UI, <2s calculations, etc.)
- * 
+ *
  * Benefits:
  * - Real-time performance monitoring
  * - Identify bottlenecks
  * - Track performance degradation
  * - Validate async optimization efforts
- * 
+ *
  * @module utils/performance/metrics
  */
 
@@ -98,7 +98,7 @@ export class PerformanceMonitor {
   /**
    * Track an async operation
    * Automatically validates against thresholds
-   * 
+   *
    * Usage:
    * ```ts
    * const duration = await performanceMonitor.trackAsync('loadSession', async () => {
@@ -151,7 +151,7 @@ export class PerformanceMonitor {
 
   /**
    * Track a synchronous operation
-   * 
+   *
    * Usage:
    * ```ts
    * const result = performanceMonitor.trackSync('renderComponent', () => {
@@ -364,17 +364,15 @@ export class PerformanceMonitor {
     const threshold = this.getThreshold(category)
 
     const slowMetrics = metrics.filter((m) => m.duration > threshold)
-    const avgDuration = metrics.length > 0
-      ? metrics.reduce((sum, m) => sum + m.duration, 0) / metrics.length
-      : 0
+    const avgDuration =
+      metrics.length > 0 ? metrics.reduce((sum, m) => sum + m.duration, 0) / metrics.length : 0
 
     return {
       count: metrics.length,
       avgDuration: Math.round(avgDuration),
       slowCount: slowMetrics.length,
-      slowPercentage: metrics.length > 0
-        ? Math.round((slowMetrics.length / metrics.length) * 100)
-        : 0,
+      slowPercentage:
+        metrics.length > 0 ? Math.round((slowMetrics.length / metrics.length) * 100) : 0,
     }
   }
 
@@ -398,12 +396,15 @@ export class PerformanceMonitor {
    */
   getSummary(): {
     totalMetrics: number
-    categories: Record<string, {
-      count: number
-      avgDuration: number
-      slowCount: number
-      slowPercentage: number
-    }>
+    categories: Record<
+      string,
+      {
+        count: number
+        avgDuration: number
+        slowCount: number
+        slowPercentage: number
+      }
+    >
     thresholds: PerformanceThresholds
   } {
     const categories: Record<string, any> = {}
@@ -433,12 +434,14 @@ export const performanceMonitor = new PerformanceMonitor()
 
 // Auto-log summary every 5 minutes in development
 if (process.env.NODE_ENV === 'development' && typeof window !== 'undefined') {
-  setInterval(() => {
-    const summary = performanceMonitor.getSummary()
-    
-    if (summary.totalMetrics > 0) {
-      generalLogger.info('[PerformanceMonitor] Performance summary', summary)
-    }
-  }, 5 * 60 * 1000)
-}
+  setInterval(
+    () => {
+      const summary = performanceMonitor.getSummary()
 
+      if (summary.totalMetrics > 0) {
+        generalLogger.info('[PerformanceMonitor] Performance summary', summary)
+      }
+    },
+    5 * 60 * 1000
+  )
+}

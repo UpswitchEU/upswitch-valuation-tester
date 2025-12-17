@@ -7,7 +7,7 @@
  */
 
 import { act, renderHook } from '@testing-library/react'
-import { describe, it, expect, beforeEach } from 'vitest'
+import { beforeEach, describe, expect, it } from 'vitest'
 import { useManualFormStore } from '../useManualFormStore'
 
 describe('useManualFormStore', () => {
@@ -281,4 +281,3 @@ describe('useManualFormStore', () => {
     })
   })
 })
-

@@ -7,9 +7,9 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { guestSessionService } from '../services/guestSessionService'
-import { chatLogger } from '../utils/logger'
-import type { Message } from '../types/message'
 import { useConversationStore } from '../store/useConversationStore'
+import type { Message } from '../types/message'
+import { chatLogger } from '../utils/logger'
 
 // Fallback questions for when backend is unavailable
 const FALLBACK_QUESTIONS = [
@@ -89,7 +89,7 @@ export const useConversationInitializer = (
 
   // Track last pythonSessionId to detect changes
   const lastPythonSessionIdRef = useRef<string | null>(null)
-  
+
   // CRITICAL: Use Zustand store for initialization state (prevents endless retries)
   const getInitializationState = useConversationStore((state) => state.getInitializationState)
   const setInitializationState = useConversationStore((state) => state.setInitializationState)
@@ -138,7 +138,7 @@ export const useConversationInitializer = (
 
       // CRITICAL: Check initialization state in Zustand store (prevents endless retries)
       const initState = getInitializationState(sessionId)
-      
+
       if (initState?.status === 'initializing' && initState.promise) {
         // Already initializing - wait for existing promise (deduplication)
         chatLogger.debug('Initialization already in progress, waiting for existing promise', {
@@ -147,7 +147,7 @@ export const useConversationInitializer = (
         await initState.promise
         return
       }
-      
+
       if (initState?.status === 'ready') {
         // Already initialized - skip
         chatLogger.debug('Conversation already initialized, skipping', { sessionId })
@@ -156,7 +156,7 @@ export const useConversationInitializer = (
       }
 
       const startTime = Date.now()
-      
+
       // CRITICAL: Create promise and store it immediately to prevent concurrent initialization
       // The promise is stored BEFORE execution so other calls can wait for it
       const initPromise = (async (): Promise<void> => {
@@ -359,18 +359,20 @@ export const useConversationInitializer = (
             isStreaming: false,
             metadata: {
               collected_field: data.field_name,
-                help_text: data.help_text,
-                session_phase: 'data_collection',
-                conversation_turn: 1,
-              },
-            }
-            
+              help_text: data.help_text,
+              session_phase: 'data_collection',
+              conversation_turn: 1,
+            },
+          }
+
           // CRITICAL FIX: Final check before state update
           if (abortControllerRef.current?.signal.aborted) {
-            chatLogger.debug('Initialization aborted before adding message - skipping', { sessionId })
+            chatLogger.debug('Initialization aborted before adding message - skipping', {
+              sessionId,
+            })
             return
           }
-          
+
           callbacks.addMessage(message)
 
           chatLogger.debug('Initial message created from /start', {
@@ -378,7 +380,7 @@ export const useConversationInitializer = (
             questionPreview: data.ai_message?.substring(0, 50),
             autoSend: callbacks.autoSend,
           })
-          
+
           // CRITICAL FIX: Set isInitializing to false only if not aborted
           if (!abortControllerRef.current?.signal.aborted) {
             setIsInitializing(false)
@@ -411,7 +413,7 @@ export const useConversationInitializer = (
             })
             return // State changed (e.g., reset or new session), don't retry
           }
-          
+
           if (attempt < maxAttempts) {
             const delay = Math.min(1000 * Math.pow(2, attempt - 1), 5000)
             chatLogger.warn(`Initialization attempt ${attempt} failed, retrying in ${delay}ms`, {
@@ -423,7 +425,7 @@ export const useConversationInitializer = (
             })
 
             await new Promise((resolve) => setTimeout(resolve, delay))
-            
+
             // CRITICAL: Double-check state before retrying
             const retryInitState = getInitializationState(sessionId)
             if (retryInitState?.status !== 'initializing') {
@@ -434,7 +436,7 @@ export const useConversationInitializer = (
               })
               return // State changed, don't retry
             }
-            
+
             return initializeWithRetry(attempt + 1, maxAttempts)
           }
 
@@ -481,7 +483,7 @@ export const useConversationInitializer = (
             }
             callbacks.addMessage(welcomeMessage)
           }
-          
+
           // Set state to 'failed' (atomic write)
           setInitializationState(sessionId, { status: 'failed' })
         } finally {
@@ -491,14 +493,22 @@ export const useConversationInitializer = (
           }
         }
       })()
-      
+
       // CRITICAL: Store promise BEFORE awaiting (allows other calls to wait for it)
       // The promise is created and stored immediately so concurrent calls can find it
       setInitializationState(sessionId, { status: 'initializing', promise: initPromise })
-      
+
       return initPromise
     },
-    [sessionId, userId, callbacks, useFallbackMode, getInitializationState, setInitializationState, resetInitializationState]
+    [
+      sessionId,
+      userId,
+      callbacks,
+      useFallbackMode,
+      getInitializationState,
+      setInitializationState,
+      resetInitializationState,
+    ]
   )
 
   /**
@@ -555,7 +565,7 @@ export const useConversationInitializer = (
 
     const currentMessages = callbacks.getCurrentMessages ? callbacks.getCurrentMessages() : []
     const hasMessages = currentMessages.length > 0
-    
+
     chatLogger.debug('useConversationInitializer: state check', {
       sessionId,
       pythonSessionId: currentPythonSessionId,
@@ -603,11 +613,14 @@ export const useConversationInitializer = (
     // CRITICAL: We must call /start to initialize the conversation session on the backend,
     // even when autoSend=true, so the backend knows about the conversation before we send the first message
     if (callbacks.autoSend && callbacks.initialMessage && callbacks.initialMessage.trim()) {
-      chatLogger.info('⏭️ Auto-send enabled - initializing conversation without displaying initial message', {
-        sessionId,
-        pythonSessionId: currentPythonSessionId,
-        initialMessage: callbacks.initialMessage.substring(0, 50),
-      })
+      chatLogger.info(
+        '⏭️ Auto-send enabled - initializing conversation without displaying initial message',
+        {
+          sessionId,
+          pythonSessionId: currentPythonSessionId,
+          initialMessage: callbacks.initialMessage.substring(0, 50),
+        }
+      )
       // Call initializeWithRetry but with a flag to skip adding the initial AI message
       // The initializeWithRetry function will handle calling /start to create the conversation
       // CRITICAL: initializeWithRetry now handles state tracking internally

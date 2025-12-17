@@ -236,9 +236,7 @@ const BusinessProfileCardV4: React.FC<BusinessProfileCardV4Props> = ({
                   <span className="hidden sm:inline">•</span>
                   <span>👥 {businessInfo.teamSize}</span>
                 </div>
-                <div>
-                  📍 {businessInfo.isRemote ? 'Remote' : businessInfo.location}
-                </div>
+                <div>📍 {businessInfo.isRemote ? 'Remote' : businessInfo.location}</div>
               </div>
             </div>
           </div>
@@ -249,4 +247,3 @@ const BusinessProfileCardV4: React.FC<BusinessProfileCardV4Props> = ({
 }
 
 export default BusinessProfileCardV4
-

@@ -2,7 +2,7 @@
  * ✏️ Edit Choice Modal
  * Location: src/components/modals/EditChoiceModal.tsx
  * Purpose: Context-aware modal to choose what to edit when clicking edit on business card
- * 
+ *
  * Shows when user clicks edit on business card.
  * Lets them choose: Edit Report OR Delete Report
  */
@@ -52,9 +52,7 @@ const EditChoiceModal: React.FC<EditChoiceModalProps> = ({
                   <Building2 className="w-6 h-6 text-primary-600" />
                 </div>
                 <div className="flex-1">
-                  <h3 className="text-lg font-semibold text-gray-900 mb-1">
-                    Edit Report
-                  </h3>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-1">Edit Report</h3>
                   <p className="text-sm text-gray-600">
                     Update your valuation report: inputs, business information, and other details.
                   </p>
@@ -87,12 +85,10 @@ const EditChoiceModal: React.FC<EditChoiceModalProps> = ({
                     <Trash2 className="w-6 h-6 text-red-600" />
                   </div>
                   <div className="flex-1">
-                    <h3 className="text-lg font-semibold text-gray-900 mb-1">
-                      Delete Report
-                    </h3>
+                    <h3 className="text-lg font-semibold text-gray-900 mb-1">Delete Report</h3>
                     <p className="text-sm text-gray-600">
-                      Permanently delete {reportName} and all associated data.
-                      This action cannot be undone.
+                      Permanently delete {reportName} and all associated data. This action cannot be
+                      undone.
                     </p>
                     <div className="mt-2 flex flex-wrap gap-2">
                       <span className="inline-flex items-center px-2 py-1 rounded-md bg-red-100 text-xs text-red-700">
@@ -135,4 +131,3 @@ const EditChoiceModal: React.FC<EditChoiceModalProps> = ({
 }
 
 export default EditChoiceModal
-

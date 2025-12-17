@@ -35,7 +35,8 @@ export const shouldEnablePremiumUpsell = (): boolean => FEATURE_FLAGS.ENABLE_PRE
 export const shouldShowOnboardingTooltips = (): boolean => FEATURE_FLAGS.SHOW_ONBOARDING_TOOLTIPS
 export const shouldEnableAnimations = (): boolean => FEATURE_FLAGS.ENABLE_ANIMATIONS
 export const shouldShowCreditAnalytics = (): boolean => FEATURE_FLAGS.SHOW_CREDIT_ANALYTICS
-export const shouldEnableSessionRestoration = (): boolean => FEATURE_FLAGS.ENABLE_SESSION_RESTORATION
+export const shouldEnableSessionRestoration = (): boolean =>
+  FEATURE_FLAGS.ENABLE_SESSION_RESTORATION
 export const isDebugCreditSystem = (): boolean => FEATURE_FLAGS.DEBUG_CREDIT_SYSTEM
 export const shouldMockCreditData = (): boolean => FEATURE_FLAGS.MOCK_CREDIT_DATA
 

@@ -43,7 +43,7 @@ export const useValuationResultsStore = create<ValuationResultsStore>((set, get)
         // Add stack trace to see who's calling this
         callerStack: new Error().stack?.split('\n').slice(2, 5).join(' << '),
       })
-      
+
       // Warn if html_report is missing
       if (!result.html_report || result.html_report.trim().length === 0) {
         storeLogger.error('CRITICAL: html_report missing or empty when setting result', {
@@ -53,7 +53,7 @@ export const useValuationResultsStore = create<ValuationResultsStore>((set, get)
           resultKeys: Object.keys(result),
         })
       }
-      
+
       // CRITICAL: Warn if info_tab_html is missing
       if (!result.info_tab_html || result.info_tab_html.trim().length === 0) {
         storeLogger.error('CRITICAL: info_tab_html missing or empty when setting result', {
@@ -81,7 +81,7 @@ export const useValuationResultsStore = create<ValuationResultsStore>((set, get)
         hasResult: false,
       })
     }
-    
+
     set({ result })
   },
 
@@ -143,4 +143,3 @@ export const useValuationResultsStore = create<ValuationResultsStore>((set, get)
     storeLogger.debug('Valuation result cleared')
   },
 }))
-

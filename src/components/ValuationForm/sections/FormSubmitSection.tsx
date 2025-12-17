@@ -58,7 +58,15 @@ export const FormSubmitSection: React.FC<FormSubmitSectionProps> = ({
         missingFields,
       })
     }
-  }, [isFormValid, isSubmitting, formData.revenue, formData.ebitda, formData.industry, formData.country_code, missingFields])
+  }, [
+    isFormValid,
+    isSubmitting,
+    formData.revenue,
+    formData.ebitda,
+    formData.industry,
+    formData.country_code,
+    missingFields,
+  ])
 
   return (
     <>

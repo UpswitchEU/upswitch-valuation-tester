@@ -21,7 +21,7 @@ interface CachedSession {
   session: ValuationSession
   cachedAt: number
   expiresAt: number
-  version: string  // Cache version based on session.updatedAt for staleness detection
+  version: string // Cache version based on session.updatedAt for staleness detection
 }
 
 /**
@@ -95,7 +95,7 @@ export class SessionCacheManager {
       // HTML reports are fetched from backend on demand
       // Use destructuring to completely exclude HTML reports (more efficient than setting to undefined)
       const { htmlReport, infoTabHtml, ...sessionWithoutHtml } = session
-      
+
       // Note: htmlReport and infoTabHtml are excluded from sessionWithoutHtml
       // They exist in backend and are fetched on demand when needed
 
@@ -103,11 +103,11 @@ export class SessionCacheManager {
         session: sessionWithoutHtml,
         cachedAt: Date.now(),
         expiresAt: Date.now() + CACHE_TTL_MS,
-        version: session.updatedAt?.toString() || Date.now().toString(),  // Track version for staleness detection
+        version: session.updatedAt?.toString() || Date.now().toString(), // Track version for staleness detection
       }
 
       const key = this.getCacheKey(reportId)
-      
+
       try {
         localStorage.setItem(key, JSON.stringify(cached))
       } catch (quotaError: any) {
@@ -218,12 +218,12 @@ export class SessionCacheManager {
       // This prevents stale "empty session" caches from before valuation completion
       const hasValuationResult = !!sanitized.valuationResult
       const cacheAge_minutes = Math.floor((Date.now() - parsed.cachedAt) / (60 * 1000))
-      
+
       // Note: HTML reports are not cached (too large), so we don't check for them here
       // They will be fetched from backend when needed
       if (!hasValuationResult && cacheAge_minutes > 10) {
-        cacheLogger.info('Invalidating incomplete stale cache (no valuation result)', { 
-          reportId, 
+        cacheLogger.info('Invalidating incomplete stale cache (no valuation result)', {
+          reportId,
           cacheAge_minutes,
           hasValuationResult,
         })

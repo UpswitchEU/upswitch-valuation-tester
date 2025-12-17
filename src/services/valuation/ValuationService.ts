@@ -17,17 +17,17 @@
  * @module services/valuation/ValuationService
  */
 
-import { backendAPI } from '../backendApi'
-import type { ValuationRequest, ValuationResponse } from '../../types/valuation'
-import { createContextLogger } from '../../utils/logger'
-import { getErrorMessage } from '../../utils/errors/errorConverter'
 import {
-  ValidationError,
-  NetworkError,
-  CalculationError,
-  NotFoundError,
   ApplicationError,
+  CalculationError,
+  NetworkError,
+  NotFoundError,
+  ValidationError,
 } from '../../types/errors'
+import type { ValuationRequest, ValuationResponse } from '../../types/valuation'
+import { getErrorMessage } from '../../utils/errors/errorConverter'
+import { createContextLogger } from '../../utils/logger'
+import { backendAPI } from '../backendApi'
 
 const logger = createContextLogger('ValuationService')
 
@@ -175,4 +175,3 @@ export class ValuationService {
 
 // Export singleton instance
 export const valuationService = ValuationService.getInstance()
-

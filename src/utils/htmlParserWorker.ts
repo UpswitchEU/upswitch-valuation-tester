@@ -1,9 +1,9 @@
 /**
  * HTML Parser Worker Client
- * 
+ *
  * TypeScript wrapper for the HTML Parser Web Worker.
  * Provides a Promise-based API for background HTML processing.
- * 
+ *
  * @module utils/htmlParserWorker
  */
 
@@ -58,10 +58,13 @@ export interface HTMLStructureResult {
 class HTMLParserWorkerClient {
   private worker: Worker | null = null
   private messageId = 0
-  private pendingRequests = new Map<number, {
-    resolve: (result: any) => void
-    reject: (error: Error) => void
-  }>()
+  private pendingRequests = new Map<
+    number,
+    {
+      resolve: (result: any) => void
+      reject: (error: Error) => void
+    }
+  >()
 
   /**
    * Initialize the worker
@@ -223,4 +226,3 @@ class HTMLParserWorkerClient {
 
 // Export singleton instance
 export const htmlParserWorker = new HTMLParserWorkerClient()
-

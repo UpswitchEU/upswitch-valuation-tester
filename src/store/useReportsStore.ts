@@ -109,7 +109,7 @@ export const useReportsStore = create<ReportsStore>((set, get) => ({
         const { globalSessionCache } = await import('../utils/sessionCacheManager')
         globalSessionCache.remove(reportId)
         reportsLogger.info('Cache cleared for deleted report', { reportId })
-        
+
         // Also clear from session store if it's the active session
         const { useSessionStore } = await import('./useSessionStore')
         const currentSession = useSessionStore.getState().session

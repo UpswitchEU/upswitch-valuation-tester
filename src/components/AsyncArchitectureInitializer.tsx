@@ -1,14 +1,14 @@
 /**
  * Async Architecture Initializer
- * 
+ *
  * Initializes async architecture utilities on app startup:
  * - Service Worker registration (offline support)
  * - Real User Monitoring (RUM) - auto-initialized on import
  * - Performance monitoring - auto-initialized on import
- * 
+ *
  * This component should be included in the app root to ensure
  * all async optimizations are active.
- * 
+ *
  * @module components/AsyncArchitectureInitializer
  */
 
@@ -49,4 +49,3 @@ export function AsyncArchitectureInitializer() {
   // This component doesn't render anything
   return null
 }
-

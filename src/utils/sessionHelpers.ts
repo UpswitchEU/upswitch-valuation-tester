@@ -226,38 +226,38 @@ export function syncSessionToBackend(session: ValuationSession): void {
             // Re-throw to outer catch block for 409 handling
             throw createError
           }
-          
+
           // For other errors, retry with exponential backoff
-        await retryWithBackoff(
-          async () => {
-            return await backendAPI.createValuationSession(session)
-          },
-          {
-            maxRetries: 3,
+          await retryWithBackoff(
+            async () => {
+              return await backendAPI.createValuationSession(session)
+            },
+            {
+              maxRetries: 3,
               initialDelay: 200,
               maxDelay: 2000,
-            backoffMultiplier: 2,
-            onRetry: (attempt, error, delay) => {
+              backoffMultiplier: 2,
+              onRetry: (attempt, error, delay) => {
                 sessionHelpersLogger.debug('Retrying background sync', {
-                reportId,
-                attempt,
-                delay_ms: delay,
-                error: error instanceof Error ? error.message : 'Unknown error',
-              })
-            },
-            onFailure: (error, attempts) => {
+                  reportId,
+                  attempt,
+                  delay_ms: delay,
+                  error: error instanceof Error ? error.message : 'Unknown error',
+                })
+              },
+              onFailure: (error, attempts) => {
                 sessionHelpersLogger.warn('Background sync failed after retries', {
-                reportId,
-                attempts,
-                error: error instanceof Error ? error.message : 'Unknown error',
-              })
-            },
-          }
-        )
+                  reportId,
+                  attempts,
+                  error: error instanceof Error ? error.message : 'Unknown error',
+                })
+              },
+            }
+          )
 
           sessionHelpersLogger.debug('Background sync completed successfully after retries', {
-          reportId,
-        })
+            reportId,
+          })
         }
       } catch (error) {
         // Handle 409 conflicts (not retryable - session already exists)
@@ -291,7 +291,7 @@ export function syncSessionToBackend(session: ValuationSession): void {
             if (backendSessionResponse?.session) {
               // Merge top-level fields into sessionData (SINGLE SOURCE OF TRUTH)
               const mergedSession = mergeSessionFields(backendSessionResponse.session)
-              
+
               const backendSession = normalizeSessionDates(mergedSession)
 
               // Update cache with backend version

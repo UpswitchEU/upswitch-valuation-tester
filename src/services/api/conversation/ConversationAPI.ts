@@ -1,13 +1,13 @@
 /**
  * Conversation API
- * 
+ *
  * Handles conversation history persistence and retrieval
  */
 
-import { HttpClient } from '../HttpClient'
-import { apiLogger } from '../../../utils/logger'
-import type { Message } from '../../../types/message'
 import type { InternalAxiosRequestConfig } from 'axios'
+import type { Message } from '../../../types/message'
+import { apiLogger } from '../../../utils/logger'
+import { HttpClient } from '../HttpClient'
 
 export interface SaveMessageRequest {
   reportId: string
@@ -128,4 +128,3 @@ export class ConversationAPI extends HttpClient {
 
 // Export singleton instance
 export const conversationAPI = new ConversationAPI()
-

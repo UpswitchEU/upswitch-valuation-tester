@@ -8,13 +8,13 @@
  */
 
 import type {
-    CreateVersionRequest,
-    UpdateVersionRequest,
-    ValuationVersion,
-    VersionComparison,
-    VersionFilterOptions,
-    VersionListResponse,
-    VersionStatistics,
+  CreateVersionRequest,
+  UpdateVersionRequest,
+  ValuationVersion,
+  VersionComparison,
+  VersionFilterOptions,
+  VersionListResponse,
+  VersionStatistics,
 } from '../../../types/ValuationVersion'
 import { createContextLogger } from '../../../utils/logger'
 

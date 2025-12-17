@@ -348,4 +348,3 @@ export function AuditLogEmpty() {
     </div>
   )
 }
-

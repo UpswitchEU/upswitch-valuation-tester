@@ -1,6 +1,6 @@
 /**
  * SessionCacheManager Tests
- * 
+ *
  * Tests for cache versioning and completeness validation:
  * - Cache versioning (Phase 3)
  * - Incomplete cache detection
@@ -76,7 +76,7 @@ describe('SessionCacheManager - Cache Versioning & Completeness', () => {
 
       const cached = localStorage.getItem(`upswitch_session_cache_${mockReportId}`)
       const parsed = JSON.parse(cached!)
-      
+
       const version = parseInt(parsed.version)
       expect(version).toBeGreaterThanOrEqual(before)
       expect(version).toBeLessThanOrEqual(after)
@@ -114,16 +114,13 @@ describe('SessionCacheManager - Cache Versioning & Completeness', () => {
         version: incompleteSession.updatedAt?.toString() || Date.now().toString(),
       }
 
-      localStorage.setItem(
-        `upswitch_session_cache_${mockReportId}`,
-        JSON.stringify(cached)
-      )
+      localStorage.setItem(`upswitch_session_cache_${mockReportId}`, JSON.stringify(cached))
 
       const result = cacheManager.get(mockReportId)
 
       // Should return null (cache invalidated)
       expect(result).toBeNull()
-      
+
       // Cache should be deleted
       const deletedCache = localStorage.getItem(`upswitch_session_cache_${mockReportId}`)
       expect(deletedCache).toBeNull()
@@ -138,10 +135,7 @@ describe('SessionCacheManager - Cache Versioning & Completeness', () => {
         version: completeSession.updatedAt?.toString() || Date.now().toString(),
       }
 
-      localStorage.setItem(
-        `upswitch_session_cache_${mockReportId}`,
-        JSON.stringify(cached)
-      )
+      localStorage.setItem(`upswitch_session_cache_${mockReportId}`, JSON.stringify(cached))
 
       const result = cacheManager.get(mockReportId)
 
@@ -154,15 +148,12 @@ describe('SessionCacheManager - Cache Versioning & Completeness', () => {
 
   describe('Edge Cases', () => {
     it('should handle corrupted cache gracefully', () => {
-      localStorage.setItem(
-        `upswitch_session_cache_${mockReportId}`,
-        'invalid json'
-      )
+      localStorage.setItem(`upswitch_session_cache_${mockReportId}`, 'invalid json')
 
       const result = cacheManager.get(mockReportId)
 
       expect(result).toBeNull()
-      
+
       // Cache should be deleted
       const deletedCache = localStorage.getItem(`upswitch_session_cache_${mockReportId}`)
       expect(deletedCache).toBeNull()
@@ -176,10 +167,7 @@ describe('SessionCacheManager - Cache Versioning & Completeness', () => {
         version: completeSession.updatedAt?.toString() || Date.now().toString(),
       }
 
-      localStorage.setItem(
-        `upswitch_session_cache_${mockReportId}`,
-        JSON.stringify(cached)
-      )
+      localStorage.setItem(`upswitch_session_cache_${mockReportId}`, JSON.stringify(cached))
 
       const result = cacheManager.get(mockReportId)
 
@@ -240,5 +228,3 @@ describe('SessionCacheManager - Cache Versioning & Completeness', () => {
     })
   })
 })
-
-

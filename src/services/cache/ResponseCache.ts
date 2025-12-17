@@ -1,15 +1,15 @@
 /**
  * Response Cache with TTL
- * 
+ *
  * Caches API responses with Time-To-Live (TTL) expiration.
  * Reduces network calls for repeated requests.
- * 
+ *
  * Benefits:
  * - Fast subsequent loads (cache hits)
  * - Reduced server load
  * - Configurable TTL per request type
  * - Automatic cache cleanup
- * 
+ *
  * @module services/cache/ResponseCache
  */
 
@@ -38,17 +38,13 @@ export class ResponseCache {
   /**
    * Fetch with caching
    * Returns cached data if fresh, otherwise fetches and caches
-   * 
+   *
    * @param key - Unique cache key
    * @param fn - Function that fetches the data
    * @param ttl - Time-to-live in milliseconds (default: 60000 = 1 minute)
    * @returns Cached or fresh data
    */
-  async cachedFetch<T>(
-    key: string,
-    fn: () => Promise<T>,
-    ttl: number = 60000
-  ): Promise<T> {
+  async cachedFetch<T>(key: string, fn: () => Promise<T>, ttl: number = 60000): Promise<T> {
     const cached = this.cache.get(key)
     const now = Date.now()
 
@@ -121,7 +117,7 @@ export class ResponseCache {
    */
   get<T>(key: string): T | undefined {
     const cached = this.cache.get(key)
-    
+
     if (!cached) {
       return undefined
     }
@@ -284,8 +280,10 @@ export const responseCache = new ResponseCache(100)
 
 // Auto cleanup expired entries every 5 minutes
 if (typeof window !== 'undefined') {
-  setInterval(() => {
-    responseCache.cleanupExpired()
-  }, 5 * 60 * 1000)
+  setInterval(
+    () => {
+      responseCache.cleanupExpired()
+    },
+    5 * 60 * 1000
+  )
 }
-

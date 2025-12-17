@@ -7,9 +7,7 @@
  */
 
 import { useCallback, useState } from 'react'
-import {
-  useValuationToolbarRefresh,
-} from '../../../hooks/valuationToolbar'
+import { useValuationToolbarRefresh } from '../../../hooks/valuationToolbar'
 import { backendAPI } from '../../../services/backendApi'
 import { RefreshService } from '../../../services/toolbar/refreshService'
 import UrlGeneratorService from '../../../services/urlGenerator'

@@ -33,7 +33,7 @@ export function parseBusinessTypeSuggestions(message: string): BusinessTypeSugge
     if (fullText.length > 1 && !fullText.toLowerCase().includes('best describes')) {
       // Remove markdown bold formatting (**text**)
       fullText = fullText.replace(/\*\*(.+?)\*\*/g, '$1')
-      
+
       // Extract emoji if present (first character)
       const firstChar = fullText.charAt(0)
       const hasEmoji = /[\u{1F300}-\u{1F9FF}]/u.test(firstChar)

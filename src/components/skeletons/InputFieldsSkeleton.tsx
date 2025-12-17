@@ -1,10 +1,10 @@
 /**
  * Input Fields Skeleton
- * 
+ *
  * Loading skeleton for form input fields - MATCHES ACTUAL FORM STRUCTURE.
  * Shows while input data is being restored from backend.
  * Matches: ValuationForm sections with dark theme (bg-zinc-900)
- * 
+ *
  * @module components/skeletons/InputFieldsSkeleton
  */
 
@@ -16,7 +16,7 @@ export function InputFieldsSkeleton() {
       {/* Basic Information Section */}
       <div className="space-y-6">
         <h3 className="h-6 w-40 bg-white/10 rounded mb-6 pb-2 border-b border-white/10" />
-        
+
         <div className="grid grid-cols-1 gap-6">
           {/* Business Type Search - Full width */}
           <div className="space-y-2">
@@ -47,7 +47,7 @@ export function InputFieldsSkeleton() {
       {/* Ownership Structure Section */}
       <div className="space-y-6">
         <h3 className="h-6 w-48 bg-white/10 rounded mb-6 pb-2 border-b border-white/10" />
-        
+
         <div className="grid grid-cols-1 @4xl:grid-cols-2 gap-6">
           <div className="space-y-2">
             <div className="h-4 w-40 bg-white/10 rounded" />
@@ -63,7 +63,7 @@ export function InputFieldsSkeleton() {
       {/* Financial Data Section */}
       <div className="space-y-6">
         <h3 className="h-6 w-36 bg-white/10 rounded mb-6 pb-2 border-b border-white/10" />
-        
+
         <div className="grid grid-cols-1 @4xl:grid-cols-2 gap-6">
           {/* Revenue */}
           <div className="space-y-2">
@@ -71,7 +71,7 @@ export function InputFieldsSkeleton() {
             <div className="h-12 w-full bg-white/5 border border-white/10 rounded-lg" />
             <div className="h-3 w-full bg-white/5 rounded" />
           </div>
-          
+
           {/* EBITDA */}
           <div className="space-y-2">
             <div className="h-4 w-28 bg-white/10 rounded" />
@@ -110,4 +110,3 @@ export function InputFieldsSkeleton() {
     </div>
   )
 }
-

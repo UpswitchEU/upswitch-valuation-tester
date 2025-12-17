@@ -146,8 +146,7 @@ export function useAutoSend(options: UseAutoSendOptions): UseAutoSendReturn {
     // Session is ready when:
     // - Session is initialized, OR
     // - Restoration is complete (if restoration was attempted)
-    const sessionReady =
-      isSessionInitialized || (isRestorationComplete && !isRestoring)
+    const sessionReady = isSessionInitialized || (isRestorationComplete && !isRestoring)
 
     // CRITICAL: Wait for pythonSessionId to be available if initialization is complete
     // This ensures we use the correct backend session ID for streaming
@@ -219,4 +218,3 @@ export function useAutoSend(options: UseAutoSendOptions): UseAutoSendReturn {
 
   return {}
 }
-

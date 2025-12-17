@@ -1,10 +1,10 @@
 /**
  * Valuation Session Mapper Utilities
- * 
+ *
  * Maps ValuationSession data to BusinessInfo format for BusinessProfileCardV4
  */
 
-import type { ValuationSession, ValuationResponse } from '../types/valuation'
+import type { ValuationResponse, ValuationSession } from '../types/valuation'
 
 export interface BusinessInfo {
   name: string
@@ -28,11 +28,11 @@ function getValueFromSources<T>(
 ): T {
   for (const source of sources) {
     if (!source || typeof source !== 'object') continue
-    
+
     for (const path of paths) {
       const keys = path.split('.')
       let value: any = source
-      
+
       for (const key of keys) {
         if (value && typeof value === 'object' && key in value) {
           value = value[key]
@@ -41,19 +41,19 @@ function getValueFromSources<T>(
           break
         }
       }
-      
+
       if (value !== undefined && value !== null && value !== '') {
         return value as T
       }
     }
   }
-  
+
   return defaultValue
 }
 
 /**
  * Map ValuationSession to BusinessInfo
- * 
+ *
  * Comprehensive mapping that extracts all business card fields from:
  * - sessionData (complete ValuationRequest)
  * - partialData (incremental updates)
@@ -66,7 +66,7 @@ export function mapValuationSessionToBusinessInfo(session: ValuationSession): Bu
   const sessionData = (session.sessionData || {}) as any
   const partialData = (session.partialData || {}) as any
   const valuationResult = (session as any).valuationResult as ValuationResponse | undefined
-  
+
   // Also check if data is nested in sessionData/partialData (backend may nest it)
   const nestedSessionData = sessionData?.sessionData || sessionData
   const nestedPartialData = partialData?.partialData || partialData
@@ -82,19 +82,16 @@ export function mapValuationSessionToBusinessInfo(session: ValuationSession): Bu
   ].filter(Boolean) as Array<Record<string, any>>
 
   // Extract company name (priority: valuationResult > sessionData > partialData > top-level)
-  const name = getValueFromSources(
-    allSources,
-    ['company_name'],
-    'Untitled Business'
-  )
+  const name = getValueFromSources(allSources, ['company_name'], 'Untitled Business')
 
   // Extract business type ID (industry) - check multiple possible field names
   // Priority: business_type_id > industry > business_type > business_model
-  const industry = getValueFromSources(
-    allSources,
-    ['business_type_id', 'industry', 'business_type', 'business_model'],
-    ''
-  ) || 'other' // Default to 'other' if not found
+  const industry =
+    getValueFromSources(
+      allSources,
+      ['business_type_id', 'industry', 'business_type', 'business_model'],
+      ''
+    ) || 'other' // Default to 'other' if not found
 
   // Extract description (check multiple field names)
   // NOTE: business_context is an object (not a string), so check for description property within it
@@ -116,11 +113,12 @@ export function mapValuationSessionToBusinessInfo(session: ValuationSession): Bu
     ['founding_year', 'founded_year'],
     new Date().getFullYear()
   )
-  const foundedYear = typeof foundedYearRaw === 'number' && 
-    foundedYearRaw > 1900 && 
+  const foundedYear =
+    typeof foundedYearRaw === 'number' &&
+    foundedYearRaw > 1900 &&
     foundedYearRaw <= new Date().getFullYear()
-    ? foundedYearRaw
-    : new Date().getFullYear()
+      ? foundedYearRaw
+      : new Date().getFullYear()
 
   // Extract team size (check multiple field names)
   // Check for employees first, then owners, then combine if both exist
@@ -136,7 +134,7 @@ export function mapValuationSessionToBusinessInfo(session: ValuationSession): Bu
     ],
     null
   )
-  
+
   const owners: number | string | null = getValueFromSources<number | string | null>(
     allSources,
     [
@@ -146,7 +144,7 @@ export function mapValuationSessionToBusinessInfo(session: ValuationSession): Bu
     ],
     null
   )
-  
+
   // Format team size: show employees, or employees + owners if both exist
   let teamSize = 'N/A'
   if (employees !== null && employees !== undefined && employees !== '') {
@@ -173,45 +171,31 @@ export function mapValuationSessionToBusinessInfo(session: ValuationSession): Bu
   }
 
   // Extract revenue (check nested current_year_data structure)
-  const revenueRaw = getValueFromSources(
-    allSources,
-    ['current_year_data.revenue', 'revenue'],
-    0
-  )
+  const revenueRaw = getValueFromSources(allSources, ['current_year_data.revenue', 'revenue'], 0)
   const revenue = typeof revenueRaw === 'number' && revenueRaw >= 0 ? revenueRaw : 0
 
   // Extract location (city preferred, fallback to country_code)
-  const city = getValueFromSources(
-    allSources,
-    ['city'],
-    ''
-  )
-  
-  const countryCode = getValueFromSources(
-    allSources,
-    ['country_code', 'country'],
-    ''
-  )
-  
+  const city = getValueFromSources(allSources, ['city'], '')
+
+  const countryCode = getValueFromSources(allSources, ['country_code', 'country'], '')
+
   // Combine city and country for location display
-  const location = city 
-    ? (countryCode ? `${city}, ${countryCode}` : city)
-    : (countryCode || 'Unknown')
+  const location = city
+    ? countryCode
+      ? `${city}, ${countryCode}`
+      : city
+    : countryCode || 'Unknown'
 
   // Determine if remote (check is_remote field)
-  const isRemoteRaw = getValueFromSources(
-    allSources,
-    ['is_remote', 'isRemote'],
-    false
-  )
+  const isRemoteRaw = getValueFromSources(allSources, ['is_remote', 'isRemote'], false)
   const isRemote = Boolean(isRemoteRaw)
 
   // Determine status based on completion and data presence
-  const status: 'active' | 'inactive' | 'draft' = 
+  const status: 'active' | 'inactive' | 'draft' =
     session.completedAt || session.calculatedAt
       ? 'active'
       : (session.partialData && Object.keys(session.partialData).length > 0) ||
-        (session.sessionData && Object.keys(session.sessionData).length > 0)
+          (session.sessionData && Object.keys(session.sessionData).length > 0)
         ? 'active'
         : 'draft'
 
@@ -302,4 +286,3 @@ export function extractProfileData(
     location: undefined, // Can be enhanced if user has location data
   }
 }
-

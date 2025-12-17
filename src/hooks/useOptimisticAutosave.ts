@@ -1,15 +1,15 @@
 /**
  * Optimistic Autosave Hook
- * 
+ *
  * Provides instant "saved" feedback by updating UI immediately,
  * then persisting changes in the background with debouncing.
- * 
+ *
  * Features:
  * - Immediate UI feedback (<16ms)
  * - Debounced persistence (500ms default)
  * - Automatic rollback on error
  * - Progress tracking (Saving... → Saved)
- * 
+ *
  * @module hooks/useOptimisticAutosave
  */
 
@@ -57,10 +57,7 @@ export interface OptimisticAutosaveState {
   error: string | null
 }
 
-export function useOptimisticAutosave(
-  reportId: string,
-  options: OptimisticAutosaveOptions = {}
-) {
+export function useOptimisticAutosave(reportId: string, options: OptimisticAutosaveOptions = {}) {
   const { debounceMs = 500, onSaveSuccess, onSaveError } = options
 
   // Local state for UI feedback
@@ -92,7 +89,7 @@ export function useOptimisticAutosave(
 
   /**
    * Update a single field with optimistic autosave
-   * 
+   *
    * Flow:
    * 1. Update UI immediately (show "Saved")
    * 2. Accumulate changes in pendingChangesRef
@@ -366,4 +363,3 @@ export function useOptimisticAutosave(
     forceSave,
   }
 }
-

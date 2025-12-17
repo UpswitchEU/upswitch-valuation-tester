@@ -1,15 +1,15 @@
 /**
  * Virtualizer Hook
- * 
+ *
  * Provides list virtualization for efficient rendering of large lists.
  * Only renders visible items + buffer, dramatically improving performance.
- * 
+ *
  * Benefits:
  * - Fast rendering even with 1000+ items
  * - Low memory usage
  * - Smooth scrolling
  * - No external dependencies
- * 
+ *
  * @module hooks/useVirtualizer
  */
 
@@ -107,7 +107,7 @@ export interface VirtualizerResult {
 
 /**
  * Virtualizer hook for efficient list rendering
- * 
+ *
  * Usage:
  * ```tsx
  * const virtualizer = useVirtualizer({
@@ -115,7 +115,7 @@ export interface VirtualizerResult {
  *   estimateSize: 120, // Each item ~120px tall
  *   overscan: 5, // Render 5 extra items above/below
  * })
- * 
+ *
  * return (
  *   <div style={{ height: '600px', overflow: 'auto' }} ref={parentRef}>
  *     <div style={{ height: `${virtualizer.totalSize}px`, position: 'relative' }}>
@@ -358,4 +358,3 @@ export function useVirtualizer(config: VirtualizerConfig): VirtualizerResult {
     scrollToIndex,
   }
 }
-

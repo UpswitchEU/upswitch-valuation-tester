@@ -11,11 +11,11 @@ import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import { VersionAPI } from '../services/api/version/VersionAPI'
 import type {
-    CreateVersionRequest,
-    UpdateVersionRequest,
-    ValuationVersion,
-    VersionChanges,
-    VersionComparison,
+  CreateVersionRequest,
+  UpdateVersionRequest,
+  ValuationVersion,
+  VersionChanges,
+  VersionComparison,
 } from '../types/ValuationVersion'
 import { createContextLogger } from '../utils/logger'
 
@@ -156,12 +156,12 @@ export const useVersionHistoryStore = create<VersionHistoryStore>()(
           // ✅ FIX: Deduplicate versions by versionNumber to prevent duplicates
           // Use a Map to ensure unique versions by versionNumber
           const versionMap = new Map<number, ValuationVersion>()
-          
+
           // Add backend versions (these are the source of truth)
           response.versions.forEach((version) => {
             versionMap.set(version.versionNumber, version)
           })
-          
+
           // Convert back to array and sort by versionNumber
           const deduplicatedVersions = Array.from(versionMap.values()).sort(
             (a, b) => a.versionNumber - b.versionNumber
@@ -228,12 +228,12 @@ export const useVersionHistoryStore = create<VersionHistoryStore>()(
             // ✅ FIX: Check if version already exists before adding to prevent duplicates
             set((state) => {
               const reportVersions = state.versions[request.reportId] || []
-              
+
               // Check if version with same versionNumber already exists
               const versionExists = reportVersions.some(
                 (v) => v.versionNumber === version.versionNumber
               )
-              
+
               if (versionExists) {
                 versionLogger.warn('Version already exists in local state, skipping add', {
                   reportId: request.reportId,
@@ -248,7 +248,7 @@ export const useVersionHistoryStore = create<VersionHistoryStore>()(
                   },
                 }
               }
-              
+
               return {
                 versions: {
                   ...state.versions,
@@ -565,16 +565,16 @@ export const useVersionHistoryStore = create<VersionHistoryStore>()(
         // ✅ FIX: Exclude HTML reports from localStorage to prevent quota exceeded errors
         // HTML reports are stored in backend and fetched on demand
         const versionsWithoutHtml: Record<string, ValuationVersion[]> = {}
-        
+
         for (const [reportId, versions] of Object.entries(state.versions)) {
           versionsWithoutHtml[reportId] = versions.map((version) => ({
             ...version,
-            htmlReport: null,  // Don't store large HTML reports in localStorage
+            htmlReport: null, // Don't store large HTML reports in localStorage
             infoTabHtml: null, // Don't store large info tab HTML in localStorage
             // Keep metadata flags to indicate HTML reports exist in backend
           }))
         }
-        
+
         return {
           versions: versionsWithoutHtml,
           activeVersions: state.activeVersions,

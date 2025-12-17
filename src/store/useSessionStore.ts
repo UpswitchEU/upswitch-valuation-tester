@@ -24,19 +24,23 @@ interface SessionStore {
   session: ValuationSession | null
   isLoading: boolean
   error: string | null
-  
+
   // Save state (M&A workflow)
   isSaving: boolean
   lastSaved: Date | null
   hasUnsavedChanges: boolean
-  
+
   // Actions
-  loadSession: (reportId: string, flow?: 'manual' | 'conversational', prefilledQuery?: string | null) => Promise<void>
+  loadSession: (
+    reportId: string,
+    flow?: 'manual' | 'conversational',
+    prefilledQuery?: string | null
+  ) => Promise<void>
   updateSession: (updates: Partial<ValuationSession>) => void
-  updateSessionData: (data: Partial<any>) => Promise<void>  // Async for hook compatibility
+  updateSessionData: (data: Partial<any>) => Promise<void> // Async for hook compatibility
   saveSession: () => Promise<void>
   clearSession: () => void
-  
+
   // Helpers
   getReportId: () => string | null
   getSessionData: () => any | null
@@ -60,7 +64,7 @@ export const useSessionStore = create<SessionStore>((set, get) => ({
   isSaving: false,
   lastSaved: null,
   hasUnsavedChanges: false,
-  
+
   /**
    * Load session from backend/cache
    *
@@ -71,48 +75,52 @@ export const useSessionStore = create<SessionStore>((set, get) => ({
    * - Auto-creates session if not found (for new reports)
    * - Merges prefilledQuery into partialData if provided
    */
-  loadSession: async (reportId: string, flow?: 'manual' | 'conversational', prefilledQuery?: string | null) => {
+  loadSession: async (
+    reportId: string,
+    flow?: 'manual' | 'conversational',
+    prefilledQuery?: string | null
+  ) => {
     const state = get()
-    
+
     // GUARD 1: Already loaded for this reportId
     if (state.session?.reportId === reportId && !state.error) {
       storeLogger.debug('[Session] Already loaded, skipping', { reportId })
       return
     }
-    
+
     // GUARD 2: Already loading (promise cache)
     if (loadingPromises.has(reportId)) {
       storeLogger.debug('[Session] Already loading, reusing promise', { reportId })
       await loadingPromises.get(reportId)
       return
     }
-    
+
     // Create load promise
     const loadPromise = (async () => {
       set({ isLoading: true, error: null })
-      
+
       try {
         storeLogger.info('[Session] Loading session', { reportId, flow, prefilledQuery })
-        
+
         // Load from SessionService (handles cache, backend, merging, auto-creation)
         const session = await sessionService.loadSession(reportId, flow, prefilledQuery)
-        
+
         if (!session) {
           throw new Error(`Session not found: ${reportId}`)
         }
-        
+
         // ✅ FIX: Only mark as saved if session was explicitly updated (user saved changes)
         // Don't use calculatedAt - calculation completion != user save
         // Don't default to new Date() - new reports shouldn't show "Saved" immediately
-        set({ 
-          session, 
+        set({
+          session,
           isLoading: false,
           error: null,
           hasUnsavedChanges: false,
           lastSaved: session.updatedAt || null, // Only set if user explicitly saved
           isSaving: false,
         })
-        
+
         storeLogger.info('[Session] Session loaded successfully', {
           reportId,
           currentView: session.currentView,
@@ -124,24 +132,24 @@ export const useSessionStore = create<SessionStore>((set, get) => ({
         })
       } catch (error) {
         const message = error instanceof Error ? error.message : 'Failed to load session'
-        
+
         storeLogger.error('[Session] Load failed', {
           reportId,
           error: message,
         })
-        
-        set({ 
-          error: message, 
-          isLoading: false 
+
+        set({
+          error: message,
+          isLoading: false,
         })
-        
+
         throw error
       }
     })()
-    
+
     // Store in promise cache
     loadingPromises.set(reportId, loadPromise)
-    
+
     try {
       await loadPromise
     } finally {
@@ -149,45 +157,45 @@ export const useSessionStore = create<SessionStore>((set, get) => ({
       loadingPromises.delete(reportId)
     }
   },
-  
+
   /**
    * Update entire session object
    */
   updateSession: (updates: Partial<ValuationSession>) => {
-    set(state => {
+    set((state) => {
       if (!state.session) {
         storeLogger.warn('[Session] Cannot update: no active session')
         return state
       }
-      
+
       const updatedSession = {
         ...state.session,
         ...updates,
       }
-      
+
       storeLogger.debug('[Session] Session updated', {
         reportId: state.session.reportId,
         fieldsUpdated: Object.keys(updates).length,
       })
-      
+
       // ✅ CRITICAL: Update localStorage cache immediately (Cursor/ChatGPT pattern)
       // This ensures page refresh loads the updated session with all assets
       // ✅ FIX: Exclude HTML reports before caching to prevent quota exceeded errors
       try {
         const { globalSessionCache } = require('../utils/sessionCacheManager')
-        
+
         storeLogger.debug('[Session] Starting optimistic cache update', {
           reportId: state.session.reportId,
           updateKeys: Object.keys(updates),
           hasHtmlReportInUpdate: !!updates.htmlReport,
           hasInfoTabHtmlInUpdate: !!updates.infoTabHtml,
         })
-        
+
         // Exclude HTML reports before caching (they're too large for localStorage)
         // HTML reports are fetched from backend on demand when needed
         const { htmlReport, infoTabHtml, ...sessionWithoutHtml } = updatedSession
         globalSessionCache.set(state.session.reportId, sessionWithoutHtml)
-        
+
         storeLogger.info('[Session] Cache updated optimistically (SUCCESS)', {
           reportId: state.session.reportId,
           fieldsUpdated: Object.keys(updates).length,
@@ -205,7 +213,7 @@ export const useSessionStore = create<SessionStore>((set, get) => ({
           stack: cacheError instanceof Error ? cacheError.stack : undefined,
         })
       }
-      
+
       return {
         ...state,
         session: updatedSession,
@@ -213,34 +221,39 @@ export const useSessionStore = create<SessionStore>((set, get) => ({
       }
     })
   },
-  
+
   /**
    * Update session data (form fields)
    * Async for compatibility with hooks expecting Promise<void>
    */
   updateSessionData: async (data: Partial<any>) => {
-    set(state => {
+    set((state) => {
       if (!state.session) {
         storeLogger.warn('[Session] Cannot update data: no active session')
         return state
       }
-      
+
       // ✅ FIX: Check if data actually changed before marking as unsaved
       // This prevents restoration from triggering "unsaved changes"
-      const currentSessionData = state.session.sessionData || {} as any
+      const currentSessionData = state.session.sessionData || ({} as any)
       const dataAny = data as any
-      const dataChanged = Object.keys(data).some(key => {
+      const dataChanged = Object.keys(data).some((key) => {
         const newValue = dataAny[key]
         const oldValue = (currentSessionData as any)[key]
-        
+
         // Deep comparison for nested objects
-        if (typeof newValue === 'object' && typeof oldValue === 'object' && newValue !== null && oldValue !== null) {
+        if (
+          typeof newValue === 'object' &&
+          typeof oldValue === 'object' &&
+          newValue !== null &&
+          oldValue !== null
+        ) {
           return JSON.stringify(newValue) !== JSON.stringify(oldValue)
         }
-        
+
         return newValue !== oldValue
       })
-      
+
       // If data hasn't changed, don't mark as unsaved
       if (!dataChanged) {
         storeLogger.debug('[Session] Session data unchanged, skipping update', {
@@ -249,7 +262,7 @@ export const useSessionStore = create<SessionStore>((set, get) => ({
         })
         return state
       }
-      
+
       const updatedSession = {
         ...state.session,
         sessionData: {
@@ -257,13 +270,13 @@ export const useSessionStore = create<SessionStore>((set, get) => ({
           ...data,
         },
       }
-      
+
       storeLogger.debug('[Session] Session data updated', {
         reportId: state.session.reportId,
         fieldsUpdated: Object.keys(data).length,
         dataChanged: true,
       })
-      
+
       return {
         ...state,
         session: updatedSession,
@@ -271,65 +284,65 @@ export const useSessionStore = create<SessionStore>((set, get) => ({
       }
     })
   },
-  
+
   /**
    * Save session to backend
    */
   saveSession: async () => {
     const state = get()
-    
+
     if (!state.session) {
       storeLogger.warn('[Session] Cannot save: no active session')
       return
     }
-    
+
     set({ isSaving: true, error: null })
-    
+
     try {
       storeLogger.info('[Session] Saving session', {
         reportId: state.session.reportId,
       })
-      
+
       // Save via SessionService
       await sessionService.saveSession(state.session.reportId, state.session.sessionData || {})
-      
+
       set({
         isSaving: false,
         hasUnsavedChanges: false,
         lastSaved: new Date(),
         error: null,
       })
-      
+
       storeLogger.info('[Session] Session saved successfully', {
         reportId: state.session.reportId,
       })
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Failed to save session'
-      
+
       storeLogger.error('[Session] Save failed', {
         reportId: state.session.reportId,
         error: message,
       })
-      
-      set({ 
+
+      set({
         isSaving: false,
-        error: message 
+        error: message,
       })
-      
+
       throw error
     }
   },
-  
+
   /**
    * Clear session state
    */
   clearSession: () => {
     const state = get()
-    
+
     storeLogger.info('[Session] Clearing session', {
       reportId: state.session?.reportId,
     })
-    
+
     set({
       session: null,
       isLoading: false,
@@ -339,7 +352,7 @@ export const useSessionStore = create<SessionStore>((set, get) => ({
       hasUnsavedChanges: false,
     })
   },
-  
+
   /**
    * Get current report ID
    */
@@ -347,7 +360,7 @@ export const useSessionStore = create<SessionStore>((set, get) => ({
     const { session } = get()
     return session?.reportId || null
   },
-  
+
   /**
    * Get session data
    */
@@ -355,7 +368,7 @@ export const useSessionStore = create<SessionStore>((set, get) => ({
     const { session } = get()
     return session?.sessionData || null
   },
-  
+
   /**
    * Mark session as saved
    */
@@ -366,10 +379,10 @@ export const useSessionStore = create<SessionStore>((set, get) => ({
       isSaving: false,
       error: null,
     })
-    
+
     storeLogger.debug('[Session] Marked as saved')
   },
-  
+
   /**
    * Mark session as having unsaved changes
    */

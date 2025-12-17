@@ -35,7 +35,7 @@ import { useToast } from './useToast'
  *
  * NOTE: Only restores for EXISTING reports (with meaningful sessionData).
  * NEW reports (empty sessionData) skip restoration entirely.
- * 
+ *
  * SIMPLIFIED: Single restoration per reportId - no complex flag management.
  */
 /**
@@ -120,7 +120,14 @@ export function useSessionRestoration() {
       restoreFormData(reportId, sessionData, updateFormData)
 
       // STEP 2: Restore valuation results (from merged sessionData which includes top-level fields)
-      restoreResults(reportId, sessionData, currentSession, setResult, setHtmlReport, setInfoTabHtml)
+      restoreResults(
+        reportId,
+        sessionData,
+        currentSession,
+        setResult,
+        setHtmlReport,
+        setInfoTabHtml
+      )
 
       // STEP 3: Fetch version history (async, non-blocking)
       fetchVersions(reportId)
@@ -154,7 +161,7 @@ export function useSessionRestoration() {
       // Remove from restored set to allow retry on next mount
       restoredReports.current.delete(reportId)
       lastReportIdRef.current = null // Reset to allow retry
-      
+
       // Show error toast
       showToast('Failed to load report data. Please refresh the page.', 'error', 5000)
     }
@@ -311,4 +318,3 @@ function restoreResults(
     })
   }
 }
-

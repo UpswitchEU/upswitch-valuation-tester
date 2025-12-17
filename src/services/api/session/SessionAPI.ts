@@ -9,17 +9,17 @@
 
 import { CreateValuationSessionRequest, UpdateValuationSessionRequest } from '../../../types/api'
 import type {
-    CreateValuationSessionResponse,
-    SwitchViewResponse,
-    UpdateValuationSessionResponse,
-    ValuationSessionResponse,
+  CreateValuationSessionResponse,
+  SwitchViewResponse,
+  UpdateValuationSessionResponse,
+  ValuationSessionResponse,
 } from '../../../types/api-responses'
 import { APIError, AuthenticationError } from '../../../types/errors'
 import { convertToApplicationError } from '../../../utils/errors/errorConverter'
 import {
-    isNetworkError,
-    isSessionConflictError,
-    isValidationError,
+  isNetworkError,
+  isSessionConflictError,
+  isValidationError,
 } from '../../../utils/errors/errorGuards'
 import { apiLogger } from '../../../utils/logger'
 import { APIRequestConfig, HttpClient } from '../HttpClient'
@@ -61,7 +61,12 @@ export class SessionAPI extends HttpClient {
       }
 
       // Check if response has nested data structure (edge case)
-      if ('data' in response && response.data && typeof response.data === 'object' && !('reportId' in response)) {
+      if (
+        'data' in response &&
+        response.data &&
+        typeof response.data === 'object' &&
+        !('reportId' in response)
+      ) {
         // Response is { success: true, data: {...} } - extract inner data
         sessionData = response.data
         success = (response as any).success ?? true
@@ -126,7 +131,7 @@ export class SessionAPI extends HttpClient {
       }
     } catch (error) {
       const axiosError = error as any
-      
+
       // DIAGNOSTIC: Log the error in detail
       console.error('[SessionAPI] GET session error:', {
         reportId,
@@ -138,7 +143,7 @@ export class SessionAPI extends HttpClient {
         errorMessage: axiosError?.message,
         errorCode: axiosError?.code,
       })
-      
+
       // Handle 404 gracefully - session doesn't exist yet
       if (axiosError?.response?.status === 404) {
         apiLogger.debug('Session does not exist yet', { reportId })
@@ -201,19 +206,17 @@ export class SessionAPI extends HttpClient {
       }
 
       // Map backend 'ai-guided' to frontend 'conversational'
-        if ((sessionData.currentView as string) === 'ai-guided') {
-          sessionData.currentView = 'conversational'
-        }
-        // Map dataSource: 'ai-guided' → 'conversational'
-        if (sessionData.dataSource === 'ai-guided') {
-          sessionData.dataSource = 'conversational'
-        }
+      if ((sessionData.currentView as string) === 'ai-guided') {
+        sessionData.currentView = 'conversational'
+      }
+      // Map dataSource: 'ai-guided' → 'conversational'
+      if (sessionData.dataSource === 'ai-guided') {
+        sessionData.dataSource = 'conversational'
+      }
 
       // CRITICAL: Validate required fields exist
       if (!sessionData.reportId) {
-        throw new Error(
-          `Backend returned incomplete session data: missing reportId`
-        )
+        throw new Error(`Backend returned incomplete session data: missing reportId`)
       }
 
       return {
@@ -360,7 +363,10 @@ export class SessionAPI extends HttpClient {
       const appError = convertToApplicationError(error, { reportId, view })
 
       // Handle rate limiting gracefully (429)
-      if ((appError as any).code === 'RATE_LIMIT_ERROR' || (appError as any).code === 'TOO_MANY_REQUESTS_ERROR') {
+      if (
+        (appError as any).code === 'RATE_LIMIT_ERROR' ||
+        (appError as any).code === 'TOO_MANY_REQUESTS_ERROR'
+      ) {
         apiLogger.warn('Rate limited on switch view - keeping optimistic update', {
           reportId,
           view,
@@ -435,13 +441,13 @@ export class SessionAPI extends HttpClient {
   /**
    * Save complete valuation package to session
    * Persists sessionData (input fields), valuation result, HTML report, and info tab HTML for restoration
-   * 
+   *
    * ATOMIC SAVE: All data saved in single API call to ensure consistency
    */
   async saveValuationResult(
     reportId: string,
     data: {
-      sessionData?: any  // ✅ NEW: Input data (form fields or collected data)
+      sessionData?: any // ✅ NEW: Input data (form fields or collected data)
       valuationResult: any
       htmlReport?: string
       infoTabHtml?: string
@@ -467,7 +473,7 @@ export class SessionAPI extends HttpClient {
           method: 'PUT',
           url: `/api/valuation-sessions/${reportId}/result`,
           data: {
-            sessionData: data.sessionData,  // ✅ NEW: Send input data
+            sessionData: data.sessionData, // ✅ NEW: Send input data
             valuationResult: data.valuationResult,
             htmlReport: data.htmlReport,
             infoTabHtml: data.infoTabHtml,

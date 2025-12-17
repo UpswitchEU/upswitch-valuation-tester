@@ -17,19 +17,18 @@
  * @module services/session/SessionService
  */
 
-import {
-    ApplicationError,
-    NetworkError,
-    NotFoundError,
-    ValidationError,
-} from '../../types/errors'
+import { ApplicationError, NetworkError, NotFoundError, ValidationError } from '../../types/errors'
 import type { ValuationRequest, ValuationSession } from '../../types/valuation'
 import { sessionCircuitBreaker } from '../../utils/circuitBreaker'
 import { getErrorMessage } from '../../utils/errors/errorConverter'
 import { createContextLogger } from '../../utils/logger'
 import { retrySessionOperation } from '../../utils/retryWithBackoff'
 import { globalSessionCache } from '../../utils/sessionCacheManager'
-import { mergePrefilledQuery, mergeSessionFields, normalizeSessionDates } from '../../utils/sessionHelpers'
+import {
+  mergePrefilledQuery,
+  mergeSessionFields,
+  normalizeSessionDates,
+} from '../../utils/sessionHelpers'
 import { validateSessionData } from '../../utils/sessionValidation'
 import { backendAPI } from '../backendApi'
 
@@ -72,7 +71,11 @@ export class SessionService {
    * @param prefilledQuery - Optional prefilled query from URL to merge into partialData
    * @returns Session object or null if not found
    */
-  async loadSession(reportId: string, flow?: 'manual' | 'conversational', prefilledQuery?: string | null): Promise<ValuationSession | null> {
+  async loadSession(
+    reportId: string,
+    flow?: 'manual' | 'conversational',
+    prefilledQuery?: string | null
+  ): Promise<ValuationSession | null> {
     const startTime = performance.now()
     const ABSOLUTE_TIMEOUT = 12000 // 12 seconds max
 
@@ -83,7 +86,7 @@ export class SessionService {
       const cachedSession = globalSessionCache.get(reportId)
       if (cachedSession) {
         const loadTime = performance.now() - startTime
-        
+
         // Calculate cache age for stale-while-revalidate
         const cacheAge_minutes = cachedSession.updatedAt
           ? Math.floor((Date.now() - new Date(cachedSession.updatedAt).getTime()) / (60 * 1000))
@@ -91,15 +94,17 @@ export class SessionService {
 
         // ✅ VERIFY: Log form data presence in cache for restoration
         const hasSessionData = !!cachedSession.sessionData
-        const sessionDataKeys = cachedSession.sessionData ? Object.keys(cachedSession.sessionData) : []
-        const sessionData = cachedSession.sessionData || {} as any
-        const hasFormFields = hasSessionData && (
-          sessionData.company_name ||
-          (sessionData.current_year_data as any)?.revenue ||
-          (sessionData.current_year_data as any)?.ebitda ||
-          sessionData.current_year_data
-        )
-        
+        const sessionDataKeys = cachedSession.sessionData
+          ? Object.keys(cachedSession.sessionData)
+          : []
+        const sessionData = cachedSession.sessionData || ({} as any)
+        const hasFormFields =
+          hasSessionData &&
+          (sessionData.company_name ||
+            (sessionData.current_year_data as any)?.revenue ||
+            (sessionData.current_year_data as any)?.ebitda ||
+            sessionData.current_year_data)
+
         logger.info('Session loaded from cache (instant)', {
           reportId,
           loadTime_ms: loadTime.toFixed(2),
@@ -132,10 +137,10 @@ export class SessionService {
         // This ensures data freshness while maintaining instant loads
         if (cacheAge_minutes > 5) {
           logger.debug('Cache stale, revalidating in background', { reportId, cacheAge_minutes })
-          this.revalidateInBackground(reportId).catch(err => {
-            logger.warn('Background revalidation failed', { 
-              reportId, 
-              error: err instanceof Error ? err.message : String(err)
+          this.revalidateInBackground(reportId).catch((err) => {
+            logger.warn('Background revalidation failed', {
+              reportId,
+              error: err instanceof Error ? err.message : String(err),
             })
           })
         }
@@ -166,41 +171,46 @@ export class SessionService {
             if (!sessionResponse?.session) {
               // Session doesn't exist - create it automatically
               logger.info('Session not found, creating new session', { reportId, flow })
-              
+
               try {
                 // Create minimal session on backend with prefilledQuery in partialData
-                const partialData = prefilledQuery ? ({ _prefilledQuery: prefilledQuery } as any) : {}
+                const partialData = prefilledQuery
+                  ? ({ _prefilledQuery: prefilledQuery } as any)
+                  : {}
                 const createResponse = await backendAPI.createValuationSession({
                   reportId,
                   currentView: flow || 'manual', // Use provided flow or default to manual
                   sessionData: {},
                   partialData,
                 })
-                
+
                 if (!createResponse?.session) {
                   logger.error('Failed to create new session', { reportId })
-              return null
+                  return null
                 }
-                
+
                 logger.info('New session created successfully', {
                   reportId,
                   currentView: createResponse.session.currentView,
                   hasPrefilledQuery: !!prefilledQuery,
                 })
-                
+
                 // Validate and normalize the new session
                 validateSessionData(createResponse.session)
                 const normalizedSession = normalizeSessionDates(createResponse.session)
                 const mergedSession = mergeSessionFields(normalizedSession)
-                
+
                 // Ensure prefilledQuery is in partialData (merge in case backend didn't preserve it)
                 if (prefilledQuery) {
-                  mergedSession.partialData = mergePrefilledQuery(mergedSession.partialData, prefilledQuery)
+                  mergedSession.partialData = mergePrefilledQuery(
+                    mergedSession.partialData,
+                    prefilledQuery
+                  )
                 }
-                
+
                 // Cache the new session
                 globalSessionCache.set(reportId, mergedSession)
-                
+
                 return mergedSession
               } catch (createError) {
                 logger.error('Error creating new session', {
@@ -222,21 +232,26 @@ export class SessionService {
 
             // Merge prefilledQuery if provided (only if not already present)
             if (prefilledQuery) {
-              mergedSession.partialData = mergePrefilledQuery(mergedSession.partialData, prefilledQuery)
+              mergedSession.partialData = mergePrefilledQuery(
+                mergedSession.partialData,
+                prefilledQuery
+              )
             }
 
             // Cache for next time (includes sessionData/form fields, excludes HTML reports)
             // ✅ CRITICAL: Form data (sessionData) is included in cache for instant restoration
             const hasSessionData = !!mergedSession.sessionData
-            const sessionDataKeys = mergedSession.sessionData ? Object.keys(mergedSession.sessionData) : []
-            const sessionData = mergedSession.sessionData || {} as any
-            const hasFormFields = hasSessionData && (
-              sessionData.company_name ||
-              (sessionData.current_year_data as any)?.revenue ||
-              (sessionData.current_year_data as any)?.ebitda ||
-              sessionData.current_year_data
-            )
-            
+            const sessionDataKeys = mergedSession.sessionData
+              ? Object.keys(mergedSession.sessionData)
+              : []
+            const sessionData = mergedSession.sessionData || ({} as any)
+            const hasFormFields =
+              hasSessionData &&
+              (sessionData.company_name ||
+                (sessionData.current_year_data as any)?.revenue ||
+                (sessionData.current_year_data as any)?.ebitda ||
+                sessionData.current_year_data)
+
             globalSessionCache.set(reportId, mergedSession)
 
             logger.info('Session loaded from backend and cached', {
@@ -389,14 +404,14 @@ export class SessionService {
       // Backend expects sessionData structure, not raw ValuationRequest
       // Extract currentView if present (needed for session creation)
       const updatesAny = updates as any
-      
+
       // Extract currentView separately (it's a top-level session property, not part of sessionData)
       const currentView = updatesAny.currentView
-      
+
       // sessionData should contain the actual form data (everything except currentView)
       const { currentView: _, ...sessionDataWithoutView } = updatesAny
       const sessionData = updatesAny.sessionData || sessionDataWithoutView
-      
+
       const sessionUpdates: Partial<ValuationSession> = {
         sessionData: sessionData as any,
         ...(currentView && { currentView }),
@@ -415,16 +430,16 @@ export class SessionService {
         // Backend didn't return session data (common when creating new session)
         // Clear cache and reload with retry (backend may need a moment to persist)
         logger.debug('Backend did not return session data, reloading session', { reportId })
-        
+
         // Clear cache to ensure fresh data
         globalSessionCache.remove(reportId)
-        
+
         // Retry loading with exponential backoff + jitter (backend may need time to persist)
         let reloadedSession: ValuationSession | null = null
         const maxRetries = 5
         const initialDelay = 200
         const maxDelay = 2000
-        
+
         for (let attempt = 0; attempt < maxRetries; attempt++) {
           if (attempt > 0) {
             // Exponential backoff: 200ms, 400ms, 800ms, 1600ms, 2000ms (capped)
@@ -432,40 +447,45 @@ export class SessionService {
             // Add jitter (±20%) to prevent thundering herd
             const jitter = delay * 0.2 * (Math.random() - 0.5)
             const finalDelay = Math.max(0, delay + jitter)
-            
-            logger.debug(`Waiting ${finalDelay.toFixed(0)}ms before retry attempt ${attempt + 1}`, { 
+
+            logger.debug(`Waiting ${finalDelay.toFixed(0)}ms before retry attempt ${attempt + 1}`, {
               reportId,
               baseDelay: delay,
-              jitter: jitter.toFixed(0)
+              jitter: jitter.toFixed(0),
             })
-            
-            await new Promise(resolve => setTimeout(resolve, finalDelay))
+
+            await new Promise((resolve) => setTimeout(resolve, finalDelay))
           }
-          
+
           reloadedSession = await this.loadSession(reportId)
           if (reloadedSession) {
-            logger.info('Session reloaded successfully after save', { 
-              reportId, 
+            logger.info('Session reloaded successfully after save', {
+              reportId,
               attempt: attempt + 1,
-              totalRetries: maxRetries
+              totalRetries: maxRetries,
             })
             break
           }
-          
-          logger.debug(`Reload attempt ${attempt + 1}/${maxRetries} failed, retrying...`, { reportId })
+
+          logger.debug(`Reload attempt ${attempt + 1}/${maxRetries} failed, retrying...`, {
+            reportId,
+          })
         }
-        
+
         if (!reloadedSession) {
           // If reload still fails, create a minimal session object from what we saved
           // This prevents errors and allows the UI to continue
-          logger.warn('Failed to reload session after save, creating minimal session object', { 
+          logger.warn('Failed to reload session after save, creating minimal session object', {
             reportId,
-            retriesAttempted: maxRetries
+            retriesAttempted: maxRetries,
           })
           mergedSession = {
             reportId,
             currentView: (currentView as 'manual' | 'conversational') || 'manual',
-            dataSource: (currentView === 'conversational' ? 'conversational' : 'manual') as 'manual' | 'conversational' | 'mixed',
+            dataSource: (currentView === 'conversational' ? 'conversational' : 'manual') as
+              | 'manual'
+              | 'conversational'
+              | 'mixed',
             sessionData: sessionData || {},
             partialData: {},
             createdAt: new Date(),
@@ -630,14 +650,14 @@ export class SessionService {
       try {
         // Clear cache first to ensure we fetch fresh data from backend
         globalSessionCache.remove(reportId)
-        
+
         // Reload session from backend to get complete data
         const freshSession = await this.loadSession(reportId)
-        
+
         if (freshSession) {
           // Cache the fresh session with all valuation data
           globalSessionCache.set(reportId, freshSession)
-          
+
           logger.info('Cache updated with fresh valuation data', {
             reportId,
             hasHtmlReport: !!freshSession.htmlReport,
@@ -711,7 +731,7 @@ export class SessionService {
 
   /**
    * Revalidate session cache in background
-   * 
+   *
    * Fetches fresh data from backend and updates cache without blocking UI.
    * Used for stale-while-revalidate pattern (Cursor/ChatGPT style).
    *
@@ -721,20 +741,20 @@ export class SessionService {
   private async revalidateInBackground(reportId: string): Promise<void> {
     try {
       logger.debug('Starting background revalidation', { reportId })
-      
+
       // Fetch fresh data from backend
       const sessionResponse = await backendAPI.getValuationSession(reportId)
-      
+
       if (sessionResponse?.session) {
         // Validate and normalize the fresh session
         validateSessionData(sessionResponse.session)
         const normalizedSession = normalizeSessionDates(sessionResponse.session)
         const mergedSession = mergeSessionFields(normalizedSession)
-        
+
         // Update cache with fresh data
         globalSessionCache.set(reportId, mergedSession)
-        
-        logger.info('Cache revalidated in background', { 
+
+        logger.info('Cache revalidated in background', {
           reportId,
           hasHtmlReport: !!mergedSession.htmlReport,
           hasInfoTabHtml: !!mergedSession.infoTabHtml,
@@ -754,4 +774,3 @@ export class SessionService {
 
 // Export singleton instance
 export const sessionService = SessionService.getInstance()
-

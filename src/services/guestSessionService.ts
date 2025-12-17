@@ -52,12 +52,12 @@ class GuestSessionService {
     if (storedSessionId && storedExpiresAt) {
       const expiresAt = new Date(storedExpiresAt)
       const oneHourFromNow = new Date(Date.now() + 60 * 60 * 1000)
-      
+
       if (expiresAt > oneHourFromNow) {
         // Session is valid for more than 1 hour - trust localStorage without verification
         generalLogger.debug('Using cached session (expires in more than 1 hour)', {
           sessionId: storedSessionId.substring(0, 15) + '...',
-          expiresAt
+          expiresAt,
         })
         return storedSessionId
       }

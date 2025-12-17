@@ -1,15 +1,15 @@
 /**
  * Session Inspector
- * 
+ *
  * Developer tool for inspecting session store state in real-time.
  * Only visible in development mode.
- * 
+ *
  * Shows:
  * - Session data (reportId, currentView, sessionData)
  * - Loading state
  * - Error state
  * - Save status
- * 
+ *
  * @module components/debug/AssetInspector
  */
 
@@ -20,15 +20,15 @@ import { useSessionStore } from '../../store/useSessionStore'
 
 export function AssetInspector() {
   const [isOpen, setIsOpen] = useState(false)
-  
+
   // Get unified session store
   const { session, isLoading, error, isSaving, lastSaved, hasUnsavedChanges } = useSessionStore()
-  
+
   // Only show in development
   if (process.env.NODE_ENV !== 'development') {
     return null
   }
-  
+
   if (!isOpen) {
     return (
       <button
@@ -39,7 +39,7 @@ export function AssetInspector() {
       </button>
     )
   }
-  
+
   return (
     <div className="fixed bottom-4 right-4 bg-white shadow-2xl rounded-lg w-96 max-h-[600px] overflow-hidden z-50 border border-gray-200">
       {/* Header */}
@@ -52,7 +52,7 @@ export function AssetInspector() {
           ✕
         </button>
       </div>
-      
+
       {/* Session state */}
       <div className="p-4 space-y-3 overflow-y-auto max-h-[520px]">
         {/* Status */}
@@ -85,7 +85,7 @@ export function AssetInspector() {
             )}
           </div>
         </div>
-        
+
         {/* Session Data */}
         {session && (
           <div className="border border-gray-200 rounded-lg p-3 bg-white">
@@ -126,7 +126,7 @@ export function AssetInspector() {
             </div>
           </div>
         )}
-        
+
         {/* Error */}
         {error && (
           <div className="border border-red-200 rounded-lg p-3 bg-red-50">
@@ -134,14 +134,11 @@ export function AssetInspector() {
             <div className="text-xs text-red-700">{error}</div>
           </div>
         )}
-        
+
         {!session && !isLoading && (
-          <div className="text-center text-gray-500 text-sm py-4">
-            No session loaded
-          </div>
+          <div className="text-center text-gray-500 text-sm py-4">No session loaded</div>
         )}
       </div>
     </div>
   )
 }
-

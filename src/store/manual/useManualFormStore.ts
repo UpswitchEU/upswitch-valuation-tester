@@ -71,7 +71,7 @@ export const useManualFormStore = create<ManualFormStore>((set, get) => ({
   updateFormData: (updates: Partial<ValuationFormData>) => {
     set((state) => {
       const updatedFormData = { ...state.formData, ...updates }
-      
+
       storeLogger.debug('[Manual] Form data updated', {
         fieldsUpdated: Object.keys(updates),
         formId: 'manual',
@@ -91,7 +91,7 @@ export const useManualFormStore = create<ManualFormStore>((set, get) => ({
       ...state,
       validationErrors: errors,
     }))
-    
+
     storeLogger.debug('[Manual] Validation errors updated', {
       errorCount: Object.keys(errors).length,
       formId: 'manual',
@@ -106,7 +106,7 @@ export const useManualFormStore = create<ManualFormStore>((set, get) => ({
       isDirty: false,
       validationErrors: {},
     }))
-    
+
     storeLogger.info('[Manual] Form data reset', {
       formId: 'manual',
     })
@@ -153,4 +153,3 @@ export const useManualFormStore = create<ManualFormStore>((set, get) => ({
     }))
   },
 }))
-

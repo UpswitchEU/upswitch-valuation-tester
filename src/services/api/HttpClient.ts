@@ -58,10 +58,10 @@ export class HttpClient {
       async (config: InternalAxiosRequestConfig) => {
         // Use Zustand store for atomic session access
         const { getSessionId, ensureSession } = useGuestSessionStore.getState()
-        
+
         // Check synchronously first (Zustand store syncs with localStorage)
         let sessionId = getSessionId()
-        
+
         // If no session exists, ensure one is created (atomic operation via Zustand)
         // This prevents race conditions when multiple requests fire simultaneously
         if (!sessionId) {
@@ -327,19 +327,21 @@ export class HttpClient {
       // Extract data from nested response structure
       // Backend returns { success: true, data: result }, so extract nested data first
       const responseData = response.data?.data || response.data
-      
+
       // ✅ FIX: Log response structure for valuation and session endpoints to diagnose missing html_report
       // Only flag POST /calculate endpoints as CRITICAL - GET session endpoints may not have HTML if called before PUT /result
-      const isPutResultEndpoint = config.url?.includes('/result') && config.method?.toUpperCase() === 'PUT'
-      const isCalculateEndpoint = config.url?.includes('/valuations/calculate') && config.method?.toUpperCase() === 'POST'
+      const isPutResultEndpoint =
+        config.url?.includes('/result') && config.method?.toUpperCase() === 'PUT'
+      const isCalculateEndpoint =
+        config.url?.includes('/valuations/calculate') && config.method?.toUpperCase() === 'POST'
       const isSessionEndpoint = config.url?.includes('/valuation-sessions/') && !isPutResultEndpoint
-      
+
       // Diagnostic logging for all valuation/session endpoints (for debugging)
       if (isCalculateEndpoint || isSessionEndpoint) {
         const rawData = response.data
         const nestedData = (rawData as any)?.data
         const extractedData = responseData
-        
+
         apiLogger.info('DIAGNOSTIC: Valuation response received', {
           url: config.url,
           method: config.method,
@@ -361,14 +363,17 @@ export class HttpClient {
           extractionMethod: rawData?.data ? 'nested' : 'direct',
         })
       }
-      
+
       // ✅ FIX: Only flag POST /calculate endpoints as CRITICAL if missing HTML reports
       // GET session endpoints may legitimately not have HTML if called before PUT /result completes
       if (isCalculateEndpoint) {
         const extractedData = responseData
-        
+
         // CRITICAL: Warn if html_report is missing from calculation response
-        if (!(extractedData as any)?.html_report || (extractedData as any).html_report.trim().length === 0) {
+        if (
+          !(extractedData as any)?.html_report ||
+          (extractedData as any).html_report.trim().length === 0
+        ) {
           apiLogger.error('CRITICAL: html_report missing or empty in valuation response', {
             url: config.url,
             hasExtractedData: !!extractedData,
@@ -383,9 +388,12 @@ export class HttpClient {
             htmlReportPreview: (extractedData as any)?.html_report?.substring(0, 200),
           })
         }
-        
+
         // CRITICAL: Warn if info_tab_html is missing from calculation response
-        if (!(extractedData as any)?.info_tab_html || (extractedData as any).info_tab_html.trim().length === 0) {
+        if (
+          !(extractedData as any)?.info_tab_html ||
+          (extractedData as any).info_tab_html.trim().length === 0
+        ) {
           apiLogger.error('CRITICAL: info_tab_html missing or empty in valuation response', {
             url: config.url,
             hasExtractedData: !!extractedData,
@@ -403,7 +411,7 @@ export class HttpClient {
           })
         }
       }
-      
+
       return responseData
     } finally {
       // Cleanup

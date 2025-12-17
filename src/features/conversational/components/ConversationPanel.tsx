@@ -11,7 +11,10 @@ import React, { useCallback, useMemo } from 'react'
 import { StreamingChat } from '../../../components/StreamingChat'
 import { reportService, valuationService } from '../../../services'
 import { valuationAuditService } from '../../../services/audit/ValuationAuditService'
-import { useConversationalChatStore, useConversationalResultsStore } from '../../../store/conversational'
+import {
+  useConversationalChatStore,
+  useConversationalResultsStore,
+} from '../../../store/conversational'
 import { useSessionStore } from '../../../store/useSessionStore'
 import { useVersionHistoryStore } from '../../../store/useVersionHistoryStore'
 import type { Message } from '../../../types/message'
@@ -19,9 +22,9 @@ import type { ValuationResponse } from '../../../types/valuation'
 import { buildValuationRequest } from '../../../utils/buildValuationRequest'
 import { chatLogger } from '../../../utils/logger'
 import {
-    areChangesSignificant,
-    detectVersionChanges,
-    generateAutoLabel,
+  areChangesSignificant,
+  detectVersionChanges,
+  generateAutoLabel,
 } from '../../../utils/versionDiffDetection'
 import { ComponentErrorBoundary } from '../../shared/components/ErrorBoundary'
 import { useConversationActions, useConversationState } from '../context/ConversationContext'
@@ -128,7 +131,8 @@ export const ConversationPanel: React.FC<ConversationPanelProps> = ({
   )
 
   // Handle valuation complete - sync to context and conversational results store
-  const { isCalculating, setResult, trySetCalculating, setCalculating } = useConversationalResultsStore()
+  const { isCalculating, setResult, trySetCalculating, setCalculating } =
+    useConversationalResultsStore()
   // ROOT CAUSE FIX: Only subscribe to reportId, not entire session object
   const reportId = useSessionStore((state) => state.session?.reportId)
   const { createVersion, getLatestVersion } = useVersionHistoryStore()
@@ -162,7 +166,7 @@ export const ConversationPanel: React.FC<ConversationPanelProps> = ({
       // CRITICAL: Save complete session atomically (using unified store)
       // Uses sessionService for consistency across flows
       const sessionStore = useSessionStore.getState()
-      
+
       if (reportId) {
         try {
           // Get collected data from session for restoration
@@ -176,7 +180,7 @@ export const ConversationPanel: React.FC<ConversationPanelProps> = ({
           // - infoTabHtml: Info tab HTML
           // - name: Custom valuation name (e.g., "Amadeus report")
           await reportService.saveReportAssets(reportId, {
-            sessionData: sessionData,  // ✅ NEW: Include collected data
+            sessionData: sessionData, // ✅ NEW: Include collected data
             valuationResult: resultWithHtml,
             htmlReport: resultWithHtml.html_report || '',
             infoTabHtml: resultWithHtml.info_tab_html || '',
@@ -215,7 +219,7 @@ export const ConversationPanel: React.FC<ConversationPanelProps> = ({
           // CRITICAL FIX: Get complete formData from session, not just result
           // The result only has calculated fields, but formData needs all input fields
           const sessionData = (useSessionStore.getState().session?.sessionData || {}) as any
-          
+
           // Build complete formData from session + result
           // Session has the collected data, result has calculated/computed fields
           const resultAny = result as any
@@ -232,21 +236,29 @@ export const ConversationPanel: React.FC<ConversationPanelProps> = ({
             number_of_owners: sessionData.number_of_owners || 0,
             shares_for_sale: sessionData.shares_for_sale || 100,
             recurring_revenue_percentage: sessionData.recurring_revenue_percentage || 0,
-            
+
             // Financial data from session (preferred) or result
             current_year_data: {
               year: sessionData.current_year_data?.year || new Date().getFullYear(),
-              revenue: sessionData.current_year_data?.revenue || sessionData.revenue || resultAny.revenue || 0,
-              ebitda: sessionData.current_year_data?.ebitda || sessionData.ebitda || resultAny.ebitda || 0,
+              revenue:
+                sessionData.current_year_data?.revenue ||
+                sessionData.revenue ||
+                resultAny.revenue ||
+                0,
+              ebitda:
+                sessionData.current_year_data?.ebitda ||
+                sessionData.ebitda ||
+                resultAny.ebitda ||
+                0,
               net_income: sessionData.current_year_data?.net_income || 0,
               total_assets: sessionData.current_year_data?.total_assets || 0,
               total_debt: sessionData.current_year_data?.total_debt || 0,
               cash: sessionData.current_year_data?.cash || 0,
             },
-            
+
             // Historical data if available
             historical_years_data: sessionData.historical_years_data || [],
-            
+
             // Additional context
             business_description: sessionData.business_description || '',
             business_highlights: sessionData.business_highlights || '',
@@ -349,7 +361,8 @@ export const ConversationPanel: React.FC<ConversationPanelProps> = ({
     // ROOT CAUSE FIX: Read session state via getState(), not as subscription
     const currentSession = useSessionStore.getState().session
     const hasRestoredMessages = restoredMessages && restoredMessages.length > 0
-    const hasCollectedData = currentSession?.sessionData && Object.keys(currentSession.sessionData).length > 0
+    const hasCollectedData =
+      currentSession?.sessionData && Object.keys(currentSession.sessionData).length > 0
     return hasRestoredMessages && hasCollectedData && isRestorationComplete
   }, [restoredMessages, reportId, isRestorationComplete]) // Depend on reportId instead of session
 
@@ -464,14 +477,21 @@ export const ConversationPanel: React.FC<ConversationPanelProps> = ({
       ;(request as any).dataSource = 'ai-guided' // Conversational flow
 
       // Validate required fields
-      if (!request.current_year_data?.revenue || !request.current_year_data?.ebitda || !request.industry || !request.country_code) {
+      if (
+        !request.current_year_data?.revenue ||
+        !request.current_year_data?.ebitda ||
+        !request.industry ||
+        !request.country_code
+      ) {
         const missingFields = []
         if (!request.current_year_data?.revenue) missingFields.push('Revenue')
         if (!request.current_year_data?.ebitda) missingFields.push('EBITDA')
         if (!request.industry) missingFields.push('Industry')
         if (!request.country_code) missingFields.push('Country')
 
-        chatLogger.warn('[Conversational] Cannot calculate: missing required fields', { missingFields })
+        chatLogger.warn('[Conversational] Cannot calculate: missing required fields', {
+          missingFields,
+        })
         actions.setError(`Please provide: ${missingFields.join(', ')}`)
         actions.setGenerating(false)
         setCalculating(false) // Reset on validation error
@@ -496,7 +516,9 @@ export const ConversationPanel: React.FC<ConversationPanelProps> = ({
     } catch (error) {
       chatLogger.error('[Conversational] Manual calculate failed', { error })
       actions.setError(
-        error instanceof Error ? `Calculation failed: ${error.message}` : 'Calculation failed. Please try again.'
+        error instanceof Error
+          ? `Calculation failed: ${error.message}`
+          : 'Calculation failed. Please try again.'
       )
       actions.setGenerating(false)
       setCalculating(false) // Reset on error
@@ -538,34 +560,34 @@ export const ConversationPanel: React.FC<ConversationPanelProps> = ({
 
         {/* Chat Interface */}
         <div className="flex-1 min-h-0">
-      <StreamingChat
-        sessionId={sessionId}
-        userId={userId}
-        initialMessages={restoredMessages}
-        isRestoring={isRestoring}
-        isRestorationComplete={isRestorationComplete}
-        isSessionInitialized={isSessionInitialized}
-        pythonSessionId={pythonSessionId ?? state.pythonSessionId}
-        onPythonSessionIdReceived={handlePythonSessionIdReceived}
-        onValuationComplete={handleValuationComplete}
-        onValuationStart={handleValuationStart}
-        onMessageComplete={handleMessageComplete}
-        onReportUpdate={onReportUpdate}
-        onDataCollected={handleDataCollected}
-        onValuationPreview={onValuationPreview}
-        onCalculateOptionAvailable={onCalculateOptionAvailable}
-        onProgressUpdate={onProgressUpdate}
-        onReportSectionUpdate={onReportSectionUpdate}
-        onSectionLoading={onSectionLoading}
-        onSectionComplete={onSectionComplete}
-        onReportComplete={onReportComplete}
-        onContextUpdate={onContextUpdate}
-        onHtmlPreviewUpdate={onHtmlPreviewUpdate}
-        onCalculate={handleManualCalculate}
-        isCalculating={isCalculating || state.isGenerating}
-        initialMessage={initialMessage}
-        autoSend={autoSend}
-      />
+          <StreamingChat
+            sessionId={sessionId}
+            userId={userId}
+            initialMessages={restoredMessages}
+            isRestoring={isRestoring}
+            isRestorationComplete={isRestorationComplete}
+            isSessionInitialized={isSessionInitialized}
+            pythonSessionId={pythonSessionId ?? state.pythonSessionId}
+            onPythonSessionIdReceived={handlePythonSessionIdReceived}
+            onValuationComplete={handleValuationComplete}
+            onValuationStart={handleValuationStart}
+            onMessageComplete={handleMessageComplete}
+            onReportUpdate={onReportUpdate}
+            onDataCollected={handleDataCollected}
+            onValuationPreview={onValuationPreview}
+            onCalculateOptionAvailable={onCalculateOptionAvailable}
+            onProgressUpdate={onProgressUpdate}
+            onReportSectionUpdate={onReportSectionUpdate}
+            onSectionLoading={onSectionLoading}
+            onSectionComplete={onSectionComplete}
+            onReportComplete={onReportComplete}
+            onContextUpdate={onContextUpdate}
+            onHtmlPreviewUpdate={onHtmlPreviewUpdate}
+            onCalculate={handleManualCalculate}
+            isCalculating={isCalculating || state.isGenerating}
+            initialMessage={initialMessage}
+            autoSend={autoSend}
+          />
         </div>
       </div>
     </ComponentErrorBoundary>

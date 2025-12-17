@@ -1,15 +1,15 @@
 /**
  * Request Deduplicator
- * 
+ *
  * Prevents duplicate concurrent requests by caching in-flight promises.
  * Multiple components requesting the same data get the same promise.
- * 
+ *
  * Benefits:
  * - Only 1 network call for concurrent requests
  * - Reduced server load
  * - Faster response (reuse in-flight requests)
  * - No race conditions
- * 
+ *
  * @module services/cache/RequestDeduplicator
  */
 
@@ -27,7 +27,7 @@ export class RequestDeduplicator {
    * Deduplicate a request by key
    * If request is already pending, returns existing promise
    * Otherwise, starts new request and caches promise
-   * 
+   *
    * @param key - Unique key for the request (e.g., 'session:reportId123')
    * @param fn - Function that returns the promise to execute
    * @returns Promise with the result
@@ -53,7 +53,7 @@ export class RequestDeduplicator {
       .then((result) => {
         // Clean up on success
         this.pendingRequests.delete(key)
-        
+
         const dedupedCount = this.requestCounts.get(key) || 0
         if (dedupedCount > 0) {
           generalLogger.info('[RequestDeduplicator] Request completed (saved duplicates)', {
@@ -141,4 +141,3 @@ export class RequestDeduplicator {
 
 // Export singleton instance
 export const requestDeduplicator = new RequestDeduplicator()
-

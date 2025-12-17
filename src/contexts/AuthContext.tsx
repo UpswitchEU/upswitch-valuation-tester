@@ -344,8 +344,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         authLogger.info('Initializing guest session via Zustand store')
         try {
           const sessionId = await initializeSession()
-          authLogger.info('Guest session initialized', { 
-            session_id: sessionId ? sessionId.substring(0, 15) + '...' : null 
+          authLogger.info('Guest session initialized', {
+            session_id: sessionId ? sessionId.substring(0, 15) + '...' : null,
           })
         } catch (guestError) {
           authLogger.warn('Failed to initialize guest session', {
@@ -363,8 +363,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           // Only calls backend if session is close to expiration
           // Uses Zustand store for atomic operations
           const sessionId = await initializeSession()
-          authLogger.debug('Guest session verified', { 
-            session_id: sessionId ? sessionId.substring(0, 15) + '...' : null 
+          authLogger.debug('Guest session verified', {
+            session_id: sessionId ? sessionId.substring(0, 15) + '...' : null,
           })
         } catch (guestError) {
           authLogger.warn('Failed to verify guest session, will create new one on next request', {
@@ -490,13 +490,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           try {
             const authenticatedSessionId = await ensureSession()
             authLogger.info('Authenticated session ensured', {
-              session_id: authenticatedSessionId ? authenticatedSessionId.substring(0, 15) + '...' : null,
+              session_id: authenticatedSessionId
+                ? authenticatedSessionId.substring(0, 15) + '...'
+                : null,
             })
           } catch (sessionError) {
             // Don't fail authentication if session creation fails
-            authLogger.warn('Failed to ensure authenticated session, but authentication succeeded', {
-              error: sessionError instanceof Error ? sessionError.message : 'Unknown error',
-            })
+            authLogger.warn(
+              'Failed to ensure authenticated session, but authentication succeeded',
+              {
+                error: sessionError instanceof Error ? sessionError.message : 'Unknown error',
+              }
+            )
             // Continue - backend will use user_id from auth cookie if session fails
           }
         } catch (migrationError) {
@@ -505,7 +510,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             error: migrationError instanceof Error ? migrationError.message : 'Unknown error',
           })
           // Continue with authentication - user can still use the app
-          
+
           // Still try to ensure session even if migration failed
           try {
             const { ensureSession } = useGuestSessionStore.getState()

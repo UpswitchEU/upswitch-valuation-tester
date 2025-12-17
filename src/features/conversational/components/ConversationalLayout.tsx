@@ -21,19 +21,25 @@ import { useReportIdTracking } from '../../../hooks/useReportIdTracking'
 import { useToast } from '../../../hooks/useToast'
 import { conversationAPI } from '../../../services/api/conversation/ConversationAPI'
 import { guestCreditService } from '../../../services/guestCreditService'
-import { useConversationalChatStore, useConversationalResultsStore } from '../../../store/conversational'
+import {
+  useConversationalChatStore,
+  useConversationalResultsStore,
+} from '../../../store/conversational'
 import { useSessionStore } from '../../../store/useSessionStore'
 import type { Message } from '../../../types/message'
 import type { ValuationResponse } from '../../../types/valuation'
 import { chatLogger } from '../../../utils/logger'
 import { CreditGuard } from '../../auth/components/CreditGuard'
 import {
-    ConversationProvider,
-    useConversationActions,
-    useConversationState,
+  ConversationProvider,
+  useConversationActions,
+  useConversationState,
 } from '../context/ConversationContext'
 import { useConversationRestoration } from '../hooks'
-import { generateImportSummaryMessage, shouldGenerateImportSummary } from '../utils/generateImportSummary'
+import {
+  generateImportSummaryMessage,
+  shouldGenerateImportSummary,
+} from '../utils/generateImportSummary'
 import { BusinessProfileSection } from './BusinessProfileSection'
 import { ConversationPanel } from './ConversationPanel'
 import { ErrorDisplay } from './ErrorDisplay'
@@ -97,7 +103,7 @@ const ConversationalLayoutInner: React.FC<ConversationalLayoutProps> = ({
   // Use Conversational Flow isolated stores
   const { isCalculating, error, result, setResult, clearError } = useConversationalResultsStore()
   const { collectedData, updateCollectedData } = useConversationalChatStore()
-  
+
   // Unified session store
   // ROOT CAUSE FIX: Only subscribe to primitive values, not entire session object
   // This prevents re-renders when session data updates
@@ -138,13 +144,16 @@ const ConversationalLayoutInner: React.FC<ConversationalLayoutProps> = ({
     // Restore results - CRITICAL FIX: Merge HTML reports from session into result object
     if (currentSession.valuationResult) {
       const currentResult = useConversationalResultsStore.getState().result
-      const shouldRestoreResult = !currentResult || currentResult.valuation_id !== currentSession.valuationResult.valuation_id
-      const resultMissingHtml = currentResult && !currentResult.html_report && !!currentSession.htmlReport
-      const resultMissingInfoTab = currentResult && !currentResult.info_tab_html && !!currentSession.infoTabHtml
-      
+      const shouldRestoreResult =
+        !currentResult || currentResult.valuation_id !== currentSession.valuationResult.valuation_id
+      const resultMissingHtml =
+        currentResult && !currentResult.html_report && !!currentSession.htmlReport
+      const resultMissingInfoTab =
+        currentResult && !currentResult.info_tab_html && !!currentSession.infoTabHtml
+
       // ✅ FIX: Restore if result doesn't exist, has different ID, OR is missing HTML reports
       if (shouldRestoreResult || resultMissingHtml || resultMissingInfoTab) {
-        chatLogger.info('[Conversational] Restoring result with HTML assets', { 
+        chatLogger.info('[Conversational] Restoring result with HTML assets', {
           reportId,
           shouldRestoreResult,
           resultMissingHtml,
@@ -154,25 +163,34 @@ const ConversationalLayoutInner: React.FC<ConversationalLayoutProps> = ({
           htmlReportLength: currentSession.htmlReport?.length || 0,
           infoTabHtmlLength: currentSession.infoTabHtml?.length || 0,
         })
-        
+
         // Merge HTML reports from session into result object (they're stored separately in DB)
         const resultWithHtml = {
           ...(currentResult || currentSession.valuationResult),
           ...currentSession.valuationResult, // Ensure we have latest valuation result
-          html_report: currentSession.htmlReport || currentResult?.html_report || currentSession.valuationResult.html_report,
-          info_tab_html: currentSession.infoTabHtml || currentResult?.info_tab_html || currentSession.valuationResult.info_tab_html,
+          html_report:
+            currentSession.htmlReport ||
+            currentResult?.html_report ||
+            currentSession.valuationResult.html_report,
+          info_tab_html:
+            currentSession.infoTabHtml ||
+            currentResult?.info_tab_html ||
+            currentSession.valuationResult.info_tab_html,
         }
-        
+
         setResult(resultWithHtml as any)
-        
+
         // Verify restoration was successful
         const restoredResult = useConversationalResultsStore.getState().result
         if (restoredResult && !restoredResult.html_report && currentSession.htmlReport) {
-          chatLogger.error('[Conversational] RESTORATION FAILED: html_report missing after setResult', {
-            reportId,
-            valuationId: restoredResult.valuation_id,
-            sessionHadHtmlReport: !!currentSession.htmlReport,
-          })
+          chatLogger.error(
+            '[Conversational] RESTORATION FAILED: html_report missing after setResult',
+            {
+              reportId,
+              valuationId: restoredResult.valuation_id,
+              sessionHadHtmlReport: !!currentSession.htmlReport,
+            }
+          )
         } else if (restoredResult?.html_report) {
           chatLogger.info('[Conversational] RESTORATION SUCCESS: HTML report restored', {
             reportId,
@@ -212,7 +230,8 @@ const ConversationalLayoutInner: React.FC<ConversationalLayoutProps> = ({
 
     // Check if result is missing HTML reports
     const resultMissingHtml = currentResult && !currentResult.html_report && hasHtmlReportInSession
-    const resultMissingInfoTab = currentResult && !currentResult.info_tab_html && hasInfoTabHtmlInSession
+    const resultMissingInfoTab =
+      currentResult && !currentResult.info_tab_html && hasInfoTabHtmlInSession
 
     if (resultMissingHtml || resultMissingInfoTab) {
       chatLogger.info('[Conversational] HTML reports detected in session, restoring to result', {
@@ -258,30 +277,30 @@ const ConversationalLayoutInner: React.FC<ConversationalLayoutProps> = ({
   const prevHasUnsavedChangesRef = useRef<boolean>(false)
   // Track initial load to prevent showing "saved" toast during initialization
   const isInitialLoadRef = useRef<boolean>(true)
-  
+
   // Mark initial load as complete after first render and when session is ready
   useEffect(() => {
     // Wait a bit to ensure initialization is complete
     const timer = setTimeout(() => {
       isInitialLoadRef.current = false
     }, 3000) // 3 seconds should be enough for initialization
-    
+
     return () => clearTimeout(timer)
   }, [])
-  
+
   // Show success toast when save completes (only if there were unsaved changes)
   useEffect(() => {
     // Don't show toast during initial load
     if (isInitialLoadRef.current) {
       return
     }
-    
+
     // Check previous state BEFORE updating ref
     const hadUnsavedChanges = prevHasUnsavedChangesRef.current
-    
+
     // Update ref to track current state for next render
     prevHasUnsavedChangesRef.current = hasUnsavedChanges
-    
+
     // Only show toast if:
     // 1. Save just completed (lastSaved is recent)
     // 2. There were unsaved changes before the save (hadUnsavedChanges was true)
@@ -323,7 +342,7 @@ const ConversationalLayoutInner: React.FC<ConversationalLayoutProps> = ({
         }
         actionsRef.current.setRestored(true)
         actionsRef.current.setInitialized(true)
-        
+
         // ✅ FIX: Mark session as saved after restoration completes
         // Restored messages are already saved, so session should show "Saved"
         useSessionStore.getState().markSaved()
@@ -344,12 +363,12 @@ const ConversationalLayoutInner: React.FC<ConversationalLayoutProps> = ({
       [] // Empty deps - use refs instead
     ),
   })
-  
+
   // ✅ FIX: Only mark as unsaved when user adds new messages, not during restoration
   // Track initial message count to distinguish restoration from user input
   const initialMessageCountRef = useRef<number | null>(null)
   const isRestoringRef = useRef(false)
-  
+
   // Track restoration state and set initial message count
   useEffect(() => {
     if (restoration.state.isRestoring) {
@@ -360,7 +379,7 @@ const ConversationalLayoutInner: React.FC<ConversationalLayoutProps> = ({
       initialMessageCountRef.current = state.messages.length
     }
   }, [restoration.state.isRestoring, restoration.state.isRestored, state.messages.length])
-  
+
   // Mark conversation changes as unsaved (for save status indicator)
   // ✅ FIX: Only mark as unsaved if messages increased beyond initial restored count
   // Skip during restoration to prevent false positives
@@ -369,12 +388,12 @@ const ConversationalLayoutInner: React.FC<ConversationalLayoutProps> = ({
     if (restoration.state.isRestoring || isRestoringRef.current) {
       return
     }
-    
+
     // Skip if restoration hasn't completed yet (initialMessageCountRef is null)
     if (!restoration.state.isRestored || initialMessageCountRef.current === null) {
       return
     }
-    
+
     // Only mark as unsaved if user added new messages (beyond restored messages)
     if (state.messages.length > initialMessageCountRef.current) {
       useSessionStore.getState().markUnsaved()
@@ -383,7 +402,10 @@ const ConversationalLayoutInner: React.FC<ConversationalLayoutProps> = ({
         initialCount: initialMessageCountRef.current,
         currentCount: state.messages.length,
       })
-    } else if (state.messages.length === initialMessageCountRef.current && state.messages.length > 0) {
+    } else if (
+      state.messages.length === initialMessageCountRef.current &&
+      state.messages.length > 0
+    ) {
       // Messages match restored count - ensure we're marked as saved
       // This handles the case where messages were restored but we're not showing unsaved
       const currentState = useSessionStore.getState()
@@ -486,7 +508,7 @@ const ConversationalLayoutInner: React.FC<ConversationalLayoutProps> = ({
 
         // Generate summary message with unique ID
         const messageId = `import_summary_${Date.now()}_${Math.random().toString(36).substring(7)}`
-        
+
         // Failproof: Wrap in try-catch
         let summaryMessagePartial
         try {
@@ -504,7 +526,7 @@ const ConversationalLayoutInner: React.FC<ConversationalLayoutProps> = ({
           id: messageId,
           timestamp: new Date(),
         }
-        
+
         // Failproof: Validate message before adding
         if (!summaryMessage.content || !summaryMessage.type) {
           chatLogger.warn('Invalid summary message generated, skipping', {
@@ -514,7 +536,7 @@ const ConversationalLayoutInner: React.FC<ConversationalLayoutProps> = ({
           })
           return
         }
-        
+
         // Add to conversation
         try {
           actions.addMessage(summaryMessage)
@@ -528,21 +550,23 @@ const ConversationalLayoutInner: React.FC<ConversationalLayoutProps> = ({
 
         // Persist to database (non-blocking)
         if (reportId && summaryMessage.id && summaryMessage.content) {
-          conversationAPI.saveMessage({
-            reportId,
-            messageId: summaryMessage.id,
-            role: summaryMessage.role || 'assistant',
-            type: summaryMessage.type,
-            content: summaryMessage.content,
-            metadata: summaryMessage.metadata || {},
-          }).catch((error) => {
-            chatLogger.warn('Failed to persist import summary message', {
+          conversationAPI
+            .saveMessage({
               reportId,
               messageId: summaryMessage.id,
-              error: error instanceof Error ? error.message : String(error),
+              role: summaryMessage.role || 'assistant',
+              type: summaryMessage.type,
+              content: summaryMessage.content,
+              metadata: summaryMessage.metadata || {},
             })
-            // Don't throw - persistence failure shouldn't break UI
-          })
+            .catch((error) => {
+              chatLogger.warn('Failed to persist import summary message', {
+                reportId,
+                messageId: summaryMessage.id,
+                error: error instanceof Error ? error.message : String(error),
+              })
+              // Don't throw - persistence failure shouldn't break UI
+            })
         }
 
         hasGeneratedSummaryRef.current = true
@@ -679,7 +703,7 @@ const ConversationalLayoutInner: React.FC<ConversationalLayoutProps> = ({
           valuationId={result?.valuation_id || state.valuationResult?.valuation_id}
           activeTab={toolbar.activeTab}
           onTabChange={(tab: 'preview' | 'info' | 'history') => {
-              toolbar.handleTabChange(tab)
+            toolbar.handleTabChange(tab)
           }}
           companyName={state.businessProfile?.company_name || result?.company_name}
         />

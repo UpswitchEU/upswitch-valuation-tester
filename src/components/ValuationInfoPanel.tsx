@@ -31,10 +31,10 @@ export const ValuationInfoPanel: React.FC<ValuationInfoPanelProps> = React.memo(
     // ROOT CAUSE FIX: Only subscribe to primitive values, not entire session object
     const isLoading = useSessionStore((state) => state.isLoading)
     const error = useSessionStore((state) => state.error)
-    
+
     // Use prop only (prop-driven component for flow isolation)
     const result = resultProp
-    
+
     // ROOT CAUSE FIX: Read session data via useMemo to avoid subscription
     const infoTabHtml = React.useMemo(() => {
       const currentSession = useSessionStore.getState().session
@@ -82,7 +82,9 @@ export const ValuationInfoPanel: React.FC<ValuationInfoPanelProps> = React.memo(
       return (
         <div className="h-full flex flex-col items-center justify-center p-8">
           <div className="text-center max-w-md">
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">No Valuation Result Available</h3>
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">
+              No Valuation Result Available
+            </h3>
             <p className="text-sm text-gray-600 mb-4">
               Generate a valuation report first to see the detailed calculation breakdown.
             </p>

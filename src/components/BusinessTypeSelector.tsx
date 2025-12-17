@@ -172,14 +172,16 @@ export const BusinessTypeSelector: React.FC<BusinessTypeSelectorProps> = ({
                     Key Metrics We'll Ask About:
                   </p>
                   <div className="flex flex-wrap gap-2">
-                    {selectedMetadata.key_metrics.slice(0, 4).map((metric: { label?: string; name?: string }, index: number) => (
-                      <span
-                        key={index}
-                        className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-primary-100 text-primary-800"
-                      >
-                        {metric.label || metric.name}
-                      </span>
-                    ))}
+                    {selectedMetadata.key_metrics
+                      .slice(0, 4)
+                      .map((metric: { label?: string; name?: string }, index: number) => (
+                        <span
+                          key={index}
+                          className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-primary-100 text-primary-800"
+                        >
+                          {metric.label || metric.name}
+                        </span>
+                      ))}
                   </div>
                 </div>
               )}
@@ -201,7 +203,8 @@ export const BusinessTypeSelector: React.FC<BusinessTypeSelectorProps> = ({
                     />
                   </svg>
                   {selectedMetadata.questions.length} targeted questions
-                  {selectedMetadata.questions.filter((q: { required?: boolean }) => q.required).length > 0 &&
+                  {selectedMetadata.questions.filter((q: { required?: boolean }) => q.required)
+                    .length > 0 &&
                     ` (${selectedMetadata.questions.filter((q: { required?: boolean }) => q.required).length} required)`}
                 </div>
               )}

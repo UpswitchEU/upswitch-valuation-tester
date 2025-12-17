@@ -75,7 +75,8 @@ export function convertToApplicationError(
  */
 function convertAxiosError(error: AxiosError, context?: Record<string, unknown>): ApplicationError {
   const status = error.response?.status
-  const message = (error.response?.data as { message?: string })?.message || error.message || 'Request failed'
+  const message =
+    (error.response?.data as { message?: string })?.message || error.message || 'Request failed'
   const errorContext = {
     ...context,
     url: error.config?.url,
@@ -130,7 +131,8 @@ function convertNativeError(error: Error, context?: Record<string, unknown>): Ap
 
   // CRITICAL FIX: Check for HTTP status codes on error object (for fetch API errors)
   const errorWithStatus = error as any
-  const status = errorWithStatus?.status || errorWithStatus?.statusCode || errorWithStatus?.response?.status
+  const status =
+    errorWithStatus?.status || errorWithStatus?.statusCode || errorWithStatus?.response?.status
   if (status) {
     const message = error.message || 'Request failed'
     return createErrorFromStatus(status, message, {

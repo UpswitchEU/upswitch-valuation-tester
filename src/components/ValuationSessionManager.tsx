@@ -51,14 +51,14 @@ export const ValuationSessionManager: React.FC<ValuationSessionManagerProps> = R
   ({ reportId, children }) => {
     const searchParams = useSearchParams()
     const router = useRouter()
-    
+
     // ROOT CAUSE FIX: Subscribe to specific values, not entire store
     // This component needs session for stage detection, but we can optimize
     const isLoading = useSessionStore((state) => state.isLoading)
     const error = useSessionStore((state) => state.error)
     const loadSession = useSessionStore((state) => state.loadSession)
     const clearSession = useSessionStore((state) => state.clearSession)
-    
+
     // ROOT CAUSE FIX: Read session only when needed for stage calculation
     const session = useSessionStore((state) => state.session)
 
@@ -67,30 +67,38 @@ export const ValuationSessionManager: React.FC<ValuationSessionManagerProps> = R
     const autoSend = searchParams?.get('autoSend') === 'true'
     const flowParam = searchParams?.get('flow') as 'manual' | 'conversational' | null
     const detectedFlow = flowParam || 'manual'
-    
+
     // Dynamic stage based on loading state
     const stage: Stage = isLoading && !session ? 'loading' : 'data-entry'
-    
+
     // Load session when reportId changes (promise cache prevents duplicates)
     useEffect(() => {
-      generalLogger.info('[SessionManager] Loading session', { reportId, flow: detectedFlow, prefilledQuery })
-      loadSession(reportId, detectedFlow, prefilledQuery).catch(err => {
+      generalLogger.info('[SessionManager] Loading session', {
+        reportId,
+        flow: detectedFlow,
+        prefilledQuery,
+      })
+      loadSession(reportId, detectedFlow, prefilledQuery).catch((err) => {
         generalLogger.error('[SessionManager] Load failed', {
           reportId,
           flow: detectedFlow,
-          error: err.message
+          error: err.message,
         })
       })
       // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [reportId, detectedFlow, prefilledQuery])  // loadSession is stable - don't include in deps
-    
+    }, [reportId, detectedFlow, prefilledQuery]) // loadSession is stable - don't include in deps
+
     // Retry: Clear error and reload
     const handleRetry = useCallback(() => {
-      generalLogger.info('[SessionManager] Retrying load', { reportId, flow: detectedFlow, prefilledQuery })
+      generalLogger.info('[SessionManager] Retrying load', {
+        reportId,
+        flow: detectedFlow,
+        prefilledQuery,
+      })
       loadSession(reportId, detectedFlow, prefilledQuery)
       // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [reportId, detectedFlow, prefilledQuery])  // loadSession is stable - don't include in deps
-    
+    }, [reportId, detectedFlow, prefilledQuery]) // loadSession is stable - don't include in deps
+
     // Start over: Clear and navigate home
     const handleStartOver = useCallback(() => {
       generalLogger.info('[SessionManager] Starting over', { reportId })
@@ -100,13 +108,13 @@ export const ValuationSessionManager: React.FC<ValuationSessionManagerProps> = R
 
     // Simplified render: Optimistic UI (no loading screen)
     return children({
-          session,
-          stage,
-          error,
+      session,
+      stage,
+      error,
       showOutOfCreditsModal: false, // TODO: Re-implement if needed
       onCloseModal: () => {}, // No-op
-          prefilledQuery,
-          autoSend,
+      prefilledQuery,
+      autoSend,
       onRetry: handleRetry,
       onStartOver: handleStartOver,
       reportId,

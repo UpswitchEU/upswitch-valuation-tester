@@ -1,27 +1,27 @@
 import {
-    AlertCircle,
-    Check,
-    Download,
-    Edit3,
-    Eye,
-    GitBranch,
-    History,
-    Info,
-    Loader2,
-    Maximize,
-    MessageSquare,
-    RefreshCw,
-    Save,
+  AlertCircle,
+  Check,
+  Download,
+  Edit3,
+  Eye,
+  GitBranch,
+  History,
+  Info,
+  Loader2,
+  Maximize,
+  MessageSquare,
+  RefreshCw,
+  Save,
 } from 'lucide-react'
 import React from 'react'
 import {
-    useValuationToolbarAuth,
-    useValuationToolbarDownload,
-    useValuationToolbarFlow,
-    useValuationToolbarFullscreen,
-    useValuationToolbarName,
-    useValuationToolbarRefresh,
-    useValuationToolbarTabs,
+  useValuationToolbarAuth,
+  useValuationToolbarDownload,
+  useValuationToolbarFlow,
+  useValuationToolbarFullscreen,
+  useValuationToolbarName,
+  useValuationToolbarRefresh,
+  useValuationToolbarTabs,
 } from '../hooks/valuationToolbar'
 import { useSessionStore } from '../store/useSessionStore'
 import { useVersionHistoryStore } from '../store/useVersionHistoryStore'
@@ -53,11 +53,11 @@ export const ValuationToolbar: React.FC<ValuationToolbarProps> = ({
   const lastSaved = useSessionStore((state) => state.lastSaved)
   const hasUnsavedChanges = useSessionStore((state) => state.hasUnsavedChanges)
   const syncError = useSessionStore((state) => state.error)
-  
+
   // Flow detection from session
   const isManualFlow = currentView === 'manual'
   const isConversationalFlow = currentView === 'conversational'
-  
+
   const {
     versions: storeVersions,
     getActiveVersion,
@@ -66,8 +66,7 @@ export const ValuationToolbar: React.FC<ValuationToolbarProps> = ({
   } = useVersionHistoryStore()
 
   // Use props if provided, otherwise use store
-  const displayVersions =
-    versions || (reportId ? storeVersions[reportId] || [] : [])
+  const displayVersions = versions || (reportId ? storeVersions[reportId] || [] : [])
   const storeActiveVersion = reportId ? getActiveVersion(reportId) : null
   const displayActiveVersion = activeVersion ?? storeActiveVersion?.versionNumber
 
@@ -125,7 +124,7 @@ export const ValuationToolbar: React.FC<ValuationToolbarProps> = ({
   // Handle retry save when error icon is clicked
   const handleRetrySave = async () => {
     if (!syncError || !reportId) return
-    
+
     // Trigger save using unified store
     const { saveSession: save } = useSessionStore.getState()
     await save()
@@ -241,33 +240,34 @@ export const ValuationToolbar: React.FC<ValuationToolbarProps> = ({
                   </div>
                 </div>
                 {/* Save Status Icon (M&A Workflow) - Minimalist inline indicator */}
-                {getSaveStatusIcon() && (() => {
-                  const tooltipContent = getSaveStatusTooltip()
-                  const iconContent = syncError ? (
-                    // Clickable only when there's an error (manual retry)
-                    <button
-                      onClick={handleRetrySave}
-                      className="flex items-center justify-center p-1 rounded hover:bg-zinc-800 transition-colors cursor-pointer"
-                      aria-label="Retry save"
-                    >
-                      {getSaveStatusIcon()}
-                    </button>
-                  ) : (
-                    // Non-clickable for normal states (autosave)
-                    <div className="flex items-center justify-center p-1">
-                      {getSaveStatusIcon()}
-                    </div>
-                  )
-                  
-                  // Only wrap in Tooltip if there's tooltip content (hide for new reports)
-                  return tooltipContent ? (
-                    <Tooltip content={tooltipContent} position="bottom" className="">
-                      {iconContent}
-                    </Tooltip>
-                  ) : (
-                    iconContent
-                  )
-                })()}
+                {getSaveStatusIcon() &&
+                  (() => {
+                    const tooltipContent = getSaveStatusTooltip()
+                    const iconContent = syncError ? (
+                      // Clickable only when there's an error (manual retry)
+                      <button
+                        onClick={handleRetrySave}
+                        className="flex items-center justify-center p-1 rounded hover:bg-zinc-800 transition-colors cursor-pointer"
+                        aria-label="Retry save"
+                      >
+                        {getSaveStatusIcon()}
+                      </button>
+                    ) : (
+                      // Non-clickable for normal states (autosave)
+                      <div className="flex items-center justify-center p-1">
+                        {getSaveStatusIcon()}
+                      </div>
+                    )
+
+                    // Only wrap in Tooltip if there's tooltip content (hide for new reports)
+                    return tooltipContent ? (
+                      <Tooltip content={tooltipContent} position="bottom" className="">
+                        {iconContent}
+                      </Tooltip>
+                    ) : (
+                      iconContent
+                    )
+                  })()}
               </div>
 
               {/* Center Section - Action Buttons */}

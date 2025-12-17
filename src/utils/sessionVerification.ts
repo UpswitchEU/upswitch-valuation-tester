@@ -56,10 +56,7 @@ export function shouldVerifyCache(cachedSession: ValuationSession): boolean {
  * @param reportId - Report identifier
  * @param cachedSession - Cached session to verify
  */
-export function verifySessionInBackground(
-  reportId: string,
-  cachedSession: ValuationSession
-): void {
+export function verifySessionInBackground(reportId: string, cachedSession: ValuationSession): void {
   // Skip verification if already in progress
   if (verificationInProgress.has(reportId)) {
     VERIFICATION_LOGGER.debug('Verification already in progress, skipping', { reportId })
@@ -95,15 +92,15 @@ export function verifySessionInBackground(
             reportId,
             cacheAge: cachedSession.updatedAt,
           })
-          
+
           // CRITICAL: Invalidate stale cache
           globalSessionCache.remove(reportId)
-          
+
           // Re-initialize using unified store
           const { useSessionStore } = await import('../store/useSessionStore')
           const { loadSession } = useSessionStore.getState()
           await loadSession(reportId)
-          
+
           return
         }
 
@@ -142,16 +139,16 @@ export function verifySessionInBackground(
       } catch (error) {
         // Check if it's a 404 - explicit signal that session doesn't exist
         const is404 = (error as any)?.response?.status === 404
-        
+
         if (is404) {
           // Explicit 404 - cache is definitely stale
           VERIFICATION_LOGGER.error('Backend session not found (404) - invalidating cache', {
             reportId,
           })
-          
+
           // Remove stale cache
           globalSessionCache.remove(reportId)
-          
+
           // Re-initialize using unified store
           try {
             const { useSessionStore } = await import('../store/useSessionStore')
@@ -191,4 +188,3 @@ export function verifySessionInBackground(
 export function clearVerificationState(): void {
   verificationInProgress.clear()
 }
-

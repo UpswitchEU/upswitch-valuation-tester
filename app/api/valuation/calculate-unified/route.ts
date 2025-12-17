@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { ValuationAPI } from '../../../../src/services/api/valuation/ValuationAPI'
 import {
-    APIError,
-    AuthenticationError,
-    CreditError,
-    NetworkError,
-    RateLimitError,
-    ValidationError,
+  APIError,
+  AuthenticationError,
+  CreditError,
+  NetworkError,
+  RateLimitError,
+  ValidationError,
 } from '../../../../src/types/errors'
 import { apiLogger } from '../../../../src/utils/logger'
 
@@ -18,11 +18,11 @@ export const dynamic = 'force-dynamic'
 
 /**
  * POST /api/valuation/calculate-unified
- * 
+ *
  * Unified valuation calculation endpoint that handles both manual and conversational flows.
- * 
+ *
  * Request body should match ValuationRequest type.
- * 
+ *
  * Error handling:
  * - 400: Validation errors (invalid input)
  * - 401: Authentication errors
@@ -33,7 +33,7 @@ export const dynamic = 'force-dynamic'
  */
 export async function POST(request: NextRequest) {
   const startTime = Date.now()
-  
+
   try {
     // Validate request method
     if (request.method !== 'POST') {
@@ -91,7 +91,7 @@ export async function POST(request: NextRequest) {
     })
   } catch (error) {
     const duration = Date.now() - startTime
-    
+
     // Handle specific error types
     if (error instanceof ValidationError) {
       apiLogger.warn('Validation error in valuation calculation', {
@@ -208,9 +208,12 @@ export async function POST(request: NextRequest) {
       {
         error: 'Internal server error',
         code: 'INTERNAL_ERROR',
-        message: process.env.NODE_ENV === 'development' 
-          ? (error instanceof Error ? error.message : String(error))
-          : 'An unexpected error occurred',
+        message:
+          process.env.NODE_ENV === 'development'
+            ? error instanceof Error
+              ? error.message
+              : String(error)
+            : 'An unexpected error occurred',
         recoverable: false,
       },
       { status: 500 }
@@ -220,7 +223,7 @@ export async function POST(request: NextRequest) {
 
 /**
  * GET /api/valuation/calculate-unified
- * 
+ *
  * This endpoint only accepts POST requests.
  */
 export async function GET() {

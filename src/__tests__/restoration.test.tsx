@@ -23,7 +23,7 @@ describe('Valuation Restoration', () => {
       lastSaved: null,
       hasUnsavedChanges: false,
     })
-    
+
     useManualResultsStore.setState({
       result: null,
       htmlReport: null,
@@ -88,8 +88,10 @@ describe('Valuation Restoration', () => {
           key_value_drivers: ['Strong margins', 'Growth trajectory'],
           risk_factors: ['Owner dependency'],
         } as ValuationResponse,
-        htmlReport: '<html><body><h1>Valuation Report</h1><p>Test Company: €500,000</p></body></html>',
-        infoTabHtml: '<html><body><h2>Calculation Breakdown</h2><p>EBITDA Multiple Method</p></body></html>',
+        htmlReport:
+          '<html><body><h1>Valuation Report</h1><p>Test Company: €500,000</p></body></html>',
+        infoTabHtml:
+          '<html><body><h2>Calculation Breakdown</h2><p>EBITDA Multiple Method</p></body></html>',
         partialData: {},
         createdAt: new Date('2024-12-17T10:00:00Z'),
         updatedAt: new Date('2024-12-17T10:05:00Z'),
@@ -270,7 +272,8 @@ describe('Valuation Restoration', () => {
           // Note: NO html_report in result - stored separately in session
         } as ValuationResponse,
         // HTML stored separately in session (as returned by backend)
-        htmlReport: '<html><body><h1>Integration Test Report</h1><p>Value: €1,000,000</p></body></html>',
+        htmlReport:
+          '<html><body><h1>Integration Test Report</h1><p>Value: €1,000,000</p></body></html>',
         infoTabHtml: '<html><body><h2>Methodology</h2><p>EBITDA Multiple: 5.0x</p></body></html>',
         partialData: {},
         createdAt: new Date('2024-12-17T11:00:00Z'),
@@ -283,26 +286,26 @@ describe('Valuation Restoration', () => {
 
       // Simulate restoration logic (what ManualLayout.tsx does)
       const { setResult } = useManualResultsStore.getState()
-      
+
       // Merge HTML from session into result (this is the fix!)
       const resultWithHtml = {
         ...mockSession.valuationResult,
         html_report: mockSession.htmlReport,
         info_tab_html: mockSession.infoTabHtml,
       }
-      
+
       setResult(resultWithHtml as any)
 
       // Verify restoration
       const resultsState = useManualResultsStore.getState()
-      
+
       expect(resultsState.result).toBeTruthy()
       expect(resultsState.result?.valuation_id).toBe('val_result_integration')
       expect(resultsState.result?.html_report).toBeTruthy()
       expect(resultsState.result?.info_tab_html).toBeTruthy()
       expect(resultsState.htmlReport).toBeTruthy()
       expect(resultsState.infoTabHtml).toBeTruthy()
-      
+
       // Verify HTML content is correct
       expect(resultsState.result?.html_report).toContain('Integration Test Report')
       expect(resultsState.result?.info_tab_html).toContain('EBITDA Multiple')
@@ -339,7 +342,7 @@ describe('Valuation Restoration', () => {
       expect(sessionState.session?.sessionData).toBeTruthy()
       expect(sessionState.session?.valuationResult).toBeFalsy()
       expect(sessionState.session?.htmlReport).toBeFalsy()
-      
+
       // This represents the "form pre-filled but no report yet" state
       expect(sessionState.session?.sessionData?.company_name).toBe('Partial Data Co')
     })
@@ -381,7 +384,7 @@ describe('Valuation Restoration', () => {
 
       // With feature flag disabled, restoration should not happen
       // (In actual implementation, the ManualLayout effect would skip restoration)
-      
+
       const resultsState = useManualResultsStore.getState()
       expect(resultsState.result).toBeNull() // Should remain null
     })
@@ -425,7 +428,7 @@ describe('Valuation Restoration', () => {
         html_report: mockSession.htmlReport || mockSession.valuationResult!.html_report,
         info_tab_html: mockSession.infoTabHtml || mockSession.valuationResult!.info_tab_html,
       }
-      
+
       setResult(resultWithHtml as any)
 
       const resultsState = useManualResultsStore.getState()
@@ -468,16 +471,14 @@ describe('Valuation Restoration', () => {
       vi.spyOn(sessionService, 'loadSession').mockResolvedValue(mockSession)
 
       const startTime = performance.now()
-      
+
       const { loadSession } = useSessionStore.getState()
       await loadSession('val_perf_test', 'manual', null)
-      
+
       const duration = performance.now() - startTime
-      
+
       // Should complete in <500ms
       expect(duration).toBeLessThan(500)
     })
   })
 })
-
-

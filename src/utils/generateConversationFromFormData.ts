@@ -1,6 +1,6 @@
 /**
  * Generate Conversation from Form Data
- * 
+ *
  * Creates synthetic conversation messages from manual form data
  * This enables Manual → Conversational flow with conversation history
  */
@@ -74,11 +74,7 @@ export function generateConversationFromFormData(
 
   // Company Name
   if (formData.company_name) {
-    addMessagePair(
-      "What's your company name?",
-      formData.company_name,
-      'company_name'
-    )
+    addMessagePair("What's your company name?", formData.company_name, 'company_name')
   }
 
   // Founding Year
@@ -110,12 +106,9 @@ export function generateConversationFromFormData(
 
   // Business Structure
   if (formData.business_type) {
-    const structureLabel = formData.business_type === 'sole-trader' ? 'Sole Trader' : 'Limited Company'
-    addMessagePair(
-      'What is your business structure?',
-      structureLabel,
-      'business_type'
-    )
+    const structureLabel =
+      formData.business_type === 'sole-trader' ? 'Sole Trader' : 'Limited Company'
+    addMessagePair('What is your business structure?', structureLabel, 'business_type')
   }
 
   // Shares for Sale
@@ -152,24 +145,20 @@ export function generateConversationFromFormData(
   if (formData.revenue || formData.current_year_data?.revenue) {
     const revenue = formData.revenue || formData.current_year_data?.revenue || 0
     const year = formData.current_year_data?.year || new Date().getFullYear()
-    addMessagePair(
-      `What was your revenue in ${year}?`,
-      `€${revenue.toLocaleString()}`,
-      'revenue',
-      { revenue, year }
-    )
+    addMessagePair(`What was your revenue in ${year}?`, `€${revenue.toLocaleString()}`, 'revenue', {
+      revenue,
+      year,
+    })
   }
 
   // EBITDA
   if (formData.ebitda !== undefined || formData.current_year_data?.ebitda !== undefined) {
     const ebitda = formData.ebitda ?? formData.current_year_data?.ebitda ?? 0
     const year = formData.current_year_data?.year || new Date().getFullYear()
-    addMessagePair(
-      `What was your EBITDA in ${year}?`,
-      `€${ebitda.toLocaleString()}`,
-      'ebitda',
-      { ebitda, year }
-    )
+    addMessagePair(`What was your EBITDA in ${year}?`, `€${ebitda.toLocaleString()}`, 'ebitda', {
+      ebitda,
+      year,
+    })
   }
 
   // Historical Data
@@ -213,7 +202,7 @@ export function generateConversationFromFormData(
  * Check if conversation was generated from manual form data
  */
 export function isGeneratedConversation(messages: Message[]): boolean {
-  return messages.some(msg => msg.metadata?.generated_from_manual === true)
+  return messages.some((msg) => msg.metadata?.generated_from_manual === true)
 }
 
 /**
@@ -233,4 +222,3 @@ export function extractDataFromGeneratedConversation(messages: Message[]): Recor
 
   return data
 }
-

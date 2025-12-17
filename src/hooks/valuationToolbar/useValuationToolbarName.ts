@@ -38,11 +38,11 @@ export const useValuationToolbarName = (
   options: UseValuationToolbarNameOptions = {}
 ): UseValuationToolbarNameReturn => {
   const { initialName = 'Valuation test123', companyName, reportId } = options
-  
+
   // ROOT CAUSE FIX: Only subscribe to reportId, not entire session object
   const sessionReportId = useSessionStore((state) => state.session?.reportId)
   const actualReportId = reportId || sessionReportId
-  
+
   // ✅ NEW: Subscribe to session.name for restoration
   const sessionName = useSessionStore((state) => state.session?.name)
 
@@ -64,7 +64,7 @@ export const useValuationToolbarName = (
     }
     return NameGenerator.generateValuationName()
   })
-  
+
   // ✅ NEW: Restore name from session when it becomes available
   useEffect(() => {
     if (sessionName && sessionName !== generatedName && !isEditingName) {
@@ -120,16 +120,16 @@ export const useValuationToolbarName = (
           const response = await backendAPI.updateValuationSession(actualReportId, {
             name: nameToSave,
           } as any)
-          
+
           // ✅ NEW: Update session store with the saved name to keep it in sync
           if (response?.session?.name) {
             useSessionStore.getState().updateSession({ name: response.session.name })
-            generalLogger.debug('Session store updated with saved name', { 
+            generalLogger.debug('Session store updated with saved name', {
               reportId: actualReportId,
-              name: response.session.name 
+              name: response.session.name,
             })
           }
-          
+
           generalLogger.debug('Valuation name persisted to backend', { reportId: actualReportId })
         } catch (error) {
           generalLogger.warn('Failed to persist valuation name to backend', {

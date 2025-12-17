@@ -1,15 +1,15 @@
 /**
  * Request Queue for Failed Operations
- * 
+ *
  * Queues failed API requests for automatic retry when online.
  * Uses IndexedDB for persistent storage across sessions.
- * 
+ *
  * Benefits:
  * - Users never lose work due to network failures
  * - Automatic retry when connection restores
  * - Persistent queue survives page reloads
  * - Configurable retry strategies
- * 
+ *
  * @module services/sync/RequestQueue
  */
 
@@ -414,4 +414,3 @@ if (typeof window !== 'undefined') {
     })
   })
 }
-

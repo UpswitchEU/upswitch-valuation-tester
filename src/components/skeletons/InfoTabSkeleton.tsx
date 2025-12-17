@@ -1,10 +1,10 @@
 /**
  * Info Tab Skeleton
- * 
+ *
  * Loading skeleton for info tab HTML - MATCHES ACTUAL INFO TAB STRUCTURE.
  * Shows while info tab is being loaded from backend.
  * Matches: Calculation breakdown with waterfalls and detailed analysis
- * 
+ *
  * @module components/skeletons/InfoTabSkeleton
  */
 
@@ -18,14 +18,14 @@ export function InfoTabSkeleton() {
         <div className="h-7 w-2/5 bg-gray-200 rounded" />
         <div className="h-4 w-3/4 bg-gray-100 rounded" />
       </div>
-      
+
       {/* Calculation steps - match actual waterfall structure */}
       {[
         'DCF Valuation',
         'Comparable Multiples',
         'Weighted Valuation',
         'Adjustments',
-        'Final Valuation Range'
+        'Final Valuation Range',
       ].map((step, idx) => (
         <div key={idx} className="mb-8">
           {/* Step header */}
@@ -35,7 +35,7 @@ export function InfoTabSkeleton() {
             </div>
             <div className="h-6 w-56 bg-gray-200 rounded" />
           </div>
-          
+
           {/* Step content */}
           <div className="ml-14 space-y-4">
             <div className="space-y-2">
@@ -43,7 +43,7 @@ export function InfoTabSkeleton() {
               <div className="h-4 w-5/6 bg-gray-100 rounded" />
               <div className="h-4 w-4/5 bg-gray-100 rounded" />
             </div>
-            
+
             {/* Data table/grid */}
             <div className="border border-gray-200 rounded-lg p-4 space-y-2">
               <div className="grid grid-cols-2 gap-4">
@@ -74,4 +74,3 @@ export function InfoTabSkeleton() {
     </div>
   )
 }
-

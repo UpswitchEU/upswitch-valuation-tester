@@ -105,8 +105,14 @@ export const MessageItem = React.memo<MessageItemProps>(
     // Detect business type suggestions in the message
     const businessTypeSuggestions = React.useMemo((): BusinessTypeSuggestion[] | null => {
       // First check for structured suggestions in metadata (preferred - more reliable)
-      const structuredSuggestions = getMetadataValue<BusinessTypeSuggestion[]>('business_type_suggestions')
-      if (structuredSuggestions && Array.isArray(structuredSuggestions) && structuredSuggestions.length > 0) {
+      const structuredSuggestions = getMetadataValue<BusinessTypeSuggestion[]>(
+        'business_type_suggestions'
+      )
+      if (
+        structuredSuggestions &&
+        Array.isArray(structuredSuggestions) &&
+        structuredSuggestions.length > 0
+      ) {
         return structuredSuggestions.map((s, idx) => ({
           number: s.number || idx + 1,
           id: s.id || String(s.number || idx + 1),
@@ -117,7 +123,7 @@ export const MessageItem = React.memo<MessageItemProps>(
           icon: s.icon,
         }))
       }
-      
+
       // Fallback: parse from clarification message text
       const clarificationMsg = getMetadataString('clarification_message')
       if (clarificationMsg && hasBusinessTypeSuggestions(clarificationMsg)) {
@@ -146,20 +152,31 @@ export const MessageItem = React.memo<MessageItemProps>(
           />
         </div>
       ) as React.ReactNode
-    }, [hasBusinessTypeSuggestionsInMessage, businessTypeSuggestions, onBusinessTypeSuggestionSelect])
+    }, [
+      hasBusinessTypeSuggestionsInMessage,
+      businessTypeSuggestions,
+      onBusinessTypeSuggestionSelect,
+    ])
 
     // Detect KBO suggestions in the message
     const kboSuggestions = React.useMemo((): KBOSuggestion[] | null => {
       // First check for structured suggestions in metadata (preferred - more reliable)
-      const structuredSuggestions = getMetadataValue<Array<{company_name: string; registration_number?: string}>>('kbo_suggestions')
-      if (structuredSuggestions && Array.isArray(structuredSuggestions) && structuredSuggestions.length > 0) {
+      const structuredSuggestions =
+        getMetadataValue<Array<{ company_name: string; registration_number?: string }>>(
+          'kbo_suggestions'
+        )
+      if (
+        structuredSuggestions &&
+        Array.isArray(structuredSuggestions) &&
+        structuredSuggestions.length > 0
+      ) {
         return structuredSuggestions.map((s, idx) => ({
           number: idx + 1,
           companyName: s.company_name || '',
           registrationNumber: s.registration_number,
         }))
       }
-      
+
       // Fallback: parse from clarification message text
       const clarificationMsg = getMetadataString('clarification_message')
       if (clarificationMsg && hasKBOSuggestions(clarificationMsg)) {
@@ -334,11 +351,18 @@ export const MessageItem = React.memo<MessageItemProps>(
                   {/* Suggestion chips - Show for AI messages with suggestions metadata */}
                   {(() => {
                     // Check for suggestions in metadata (backend sends as 'suggestions', frontend may store as 'options')
-                    const suggestions = getMetadataValue<unknown[]>('suggestions') || getMetadataValue<unknown[]>('options') || []
+                    const suggestions =
+                      getMetadataValue<unknown[]>('suggestions') ||
+                      getMetadataValue<unknown[]>('options') ||
+                      []
                     const suggestionType = getMetadataString('suggestion_type')
-                    
+
                     // Only show general suggestions (not business_type or kbo - those have their own components)
-                    if (suggestions.length > 0 && suggestionType !== 'business_type' && suggestionType !== 'kbo') {
+                    if (
+                      suggestions.length > 0 &&
+                      suggestionType !== 'business_type' &&
+                      suggestionType !== 'kbo'
+                    ) {
                       return (
                         <div className="mt-4">
                           <SuggestionChips
@@ -348,7 +372,11 @@ export const MessageItem = React.memo<MessageItemProps>(
                                 return { text: s, confidence: 0, reason: '' }
                               }
                               return {
-                                text: (s as any)?.text || (s as any)?.company_name || (s as any)?.title || String(s),
+                                text:
+                                  (s as any)?.text ||
+                                  (s as any)?.company_name ||
+                                  (s as any)?.title ||
+                                  String(s),
                                 confidence: (s as any)?.confidence || 0,
                                 reason: (s as any)?.reason || '',
                               }

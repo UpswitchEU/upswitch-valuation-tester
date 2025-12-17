@@ -179,11 +179,7 @@ export function detectVersionChanges(
 
   // Industry and business model
   if (oldData.industry !== newData.industry) {
-    changes.industry = createChange(
-      'industry',
-      oldData.industry || '',
-      newData.industry || ''
-    )
+    changes.industry = createChange('industry', oldData.industry || '', newData.industry || '')
   }
 
   if (oldData.business_model !== newData.business_model) {

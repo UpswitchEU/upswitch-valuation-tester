@@ -273,7 +273,7 @@ export class StreamingManager {
       if (timeoutId !== null) {
         clearTimeout(timeoutId)
       }
-      
+
       // CRITICAL FIX: Robust lock release in finally block
       // This is the safety net - ensures locks are ALWAYS released
       // Even if catch block is somehow bypassed
@@ -338,7 +338,10 @@ export class StreamingManager {
         if (generatorTimeout) {
           clearTimeout(generatorTimeout)
           generatorTimeout = setTimeout(() => {
-            chatLogger.warn('Stream timeout - no activity for 60 seconds', { sessionId, eventCount })
+            chatLogger.warn('Stream timeout - no activity for 60 seconds', {
+              sessionId,
+              eventCount,
+            })
             throw new Error('Stream timeout - connection may have been lost')
           }, STREAM_TIMEOUT)
         }
@@ -372,7 +375,9 @@ export class StreamingManager {
 
       // Only throw error if absolutely no events received (shouldn't happen with typing event)
       if (eventCount === 0) {
-        chatLogger.warn('No events received from async generator - server may not have responded', { sessionId })
+        chatLogger.warn('No events received from async generator - server may not have responded', {
+          sessionId,
+        })
         throw new Error('No events received from async generator - server may not have responded')
       }
     } catch (error) {

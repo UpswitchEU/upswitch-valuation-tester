@@ -26,7 +26,7 @@ interface ConversationalResultsStore {
   // Calculation state
   isCalculating: boolean
   error: string | null
-  
+
   // Progress tracking (for long calculations, streaming responses)
   calculationProgress: number
 
@@ -132,7 +132,7 @@ export const useConversationalResultsStore = create<ConversationalResultsStore>(
 
       if (currentResult) {
         const updatedResult = { ...currentResult, html_report: html }
-        
+
         storeLogger.info('[Conversational] HTML report updated in existing result', {
           htmlLength: html.length,
         })
@@ -163,7 +163,7 @@ export const useConversationalResultsStore = create<ConversationalResultsStore>(
 
       if (currentResult) {
         const updatedResult = { ...currentResult, info_tab_html: html }
-        
+
         storeLogger.info('[Conversational] Info tab HTML updated in existing result', {
           htmlLength: html.length,
         })
@@ -240,7 +240,7 @@ export const useConversationalResultsStore = create<ConversationalResultsStore>(
   // CRITICAL: This provides < 16ms UI response time (instant button disable)
   trySetCalculating: () => {
     let wasSet = false
-    
+
     set((state) => {
       if (state.isCalculating) {
         storeLogger.debug('[Conversational] Already calculating, preventing duplicate submission')
@@ -267,7 +267,9 @@ export const useConversationalResultsStore = create<ConversationalResultsStore>(
     set((state) => {
       // If trying to set to true but already calculating, don't change state
       if (isCalculating && state.isCalculating) {
-        storeLogger.debug('[Conversational] Already calculating, skipping duplicate setCalculating(true)')
+        storeLogger.debug(
+          '[Conversational] Already calculating, skipping duplicate setCalculating(true)'
+        )
         return state
       }
 
@@ -306,14 +308,11 @@ export const useConversationalResultsStore = create<ConversationalResultsStore>(
       const { valuationService } = await import('../../services')
 
       // Calculate with progress callback
-      const result = await valuationService.calculateValuation(
-        request,
-        (progress, message) => {
-          // Update progress in real-time
-          setCalculationProgress(progress)
-          storeLogger.debug('[Conversational] Calculation progress', { progress, message })
-        }
-      )
+      const result = await valuationService.calculateValuation(request, (progress, message) => {
+        // Update progress in real-time
+        setCalculationProgress(progress)
+        storeLogger.debug('[Conversational] Calculation progress', { progress, message })
+      })
 
       // Step 3: Atomic state update
       set((state) => ({
@@ -356,4 +355,3 @@ export const useConversationalResultsStore = create<ConversationalResultsStore>(
     }
   },
 }))
-

@@ -75,7 +75,7 @@ export class ValuationHandlers {
 
   /**
    * Handle valuation complete events
-   * 
+   *
    * NOTE: This handler is flow-agnostic. The results store update is handled
    * through callbacks, which should be provided by the appropriate flow
    * (Manual or Conversational).
@@ -83,7 +83,7 @@ export class ValuationHandlers {
   handleValuationComplete(data: any): void {
     const result = data.result || data
     const valuationId = data.valuation_id || result?.valuation_id
-    
+
     chatLogger.info('[Chat] Valuation completed', {
       hasResult: !!result,
       resultKeys: result ? Object.keys(result) : [],

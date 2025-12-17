@@ -30,7 +30,7 @@ const ResultsComponent: React.FC<ResultsComponentProps> = ({ result }) => {
   // ROOT CAUSE FIX: Only subscribe to primitive values, not entire session object
   const isLoading = useSessionStore((state) => state.isLoading)
   const error = useSessionStore((state) => state.error)
-  
+
   // ROOT CAUSE FIX: Read session data via useMemo to avoid subscription
   const htmlReport = React.useMemo(() => {
     const currentSession = useSessionStore.getState().session
@@ -149,10 +149,7 @@ const ResultsComponent: React.FC<ResultsComponentProps> = ({ result }) => {
 
   return (
     <div className="h-full overflow-y-auto valuation-report-preview">
-      <div
-        className="accountant-view-report"
-        dangerouslySetInnerHTML={{ __html: sanitizedHtml }}
-      />
+      <div className="accountant-view-report" dangerouslySetInnerHTML={{ __html: sanitizedHtml }} />
     </div>
   )
 }

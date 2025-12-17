@@ -7,7 +7,6 @@
  * @module store/conversational
  */
 
-export { useConversationalChatStore } from './useConversationalChatStore'
 export type { ChatMessage } from './useConversationalChatStore'
+export { useConversationalChatStore } from './useConversationalChatStore'
 export { useConversationalResultsStore } from './useConversationalResultsStore'
-

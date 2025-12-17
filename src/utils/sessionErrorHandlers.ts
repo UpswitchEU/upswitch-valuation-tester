@@ -29,10 +29,10 @@ import { globalRequestDeduplicator } from './requestDeduplication'
 import { retrySessionOperation } from './retryWithBackoff'
 import { globalAuditTrail } from './sessionAuditTrail'
 import {
-    createBaseSession,
-    mergePrefilledQuery,
-    mergeSessionFields,
-    normalizeSessionDates,
+  createBaseSession,
+  mergePrefilledQuery,
+  mergeSessionFields,
+  normalizeSessionDates,
 } from './sessionHelpers'
 
 /**
@@ -244,11 +244,7 @@ export async function createOrLoadSession(
               async () => {
                 // Execute through circuit breaker
                 return await sessionCircuitBreaker.execute(async () => {
-                  const newSession = createBaseSession(
-                    reportId,
-                    currentView,
-                    prefilledQuery
-                  )
+                  const newSession = createBaseSession(reportId, currentView, prefilledQuery)
 
                   // Create session
                   // Note: Backend API doesn't currently support custom headers
@@ -348,7 +344,7 @@ export async function createOrLoadSession(
           reportId,
           correlationId,
         })
-        
+
         // Record partial success (conflict resolved but had to use fallback)
         globalAuditTrail.log({
           operation: 'CREATE',

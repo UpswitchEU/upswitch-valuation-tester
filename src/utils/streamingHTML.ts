@@ -1,15 +1,15 @@
 /**
  * Streaming HTML Utility
- * 
+ *
  * Progressively renders large HTML content to avoid blocking the main thread.
  * Useful for 20-30 page reports that would otherwise cause janky rendering.
- * 
+ *
  * Benefits:
  * - No layout blocking for large documents
  * - Users see content immediately
  * - Smooth scrolling during render
  * - Better perceived performance
- * 
+ *
  * @module utils/streamingHTML
  */
 
@@ -45,7 +45,7 @@ export interface StreamingHTMLConfig {
 /**
  * Async generator that yields HTML chunks
  * Allows progressive rendering of large HTML content
- * 
+ *
  * @param htmlContent - Full HTML string to stream
  * @param config - Streaming configuration
  */
@@ -106,7 +106,7 @@ export async function* streamHTMLChunks(
 /**
  * Stream HTML into a DOM element
  * Progressively appends HTML chunks to the target element
- * 
+ *
  * @param htmlContent - Full HTML string to stream
  * @param targetElement - DOM element to append chunks to
  * @param config - Streaming configuration
@@ -154,17 +154,17 @@ export async function streamHTMLToElement(
 /**
  * Stream HTML content with React
  * Returns chunks as they're ready for React rendering
- * 
+ *
  * Usage:
  * ```tsx
  * const [htmlChunks, setHtmlChunks] = useState<string[]>([])
- * 
+ *
  * useEffect(() => {
  *   streamHTMLForReact(htmlReport, (chunk) => {
  *     setHtmlChunks(prev => [...prev, chunk])
  *   })
  * }, [htmlReport])
- * 
+ *
  * return (
  *   <div>
  *     {htmlChunks.map((chunk, i) => (
@@ -173,7 +173,7 @@ export async function streamHTMLToElement(
  *   </div>
  * )
  * ```
- * 
+ *
  * @param htmlContent - Full HTML string to stream
  * @param onChunk - Callback when chunk is ready
  * @param config - Streaming configuration
@@ -205,7 +205,7 @@ export async function streamHTMLForReact(
 
 /**
  * Check if HTML content is large enough to benefit from streaming
- * 
+ *
  * @param htmlContent - HTML string to check
  * @param threshold - Size threshold in characters (default: 100000 = 100KB)
  * @returns True if streaming is recommended
@@ -217,7 +217,7 @@ export function shouldStreamHTML(htmlContent: string, threshold: number = 100000
 /**
  * Split HTML at safe boundaries (not mid-tag)
  * Ensures chunks don't break HTML structure
- * 
+ *
  * @param htmlContent - HTML string to split
  * @param chunkSize - Approximate size of each chunk
  * @returns Array of HTML chunks split at safe boundaries
@@ -233,7 +233,7 @@ export function splitHTMLSafely(htmlContent: string, chunkSize: number = 50000):
     if (endIndex < htmlContent.length) {
       // Look for closing tag after chunk boundary
       const nextClosingTag = htmlContent.indexOf('>', endIndex)
-      
+
       if (nextClosingTag !== -1 && nextClosingTag - endIndex < 1000) {
         // If closing tag is within 1000 chars, use it
         endIndex = nextClosingTag + 1
@@ -263,7 +263,7 @@ export function splitHTMLSafely(htmlContent: string, chunkSize: number = 50000):
 /**
  * Estimate rendering time for HTML content
  * Helps decide whether to stream or render all at once
- * 
+ *
  * @param htmlContent - HTML string to estimate
  * @returns Estimated render time in milliseconds
  */
@@ -274,4 +274,3 @@ export function estimateRenderTime(htmlContent: string): number {
 
   return Math.round(estimatedMs)
 }
-

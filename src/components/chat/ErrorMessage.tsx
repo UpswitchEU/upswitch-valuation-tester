@@ -51,12 +51,13 @@ export interface ErrorMessageProps {
  */
 function ErrorMessageComponent(props: ErrorMessageProps): React.JSX.Element {
   const { message, error, onRetry, isRetrying = false, details } = props
-  
+
   // Ensure message is a string for type safety
   const messageText: string = typeof message === 'string' ? message : String(message)
-  
+
   const canRetry = error && isRetryable(error) && onRetry
-  const errorCode = error && typeof error === 'object' && 'code' in error ? String(error.code) : undefined
+  const errorCode =
+    error && typeof error === 'object' && 'code' in error ? String(error.code) : undefined
   const isNetworkError = errorCode === 'NETWORK_ERROR'
   const isTimeoutError = errorCode === 'TIMEOUT_ERROR'
 
@@ -101,11 +102,7 @@ function ErrorMessageComponent(props: ErrorMessageProps): React.JSX.Element {
         <div className="flex-1 min-w-0">
           {/* Error Title */}
           <div className={`font-semibold text-sm mb-1 ${colors.title}`}>
-            {isNetworkError
-              ? 'Connection Error'
-              : isTimeoutError
-                ? 'Request Timeout'
-                : 'Error'}
+            {isNetworkError ? 'Connection Error' : isTimeoutError ? 'Request Timeout' : 'Error'}
           </div>
 
           {/* Error Message */}

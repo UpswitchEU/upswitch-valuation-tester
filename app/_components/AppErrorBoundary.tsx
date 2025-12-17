@@ -16,10 +16,10 @@ interface AppErrorBoundaryProps {
 
 /**
  * Shared App Router Error Boundary Component
- * 
+ *
  * Reusable error handler for Next.js App Router error.tsx files.
  * Consolidates common error handling logic to avoid duplication.
- * 
+ *
  * Usage in error.tsx files:
  * ```tsx
  * export default function Error({ error, reset }: ErrorProps) {

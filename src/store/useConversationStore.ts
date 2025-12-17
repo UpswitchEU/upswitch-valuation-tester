@@ -40,10 +40,15 @@ export interface ConversationStore {
   setTypingContext: (context?: string) => void
   clearMessages: () => void
   setMessages: (messages: Message[]) => void
-  
+
   // Initialization state management (prevents endless retries)
-  getInitializationState: (sessionId: string) => { status: 'idle' | 'initializing' | 'ready' | 'failed'; promise?: Promise<void> } | undefined
-  setInitializationState: (sessionId: string, state: { status: 'idle' | 'initializing' | 'ready' | 'failed'; promise?: Promise<void> }) => void
+  getInitializationState: (
+    sessionId: string
+  ) => { status: 'idle' | 'initializing' | 'ready' | 'failed'; promise?: Promise<void> } | undefined
+  setInitializationState: (
+    sessionId: string,
+    state: { status: 'idle' | 'initializing' | 'ready' | 'failed'; promise?: Promise<void> }
+  ) => void
   resetInitializationState: (sessionId: string) => void
   cleanupInitializationStates: (keepSessionIds: string[]) => void
 }
@@ -86,10 +91,13 @@ function pruneMessages(messages: Message[]): Message[] {
 
 // CRITICAL: Atomic initialization state (prevents endless retries)
 // Similar to useValuationSessionStore pattern
-const initializationState = new Map<string, {
-  status: 'idle' | 'initializing' | 'ready' | 'failed'
-  promise?: Promise<void>
-}>()
+const initializationState = new Map<
+  string,
+  {
+    status: 'idle' | 'initializing' | 'ready' | 'failed'
+    promise?: Promise<void>
+  }
+>()
 
 export const useConversationStore = create<ConversationStore>((set, get) => {
   return {
@@ -209,7 +217,7 @@ export const useConversationStore = create<ConversationStore>((set, get) => {
             .slice()
             .reverse()
             .find((msg) => msg.isStreaming && !msg.isComplete)
-          
+
           if (fallbackMessage) {
             storeLogger.debug('Found streaming message via fallback in appendToMessage', {
               requestedId: id,
@@ -229,12 +237,14 @@ export const useConversationStore = create<ConversationStore>((set, get) => {
               }
             }
           }
-          
-          storeLogger.warn('Cannot append to message - message not found', { 
+
+          storeLogger.warn('Cannot append to message - message not found', {
             messageId: id,
             availableMessageIds: state.messages.map((m) => m.id).slice(-5), // Last 5 IDs for debugging
             currentStreamingId: state.currentStreamingMessageId,
-            streamingMessages: state.messages.filter((m) => m.isStreaming).map((m) => ({ id: m.id, isComplete: m.isComplete })),
+            streamingMessages: state.messages
+              .filter((m) => m.isStreaming)
+              .map((m) => ({ id: m.id, isComplete: m.isComplete })),
           })
           return state
         }
@@ -321,7 +331,10 @@ export const useConversationStore = create<ConversationStore>((set, get) => {
     /**
      * Set initialization state for a session
      */
-    setInitializationState: (sessionId: string, state: { status: 'idle' | 'initializing' | 'ready' | 'failed'; promise?: Promise<void> }) => {
+    setInitializationState: (
+      sessionId: string,
+      state: { status: 'idle' | 'initializing' | 'ready' | 'failed'; promise?: Promise<void> }
+    ) => {
       initializationState.set(sessionId, state)
       storeLogger.debug('Initialization state updated', { sessionId, status: state.status })
     },
@@ -339,7 +352,7 @@ export const useConversationStore = create<ConversationStore>((set, get) => {
       initializationState.delete(sessionId)
       storeLogger.debug('Initialization state reset', { sessionId })
     },
-    
+
     /**
      * Cleanup old initialization states (prevents memory leaks)
      * Should be called periodically or when session changes
@@ -354,9 +367,11 @@ export const useConversationStore = create<ConversationStore>((set, get) => {
         }
       }
       if (cleaned > 0) {
-        storeLogger.debug('Cleaned up old initialization states', { cleaned, kept: keepSessionIds.length })
+        storeLogger.debug('Cleaned up old initialization states', {
+          cleaned,
+          kept: keepSessionIds.length,
+        })
       }
     },
   }
 })
-

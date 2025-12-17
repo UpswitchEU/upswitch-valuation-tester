@@ -14,9 +14,9 @@ import BusinessProfileCardV4 from '../../../components/business/BusinessProfileC
 import EditChoiceModal from '../../../components/modals/EditChoiceModal'
 import type { ValuationSession } from '../../../types/valuation'
 import {
-    extractProfileData,
-    extractValuationAmount,
-    mapValuationSessionToBusinessInfo,
+  extractProfileData,
+  extractValuationAmount,
+  mapValuationSessionToBusinessInfo,
 } from '../../../utils/valuationSessionMapper'
 
 export interface RecentReportsSectionProps {

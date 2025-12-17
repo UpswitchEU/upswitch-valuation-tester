@@ -23,10 +23,10 @@ import type { Message } from '../../../types/message'
 import { CorrelationPrefixes, createCorrelationId } from '../../../utils/correlationId'
 import { convertToApplicationError, getErrorMessage } from '../../../utils/errors/errorConverter'
 import {
-    isNetworkError,
-    isRestorationError,
-    isRetryable,
-    isTimeoutError,
+  isNetworkError,
+  isRestorationError,
+  isRetryable,
+  isTimeoutError,
 } from '../../../utils/errors/errorGuards'
 import { chatLogger } from '../../../utils/logger'
 import { globalSessionMetrics } from '../../../utils/metrics/sessionMetrics'
@@ -401,4 +401,3 @@ export const useConversationRestoration = (
     reset,
   }
 }
-

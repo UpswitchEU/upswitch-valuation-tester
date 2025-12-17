@@ -1,6 +1,6 @@
 /**
  * SessionService Cache Update Tests
- * 
+ *
  * Tests for Cursor/ChatGPT-style caching strategy:
  * - Cache update after save (not invalidation)
  * - Stale-while-revalidate
@@ -109,9 +109,7 @@ describe('SessionService - Cache Update Strategy', () => {
       }))
 
       // Mock backend error
-      vi.mocked(backendAPI.getValuationSession).mockRejectedValue(
-        new Error('Backend unavailable')
-      )
+      vi.mocked(backendAPI.getValuationSession).mockRejectedValue(new Error('Backend unavailable'))
 
       // Execute - should NOT throw even if cache update fails
       await expect(
@@ -162,7 +160,7 @@ describe('SessionService - Cache Update Strategy', () => {
       expect(result).toEqual(staleSession)
 
       // Wait for background revalidation (nextTick)
-      await new Promise(resolve => setTimeout(resolve, 10))
+      await new Promise((resolve) => setTimeout(resolve, 10))
 
       // Background revalidation should have been triggered
       // (Note: This is async, so we can't directly assert on it in this test)
@@ -219,13 +217,20 @@ describe('SessionService - Cache Update Strategy', () => {
       }
 
       vi.mocked(globalSessionCache.get).mockReturnValue(staleSession)
-      
+
       // Mock slow backend response
       vi.mocked(backendAPI.getValuationSession).mockImplementation(
-        () => new Promise(resolve => setTimeout(() => resolve({
-          success: true,
-          session: mockSession,
-        }), 1000))
+        () =>
+          new Promise((resolve) =>
+            setTimeout(
+              () =>
+                resolve({
+                  success: true,
+                  session: mockSession,
+                }),
+              1000
+            )
+          )
       )
 
       const start = performance.now()
@@ -238,5 +243,3 @@ describe('SessionService - Cache Update Strategy', () => {
     })
   })
 })
-
-

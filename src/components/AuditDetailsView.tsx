@@ -192,14 +192,14 @@ function formatFieldLabel(field: string): string {
     totalDebt: 'Total Debt',
     cash: 'Cash',
     recurringRevenuePercentage: 'Recurring Revenue %',
-    
+
     // Business profile
     companyName: 'Company Name',
     foundingYear: 'Founding Year',
     numberOfEmployees: 'Employees',
     numberOfOwners: 'Owners',
     sharesForSale: 'Shares for Sale',
-    
+
     // Business type and industry
     businessTypeId: 'Business Type ID',
     businessType: 'Business Type',
@@ -207,7 +207,13 @@ function formatFieldLabel(field: string): string {
     businessModel: 'Business Model',
     countryCode: 'Country',
   }
-  return labels[field] || field.replace(/([A-Z])/g, ' $1').replace(/^./, (str) => str.toUpperCase()).trim()
+  return (
+    labels[field] ||
+    field
+      .replace(/([A-Z])/g, ' $1')
+      .replace(/^./, (str) => str.toUpperCase())
+      .trim()
+  )
 }
 
 /**
@@ -215,32 +221,32 @@ function formatFieldLabel(field: string): string {
  */
 function formatValue(value: any, field: string, countryCode: string): string {
   if (value === null || value === undefined) return 'N/A'
-  
+
   // Numeric fields (currency)
   if (['revenue', 'ebitda', 'netIncome', 'totalAssets', 'totalDebt', 'cash'].includes(field)) {
     return formatCurrency(value)
   }
-  
+
   // Percentage fields
   if (field === 'recurringRevenuePercentage') {
     return `${(value * 100).toFixed(1)}%`
   }
-  
+
   // Year field
   if (field === 'foundingYear') {
     return value.toString()
   }
-  
+
   // Count fields
   if (['numberOfEmployees', 'numberOfOwners'].includes(field)) {
     return value.toLocaleString()
   }
-  
+
   // Percentage fields (0-100)
   if (field === 'sharesForSale') {
     return `${value}%`
   }
-  
+
   // Default string representation
   return String(value)
 }
@@ -253,7 +259,11 @@ function renderFieldChanges(changes: any, countryCode: string) {
   // Get all fields that have changes (excluding summary fields)
   const summaryFields = ['totalChanges', 'significantChanges']
   const changedFields = Object.keys(changes).filter(
-    (key) => !summaryFields.includes(key) && changes[key] && typeof changes[key] === 'object' && 'from' in changes[key]
+    (key) =>
+      !summaryFields.includes(key) &&
+      changes[key] &&
+      typeof changes[key] === 'object' &&
+      'from' in changes[key]
   )
 
   if (changedFields.length === 0) {
@@ -324,9 +334,7 @@ function FieldChangeRow({ field, change, countryCode, isSignificant }: FieldChan
   return (
     <div
       className={`p-3 rounded-lg border ${
-        isSignificant
-          ? 'bg-amber-500/5 border-amber-500/20'
-          : 'bg-zinc-900 border-zinc-700'
+        isSignificant ? 'bg-amber-500/5 border-amber-500/20' : 'bg-zinc-900 border-zinc-700'
       }`}
     >
       <div className="flex items-start justify-between gap-4">
@@ -362,4 +370,3 @@ function FieldChangeRow({ field, change, countryCode, isSignificant }: FieldChan
     </div>
   )
 }
-

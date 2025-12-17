@@ -1,8 +1,8 @@
 /**
  * Service Worker Registration
- * 
+ *
  * Handles service worker registration, updates, and lifecycle management.
- * 
+ *
  * @module utils/serviceWorkerRegistration
  */
 
@@ -32,7 +32,7 @@ export interface ServiceWorkerConfig {
 
 /**
  * Register service worker
- * 
+ *
  * Usage:
  * ```tsx
  * // In app initialization (e.g., _app.tsx or main.tsx)
@@ -57,10 +57,12 @@ export async function registerServiceWorker(config: ServiceWorkerConfig = {}): P
     process.env.NODE_ENV !== 'production'
   ) {
     generalLogger.debug('[ServiceWorker] Registration skipped', {
-      reason: 
-        typeof window === 'undefined' ? 'SSR' :
-        !('serviceWorker' in navigator) ? 'Not supported' :
-        'Not production',
+      reason:
+        typeof window === 'undefined'
+          ? 'SSR'
+          : !('serviceWorker' in navigator)
+            ? 'Not supported'
+            : 'Not production',
     })
     return
   }
@@ -102,13 +104,16 @@ export async function registerServiceWorker(config: ServiceWorkerConfig = {}): P
     })
 
     // Check for updates every hour
-    setInterval(() => {
-      registration.update().catch((error) => {
-        generalLogger.error('[ServiceWorker] Update check failed', {
-          error: error.message,
+    setInterval(
+      () => {
+        registration.update().catch((error) => {
+          generalLogger.error('[ServiceWorker] Update check failed', {
+            error: error.message,
+          })
         })
-      })
-    }, 60 * 60 * 1000)
+      },
+      60 * 60 * 1000
+    )
   } catch (error) {
     const err = error instanceof Error ? error : new Error(String(error))
 
@@ -196,4 +201,3 @@ export async function requestBackgroundSync(tag: string = 'sync-valuation-data')
     })
   }
 }
-

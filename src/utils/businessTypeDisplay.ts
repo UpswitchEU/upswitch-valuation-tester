@@ -1,6 +1,6 @@
 /**
  * Business Type Display Utilities
- * 
+ *
  * Helper functions for displaying business type information (icons, titles, etc.)
  * Adapted from upswitch-frontend for valuation-tester
  */
@@ -18,9 +18,7 @@ export function getBusinessTypeIcon(businessTypeId: string | undefined): string 
   }
 
   // Try to find in fallback first (synchronous)
-  const fallbackType = BUSINESS_TYPES_FALLBACK.find(
-    (bt) => bt.value === businessTypeId
-  )
+  const fallbackType = BUSINESS_TYPES_FALLBACK.find((bt) => bt.value === businessTypeId)
   if (fallbackType) {
     // Extract emoji from label if icon not directly available
     const emojiMatch = fallbackType.label.match(/^(\p{Emoji}+)/u)
@@ -71,9 +69,7 @@ export function getBusinessTypeTitle(businessTypeId: string | undefined): string
   }
 
   // Try to find in fallback first (synchronous)
-  const fallbackType = BUSINESS_TYPES_FALLBACK.find(
-    (bt) => bt.value === businessTypeId
-  )
+  const fallbackType = BUSINESS_TYPES_FALLBACK.find((bt) => bt.value === businessTypeId)
   if (fallbackType) {
     // Remove emoji from label for title
     return fallbackType.label.replace(/^(\p{Emoji}+)\s*/u, '').trim() || fallbackType.label
@@ -166,10 +162,8 @@ export function getBusinessTypeInfo(businessTypeId: string | undefined) {
   }
 
   // Try to find in fallback first
-  const fallbackType = BUSINESS_TYPES_FALLBACK.find(
-    (bt) => bt.value === businessTypeId
-  )
-  
+  const fallbackType = BUSINESS_TYPES_FALLBACK.find((bt) => bt.value === businessTypeId)
+
   let icon = '🏢'
   let title = businessTypeId
     .split('_')
@@ -224,4 +218,3 @@ export function getBusinessTypeInfo(businessTypeId: string | undefined) {
     description: undefined,
   }
 }
-

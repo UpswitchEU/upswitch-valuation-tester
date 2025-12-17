@@ -264,10 +264,12 @@ export class RegistryService {
       const timeoutId = setTimeout(() => controller.abort(), this.timeout)
 
       // Use GET endpoint: /api/v1/registry/company/{company_id}/financials?country_code={country}&years=3
-      const url = new URL(`${this.baseURL}/api/v1/registry/company/${encodeURIComponent(companyId)}/financials`)
+      const url = new URL(
+        `${this.baseURL}/api/v1/registry/company/${encodeURIComponent(companyId)}/financials`
+      )
       url.searchParams.set('country_code', country)
       url.searchParams.set('years', '3')
-      
+
       const response = await fetch(url.toString(), {
         method: 'GET',
         headers: {

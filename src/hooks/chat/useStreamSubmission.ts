@@ -277,7 +277,7 @@ export const useStreamSubmission = ({
       } finally {
         // CRITICAL FIX: Clear timeout in finally block to ensure it's always cleared
         clearTimeout(thinkingTimeout)
-        
+
         // CRITICAL FIX: ALWAYS release lock when done (success or error)
         isRequestInProgressRef.current = false
         chatLogger.debug('Request lock released', {

@@ -24,14 +24,23 @@ const logger = pino({
     ? {
         write: (o: any) => {
           // Extract log level and message
-          const level = o.level === 10 ? 'DEBUG' : o.level === 20 ? 'INFO' : o.level === 30 ? 'WARN' : o.level === 40 ? 'ERROR' : 'INFO'
+          const level =
+            o.level === 10
+              ? 'DEBUG'
+              : o.level === 20
+                ? 'INFO'
+                : o.level === 30
+                  ? 'WARN'
+                  : o.level === 40
+                    ? 'ERROR'
+                    : 'INFO'
           const msg = o.msg || ''
           const context = o.context || ''
-          
+
           // Build formatted message
           const prefix = context ? `[${level}] [${context}]` : `[${level}]`
           const logMessage = `${prefix} ${msg}`
-          
+
           // Extract data (everything except standard pino fields)
           const data: any = {}
           Object.keys(o).forEach((key) => {
@@ -40,7 +49,7 @@ const logger = pino({
             }
           })
           const hasData = Object.keys(data).length > 0
-          
+
           // Use appropriate console method based on level
           if (o.level >= 50) {
             // ERROR

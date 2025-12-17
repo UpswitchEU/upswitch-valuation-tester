@@ -29,8 +29,8 @@ import { useConversationMetrics } from '../hooks/useConversationMetrics'
 import { useTypingAnimation } from '../hooks/useTypingAnimation'
 import { useConversationStore } from '../store/useConversationStore'
 import type { Message } from '../types/message'
-import { convertToApplicationError, getErrorMessage } from '../utils/errors/errorConverter'
 import { is429RateLimit } from '../utils/errorDetection'
+import { convertToApplicationError, getErrorMessage } from '../utils/errors/errorConverter'
 import { isNetworkError, isRateLimitError, isTimeoutError } from '../utils/errors/errorGuards'
 import { chatLogger } from '../utils/logger'
 import { ChatInputForm, MessagesList } from './chat'
@@ -40,7 +40,7 @@ export type {
   CalculateOptionData,
   CollectedData,
   StreamingChatProps,
-  ValuationPreviewData
+  ValuationPreviewData,
 } from './StreamingChat.types'
 
 export const StreamingChat: React.FC<import('./StreamingChat.types').StreamingChatProps> = ({
@@ -126,7 +126,7 @@ export const StreamingChat: React.FC<import('./StreamingChat.types').StreamingCh
     }),
     shallow
   )
-  
+
   // Local state for input and other UI state
   const [input, setInput] = useState('')
   const [collectedData, setCollectedData] = useState<Record<string, any>>({})
@@ -138,12 +138,7 @@ export const StreamingChat: React.FC<import('./StreamingChat.types').StreamingCh
   const hasPrefilledRef = useRef(false)
   useEffect(() => {
     // Only prefill once per initialMessage change, and only if input is empty
-    if (
-      initialMessage &&
-      initialMessage.trim() &&
-      !input.trim() &&
-      !hasPrefilledRef.current
-    ) {
+    if (initialMessage && initialMessage.trim() && !input.trim() && !hasPrefilledRef.current) {
       chatLogger.debug('Prefilling input field with initialMessage', {
         sessionId,
         initialMessage: initialMessage.substring(0, 50),
@@ -165,7 +160,7 @@ export const StreamingChat: React.FC<import('./StreamingChat.types').StreamingCh
   // Get stable references to store actions
   const storeSetMessages = useConversationStore((state) => state.setMessages)
   const storeAddMessage = useConversationStore((state) => state.addMessage)
-  
+
   // Wrapper to match expected signature for useStreamingCoordinator
   const setMessages = useCallback(
     (newMessages: Message[] | ((prev: Message[]) => Message[])) => {
@@ -179,7 +174,7 @@ export const StreamingChat: React.FC<import('./StreamingChat.types').StreamingCh
     },
     [storeSetMessages]
   )
-  
+
   // Wrapper for addMessage to match useConversationInitializer signature
   const addMessageWrapper = useCallback(
     (message: Omit<Message, 'id' | 'timestamp'>) => {
@@ -188,11 +183,13 @@ export const StreamingChat: React.FC<import('./StreamingChat.types').StreamingCh
       const newMessage = store.messages.find((m) => m.id === messageId)
       return {
         updatedMessages: store.messages,
-        newMessage: newMessage || ({
-          ...message,
-          id: messageId,
-          timestamp: new Date(),
-        } as Message),
+        newMessage:
+          newMessage ||
+          ({
+            ...message,
+            id: messageId,
+            timestamp: new Date(),
+          } as Message),
       }
     },
     [storeAddMessage]
@@ -216,7 +213,7 @@ export const StreamingChat: React.FC<import('./StreamingChat.types').StreamingCh
       // Simple wrapper: use store's appendToMessage or updateMessage
       const store = useConversationStore.getState()
       let streamingId = store.currentStreamingMessageId
-      
+
       // CRITICAL FIX: If currentStreamingMessageId is not set (race condition),
       // find the last streaming message as fallback
       if (!streamingId) {
@@ -228,7 +225,7 @@ export const StreamingChat: React.FC<import('./StreamingChat.types').StreamingCh
           streamingId = lastStreamingMessage.id
         }
       }
-      
+
       if (streamingId) {
         if (isComplete) {
           store.updateMessage(streamingId, {
@@ -364,20 +361,13 @@ export const StreamingChat: React.FC<import('./StreamingChat.types').StreamingCh
             error_code: appError.code,
             error_details: errorDetailsText,
             original_input: inputToSubmit.trim(),
-            can_retry: isNetworkError(appError) || isTimeoutError(appError) || isRateLimitError(appError),
+            can_retry:
+              isNetworkError(appError) || isTimeoutError(appError) || isRateLimitError(appError),
           },
         })
       }
     },
-    [
-      input,
-      setInput,
-      setStreaming,
-      streamingCoordinator,
-      addMessage,
-      sessionId,
-      pythonSessionId,
-    ]
+    [input, setInput, setStreaming, streamingCoordinator, addMessage, sessionId, pythonSessionId]
   )
 
   // Extract suggestion handlers - simplified version
@@ -465,10 +455,7 @@ export const StreamingChat: React.FC<import('./StreamingChat.types').StreamingCh
     )
     const latestCompleted = completedMessages[completedMessages.length - 1]
 
-    if (
-      latestCompleted &&
-      latestCompleted.id !== lastCompletedMessageIdRef.current
-    ) {
+    if (latestCompleted && latestCompleted.id !== lastCompletedMessageIdRef.current) {
       lastCompletedMessageIdRef.current = latestCompleted.id
       onMessageComplete(latestCompleted)
       chatLogger.debug('Message completion callback invoked', {
@@ -635,7 +622,7 @@ export const StreamingChat: React.FC<import('./StreamingChat.types').StreamingCh
       try {
         // Retry the submission
         await submitStream(originalInput)
-        
+
         // Remove the error message on success
         const updatedMessages = messages.filter((m) => m.id !== messageId)
         store.setMessages(updatedMessages)

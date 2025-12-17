@@ -10,9 +10,9 @@
  * @module services/chat/handlers/ui/UIHandlers
  */
 
+import type { ValuationRequest } from '../../../../types/valuation'
 import { chatLogger } from '../../../../utils/logger'
 import { StreamEventHandlerCallbacks } from '../../StreamEventHandler'
-import type { ValuationRequest } from '../../../../types/valuation'
 
 export class UIHandlers {
   private callbacks: StreamEventHandlerCallbacks
@@ -49,48 +49,48 @@ export class UIHandlers {
     // CRITICAL: This must include ALL fields that can be collected in conversational flow
     const fieldMap: Record<string, string> = {
       // Basic company information
-      'company_name': 'company_name',
-      'business_type': 'business_type',
-      'business_type_id': 'business_type_id',
-      'country_code': 'country_code',
-      'founding_year': 'founding_year',
-      'industry': 'industry',
-      'business_model': 'business_model',
-      
+      company_name: 'company_name',
+      business_type: 'business_type',
+      business_type_id: 'business_type_id',
+      country_code: 'country_code',
+      founding_year: 'founding_year',
+      industry: 'industry',
+      business_model: 'business_model',
+
       // Business structure and ownership
-      'business_structure': 'business_type', // Maps to business_type (company/sole_trader)
-      'shares_for_sale': 'shares_for_sale',
-      'number_of_owners': 'number_of_owners',
-      'number_of_employees': 'number_of_employees',
-      'employee_count': 'number_of_employees', // Alias
-      
+      business_structure: 'business_type', // Maps to business_type (company/sole_trader)
+      shares_for_sale: 'shares_for_sale',
+      number_of_owners: 'number_of_owners',
+      number_of_employees: 'number_of_employees',
+      employee_count: 'number_of_employees', // Alias
+
       // Financial data (current year)
-      'revenue': 'current_year_data.revenue',
-      'ebitda': 'current_year_data.ebitda',
-      'net_income': 'current_year_data.net_income',
-      'total_assets': 'current_year_data.total_assets',
-      'total_debt': 'current_year_data.total_debt',
-      'cash': 'current_year_data.cash',
-      'current_year': 'current_year_data.year',
-      
+      revenue: 'current_year_data.revenue',
+      ebitda: 'current_year_data.ebitda',
+      net_income: 'current_year_data.net_income',
+      total_assets: 'current_year_data.total_assets',
+      total_debt: 'current_year_data.total_debt',
+      cash: 'current_year_data.cash',
+      current_year: 'current_year_data.year',
+
       // Historical data
-      'provide_historical_data': 'provide_historical_data', // Boolean flag
-      'historical_years_data': 'historical_years_data', // Array of year data
-      
+      provide_historical_data: 'provide_historical_data', // Boolean flag
+      historical_years_data: 'historical_years_data', // Array of year data
+
       // Additional financial metrics
-      'recurring_revenue_percentage': 'recurring_revenue_percentage',
-      
+      recurring_revenue_percentage: 'recurring_revenue_percentage',
+
       // Owner profiling (if collected)
-      'owner_role': 'owner_role',
-      'owner_hours': 'owner_hours',
-      'delegation_capability': 'delegation_capability',
-      'succession_plan': 'succession_plan',
-      
+      owner_role: 'owner_role',
+      owner_hours: 'owner_hours',
+      delegation_capability: 'delegation_capability',
+      succession_plan: 'succession_plan',
+
       // Additional business context
-      'business_description': 'business_description',
-      'business_highlights': 'business_highlights',
-      'reason_for_selling': 'reason_for_selling',
-      'city': 'city',
+      business_description: 'business_description',
+      business_highlights: 'business_highlights',
+      reason_for_selling: 'reason_for_selling',
+      city: 'city',
     }
 
     const targetPath = fieldMap[field] || field
@@ -117,7 +117,7 @@ export class UIHandlers {
 
     // Build nested update object
     const sessionUpdate: Partial<ValuationRequest> = {}
-    
+
     if (targetPath.includes('.')) {
       const parts = targetPath.split('.')
       if (parts.length !== 2) {
@@ -130,7 +130,7 @@ export class UIHandlers {
       }
 
       const [parent, child] = parts
-      
+
       // CRITICAL FIX: For nested objects like current_year_data, we need to merge
       // not overwrite, so we preserve existing data
       const existingParent = sessionUpdate[parent as keyof ValuationRequest] as any
@@ -208,8 +208,8 @@ export class UIHandlers {
             sessionUpdate.current_year_data = {
               ...sessionUpdate.current_year_data,
               year: metadata.year,
-      } as any
-    }
+            } as any
+          }
           chatLogger.debug('✅ Saved year from metadata', {
             year: metadata.year,
           })
@@ -219,8 +219,8 @@ export class UIHandlers {
       // Handle any other metadata fields that map directly to ValuationRequest
       // This is a catch-all for fields that might have metadata we want to save
       const metadataFieldMap: Record<string, keyof ValuationRequest> = {
-        'industry_mapping': 'industry',
-        'category': 'business_type',
+        industry_mapping: 'industry',
+        category: 'business_type',
       }
 
       for (const [metaKey, requestKey] of Object.entries(metadataFieldMap)) {
@@ -295,17 +295,23 @@ export class UIHandlers {
         chatLogger.debug('[Chat] No onDataCollected callback, skipping auto-save', { field })
         return
       }
-      
+
       // CRITICAL: Handle all value types including empty strings, zero, false
       // Empty strings are valid for some fields (e.g., business_description can be empty)
       // Zero is valid for numeric fields (e.g., number_of_employees can be 0)
       // False is valid for boolean fields (e.g., provide_historical_data can be false)
       const isValidValue = value !== undefined && value !== null && value !== ''
-      
+
       // Exception: Allow empty strings for text fields that might legitimately be empty
-      const textFields = ['business_description', 'business_highlights', 'reason_for_selling', 'city']
-      const isEmptyStringAllowed = typeof value === 'string' && value === '' && textFields.includes(field)
-      
+      const textFields = [
+        'business_description',
+        'business_highlights',
+        'reason_for_selling',
+        'city',
+      ]
+      const isEmptyStringAllowed =
+        typeof value === 'string' && value === '' && textFields.includes(field)
+
       if (field && (isValidValue || isEmptyStringAllowed)) {
         // Map conversational field names to ValuationRequest structure
         const sessionDataUpdate = this.mapConversationalFieldToSessionData(

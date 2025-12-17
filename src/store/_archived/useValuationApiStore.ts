@@ -1,6 +1,6 @@
 /**
  * Valuation API Store
- * 
+ *
  * Manages API call state for valuation calculations.
  * Used by ConversationalLayout and manual flows.
  */
@@ -20,7 +20,7 @@ interface ValuationApiStore {
   // Calculation state
   isCalculating: boolean
   error: string | null
-  
+
   // Actions
   calculateValuation: (request: ValuationRequest) => Promise<ValuationResponse | null>
   setCalculating: (isCalculating: boolean) => void
@@ -33,7 +33,7 @@ export const useValuationApiStore = create<ValuationApiStore>((set, get) => ({
   // Initial state
   isCalculating: false,
   error: null,
-  
+
   // Calculate valuation
   calculateValuation: async (request: ValuationRequest): Promise<ValuationResponse | null> => {
     // CRITICAL: Use functional update to atomically check and set isCalculating
@@ -54,7 +54,7 @@ export const useValuationApiStore = create<ValuationApiStore>((set, get) => ({
       shouldProceed = true
       return { ...state, isCalculating: true, error: null }
     })
-    
+
     // This should never be false, but check anyway for safety
     if (!shouldProceed) {
       storeLogger.warn('Unexpected state: shouldProceed is false', {
@@ -62,28 +62,28 @@ export const useValuationApiStore = create<ValuationApiStore>((set, get) => ({
       })
       return null
     }
-    
+
     try {
       storeLogger.info('Calculating valuation', {
         companyName: request.company_name,
         industry: request.industry,
       })
-      
+
       const response = await backendAPI.calculateValuation(request)
-      
+
       set({ isCalculating: false })
-      
+
       storeLogger.info('Valuation calculated successfully', {
         valuationId: response?.valuation_id,
       })
-      
+
       return response
     } catch (error) {
       const appError = convertToApplicationError(error, {
         companyName: request.company_name,
         industry: request.industry,
       })
-      
+
       // Log with specific error type
       if (isValidationError(appError)) {
         storeLogger.error('Valuation calculation failed - validation error', {
@@ -110,18 +110,18 @@ export const useValuationApiStore = create<ValuationApiStore>((set, get) => ({
           context: (appError as any).context,
         })
       }
-      
+
       const errorMessage = getErrorMessage(appError)
-      
-      set({ 
+
+      set({
         isCalculating: false,
         error: errorMessage,
       })
-      
+
       return null
     }
   },
-  
+
   // Set calculating state (for immediate UI feedback)
   // Uses functional update to ensure atomic state changes
   setCalculating: (isCalculating: boolean) => {
@@ -134,7 +134,7 @@ export const useValuationApiStore = create<ValuationApiStore>((set, get) => ({
       return { ...state, isCalculating }
     })
   },
-  
+
   // Atomic check-and-set: returns true if state was set, false if already calculating
   // Use this before calling calculateValuation to ensure immediate UI feedback
   trySetCalculating: () => {
@@ -148,7 +148,7 @@ export const useValuationApiStore = create<ValuationApiStore>((set, get) => ({
     })
     return wasSet
   },
-  
+
   // Clear error
   clearError: () => {
     set({ error: null })

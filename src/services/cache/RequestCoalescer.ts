@@ -1,15 +1,15 @@
 /**
  * Request Coalescer
- * 
+ *
  * Batches rapid successive API calls into a single request.
  * Useful for autosave, search-as-you-type, etc.
- * 
+ *
  * Benefits:
  * - Reduces network calls for rapid inputs
  * - Batches multiple changes into single save
  * - Configurable delay
  * - Promise-based API
- * 
+ *
  * @module services/cache/RequestCoalescer
  */
 
@@ -33,17 +33,13 @@ export class RequestCoalescer {
    * Coalesce requests by key
    * Waits for specified delay, then executes only the last request
    * All callers get the same result
-   * 
+   *
    * @param key - Unique key for the request group
    * @param fn - Function that returns the promise to execute
    * @param delay - Delay in milliseconds to wait for more requests (default: 100ms)
    * @returns Promise with the result
    */
-  async coalesce<T>(
-    key: string,
-    fn: () => Promise<T>,
-    delay: number = 100
-  ): Promise<T> {
+  async coalesce<T>(key: string, fn: () => Promise<T>, delay: number = 100): Promise<T> {
     return new Promise<T>((resolve, reject) => {
       // Add this request to the pending queue
       const request: CoalescedRequest<T> = {
@@ -135,9 +131,7 @@ export class RequestCoalescer {
 
     const requests = this.pendingRequests.get(key)
     if (requests) {
-      requests.forEach((req) =>
-        req.reject(new Error('Request cancelled'))
-      )
+      requests.forEach((req) => req.reject(new Error('Request cancelled')))
       this.pendingRequests.delete(key)
     }
 
@@ -159,9 +153,7 @@ export class RequestCoalescer {
         clearTimeout(timeout)
       }
 
-      requests.forEach((req) =>
-        req.reject(new Error('All requests cancelled'))
-      )
+      requests.forEach((req) => req.reject(new Error('All requests cancelled')))
 
       totalCancelled += requests.length
     }
@@ -257,4 +249,3 @@ if (typeof window !== 'undefined') {
     requestCoalescer.flushAll()
   })
 }
-

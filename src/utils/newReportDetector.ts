@@ -44,7 +44,7 @@ export function isNewReport(reportId: string): boolean {
   try {
     // Check unified session store
     const session = useSessionStore.getState().session
-    
+
     if (session?.reportId === reportId) {
       detectorLogger.debug('Report exists in session store', { reportId })
       return false // Not new - already in store

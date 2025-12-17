@@ -155,7 +155,7 @@ export class StreamingChatService {
       if (!response.ok) {
         const errorText = await response.text()
         chatLogger.error('SSE request failed', { status: response.status, errorText })
-        
+
         // CRITICAL FIX: Handle rate limit errors specifically
         if (response.status === 429) {
           let retryAfter = 3600 // Default: 1 hour
@@ -165,14 +165,14 @@ export class StreamingChatService {
           } catch {
             // If parsing fails, use default
           }
-          
+
           const { RateLimitError } = await import('../../utils/errors/ApplicationErrors')
           throw new RateLimitError(
             'Too many conversation requests. Please wait before trying again.',
             { retryAfter, status: 429 }
           )
         }
-        
+
         throw new Error(`HTTP error! status: ${response.status}, body: ${errorText}`)
       }
 

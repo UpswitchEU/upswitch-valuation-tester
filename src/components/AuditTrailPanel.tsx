@@ -124,7 +124,8 @@ export function AuditTrailPanel({ reportId, className = '' }: AuditTrailPanelPro
       <div className="p-6 border-b border-gray-200">
         <h2 className="text-2xl font-semibold text-gray-900">Version History</h2>
         <p className="text-sm text-gray-600 mt-1">
-          {versions.length} version{versions.length !== 1 ? 's' : ''} • Track changes and compare valuations
+          {versions.length} version{versions.length !== 1 ? 's' : ''} • Track changes and compare
+          valuations
         </p>
       </div>
 
@@ -141,4 +142,3 @@ export function AuditTrailPanel({ reportId, className = '' }: AuditTrailPanelPro
     </div>
   )
 }
-

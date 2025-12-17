@@ -26,7 +26,7 @@ interface ManualResultsStore {
   // Calculation state
   isCalculating: boolean
   error: string | null
-  
+
   // Progress tracking (for long calculations)
   calculationProgress: number
 
@@ -132,7 +132,7 @@ export const useManualResultsStore = create<ManualResultsStore>((set, get) => ({
 
       if (currentResult) {
         const updatedResult = { ...currentResult, html_report: html }
-        
+
         storeLogger.info('[Manual] HTML report updated in existing result', {
           htmlLength: html.length,
         })
@@ -163,7 +163,7 @@ export const useManualResultsStore = create<ManualResultsStore>((set, get) => ({
 
       if (currentResult) {
         const updatedResult = { ...currentResult, info_tab_html: html }
-        
+
         storeLogger.info('[Manual] Info tab HTML updated in existing result', {
           htmlLength: html.length,
         })
@@ -240,7 +240,7 @@ export const useManualResultsStore = create<ManualResultsStore>((set, get) => ({
   // CRITICAL: This provides < 16ms UI response time (instant button disable)
   trySetCalculating: () => {
     let wasSet = false
-    
+
     set((state) => {
       if (state.isCalculating) {
         storeLogger.debug('[Manual] Already calculating, preventing duplicate submission')
@@ -306,14 +306,11 @@ export const useManualResultsStore = create<ManualResultsStore>((set, get) => ({
       const { valuationService } = await import('../../services')
 
       // Calculate with progress callback
-      const result = await valuationService.calculateValuation(
-        request,
-        (progress, message) => {
-          // Update progress in real-time
-          setCalculationProgress(progress)
-          storeLogger.debug('[Manual] Calculation progress', { progress, message })
-        }
-      )
+      const result = await valuationService.calculateValuation(request, (progress, message) => {
+        // Update progress in real-time
+        setCalculationProgress(progress)
+        storeLogger.debug('[Manual] Calculation progress', { progress, message })
+      })
 
       // Step 3: Atomic state update
       set((state) => ({
@@ -356,4 +353,3 @@ export const useManualResultsStore = create<ManualResultsStore>((set, get) => ({
     }
   },
 }))
-

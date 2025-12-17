@@ -122,13 +122,21 @@ class ReportServiceImpl implements ReportService {
         // Backend extracts company_name from session_data for convenience
         const enrichedSessionData = {
           ...sessionData,
-          ...(report.company_name && !sessionData.company_name ? { company_name: report.company_name } : {}),
+          ...(report.company_name && !sessionData.company_name
+            ? { company_name: report.company_name }
+            : {}),
         }
 
         return {
           reportId: report.id || report.report_id,
-          currentView: report.flow_type === 'ai-guided' || report.current_view === 'ai-guided' ? 'conversational' : 'manual',
-          dataSource: report.flow_type === 'ai-guided' || report.data_source === 'ai-guided' ? 'conversational' : 'manual',
+          currentView:
+            report.flow_type === 'ai-guided' || report.current_view === 'ai-guided'
+              ? 'conversational'
+              : 'manual',
+          dataSource:
+            report.flow_type === 'ai-guided' || report.data_source === 'ai-guided'
+              ? 'conversational'
+              : 'manual',
           name: report.name || undefined, // Custom valuation name
           createdAt: report.created_at ? new Date(report.created_at) : new Date(),
           updatedAt: report.updated_at ? new Date(report.updated_at) : new Date(),
@@ -300,7 +308,7 @@ class ReportServiceImpl implements ReportService {
         try {
           const { globalSessionCache } = await import('../../utils/sessionCacheManager')
           globalSessionCache.remove(reportId)
-          reportLogger.info('Cache cleared for report (treating as deleted)', { 
+          reportLogger.info('Cache cleared for report (treating as deleted)', {
             reportId,
             status: response.status,
             statusText: response.statusText,
@@ -311,11 +319,13 @@ class ReportServiceImpl implements ReportService {
             error: cacheError instanceof Error ? cacheError.message : String(cacheError),
           })
         }
-        
+
         if (response.status === 404) {
           // ✅ CRITICAL: Even if backend says 404, treat as success (idempotent deletion)
           // This handles race conditions where report was deleted but cache still exists
-          reportLogger.warn('Report not found (already deleted?) - treating as success', { reportId })
+          reportLogger.warn('Report not found (already deleted?) - treating as success', {
+            reportId,
+          })
           return // Gracefully handle already deleted
         }
         if (response.status === 403) {
@@ -324,10 +334,13 @@ class ReportServiceImpl implements ReportService {
         if (response.status === 500) {
           // ✅ FIX: Even on 500, clear cache and treat as success (idempotent)
           // Backend may have partially deleted or had errors, but cache should be cleared
-          reportLogger.warn('Backend error during deletion (500) - cache cleared, treating as success', { 
-            reportId,
-            note: 'Report may have been partially deleted, cache cleared to prevent reappearance',
-          })
+          reportLogger.warn(
+            'Backend error during deletion (500) - cache cleared, treating as success',
+            {
+              reportId,
+              note: 'Report may have been partially deleted, cache cleared to prevent reappearance',
+            }
+          )
           return // Treat as success - cache is cleared
         }
         throw new Error(`Failed to delete report: ${response.statusText}`)

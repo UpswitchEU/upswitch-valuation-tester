@@ -1,10 +1,10 @@
 /**
  * Versions Skeleton
- * 
+ *
  * Loading skeleton for version history - MATCHES ACTUAL VERSION TIMELINE.
  * Shows while versions are being loaded from backend.
  * Matches: VersionTimeline component with vertical connector and cards
- * 
+ *
  * @module components/skeletons/VersionsSkeleton
  */
 
@@ -18,10 +18,8 @@ export function VersionsSkeleton() {
         {[1, 2, 3].map((version, index) => (
           <div key={version} className="relative pb-8">
             {/* Vertical connector line */}
-            {index < 2 && (
-              <div className="absolute left-5 top-11 bottom-0 w-0.5 bg-gray-200" />
-            )}
-            
+            {index < 2 && <div className="absolute left-5 top-11 bottom-0 w-0.5 bg-gray-200" />}
+
             {/* Version card */}
             <div className="relative bg-white border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
               {/* Version header */}
@@ -32,7 +30,7 @@ export function VersionsSkeleton() {
                     <div className="h-5 w-5 bg-blue-200 rounded" />
                   </div>
                 </div>
-                
+
                 {/* Version info */}
                 <div className="flex-1 space-y-2">
                   <div className="flex items-center justify-between">
@@ -74,4 +72,3 @@ export function VersionsSkeleton() {
     </div>
   )
 }
-

@@ -6,8 +6,8 @@
  */
 
 import { useCallback, useState } from 'react'
-import { chatLogger } from '../utils/logger'
 import type { ConversationMetrics } from '../types/conversationMetrics'
+import { chatLogger } from '../utils/logger'
 
 // Re-export types for convenience
 export interface ModelPerformanceMetrics {

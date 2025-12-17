@@ -17,12 +17,7 @@
  * @module services/report/ReportService
  */
 
-import {
-    ApplicationError,
-    NetworkError,
-    NotFoundError,
-    ValidationError,
-} from '../../types/errors'
+import { ApplicationError, NetworkError, NotFoundError, ValidationError } from '../../types/errors'
 import type { ValuationResponse } from '../../types/valuation'
 import { getErrorMessage } from '../../utils/errors/errorConverter'
 import { createContextLogger } from '../../utils/logger'
@@ -71,20 +66,24 @@ export class ReportService {
   async saveReportAssets(
     reportId: string,
     assets: {
-      sessionData?: any  // ✅ NEW: Input data (form fields or collected data)
+      sessionData?: any // ✅ NEW: Input data (form fields or collected data)
       valuationResult?: ValuationResponse
       htmlReport?: string
       infoTabHtml?: string
+      name?: string // Custom valuation name (e.g., "Amadeus report")
     }
   ): Promise<void> {
     // ✅ FIX: Check if there's already a pending save for this reportId
     // If so, wait for it to complete to prevent race conditions, then proceed with new save
     const existingSave = pendingAssetSaves.get(reportId)
     if (existingSave) {
-      logger.info('[ReportService] Waiting for pending asset save to complete before saving new assets', { 
-        reportId,
-        note: 'Queueing save to prevent data loss - will save new assets after existing save completes',
-      })
+      logger.info(
+        '[ReportService] Waiting for pending asset save to complete before saving new assets',
+        {
+          reportId,
+          note: 'Queueing save to prevent data loss - will save new assets after existing save completes',
+        }
+      )
       await existingSave
       // ✅ FIX: Continue to save new assets after existing save completes (removed early return)
       // This ensures all saves are processed sequentially without data loss
@@ -140,19 +139,21 @@ export class ReportService {
       const { SessionAPI } = await import('../api/session/SessionAPI')
       const sessionAPI = new SessionAPI()
 
-      console.log('[ReportService] DIAGNOSTIC: About to call sessionAPI.saveValuationResult', { reportId })
+      console.log('[ReportService] DIAGNOSTIC: About to call sessionAPI.saveValuationResult', {
+        reportId,
+      })
 
       // Save complete package to backend in single API call
       const putResultStartTime = performance.now()
       await sessionAPI.saveValuationResult(reportId, {
-        sessionData: assets.sessionData,  // ✅ NEW: Send input data
+        sessionData: assets.sessionData, // ✅ NEW: Send input data
         valuationResult: assets.valuationResult,
         htmlReport: assets.htmlReport,
         infoTabHtml: assets.infoTabHtml,
         name: assets.name, // ✅ NEW: Send custom valuation name
       })
       const putResultDuration = performance.now() - putResultStartTime
-      
+
       console.log('[ReportService] DIAGNOSTIC: PUT /result completed successfully', {
         reportId,
         timestamp: new Date().toISOString(),
@@ -178,20 +179,22 @@ export class ReportService {
       try {
         const { sessionService } = await import('../session/SessionService')
         const { globalSessionCache } = await import('../../utils/sessionCacheManager')
-        
+
         logger.info('[ReportService] Starting cache update after report save', {
           reportId,
           hasHtmlReport: !!assets.htmlReport,
           hasInfoTabHtml: !!assets.infoTabHtml,
         })
-        
+
         // Clear cache first to ensure we fetch fresh data from backend
         globalSessionCache.remove(reportId)
-        logger.debug('[ReportService] Cache cleared, fetching fresh session from backend', { reportId })
-        
+        logger.debug('[ReportService] Cache cleared, fetching fresh session from backend', {
+          reportId,
+        })
+
         // Small delay to ensure database write is visible (eventual consistency)
-        await new Promise(resolve => setTimeout(resolve, 100))
-        
+        await new Promise((resolve) => setTimeout(resolve, 100))
+
         // ✅ FIX: Reload session from backend AFTER PUT /result completes
         // This ensures cache has latest data including HTML reports
         const reloadStartTime = performance.now()
@@ -202,10 +205,10 @@ export class ReportService {
           putResultDuration_ms,
           note: 'Reloading to update cache with fresh data from backend',
         })
-        
+
         const freshSession = await sessionService.loadSession(reportId)
         const reloadDuration = performance.now() - reloadStartTime
-        
+
         logger.info('[ReportService] DIAGNOSTIC: Session reload completed', {
           reportId,
           reloadDuration_ms: reloadDuration.toFixed(2),
@@ -216,7 +219,7 @@ export class ReportService {
           infoTabHtmlLength: freshSession?.infoTabHtml?.length || 0,
           timestamp: new Date().toISOString(),
         })
-        
+
         // ✅ CRITICAL: Update session store with fresh data so UI can restore HTML reports
         // This ensures restoration effects see the updated session with HTML reports
         if (freshSession) {
@@ -238,14 +241,14 @@ export class ReportService {
             })
           }
         }
-        
+
         if (freshSession) {
           // ✅ FIX: Check for valuation result instead of HTML reports
           // HTML reports are excluded from cache, so we verify valuation result exists
           const hasValuationResult = !!freshSession.valuationResult
           const hasHtmlReportInBackend = !!freshSession.htmlReport
           const hasInfoTabHtmlInBackend = !!freshSession.infoTabHtml
-          
+
           if (!hasValuationResult) {
             logger.warn('[ReportService] Fresh session missing valuation result, will retry', {
               reportId,
@@ -253,11 +256,11 @@ export class ReportService {
               hasHtmlReport: hasHtmlReportInBackend,
               hasInfoTabHtml: hasInfoTabHtmlInBackend,
             })
-            
+
             // Retry once after another delay
-            await new Promise(resolve => setTimeout(resolve, 200))
+            await new Promise((resolve) => setTimeout(resolve, 200))
             const retrySession = await sessionService.loadSession(reportId)
-            
+
             if (retrySession && retrySession.valuationResult) {
               // Cache session (HTML reports excluded, fetched from backend on demand)
               globalSessionCache.set(reportId, retrySession)
@@ -271,37 +274,45 @@ export class ReportService {
                 note: 'HTML reports excluded from cache, fetched from backend on demand',
               })
             } else {
-              logger.error('[ReportService] Cache update failed even after retry - session still incomplete', {
-                reportId,
-                hasValuationResult: !!retrySession?.valuationResult,
-              })
+              logger.error(
+                '[ReportService] Cache update failed even after retry - session still incomplete',
+                {
+                  reportId,
+                  hasValuationResult: !!retrySession?.valuationResult,
+                }
+              )
             }
           } else {
             // Session has valuation result, cache it (HTML reports excluded, but sessionData included)
             const cacheStartTime = performance.now()
-            
+
             // ✅ CRITICAL: Verify sessionData (form input fields) is included before caching
             // This ensures form fields can be restored from localStorage when revisiting
             const hasSessionData = !!freshSession.sessionData
-            const sessionDataKeys = freshSession.sessionData ? Object.keys(freshSession.sessionData) : []
-            const sessionData = freshSession.sessionData || {} as any
-            const hasFormFields = hasSessionData && (
-              sessionData.company_name ||
-              (sessionData.current_year_data as any)?.revenue ||
-              (sessionData.current_year_data as any)?.ebitda ||
-              sessionData.current_year_data
-            )
-            
+            const sessionDataKeys = freshSession.sessionData
+              ? Object.keys(freshSession.sessionData)
+              : []
+            const sessionData = freshSession.sessionData || ({} as any)
+            const hasFormFields =
+              hasSessionData &&
+              (sessionData.company_name ||
+                (sessionData.current_year_data as any)?.revenue ||
+                (sessionData.current_year_data as any)?.ebitda ||
+                sessionData.current_year_data)
+
             if (!hasSessionData) {
-              logger.warn('[ReportService] Fresh session missing sessionData (form fields) - cache may be incomplete', {
-                reportId,
-                note: 'Form fields may not restore properly from cache',
-              })
+              logger.warn(
+                '[ReportService] Fresh session missing sessionData (form fields) - cache may be incomplete',
+                {
+                  reportId,
+                  note: 'Form fields may not restore properly from cache',
+                }
+              )
             }
-            
+
             globalSessionCache.set(reportId, freshSession)
             const cacheDuration = performance.now() - cacheStartTime
-            
+
             logger.info('[ReportService] DIAGNOSTIC: Cache updated with fresh session (SUCCESS)', {
               reportId,
               putResultDuration_ms,
@@ -320,7 +331,7 @@ export class ReportService {
               timestamp: new Date().toISOString(),
               note: 'HTML reports excluded from cache, but sessionData (form fields) included for restoration',
             })
-            
+
             console.log('[ReportService] DIAGNOSTIC: Complete save flow finished', {
               reportId,
               putResultDuration_ms,
@@ -332,15 +343,21 @@ export class ReportService {
             })
           }
         } else {
-          logger.error('[ReportService] Failed to reload session after report save - session is null', { reportId })
+          logger.error(
+            '[ReportService] Failed to reload session after report save - session is null',
+            { reportId }
+          )
         }
       } catch (cacheError) {
         // Don't fail the entire save operation if cache update fails
-        logger.error('[ReportService] Failed to update cache after report save - exception thrown', {
-          reportId,
-          error: getErrorMessage(cacheError),
-          stack: cacheError instanceof Error ? cacheError.stack : undefined,
-        })
+        logger.error(
+          '[ReportService] Failed to update cache after report save - exception thrown',
+          {
+            reportId,
+            error: getErrorMessage(cacheError),
+            stack: cacheError instanceof Error ? cacheError.stack : undefined,
+          }
+        )
       }
     } catch (error) {
       const duration = performance.now() - startTime
@@ -526,4 +543,3 @@ export class ReportService {
 
 // Export singleton instance
 export const reportService = ReportService.getInstance()
-

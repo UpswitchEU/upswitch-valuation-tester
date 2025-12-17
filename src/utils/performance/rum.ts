@@ -1,19 +1,19 @@
 /**
  * Real User Monitoring (RUM)
- * 
+ *
  * Collects real-world performance metrics from actual users.
  * Tracks Core Web Vitals, custom metrics, and user experience.
- * 
+ *
  * Core Web Vitals:
  * - LCP (Largest Contentful Paint) - Loading performance
  * - FID (First Input Delay) - Interactivity
  * - CLS (Cumulative Layout Shift) - Visual stability
- * 
+ *
  * Additional Metrics:
  * - TTFB (Time to First Byte) - Server response time
  * - FCP (First Contentful Paint) - Initial render
  * - TTI (Time to Interactive) - Full interactivity
- * 
+ *
  * @module utils/performance/rum
  */
 
@@ -394,7 +394,9 @@ export class RUMManager {
     }
 
     window.addEventListener('load', () => {
-      const resources = window.performance.getEntriesByType('resource') as PerformanceResourceTiming[]
+      const resources = window.performance.getEntriesByType(
+        'resource'
+      ) as PerformanceResourceTiming[]
 
       const summary = {
         totalResources: resources.length,
@@ -402,9 +404,8 @@ export class RUMManager {
         avgDuration: 0,
       }
 
-      summary.avgDuration = summary.totalResources > 0
-        ? summary.totalDuration / summary.totalResources
-        : 0
+      summary.avgDuration =
+        summary.totalResources > 0 ? summary.totalDuration / summary.totalResources : 0
 
       this.trackCustomMetric('resource_count', summary.totalResources)
       this.trackCustomMetric('resource_total_duration', summary.totalDuration)
@@ -551,4 +552,3 @@ export const rumManager = new RUMManager({
     // analytics.track('custom_metric', { ...metric })
   },
 })
-

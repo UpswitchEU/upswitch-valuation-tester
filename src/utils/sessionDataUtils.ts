@@ -57,34 +57,34 @@ export function hasMeaningfulSessionData(sessionData: any, session?: any): boole
       'ebitda',
       'current_year_data',
       'historical_years_data',
-      
+
       // Business identification
       'business_type',
       'business_type_id',
       'business_structure',
       'business_model',
       'industry',
-      
+
       // Business details
       'business_description',
       'business_highlights',
       'reason_for_selling',
-      
+
       // Location & basic info
       'country_code',
       'city',
       'founding_year',
-      
+
       // Ownership
       'number_of_employees',
       'number_of_owners',
       'shares_for_sale',
-      
+
       // Generated content
       'html_report',
       'info_tab_html',
       'valuation_result',
-      
+
       // Other user-entered data
       'comparables',
       'business_context',
@@ -99,7 +99,7 @@ export function hasMeaningfulSessionData(sessionData: any, session?: any): boole
       return true
     }
   }
-  
+
   // Check top-level session fields (valuationResult, htmlReport, infoTabHtml)
   // Backend stores these separately from sessionData
   if (session) {
@@ -107,7 +107,6 @@ export function hasMeaningfulSessionData(sessionData: any, session?: any): boole
       return true
     }
   }
-  
+
   return false
 }
-

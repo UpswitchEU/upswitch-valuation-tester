@@ -9,7 +9,7 @@ interface ErrorProps {
 
 /**
  * Error Boundary for Valuation Report Pages
- * 
+ *
  * Catches errors when loading or rendering reports.
  * Reuses shared AppErrorBoundary component to avoid duplication.
  */

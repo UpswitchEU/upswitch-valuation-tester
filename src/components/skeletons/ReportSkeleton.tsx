@@ -1,10 +1,10 @@
 /**
  * Report Skeleton
- * 
+ *
  * Loading skeleton for main HTML report - MATCHES ACTUAL REPORT STRUCTURE.
  * Shows while report is being loaded from backend.
  * Matches: Professional word-style document (Times New Roman, print-friendly)
- * 
+ *
  * @module components/skeletons/ReportSkeleton
  */
 
@@ -20,7 +20,7 @@ export function ReportSkeleton() {
           <div className="h-5 w-1/2 bg-gray-100 rounded" />
           <div className="h-4 w-1/3 bg-gray-100 rounded" />
         </div>
-        
+
         {/* Executive Summary Section */}
         <div className="space-y-4 mb-10">
           <div className="h-7 w-1/3 bg-gray-300 rounded" />
@@ -36,7 +36,7 @@ export function ReportSkeleton() {
         {/* Valuation Results Section */}
         <div className="space-y-4 mb-10">
           <div className="h-7 w-2/5 bg-gray-300 rounded" />
-          
+
           {/* Results table */}
           <div className="border border-gray-200 rounded-lg p-4 space-y-3">
             <div className="flex justify-between">
@@ -77,7 +77,7 @@ export function ReportSkeleton() {
             <div className="h-4 w-11/12 bg-gray-100 rounded" />
             <div className="h-4 w-3/4 bg-gray-100 rounded" />
           </div>
-          
+
           {/* Chart placeholder */}
           <div className="h-64 w-full bg-gray-100 rounded-lg mt-4" />
         </div>
@@ -94,4 +94,3 @@ export function ReportSkeleton() {
     </div>
   )
 }
-

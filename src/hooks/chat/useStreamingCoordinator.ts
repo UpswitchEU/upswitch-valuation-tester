@@ -7,24 +7,24 @@
 
 import { useCallback, useEffect, useRef } from 'react'
 import type {
-    CalculateOptionData,
-    CollectedData,
-    ValuationPreviewData,
+  CalculateOptionData,
+  CollectedData,
+  ValuationPreviewData,
 } from '../../components/StreamingChat.types'
 import { conversationAPI } from '../../services/api/conversation/ConversationAPI'
 import { ModelPerformanceMetrics, StreamEventHandler } from '../../services/chat/StreamEventHandler'
-import type { StreamEvent } from '../../services/chat/streamingChatService'
 import {
-    StreamingManager,
-    type StreamingManagerCallbacks,
+  StreamingManager,
+  type StreamingManagerCallbacks,
 } from '../../services/chat/StreamingManager'
+import type { StreamEvent } from '../../services/chat/streamingChatService'
 import { useConversationStore } from '../../store/useConversationStore'
 import { useSessionStore } from '../../store/useSessionStore'
 import type { Message } from '../../types/message'
 import type { ValuationResponse } from '../../types/valuation'
 import {
-    extractBusinessModelFromInput,
-    extractFoundingYearFromInput,
+  extractBusinessModelFromInput,
+  extractFoundingYearFromInput,
 } from '../../utils/businessExtractionUtils'
 import { convertToApplicationError, getErrorMessage } from '../../utils/errors/errorConverter'
 import { isNetworkError, isTimeoutError } from '../../utils/errors/errorGuards'
@@ -244,7 +244,7 @@ export function useStreamingCoordinator({
 
       // Validate input before starting stream
       if (!userInput || !userInput.trim()) {
-        chatLogger.warn('Attempted to start streaming with empty input', { 
+        chatLogger.warn('Attempted to start streaming with empty input', {
           sessionId,
           pythonSessionId,
           effectiveSessionId,
@@ -260,31 +260,38 @@ export function useStreamingCoordinator({
           // CRITICAL: Use store's addMessage for consistency and atomic updates
           const store = useConversationStore.getState()
           const messageId = store.addMessage(message)
-          const newMessage = store.messages.find((m) => m.id === messageId) || ({
-            ...message,
-            id: messageId,
-            timestamp: new Date(),
-          } as Message)
+          const newMessage =
+            store.messages.find((m) => m.id === messageId) ||
+            ({
+              ...message,
+              id: messageId,
+              timestamp: new Date(),
+            } as Message)
 
           // CRITICAL: Persist message to database (non-blocking)
           // Failproof: Validate all required fields before saving
           if (sessionId && newMessage.id && newMessage.content) {
-            conversationAPI.saveMessage({
-              reportId: sessionId,
-              messageId: newMessage.id,
-              role: newMessage.role || (newMessage.type === 'ai' ? 'assistant' : 'user'),
-              type: newMessage.type || 'user',
-              content: typeof newMessage.content === 'string' ? newMessage.content : String(newMessage.content),
-              metadata: newMessage.metadata || {},
-            }).catch((error) => {
-              chatLogger.warn('Failed to persist message to database', {
-                messageId: newMessage.id,
+            conversationAPI
+              .saveMessage({
                 reportId: sessionId,
-                error: error instanceof Error ? error.message : String(error),
-                errorStack: error instanceof Error ? error.stack : undefined,
+                messageId: newMessage.id,
+                role: newMessage.role || (newMessage.type === 'ai' ? 'assistant' : 'user'),
+                type: newMessage.type || 'user',
+                content:
+                  typeof newMessage.content === 'string'
+                    ? newMessage.content
+                    : String(newMessage.content),
+                metadata: newMessage.metadata || {},
               })
-              // Don't throw - non-blocking persistence
-            })
+              .catch((error) => {
+                chatLogger.warn('Failed to persist message to database', {
+                  messageId: newMessage.id,
+                  reportId: sessionId,
+                  error: error instanceof Error ? error.message : String(error),
+                  errorStack: error instanceof Error ? error.stack : undefined,
+                })
+                // Don't throw - non-blocking persistence
+              })
           } else {
             chatLogger.warn('Skipping message persistence: missing required fields', {
               hasSessionId: !!sessionId,
@@ -387,7 +394,7 @@ export function useStreamingCoordinator({
           pythonSessionId,
           effectiveSessionId,
         })
-        
+
         // Call startStreaming with all 6 required parameters
         await streamingManagerRef.current.startStreaming(
           effectiveSessionId,
@@ -437,7 +444,8 @@ export function useStreamingCoordinator({
         }
 
         // Convert to Error for onError handler (maintains backward compatibility)
-        const errorForHandler = appError instanceof Error ? appError : new Error(getErrorMessage(appError))
+        const errorForHandler =
+          appError instanceof Error ? appError : new Error(getErrorMessage(appError))
         onError(errorForHandler)
 
         throw appError

@@ -24,7 +24,7 @@ export interface UseValuationToolbarFlowReturn {
 
 /**
  * Hook for managing flow switching in ValuationToolbar
- * 
+ *
  * Enables switching between manual and conversational flows with:
  * - Warning modal when user has entered data
  * - Immediate switch when no data exists
@@ -35,7 +35,9 @@ export const useValuationToolbarFlow = (): UseValuationToolbarFlowReturn => {
   const router = useRouter()
   const searchParams = useSearchParams()
   const [showSwitchConfirmation, setShowSwitchConfirmation] = useState(false)
-  const [pendingFlowTarget, setPendingFlowTarget] = useState<'manual' | 'conversational' | null>(null)
+  const [pendingFlowTarget, setPendingFlowTarget] = useState<'manual' | 'conversational' | null>(
+    null
+  )
   const [isSyncing, setIsSyncing] = useState(false)
 
   // Get session state
@@ -108,7 +110,7 @@ export const useValuationToolbarFlow = (): UseValuationToolbarFlowReturn => {
       const params = new URLSearchParams(searchParams?.toString() || '')
       params.set('flow', targetFlow)
       const newUrl = `/reports/${reportId}?${params.toString()}`
-      
+
       // Use replace to avoid adding history entry
       router.replace(newUrl)
 

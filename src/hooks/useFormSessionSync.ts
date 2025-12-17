@@ -2,7 +2,7 @@
  * useFormSessionSync Hook
  *
  * ROOT CAUSE FIX: Removed session object dependency to prevent render loops
- * 
+ *
  * Single Responsibility - Sync form changes TO session (one direction only)
  * Restoration is handled by useSessionRestoration hook.
  * This hook ONLY syncs form changes to session store (debounced).
@@ -32,30 +32,35 @@ interface UseFormSessionSyncOptions {
  * Only subscribes to formData changes, not session changes
  * Restoration (session → form) is handled by useSessionRestoration hook
  */
-export const useFormSessionSync = ({
-  reportId,
-  formData,
-}: UseFormSessionSyncOptions) => {
-
+export const useFormSessionSync = ({ reportId, formData }: UseFormSessionSyncOptions) => {
   // Helper to check if form data matches session data (prevent unnecessary syncs)
   const isDataEqual = useCallback((formData: any, sessionData: any): boolean => {
     if (!sessionData || !formData) return false
-    
+
     // Compare key fields that indicate meaningful changes
-    const keyFields = ['company_name', 'revenue', 'ebitda', 'industry', 'business_model', 'founding_year']
-    
+    const keyFields = [
+      'company_name',
+      'revenue',
+      'ebitda',
+      'industry',
+      'business_model',
+      'founding_year',
+    ]
+
     for (const field of keyFields) {
       if (formData[field] !== sessionData[field]) {
         return false
       }
     }
-    
+
     // Compare current_year_data
-    if (formData.current_year_data?.revenue !== sessionData.current_year_data?.revenue ||
-        formData.current_year_data?.ebitda !== sessionData.current_year_data?.ebitda) {
+    if (
+      formData.current_year_data?.revenue !== sessionData.current_year_data?.revenue ||
+      formData.current_year_data?.ebitda !== sessionData.current_year_data?.ebitda
+    ) {
       return false
     }
-    
+
     return true
   }, [])
 
@@ -67,7 +72,7 @@ export const useFormSessionSync = ({
       // Read session state inside the debounced function (not subscribed)
       const currentSession = useSessionStore.getState().session
       const updateSessionData = useSessionStore.getState().updateSessionData
-      
+
       if (!currentSession || !reportId || currentSession.reportId !== reportId) {
         return
       }

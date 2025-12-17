@@ -206,7 +206,7 @@ export class StreamEventHandler {
           // Simple: Append content to streaming message (store only, no callback)
           const store = useConversationStore.getState()
           let streamingId = store.currentStreamingMessageId
-          
+
           // CRITICAL FIX: If currentStreamingMessageId is not set (race condition),
           // find the last streaming message as fallback
           if (!streamingId) {
@@ -222,15 +222,18 @@ export class StreamEventHandler {
               })
             }
           }
-          
+
           if (streamingId && data.content) {
             store.appendToMessage(streamingId, data.content)
           } else if (!streamingId && data.content) {
             // Edge case: Chunk arrived before message_start - create message optimistically
-            chatLogger.warn('Message chunk received before message_start - creating message optimistically', {
-              sessionId: this.sessionId,
-              hasContent: !!data.content,
-            })
+            chatLogger.warn(
+              'Message chunk received before message_start - creating message optimistically',
+              {
+                sessionId: this.sessionId,
+                hasContent: !!data.content,
+              }
+            )
             const messageId = store.addMessage({
               type: 'ai',
               content: data.content,
@@ -240,10 +243,13 @@ export class StreamEventHandler {
             })
             store.setStreaming(true)
           } else if (!streamingId) {
-            chatLogger.warn('Message chunk received but no streaming message found and no content', {
-              sessionId: this.sessionId,
-              hasContent: !!data.content,
-            })
+            chatLogger.warn(
+              'Message chunk received but no streaming message found and no content',
+              {
+                sessionId: this.sessionId,
+                hasContent: !!data.content,
+              }
+            )
           }
           return
         }
@@ -252,7 +258,7 @@ export class StreamEventHandler {
           // Backend sends empty content in message_complete (content sent via chunks)
           const store = useConversationStore.getState()
           let streamingId = store.currentStreamingMessageId
-          
+
           // CRITICAL FIX: If currentStreamingMessageId is not set (race condition),
           // find the last streaming message as fallback
           if (!streamingId) {
@@ -268,14 +274,14 @@ export class StreamEventHandler {
               })
             }
           }
-          
+
           // CRITICAL FIX: Handle confirmation cards - create message if message_complete arrives
           // with confirmation metadata but no message_start was sent
           const metadata = (data.metadata || data.data || {}) as Record<string, unknown>
-          const hasConfirmationMetadata = 
+          const hasConfirmationMetadata =
             metadata.is_business_type_confirmation === true ||
             metadata.is_company_name_confirmation === true
-          
+
           if (!streamingId && hasConfirmationMetadata) {
             // Create message optimistically for confirmation cards
             chatLogger.debug('Creating message for confirmation card (no message_start received)', {
@@ -295,7 +301,7 @@ export class StreamEventHandler {
             this.callbacks.setIsTyping?.(false)
             return
           }
-          
+
           if (streamingId) {
             // Only update completion status and metadata, preserve accumulated content
             const currentMessage = store.messages.find((m) => m.id === streamingId)
@@ -307,19 +313,19 @@ export class StreamEventHandler {
                 isStreaming: false,
                 metadata: { ...currentMessage.metadata, ...metadata },
               }
-              
+
               store.updateMessage(streamingId, completedMessage)
               store.setStreaming(false)
-              
+
               // CRITICAL FIX: Reset thinking state when message completes
               this.callbacks.setIsThinking?.(false)
               this.callbacks.setIsTyping?.(false)
-              
+
               // Track completion if callback provided
               if (this.callbacks.trackConversationCompletion) {
                 this.callbacks.trackConversationCompletion(true, false)
               }
-              
+
               // Note: onMessageComplete callback is handled by StreamingChat component
               // via useEffect watching for completed messages in the store
             } else {
@@ -365,17 +371,17 @@ export class StreamEventHandler {
         case 'html_report': {
           const htmlReport = data.html_report || data.html || data.content || ''
           const valuationId = data.valuation_id || ''
-          
+
           chatLogger.info('HTML report event received', {
             valuationId,
             htmlReportLength: htmlReport.length,
             hasValuationId: !!valuationId,
           })
-          
+
           // Update valuation results store with html_report (Conversational flow)
           const resultsStore = useConversationalResultsStore.getState()
           const currentResult = resultsStore.result
-          
+
           if (currentResult && valuationId && currentResult.valuation_id === valuationId) {
             // Update existing result
             resultsStore.setResult({
@@ -407,61 +413,67 @@ export class StreamEventHandler {
           // This ensures HTML reports are saved even if they arrive before valuation_complete
           if (htmlReport && valuationId && this.sessionId) {
             // Use dynamic import in background (non-blocking)
-            import('../api/session/SessionAPI').then(({ SessionAPI }) => {
-              const sessionAPI = new SessionAPI()
-              const session = useSessionStore.getState().session
+            import('../api/session/SessionAPI')
+              .then(({ SessionAPI }) => {
+                const sessionAPI = new SessionAPI()
+                const session = useSessionStore.getState().session
 
-              if (session?.reportId) {
-                // Get current result to merge with HTML report
-                const resultToSave = resultsStore.result || { valuation_id: valuationId }
-                
-                sessionAPI.saveValuationResult(session.reportId, {
-                  valuationResult: {
-                    ...resultToSave,
-                    html_report: htmlReport,
-                  },
-                  htmlReport: htmlReport,
-                  infoTabHtml: 'info_tab_html' in resultToSave ? resultToSave.info_tab_html : undefined,
-                }).then(() => {
-                  chatLogger.info('HTML report saved to session store', {
-                    reportId: session.reportId,
-                    valuationId,
-                    htmlReportLength: htmlReport.length,
-                  })
-                }).catch((error) => {
-                  // Don't block - HTML report is already in results store
-                  chatLogger.warn('Failed to save HTML report to session store', {
-                    error: error instanceof Error ? error.message : String(error),
-                    valuationId,
-                  })
-                })
-              }
-            }).catch((error) => {
-              chatLogger.warn('Failed to import SessionAPI for HTML report save', {
-                error: error instanceof Error ? error.message : String(error),
+                if (session?.reportId) {
+                  // Get current result to merge with HTML report
+                  const resultToSave = resultsStore.result || { valuation_id: valuationId }
+
+                  sessionAPI
+                    .saveValuationResult(session.reportId, {
+                      valuationResult: {
+                        ...resultToSave,
+                        html_report: htmlReport,
+                      },
+                      htmlReport: htmlReport,
+                      infoTabHtml:
+                        'info_tab_html' in resultToSave ? resultToSave.info_tab_html : undefined,
+                    })
+                    .then(() => {
+                      chatLogger.info('HTML report saved to session store', {
+                        reportId: session.reportId,
+                        valuationId,
+                        htmlReportLength: htmlReport.length,
+                      })
+                    })
+                    .catch((error) => {
+                      // Don't block - HTML report is already in results store
+                      chatLogger.warn('Failed to save HTML report to session store', {
+                        error: error instanceof Error ? error.message : String(error),
+                        valuationId,
+                      })
+                    })
+                }
               })
-            })
+              .catch((error) => {
+                chatLogger.warn('Failed to import SessionAPI for HTML report save', {
+                  error: error instanceof Error ? error.message : String(error),
+                })
+              })
           }
-          
+
           // Also call report update callback if available
           this.callbacks.onReportUpdate?.(htmlReport, 100)
           return
         }
-        
+
         case 'info_tab_html': {
           const infoTabHtml = data.info_tab_html || data.html || data.content || ''
           const valuationId = data.valuation_id || ''
-          
+
           chatLogger.info('Info tab HTML event received', {
             valuationId,
             infoTabHtmlLength: infoTabHtml.length,
             hasValuationId: !!valuationId,
           })
-          
+
           // Update valuation results store with info_tab_html (Conversational flow)
           const resultsStore = useConversationalResultsStore.getState()
           const currentResult = resultsStore.result
-          
+
           if (currentResult && valuationId && currentResult.valuation_id === valuationId) {
             // Update existing result
             resultsStore.setResult({
@@ -493,40 +505,46 @@ export class StreamEventHandler {
           // This ensures info tab HTML is saved even if it arrives before valuation_complete
           if (infoTabHtml && valuationId && this.sessionId) {
             // Use dynamic import in background (non-blocking)
-            import('../api/session/SessionAPI').then(({ SessionAPI }) => {
-              const sessionAPI = new SessionAPI()
-              const session = useSessionStore.getState().session
+            import('../api/session/SessionAPI')
+              .then(({ SessionAPI }) => {
+                const sessionAPI = new SessionAPI()
+                const session = useSessionStore.getState().session
 
-              if (session?.reportId) {
-                // Get current result to merge with info tab HTML
-                const resultToSave = resultsStore.result || { valuation_id: valuationId }
-                
-                sessionAPI.saveValuationResult(session.reportId, {
-                  valuationResult: {
-                    ...resultToSave,
-                    info_tab_html: infoTabHtml,
-                  },
-                  htmlReport: 'html_report' in resultToSave ? resultToSave.html_report : undefined,
-                  infoTabHtml: infoTabHtml,
-                }).then(() => {
-                  chatLogger.info('Info tab HTML saved to session store', {
-                    reportId: session.reportId,
-                    valuationId,
-                    infoTabHtmlLength: infoTabHtml.length,
-                  })
-                }).catch((error) => {
-                  // Don't block - info tab HTML is already in results store
-                  chatLogger.warn('Failed to save info tab HTML to session store', {
-                    error: error instanceof Error ? error.message : String(error),
-                    valuationId,
-                  })
-                })
-              }
-            }).catch((error) => {
-              chatLogger.warn('Failed to import SessionAPI for info tab HTML save', {
-                error: error instanceof Error ? error.message : String(error),
+                if (session?.reportId) {
+                  // Get current result to merge with info tab HTML
+                  const resultToSave = resultsStore.result || { valuation_id: valuationId }
+
+                  sessionAPI
+                    .saveValuationResult(session.reportId, {
+                      valuationResult: {
+                        ...resultToSave,
+                        info_tab_html: infoTabHtml,
+                      },
+                      htmlReport:
+                        'html_report' in resultToSave ? resultToSave.html_report : undefined,
+                      infoTabHtml: infoTabHtml,
+                    })
+                    .then(() => {
+                      chatLogger.info('Info tab HTML saved to session store', {
+                        reportId: session.reportId,
+                        valuationId,
+                        infoTabHtmlLength: infoTabHtml.length,
+                      })
+                    })
+                    .catch((error) => {
+                      // Don't block - info tab HTML is already in results store
+                      chatLogger.warn('Failed to save info tab HTML to session store', {
+                        error: error instanceof Error ? error.message : String(error),
+                        valuationId,
+                      })
+                    })
+                }
               })
-            })
+              .catch((error) => {
+                chatLogger.warn('Failed to import SessionAPI for info tab HTML save', {
+                  error: error instanceof Error ? error.message : String(error),
+                })
+              })
           }
           return
         }
@@ -544,7 +562,7 @@ export class StreamEventHandler {
           return this.uiHandlers.handleClarificationNeeded(data)
         case 'html_preview':
           return this.uiHandlers.handleHtmlPreview(data)
-        case 'complete':
+        case 'complete': {
           // CRITICAL FIX: Handle complete event silently (no error message)
           // This is a success signal from backend after valuation completes
           // The report has already been loaded via valuation_complete/html_report events
@@ -559,6 +577,7 @@ export class StreamEventHandler {
           this.callbacks.setIsTyping?.(false)
           this.callbacks.setIsThinking?.(false)
           return
+        }
         case 'error':
           return this.uiHandlers.handleError(data)
 

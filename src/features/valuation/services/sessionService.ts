@@ -3,7 +3,7 @@
  *
  * Concrete implementation of ISessionService interface.
  * Provides session management and persistence with DIP compliance.
- * 
+ *
  * NOTE: This is a legacy service. Use the shared SessionService from services/session/SessionService.ts instead.
  */
 
@@ -33,26 +33,26 @@ export class SessionService implements ISessionService {
       // Use shared SessionService - create by saving initial data
       // SessionService.loadSession will create if it doesn't exist
       const session = await sharedSessionService.loadSession(reportId)
-      
+
       if (!session) {
         // If session doesn't exist, save initial data to create it
         await sharedSessionService.saveSession(reportId, {
           currentView: flow,
           sessionData: initialData || {},
         } as any)
-        
+
         // Load the newly created session
         const newSession = await sharedSessionService.loadSession(reportId)
         if (!newSession) {
           throw new Error('Failed to create session')
         }
-        
+
         generalLogger.info('Session created successfully', {
           reportId,
           sessionId: newSession.reportId,
           flow: newSession.currentView,
         })
-        
+
         return newSession
       }
 
@@ -101,12 +101,12 @@ export class SessionService implements ISessionService {
 
       // Convert ValuationSession updates to ValuationRequest format
       const requestUpdates: Partial<ValuationRequest> = {}
-      
+
       // Map sessionData if present
       if (updates.sessionData && typeof updates.sessionData === 'object') {
         Object.assign(requestUpdates, updates.sessionData)
       }
-      
+
       // Map other fields
       if (updates.partialData && typeof updates.partialData === 'object') {
         const partialData = updates.partialData as Record<string, unknown>

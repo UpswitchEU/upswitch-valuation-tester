@@ -222,4 +222,3 @@ export const useGuestSessionStore = create<GuestSessionState>((set, get) => ({
     guestSessionLogger.info('Guest session cleared')
   },
 }))
-

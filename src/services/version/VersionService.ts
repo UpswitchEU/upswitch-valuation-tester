@@ -20,23 +20,18 @@
  * @module services/version/VersionService
  */
 
-import { VersionAPI } from '../api/version/VersionAPI'
+import { ApplicationError, NetworkError, NotFoundError, ValidationError } from '../../types/errors'
 import type {
-  ValuationVersion,
   CreateVersionRequest,
   UpdateVersionRequest,
-  VersionComparison,
+  ValuationVersion,
   VersionChanges,
+  VersionComparison,
   VersionStatistics,
 } from '../../types/ValuationVersion'
-import { createContextLogger } from '../../utils/logger'
 import { getErrorMessage } from '../../utils/errors/errorConverter'
-import {
-  ValidationError,
-  NetworkError,
-  NotFoundError,
-  ApplicationError,
-} from '../../types/errors'
+import { createContextLogger } from '../../utils/logger'
+import { VersionAPI } from '../api/version/VersionAPI'
 
 const logger = createContextLogger('VersionService')
 
@@ -551,4 +546,3 @@ export class VersionService {
 
 // Export singleton instance
 export const versionService = VersionService.getInstance()
-
