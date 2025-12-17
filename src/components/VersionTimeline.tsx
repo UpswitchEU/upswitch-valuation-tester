@@ -386,7 +386,7 @@ function VersionTimelineItem({
             <div className="mt-4">
               <h4 className="text-sm font-semibold text-gray-900 mb-3">Valuation Details</h4>
               <div className="grid grid-cols-2 gap-3">
-                {version.valuationResult.valuation_summary && typeof version.valuationResult.valuation_summary === 'object' && (
+                {version.valuationResult?.valuation_summary && typeof version.valuationResult?.valuation_summary === 'object' && (
                   <>
                     {(version.valuationResult.valuation_summary as any).base_valuation && (
                       <div className="p-3 bg-gray-50 rounded-lg">
