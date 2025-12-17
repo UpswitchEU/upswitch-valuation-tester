@@ -57,8 +57,19 @@ export function VersionTimeline({
     )
   }
 
+  // ✅ FIX: Deduplicate versions by versionNumber to prevent duplicates
+  // Use a Map to ensure unique versions by versionNumber (keep the latest one if duplicates exist)
+  const versionMap = new Map<number, ValuationVersion>()
+  versions.forEach((version) => {
+    const existing = versionMap.get(version.versionNumber)
+    // Keep the version with the latest createdAt or id if duplicates exist
+    if (!existing || (version.createdAt && existing.createdAt && version.createdAt > existing.createdAt)) {
+      versionMap.set(version.versionNumber, version)
+    }
+  })
+  
   // Sort versions by number (newest first for display)
-  const sortedVersions = [...versions].sort((a, b) => b.versionNumber - a.versionNumber)
+  const sortedVersions = Array.from(versionMap.values()).sort((a, b) => b.versionNumber - a.versionNumber)
 
   return (
     <div className="w-full p-6">

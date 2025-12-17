@@ -329,7 +329,11 @@ export class HttpClient {
       const responseData = response.data?.data || response.data
       
       // CRITICAL: Log response structure for valuation and session endpoints to diagnose missing html_report
-      if (config.url?.includes('/valuations/calculate') || config.url?.includes('/valuation-sessions/')) {
+      // ✅ FIX: Skip PUT /result endpoints - they're save confirmations, not data retrieval endpoints
+      const isPutResultEndpoint = config.url?.includes('/result') && config.method?.toUpperCase() === 'PUT'
+      const isValuationEndpoint = config.url?.includes('/valuations/calculate') || config.url?.includes('/valuation-sessions/')
+      
+      if (isValuationEndpoint && !isPutResultEndpoint) {
         const rawData = response.data
         const nestedData = (rawData as any)?.data
         const extractedData = responseData
@@ -353,7 +357,7 @@ export class HttpClient {
           extractionMethod: rawData?.data ? 'nested' : 'direct',
         })
         
-        // CRITICAL: Warn if html_report is missing
+        // CRITICAL: Warn if html_report is missing (only for endpoints that should return HTML reports)
         if (!(extractedData as any)?.html_report || (extractedData as any).html_report.trim().length === 0) {
           apiLogger.error('CRITICAL: html_report missing or empty in valuation response', {
             url: config.url,
@@ -372,7 +376,7 @@ export class HttpClient {
           })
         }
         
-        // CRITICAL: Warn if info_tab_html is missing
+        // CRITICAL: Warn if info_tab_html is missing (only for endpoints that should return HTML reports)
         if (!(extractedData as any)?.info_tab_html || (extractedData as any).info_tab_html.trim().length === 0) {
           apiLogger.error('CRITICAL: info_tab_html missing or empty in valuation response', {
             url: config.url,

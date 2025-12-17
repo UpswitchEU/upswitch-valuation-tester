@@ -93,13 +93,11 @@ export class SessionCacheManager {
 
       // ✅ FIX: Exclude large HTML reports from cache to prevent quota errors
       // HTML reports are fetched from backend on demand
-      const sessionWithoutHtml: ValuationSession = {
-        ...session,
-        htmlReport: undefined,  // Don't cache large HTML report
-        infoTabHtml: undefined, // Don't cache large info tab HTML
-        // Keep metadata flags to indicate HTML reports exist
-        // These will be used to fetch HTML reports from backend when needed
-      }
+      // Use destructuring to completely exclude HTML reports (more efficient than setting to undefined)
+      const { htmlReport, infoTabHtml, ...sessionWithoutHtml } = session
+      
+      // Note: htmlReport and infoTabHtml are excluded from sessionWithoutHtml
+      // They exist in backend and are fetched on demand when needed
 
       const cached: CachedSession = {
         session: sessionWithoutHtml,

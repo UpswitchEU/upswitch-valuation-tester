@@ -339,10 +339,8 @@ export const useValuationFormSubmission = (
               calculationDuration
             )
 
-              // Refetch versions to update the toolbar dropdown
-              fetchVersions(reportId).catch(() => {
-                // Silently fail - versions will be fetched on next render
-              })
+            // ✅ FIX: Don't refetch versions immediately - version is already in local state
+            // Versions will be synced when version history panel opens or on next mount
             } else if (!previousVersion) {
               // First calculation - create initial version
               const firstVersion = await createVersion({
@@ -361,10 +359,8 @@ export const useValuationFormSubmission = (
                 versionLabel: firstVersion.versionLabel,
               })
 
-              // Refetch versions to update the toolbar dropdown
-              fetchVersions(reportId).catch(() => {
-                // Silently fail - versions will be fetched on next render
-              })
+              // ✅ FIX: Don't refetch versions immediately - version is already in local state
+              // Versions will be synced when version history panel opens or on next mount
             }
           } catch (versionError) {
             // Don't fail the valuation if versioning fails

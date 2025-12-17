@@ -22,6 +22,9 @@ import { createContextLogger } from '../utils/logger'
 const versionLogger = createContextLogger('VersionHistoryStore')
 const versionAPI = new VersionAPI()
 
+// ✅ FIX: Track pending version creations to prevent duplicates
+const pendingVersionCreations = new Set<string>()
+
 export interface VersionHistoryStore {
   // State
   versions: Record<string, ValuationVersion[]> // Keyed by reportId
@@ -150,10 +153,24 @@ export const useVersionHistoryStore = create<VersionHistoryStore>()(
           // Try backend API first
           const response = await versionAPI.listVersions(reportId)
 
+          // ✅ FIX: Deduplicate versions by versionNumber to prevent duplicates
+          // Use a Map to ensure unique versions by versionNumber
+          const versionMap = new Map<number, ValuationVersion>()
+          
+          // Add backend versions (these are the source of truth)
+          response.versions.forEach((version) => {
+            versionMap.set(version.versionNumber, version)
+          })
+          
+          // Convert back to array and sort by versionNumber
+          const deduplicatedVersions = Array.from(versionMap.values()).sort(
+            (a, b) => a.versionNumber - b.versionNumber
+          )
+
           set((state) => ({
             versions: {
               ...state.versions,
-              [reportId]: response.versions,
+              [reportId]: deduplicatedVersions,
             },
             activeVersions: {
               ...state.activeVersions,
@@ -183,6 +200,24 @@ export const useVersionHistoryStore = create<VersionHistoryStore>()(
        * Create new version
        */
       createVersion: async (request: CreateVersionRequest) => {
+        // ✅ FIX: Prevent concurrent version creation for same reportId
+        const creationKey = `${request.reportId}_${request.versionLabel || 'auto'}`
+        if (pendingVersionCreations.has(creationKey)) {
+          versionLogger.warn('Version creation already in progress, skipping duplicate', {
+            reportId: request.reportId,
+            creationKey,
+          })
+          // Return existing version if available, otherwise throw
+          const existingVersions = get().versions[request.reportId] || []
+          const latestVersion = existingVersions[existingVersions.length - 1]
+          if (latestVersion) {
+            return latestVersion
+          }
+          throw new Error('Version creation already in progress')
+        }
+
+        pendingVersionCreations.add(creationKey)
+
         try {
           versionLogger.info('Creating version', { reportId: request.reportId })
 
@@ -190,9 +225,30 @@ export const useVersionHistoryStore = create<VersionHistoryStore>()(
           try {
             const version = await versionAPI.createVersion(request)
 
-            // Add to local state
+            // ✅ FIX: Check if version already exists before adding to prevent duplicates
             set((state) => {
               const reportVersions = state.versions[request.reportId] || []
+              
+              // Check if version with same versionNumber already exists
+              const versionExists = reportVersions.some(
+                (v) => v.versionNumber === version.versionNumber
+              )
+              
+              if (versionExists) {
+                versionLogger.warn('Version already exists in local state, skipping add', {
+                  reportId: request.reportId,
+                  versionNumber: version.versionNumber,
+                  note: 'Version will be synced via fetchVersions',
+                })
+                // Don't add duplicate, but update active version
+                return {
+                  activeVersions: {
+                    ...state.activeVersions,
+                    [request.reportId]: version.versionNumber,
+                  },
+                }
+              }
+              
               return {
                 versions: {
                   ...state.versions,
@@ -205,6 +261,7 @@ export const useVersionHistoryStore = create<VersionHistoryStore>()(
               }
             })
 
+            pendingVersionCreations.delete(creationKey)
             return version
           } catch (backendError) {
             // Backend unavailable - create locally
@@ -261,9 +318,11 @@ export const useVersionHistoryStore = create<VersionHistoryStore>()(
               versionNumber: nextVersionNumber,
             })
 
+            pendingVersionCreations.delete(creationKey)
             return localVersion
           }
         } catch (error) {
+          pendingVersionCreations.delete(creationKey)
           versionLogger.error('Failed to create version', {
             reportId: request.reportId,
             error: error instanceof Error ? error.message : 'Unknown error',
@@ -502,10 +561,25 @@ export const useVersionHistoryStore = create<VersionHistoryStore>()(
     }),
     {
       name: 'version-history-storage',
-      partialize: (state) => ({
-        versions: state.versions,
-        activeVersions: state.activeVersions,
-      }),
+      partialize: (state) => {
+        // ✅ FIX: Exclude HTML reports from localStorage to prevent quota exceeded errors
+        // HTML reports are stored in backend and fetched on demand
+        const versionsWithoutHtml: Record<string, ValuationVersion[]> = {}
+        
+        for (const [reportId, versions] of Object.entries(state.versions)) {
+          versionsWithoutHtml[reportId] = versions.map((version) => ({
+            ...version,
+            htmlReport: null,  // Don't store large HTML reports in localStorage
+            infoTabHtml: null, // Don't store large info tab HTML in localStorage
+            // Keep metadata flags to indicate HTML reports exist in backend
+          }))
+        }
+        
+        return {
+          versions: versionsWithoutHtml,
+          activeVersions: state.activeVersions,
+        }
+      },
     }
   )
 )
