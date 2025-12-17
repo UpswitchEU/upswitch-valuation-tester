@@ -117,42 +117,52 @@ export const ValuationForm: React.FC<ValuationFormProps> = ({
   const [historicalInputs, setHistoricalInputs] = useState<{ [key: string]: string }>({})
   const [hasPrefilledOnce, setHasPrefilledOnce] = useState(false)
   const [employeeCountError, setEmployeeCountError] = useState<string | null>(null)
-  const [hasRestoredHistoricalData, setHasRestoredHistoricalData] = useState(false)
-
-  // ✅ FIX: Restore historical data from formData to historicalInputs when formData is restored
-  // This handles the case where historical_years_data is restored from session but historicalInputs is empty
+  // ✅ IMPROVED: Restore historical data whenever formData.historical_years_data changes
+  // This ensures all years with revenue or EBITDA data are preserved, even if outside display range
+  // Merges with existing historicalInputs to avoid overwriting user edits
   useEffect(() => {
     if (
       formData.historical_years_data &&
       Array.isArray(formData.historical_years_data) &&
-      formData.historical_years_data.length > 0 &&
-      !hasRestoredHistoricalData &&
-      Object.keys(historicalInputs).length === 0
+      formData.historical_years_data.length > 0
     ) {
-      // Convert historical_years_data array to historicalInputs format
-      // Format: { "2024_revenue": "1000000", "2024_ebitda": "200000", ... }
-      const restoredInputs: { [key: string]: string } = {}
+      // Merge with existing historicalInputs (don't overwrite user edits)
+      const restoredInputs: { [key: string]: string } = { ...historicalInputs }
       
       formData.historical_years_data.forEach((yearData: { year: number; revenue?: number; ebitda?: number }) => {
+        // Include revenue if it exists (including 0)
         if (yearData.revenue !== undefined && yearData.revenue !== null) {
           restoredInputs[`${yearData.year}_revenue`] = yearData.revenue.toString()
         }
+        // Include ebitda if it exists (including 0)
         if (yearData.ebitda !== undefined && yearData.ebitda !== null) {
           restoredInputs[`${yearData.year}_ebitda`] = yearData.ebitda.toString()
         }
       })
 
-      if (Object.keys(restoredInputs).length > 0) {
+      // Only update if we actually restored something new
+      const hasNewData = formData.historical_years_data.some((yearData) => {
+        const revenueKey = `${yearData.year}_revenue`
+        const ebitdaKey = `${yearData.year}_ebitda`
+        return (
+          (yearData.revenue !== undefined && yearData.revenue !== null && 
+           restoredInputs[revenueKey] !== historicalInputs[revenueKey]) ||
+          (yearData.ebitda !== undefined && yearData.ebitda !== null && 
+           restoredInputs[ebitdaKey] !== historicalInputs[ebitdaKey])
+        )
+      })
+
+      if (hasNewData) {
         setHistoricalInputs(restoredInputs)
-        setHasRestoredHistoricalData(true)
         generalLogger.info('[ValuationForm] Restored historical data to inputs', {
           reportId,
           yearsRestored: formData.historical_years_data.length,
           inputKeys: Object.keys(restoredInputs),
+          years: formData.historical_years_data.map((d) => d.year),
         })
       }
     }
-  }, [formData.historical_years_data, historicalInputs, hasRestoredHistoricalData, reportId])
+  }, [formData.historical_years_data, historicalInputs, reportId])
 
   // Match business type string to business_type_id
   const matchBusinessType = useCallback(
@@ -292,6 +302,17 @@ export const ValuationForm: React.FC<ValuationFormProps> = ({
 
     // Sort chronologically (oldest first) for backend compatibility
     historicalYears.sort((a, b) => a.year - b.year)
+
+    // ✅ LOGGING: Verify all years are included in conversion
+    if (Object.keys(historicalInputs).length > 0) {
+      generalLogger.debug('[ValuationForm] Converting historicalInputs to historical_years_data', {
+        reportId,
+        inputKeys: Object.keys(historicalInputs),
+        extractedYears: Array.from(yearSet).sort((a, b) => a - b),
+        historicalYearsCount: historicalYears.length,
+        historicalYears: historicalYears.map((h) => ({ year: h.year, hasRevenue: h.revenue > 0, hasEbitda: h.ebitda > 0 })),
+      })
+    }
 
     // Update formData with sorted historical data
     if (historicalYears.length > 0) {

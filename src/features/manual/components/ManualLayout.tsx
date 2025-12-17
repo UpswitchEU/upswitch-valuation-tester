@@ -329,6 +329,24 @@ export const ManualLayout: React.FC<ManualLayoutProps> = ({
             historicalDataCount: formDataUpdate.historical_years_data?.length || 0,
             historicalDataYears: formDataUpdate.historical_years_data?.map((h: any) => h.year) || [],
           })
+
+          // ✅ LOGGING: Detailed historical data restoration logging
+          if (formDataUpdate.historical_years_data && Array.isArray(formDataUpdate.historical_years_data) && formDataUpdate.historical_years_data.length > 0) {
+            generalLogger.debug('[ManualLayout] Restoring historical data', {
+              reportId,
+              hasHistoricalData: true,
+              historicalDataCount: formDataUpdate.historical_years_data.length,
+              historicalYears: formDataUpdate.historical_years_data.map((h: any) => h.year),
+              historicalDataDetails: formDataUpdate.historical_years_data.map((h: any) => ({
+                year: h.year,
+                hasRevenue: !!(h.revenue && h.revenue > 0),
+                revenue: h.revenue,
+                hasEbitda: !!(h.ebitda && h.ebitda > 0),
+                ebitda: h.ebitda,
+              })),
+            })
+          }
+
           updateFormDataFn(formDataUpdate)
 
           // ✅ FIX: Force a re-render by reading updated formData after a brief delay
@@ -616,6 +634,7 @@ export const ManualLayout: React.FC<ManualLayoutProps> = ({
             },
         historical_years_data: sessionDataObj.historical_years_data,
         recurring_revenue_percentage: sessionDataObj.recurring_revenue_percentage,
+        // ✅ LOGGING: Verify historical data is included in reactive restoration
         number_of_employees: sessionDataObj.number_of_employees,
         number_of_owners: sessionDataObj.number_of_owners,
         shares_for_sale: sessionDataObj.shares_for_sale,
@@ -654,6 +673,23 @@ export const ManualLayout: React.FC<ManualLayoutProps> = ({
         historicalDataCount: formDataUpdate.historical_years_data?.length || 0,
         historicalDataYears: formDataUpdate.historical_years_data?.map((h: any) => h.year) || [],
       })
+
+      // ✅ LOGGING: Detailed historical data restoration logging (reactive)
+      if (formDataUpdate.historical_years_data && Array.isArray(formDataUpdate.historical_years_data) && formDataUpdate.historical_years_data.length > 0) {
+        generalLogger.debug('[ManualLayout] Restoring historical data (reactive)', {
+          reportId,
+          hasHistoricalData: true,
+          historicalDataCount: formDataUpdate.historical_years_data.length,
+          historicalYears: formDataUpdate.historical_years_data.map((h: any) => h.year),
+          historicalDataDetails: formDataUpdate.historical_years_data.map((h: any) => ({
+            year: h.year,
+            hasRevenue: !!(h.revenue && h.revenue > 0),
+            revenue: h.revenue,
+            hasEbitda: !!(h.ebitda && h.ebitda > 0),
+            ebitda: h.ebitda,
+          })),
+        })
+      }
 
       updateFormDataFn(formDataUpdate)
       restorationRef.current.lastRestoredReportId = reportId

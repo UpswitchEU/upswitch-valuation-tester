@@ -136,6 +136,20 @@ export const useFormSessionSync = ({ reportId, formData }: UseFormSessionSyncOpt
           }
         })
 
+        // ✅ LOGGING: Verify historical data is synced
+        if (sessionUpdate.historical_years_data) {
+          generalLogger.debug('[useFormSessionSync] Syncing historical data', {
+            reportId: currentSession.reportId,
+            yearsCount: sessionUpdate.historical_years_data.length,
+            years: sessionUpdate.historical_years_data.map((d: any) => d.year),
+            yearsWithData: sessionUpdate.historical_years_data.map((d: any) => ({
+              year: d.year,
+              hasRevenue: !!(d.revenue && d.revenue > 0),
+              hasEbitda: !!(d.ebitda && d.ebitda > 0),
+            })),
+          })
+        }
+
         // ✅ FIX: Update local store first
         await updateSessionData(sessionUpdate)
         
