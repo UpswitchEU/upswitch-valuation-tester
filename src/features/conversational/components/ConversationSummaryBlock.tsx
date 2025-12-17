@@ -8,7 +8,7 @@
 import { motion } from 'framer-motion'
 import { CheckCircle2, FileText, TrendingUp } from 'lucide-react'
 import React from 'react'
-import { formatCurrency } from '../../../config/countries'
+import { formatCurrency, getCountryByCode } from '../../../config/countries'
 
 export interface ConversationSummaryBlockProps {
   collectedData: Record<string, any>
@@ -17,6 +17,12 @@ export interface ConversationSummaryBlockProps {
   valuationResult?: any
   onContinue?: () => void
   onViewReport?: () => void
+}
+
+interface HistoricalYearData {
+  year: number
+  revenue: number | null
+  ebitda: number | null
 }
 
 export const ConversationSummaryBlock: React.FC<ConversationSummaryBlockProps> = ({
@@ -28,17 +34,103 @@ export const ConversationSummaryBlock: React.FC<ConversationSummaryBlockProps> =
   onViewReport,
 }) => {
   // Extract key data points
+  // FIX: Use correct field names matching the data structure (country_code, founding_year, number_of_owners)
   const companyName = collectedData?.company_name
   const industry = collectedData?.industry
-  const revenue = collectedData?.current_year_data?.revenue || collectedData?.revenue
-  const ebitda = collectedData?.current_year_data?.ebitda || collectedData?.ebitda
-  const countryCode = collectedData?.country_code || 'BE'
+  // Determine current year for fallback extraction
+  const currentYearForExtraction =
+    collectedData?.current_year_data?.year || new Date().getFullYear()
+  // Extract current year revenue/EBITDA with fallbacks
+  const revenue =
+    collectedData?.current_year_data?.revenue ||
+    collectedData?.revenue ||
+    collectedData?.[`${currentYearForExtraction}_revenue`]
+  const ebitda =
+    collectedData?.current_year_data?.ebitda ||
+    collectedData?.ebitda ||
+    collectedData?.[`${currentYearForExtraction}_ebitda`]
+  const countryCode = collectedData?.country_code || collectedData?.country || 'BE'
   const businessType = collectedData?.business_type
-  const country = collectedData?.country
-  const foundedYear = collectedData?.founded_year || collectedData?.year_business_commenced
+  // Format country code to readable name
+  const countryInfo = countryCode ? getCountryByCode(countryCode) : null
+  const countryDisplay = countryInfo ? `${countryInfo.flag} ${countryInfo.name}` : countryCode
+  // FIX: Check founding_year first (matches generateImportSummary), then fallback to other field names
+  const foundedYear =
+    collectedData?.founding_year ||
+    collectedData?.founded_year ||
+    collectedData?.year_business_commenced
   const employees = collectedData?.number_of_employees || collectedData?.employees
-  const owners = collectedData?.active_owner_managers || collectedData?.owners
-  const sharesForSale = collectedData?.equity_stake_for_sale || collectedData?.shares_for_sale
+  // FIX: Check number_of_owners first (matches generateImportSummary), then fallback to other field names
+  const owners =
+    collectedData?.number_of_owners ||
+    collectedData?.active_owner_managers ||
+    collectedData?.owners
+  const sharesForSale = collectedData?.shares_for_sale || collectedData?.equity_stake_for_sale
+
+  // Extract historical financial data
+  // Look for keys matching pattern {year}_revenue and {year}_ebitda (e.g., 2023_revenue, 2023_ebitda)
+  const historicalYearsMap = new Map<number, HistoricalYearData>()
+  // Use the same current year as determined above for consistency
+  const currentYear = currentYearForExtraction
+
+  if (collectedData && typeof collectedData === 'object') {
+    Object.keys(collectedData).forEach((key) => {
+      // Match pattern: {year}_revenue or {year}_ebitda
+      const revenueMatch = key.match(/^(\d{4})_revenue$/)
+      const ebitdaMatch = key.match(/^(\d{4})_ebitda$/)
+
+      if (revenueMatch) {
+        const year = parseInt(revenueMatch[1], 10)
+        // Validate year is in reasonable range (2000-2100)
+        if (year >= 2000 && year <= 2100 && year !== currentYear) {
+          // Skip current year as it's already displayed separately
+          const value = collectedData[key]
+          // Skip SKIPPED values, null, undefined
+          if (value !== 'SKIPPED' && value !== null && value !== undefined) {
+            const numValue =
+              typeof value === 'number' ? value : parseFloat(String(value))
+            if (!isNaN(numValue)) {
+              const existing = historicalYearsMap.get(year) || {
+                year,
+                revenue: null,
+                ebitda: null,
+              }
+              historicalYearsMap.set(year, { ...existing, revenue: numValue })
+            }
+          }
+        }
+      }
+
+      if (ebitdaMatch) {
+        const year = parseInt(ebitdaMatch[1], 10)
+        // Validate year is in reasonable range (2000-2100)
+        if (year >= 2000 && year <= 2100 && year !== currentYear) {
+          // Skip current year as it's already displayed separately
+          const value = collectedData[key]
+          // Skip SKIPPED values, null, undefined
+          if (value !== 'SKIPPED' && value !== null && value !== undefined) {
+            const numValue =
+              typeof value === 'number' ? value : parseFloat(String(value))
+            if (!isNaN(numValue)) {
+              const existing = historicalYearsMap.get(year) || {
+                year,
+                revenue: null,
+                ebitda: null,
+              }
+              historicalYearsMap.set(year, { ...existing, ebitda: numValue })
+            }
+          }
+        }
+      }
+    })
+  }
+
+  // Convert map to array and sort by year (newest first)
+  const historicalYears: HistoricalYearData[] = Array.from(
+    historicalYearsMap.values()
+  )
+    .filter((yearData) => yearData.revenue !== null || yearData.ebitda !== null) // Only include years with at least one value
+    .sort((a, b) => b.year - a.year) // Sort newest first
 
   // Check if valuation is complete
   const isComplete = !!valuationResult && !!calculatedAt
@@ -46,6 +138,7 @@ export const ConversationSummaryBlock: React.FC<ConversationSummaryBlockProps> =
   // Build list of fields to display
   const fieldsToDisplay: Array<{ label: string; value: string | number | null | undefined }> = []
 
+  // Build fields list in logical order
   if (companyName && companyName !== 'Your business') {
     fieldsToDisplay.push({ label: 'Company Name', value: companyName })
   }
@@ -55,8 +148,9 @@ export const ConversationSummaryBlock: React.FC<ConversationSummaryBlockProps> =
   if (industry) {
     fieldsToDisplay.push({ label: 'Industry', value: industry })
   }
-  if (country) {
-    fieldsToDisplay.push({ label: 'Country', value: country })
+  // FIX: Show country if countryCode is available (formatted with flag and name)
+  if (countryCode) {
+    fieldsToDisplay.push({ label: 'Country', value: countryDisplay })
   }
   if (foundedYear) {
     fieldsToDisplay.push({ label: 'Founded', value: foundedYear })
@@ -121,6 +215,54 @@ export const ConversationSummaryBlock: React.FC<ConversationSummaryBlockProps> =
                         </div>
                       </div>
                     ))}
+                  </div>
+                )}
+
+                {/* Historical Financials Section */}
+                {historicalYears.length > 0 && (
+                  <div className="mt-4 pt-4 border-t border-white/10">
+                    <h5 className="text-xs font-semibold text-zinc-400 mb-3 uppercase tracking-wide">
+                      Historical Financials
+                    </h5>
+                    <div className="overflow-x-auto">
+                      <table className="w-full border-collapse">
+                        <thead>
+                          <tr className="border-b border-white/10">
+                            <th className="text-left py-2 px-3 text-xs font-semibold text-zinc-400">
+                              Year
+                            </th>
+                            <th className="text-right py-2 px-3 text-xs font-semibold text-zinc-400">
+                              Revenue
+                            </th>
+                            <th className="text-right py-2 px-3 text-xs font-semibold text-zinc-400">
+                              EBITDA
+                            </th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {historicalYears.map((yearData) => (
+                            <tr
+                              key={yearData.year}
+                              className="border-b border-white/5 hover:bg-white/5 transition-colors"
+                            >
+                              <td className="py-2 px-3 text-sm font-medium text-white">
+                                {yearData.year}
+                              </td>
+                              <td className="py-2 px-3 text-sm text-white text-right">
+                                {yearData.revenue !== null
+                                  ? formatCurrency(yearData.revenue, countryCode)
+                                  : '-'}
+                              </td>
+                              <td className="py-2 px-3 text-sm text-white text-right">
+                                {yearData.ebitda !== null
+                                  ? formatCurrency(yearData.ebitda, countryCode)
+                                  : '-'}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
                   </div>
                 )}
 

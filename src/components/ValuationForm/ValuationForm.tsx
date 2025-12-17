@@ -66,12 +66,14 @@ export const ValuationForm: React.FC<ValuationFormProps> = ({
       reportId,
       hasCompanyName: !!formData.company_name,
       companyName: formData.company_name,
+      companyNameLength: formData.company_name?.length || 0,
       revenue: formData.revenue,
       ebitda: formData.ebitda,
       industry: formData.industry,
+      formDataKeys: Object.keys(formData),
       formDataObjectId: formData ? Object.keys(formData).length : 0,
     })
-  }, [formData, reportId])
+  }, [formData.company_name, formData.revenue, formData.ebitda, formData.industry, reportId])
   const { businessTypes } = useBusinessTypes()
   const { businessCard, isAuthenticated } = useAuth()
   const { getVersion } = useVersionHistoryStore()

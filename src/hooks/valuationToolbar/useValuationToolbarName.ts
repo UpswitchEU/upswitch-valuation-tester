@@ -78,6 +78,58 @@ export const useValuationToolbarName = (
     }
   }, [sessionName, generatedName, isEditingName, actualReportId])
 
+  // ✅ NEW: Auto-generate name when companyName changes
+  useEffect(() => {
+    if (companyName && companyName.trim() && actualReportId && !isEditingName) {
+      // Only auto-generate if name hasn't been manually edited
+      // Check if current name matches the pattern or is default
+      const expectedAutoName = NameGenerator.generateFromCompany(companyName)
+      const shouldAutoGenerate =
+        !sessionName || // No saved name yet
+        generatedName === initialName || // Still using default
+        generatedName.includes('Valuation Report') || // Using default pattern
+        generatedName === expectedAutoName || // Already matches auto-generated pattern
+        (generatedName.endsWith('business valuation') &&
+          !sessionName) // Ends with "business valuation" but no session name (likely auto-generated)
+
+      if (shouldAutoGenerate) {
+        const newName = NameGenerator.generateFromCompany(companyName)
+        if (newName !== generatedName) {
+          generalLogger.info('[useValuationToolbarName] Auto-generating name from company name', {
+            companyName,
+            newName,
+            currentGeneratedName: generatedName,
+            reportId: actualReportId,
+          })
+          setGeneratedName(newName)
+          setEditedName(newName)
+
+          // Auto-save to backend (fire-and-forget)
+          backendAPI
+            .updateValuationSession(actualReportId, {
+              name: newName,
+            } as any)
+            .then((response) => {
+              if (response?.session?.name) {
+                useSessionStore.getState().updateSession({ name: response.session.name })
+                generalLogger.debug('[useValuationToolbarName] Auto-saved valuation name', {
+                  reportId: actualReportId,
+                  name: response.session.name,
+                })
+              }
+            })
+            .catch((error) => {
+              generalLogger.warn('[useValuationToolbarName] Failed to auto-save valuation name', {
+                error: error instanceof Error ? error.message : 'Unknown error',
+                reportId: actualReportId,
+                companyName,
+              })
+            })
+        }
+      }
+    }
+  }, [companyName, actualReportId, sessionName, generatedName, initialName, isEditingName])
+
   const nameInputRef = useRef<HTMLInputElement>(null)
 
   // Focus input when editing starts

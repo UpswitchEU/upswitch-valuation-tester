@@ -180,6 +180,10 @@ export const ManualLayout: React.FC<ManualLayoutProps> = ({
           sessionDataKeys: sessionDataObj ? Object.keys(sessionDataObj) : [],
           sessionDataSample: {
             companyName: sessionDataObj?.company_name,
+            companyNameType: typeof sessionDataObj?.company_name,
+            companyNameLength: sessionDataObj?.company_name?.length || 0,
+            companyNameIsEmptyString: sessionDataObj?.company_name === '',
+            companyNameIsUndefined: sessionDataObj?.company_name === undefined,
             revenue: sessionDataObj?.revenue,
             ebitda: sessionDataObj?.ebitda,
             industry: sessionDataObj?.industry,
@@ -193,6 +197,8 @@ export const ManualLayout: React.FC<ManualLayoutProps> = ({
           },
           currentFormSample: {
             companyName: currentFormData.company_name,
+            companyNameType: typeof currentFormData.company_name,
+            companyNameLength: currentFormData.company_name?.length || 0,
             revenue: currentFormData.revenue,
             ebitda: currentFormData.ebitda,
             industry: currentFormData.industry,
@@ -220,8 +226,9 @@ export const ManualLayout: React.FC<ManualLayoutProps> = ({
 
         // ✅ FIX: Check for session data in both flat and nested structures
         // Revenue/EBITDA might be in current_year_data.revenue or at top level
+        // ✅ FIX: Check if company_name exists (even if empty string) - it's a key field
         hasSessionData = !!(
-          sessionDataObj.company_name ||
+          sessionDataObj.company_name !== undefined || // Include even if empty string
           sessionDataObj.revenue ||
           sessionDataObj.ebitda ||
           sessionDataObj.current_year_data?.revenue ||
@@ -243,7 +250,8 @@ export const ManualLayout: React.FC<ManualLayoutProps> = ({
           // Handle both flat and nested structures (revenue/ebitda might be in current_year_data)
           const formDataUpdate: Partial<any> = {
             // Basic company information
-            company_name: sessionDataObj.company_name,
+            // ✅ FIX: Explicitly include company_name even if empty string (preserve user input)
+            company_name: sessionDataObj.company_name !== undefined ? sessionDataObj.company_name : undefined,
             country_code: sessionDataObj.country_code,
             industry: sessionDataObj.industry,
             subIndustry: sessionDataObj.subIndustry, // ✅ NEW: Include sub-industry field
@@ -292,8 +300,15 @@ export const ManualLayout: React.FC<ManualLayoutProps> = ({
           // ✅ FIX: Remove undefined values but preserve empty strings and null
           // Empty strings are valid values (e.g., user cleared a field)
           // Only remove truly undefined values
+          // CRITICAL: Preserve company_name even if empty string (it's a required field that user may have entered)
           Object.keys(formDataUpdate).forEach((key) => {
-            if (formDataUpdate[key] === undefined) {
+            // Special handling for company_name - always include if it exists in sessionData (even if empty string)
+            if (key === 'company_name') {
+              // Only remove if it was never set in sessionData (undefined)
+              if (formDataUpdate[key] === undefined && sessionDataObj.company_name === undefined) {
+                delete formDataUpdate[key]
+              }
+            } else if (formDataUpdate[key] === undefined) {
               delete formDataUpdate[key]
             }
           })
@@ -323,6 +338,9 @@ export const ManualLayout: React.FC<ManualLayoutProps> = ({
             generalLogger.info('[ManualLayout] Form data restored (verified)', {
               reportId,
               companyName: restoredFormData.company_name,
+              companyNameLength: restoredFormData.company_name?.length || 0,
+              companyNameFromUpdate: formDataUpdate.company_name,
+              companyNameMatch: restoredFormData.company_name === formDataUpdate.company_name,
               revenue: restoredFormData.revenue,
               ebitda: restoredFormData.ebitda,
               industry: restoredFormData.industry,
@@ -332,8 +350,20 @@ export const ManualLayout: React.FC<ManualLayoutProps> = ({
                 revenue: restoredFormData.revenue === formDataUpdate.revenue,
                 ebitda: restoredFormData.ebitda === formDataUpdate.ebitda,
                 companyName: restoredFormData.company_name === formDataUpdate.company_name,
+                companyNameExact: restoredFormData.company_name === formDataUpdate.company_name,
               },
             })
+            
+            // ✅ FIX: If company_name is still empty after restoration, log warning
+            if (!restoredFormData.company_name && formDataUpdate.company_name) {
+              generalLogger.warn('[ManualLayout] Company name not restored properly', {
+                reportId,
+                expectedCompanyName: formDataUpdate.company_name,
+                actualCompanyName: restoredFormData.company_name,
+                sessionDataCompanyName: sessionDataObj.company_name,
+                note: 'Company name may need manual re-entry',
+              })
+            }
           }, 100)
         } else if (hasSessionData && !formIsEmpty) {
           generalLogger.warn('[ManualLayout] Skipping form restoration - form already has data', {
@@ -537,8 +567,9 @@ export const ManualLayout: React.FC<ManualLayoutProps> = ({
       (currentFormData.industry === 'services' || !currentFormData.industry)
 
     const sessionDataObj = sessionData as any
+    // ✅ FIX: Check if company_name exists (even if empty string) - it's a key field
     const hasSessionData =
-      sessionDataObj.company_name ||
+      sessionDataObj.company_name !== undefined || // Include even if empty string
       sessionDataObj.revenue ||
       sessionDataObj.ebitda ||
       sessionDataObj.current_year_data?.revenue ||
@@ -556,7 +587,8 @@ export const ManualLayout: React.FC<ManualLayoutProps> = ({
       const { updateFormData: updateFormDataFn } = useManualFormStore.getState()
 
       const formDataUpdate: Partial<any> = {
-        company_name: sessionDataObj.company_name,
+        // ✅ FIX: Explicitly include company_name even if empty string (preserve user input)
+        company_name: sessionDataObj.company_name !== undefined ? sessionDataObj.company_name : undefined,
         country_code: sessionDataObj.country_code,
         industry: sessionDataObj.industry,
         subIndustry: sessionDataObj.subIndustry, // ✅ NEW: Include sub-industry field
@@ -594,8 +626,15 @@ export const ManualLayout: React.FC<ManualLayoutProps> = ({
       // ✅ FIX: Remove undefined values but preserve empty strings and null
       // Empty strings are valid values (e.g., user cleared a field)
       // Only remove truly undefined values
+      // CRITICAL: Preserve company_name even if empty string (it's a required field that user may have entered)
       Object.keys(formDataUpdate).forEach((key) => {
-        if (formDataUpdate[key] === undefined) {
+        // Special handling for company_name - always include if it exists in sessionData (even if empty string)
+        if (key === 'company_name') {
+          // Only remove if it was never set in sessionData (undefined)
+          if (formDataUpdate[key] === undefined && sessionDataObj.company_name === undefined) {
+            delete formDataUpdate[key]
+          }
+        } else if (formDataUpdate[key] === undefined) {
           delete formDataUpdate[key]
         }
       })
@@ -774,6 +813,12 @@ export const ManualLayout: React.FC<ManualLayoutProps> = ({
     return unsubscribe
   }, [showToast])
 
+  // ✅ FIX: Get company name from formData (current input) or result (after calculation)
+  // This ensures valuation name updates as user types company name
+  const formCompanyName = useManualFormStore((state) => state.formData.company_name)
+  const resultCompanyName = result?.company_name
+  const companyName = formCompanyName || resultCompanyName
+
   return (
     <div className="flex flex-col h-full overflow-hidden">
       {/* Toolbar (Save Status integrated inside toolbar) */}
@@ -789,7 +834,7 @@ export const ManualLayout: React.FC<ManualLayoutProps> = ({
         onTabChange={(tab) => {
           handleHookTabChange(tab as 'preview' | 'info' | 'history')
         }}
-        companyName={result?.company_name}
+        companyName={companyName}
       />
 
       {/* Split Panel */}

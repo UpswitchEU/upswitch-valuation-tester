@@ -16,9 +16,11 @@
  */
 
 import { useCallback, useEffect } from 'react'
+import { backendAPI } from '../services/backendApi'
 import { useSessionStore } from '../store/useSessionStore'
 import { debounce } from '../utils/debounce'
 import { generalLogger } from '../utils/logger'
+import { NameGenerator } from '../utils/nameGenerator'
 
 interface UseFormSessionSyncOptions {
   reportId: string | null | undefined
@@ -136,6 +138,56 @@ export const useFormSessionSync = ({ reportId, formData }: UseFormSessionSyncOpt
 
         // ✅ FIX: Update local store first
         await updateSessionData(sessionUpdate)
+        
+        // ✅ NEW: Auto-update valuation name when company_name changes
+        // This ensures name is updated immediately as user types
+        if (sessionUpdate.company_name && sessionUpdate.company_name.trim() && currentSession.reportId) {
+          const newName = NameGenerator.generateFromCompany(sessionUpdate.company_name)
+          const currentName = currentSession.name
+          
+          // Only update if name hasn't been manually edited (matches auto-generated pattern or is default)
+          const shouldUpdateName =
+            !currentName || // No name yet
+            currentName === 'Valuation test123' || // Still using default
+            currentName.includes('Valuation Report') || // Using default pattern
+            currentName === newName || // Already matches
+            (currentName.endsWith('business valuation') && newName !== currentName) // Ends with pattern but different company
+
+          if (shouldUpdateName && newName !== currentName) {
+            try {
+              // Update session store optimistically
+              useSessionStore.getState().updateSession({ name: newName })
+              
+              // Save to backend (fire-and-forget)
+              backendAPI
+                .updateValuationSession(currentSession.reportId, {
+                  name: newName,
+                } as any)
+                .then((response) => {
+                  if (response?.session?.name) {
+                    useSessionStore.getState().updateSession({ name: response.session.name })
+                    generalLogger.debug('[useFormSessionSync] Auto-updated valuation name', {
+                      reportId: currentSession.reportId,
+                      companyName: sessionUpdate.company_name,
+                      newName: response.session.name,
+                    })
+                  }
+                })
+                .catch((error) => {
+                  generalLogger.warn('[useFormSessionSync] Failed to auto-update valuation name', {
+                    error: error instanceof Error ? error.message : 'Unknown error',
+                    reportId: currentSession.reportId,
+                    companyName: sessionUpdate.company_name,
+                  })
+                })
+            } catch (error) {
+              // Silently fail - name update is non-critical
+              generalLogger.debug('[useFormSessionSync] Error updating valuation name', {
+                error: error instanceof Error ? error.message : 'Unknown error',
+              })
+            }
+          }
+        }
         
         // ✅ NEW: Persist to backend after updating local store
         // This ensures form fields are saved even if user refreshes before submitting

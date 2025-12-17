@@ -54,29 +54,17 @@ export class NameGenerator {
 
   /**
    * Generate a name based on company name
+   * Format: "[COMPANY NAME] business valuation" (e.g., "Amadeus business valuation")
    */
   static generateFromCompany(companyName: string): string {
-    if (!companyName) {
+    if (!companyName || !companyName.trim()) {
       return this.generateValuationName()
     }
 
-    // Clean and truncate company name
-    const cleanName = companyName
-      .trim()
-      .split(' ')
-      .slice(0, 2) // Take first 2 words max
-      .join(' ')
-      .substring(0, 20) // Max 20 chars
+    // Clean company name (remove extra spaces, trim)
+    const cleanName = companyName.trim()
 
-    // Generate unique number from company name
-    let hashSum = 0
-    for (let i = 0; i < companyName.length; i++) {
-      hashSum += companyName.charCodeAt(i) * (i + 1)
-    }
-
-    const reportNumber = (hashSum % 900) + 100
-
-    return `${cleanName} Valuation #${reportNumber}`
+    return `${cleanName} business valuation`
   }
 
   /**

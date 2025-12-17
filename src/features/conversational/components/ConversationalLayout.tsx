@@ -498,6 +498,24 @@ const ConversationalLayoutInner: React.FC<ConversationalLayoutProps> = ({
       return
     }
 
+    // FIX: Prevent duplicate import summary when ConversationSummaryBlock is shown
+    // ConversationSummaryBlock is shown when there are restored messages and collected data
+    // If summary block is displayed, skip generating the import summary message
+    const hasRestoredMessages = state.messages.length > 0
+    const hasCollectedData =
+      sessionData && typeof sessionData === 'object' && Object.keys(sessionData).length > 0
+    const wouldShowSummaryBlock = hasRestoredMessages && hasCollectedData && restoration.state.isRestored
+
+    if (wouldShowSummaryBlock) {
+      chatLogger.debug('Skipping import summary: ConversationSummaryBlock is displayed', {
+        reportId,
+        hasRestoredMessages,
+        hasCollectedData,
+        isRestored: restoration.state.isRestored,
+      })
+      return
+    }
+
     try {
       if (shouldGenerateImportSummary(sessionData, state.messages)) {
         chatLogger.info('Generating import summary for manual → conversational switch', {
