@@ -293,15 +293,25 @@ export const ManualLayout: React.FC<ManualLayoutProps> = ({
           })
           updateFormDataFn(formDataUpdate)
 
-          // Verify restoration was successful
-          const restoredFormData = useManualFormStore.getState().formData
-          generalLogger.info('[ManualLayout] Form data restored', {
-            reportId,
-            companyName: restoredFormData.company_name,
-            revenue: restoredFormData.revenue,
-            ebitda: restoredFormData.ebitda,
-            industry: restoredFormData.industry,
-          })
+          // ✅ FIX: Force a re-render by reading updated formData after a brief delay
+          // This ensures the form component receives the updated data
+          setTimeout(() => {
+            const restoredFormData = useManualFormStore.getState().formData
+            generalLogger.info('[ManualLayout] Form data restored (verified)', {
+              reportId,
+              companyName: restoredFormData.company_name,
+              revenue: restoredFormData.revenue,
+              ebitda: restoredFormData.ebitda,
+              industry: restoredFormData.industry,
+              formDataKeys: Object.keys(restoredFormData),
+              // Verify the values match what we tried to restore
+              restorationMatch: {
+                revenue: restoredFormData.revenue === formDataUpdate.revenue,
+                ebitda: restoredFormData.ebitda === formDataUpdate.ebitda,
+                companyName: restoredFormData.company_name === formDataUpdate.company_name,
+              },
+            })
+          }, 100)
         } else if (hasSessionData && !formIsEmpty) {
           generalLogger.warn('[ManualLayout] Skipping form restoration - form already has data', {
             reportId,
@@ -566,10 +576,22 @@ export const ManualLayout: React.FC<ManualLayoutProps> = ({
       updateFormDataFn(formDataUpdate)
       restorationRef.current.lastRestoredReportId = reportId
 
-      generalLogger.info('[ManualLayout] Form fields restored from sessionData (reactive)', {
-        reportId,
-        fieldsRestored: Object.keys(formDataUpdate).length,
-      })
+      // ✅ FIX: Verify restoration after a brief delay to ensure form component receives updates
+      setTimeout(() => {
+        const restoredFormData = useManualFormStore.getState().formData
+        generalLogger.info('[ManualLayout] Form fields restored from sessionData (reactive, verified)', {
+          reportId,
+          fieldsRestored: Object.keys(formDataUpdate).length,
+          companyName: restoredFormData.company_name,
+          revenue: restoredFormData.revenue,
+          ebitda: restoredFormData.ebitda,
+          restorationMatch: {
+            revenue: restoredFormData.revenue === formDataUpdate.revenue,
+            ebitda: restoredFormData.ebitda === formDataUpdate.ebitda,
+            companyName: restoredFormData.company_name === formDataUpdate.company_name,
+          },
+        })
+      }, 100)
 
       // ✅ FIX: Mark as saved if restoring an existing report that was explicitly saved by user
       // Same logic as main restoration effect

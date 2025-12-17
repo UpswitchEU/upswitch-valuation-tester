@@ -62,19 +62,24 @@ export default function ValuationReportPage({ params, searchParams }: ValuationR
   }
 
   // Handle searchParams (optional)
-  let mode: 'edit' | 'view' = 'edit' // Default to edit mode (M&A workflow)
-  let versionNumber: number | undefined
-
-  if (searchParams) {
-    const searchParamsPromise =
-      searchParams instanceof Promise ? searchParams : Promise.resolve(searchParams)
-    const resolvedSearchParams = use(searchParamsPromise)
-
-    mode = resolvedSearchParams.mode || 'edit'
-    versionNumber = resolvedSearchParams.version
-      ? parseInt(resolvedSearchParams.version)
-      : undefined
+  // FIX: Always call use() hook unconditionally to comply with React rules of hooks
+  const searchParamsPromise = searchParams
+    ? searchParams instanceof Promise
+      ? searchParams
+      : Promise.resolve(searchParams)
+    : Promise.resolve({})
+  const resolvedSearchParams = use(searchParamsPromise) as {
+    mode?: 'edit' | 'view'
+    version?: string
+    flow?: 'manual' | 'conversational'
+    prefilledQuery?: string
+    autoSend?: string
   }
+
+  const mode: 'edit' | 'view' = resolvedSearchParams.mode || 'edit' // Default to edit mode (M&A workflow)
+  const versionNumber: number | undefined = resolvedSearchParams.version
+    ? parseInt(resolvedSearchParams.version)
+    : undefined
 
   return (
     <ErrorBoundary>

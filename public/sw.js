@@ -13,7 +13,7 @@
  */
 
 // Version tracking for debugging (increment on each deploy)
-const SW_VERSION = '1.0.4'
+const SW_VERSION = '1.0.5'
 const CACHE_NAME = `upswitch-valuation-v${SW_VERSION}`
 const RUNTIME_CACHE = `upswitch-runtime-v${SW_VERSION}`
 

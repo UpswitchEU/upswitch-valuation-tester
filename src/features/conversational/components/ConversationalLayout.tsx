@@ -22,8 +22,8 @@ import { useToast } from '../../../hooks/useToast'
 import { conversationAPI } from '../../../services/api/conversation/ConversationAPI'
 import { guestCreditService } from '../../../services/guestCreditService'
 import {
-  useConversationalChatStore,
-  useConversationalResultsStore,
+    useConversationalChatStore,
+    useConversationalResultsStore,
 } from '../../../store/conversational'
 import { useSessionStore } from '../../../store/useSessionStore'
 import type { Message } from '../../../types/message'
@@ -31,14 +31,14 @@ import type { ValuationResponse } from '../../../types/valuation'
 import { chatLogger } from '../../../utils/logger'
 import { CreditGuard } from '../../auth/components/CreditGuard'
 import {
-  ConversationProvider,
-  useConversationActions,
-  useConversationState,
+    ConversationProvider,
+    useConversationActions,
+    useConversationState,
 } from '../context/ConversationContext'
 import { useConversationRestoration } from '../hooks'
 import {
-  generateImportSummaryMessage,
-  shouldGenerateImportSummary,
+    generateImportSummaryMessage,
+    shouldGenerateImportSummary,
 } from '../utils/generateImportSummary'
 import { BusinessProfileSection } from './BusinessProfileSection'
 import { ConversationPanel } from './ConversationPanel'
@@ -845,7 +845,14 @@ const ConversationalLayoutInner: React.FC<ConversationalLayoutProps> = ({
  * Provides a chat-like interface for natural business valuation conversations.
  */
 export const ConversationalLayout: React.FC<ConversationalLayoutProps> = React.memo(
-  ({ reportId, onComplete, initialQuery = null, autoSend = false }) => {
+  ({
+    reportId,
+    onComplete,
+    initialQuery = null,
+    autoSend = false,
+    initialVersion,
+    initialMode = 'edit',
+  }) => {
     // Use key prop to force remount when reportId changes
     // This ensures clean state for each new report
     return (
@@ -855,6 +862,8 @@ export const ConversationalLayout: React.FC<ConversationalLayoutProps> = React.m
           onComplete={onComplete}
           initialQuery={initialQuery}
           autoSend={autoSend}
+          initialVersion={initialVersion}
+          initialMode={initialMode}
         />
       </ConversationProvider>
     )

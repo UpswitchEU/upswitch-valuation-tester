@@ -51,10 +51,27 @@ export const ValuationForm: React.FC<ValuationFormProps> = ({
   initialVersion,
   isRegenerationMode = false,
 }) => {
-  const { formData, updateFormData, prefillFromBusinessCard } = useManualFormStore()
+  // ✅ FIX: Use selector to ensure component re-renders when formData changes
+  // This ensures form fields update when restoration happens
+  const formData = useManualFormStore((state) => state.formData)
+  const updateFormData = useManualFormStore((state) => state.updateFormData)
+  const prefillFromBusinessCard = useManualFormStore((state) => state.prefillFromBusinessCard)
   // ROOT CAUSE FIX: Only subscribe to reportId, not entire session object
   // This prevents re-renders when session data updates
   const reportId = useSessionStore((state) => state.session?.reportId)
+
+  // DEBUG: Log formData changes to diagnose restoration display issue
+  useEffect(() => {
+    generalLogger.debug('[ValuationForm] Form data changed', {
+      reportId,
+      hasCompanyName: !!formData.company_name,
+      companyName: formData.company_name,
+      revenue: formData.revenue,
+      ebitda: formData.ebitda,
+      industry: formData.industry,
+      formDataObjectId: formData ? Object.keys(formData).length : 0,
+    })
+  }, [formData, reportId])
   const { businessTypes } = useBusinessTypes()
   const { businessCard, isAuthenticated } = useAuth()
   const { getVersion } = useVersionHistoryStore()
