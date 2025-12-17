@@ -178,7 +178,7 @@ export const UserDropdown: React.FC<UserDropdownProps> = ({ user, onLogout }) =>
   const menuItems = user ? authenticatedMenuItems : guestMenuItems
 
   return (
-    <div ref={dropdownRef} className="relative" style={{ zIndex: 100 }}>
+    <div ref={dropdownRef} className="relative" style={{ zIndex: 99999 }}>
       {/* Avatar Button */}
       <button
         ref={buttonRef}
@@ -215,14 +215,15 @@ export const UserDropdown: React.FC<UserDropdownProps> = ({ user, onLogout }) =>
         <>
           {/* Backdrop */}
           <div
-            className="fixed inset-0 z-[9998]"
+            className="fixed inset-0 z-[99998]"
             onClick={() => setIsOpen(false)}
             aria-hidden="true"
           />
 
           {/* Dropdown */}
+          {/* ✅ FIX: Use very high z-index to ensure dropdown appears above report content */}
           <div
-            className="fixed w-56 bg-zinc-900 rounded-lg shadow-lg border border-zinc-800 py-2 z-[9999]"
+            className="fixed w-56 bg-zinc-900 rounded-lg shadow-lg border border-zinc-800 py-2 z-[99999]"
             style={{
               top: `${dropdownPosition.top}px`, // Dynamic position
               right: `${dropdownPosition.right}px`, // Dynamic position

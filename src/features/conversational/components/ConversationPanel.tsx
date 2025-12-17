@@ -167,17 +167,20 @@ export const ConversationPanel: React.FC<ConversationPanelProps> = ({
         try {
           // Get collected data from session for restoration
           const sessionData = sessionStore.session?.sessionData || {}
+          const sessionName = sessionStore.session?.name // Get name from session
 
           // ATOMIC SAVE: Save complete package in single API call
           // - sessionData: Collected data from conversation for restoration
           // - valuationResult: Calculation result
           // - htmlReport: Main report HTML
           // - infoTabHtml: Info tab HTML
+          // - name: Custom valuation name (e.g., "Amadeus report")
           await reportService.saveReportAssets(reportId, {
             sessionData: sessionData,  // ✅ NEW: Include collected data
             valuationResult: resultWithHtml,
             htmlReport: resultWithHtml.html_report || '',
             infoTabHtml: resultWithHtml.info_tab_html || '',
+            name: sessionName, // ✅ NEW: Include custom valuation name
           })
 
           chatLogger.info('[Conversational] Complete report package saved atomically', {

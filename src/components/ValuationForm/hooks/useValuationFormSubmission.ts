@@ -45,6 +45,7 @@ export const useValuationFormSubmission = (
   const { trySetCalculating, setCalculating, isCalculating, setResult } = useManualResultsStore()
   // ROOT CAUSE FIX: Only subscribe to reportId, not entire session object
   const reportId = useSessionStore((state) => state.session?.reportId)
+  const sessionName = useSessionStore((state) => state.session?.name) // Get name from session
   const { createVersion, getLatestVersion, fetchVersions } = useVersionHistoryStore()
 
   const handleSubmit = useCallback(
@@ -406,11 +407,13 @@ export const useValuationFormSubmission = (
             // - valuationResult: Calculation result
             // - htmlReport: Main report HTML
             // - infoTabHtml: Info tab HTML
+            // - name: Custom valuation name (e.g., "Amadeus report")
             await reportService.saveReportAssets(reportId, {
               sessionData: formData,  // ✅ NEW: Include input data
               valuationResult: result,
               htmlReport: result.html_report,
               infoTabHtml: result.info_tab_html,
+              name: sessionName, // ✅ NEW: Include custom valuation name
             })
 
             console.log('[Manual] DIAGNOSTIC: reportService.saveReportAssets completed successfully', { reportId })

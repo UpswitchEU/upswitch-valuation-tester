@@ -42,17 +42,41 @@ export const useValuationToolbarName = (
   // ROOT CAUSE FIX: Only subscribe to reportId, not entire session object
   const sessionReportId = useSessionStore((state) => state.session?.reportId)
   const actualReportId = reportId || sessionReportId
+  
+  // ✅ NEW: Subscribe to session.name for restoration
+  const sessionName = useSessionStore((state) => state.session?.name)
 
   const [isEditingName, setIsEditingName] = useState(false)
   const [editedName, setEditedName] = useState(initialName)
 
   // Generate unique name based on company or default
+  // ✅ NEW: Initialize from session.name if available, otherwise generate
   const [generatedName, setGeneratedName] = useState(() => {
+    // Priority: session.name > initialName > generated name
+    if (sessionName) {
+      return sessionName
+    }
+    if (initialName && initialName !== 'Valuation test123') {
+      return initialName
+    }
     if (companyName) {
       return NameGenerator.generateFromCompany(companyName)
     }
     return NameGenerator.generateValuationName()
   })
+  
+  // ✅ NEW: Restore name from session when it becomes available
+  useEffect(() => {
+    if (sessionName && sessionName !== generatedName && !isEditingName) {
+      generalLogger.debug('[useValuationToolbarName] Restoring name from session', {
+        sessionName,
+        currentGeneratedName: generatedName,
+        reportId: actualReportId,
+      })
+      setGeneratedName(sessionName)
+      setEditedName(sessionName)
+    }
+  }, [sessionName, generatedName, isEditingName, actualReportId])
 
   const nameInputRef = useRef<HTMLInputElement>(null)
 
@@ -93,9 +117,19 @@ export const useValuationToolbarName = (
       // Persist to backend via session update if reportId is available
       if (actualReportId) {
         try {
-          await backendAPI.updateValuationSession(actualReportId, {
+          const response = await backendAPI.updateValuationSession(actualReportId, {
             name: nameToSave,
           } as any)
+          
+          // ✅ NEW: Update session store with the saved name to keep it in sync
+          if (response?.session?.name) {
+            useSessionStore.getState().updateSession({ name: response.session.name })
+            generalLogger.debug('Session store updated with saved name', { 
+              reportId: actualReportId,
+              name: response.session.name 
+            })
+          }
+          
           generalLogger.debug('Valuation name persisted to backend', { reportId: actualReportId })
         } catch (error) {
           generalLogger.warn('Failed to persist valuation name to backend', {
@@ -114,7 +148,8 @@ export const useValuationToolbarName = (
   }
 
   const handleNameCancel = () => {
-    setEditedName(initialName)
+    // Reset to current generated name (which may be from session)
+    setEditedName(generatedName)
     setIsEditingName(false)
   }
 

@@ -109,6 +109,7 @@ export class ReportService {
       valuationResult?: ValuationResponse
       htmlReport?: string
       infoTabHtml?: string
+      name?: string // Custom valuation name (e.g., "Amadeus report")
     }
   ): Promise<void> {
     const startTime = performance.now()
@@ -148,6 +149,7 @@ export class ReportService {
         valuationResult: assets.valuationResult,
         htmlReport: assets.htmlReport,
         infoTabHtml: assets.infoTabHtml,
+        name: assets.name, // ✅ NEW: Send custom valuation name
       })
       const putResultDuration = performance.now() - putResultStartTime
       

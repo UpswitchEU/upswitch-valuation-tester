@@ -445,6 +445,7 @@ export class SessionAPI extends HttpClient {
       valuationResult: any
       htmlReport?: string
       infoTabHtml?: string
+      name?: string // ✅ NEW: Custom valuation name (e.g., "Amadeus report")
     },
     options?: APIRequestConfig
   ): Promise<{ success: boolean; message: string }> {
@@ -457,6 +458,8 @@ export class SessionAPI extends HttpClient {
         htmlReportLength: data.htmlReport?.length || 0,
         hasInfoTabHtml: !!data.infoTabHtml,
         infoTabHtmlLength: data.infoTabHtml?.length || 0,
+        hasName: !!data.name,
+        name: data.name || undefined,
       })
 
       const response = await this.executeRequest<{ success: boolean; message: string }>(
@@ -468,6 +471,7 @@ export class SessionAPI extends HttpClient {
             valuationResult: data.valuationResult,
             htmlReport: data.htmlReport,
             infoTabHtml: data.infoTabHtml,
+            name: data.name, // ✅ NEW: Send custom valuation name
           },
           headers: {},
         } as any,
