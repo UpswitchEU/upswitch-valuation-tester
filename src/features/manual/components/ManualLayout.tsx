@@ -13,6 +13,7 @@ import { ResizableDivider } from '../../../components/ResizableDivider'
 import { InputFieldsSkeleton } from '../../../components/skeletons'
 import { ValuationForm } from '../../../components/ValuationForm'
 import { ValuationToolbar } from '../../../components/ValuationToolbar'
+import { shouldEnableSessionRestoration } from '../../../config/features'
 import { useAuth } from '../../../hooks/useAuth'
 import { useToast } from '../../../hooks/useToast'
 import {
@@ -129,6 +130,13 @@ export const ManualLayout: React.FC<ManualLayoutProps> = ({
       return
     }
 
+    // Check feature flag before restoring
+    if (!shouldEnableSessionRestoration()) {
+      generalLogger.info('[ManualLayout] Session restoration disabled by feature flag', { reportId })
+      restorationRef.current.lastRestoredReportId = reportId
+      return
+    }
+
     // Mark as restoring
     restorationRef.current.isRestoring = true
 
@@ -155,12 +163,43 @@ export const ManualLayout: React.FC<ManualLayoutProps> = ({
         }
       }
 
-      // Restore results
+      // Restore results - CRITICAL FIX: Merge HTML reports from session into result object
       if (currentSession.valuationResult) {
         const currentResult = useManualResultsStore.getState().result
         if (!currentResult || currentResult.valuation_id !== currentSession.valuationResult.valuation_id) {
-          generalLogger.debug('[ManualLayout] Restoring result', { reportId })
-          setResultFn(currentSession.valuationResult as any)
+          generalLogger.info('[ManualLayout] Restoring result with HTML assets', { 
+            reportId,
+            hasHtmlReport: !!currentSession.htmlReport,
+            hasInfoTabHtml: !!currentSession.infoTabHtml,
+            htmlReportLength: currentSession.htmlReport?.length || 0,
+            infoTabHtmlLength: currentSession.infoTabHtml?.length || 0,
+          })
+          
+          // Merge HTML reports from session into result object (they're stored separately in DB)
+          const resultWithHtml = {
+            ...currentSession.valuationResult,
+            html_report: currentSession.htmlReport || currentSession.valuationResult.html_report,
+            info_tab_html: currentSession.infoTabHtml || currentSession.valuationResult.info_tab_html,
+          }
+          
+          setResultFn(resultWithHtml as any)
+          
+          // Verify restoration was successful
+          const restoredResult = useManualResultsStore.getState().result
+          if (restoredResult && !restoredResult.html_report) {
+            generalLogger.error('[ManualLayout] RESTORATION FAILED: html_report missing after setResult', {
+              reportId,
+              valuationId: restoredResult.valuation_id,
+              sessionHadHtmlReport: !!currentSession.htmlReport,
+            })
+          } else if (restoredResult?.html_report) {
+            generalLogger.info('[ManualLayout] RESTORATION SUCCESS: HTML report restored', {
+              reportId,
+              valuationId: restoredResult.valuation_id,
+              htmlReportLength: restoredResult.html_report.length,
+              infoTabHtmlLength: restoredResult.info_tab_html?.length || 0,
+            })
+          }
         }
       }
 

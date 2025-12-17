@@ -110,6 +110,30 @@ import { ConversationalLayout } from '@/features/conversational/components/Conve
 4. **Error handling**: Specific error types instead of generic Error
 5. **Performance**: Memoization and code splitting added
 
+## Session Restoration
+
+**Critical Feature**: Valuation data now persists across page refreshes.
+
+**Implementation**: See [`/docs/RESTORATION_ARCHITECTURE.md`](../../docs/RESTORATION_ARCHITECTURE.md) for complete details.
+
+**Key Changes** (December 17, 2025):
+- Fixed HTML report restoration in both Manual and Conversational flows
+- Added feature flag `ENABLE_SESSION_RESTORATION` for safe rollback
+- Comprehensive logging and verification
+- Full test coverage (unit + integration + E2E)
+
+**What Persists**:
+- ✅ Form input data (company name, revenue, etc.)
+- ✅ Valuation results (calculations, metrics)
+- ✅ HTML reports (main report + info tab)
+- ✅ Final valuation price
+- ✅ Version history
+
+**Files Modified**:
+- `manual/components/ManualLayout.tsx` - HTML merging fix
+- `conversational/components/ConversationalLayout.tsx` - HTML merging fix
+- `config/features.ts` - Restoration feature flag
+
 ## Best Practices
 
 1. **Keep components small**: Max 300 lines per component
@@ -118,6 +142,7 @@ import { ConversationalLayout } from '@/features/conversational/components/Conve
 4. **Handle errors specifically**: Use domain-specific error types
 5. **Memoize expensive operations**: Use React.memo, useMemo, useCallback
 6. **Code split heavy components**: Lazy load routes and heavy components
+7. **Test restoration**: Always test data persistence after page refresh
 
 ## Testing
 

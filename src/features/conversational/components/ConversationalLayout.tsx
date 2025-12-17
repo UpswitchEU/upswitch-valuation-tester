@@ -12,6 +12,7 @@ import { AssetInspector } from '../../../components/debug/AssetInspector'
 import { FullScreenModal } from '../../../components/FullScreenModal'
 import { ResizableDivider } from '../../../components/ResizableDivider'
 import { ValuationToolbar } from '../../../components/ValuationToolbar'
+import { shouldEnableSessionRestoration } from '../../../config/features'
 import { MOBILE_BREAKPOINT } from '../../../constants/panelConstants'
 import { useAuth } from '../../../hooks/useAuth'
 import { useConversationalToolbar } from '../../../hooks/useConversationalToolbar'
@@ -118,6 +119,13 @@ const ConversationalLayoutInner: React.FC<ConversationalLayoutProps> = ({
       return
     }
 
+    // Check feature flag before restoring
+    if (!shouldEnableSessionRestoration()) {
+      chatLogger.info('[Conversational] Session restoration disabled by feature flag', { reportId })
+      lastRestoredReportIdRef.current = reportId
+      return
+    }
+
     // Read session state inside effect (only when reportId prop changes)
     const currentSession = useSessionStore.getState().session
     if (!currentSession || currentSession.reportId !== reportId) {
@@ -128,11 +136,41 @@ const ConversationalLayoutInner: React.FC<ConversationalLayoutProps> = ({
     lastRestoredReportIdRef.current = reportId
 
     // Restore results if session has them and we don't have a result yet
+    // CRITICAL FIX: Merge HTML reports from session into result object
     if (currentSession.valuationResult && !result) {
-      setResult(currentSession.valuationResult as any)
-      chatLogger.info('[Conversational] Restored valuation result from session', {
+      chatLogger.info('[Conversational] Restoring result with HTML assets', { 
         reportId,
+        hasHtmlReport: !!currentSession.htmlReport,
+        hasInfoTabHtml: !!currentSession.infoTabHtml,
+        htmlReportLength: currentSession.htmlReport?.length || 0,
+        infoTabHtmlLength: currentSession.infoTabHtml?.length || 0,
       })
+      
+      // Merge HTML reports from session into result object (they're stored separately in DB)
+      const resultWithHtml = {
+        ...currentSession.valuationResult,
+        html_report: currentSession.htmlReport || currentSession.valuationResult.html_report,
+        info_tab_html: currentSession.infoTabHtml || currentSession.valuationResult.info_tab_html,
+      }
+      
+      setResult(resultWithHtml as any)
+      
+      // Verify restoration was successful
+      const restoredResult = useConversationalResultsStore.getState().result
+      if (restoredResult && !restoredResult.html_report) {
+        chatLogger.error('[Conversational] RESTORATION FAILED: html_report missing after setResult', {
+          reportId,
+          valuationId: restoredResult.valuation_id,
+          sessionHadHtmlReport: !!currentSession.htmlReport,
+        })
+      } else if (restoredResult?.html_report) {
+        chatLogger.info('[Conversational] RESTORATION SUCCESS: HTML report restored', {
+          reportId,
+          valuationId: restoredResult.valuation_id,
+          htmlReportLength: restoredResult.html_report.length,
+          infoTabHtmlLength: restoredResult.info_tab_html?.length || 0,
+        })
+      }
     }
   }, [reportId, result, setResult]) // Only depend on reportId prop, not session?.reportId
 

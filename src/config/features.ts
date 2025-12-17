@@ -19,6 +19,9 @@ export const FEATURE_FLAGS = {
   ENABLE_ANIMATIONS: process.env.NEXT_PUBLIC_ENABLE_ANIMATIONS !== 'false',
   SHOW_CREDIT_ANALYTICS: process.env.NEXT_PUBLIC_SHOW_CREDIT_ANALYTICS === 'true',
 
+  // Session & Persistence Flags
+  ENABLE_SESSION_RESTORATION: process.env.NEXT_PUBLIC_ENABLE_SESSION_RESTORATION !== 'false', // Default: enabled
+
   // Development Flags
   DEBUG_CREDIT_SYSTEM: process.env.NEXT_PUBLIC_DEBUG_CREDIT_SYSTEM === 'true',
   MOCK_CREDIT_DATA: process.env.NEXT_PUBLIC_MOCK_CREDIT_DATA === 'true',
@@ -32,6 +35,7 @@ export const shouldEnablePremiumUpsell = (): boolean => FEATURE_FLAGS.ENABLE_PRE
 export const shouldShowOnboardingTooltips = (): boolean => FEATURE_FLAGS.SHOW_ONBOARDING_TOOLTIPS
 export const shouldEnableAnimations = (): boolean => FEATURE_FLAGS.ENABLE_ANIMATIONS
 export const shouldShowCreditAnalytics = (): boolean => FEATURE_FLAGS.SHOW_CREDIT_ANALYTICS
+export const shouldEnableSessionRestoration = (): boolean => FEATURE_FLAGS.ENABLE_SESSION_RESTORATION
 export const isDebugCreditSystem = (): boolean => FEATURE_FLAGS.DEBUG_CREDIT_SYSTEM
 export const shouldMockCreditData = (): boolean => FEATURE_FLAGS.MOCK_CREDIT_DATA
 
