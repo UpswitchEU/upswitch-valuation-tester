@@ -101,14 +101,15 @@ export const useSessionStore = create<SessionStore>((set, get) => ({
           throw new Error(`Session not found: ${reportId}`)
         }
         
-        // ✅ FIX: Mark session as saved when loading (existing report is already saved)
-        // This ensures "Saved" is the default state, not "Auto-saving soon..."
+        // ✅ FIX: Only mark as saved if session was explicitly updated (user saved changes)
+        // Don't use calculatedAt - calculation completion != user save
+        // Don't default to new Date() - new reports shouldn't show "Saved" immediately
         set({ 
           session, 
           isLoading: false,
           error: null,
           hasUnsavedChanges: false,
-          lastSaved: session.updatedAt || session.calculatedAt || new Date(),
+          lastSaved: session.updatedAt || null, // Only set if user explicitly saved
           isSaving: false,
         })
         
@@ -171,6 +172,7 @@ export const useSessionStore = create<SessionStore>((set, get) => ({
       
       // ✅ CRITICAL: Update localStorage cache immediately (Cursor/ChatGPT pattern)
       // This ensures page refresh loads the updated session with all assets
+      // ✅ FIX: Exclude HTML reports before caching to prevent quota exceeded errors
       try {
         const { globalSessionCache } = require('../utils/sessionCacheManager')
         
@@ -181,7 +183,10 @@ export const useSessionStore = create<SessionStore>((set, get) => ({
           hasInfoTabHtmlInUpdate: !!updates.infoTabHtml,
         })
         
-        globalSessionCache.set(state.session.reportId, updatedSession)
+        // Exclude HTML reports before caching (they're too large for localStorage)
+        // HTML reports are fetched from backend on demand when needed
+        const { htmlReport, infoTabHtml, ...sessionWithoutHtml } = updatedSession
+        globalSessionCache.set(state.session.reportId, sessionWithoutHtml)
         
         storeLogger.info('[Session] Cache updated optimistically (SUCCESS)', {
           reportId: state.session.reportId,

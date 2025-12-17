@@ -111,7 +111,6 @@ export const ValuationToolbar: React.FC<ValuationToolbarProps> = ({
     if (syncError) return 'Save failed - click to retry'
     if (isSaving) return 'Auto-saving...'
     // ✅ FIX: Only show "Auto-saving soon..." when there are actual unsaved changes
-    // "Saved" should be the default state when there's a lastSaved timestamp
     if (hasUnsavedChanges) return 'Auto-saving soon...'
     if (lastSaved) {
       const timeAgo = Math.floor((Date.now() - lastSaved.getTime()) / 1000 / 60)
@@ -119,8 +118,8 @@ export const ValuationToolbar: React.FC<ValuationToolbarProps> = ({
       if (timeAgo < 60) return `Saved ${timeAgo}m ago`
       return `Saved ${Math.floor(timeAgo / 60)}h ago`
     }
-    // ✅ FIX: Default to "Saved" when there's a session (report exists)
-    return 'Saved'
+    // ✅ FIX: Don't show "Saved" for new reports - return null to hide tooltip
+    return null
   }
 
   // Handle retry save when error icon is clicked

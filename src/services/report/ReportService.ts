@@ -275,8 +275,27 @@ export class ReportService {
               })
             }
           } else {
-            // Session has valuation result, cache it (HTML reports excluded)
+            // Session has valuation result, cache it (HTML reports excluded, but sessionData included)
             const cacheStartTime = performance.now()
+            
+            // ✅ CRITICAL: Verify sessionData (form input fields) is included before caching
+            // This ensures form fields can be restored from localStorage when revisiting
+            const hasSessionData = !!freshSession.sessionData
+            const sessionDataKeys = freshSession.sessionData ? Object.keys(freshSession.sessionData) : []
+            const hasFormFields = hasSessionData && (
+              freshSession.sessionData.company_name ||
+              freshSession.sessionData.revenue ||
+              freshSession.sessionData.ebitda ||
+              freshSession.sessionData.current_year_data
+            )
+            
+            if (!hasSessionData) {
+              logger.warn('[ReportService] Fresh session missing sessionData (form fields) - cache may be incomplete', {
+                reportId,
+                note: 'Form fields may not restore properly from cache',
+              })
+            }
+            
             globalSessionCache.set(reportId, freshSession)
             const cacheDuration = performance.now() - cacheStartTime
             
@@ -291,9 +310,12 @@ export class ReportService {
               htmlReportLength: freshSession.htmlReport?.length || 0,
               hasInfoTabHtmlInBackend: hasInfoTabHtmlInBackend,
               infoTabHtmlLength: freshSession.infoTabHtml?.length || 0,
-              hasSessionData: !!freshSession.sessionData,
+              hasSessionData,
+              hasFormFields,
+              sessionDataKeys: sessionDataKeys.slice(0, 10), // Log first 10 keys
+              sessionDataKeysCount: sessionDataKeys.length,
               timestamp: new Date().toISOString(),
-              note: 'HTML reports excluded from cache, fetched from backend on demand',
+              note: 'HTML reports excluded from cache, but sessionData (form fields) included for restoration',
             })
             
             console.log('[ReportService] DIAGNOSTIC: Complete save flow finished', {

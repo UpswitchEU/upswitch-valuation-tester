@@ -277,11 +277,35 @@ export const ManualLayout: React.FC<ManualLayoutProps> = ({
       // Mark this reportId as restored
       restorationRef.current.lastRestoredReportId = reportId
       
-      // ✅ FIX: Mark session as saved after restoration completes
-      // This ensures "Saved" is shown, not "Auto-saving soon..."
-      // Restoration is loading existing data, so it's already saved
-      useSessionStore.getState().markSaved()
-      generalLogger.info('[ManualLayout] Session marked as saved after restoration', { reportId })
+      // ✅ FIX: Only mark as saved if restoring an existing report that was explicitly saved by user
+      // Don't mark new reports as saved (they haven't been explicitly saved by user yet)
+      // Check for actual user-entered financial data (revenue/ebitda), not just prefilled company_name
+      const sessionData = currentSession.sessionData as any
+      const hasUserEnteredData = sessionData && 
+        typeof sessionData === 'object' &&
+        // Check for actual financial data entered by user (not just prefilled company_name)
+        (sessionData.revenue || sessionData.ebitda || sessionData.current_year_data?.revenue || sessionData.current_year_data?.ebitda)
+      
+      // Only mark as saved if session was explicitly updated (has updatedAt) AND has user-entered data
+      const wasExplicitlySaved = currentSession.updatedAt && hasUserEnteredData
+      
+      if (wasExplicitlySaved) {
+        // Existing report with user-entered data that was explicitly saved - mark as saved
+        useSessionStore.getState().markSaved()
+        generalLogger.info('[ManualLayout] Session marked as saved after restoration (existing report with user data)', { 
+          reportId,
+          hasUpdatedAt: !!currentSession.updatedAt,
+          hasUserEnteredData,
+        })
+      } else {
+        // New report or report without explicit user saves - don't mark as saved yet
+        generalLogger.debug('[ManualLayout] Skipping markSaved - new report or no explicit user saves yet', { 
+          reportId,
+          hasUpdatedAt: !!currentSession.updatedAt,
+          hasUserEnteredData,
+          note: 'Expected behavior for new reports - will be marked as saved after user makes changes',
+        })
+      }
     } finally {
       restorationRef.current.isRestoring = false
     }

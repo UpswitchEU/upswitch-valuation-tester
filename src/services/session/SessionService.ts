@@ -89,10 +89,25 @@ export class SessionService {
           ? Math.floor((Date.now() - new Date(cachedSession.updatedAt).getTime()) / (60 * 1000))
           : 0
 
+        // ✅ VERIFY: Log form data presence in cache for restoration
+        const hasSessionData = !!cachedSession.sessionData
+        const sessionDataKeys = cachedSession.sessionData ? Object.keys(cachedSession.sessionData) : []
+        const hasFormFields = hasSessionData && (
+          cachedSession.sessionData.company_name ||
+          cachedSession.sessionData.revenue ||
+          cachedSession.sessionData.ebitda ||
+          cachedSession.sessionData.current_year_data
+        )
+        
         logger.info('Session loaded from cache (instant)', {
           reportId,
           loadTime_ms: loadTime.toFixed(2),
           cacheAge_minutes,
+          hasSessionData,
+          hasFormFields,
+          sessionDataKeysCount: sessionDataKeys.length,
+          sessionDataKeys: sessionDataKeys.slice(0, 5), // Log first 5 keys
+          note: 'Form fields (sessionData) included in cache for instant restoration',
         })
 
         // Validate cached session
@@ -209,13 +224,28 @@ export class SessionService {
               mergedSession.partialData = mergePrefilledQuery(mergedSession.partialData, prefilledQuery)
             }
 
-            // Cache for next time
+            // Cache for next time (includes sessionData/form fields, excludes HTML reports)
+            // ✅ CRITICAL: Form data (sessionData) is included in cache for instant restoration
+            const hasSessionData = !!mergedSession.sessionData
+            const sessionDataKeys = mergedSession.sessionData ? Object.keys(mergedSession.sessionData) : []
+            const hasFormFields = hasSessionData && (
+              mergedSession.sessionData.company_name ||
+              mergedSession.sessionData.revenue ||
+              mergedSession.sessionData.ebitda ||
+              mergedSession.sessionData.current_year_data
+            )
+            
             globalSessionCache.set(reportId, mergedSession)
 
             logger.info('Session loaded from backend and cached', {
               reportId,
               currentView: mergedSession.currentView,
               hasPrefilledQuery: !!prefilledQuery,
+              hasSessionData,
+              hasFormFields,
+              sessionDataKeysCount: sessionDataKeys.length,
+              sessionDataKeys: sessionDataKeys.slice(0, 5), // Log first 5 keys
+              note: 'Form fields (sessionData) included in cache for instant restoration on revisit',
             })
 
             return mergedSession
