@@ -27,13 +27,15 @@ interface ResultsComponentProps {
  * NOTE: This component is now prop-driven (no direct store access) for flow isolation
  */
 const ResultsComponent: React.FC<ResultsComponentProps> = ({ result }) => {
-  // Read from unified session store
-  const session = useSessionStore((state) => state.session)
+  // ROOT CAUSE FIX: Only subscribe to primitive values, not entire session object
   const isLoading = useSessionStore((state) => state.isLoading)
   const error = useSessionStore((state) => state.error)
   
-  // Get HTML report from session
-  const htmlReport = session?.htmlReport || result?.html_report
+  // ROOT CAUSE FIX: Read session data via useMemo to avoid subscription
+  const htmlReport = React.useMemo(() => {
+    const currentSession = useSessionStore.getState().session
+    return currentSession?.htmlReport || result?.html_report
+  }, [result?.html_report])
 
   // Verification logging: Track when result changes
   useEffect(() => {

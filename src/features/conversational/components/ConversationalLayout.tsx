@@ -98,7 +98,8 @@ const ConversationalLayoutInner: React.FC<ConversationalLayoutProps> = ({
   const { collectedData, updateCollectedData } = useConversationalChatStore()
   
   // Unified session store
-  const session = useSessionStore((state) => state.session)
+  // ROOT CAUSE FIX: Only subscribe to primitive values, not entire session object
+  // This prevents re-renders when session data updates
   const isSaving = useSessionStore((state) => state.isSaving)
   const lastSaved = useSessionStore((state) => state.lastSaved)
   const hasUnsavedChanges = useSessionStore((state) => state.hasUnsavedChanges)
@@ -109,17 +110,17 @@ const ConversationalLayoutInner: React.FC<ConversationalLayoutProps> = ({
   // Session loads via SessionManager, data populates reactively
 
   // Restore results from session when reportId changes (new session loaded)
+  // ROOT CAUSE FIX: Only depend on reportId prop, not reactive session?.reportId
   const lastRestoredReportIdRef = useRef<string | null>(null)
   useEffect(() => {
-    const currentSession = useSessionStore.getState().session
-    if (!currentSession?.reportId) {
+    // Only restore once per reportId (when new report loads)
+    if (lastRestoredReportIdRef.current === reportId) {
       return
     }
 
-    const reportId = currentSession.reportId
-
-    // Only restore once per reportId (when new session loads)
-    if (lastRestoredReportIdRef.current === reportId) {
+    // Read session state inside effect (only when reportId prop changes)
+    const currentSession = useSessionStore.getState().session
+    if (!currentSession || currentSession.reportId !== reportId) {
       return
     }
 
@@ -133,7 +134,7 @@ const ConversationalLayoutInner: React.FC<ConversationalLayoutProps> = ({
         reportId,
       })
     }
-  }, [session?.reportId, result, setResult])
+  }, [reportId, result, setResult]) // Only depend on reportId prop, not session?.reportId
 
   // Mark conversation changes as unsaved (for save status indicator)
   useEffect(() => {
@@ -386,9 +387,8 @@ const ConversationalLayoutInner: React.FC<ConversationalLayoutProps> = ({
     }
   }, [
     restoration.state.isRestored,
-    session?.reportId, // Only depend on reportId, read sessionData inside effect
+    reportId, // ROOT CAUSE FIX: Only depend on reportId prop, read sessionData inside effect
     state.messages.length,
-    reportId,
     actions,
   ])
 

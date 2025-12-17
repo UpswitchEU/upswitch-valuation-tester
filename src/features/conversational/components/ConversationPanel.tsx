@@ -129,7 +129,8 @@ export const ConversationPanel: React.FC<ConversationPanelProps> = ({
 
   // Handle valuation complete - sync to context and conversational results store
   const { isCalculating, setResult, trySetCalculating, setCalculating } = useConversationalResultsStore()
-  const session = useSessionStore((state) => state.session)
+  // ROOT CAUSE FIX: Only subscribe to reportId, not entire session object
+  const reportId = useSessionStore((state) => state.session?.reportId)
   const { createVersion, getLatestVersion } = useVersionHistoryStore()
 
   const handleValuationComplete = useCallback(
@@ -149,7 +150,7 @@ export const ConversationPanel: React.FC<ConversationPanelProps> = ({
       // Uses sessionService for consistency across flows
       const sessionStore = useSessionStore.getState()
       
-      if (session?.reportId) {
+      if (reportId) {
         try {
           // Get collected data from session for restoration
           const sessionData = sessionStore.session?.sessionData || {}
@@ -159,7 +160,7 @@ export const ConversationPanel: React.FC<ConversationPanelProps> = ({
           // - valuationResult: Calculation result
           // - htmlReport: Main report HTML
           // - infoTabHtml: Info tab HTML
-          await reportService.saveReportAssets(session.reportId, {
+          await reportService.saveReportAssets(reportId, {
             sessionData: sessionData,  // ✅ NEW: Include collected data
             valuationResult: result,
             htmlReport: result.html_report || '',
@@ -167,7 +168,7 @@ export const ConversationPanel: React.FC<ConversationPanelProps> = ({
           })
 
           chatLogger.info('[Conversational] Complete report package saved atomically', {
-            reportId: session.reportId,
+            reportId,
             hasSessionData: !!sessionData,
             sessionDataKeys: sessionData ? Object.keys(sessionData) : [],
             hasResult: !!result,
@@ -180,7 +181,7 @@ export const ConversationPanel: React.FC<ConversationPanelProps> = ({
           sessionStore.markSaved()
         } catch (error) {
           chatLogger.error('[Conversational] Failed to save complete report package', {
-            reportId: session.reportId,
+            reportId,
             error: error instanceof Error ? error.message : String(error),
           })
           // Error handled by store
@@ -190,7 +191,7 @@ export const ConversationPanel: React.FC<ConversationPanelProps> = ({
       }
 
       // M&A Workflow: Create new version if this is a regeneration (conversational flow)
-      const reportId = session?.reportId
+      // reportId is already available from selector above
       if (reportId) {
         try {
           const previousVersion = getLatestVersion(reportId)
@@ -289,7 +290,7 @@ export const ConversationPanel: React.FC<ConversationPanelProps> = ({
       // Call parent callback
       onValuationComplete?.(result)
     },
-    [actions, onValuationComplete, setResult, session, getLatestVersion, createVersion]
+    [actions, onValuationComplete, setResult, reportId, getLatestVersion, createVersion]
   )
 
   // Handle valuation start
@@ -327,16 +328,20 @@ export const ConversationPanel: React.FC<ConversationPanelProps> = ({
   // Determine if we should show summary block
   const showSummaryBlock = useMemo(() => {
     // Show if we have restored messages AND collected data
+    // ROOT CAUSE FIX: Read session state via getState(), not as subscription
+    const currentSession = useSessionStore.getState().session
     const hasRestoredMessages = restoredMessages && restoredMessages.length > 0
-    const hasCollectedData = session?.sessionData && Object.keys(session.sessionData).length > 0
+    const hasCollectedData = currentSession?.sessionData && Object.keys(currentSession.sessionData).length > 0
     return hasRestoredMessages && hasCollectedData && isRestorationComplete
-  }, [restoredMessages, session?.sessionData, isRestorationComplete])
+  }, [restoredMessages, reportId, isRestorationComplete]) // Depend on reportId instead of session
 
   // Calculate completion percentage
   const completionPercentage = useMemo(() => {
-    if (!session?.sessionData) return 0
+    // ROOT CAUSE FIX: Read session state via getState(), not as subscription
+    const currentSession = useSessionStore.getState().session
+    if (!currentSession?.sessionData) return 0
 
-    const data = session.sessionData as any
+    const data = currentSession.sessionData as any
     let filledFields = 0
     const totalFields = 8 // Key fields we track
 
@@ -350,7 +355,7 @@ export const ConversationPanel: React.FC<ConversationPanelProps> = ({
     if (data.number_of_owners) filledFields++
 
     return Math.round((filledFields / totalFields) * 100)
-  }, [session?.sessionData])
+  }, [reportId]) // Depend on reportId instead of session
 
   // Handle continue action
   const handleContinue = useCallback(() => {
@@ -367,9 +372,22 @@ export const ConversationPanel: React.FC<ConversationPanelProps> = ({
     onReportComplete?.(valuationResult?.html_report || '', valuationResult?.valuation_id || '')
   }, [valuationResult, onReportComplete])
 
+  // ROOT CAUSE FIX: Read session data via useMemo to avoid subscription
+  const sessionDataForSummary = useMemo(() => {
+    const currentSession = useSessionStore.getState().session
+    return currentSession?.sessionData || {}
+  }, [reportId])
+
+  const completedAtForSummary = useMemo(() => {
+    const currentSession = useSessionStore.getState().session
+    return currentSession?.completedAt
+  }, [reportId])
+
   // Handle manual calculate action (same as manual flow)
   const handleManualCalculate = useCallback(async () => {
-    if (!session?.sessionData) {
+    // ROOT CAUSE FIX: Read session state via getState(), not as subscription
+    const currentSession = useSessionStore.getState().session
+    if (!currentSession?.sessionData) {
       chatLogger.warn('[Conversational] Cannot calculate: no session data')
       return
     }
@@ -386,7 +404,7 @@ export const ConversationPanel: React.FC<ConversationPanelProps> = ({
     try {
       chatLogger.info('[Conversational] Manual calculate triggered', {
         sessionId,
-        hasSessionData: !!session.sessionData,
+        hasSessionData: !!currentSession.sessionData,
       })
 
       // Mark conversation as generating
@@ -394,7 +412,7 @@ export const ConversationPanel: React.FC<ConversationPanelProps> = ({
       onValuationStart?.()
 
       // Build ValuationRequest from session data (same as manual flow)
-      const sessionData = session.sessionData as any
+      const sessionData = currentSession.sessionData as any
       const formData = {
         company_name: sessionData.company_name || '',
         industry: sessionData.industry || '',
@@ -474,7 +492,7 @@ export const ConversationPanel: React.FC<ConversationPanelProps> = ({
       }
     }
   }, [
-    session,
+    reportId,
     sessionId,
     trySetCalculating,
     handleValuationComplete,
@@ -490,9 +508,9 @@ export const ConversationPanel: React.FC<ConversationPanelProps> = ({
         {showSummaryBlock && (
           <div className="flex-shrink-0 p-4 overflow-y-auto">
             <ConversationSummaryBlock
-              collectedData={session?.sessionData || {}}
+              collectedData={sessionDataForSummary}
               completionPercentage={completionPercentage}
-              calculatedAt={session?.completedAt}
+              calculatedAt={completedAtForSummary}
               valuationResult={valuationResult}
               onContinue={handleContinue}
               onViewReport={valuationResult ? handleViewReport : undefined}

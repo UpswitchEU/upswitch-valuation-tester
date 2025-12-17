@@ -39,9 +39,9 @@ export const useValuationToolbarName = (
 ): UseValuationToolbarNameReturn => {
   const { initialName = 'Valuation test123', companyName, reportId } = options
   
-  // Read from unified session store
-  const session = useSessionStore((state) => state.session)
-  const actualReportId = reportId || session?.reportId
+  // ROOT CAUSE FIX: Only subscribe to reportId, not entire session object
+  const sessionReportId = useSessionStore((state) => state.session?.reportId)
+  const actualReportId = reportId || sessionReportId
 
   const [isEditingName, setIsEditingName] = useState(false)
   const [editedName, setEditedName] = useState(initialName)

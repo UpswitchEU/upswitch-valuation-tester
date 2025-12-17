@@ -46,15 +46,17 @@ export const ValuationToolbar: React.FC<ValuationToolbarProps> = ({
   onVersionSelect,
 }) => {
   // Read from unified session store
-  const session = useSessionStore((state) => state.session)
+  // ROOT CAUSE FIX: Only subscribe to specific primitives, not entire session object
+  const reportId = useSessionStore((state) => state.session?.reportId)
+  const currentView = useSessionStore((state) => state.session?.currentView)
   const isSaving = useSessionStore((state) => state.isSaving)
   const lastSaved = useSessionStore((state) => state.lastSaved)
   const hasUnsavedChanges = useSessionStore((state) => state.hasUnsavedChanges)
   const syncError = useSessionStore((state) => state.error)
   
   // Flow detection from session
-  const isManualFlow = session?.currentView === 'manual'
-  const isConversationalFlow = session?.currentView === 'conversational'
+  const isManualFlow = currentView === 'manual'
+  const isConversationalFlow = currentView === 'conversational'
   
   // Flow switching not supported in new architecture (flows are isolated)
   const pendingFlowSwitch = false
@@ -67,26 +69,26 @@ export const ValuationToolbar: React.FC<ValuationToolbarProps> = ({
 
   // Use props if provided, otherwise use store
   const displayVersions =
-    versions || (session?.reportId ? storeVersions[session.reportId] || [] : [])
-  const storeActiveVersion = session?.reportId ? getActiveVersion(session.reportId) : null
+    versions || (reportId ? storeVersions[reportId] || [] : [])
+  const storeActiveVersion = reportId ? getActiveVersion(reportId) : null
   const displayActiveVersion = activeVersion ?? storeActiveVersion?.versionNumber
 
   const handleVersionSelect =
     onVersionSelect ||
     ((versionNumber: number) => {
-      if (session?.reportId) {
-        setActiveVersion(session.reportId, versionNumber)
+      if (reportId) {
+        setActiveVersion(reportId, versionNumber)
       }
     })
 
   // Fetch versions if we have a reportId but no versions
   React.useEffect(() => {
-    if (session?.reportId && !displayVersions.length) {
-      fetchVersions(session.reportId).catch(() => {
+    if (reportId && !displayVersions.length) {
+      fetchVersions(reportId).catch(() => {
         // Silently fail - versions are optional
       })
     }
-  }, [session?.reportId, displayVersions.length, fetchVersions])
+  }, [reportId, displayVersions.length, fetchVersions])
 
   // Save status icon (minimalist - just icon with tooltip)
   const getSaveStatusIcon = () => {
@@ -122,13 +124,11 @@ export const ValuationToolbar: React.FC<ValuationToolbarProps> = ({
 
   // Handle retry save when error icon is clicked
   const handleRetrySave = async () => {
-    if (!syncError || !session) return
+    if (!syncError || !reportId) return
     
     // Trigger save using unified store
-    if (session?.reportId) {
-      const { saveSession: save } = useSessionStore.getState()
-      await save()
-    }
+    const { saveSession: save } = useSessionStore.getState()
+    await save()
   }
 
   // Use focused hooks for business logic
@@ -153,7 +153,7 @@ export const ValuationToolbar: React.FC<ValuationToolbarProps> = ({
   } = useValuationToolbarName({
     initialName: valuationName,
     companyName,
-    reportId: session?.reportId,
+    reportId,
   })
 
   const { handleLogout } = useValuationToolbarAuth()
@@ -267,14 +267,14 @@ export const ValuationToolbar: React.FC<ValuationToolbarProps> = ({
                 <Tooltip content="Manual Input" position="bottom" className="">
                   <button
                     onClick={() => handleFlowIconClick('manual')}
-                    disabled={session?.currentView === 'manual' || isSyncing}
+                    disabled={currentView === 'manual' || isSyncing}
                     className={`p-2 rounded-lg transition-all duration-200 ${
-                      session?.currentView === 'manual'
+                      currentView === 'manual'
                         ? 'bg-zinc-700 text-white'
                         : 'text-gray-400 hover:text-gray-300 hover:bg-zinc-800'
                     } ${isSyncing ? 'opacity-50 cursor-not-allowed' : ''}`}
                   >
-                    {isSyncing && session?.currentView !== 'manual' ? (
+                    {isSyncing && currentView !== 'manual' ? (
                       <Loader2 className="w-4 h-4 animate-spin" />
                     ) : (
                       <Edit3 className="w-4 h-4" />
@@ -284,14 +284,14 @@ export const ValuationToolbar: React.FC<ValuationToolbarProps> = ({
                 <Tooltip content="Conversational Mode" position="bottom" className="">
                   <button
                     onClick={() => handleFlowIconClick('conversational')}
-                    disabled={session?.currentView === 'conversational' || isSyncing}
+                    disabled={currentView === 'conversational' || isSyncing}
                     className={`p-2 rounded-lg transition-all duration-200 ${
-                      session?.currentView === 'conversational'
+                      currentView === 'conversational'
                         ? 'bg-zinc-700 text-white'
                         : 'text-gray-400 hover:text-gray-300 hover:bg-zinc-800'
                     } ${isSyncing ? 'opacity-50 cursor-not-allowed' : ''}`}
                   >
-                    {isSyncing && session?.currentView !== 'conversational' ? (
+                    {isSyncing && currentView !== 'conversational' ? (
                       <Loader2 className="w-4 h-4 animate-spin" />
                     ) : (
                       <MessageSquare className="w-4 h-4" />
@@ -417,7 +417,7 @@ export const ValuationToolbar: React.FC<ValuationToolbarProps> = ({
       </nav>
       <FlowSwitchWarningModal
         isOpen={showSwitchConfirmation}
-        currentFlow={session?.currentView || 'manual'}
+        currentFlow={currentView || 'manual'}
         targetFlow={pendingFlowSwitch || 'manual'}
         onConfirm={handleConfirmSwitch}
         onClose={handleCancelSwitch}

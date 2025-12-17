@@ -43,7 +43,8 @@ export const useValuationFormSubmission = (
 ): UseValuationFormSubmissionReturn => {
   const { formData } = useManualFormStore()
   const { trySetCalculating, setCalculating, isCalculating, setResult } = useManualResultsStore()
-  const session = useSessionStore((state) => state.session)
+  // ROOT CAUSE FIX: Only subscribe to reportId, not entire session object
+  const reportId = useSessionStore((state) => state.session?.reportId)
   const { createVersion, getLatestVersion, fetchVersions } = useVersionHistoryStore()
 
   const handleSubmit = useCallback(
@@ -136,7 +137,7 @@ export const useValuationFormSubmission = (
       // CRITICAL: Sync all form data to session IMMEDIATELY before calculation
       // This ensures all data is saved even if calculation fails or user navigates away
       // NOTE: We use fire-and-forget to avoid blocking calculation if backend is slow
-      if (session?.reportId) {
+      if (reportId) {
         try {
           // Convert formData to session format
           const sessionUpdate: Partial<any> = {
@@ -170,15 +171,15 @@ export const useValuationFormSubmission = (
           
           // Fire-and-forget: Don't await to avoid blocking calculation
           // The sync will happen in the background, and data will be saved after calculation anyway
-          sessionService.saveSession(session.reportId, sessionUpdate).catch((syncError) => {
+          sessionService.saveSession(reportId, sessionUpdate).catch((syncError) => {
             generalLogger.warn('[Manual] Background sync failed before calculation, continuing anyway', {
               error: syncError instanceof Error ? syncError.message : String(syncError),
-              reportId: session.reportId,
+              reportId,
             })
           })
           
           generalLogger.info('[Manual] Form data sync initiated (non-blocking) before calculation', {
-            reportId: session.reportId,
+            reportId,
           })
         } catch (syncError) {
           generalLogger.warn('[Manual] Failed to initiate sync before calculation, continuing anyway', {
@@ -196,7 +197,6 @@ export const useValuationFormSubmission = (
       ;(request as any).dataSource = 'manual'
 
       // M&A Workflow: Check if this is a regeneration
-      const reportId = session?.reportId
       let previousVersion: any = null
       let changes: any = null
 
@@ -388,14 +388,14 @@ export const useValuationFormSubmission = (
         // This ensures everything can be restored when user returns later
         // Note: Saving handled by unified session store
 
-        if (session?.reportId) {
+        if (reportId) {
           try {
             // ATOMIC SAVE: Save complete package in single API call
             // - sessionData: Original form inputs for restoration
             // - valuationResult: Calculation result
             // - htmlReport: Main report HTML
             // - infoTabHtml: Info tab HTML
-            await reportService.saveReportAssets(session.reportId, {
+            await reportService.saveReportAssets(reportId, {
               sessionData: formData,  // ✅ NEW: Include input data
               valuationResult: result,
               htmlReport: result.html_report,
@@ -403,7 +403,7 @@ export const useValuationFormSubmission = (
             })
 
             generalLogger.info('[Manual] Complete report package saved atomically after calculation', {
-              reportId: session.reportId,
+              reportId,
               hasSessionData: !!formData,
               sessionDataKeys: formData ? Object.keys(formData) : [],
               hasResult: !!result,
@@ -416,7 +416,7 @@ export const useValuationFormSubmission = (
             useSessionStore.getState().markSaved()
           } catch (saveError) {
             generalLogger.error('[Manual] Failed to save complete report package', {
-              reportId: session.reportId,
+              reportId,
               error: saveError instanceof Error ? saveError.message : String(saveError),
             })
             // Error logged, continue - don't block user even if save fails
@@ -452,7 +452,7 @@ export const useValuationFormSubmission = (
       formData,
       setResult,
       setEmployeeCountError,
-      session,
+      reportId,
       getLatestVersion,
       createVersion,
       fetchVersions,

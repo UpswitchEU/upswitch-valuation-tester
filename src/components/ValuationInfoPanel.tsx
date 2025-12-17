@@ -28,16 +28,18 @@ interface ValuationInfoPanelProps {
  */
 export const ValuationInfoPanel: React.FC<ValuationInfoPanelProps> = React.memo(
   ({ result: resultProp }) => {
-    // Read from unified session store
-    const session = useSessionStore((state) => state.session)
+    // ROOT CAUSE FIX: Only subscribe to primitive values, not entire session object
     const isLoading = useSessionStore((state) => state.isLoading)
     const error = useSessionStore((state) => state.error)
     
     // Use prop only (prop-driven component for flow isolation)
     const result = resultProp
     
-    // Get info tab HTML from session
-    const infoTabHtml = session?.infoTabHtml || result?.info_tab_html
+    // ROOT CAUSE FIX: Read session data via useMemo to avoid subscription
+    const infoTabHtml = React.useMemo(() => {
+      const currentSession = useSessionStore.getState().session
+      return currentSession?.infoTabHtml || result?.info_tab_html
+    }, [result?.info_tab_html])
 
     // Show loading skeleton while loading
     if (isLoading && !infoTabHtml) {

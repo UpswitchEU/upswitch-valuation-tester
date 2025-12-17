@@ -52,20 +52,22 @@ export const ValuationForm: React.FC<ValuationFormProps> = ({
   isRegenerationMode = false,
 }) => {
   const { formData, updateFormData, prefillFromBusinessCard } = useManualFormStore()
-  const session = useSessionStore((state) => state.session)
-  const updateSessionData = useSessionStore((state) => state.updateSessionData)
+  // ROOT CAUSE FIX: Only subscribe to reportId, not entire session object
+  // This prevents re-renders when session data updates
+  const reportId = useSessionStore((state) => state.session?.reportId)
   const { businessTypes } = useBusinessTypes()
   const { businessCard, isAuthenticated } = useAuth()
   const { getVersion } = useVersionHistoryStore()
 
   // Load version data if initialVersion is provided (M&A workflow)
+  // CRITICAL: Read session state via getState() inside effect, not as subscription
   useEffect(() => {
-    if (initialVersion && session?.reportId) {
+    if (initialVersion && reportId) {
       try {
-        const version = getVersion(session.reportId, initialVersion)
+        const version = getVersion(reportId, initialVersion)
         if (version?.formData) {
           generalLogger.info('Loading version data into form', {
-            reportId: session.reportId,
+            reportId,
             versionNumber: initialVersion,
           })
           // Convert version formData to form store format
@@ -76,21 +78,21 @@ export const ValuationForm: React.FC<ValuationFormProps> = ({
         // BANK-GRADE: Specific error handling - version load failure
         if (error instanceof Error) {
           generalLogger.warn('Failed to load version data', {
-            reportId: session.reportId,
+            reportId,
             versionNumber: initialVersion,
             error: error.message,
             stack: error.stack,
           })
         } else {
           generalLogger.warn('Failed to load version data', {
-            reportId: session.reportId,
+            reportId,
             versionNumber: initialVersion,
             error: String(error),
           })
         }
       }
     }
-  }, [initialVersion, session?.reportId, getVersion, updateFormData])
+  }, [initialVersion, reportId, getVersion, updateFormData])
 
   // Local state for historical data inputs
   const [historicalInputs, setHistoricalInputs] = useState<{ [key: string]: string }>({})
@@ -184,11 +186,11 @@ export const ValuationForm: React.FC<ValuationFormProps> = ({
   )
 
   // Use form session sync hook for syncing form changes to session
+  // ROOT CAUSE FIX: Pass reportId instead of session object to prevent re-renders
   // Note: Restoration is handled by useSessionRestoration in ManualLayout
   useFormSessionSync({
-    session,
+    reportId,
     formData,
-    updateSessionData,
   })
 
   // NOTE: DataResponse[] syncing is not needed for Manual flow
@@ -343,7 +345,9 @@ export const ValuationForm: React.FC<ValuationFormProps> = ({
   // This runs after restoration and business types are loaded
   const [hasProcessedPrefilledQuery, setHasProcessedPrefilledQuery] = useState(false)
   useEffect(() => {
-    const prefilledQuery = (session?.partialData as any)?._prefilledQuery
+    // ROOT CAUSE FIX: Read session state via getState() inside effect, not as subscription
+    const currentSession = useSessionStore.getState().session
+    const prefilledQuery = (currentSession?.partialData as any)?._prefilledQuery
 
     // Only process if:
     // 1. prefilledQuery exists
@@ -358,7 +362,7 @@ export const ValuationForm: React.FC<ValuationFormProps> = ({
     ) {
       generalLogger.info('Processing prefilledQuery from URL', {
         prefilledQuery,
-        reportId: session?.reportId,
+        reportId,
       })
 
       // Match query to business type
@@ -398,8 +402,7 @@ export const ValuationForm: React.FC<ValuationFormProps> = ({
       }
     }
   }, [
-    session?.partialData,
-    session?.reportId,
+    reportId,
     businessTypes,
     formData.business_type_id,
     hasProcessedPrefilledQuery,
@@ -411,8 +414,11 @@ export const ValuationForm: React.FC<ValuationFormProps> = ({
   const { handleSubmit, isSubmitting } = useValuationFormSubmission(setEmployeeCountError)
 
   // Memoize prefilledQuery to prevent render loops
-  // Extract the value first, then memoize based on the actual string value
-  const prefilledQueryValue = (session?.partialData as any)?._prefilledQuery
+  // ROOT CAUSE FIX: Read session state via getState(), not as subscription
+  const prefilledQueryValue = useMemo(() => {
+    const currentSession = useSessionStore.getState().session
+    return (currentSession?.partialData as any)?._prefilledQuery || null
+  }, [reportId]) // Only recompute when reportId changes
   const prefilledQuery = useMemo(() => {
     return prefilledQueryValue || null
   }, [prefilledQueryValue]) // Only recompute when the actual string value changes

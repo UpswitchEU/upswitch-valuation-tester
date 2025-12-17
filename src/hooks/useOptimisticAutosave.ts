@@ -71,8 +71,8 @@ export function useOptimisticAutosave(
     error: null,
   })
 
-  // Session store for actual persistence
-  const session = useSessionStore((state) => state.session)
+  // ROOT CAUSE FIX: Only subscribe to saveSession function, not entire session object
+  // Session state is read via getState() when needed
   const saveSession = useSessionStore((state) => state.saveSession)
 
   // Ref to store pending changes

@@ -52,8 +52,15 @@ export const ValuationSessionManager: React.FC<ValuationSessionManagerProps> = R
     const searchParams = useSearchParams()
     const router = useRouter()
     
-    // Unified store (replaces manual + conversational stores)
-    const { session, isLoading, error, loadSession, clearSession } = useSessionStore()
+    // ROOT CAUSE FIX: Subscribe to specific values, not entire store
+    // This component needs session for stage detection, but we can optimize
+    const isLoading = useSessionStore((state) => state.isLoading)
+    const error = useSessionStore((state) => state.error)
+    const loadSession = useSessionStore((state) => state.loadSession)
+    const clearSession = useSessionStore((state) => state.clearSession)
+    
+    // ROOT CAUSE FIX: Read session only when needed for stage calculation
+    const session = useSessionStore((state) => state.session)
 
     // Extract URL params
     const prefilledQuery = searchParams?.get('prefilledQuery') || null

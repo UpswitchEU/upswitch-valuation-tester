@@ -43,8 +43,8 @@ import { useToast } from './useToast'
  * Kept for backwards compatibility but should be removed in future.
  */
 export function useSessionRestoration() {
-  // Use unified session store
-  const session = useSessionStore((state) => state.session)
+  // ROOT CAUSE FIX: Only subscribe to reportId, not entire session object
+  const reportId = useSessionStore((state) => state.session?.reportId)
   const { updateFormData } = useManualFormStore()
   const { setResult, setHtmlReport, setInfoTabHtml } = useManualResultsStore()
   const { fetchVersions } = useVersionHistoryStore()
@@ -56,12 +56,10 @@ export function useSessionRestoration() {
 
   // Single restoration effect - only runs when reportId changes (new session loaded)
   useEffect(() => {
-    const currentSession = useSessionStore.getState().session
-    if (!currentSession?.reportId) {
+    // ROOT CAUSE FIX: Read session state inside effect, not as subscription
+    if (!reportId) {
       return
     }
-
-    const reportId = currentSession.reportId
 
     // Only restore once per reportId (when new session loads)
     if (restoredReports.current.has(reportId)) {
@@ -75,6 +73,12 @@ export function useSessionRestoration() {
 
     // Update tracked reportId
     lastReportIdRef.current = reportId
+
+    // Read session state inside effect
+    const currentSession = useSessionStore.getState().session
+    if (!currentSession || currentSession.reportId !== reportId) {
+      return
+    }
 
     // CRITICAL: Use session.sessionData directly (merged with top-level fields)
     // NOT getSessionData() which filters to form fields only
@@ -154,20 +158,20 @@ export function useSessionRestoration() {
       // Show error toast
       showToast('Failed to load report data. Please refresh the page.', 'error', 5000)
     }
-  }, [session?.reportId, updateFormData, setResult, setHtmlReport, setInfoTabHtml, fetchVersions, showToast])
+  }, [reportId, updateFormData, setResult, setHtmlReport, setInfoTabHtml, fetchVersions, showToast])
 
   // Cleanup: Allow re-restoration if component remounts
   useEffect(() => {
     return () => {
-      if (session?.reportId) {
-        restoredReports.current.delete(session.reportId)
+      if (reportId) {
+        restoredReports.current.delete(reportId)
         lastReportIdRef.current = null
         generalLogger.debug('Cleared restoration tracking on unmount', {
-          reportId: session.reportId,
+          reportId,
         })
       }
     }
-  }, [session?.reportId])
+  }, [reportId])
 }
 
 /**

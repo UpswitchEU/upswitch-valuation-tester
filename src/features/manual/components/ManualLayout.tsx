@@ -96,48 +96,25 @@ export const ManualLayout: React.FC<ManualLayoutProps> = ({
 
   const { user } = useAuth()
   const { isCalculating, error, result, setResult } = useManualResultsStore()
-  const { updateFormData, formData } = useManualFormStore()
+  // CRITICAL FIX: Don't subscribe to formData or updateFormData - they cause re-renders on every form change
+  // We only need updateFormData inside the restoration effect, accessed via getState()
   const { showToast } = useToast()
 
-  // CRITICAL FIX: Only subscribe to reportId, not entire session object
-  // This prevents re-renders when sessionData updates (which happens on every form change via useFormSessionSync)
-  // The session object reference changes on every update, but reportId is stable
-  const sessionReportId = useSessionStore((state) => state.session?.reportId)
-  
   // Track restoration to prevent loops
   const restorationRef = useRef<{
     lastRestoredReportId: string | null
-    lastSessionReportId: string | null | undefined
     isRestoring: boolean
   }>({
     lastRestoredReportId: null,
-    lastSessionReportId: null,
     isRestoring: false,
   })
   
   // Simple restoration: Only restore on reportId change (new session loaded)
-  // CRITICAL: This effect MUST only run when reportId changes OR when session loads for the first time
-  // It must NOT run when sessionData updates (which happens on every form change)
+  // CRITICAL: This effect MUST only run when reportId prop changes, NOT on every render
+  // We read session state inside the effect without subscribing to avoid re-renders
   useEffect(() => {
-    // Early return if session hasn't loaded yet or reportId doesn't match
-    if (!sessionReportId || sessionReportId !== reportId) {
-      return
-    }
-
-    // CRITICAL: Only run restoration if:
-    // 1. This is a new reportId (different from last restored)
-    // 2. OR session just loaded (sessionReportId changed from null/undefined to a value)
-    const isNewReport = restorationRef.current.lastRestoredReportId !== reportId
-    const isSessionJustLoaded = restorationRef.current.lastSessionReportId !== sessionReportId
-    
-    if (!isNewReport && !isSessionJustLoaded) {
-      // Session data updated but reportId hasn't changed - skip restoration
-      // This prevents restoration from running on every form update
-      return
-    }
-
-    // Only restore once per reportId (when new session loads)
-    if (restorationRef.current.lastRestoredReportId === reportId && !isSessionJustLoaded) {
+    // Only restore once per reportId (when new report loads)
+    if (restorationRef.current.lastRestoredReportId === reportId) {
       return
     }
 
@@ -187,13 +164,12 @@ export const ManualLayout: React.FC<ManualLayoutProps> = ({
         }
       }
 
-      // Mark this reportId as restored and track sessionReportId
+      // Mark this reportId as restored
       restorationRef.current.lastRestoredReportId = reportId
-      restorationRef.current.lastSessionReportId = sessionReportId
     } finally {
       restorationRef.current.isRestoring = false
     }
-  }, [reportId, sessionReportId]) // Depend on reportId (prop) and sessionReportId (to detect when session loads)
+  }, [reportId]) // ONLY depend on reportId prop - this ensures effect only runs when navigating to a new report
 
   // Panel resize hook
   const { leftPanelWidth, handleResize, isMobile, mobileActivePanel, setMobileActivePanel } =
