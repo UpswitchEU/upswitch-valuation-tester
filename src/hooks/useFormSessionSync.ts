@@ -31,10 +31,40 @@ export const useFormSessionSync = ({
   updateSessionData,
 }: UseFormSessionSyncOptions) => {
 
+  // Helper to check if form data matches session data (prevent unnecessary syncs)
+  const isDataEqual = useCallback((formData: any, sessionData: any): boolean => {
+    if (!sessionData || !formData) return false
+    
+    // Compare key fields that indicate meaningful changes
+    const keyFields = ['company_name', 'revenue', 'ebitda', 'industry', 'business_model', 'founding_year']
+    
+    for (const field of keyFields) {
+      if (formData[field] !== sessionData[field]) {
+        return false
+      }
+    }
+    
+    // Compare current_year_data
+    if (formData.current_year_data?.revenue !== sessionData.current_year_data?.revenue ||
+        formData.current_year_data?.ebitda !== sessionData.current_year_data?.ebitda) {
+      return false
+    }
+    
+    return true
+  }, [])
+
   // Debounced sync: form data → session store (500ms delay)
   const debouncedSyncToSession = useCallback(
     debounce(async (data: typeof formData) => {
       if (!session || !data || Object.keys(data).length === 0) {
+        return
+      }
+
+      // Skip sync if data matches what's already in session (prevents loops during restoration)
+      if (session.sessionData && isDataEqual(data, session.sessionData)) {
+        generalLogger.debug('Skipping sync - form data matches session data', {
+          reportId: session.reportId,
+        })
         return
       }
 
@@ -85,7 +115,7 @@ export const useFormSessionSync = ({
         generalLogger.warn('Failed to sync form data to session', { error: err })
       }
     }, 500),
-    [session, updateSessionData]
+    [session, updateSessionData, isDataEqual]
   )
 
   // Sync form data to session store whenever it changes (debounced)

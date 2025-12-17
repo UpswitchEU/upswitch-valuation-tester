@@ -96,35 +96,93 @@ export const ManualLayout: React.FC<ManualLayoutProps> = ({
 
   const { user } = useAuth()
   const { isCalculating, error, result, setResult } = useManualResultsStore()
-  const { updateFormData } = useManualFormStore()
+  const { updateFormData, formData } = useManualFormStore()
   const { showToast } = useToast()
 
   // Unified store: Simple subscriptions (2 total)
   const session = useSessionStore((state) => state.session)
   const sessionReportId = session?.reportId
   
+  // Track restoration to prevent loops
+  const restorationRef = useRef<{
+    lastRestoredReportId: string | null
+    lastRestoredFormDataHash: string | null
+    lastRestoredResultId: string | null
+    isRestoring: boolean
+  }>({
+    lastRestoredReportId: null,
+    lastRestoredFormDataHash: null,
+    lastRestoredResultId: null,
+    isRestoring: false,
+  })
+  
+  // Helper to create a simple hash of form data for comparison
+  const getFormDataHash = (data: any): string => {
+    if (!data) return ''
+    // Create hash from key fields that indicate meaningful data
+    const key = `${data.company_name || ''}_${data.revenue || ''}_${data.industry || ''}_${data.founding_year || ''}`
+    return key
+  }
+  
   // Simple restoration: Read directly from session when it changes
   useEffect(() => {
     if (!session || session.reportId !== reportId) {
+      restorationRef.current.isRestoring = false
       return
     }
 
-    // Restore form data
-    if (session.sessionData) {
-      const sessionDataObj = session.sessionData as any
-      if (sessionDataObj.company_name || sessionDataObj.revenue) {
-        generalLogger.debug('[ManualLayout] Restoring form data', { reportId })
-        updateFormData(sessionDataObj)
-      }
+    // Prevent concurrent restoration
+    if (restorationRef.current.isRestoring) {
+      return
     }
 
-    // Restore results
-    if (session.valuationResult) {
-      const currentResult = useManualResultsStore.getState().result
-      if (!currentResult || currentResult.valuation_id !== session.valuationResult.valuation_id) {
-        generalLogger.debug('[ManualLayout] Restoring result', { reportId })
-        setResult(session.valuationResult as any)
+    // Only restore once per session load (when reportId changes)
+    const shouldRestore = restorationRef.current.lastRestoredReportId !== reportId
+
+    if (!shouldRestore) {
+      return
+    }
+
+    // Mark as restoring to prevent re-entry
+    restorationRef.current.isRestoring = true
+
+    try {
+      // Restore form data
+      if (session.sessionData) {
+        const sessionDataObj = session.sessionData as any
+        if (sessionDataObj.company_name || sessionDataObj.revenue) {
+          const formDataHash = getFormDataHash(sessionDataObj)
+          const currentFormDataHash = getFormDataHash(formData)
+          
+          // Only restore if data is actually different from current form data
+          // and we haven't already restored this exact data
+          if (formDataHash !== currentFormDataHash && formDataHash !== restorationRef.current.lastRestoredFormDataHash) {
+            generalLogger.debug('[ManualLayout] Restoring form data', { reportId })
+            restorationRef.current.lastRestoredFormDataHash = formDataHash
+            updateFormData(sessionDataObj)
+          }
+        }
       }
+
+      // Restore results
+      if (session.valuationResult) {
+        const currentResult = useManualResultsStore.getState().result
+        const resultId = session.valuationResult.valuation_id
+        
+        // Only restore if result is different and we haven't restored this one already
+        if ((!currentResult || currentResult.valuation_id !== resultId) && 
+            resultId !== restorationRef.current.lastRestoredResultId) {
+          generalLogger.debug('[ManualLayout] Restoring result', { reportId })
+          restorationRef.current.lastRestoredResultId = resultId
+          setResult(session.valuationResult as any)
+        }
+      }
+      
+      // Mark this reportId as restored
+      restorationRef.current.lastRestoredReportId = reportId
+    } finally {
+      // Always clear restoring flag, even if there's an error
+      restorationRef.current.isRestoring = false
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sessionReportId, reportId])  // Only trigger when reportId changes, not when session object changes
