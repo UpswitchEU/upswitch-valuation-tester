@@ -78,12 +78,16 @@ export class ReportService {
     }
   ): Promise<void> {
     // ✅ FIX: Check if there's already a pending save for this reportId
-    // If so, wait for it to complete to prevent race conditions
+    // If so, wait for it to complete to prevent race conditions, then proceed with new save
     const existingSave = pendingAssetSaves.get(reportId)
     if (existingSave) {
-      logger.info('[ReportService] Waiting for pending asset save to complete', { reportId })
+      logger.info('[ReportService] Waiting for pending asset save to complete before saving new assets', { 
+        reportId,
+        note: 'Queueing save to prevent data loss - will save new assets after existing save completes',
+      })
       await existingSave
-      return
+      // ✅ FIX: Continue to save new assets after existing save completes (removed early return)
+      // This ensures all saves are processed sequentially without data loss
     }
 
     // Create save promise and track it

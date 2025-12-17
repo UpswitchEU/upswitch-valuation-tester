@@ -328,18 +328,22 @@ export class HttpClient {
       // Backend returns { success: true, data: result }, so extract nested data first
       const responseData = response.data?.data || response.data
       
-      // CRITICAL: Log response structure for valuation and session endpoints to diagnose missing html_report
-      // ✅ FIX: Skip PUT /result endpoints - they're save confirmations, not data retrieval endpoints
+      // ✅ FIX: Log response structure for valuation and session endpoints to diagnose missing html_report
+      // Only flag POST /calculate endpoints as CRITICAL - GET session endpoints may not have HTML if called before PUT /result
       const isPutResultEndpoint = config.url?.includes('/result') && config.method?.toUpperCase() === 'PUT'
-      const isValuationEndpoint = config.url?.includes('/valuations/calculate') || config.url?.includes('/valuation-sessions/')
+      const isCalculateEndpoint = config.url?.includes('/valuations/calculate') && config.method?.toUpperCase() === 'POST'
+      const isSessionEndpoint = config.url?.includes('/valuation-sessions/') && !isPutResultEndpoint
       
-      if (isValuationEndpoint && !isPutResultEndpoint) {
+      // Diagnostic logging for all valuation/session endpoints (for debugging)
+      if (isCalculateEndpoint || isSessionEndpoint) {
         const rawData = response.data
         const nestedData = (rawData as any)?.data
         const extractedData = responseData
         
         apiLogger.info('DIAGNOSTIC: Valuation response received', {
           url: config.url,
+          method: config.method,
+          endpointType: isCalculateEndpoint ? 'calculate' : 'session',
           hasRawData: !!rawData,
           rawDataType: typeof rawData,
           rawDataKeys: rawData ? Object.keys(rawData) : [],
@@ -356,17 +360,21 @@ export class HttpClient {
           htmlReportPreview: (extractedData as any)?.html_report?.substring(0, 200) || 'N/A',
           extractionMethod: rawData?.data ? 'nested' : 'direct',
         })
+      }
+      
+      // ✅ FIX: Only flag POST /calculate endpoints as CRITICAL if missing HTML reports
+      // GET session endpoints may legitimately not have HTML if called before PUT /result completes
+      if (isCalculateEndpoint) {
+        const extractedData = responseData
         
-        // CRITICAL: Warn if html_report is missing (only for endpoints that should return HTML reports)
+        // CRITICAL: Warn if html_report is missing from calculation response
         if (!(extractedData as any)?.html_report || (extractedData as any).html_report.trim().length === 0) {
           apiLogger.error('CRITICAL: html_report missing or empty in valuation response', {
             url: config.url,
             hasExtractedData: !!extractedData,
             extractedDataKeys: extractedData ? Object.keys(extractedData) : [],
-            hasNestedData: !!nestedData,
-            nestedDataKeys: nestedData ? Object.keys(nestedData) : [],
-            nestedDataHasHtmlReport: !!(nestedData as any)?.html_report,
-            rawResponseSample: JSON.stringify(rawData).substring(0, 1000),
+            rawResponseSample: JSON.stringify(response.data).substring(0, 1000),
+            note: 'POST /calculate endpoints should always return HTML reports',
           })
         } else {
           apiLogger.info('SUCCESS: html_report found in valuation response', {
@@ -376,18 +384,16 @@ export class HttpClient {
           })
         }
         
-        // CRITICAL: Warn if info_tab_html is missing (only for endpoints that should return HTML reports)
+        // CRITICAL: Warn if info_tab_html is missing from calculation response
         if (!(extractedData as any)?.info_tab_html || (extractedData as any).info_tab_html.trim().length === 0) {
           apiLogger.error('CRITICAL: info_tab_html missing or empty in valuation response', {
             url: config.url,
             hasExtractedData: !!extractedData,
             extractedDataKeys: extractedData ? Object.keys(extractedData) : [],
-            hasNestedData: !!nestedData,
-            nestedDataKeys: nestedData ? Object.keys(nestedData) : [],
-            nestedDataHasInfoTabHtml: !!(nestedData as any)?.info_tab_html,
             hasHtmlReport: !!(extractedData as any)?.html_report,
             htmlReportLength: (extractedData as any)?.html_report?.length || 0,
-            rawResponseSample: JSON.stringify(rawData).substring(0, 1000),
+            rawResponseSample: JSON.stringify(response.data).substring(0, 1000),
+            note: 'POST /calculate endpoints should always return HTML reports',
           })
         } else {
           apiLogger.info('SUCCESS: info_tab_html found in valuation response', {

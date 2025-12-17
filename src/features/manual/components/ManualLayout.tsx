@@ -209,15 +209,19 @@ export const ManualLayout: React.FC<ManualLayoutProps> = ({
             formHasIndustry: !!currentFormData.industry,
           })
         } else if (!hasSessionData) {
-          generalLogger.warn('[ManualLayout] Skipping form restoration - no session data', {
+          // ✅ FIX: Downgrade to DEBUG - this is expected for NEW reports (no session data yet)
+          generalLogger.debug('[ManualLayout] Skipping form restoration - no session data (NEW report)', {
             reportId,
+            note: 'Expected behavior for new reports - session data will be populated after form submission',
           })
         }
       } else {
-        generalLogger.warn('[ManualLayout] No sessionData found for restoration', {
+        // ✅ FIX: Downgrade to DEBUG - this is expected for NEW reports
+        generalLogger.debug('[ManualLayout] No sessionData found for restoration (NEW report)', {
           reportId,
           hasSession: !!currentSession,
           sessionKeys: currentSession ? Object.keys(currentSession) : [],
+          note: 'Expected behavior for new reports - session data will be populated after form submission',
         })
       }
 
