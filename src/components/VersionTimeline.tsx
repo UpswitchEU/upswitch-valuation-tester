@@ -388,22 +388,22 @@ function VersionTimelineItem({
               <div className="grid grid-cols-2 gap-3">
                 {version.valuationResult?.valuation_summary && typeof version.valuationResult?.valuation_summary === 'object' && (
                   <>
-                    {(version.valuationResult.valuation_summary as any).base_valuation && (
+                    {(version.valuationResult?.valuation_summary as any)?.base_valuation && (
                       <div className="p-3 bg-gray-50 rounded-lg">
                         <p className="text-xs text-gray-600 mb-1">Base Valuation</p>
                         <p className="text-sm font-semibold text-gray-900">
-                          {formatCurrency((version.valuationResult.valuation_summary as any).base_valuation, countryCode)}
+                          {formatCurrency((version.valuationResult?.valuation_summary as any)?.base_valuation, countryCode)}
                         </p>
                       </div>
                     )}
-                    {(version.valuationResult.valuation_summary as any).adjustments_total !== undefined && (
+                    {(version.valuationResult?.valuation_summary as any)?.adjustments_total !== undefined && (
                       <div className="p-3 bg-gray-50 rounded-lg">
                         <p className="text-xs text-gray-600 mb-1">Total Adjustments</p>
                         <p className={`text-sm font-semibold ${
-                          (version.valuationResult.valuation_summary as any).adjustments_total >= 0 ? 'text-green-700' : 'text-red-700'
+                          (version.valuationResult?.valuation_summary as any)?.adjustments_total >= 0 ? 'text-green-700' : 'text-red-700'
                         }`}>
-                          {(version.valuationResult.valuation_summary as any).adjustments_total >= 0 ? '+' : ''}
-                          {formatCurrency((version.valuationResult.valuation_summary as any).adjustments_total, countryCode)}
+                          {(version.valuationResult?.valuation_summary as any)?.adjustments_total >= 0 ? '+' : ''}
+                          {formatCurrency((version.valuationResult?.valuation_summary as any)?.adjustments_total, countryCode)}
                         </p>
                       </div>
                     )}
@@ -489,7 +489,7 @@ function VersionTimelineItem({
               <div className="flex items-center justify-between text-sm">
                 <span className="text-gray-700">Calculation Time:</span>
                 <span className="font-semibold text-blue-700">
-                  {(version.calculationDuration_ms / 1000).toFixed(2)}s
+                  {((version.calculationDuration_ms ?? 0) / 1000).toFixed(2)}s
                 </span>
               </div>
             </div>
