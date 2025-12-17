@@ -106,9 +106,11 @@ export const ManualLayout: React.FC<ManualLayoutProps> = ({
   const restorationRef = useRef<{
     lastRestoredReportId: string | null
     isRestoring: boolean
+    lastAttemptedReportId: string | null // Track if we attempted but session wasn't ready
   }>({
     lastRestoredReportId: null,
     isRestoring: false,
+    lastAttemptedReportId: null,
   })
   
   // Simple restoration: Only restore on reportId change (new session loaded)
@@ -128,8 +130,21 @@ export const ManualLayout: React.FC<ManualLayoutProps> = ({
     // Read session state inside effect (only when reportId changes)
     const currentSession = useSessionStore.getState().session
     if (!currentSession || currentSession.reportId !== reportId) {
+      // ✅ FIX: Track that we attempted restoration but session wasn't ready
+      // This allows us to retry when session becomes available
+      if (reportId && restorationRef.current.lastAttemptedReportId !== reportId) {
+        restorationRef.current.lastAttemptedReportId = reportId
+        generalLogger.debug('[ManualLayout] Session not ready yet, will retry when available', {
+          reportId,
+          hasSession: !!currentSession,
+          sessionReportId: currentSession?.reportId,
+        })
+      }
       return
     }
+    
+    // Clear attempted flag since session is now available
+    restorationRef.current.lastAttemptedReportId = null
 
     // Check feature flag before restoring
     if (!shouldEnableSessionRestoration()) {
@@ -170,26 +185,96 @@ export const ManualLayout: React.FC<ManualLayoutProps> = ({
         // Check if form is empty - be more strict to avoid overwriting user input
         // ✅ FIX: Only check critical user-entered fields (ignore defaults like industry='services')
         // Default values don't indicate user has filled the form
+        // Also check current_year_data for revenue/ebitda (form might have defaults there)
+        const hasRevenue = currentFormData.revenue || (currentFormData.current_year_data?.revenue && currentFormData.current_year_data.revenue > 0)
+        const hasEbitda = currentFormData.ebitda || (currentFormData.current_year_data?.ebitda && currentFormData.current_year_data.ebitda > 0)
         const formIsEmpty = !currentFormData.company_name && 
-                           !currentFormData.revenue && 
-                           !currentFormData.ebitda &&
+                           !hasRevenue && 
+                           !hasEbitda &&
                            // Check if industry is still default value (not user-entered)
                            (currentFormData.industry === 'services' || !currentFormData.industry)
-        const hasSessionData = sessionDataObj.company_name || sessionDataObj.revenue || sessionDataObj.ebitda
+        
+        // ✅ FIX: Check for session data in both flat and nested structures
+        // Revenue/EBITDA might be in current_year_data.revenue or at top level
+        const hasSessionData = sessionDataObj.company_name || 
+                              sessionDataObj.revenue || 
+                              sessionDataObj.ebitda ||
+                              sessionDataObj.current_year_data?.revenue ||
+                              sessionDataObj.current_year_data?.ebitda
         
         generalLogger.info('[ManualLayout] Form restoration check', {
           reportId,
           formIsEmpty,
           hasSessionData,
+          hasCompanyName: !!sessionDataObj.company_name,
+          hasRevenue: !!(sessionDataObj.revenue || sessionDataObj.current_year_data?.revenue),
+          hasEbitda: !!(sessionDataObj.ebitda || sessionDataObj.current_year_data?.ebitda),
           willRestore: hasSessionData && formIsEmpty,
         })
         
         if (hasSessionData && formIsEmpty) {
+          // ✅ FIX: Properly map sessionData to formData format
+          // Handle both flat and nested structures (revenue/ebitda might be in current_year_data)
+          const formDataUpdate: Partial<any> = {
+            // Basic company information
+            company_name: sessionDataObj.company_name,
+            country_code: sessionDataObj.country_code,
+            industry: sessionDataObj.industry,
+            business_model: sessionDataObj.business_model,
+            founding_year: sessionDataObj.founding_year,
+            
+            // Business details
+            business_type: sessionDataObj.business_type,
+            business_type_id: sessionDataObj.business_type_id,
+            business_description: sessionDataObj.business_description,
+            business_highlights: sessionDataObj.business_highlights,
+            reason_for_selling: sessionDataObj.reason_for_selling,
+            city: sessionDataObj.city,
+            
+            // Financials - handle both nested and flat structures
+            revenue: sessionDataObj.current_year_data?.revenue || sessionDataObj.revenue,
+            ebitda: sessionDataObj.current_year_data?.ebitda || sessionDataObj.ebitda,
+            // ✅ FIX: Preserve all fields from existing current_year_data, merge with defaults if needed
+            current_year_data: sessionDataObj.current_year_data ? {
+              ...sessionDataObj.current_year_data,
+              // Ensure revenue/ebitda are set (might be at top level)
+              revenue: sessionDataObj.current_year_data.revenue ?? sessionDataObj.revenue ?? 0,
+              ebitda: sessionDataObj.current_year_data.ebitda ?? sessionDataObj.ebitda ?? 0,
+              // Ensure year is set
+              year: sessionDataObj.current_year_data.year ?? new Date().getFullYear(),
+            } : {
+              year: new Date().getFullYear(),
+              revenue: sessionDataObj.revenue ?? 0,
+              ebitda: sessionDataObj.ebitda ?? 0,
+            },
+            historical_years_data: sessionDataObj.historical_years_data,
+            recurring_revenue_percentage: sessionDataObj.recurring_revenue_percentage,
+            
+            // Ownership
+            number_of_employees: sessionDataObj.number_of_employees,
+            number_of_owners: sessionDataObj.number_of_owners,
+            shares_for_sale: sessionDataObj.shares_for_sale,
+            
+            // Other
+            comparables: sessionDataObj.comparables,
+            business_context: sessionDataObj.business_context,
+          }
+          
+          // Remove undefined values
+          Object.keys(formDataUpdate).forEach((key) => {
+            if (formDataUpdate[key] === undefined) {
+              delete formDataUpdate[key]
+            }
+          })
+          
           generalLogger.info('[ManualLayout] Restoring form data', { 
             reportId,
-            fieldsToRestore: Object.keys(sessionDataObj).filter(key => sessionDataObj[key] !== undefined && sessionDataObj[key] !== null && sessionDataObj[key] !== ''),
+            fieldsToRestore: Object.keys(formDataUpdate),
+            hasRevenue: !!formDataUpdate.revenue,
+            hasEbitda: !!formDataUpdate.ebitda,
+            hasCurrentYearData: !!formDataUpdate.current_year_data,
           })
-          updateFormDataFn(sessionDataObj)
+          updateFormDataFn(formDataUpdate)
           
           // Verify restoration was successful
           const restoredFormData = useManualFormStore.getState().formData
@@ -274,8 +359,20 @@ export const ManualLayout: React.FC<ManualLayoutProps> = ({
         }
       }
 
-      // Mark this reportId as restored
-      restorationRef.current.lastRestoredReportId = reportId
+      // ✅ FIX: Mark as restored ONLY if we actually restored form data
+      // This allows reactive restoration to trigger if session loads later
+      // We check if restoration happened inside the try block above
+      // If session wasn't ready, don't mark - let reactive effect handle it
+      if (currentSession.sessionData && hasSessionData && formIsEmpty) {
+        restorationRef.current.lastRestoredReportId = reportId
+        generalLogger.info('[ManualLayout] Form restoration completed, marked as restored', { reportId })
+      } else if (!currentSession.sessionData) {
+        // Session not ready yet - don't mark as restored, let reactive effect handle it
+        generalLogger.debug('[ManualLayout] Session not ready, will retry via reactive effect', { reportId })
+      } else {
+        // Form not empty or no session data - mark as processed to prevent infinite retries
+        restorationRef.current.lastRestoredReportId = reportId
+      }
       
       // ✅ FIX: Only mark as saved if restoring an existing report that was explicitly saved by user
       // Don't mark new reports as saved (they haven't been explicitly saved by user yet)
@@ -317,6 +414,109 @@ export const ManualLayout: React.FC<ManualLayoutProps> = ({
   const sessionHtmlReport = useSessionStore((state) => state.session?.htmlReport)
   const sessionInfoTabHtml = useSessionStore((state) => state.session?.infoTabHtml)
   const sessionValuationResult = useSessionStore((state) => state.session?.valuationResult)
+  
+  // ✅ FIX: Subscribe to sessionData to detect when form fields are loaded
+  // This handles the case where sessionData loads from cache/backend after component mounts
+  // Form fields should be restored just like HTML reports
+  const sessionData = useSessionStore((state) => state.session?.sessionData)
+
+  // ✅ FIX: Separate effect to restore form fields when sessionData becomes available
+  // This handles the case where sessionData loads from cache/backend after component mounts
+  // Similar to HTML report restoration, but for input fields
+  useEffect(() => {
+    if (!reportId || !sessionData) return
+    
+    // Only restore if we haven't already restored for this reportId
+    if (restorationRef.current.lastRestoredReportId === reportId) {
+      return
+    }
+    
+    // Prevent concurrent restoration
+    if (restorationRef.current.isRestoring) {
+      return
+    }
+    
+    const currentSession = useSessionStore.getState().session
+    if (!currentSession || currentSession.reportId !== reportId) {
+      return
+    }
+    
+    const currentFormData = useManualFormStore.getState().formData
+    
+    // Check if form is empty (same logic as main restoration)
+    const hasRevenue = currentFormData.revenue || (currentFormData.current_year_data?.revenue && currentFormData.current_year_data.revenue > 0)
+    const hasEbitda = currentFormData.ebitda || (currentFormData.current_year_data?.ebitda && currentFormData.current_year_data.ebitda > 0)
+    const formIsEmpty = !currentFormData.company_name && 
+                       !hasRevenue && 
+                       !hasEbitda &&
+                       (currentFormData.industry === 'services' || !currentFormData.industry)
+    
+    const sessionDataObj = sessionData as any
+    const hasSessionData = sessionDataObj.company_name || 
+                          sessionDataObj.revenue || 
+                          sessionDataObj.ebitda ||
+                          sessionDataObj.current_year_data?.revenue ||
+                          sessionDataObj.current_year_data?.ebitda
+    
+    if (hasSessionData && formIsEmpty) {
+      generalLogger.info('[ManualLayout] Restoring form fields from sessionData (reactive)', {
+        reportId,
+        hasSessionData: true,
+        formIsEmpty: true,
+        source: 'sessionData subscription',
+      })
+      
+      // Use the same restoration logic as the main effect
+      const { updateFormData: updateFormDataFn } = useManualFormStore.getState()
+      
+      const formDataUpdate: Partial<any> = {
+        company_name: sessionDataObj.company_name,
+        country_code: sessionDataObj.country_code,
+        industry: sessionDataObj.industry,
+        business_model: sessionDataObj.business_model,
+        founding_year: sessionDataObj.founding_year,
+        business_type: sessionDataObj.business_type,
+        business_type_id: sessionDataObj.business_type_id,
+        business_description: sessionDataObj.business_description,
+        business_highlights: sessionDataObj.business_highlights,
+        reason_for_selling: sessionDataObj.reason_for_selling,
+        city: sessionDataObj.city,
+        revenue: sessionDataObj.current_year_data?.revenue || sessionDataObj.revenue,
+        ebitda: sessionDataObj.current_year_data?.ebitda || sessionDataObj.ebitda,
+        current_year_data: sessionDataObj.current_year_data ? {
+          ...sessionDataObj.current_year_data,
+          revenue: sessionDataObj.current_year_data.revenue ?? sessionDataObj.revenue ?? 0,
+          ebitda: sessionDataObj.current_year_data.ebitda ?? sessionDataObj.ebitda ?? 0,
+          year: sessionDataObj.current_year_data.year ?? new Date().getFullYear(),
+        } : {
+          year: new Date().getFullYear(),
+          revenue: sessionDataObj.revenue ?? 0,
+          ebitda: sessionDataObj.ebitda ?? 0,
+        },
+        historical_years_data: sessionDataObj.historical_years_data,
+        recurring_revenue_percentage: sessionDataObj.recurring_revenue_percentage,
+        number_of_employees: sessionDataObj.number_of_employees,
+        number_of_owners: sessionDataObj.number_of_owners,
+        shares_for_sale: sessionDataObj.shares_for_sale,
+        comparables: sessionDataObj.comparables,
+        business_context: sessionDataObj.business_context,
+      }
+      
+      Object.keys(formDataUpdate).forEach((key) => {
+        if (formDataUpdate[key] === undefined) {
+          delete formDataUpdate[key]
+        }
+      })
+      
+      updateFormDataFn(formDataUpdate)
+      restorationRef.current.lastRestoredReportId = reportId
+      
+      generalLogger.info('[ManualLayout] Form fields restored from sessionData (reactive)', {
+        reportId,
+        fieldsRestored: Object.keys(formDataUpdate).length,
+      })
+    }
+  }, [reportId, sessionData]) // Watch for sessionData changes
 
   // ✅ FIX: Separate effect to restore HTML reports when they're added to session
   useEffect(() => {
