@@ -13,7 +13,7 @@
  */
 
 // Version tracking for debugging (increment on each deploy)
-const SW_VERSION = '1.0.3'
+const SW_VERSION = '1.0.4'
 const CACHE_NAME = `upswitch-valuation-v${SW_VERSION}`
 const RUNTIME_CACHE = `upswitch-runtime-v${SW_VERSION}`
 
@@ -97,7 +97,55 @@ self.addEventListener('activate', (event) => {
   return self.clients.claim()
 })
 
-// Fetch event - serve from cache, fallback to network
+// Check if a URL should use network-first strategy
+function shouldUseNetworkFirst(url) {
+  // Next.js build chunks have hashes and should always be fetched fresh
+  // These include webpack chunks, app chunks, and other _next/static files
+  if (url.includes('/_next/static/chunks/')) {
+    return true
+  }
+  
+  // CSS files from _next/static can change between builds
+  if (url.includes('/_next/static/css/')) {
+    return true
+  }
+  
+  // Don't cache API routes
+  if (url.includes('/api/')) {
+    return true
+  }
+  
+  return false
+}
+
+// Check if a URL should be cached
+function shouldCache(url, response) {
+  // Don't cache non-200 responses
+  if (!response || response.status !== 200) {
+    return false
+  }
+  
+  // Don't cache API routes
+  if (url.includes('/api/')) {
+    return false
+  }
+  
+  // Don't cache Next.js build chunks (they have content hashes)
+  if (url.includes('/_next/static/chunks/')) {
+    return false
+  }
+  
+  // Cache static assets: images, fonts, videos, manifest, etc.
+  const staticExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.svg', '.webp', '.woff', '.woff2', '.ttf', '.mp4', '.webm', '.json']
+  const isStaticAsset = staticExtensions.some(ext => url.includes(ext))
+  
+  // Cache root HTML and manifest
+  const isRootOrManifest = url.endsWith('/') || url.includes('/manifest.json')
+  
+  return isStaticAsset || isRootOrManifest
+}
+
+// Fetch event - network first for dynamic content, cache first for static assets
 self.addEventListener('fetch', (event) => {
   const { request } = event
 
@@ -111,33 +159,69 @@ self.addEventListener('fetch', (event) => {
     return
   }
 
+  const url = request.url
+  const useNetworkFirst = shouldUseNetworkFirst(url)
+
   event.respondWith(
-    caches.match(request).then((cachedResponse) => {
-      if (cachedResponse) {
-        console.log(`[ServiceWorker v${SW_VERSION}] Serving from cache:`, request.url)
-        return cachedResponse
-      }
-
-      // Not in cache, fetch from network
-      console.log(`[ServiceWorker v${SW_VERSION}] Fetching from network:`, request.url)
-      return fetch(request)
-        .then((response) => {
-          // Log successful network fetch
-          console.log(`[ServiceWorker v${SW_VERSION}] Fetch finished loading:`, request.method, JSON.stringify(request.url))
+    (async () => {
+      if (useNetworkFirst) {
+        // Network-first strategy for Next.js chunks and dynamic content
+        try {
+          console.log(`[ServiceWorker v${SW_VERSION}] Fetching from network (network-first):`, url)
+          const response = await fetch(request)
           
-          // Cache successful responses
-          if (response && response.status === 200 && response.type === 'basic') {
-            const responseToCache = response.clone()
+          if (response.ok) {
+            console.log(`[ServiceWorker v${SW_VERSION}] Fetch finished loading:`, request.method, JSON.stringify(url))
+            return response
+          } else {
+            // If network fails, try cache
+            console.warn(`[ServiceWorker v${SW_VERSION}] Network returned ${response.status}, trying cache:`, url)
+            const cachedResponse = await caches.match(request)
+            if (cachedResponse) {
+              console.log(`[ServiceWorker v${SW_VERSION}] Serving from cache (fallback):`, url)
+              return cachedResponse
+            }
+            return response
+          }
+        } catch (error) {
+          // Network failed, try cache
+          console.warn(`[ServiceWorker v${SW_VERSION}] Network failed, trying cache:`, url, error.message)
+          const cachedResponse = await caches.match(request)
+          if (cachedResponse) {
+            console.log(`[ServiceWorker v${SW_VERSION}] Serving from cache (fallback):`, url)
+            return cachedResponse
+          }
+          throw error
+        }
+      } else {
+        // Cache-first strategy for static assets
+        const cachedResponse = await caches.match(request)
+        if (cachedResponse) {
+          console.log(`[ServiceWorker v${SW_VERSION}] Serving from cache:`, url)
+          return cachedResponse
+        }
 
+        // Not in cache, fetch from network
+        try {
+          console.log(`[ServiceWorker v${SW_VERSION}] Fetching from network:`, url)
+          const response = await fetch(request)
+          
+          // Log successful network fetch
+          if (response.ok) {
+            console.log(`[ServiceWorker v${SW_VERSION}] Fetch finished loading:`, request.method, JSON.stringify(url))
+          }
+          
+          // Cache successful static assets
+          if (shouldCache(url, response)) {
+            const responseToCache = response.clone()
             caches.open(RUNTIME_CACHE).then((cache) => {
               cache.put(request, responseToCache)
             })
           }
 
           return response
-        })
-        .catch((error) => {
-          console.error(`[ServiceWorker v${SW_VERSION}] Fetch failed:`, request.url, error)
+        } catch (error) {
+          console.error(`[ServiceWorker v${SW_VERSION}] Fetch failed:`, url, error)
 
           // Return offline page for navigation requests
           if (request.mode === 'navigate') {
@@ -213,8 +297,9 @@ self.addEventListener('fetch', (event) => {
           }
 
           throw error
-        })
-    })
+        }
+      }
+    })()
   )
 })
 
