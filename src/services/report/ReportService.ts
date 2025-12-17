@@ -76,6 +76,16 @@ export class ReportService {
     const startTime = performance.now()
 
     try {
+      console.log('[ReportService] DIAGNOSTIC: saveReportAssets called', {
+        reportId,
+        hasSessionData: !!assets.sessionData,
+        hasResult: !!assets.valuationResult,
+        hasHtmlReport: !!assets.htmlReport,
+        htmlLength: assets.htmlReport?.length || 0,
+        hasInfoTab: !!assets.infoTabHtml,
+        infoLength: assets.infoTabHtml?.length || 0,
+      })
+
       logger.info('Saving complete report package', {
         reportId,
         hasSessionData: !!assets.sessionData,
@@ -91,6 +101,8 @@ export class ReportService {
       const { SessionAPI } = await import('../api/session/SessionAPI')
       const sessionAPI = new SessionAPI()
 
+      console.log('[ReportService] DIAGNOSTIC: About to call sessionAPI.saveValuationResult', { reportId })
+
       // Save complete package to backend in single API call
       await sessionAPI.saveValuationResult(reportId, {
         sessionData: assets.sessionData,  // ✅ NEW: Send input data
@@ -98,6 +110,8 @@ export class ReportService {
         htmlReport: assets.htmlReport,
         infoTabHtml: assets.infoTabHtml,
       })
+
+      console.log('[ReportService] DIAGNOSTIC: sessionAPI.saveValuationResult completed', { reportId })
 
       const duration = performance.now() - startTime
 

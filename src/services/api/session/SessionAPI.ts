@@ -9,17 +9,17 @@
 
 import { CreateValuationSessionRequest, UpdateValuationSessionRequest } from '../../../types/api'
 import type {
-    CreateValuationSessionResponse,
-    SwitchViewResponse,
-    UpdateValuationSessionResponse,
-    ValuationSessionResponse,
+  CreateValuationSessionResponse,
+  SwitchViewResponse,
+  UpdateValuationSessionResponse,
+  ValuationSessionResponse,
 } from '../../../types/api-responses'
 import { APIError, AuthenticationError } from '../../../types/errors'
 import { convertToApplicationError } from '../../../utils/errors/errorConverter'
 import {
-    isNetworkError,
-    isSessionConflictError,
-    isValidationError,
+  isNetworkError,
+  isSessionConflictError,
+  isValidationError,
 } from '../../../utils/errors/errorGuards'
 import { apiLogger } from '../../../utils/logger'
 import { APIRequestConfig, HttpClient } from '../HttpClient'
@@ -415,6 +415,16 @@ export class SessionAPI extends HttpClient {
     options?: APIRequestConfig
   ): Promise<{ success: boolean; message: string }> {
     try {
+      console.log('[SessionAPI] DIAGNOSTIC: saveValuationResult called', {
+        reportId,
+        hasSessionData: !!data.sessionData,
+        hasValuationResult: !!data.valuationResult,
+        hasHtmlReport: !!data.htmlReport,
+        htmlReportLength: data.htmlReport?.length || 0,
+        hasInfoTabHtml: !!data.infoTabHtml,
+        infoTabHtmlLength: data.infoTabHtml?.length || 0,
+      })
+
       const response = await this.executeRequest<{ success: boolean; message: string }>(
         {
           method: 'PUT',
@@ -430,6 +440,11 @@ export class SessionAPI extends HttpClient {
         options
       )
 
+      console.log('[SessionAPI] DIAGNOSTIC: PUT /result succeeded', {
+        reportId,
+        responseSuccess: response?.success,
+      })
+
       apiLogger.info('Complete valuation package saved to session', {
         reportId,
         hasSessionData: !!data.sessionData,
@@ -443,6 +458,12 @@ export class SessionAPI extends HttpClient {
 
       return response
     } catch (error) {
+      console.error('[SessionAPI] DIAGNOSTIC: PUT /result FAILED', {
+        reportId,
+        error,
+        errorMessage: error instanceof Error ? error.message : String(error),
+      })
+
       apiLogger.error('Failed to save valuation result to session', {
         reportId,
         error: error instanceof Error ? error.message : String(error),
