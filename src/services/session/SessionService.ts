@@ -336,6 +336,18 @@ export class SessionService {
     const startTime = performance.now()
 
     try {
+      // ✅ FIX: Wait for any pending asset saves to complete before reloading session
+      // This prevents race condition where saveSession reloads before saveReportAssets completes
+      const { pendingAssetSaves } = await import('../report/ReportService')
+      const pendingSave = pendingAssetSaves.get(reportId)
+      if (pendingSave) {
+        logger.info('Waiting for pending asset save before reloading session', {
+          reportId,
+          note: 'Preventing race condition - asset save must complete before session reload',
+        })
+        await pendingSave
+      }
+
       logger.info('Saving session', {
         reportId,
         updateKeys: Object.keys(updates),

@@ -91,20 +91,50 @@ export class SessionCacheManager {
       // Validate before caching
       validateSessionData(session)
 
+      // ✅ FIX: Exclude large HTML reports from cache to prevent quota errors
+      // HTML reports are fetched from backend on demand
+      const sessionWithoutHtml: ValuationSession = {
+        ...session,
+        htmlReport: undefined,  // Don't cache large HTML report
+        infoTabHtml: undefined, // Don't cache large info tab HTML
+        // Keep metadata flags to indicate HTML reports exist
+        // These will be used to fetch HTML reports from backend when needed
+      }
+
       const cached: CachedSession = {
-        session,
+        session: sessionWithoutHtml,
         cachedAt: Date.now(),
         expiresAt: Date.now() + CACHE_TTL_MS,
         version: session.updatedAt?.toString() || Date.now().toString(),  // Track version for staleness detection
       }
 
       const key = this.getCacheKey(reportId)
-      localStorage.setItem(key, JSON.stringify(cached))
+      
+      try {
+        localStorage.setItem(key, JSON.stringify(cached))
+      } catch (quotaError: any) {
+        // If still hitting quota (shouldn't happen now, but safety check)
+        if (quotaError.name === 'QuotaExceededError' || quotaError.code === 22) {
+          cacheLogger.warn('Cache quota exceeded, clearing oldest entries and retrying', {
+            reportId,
+          })
+          // Clear some old caches and retry
+          this.enforceSizeLimit()
+          this.cleanExpired()
+          // Retry with reduced data
+          localStorage.setItem(key, JSON.stringify(cached))
+        } else {
+          throw quotaError
+        }
+      }
 
-      cacheLogger.info('Session cached', {
+      cacheLogger.info('Session cached (HTML reports excluded)', {
         reportId,
         expiresIn_hours: CACHE_TTL_MS / (60 * 60 * 1000),
         version: cached.version,
+        hasHtmlReportInBackend: !!session.htmlReport,
+        hasInfoTabHtmlInBackend: !!session.infoTabHtml,
+        note: 'HTML reports excluded from cache, fetched from backend on demand',
       })
 
       // Check cache size and clean if needed
@@ -146,27 +176,30 @@ export class SessionCacheManager {
       const sanitized = sanitizeSessionData(parsed.session)
 
       // ✅ CACHE COMPLETENESS CHECK: Detect incomplete/stale caches
-      // If session is incomplete (no HTML reports) but cache is old (>10 min), invalidate it
+      // Note: HTML reports are excluded from cache, so we check valuationResult instead
+      // If session has no valuation result but cache is old (>10 min), invalidate it
       // This prevents stale "empty session" caches from before valuation completion
-      const isComplete = !!(sanitized.htmlReport || sanitized.infoTabHtml)
+      const hasValuationResult = !!sanitized.valuationResult
       const cacheAge_minutes = Math.floor((Date.now() - parsed.cachedAt) / (60 * 1000))
       
-      if (!isComplete && cacheAge_minutes > 10) {
-        cacheLogger.info('Invalidating incomplete stale cache', { 
+      // Note: HTML reports are not cached (too large), so we don't check for them here
+      // They will be fetched from backend when needed
+      if (!hasValuationResult && cacheAge_minutes > 10) {
+        cacheLogger.info('Invalidating incomplete stale cache (no valuation result)', { 
           reportId, 
           cacheAge_minutes,
-          hasHtmlReport: !!sanitized.htmlReport,
-          hasInfoTabHtml: !!sanitized.infoTabHtml,
+          hasValuationResult,
         })
         this.delete(reportId)
         return null
       }
 
-      cacheLogger.info('Session loaded from cache', {
+      cacheLogger.info('Session loaded from cache (HTML reports excluded, fetch from backend)', {
         reportId,
         cachedAgo_minutes: cacheAge_minutes,
-        isComplete,
+        hasValuationResult,
         version: parsed.version,
+        note: 'HTML reports not cached, will be fetched from backend when needed',
       })
 
       return sanitized

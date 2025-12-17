@@ -9,17 +9,17 @@
 
 import { CreateValuationSessionRequest, UpdateValuationSessionRequest } from '../../../types/api'
 import type {
-  CreateValuationSessionResponse,
-  SwitchViewResponse,
-  UpdateValuationSessionResponse,
-  ValuationSessionResponse,
+    CreateValuationSessionResponse,
+    SwitchViewResponse,
+    UpdateValuationSessionResponse,
+    ValuationSessionResponse,
 } from '../../../types/api-responses'
 import { APIError, AuthenticationError } from '../../../types/errors'
 import { convertToApplicationError } from '../../../utils/errors/errorConverter'
 import {
-  isNetworkError,
-  isSessionConflictError,
-  isValidationError,
+    isNetworkError,
+    isSessionConflictError,
+    isValidationError,
 } from '../../../utils/errors/errorGuards'
 import { apiLogger } from '../../../utils/logger'
 import { APIRequestConfig, HttpClient } from '../HttpClient'
@@ -33,8 +33,15 @@ export class SessionAPI extends HttpClient {
     options?: APIRequestConfig
   ): Promise<ValuationSessionResponse | null> {
     try {
-      // Backend returns { success: true, data: {...} }
-      const response = await this.executeRequest<{ success: boolean; data: any }>(
+      // ✅ FIX: HttpClient unwraps response.data?.data || response.data
+      // Backend returns: res.json({ success: true, data: sessionObject })
+      // Axios receives: { success: true, data: sessionObject }
+      // HttpClient extracts: response.data?.data || response.data
+      //   - response.data = { success: true, data: sessionObject }
+      //   - response.data.data = sessionObject
+      //   - So HttpClient returns sessionObject directly
+      // Therefore, response IS the session object
+      const response = await this.executeRequest<any>(
         {
           method: 'GET',
           url: `/api/valuation-sessions/${reportId}`,
@@ -43,26 +50,53 @@ export class SessionAPI extends HttpClient {
         options
       )
 
-      // DIAGNOSTIC: Log what we received
-      console.log('[SessionAPI] GET response received:', {
-        reportId,
-        hasResponse: !!response,
-        responseType: typeof response,
-        hasData: !!response?.data,
-        dataType: typeof response?.data,
-        hasHtmlReport: !!(response?.data as any)?.htmlReport,
-        htmlReportLength: (response?.data as any)?.htmlReport?.length || 0,
-        responseKeys: response ? Object.keys(response) : [],
-        dataKeys: response?.data ? Object.keys(response.data) : [],
-      })
+      // ✅ FIX: HttpClient already unwrapped the response, so response IS the session data
+      // But handle edge cases where structure might be different
+      let sessionData: any
+      let success: boolean
 
-      // Transform backend format { success, data } to frontend format { success, session }
-      if (!response?.data) {
-        apiLogger.debug('Session not found', { reportId })
+      if (!response || typeof response !== 'object') {
+        apiLogger.debug('Session not found - invalid response', { reportId })
         return null
       }
 
-      const sessionData = response.data
+      // Check if response has nested data structure (edge case)
+      if ('data' in response && response.data && typeof response.data === 'object' && !('reportId' in response)) {
+        // Response is { success: true, data: {...} } - extract inner data
+        sessionData = response.data
+        success = (response as any).success ?? true
+      } else if ('reportId' in response || 'currentView' in response) {
+        // Response is the session object directly (most common case)
+        sessionData = response
+        success = (response as any).success ?? true
+      } else {
+        // Invalid structure
+        apiLogger.debug('Session not found - invalid response structure', {
+          reportId,
+          responseKeys: Object.keys(response),
+        })
+        return null
+      }
+
+      // DIAGNOSTIC: Log what we received and parsed
+      console.log('[SessionAPI] GET response received and parsed:', {
+        reportId,
+        hasResponse: !!response,
+        responseType: typeof response,
+        responseKeys: response ? Object.keys(response) : [],
+        hasSessionData: !!sessionData,
+        sessionDataKeys: sessionData ? Object.keys(sessionData) : [],
+        hasHtmlReport: !!(sessionData as any)?.htmlReport,
+        htmlReportLength: (sessionData as any)?.htmlReport?.length || 0,
+        hasInfoTabHtml: !!(sessionData as any)?.infoTabHtml,
+        infoTabHtmlLength: (sessionData as any)?.infoTabHtml?.length || 0,
+        hasValuationResult: !!(sessionData as any)?.valuationResult,
+      })
+
+      if (!sessionData) {
+        apiLogger.debug('Session not found', { reportId })
+        return null
+      }
 
       // Map backend 'ai-guided' to frontend 'conversational'
       if ((sessionData.currentView as string) === 'ai-guided') {
@@ -87,7 +121,7 @@ export class SessionAPI extends HttpClient {
 
       // Return in expected format
       return {
-        success: response.success,
+        success,
         session: sessionData,
       }
     } catch (error) {

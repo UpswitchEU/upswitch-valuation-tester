@@ -166,9 +166,17 @@ export const ManualLayout: React.FC<ManualLayoutProps> = ({
       // Restore results - CRITICAL FIX: Merge HTML reports from session into result object
       if (currentSession.valuationResult) {
         const currentResult = useManualResultsStore.getState().result
-        if (!currentResult || currentResult.valuation_id !== currentSession.valuationResult.valuation_id) {
+        const shouldRestoreResult = !currentResult || currentResult.valuation_id !== currentSession.valuationResult.valuation_id
+        const resultMissingHtml = currentResult && !currentResult.html_report && !!currentSession.htmlReport
+        const resultMissingInfoTab = currentResult && !currentResult.info_tab_html && !!currentSession.infoTabHtml
+        
+        // ✅ FIX: Restore if result doesn't exist, has different ID, OR is missing HTML reports
+        if (shouldRestoreResult || resultMissingHtml || resultMissingInfoTab) {
           generalLogger.info('[ManualLayout] Restoring result with HTML assets', { 
             reportId,
+            shouldRestoreResult,
+            resultMissingHtml,
+            resultMissingInfoTab,
             hasHtmlReport: !!currentSession.htmlReport,
             hasInfoTabHtml: !!currentSession.infoTabHtml,
             htmlReportLength: currentSession.htmlReport?.length || 0,
@@ -177,16 +185,17 @@ export const ManualLayout: React.FC<ManualLayoutProps> = ({
           
           // Merge HTML reports from session into result object (they're stored separately in DB)
           const resultWithHtml = {
-            ...currentSession.valuationResult,
-            html_report: currentSession.htmlReport || currentSession.valuationResult.html_report,
-            info_tab_html: currentSession.infoTabHtml || currentSession.valuationResult.info_tab_html,
+            ...(currentResult || currentSession.valuationResult),
+            ...currentSession.valuationResult, // Ensure we have latest valuation result
+            html_report: currentSession.htmlReport || currentResult?.html_report || currentSession.valuationResult.html_report,
+            info_tab_html: currentSession.infoTabHtml || currentResult?.info_tab_html || currentSession.valuationResult.info_tab_html,
           }
           
           setResultFn(resultWithHtml as any)
           
           // Verify restoration was successful
           const restoredResult = useManualResultsStore.getState().result
-          if (restoredResult && !restoredResult.html_report) {
+          if (restoredResult && !restoredResult.html_report && currentSession.htmlReport) {
             generalLogger.error('[ManualLayout] RESTORATION FAILED: html_report missing after setResult', {
               reportId,
               valuationId: restoredResult.valuation_id,
@@ -209,6 +218,77 @@ export const ManualLayout: React.FC<ManualLayoutProps> = ({
       restorationRef.current.isRestoring = false
     }
   }, [reportId]) // ONLY depend on reportId prop - this ensures effect only runs when navigating to a new report
+
+  // ✅ FIX: Subscribe to session to detect when HTML reports are added
+  // This handles the case where HTML reports are loaded after initial restoration
+  // (e.g., after PUT /result completes and session is reloaded)
+  const sessionHtmlReport = useSessionStore((state) => state.session?.htmlReport)
+  const sessionInfoTabHtml = useSessionStore((state) => state.session?.infoTabHtml)
+  const sessionValuationResult = useSessionStore((state) => state.session?.valuationResult)
+
+  // ✅ FIX: Separate effect to restore HTML reports when they're added to session
+  useEffect(() => {
+    if (!reportId) return
+
+    const currentSession = useSessionStore.getState().session
+    if (!currentSession || currentSession.reportId !== reportId) {
+      return
+    }
+
+    // Check if session has HTML reports but result doesn't
+    const hasHtmlReportInSession = !!sessionHtmlReport
+    const hasInfoTabHtmlInSession = !!sessionInfoTabHtml
+    const currentResult = useManualResultsStore.getState().result
+
+    if (!hasHtmlReportInSession && !hasInfoTabHtmlInSession) {
+      return // No HTML reports to restore
+    }
+
+    // Check if result is missing HTML reports
+    const resultMissingHtml = currentResult && !currentResult.html_report && hasHtmlReportInSession
+    const resultMissingInfoTab = currentResult && !currentResult.info_tab_html && hasInfoTabHtmlInSession
+
+    if (resultMissingHtml || resultMissingInfoTab) {
+      generalLogger.info('[ManualLayout] HTML reports detected in session, restoring to result', {
+        reportId,
+        hasHtmlReportInSession,
+        hasInfoTabHtmlInSession,
+        resultMissingHtml,
+        resultMissingInfoTab,
+        hasExistingResult: !!currentResult,
+      })
+
+      const { setResult: setResultFn } = useManualResultsStore.getState()
+
+      // Merge HTML reports into existing result
+      if (currentResult) {
+        const resultWithHtml = {
+          ...currentResult,
+          html_report: sessionHtmlReport || currentResult.html_report,
+          info_tab_html: sessionInfoTabHtml || currentResult.info_tab_html,
+        }
+        setResultFn(resultWithHtml as any)
+        generalLogger.info('[ManualLayout] HTML reports restored to existing result', {
+          reportId,
+          htmlReportLength: resultWithHtml.html_report?.length || 0,
+          infoTabHtmlLength: resultWithHtml.info_tab_html?.length || 0,
+        })
+      } else if (sessionValuationResult) {
+        // No result yet, but we have valuation result - restore it with HTML
+        const resultWithHtml = {
+          ...sessionValuationResult,
+          html_report: sessionHtmlReport || sessionValuationResult.html_report,
+          info_tab_html: sessionInfoTabHtml || sessionValuationResult.info_tab_html,
+        }
+        setResultFn(resultWithHtml as any)
+        generalLogger.info('[ManualLayout] HTML reports restored with valuation result', {
+          reportId,
+          htmlReportLength: resultWithHtml.html_report?.length || 0,
+          infoTabHtmlLength: resultWithHtml.info_tab_html?.length || 0,
+        })
+      }
+    }
+  }, [reportId, sessionHtmlReport, sessionInfoTabHtml, sessionValuationResult])
 
   // Panel resize hook
   const { leftPanelWidth, handleResize, isMobile, mobileActivePanel, setMobileActivePanel } =

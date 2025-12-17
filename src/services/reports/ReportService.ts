@@ -294,25 +294,40 @@ class ReportServiceImpl implements ReportService {
       })
 
       if (!response.ok) {
+        // ✅ FIX: Always clear cache regardless of error status (404, 500, etc.)
+        // This ensures frontend cache is cleared even if backend has issues
+        try {
+          const { globalSessionCache } = await import('../../utils/sessionCacheManager')
+          globalSessionCache.remove(reportId)
+          reportLogger.info('Cache cleared for report (treating as deleted)', { 
+            reportId,
+            status: response.status,
+            statusText: response.statusText,
+          })
+        } catch (cacheError) {
+          reportLogger.warn('Failed to clear cache for report', {
+            reportId,
+            error: cacheError instanceof Error ? cacheError.message : String(cacheError),
+          })
+        }
+        
         if (response.status === 404) {
-          // ✅ CRITICAL: Even if backend says 404, clear cache to prevent reappearance
+          // ✅ CRITICAL: Even if backend says 404, treat as success (idempotent deletion)
           // This handles race conditions where report was deleted but cache still exists
-          try {
-            const { globalSessionCache } = await import('../../utils/sessionCacheManager')
-            globalSessionCache.remove(reportId)
-            reportLogger.info('Cache cleared for 404 report (treating as deleted)', { reportId })
-          } catch (cacheError) {
-            reportLogger.warn('Failed to clear cache for 404 report', {
-              reportId,
-              error: cacheError instanceof Error ? cacheError.message : String(cacheError),
-            })
-          }
-          
-          reportLogger.warn('Report not found (already deleted?)', { reportId })
+          reportLogger.warn('Report not found (already deleted?) - treating as success', { reportId })
           return // Gracefully handle already deleted
         }
         if (response.status === 403) {
           throw new Error('Not authorized to delete this report')
+        }
+        if (response.status === 500) {
+          // ✅ FIX: Even on 500, clear cache and treat as success (idempotent)
+          // Backend may have partially deleted or had errors, but cache should be cleared
+          reportLogger.warn('Backend error during deletion (500) - cache cleared, treating as success', { 
+            reportId,
+            note: 'Report may have been partially deleted, cache cleared to prevent reappearance',
+          })
+          return // Treat as success - cache is cleared
         }
         throw new Error(`Failed to delete report: ${response.statusText}`)
       }

@@ -150,12 +150,12 @@ export const HomePage: React.FC = () => {
 
   // Business type focused examples aligned with AI-guided Q1
   const quickQueries = [
-    'SaaS company',
+    'SaaS',
     'Restaurant',
     'E-commerce store',
     'Manufacturing business',
     'Consulting firm',
-    'Tech startup',
+    'SaaS company',
   ]
 
   return (

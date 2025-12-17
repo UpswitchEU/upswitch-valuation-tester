@@ -135,44 +135,124 @@ const ConversationalLayoutInner: React.FC<ConversationalLayoutProps> = ({
     // Update tracked reportId
     lastRestoredReportIdRef.current = reportId
 
-    // Restore results if session has them and we don't have a result yet
-    // CRITICAL FIX: Merge HTML reports from session into result object
-    if (currentSession.valuationResult && !result) {
-      chatLogger.info('[Conversational] Restoring result with HTML assets', { 
-        reportId,
-        hasHtmlReport: !!currentSession.htmlReport,
-        hasInfoTabHtml: !!currentSession.infoTabHtml,
-        htmlReportLength: currentSession.htmlReport?.length || 0,
-        infoTabHtmlLength: currentSession.infoTabHtml?.length || 0,
-      })
+    // Restore results - CRITICAL FIX: Merge HTML reports from session into result object
+    if (currentSession.valuationResult) {
+      const currentResult = useConversationalResultsStore.getState().result
+      const shouldRestoreResult = !currentResult || currentResult.valuation_id !== currentSession.valuationResult.valuation_id
+      const resultMissingHtml = currentResult && !currentResult.html_report && !!currentSession.htmlReport
+      const resultMissingInfoTab = currentResult && !currentResult.info_tab_html && !!currentSession.infoTabHtml
       
-      // Merge HTML reports from session into result object (they're stored separately in DB)
-      const resultWithHtml = {
-        ...currentSession.valuationResult,
-        html_report: currentSession.htmlReport || currentSession.valuationResult.html_report,
-        info_tab_html: currentSession.infoTabHtml || currentSession.valuationResult.info_tab_html,
-      }
-      
-      setResult(resultWithHtml as any)
-      
-      // Verify restoration was successful
-      const restoredResult = useConversationalResultsStore.getState().result
-      if (restoredResult && !restoredResult.html_report) {
-        chatLogger.error('[Conversational] RESTORATION FAILED: html_report missing after setResult', {
+      // ✅ FIX: Restore if result doesn't exist, has different ID, OR is missing HTML reports
+      if (shouldRestoreResult || resultMissingHtml || resultMissingInfoTab) {
+        chatLogger.info('[Conversational] Restoring result with HTML assets', { 
           reportId,
-          valuationId: restoredResult.valuation_id,
-          sessionHadHtmlReport: !!currentSession.htmlReport,
+          shouldRestoreResult,
+          resultMissingHtml,
+          resultMissingInfoTab,
+          hasHtmlReport: !!currentSession.htmlReport,
+          hasInfoTabHtml: !!currentSession.infoTabHtml,
+          htmlReportLength: currentSession.htmlReport?.length || 0,
+          infoTabHtmlLength: currentSession.infoTabHtml?.length || 0,
         })
-      } else if (restoredResult?.html_report) {
-        chatLogger.info('[Conversational] RESTORATION SUCCESS: HTML report restored', {
+        
+        // Merge HTML reports from session into result object (they're stored separately in DB)
+        const resultWithHtml = {
+          ...(currentResult || currentSession.valuationResult),
+          ...currentSession.valuationResult, // Ensure we have latest valuation result
+          html_report: currentSession.htmlReport || currentResult?.html_report || currentSession.valuationResult.html_report,
+          info_tab_html: currentSession.infoTabHtml || currentResult?.info_tab_html || currentSession.valuationResult.info_tab_html,
+        }
+        
+        setResult(resultWithHtml as any)
+        
+        // Verify restoration was successful
+        const restoredResult = useConversationalResultsStore.getState().result
+        if (restoredResult && !restoredResult.html_report && currentSession.htmlReport) {
+          chatLogger.error('[Conversational] RESTORATION FAILED: html_report missing after setResult', {
+            reportId,
+            valuationId: restoredResult.valuation_id,
+            sessionHadHtmlReport: !!currentSession.htmlReport,
+          })
+        } else if (restoredResult?.html_report) {
+          chatLogger.info('[Conversational] RESTORATION SUCCESS: HTML report restored', {
+            reportId,
+            valuationId: restoredResult.valuation_id,
+            htmlReportLength: restoredResult.html_report.length,
+            infoTabHtmlLength: restoredResult.info_tab_html?.length || 0,
+          })
+        }
+      }
+    }
+  }, [reportId, setResult]) // Only depend on reportId prop, not session?.reportId or result
+
+  // ✅ FIX: Subscribe to session to detect when HTML reports are added
+  // This handles the case where HTML reports are loaded after initial restoration
+  // (e.g., after PUT /result completes and session is reloaded)
+  const sessionHtmlReport = useSessionStore((state) => state.session?.htmlReport)
+  const sessionInfoTabHtml = useSessionStore((state) => state.session?.infoTabHtml)
+  const sessionValuationResult = useSessionStore((state) => state.session?.valuationResult)
+
+  // ✅ FIX: Separate effect to restore HTML reports when they're added to session
+  useEffect(() => {
+    if (!reportId) return
+
+    const currentSession = useSessionStore.getState().session
+    if (!currentSession || currentSession.reportId !== reportId) {
+      return
+    }
+
+    // Check if session has HTML reports but result doesn't
+    const hasHtmlReportInSession = !!sessionHtmlReport
+    const hasInfoTabHtmlInSession = !!sessionInfoTabHtml
+    const currentResult = useConversationalResultsStore.getState().result
+
+    if (!hasHtmlReportInSession && !hasInfoTabHtmlInSession) {
+      return // No HTML reports to restore
+    }
+
+    // Check if result is missing HTML reports
+    const resultMissingHtml = currentResult && !currentResult.html_report && hasHtmlReportInSession
+    const resultMissingInfoTab = currentResult && !currentResult.info_tab_html && hasInfoTabHtmlInSession
+
+    if (resultMissingHtml || resultMissingInfoTab) {
+      chatLogger.info('[Conversational] HTML reports detected in session, restoring to result', {
+        reportId,
+        hasHtmlReportInSession,
+        hasInfoTabHtmlInSession,
+        resultMissingHtml,
+        resultMissingInfoTab,
+        hasExistingResult: !!currentResult,
+      })
+
+      // Merge HTML reports into existing result
+      if (currentResult) {
+        const resultWithHtml = {
+          ...currentResult,
+          html_report: sessionHtmlReport || currentResult.html_report,
+          info_tab_html: sessionInfoTabHtml || currentResult.info_tab_html,
+        }
+        setResult(resultWithHtml as any)
+        chatLogger.info('[Conversational] HTML reports restored to existing result', {
           reportId,
-          valuationId: restoredResult.valuation_id,
-          htmlReportLength: restoredResult.html_report.length,
-          infoTabHtmlLength: restoredResult.info_tab_html?.length || 0,
+          htmlReportLength: resultWithHtml.html_report?.length || 0,
+          infoTabHtmlLength: resultWithHtml.info_tab_html?.length || 0,
+        })
+      } else if (sessionValuationResult) {
+        // No result yet, but we have valuation result - restore it with HTML
+        const resultWithHtml = {
+          ...sessionValuationResult,
+          html_report: sessionHtmlReport || sessionValuationResult.html_report,
+          info_tab_html: sessionInfoTabHtml || sessionValuationResult.info_tab_html,
+        }
+        setResult(resultWithHtml as any)
+        chatLogger.info('[Conversational] HTML reports restored with valuation result', {
+          reportId,
+          htmlReportLength: resultWithHtml.html_report?.length || 0,
+          infoTabHtmlLength: resultWithHtml.info_tab_html?.length || 0,
         })
       }
     }
-  }, [reportId, result, setResult]) // Only depend on reportId prop, not session?.reportId
+  }, [reportId, sessionHtmlReport, sessionInfoTabHtml, sessionValuationResult, setResult])
 
   // Mark conversation changes as unsaved (for save status indicator)
   useEffect(() => {
