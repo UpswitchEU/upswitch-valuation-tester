@@ -36,6 +36,7 @@ export interface ValuationVersion {
   formData: ValuationRequest // Input data used for calculation
   valuationResult: ValuationResponse | null // Calculation result
   htmlReport: string | null // Generated HTML report
+  infoTabHtml: string | null // Info tab HTML (calculation breakdown)
 
   // Changes from previous version (for audit and comparison)
   changesSummary: VersionChanges
@@ -155,6 +156,7 @@ export interface CreateVersionRequest {
   formData: ValuationRequest
   valuationResult?: ValuationResponse
   htmlReport?: string
+  infoTabHtml?: string
   notes?: string
   tags?: string[]
 

@@ -247,6 +247,7 @@ export const ConversationPanel: React.FC<ConversationPanelProps> = ({
                 formData: newFormData,
                 valuationResult: result,
                 htmlReport: result.html_report || undefined,
+                infoTabHtml: result.info_tab_html || undefined,
                 changesSummary: changes,
                 versionLabel: generateAutoLabel(previousVersion.versionNumber + 1, changes),
               })
@@ -274,6 +275,7 @@ export const ConversationPanel: React.FC<ConversationPanelProps> = ({
               formData: newFormData,
               valuationResult: result,
               htmlReport: result.html_report || undefined,
+              infoTabHtml: result.info_tab_html || undefined,
               changesSummary: { totalChanges: 0, significantChanges: [] },
               versionLabel: 'v1 - Initial valuation',
             })

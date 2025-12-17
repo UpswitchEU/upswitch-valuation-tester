@@ -8,13 +8,13 @@
  */
 
 import type {
-  CreateVersionRequest,
-  UpdateVersionRequest,
-  ValuationVersion,
-  VersionComparison,
-  VersionFilterOptions,
-  VersionListResponse,
-  VersionStatistics,
+    CreateVersionRequest,
+    UpdateVersionRequest,
+    ValuationVersion,
+    VersionComparison,
+    VersionFilterOptions,
+    VersionListResponse,
+    VersionStatistics,
 } from '../../../types/ValuationVersion'
 import { createContextLogger } from '../../../utils/logger'
 
@@ -244,6 +244,7 @@ export class VersionAPI {
         form_data: request.formData,
         valuation_result: request.valuationResult,
         html_report: request.htmlReport,
+        info_tab_html: request.infoTabHtml,
         changes_summary: request.changesSummary,
         notes: request.notes,
         tags: request.tags,
@@ -501,6 +502,7 @@ export class VersionAPI {
       formData: backendVersion.form_data,
       valuationResult: backendVersion.valuation_result || null,
       htmlReport: backendVersion.html_report || null,
+      infoTabHtml: backendVersion.info_tab_html || null,
       changesSummary: backendVersion.changes_summary || { totalChanges: 0, significantChanges: [] },
       isActive: backendVersion.is_active || false,
       isPinned: backendVersion.is_pinned || false,

@@ -320,6 +320,7 @@ export const useValuationFormSubmission = (
               formData: request,
               valuationResult: result,
               htmlReport: result.html_report || undefined,
+              infoTabHtml: result.info_tab_html || undefined,
               changesSummary: changes,
               versionLabel: generateAutoLabel(previousVersion.versionNumber + 1, changes),
             })
@@ -349,6 +350,7 @@ export const useValuationFormSubmission = (
                 formData: request,
                 valuationResult: result,
                 htmlReport: result.html_report || undefined,
+                infoTabHtml: result.info_tab_html || undefined,
                 changesSummary: { totalChanges: 0, significantChanges: [] },
                 versionLabel: 'v1 - Initial valuation',
               })
