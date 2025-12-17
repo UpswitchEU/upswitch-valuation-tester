@@ -18,9 +18,9 @@ import { shouldEnableSessionRestoration } from '../../../config/features'
 import { useAuth } from '../../../hooks/useAuth'
 import { useToast } from '../../../hooks/useToast'
 import {
-  useValuationToolbarFullscreen,
-  useValuationToolbarTabs,
-  type ValuationTab,
+    useValuationToolbarFullscreen,
+    useValuationToolbarTabs,
+    type ValuationTab,
 } from '../../../hooks/valuationToolbar'
 import { useManualFormStore, useManualResultsStore } from '../../../store/manual'
 import { useSessionStore } from '../../../store/useSessionStore'

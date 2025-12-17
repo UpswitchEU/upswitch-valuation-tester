@@ -267,65 +267,80 @@ export const useVersionHistoryStore = create<VersionHistoryStore>()(
             // Backend unavailable - create locally
             versionLogger.warn('Backend unavailable, creating local version', {
               reportId: request.reportId,
+              backendError: backendError instanceof Error ? backendError.message : String(backendError),
             })
 
-            const reportVersions = get().versions[request.reportId] || []
-            const nextVersionNumber = Math.max(0, ...reportVersions.map((v) => v.versionNumber)) + 1
+            try {
+              const reportVersions = get().versions[request.reportId] || []
+              const nextVersionNumber = Math.max(0, ...reportVersions.map((v) => v.versionNumber)) + 1
 
-            // Generate auto-label
-            const autoLabel =
-              request.changesSummary && request.changesSummary.significantChanges.length > 0
-                ? `v${nextVersionNumber} - Adjusted ${request.changesSummary.significantChanges.join(', ')}`
-                : `Version ${nextVersionNumber}`
+              // Generate auto-label
+              const autoLabel =
+                request.changesSummary && request.changesSummary.significantChanges.length > 0
+                  ? `v${nextVersionNumber} - Adjusted ${request.changesSummary.significantChanges.join(', ')}`
+                  : `Version ${nextVersionNumber}`
 
-            const localVersion: ValuationVersion = {
-              id: generateVersionId(),
-              reportId: request.reportId,
-              versionNumber: nextVersionNumber,
-              versionLabel: request.versionLabel || autoLabel,
-              createdAt: new Date(),
-              createdBy: null,
-              formData: request.formData,
-              valuationResult: request.valuationResult || null,
-              htmlReport: request.htmlReport || null,
-              infoTabHtml: request.infoTabHtml || null,
-              changesSummary: request.changesSummary || { totalChanges: 0, significantChanges: [] },
-              isActive: true,
-              isPinned: false,
-              tags: request.tags || [],
-              notes: request.notes,
+              const localVersion: ValuationVersion = {
+                id: generateVersionId(),
+                reportId: request.reportId,
+                versionNumber: nextVersionNumber,
+                versionLabel: request.versionLabel || autoLabel,
+                createdAt: new Date(),
+                createdBy: null,
+                formData: request.formData,
+                valuationResult: request.valuationResult || null,
+                htmlReport: request.htmlReport || null,
+                infoTabHtml: request.infoTabHtml || null,
+                changesSummary: request.changesSummary || { totalChanges: 0, significantChanges: [] },
+                isActive: true,
+                isPinned: false,
+                tags: request.tags || [],
+                notes: request.notes,
+              }
+
+              // Mark previous versions as inactive
+              const updatedVersions = reportVersions.map((v) => ({
+                ...v,
+                isActive: false,
+              }))
+
+              set((state) => ({
+                versions: {
+                  ...state.versions,
+                  [request.reportId]: [...updatedVersions, localVersion],
+                },
+                activeVersions: {
+                  ...state.activeVersions,
+                  [request.reportId]: nextVersionNumber,
+                },
+              }))
+
+              versionLogger.info('Local version created successfully (fallback)', {
+                reportId: request.reportId,
+                versionNumber: nextVersionNumber,
+                note: 'Backend unavailable, using local storage',
+              })
+
+              pendingVersionCreations.delete(creationKey)
+              return localVersion
+            } catch (localError) {
+              // Local version creation also failed - this is a real error
+              pendingVersionCreations.delete(creationKey)
+              versionLogger.error('Failed to create version (both backend and local fallback failed)', {
+                reportId: request.reportId,
+                backendError: backendError instanceof Error ? backendError.message : String(backendError),
+                localError: localError instanceof Error ? localError.message : String(localError),
+              })
+              throw localError
             }
-
-            // Mark previous versions as inactive
-            const updatedVersions = reportVersions.map((v) => ({
-              ...v,
-              isActive: false,
-            }))
-
-            set((state) => ({
-              versions: {
-                ...state.versions,
-                [request.reportId]: [...updatedVersions, localVersion],
-              },
-              activeVersions: {
-                ...state.activeVersions,
-                [request.reportId]: nextVersionNumber,
-              },
-            }))
-
-            versionLogger.info('Local version created', {
-              reportId: request.reportId,
-              versionNumber: nextVersionNumber,
-            })
-
-            pendingVersionCreations.delete(creationKey)
-            return localVersion
           }
         } catch (error) {
+          // This catch should only handle unexpected errors (not backend or local creation errors)
           pendingVersionCreations.delete(creationKey)
-          versionLogger.error('Failed to create version', {
+          versionLogger.error('Failed to create version (unexpected error)', {
             reportId: request.reportId,
             error: error instanceof Error ? error.message : 'Unknown error',
+            errorType: error instanceof Error ? error.constructor.name : typeof error,
           })
           throw error
         }
