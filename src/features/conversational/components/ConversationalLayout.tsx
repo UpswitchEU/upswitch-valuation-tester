@@ -254,65 +254,6 @@ const ConversationalLayoutInner: React.FC<ConversationalLayoutProps> = ({
     }
   }, [reportId, sessionHtmlReport, sessionInfoTabHtml, sessionValuationResult, setResult])
 
-  // ✅ FIX: Only mark as unsaved when user adds new messages, not during restoration
-  // Track initial message count to distinguish restoration from user input
-  const initialMessageCountRef = useRef<number | null>(null)
-  const isRestoringRef = useRef(false)
-  
-  // Track restoration state
-  useEffect(() => {
-    if (restoration.isRestoring) {
-      isRestoringRef.current = true
-    } else if (restoration.isRestored && isRestoringRef.current) {
-      // Restoration just completed
-      isRestoringRef.current = false
-      initialMessageCountRef.current = state.messages.length
-      // ✅ FIX: Mark session as saved after restoration completes
-      // Restored messages are already saved, so session should show "Saved"
-      useSessionStore.getState().markSaved()
-      chatLogger.info('[Conversational] Session marked as saved after restoration', {
-        reportId,
-        messageCount: state.messages.length,
-      })
-    }
-  }, [restoration.isRestoring, restoration.isRestored, state.messages.length, reportId])
-  
-  // Mark conversation changes as unsaved (for save status indicator)
-  // ✅ FIX: Only mark as unsaved if messages increased beyond initial restored count
-  // Skip during restoration to prevent false positives
-  useEffect(() => {
-    // Skip if currently restoring
-    if (restoration.isRestoring || isRestoringRef.current) {
-      return
-    }
-    
-    // Skip if restoration hasn't completed yet (initialMessageCountRef is null)
-    if (!restoration.isRestored || initialMessageCountRef.current === null) {
-      return
-    }
-    
-    // Only mark as unsaved if user added new messages (beyond restored messages)
-    if (state.messages.length > initialMessageCountRef.current) {
-      useSessionStore.getState().markUnsaved()
-      chatLogger.debug('[Conversational] Marked as unsaved - new user messages', {
-        reportId,
-        initialCount: initialMessageCountRef.current,
-        currentCount: state.messages.length,
-      })
-    } else if (state.messages.length === initialMessageCountRef.current && state.messages.length > 0) {
-      // Messages match restored count - ensure we're marked as saved
-      // This handles the case where messages were restored but we're not showing unsaved
-      const currentState = useSessionStore.getState()
-      if (currentState.hasUnsavedChanges) {
-        useSessionStore.getState().markSaved()
-        chatLogger.debug('[Conversational] Marked as saved - messages match restored count', {
-          reportId,
-          messageCount: state.messages.length,
-        })
-      }
-    }
-  }, [state.messages.length, restoration.isRestoring, restoration.isRestored, reportId])
-
   // Track previous hasUnsavedChanges to detect when save happens after user changes
   const prevHasUnsavedChangesRef = useRef<boolean>(false)
   // Track initial load to prevent showing "saved" toast during initialization
