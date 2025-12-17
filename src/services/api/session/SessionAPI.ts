@@ -73,6 +73,18 @@ export class SessionAPI extends HttpClient {
         sessionData.dataSource = 'conversational'
       }
 
+      // DIAGNOSTIC: Log what we're returning
+      console.log('[SessionAPI] GET returning session:', {
+        reportId,
+        hasSession: !!sessionData,
+        sessionKeys: sessionData ? Object.keys(sessionData) : [],
+        hasHtmlReport: !!(sessionData as any)?.htmlReport,
+        htmlReportLength: (sessionData as any)?.htmlReport?.length || 0,
+        hasInfoTabHtml: !!(sessionData as any)?.infoTabHtml,
+        infoTabHtmlLength: (sessionData as any)?.infoTabHtml?.length || 0,
+        hasValuationResult: !!(sessionData as any)?.valuationResult,
+      })
+
       // Return in expected format
       return {
         success: response.success,
@@ -80,6 +92,19 @@ export class SessionAPI extends HttpClient {
       }
     } catch (error) {
       const axiosError = error as any
+      
+      // DIAGNOSTIC: Log the error in detail
+      console.error('[SessionAPI] GET session error:', {
+        reportId,
+        errorType: typeof error,
+        errorConstructor: error?.constructor?.name,
+        hasResponse: !!axiosError?.response,
+        responseStatus: axiosError?.response?.status,
+        responseData: axiosError?.response?.data,
+        errorMessage: axiosError?.message,
+        errorCode: axiosError?.code,
+      })
+      
       // Handle 404 gracefully - session doesn't exist yet
       if (axiosError?.response?.status === 404) {
         apiLogger.debug('Session does not exist yet', { reportId })

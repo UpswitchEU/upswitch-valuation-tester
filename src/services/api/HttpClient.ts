@@ -328,8 +328,8 @@ export class HttpClient {
       // Backend returns { success: true, data: result }, so extract nested data first
       const responseData = response.data?.data || response.data
       
-      // CRITICAL: Log response structure for valuation endpoints to diagnose missing html_report
-      if (config.url?.includes('/valuations/calculate')) {
+      // CRITICAL: Log response structure for valuation and session endpoints to diagnose missing html_report
+      if (config.url?.includes('/valuations/calculate') || config.url?.includes('/valuation-sessions/')) {
         const rawData = response.data
         const nestedData = (rawData as any)?.data
         const extractedData = responseData

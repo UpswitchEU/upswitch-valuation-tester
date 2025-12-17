@@ -135,6 +135,18 @@ export class SessionService {
           return await sessionCircuitBreaker.execute(async () => {
             const sessionResponse = await backendAPI.getValuationSession(reportId)
 
+            // DIAGNOSTIC: Log what we received from backendAPI
+            console.log('[SessionService] GET response from backendAPI:', {
+              reportId,
+              hasResponse: !!sessionResponse,
+              responseType: typeof sessionResponse,
+              hasSession: !!sessionResponse?.session,
+              sessionType: typeof sessionResponse?.session,
+              sessionKeys: sessionResponse?.session ? Object.keys(sessionResponse.session) : [],
+              hasHtmlReport: !!(sessionResponse?.session as any)?.htmlReport,
+              htmlReportLength: (sessionResponse?.session as any)?.htmlReport?.length || 0,
+            })
+
             if (!sessionResponse?.session) {
               // Session doesn't exist - create it automatically
               logger.info('Session not found, creating new session', { reportId, flow })
