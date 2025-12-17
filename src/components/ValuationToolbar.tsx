@@ -58,8 +58,6 @@ export const ValuationToolbar: React.FC<ValuationToolbarProps> = ({
   const isManualFlow = currentView === 'manual'
   const isConversationalFlow = currentView === 'conversational'
   
-  // Flow switching not supported in new architecture (flows are isolated)
-  const pendingFlowSwitch = false
   const {
     versions: storeVersions,
     getActiveVersion,
@@ -134,6 +132,7 @@ export const ValuationToolbar: React.FC<ValuationToolbarProps> = ({
   // Use focused hooks for business logic
   const {
     showSwitchConfirmation,
+    pendingFlowTarget,
     handleFlowIconClick,
     handleConfirmSwitch,
     handleCancelSwitch,
@@ -418,7 +417,7 @@ export const ValuationToolbar: React.FC<ValuationToolbarProps> = ({
       <FlowSwitchWarningModal
         isOpen={showSwitchConfirmation}
         currentFlow={currentView || 'manual'}
-        targetFlow={pendingFlowSwitch || 'manual'}
+        targetFlow={pendingFlowTarget || 'manual'}
         onConfirm={handleConfirmSwitch}
         onClose={handleCancelSwitch}
       />

@@ -9,10 +9,9 @@
 
 'use client'
 
-import { ArrowDown, ArrowUp, Calendar, Check, ChevronDown, ChevronRight, Minus, Pin, Tag, User } from 'lucide-react'
-import { useState } from 'react'
-import type { ValuationVersion } from '../types/ValuationVersion'
+import { ArrowDown, ArrowUp, Calendar, Minus } from 'lucide-react'
 import { formatCurrency } from '../config/countries'
+import type { ValuationVersion } from '../types/ValuationVersion'
 import { formatChangesSummary } from '../utils/versionDiffDetection'
 
 export interface VersionTimelineProps {
@@ -27,11 +26,11 @@ export interface VersionTimelineProps {
  * Version Timeline
  *
  * Displays chronological version history with:
- * - Version numbers (v1, v2, v3...)
- * - Labels and dates
+ * - Version labels and dates
+ * - Valuation cards
  * - Change summaries
- * - Active version indicator
- * - Pin functionality
+ *
+ * Simplified design with harvest-50 background.
  *
  * @example
  * ```tsx
@@ -39,7 +38,6 @@ export interface VersionTimelineProps {
  *   versions={versions}
  *   activeVersion={3}
  *   onVersionSelect={(v) => loadVersion(v)}
- *   onVersionPin={(v) => pinVersion(v)}
  * />
  * ```
  */
@@ -64,15 +62,9 @@ export function VersionTimeline({
 
   return (
     <div className="w-full p-6">
-      {/* Timeline connector */}
       <div className="relative">
         {sortedVersions.map((version, index) => (
           <div key={version.id} className="relative pb-8">
-            {/* Vertical line connector (except for last item) */}
-            {index < sortedVersions.length - 1 && (
-              <div className="absolute left-5 top-11 bottom-0 w-0.5 bg-gray-200" />
-            )}
-            
             <VersionTimelineItem
               version={version}
               previousVersion={index < sortedVersions.length - 1 ? sortedVersions[index + 1] : null}
@@ -107,13 +99,12 @@ interface VersionTimelineItemProps {
 function VersionTimelineItem({
   version,
   previousVersion,
-  isActive,
-  isLatest,
+  isActive: _isActive, // Kept for backward compatibility but not used in rendering
+  isLatest: _isLatest, // Kept for backward compatibility but not used in rendering
   onClick,
-  onPin,
+  onPin: _onPin, // Kept for backward compatibility but not used in rendering
   compact,
 }: VersionTimelineItemProps) {
-  const [isExpanded, setIsExpanded] = useState(false)
   const formatDate = (date: Date | string) => {
     try {
       const dateObj = date instanceof Date ? date : new Date(date)
@@ -147,11 +138,6 @@ function VersionTimelineItem({
 
   const countryCode = version.formData.country_code || 'BE'
 
-  // Get author info
-  const author = version.createdBy === 'guest' ? 'Guest User' : 
-                 version.createdBy ? `User ${version.createdBy.substring(0, 8)}...` : 
-                 'System'
-
   const hasChanges = version.changesSummary && version.changesSummary.totalChanges > 0
   const changeSummaries = hasChanges
     ? formatChangesSummary(version.changesSummary, countryCode)
@@ -159,103 +145,30 @@ function VersionTimelineItem({
 
   return (
     <div
-      className={`
-        relative transition-all duration-200 rounded-lg
-        ${isActive ? 'bg-blue-50 ring-2 ring-blue-500' : 'hover:bg-gray-50'}
-      `}
+      className="relative transition-all duration-200 rounded-lg bg-harvest-50"
     >
       <div 
-        className="flex gap-4 p-6 cursor-pointer"
+        className="p-6 cursor-pointer"
         onClick={onClick}
       >
-        {/* Timeline dot */}
-        <div className="relative flex-shrink-0">
-          <div
-            className={`
-              w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold
-              ${isActive ? 'bg-blue-500 text-white ring-4 ring-blue-100' : 'bg-white border-2 border-gray-300 text-gray-700'}
-            `}
-          >
-            v{version.versionNumber}
-          </div>
-          {isLatest && (
-            <div className="absolute -top-1 -right-1 w-5 h-5 bg-green-500 rounded-full flex items-center justify-center">
-              <Check className="w-3 h-3 text-white" />
-            </div>
-          )}
-        </div>
-
         {/* Content */}
-        <div className="flex-1 min-w-0">
+        <div className="w-full">
           {/* Header row */}
-          <div className="flex items-start justify-between gap-4 mb-3">
+          <div className="mb-3">
             <div className="flex-1">
-              <div className="flex items-center gap-2 mb-1">
+              <div className="mb-1">
                 <h3 className="text-lg font-semibold text-gray-900">
                   {version.versionLabel}
                 </h3>
-                {isActive && (
-                  <span className="px-2 py-0.5 text-xs font-medium bg-green-500/10 text-green-600 rounded-full border border-green-500/20">
-                    Active
-                  </span>
-                )}
               </div>
               
               {/* Metadata row */}
               <div className="flex flex-wrap items-center gap-3 text-sm text-gray-600">
                 <div className="flex items-center gap-1.5">
-                  <User className="w-4 h-4" />
-                  <span>{author}</span>
-                </div>
-                <div className="flex items-center gap-1.5">
                   <Calendar className="w-4 h-4" />
                   <span>{formatDate(version.createdAt)}</span>
                 </div>
-                {isLatest && (
-                  <span className="px-2 py-0.5 text-xs font-medium bg-green-100 text-green-700 rounded-full">
-                    Latest
-                  </span>
-                )}
               </div>
-            </div>
-
-            {/* Actions */}
-            <div className="flex items-center gap-2 flex-shrink-0">
-              {onPin && (
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    onPin()
-                  }}
-                  className={`
-                    p-2 rounded-lg transition-colors
-                    ${
-                      version.isPinned
-                        ? 'text-amber-500 hover:text-amber-600 bg-amber-50'
-                        : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'
-                    }
-                  `}
-                  title={version.isPinned ? 'Unpin version' : 'Pin version'}
-                >
-                  <Pin className={`w-4 h-4 ${version.isPinned ? 'fill-current' : ''}`} />
-                </button>
-              )}
-              
-              {/* Expand/Collapse button */}
-              <button
-                onClick={(e) => {
-                  e.stopPropagation()
-                  setIsExpanded(!isExpanded)
-                }}
-                className="p-2 rounded-lg transition-colors text-gray-400 hover:text-gray-600 hover:bg-gray-100"
-                title={isExpanded ? 'Collapse details' : 'Expand details'}
-              >
-                {isExpanded ? (
-                  <ChevronDown className="w-4 h-4" />
-                ) : (
-                  <ChevronRight className="w-4 h-4" />
-                )}
-              </button>
             </div>
           </div>
 
@@ -465,9 +378,9 @@ function VersionTimelineItem({
         </div>
       </div>
 
-      {/* Collapsible Details Section */}
-      {isExpanded && (
-        <div className="px-6 pb-6 pt-0 ml-14 space-y-4 border-t border-gray-200 mt-4">
+      {/* Collapsible Details Section - Removed expand button but keeping section for potential future use */}
+      {false && (
+        <div className="px-6 pb-6 pt-0 space-y-4 border-t border-gray-200 mt-4">
           {/* Valuation Breakdown */}
           {version.valuationResult && (
             <div className="mt-4">
