@@ -43,6 +43,19 @@ export class SessionAPI extends HttpClient {
         options
       )
 
+      // DIAGNOSTIC: Log what we received
+      console.log('[SessionAPI] GET response received:', {
+        reportId,
+        hasResponse: !!response,
+        responseType: typeof response,
+        hasData: !!response?.data,
+        dataType: typeof response?.data,
+        hasHtmlReport: !!(response?.data as any)?.htmlReport,
+        htmlReportLength: (response?.data as any)?.htmlReport?.length || 0,
+        responseKeys: response ? Object.keys(response) : [],
+        dataKeys: response?.data ? Object.keys(response.data) : [],
+      })
+
       // Transform backend format { success, data } to frontend format { success, session }
       if (!response?.data) {
         apiLogger.debug('Session not found', { reportId })
