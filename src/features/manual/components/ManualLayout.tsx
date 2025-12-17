@@ -7,7 +7,7 @@
  * @module features/manual/components/ManualLayout
  */
 
-import React, { Suspense, useEffect, useRef } from 'react'
+import React, { Suspense, useCallback, useEffect, useMemo, useRef } from 'react'
 import { AssetInspector } from '../../../components/debug/AssetInspector'
 import { ResizableDivider } from '../../../components/ResizableDivider'
 import { InputFieldsSkeleton } from '../../../components/skeletons'
@@ -108,21 +108,28 @@ export const ManualLayout: React.FC<ManualLayoutProps> = ({
     lastRestoredReportId: string | null
     lastRestoredFormDataHash: string | null
     lastRestoredResultId: string | null
+    lastSeenSessionDataHash: string | null
     isRestoring: boolean
   }>({
     lastRestoredReportId: null,
     lastRestoredFormDataHash: null,
     lastRestoredResultId: null,
+    lastSeenSessionDataHash: null,
     isRestoring: false,
   })
   
   // Helper to create a simple hash of form data for comparison
-  const getFormDataHash = (data: any): string => {
+  const getFormDataHash = useCallback((data: any): string => {
     if (!data) return ''
     // Create hash from key fields that indicate meaningful data
     const key = `${data.company_name || ''}_${data.revenue || ''}_${data.industry || ''}_${data.founding_year || ''}`
     return key
-  }
+  }, [])
+  
+  // Memoize session data hash to prevent unnecessary effect runs
+  const sessionDataHash = useMemo(() => {
+    return session?.sessionData ? getFormDataHash(session.sessionData as any) : null
+  }, [session?.sessionData, getFormDataHash])
   
   // Simple restoration: Read directly from session when it changes
   useEffect(() => {
@@ -136,11 +143,33 @@ export const ManualLayout: React.FC<ManualLayoutProps> = ({
       return
     }
 
-    // Only restore once per session load (when reportId changes)
-    const shouldRestore = restorationRef.current.lastRestoredReportId !== reportId
+    // Check if reportId changed (new session loaded)
+    const reportIdChanged = restorationRef.current.lastRestoredReportId !== reportId
+    
+    // Get current form data hash (read from store to avoid dependency on formData prop)
+    const currentFormData = useManualFormStore.getState().formData
+    const currentFormDataHash = getFormDataHash(currentFormData)
+    
+    // Check if session data changed from external source (not from form sync)
+    // If session data hash matches current form data hash, it came from form sync → skip
+    const sessionDataChanged = sessionDataHash !== null && 
+                               sessionDataHash !== restorationRef.current.lastSeenSessionDataHash &&
+                               sessionDataHash !== currentFormDataHash // Don't restore if it matches current form (form sync case)
 
-    if (!shouldRestore) {
+    // Track the session data hash we're seeing
+    if (sessionDataHash !== null) {
+      restorationRef.current.lastSeenSessionDataHash = sessionDataHash
+    }
+
+    // Only restore if reportId changed (new session) OR session data changed from external source
+    if (!reportIdChanged && !sessionDataChanged) {
       return
+    }
+
+    // If reportId changed, reset restoration tracking
+    if (reportIdChanged) {
+      restorationRef.current.lastRestoredFormDataHash = null
+      restorationRef.current.lastRestoredResultId = null
     }
 
     // Mark as restoring to prevent re-entry
@@ -152,12 +181,12 @@ export const ManualLayout: React.FC<ManualLayoutProps> = ({
         const sessionDataObj = session.sessionData as any
         if (sessionDataObj.company_name || sessionDataObj.revenue) {
           const formDataHash = getFormDataHash(sessionDataObj)
-          const currentFormDataHash = getFormDataHash(formData)
           
           // Only restore if data is actually different from current form data
           // and we haven't already restored this exact data
-          if (formDataHash !== currentFormDataHash && formDataHash !== restorationRef.current.lastRestoredFormDataHash) {
-            generalLogger.debug('[ManualLayout] Restoring form data', { reportId })
+          if (formDataHash !== currentFormDataHash && 
+              formDataHash !== restorationRef.current.lastRestoredFormDataHash) {
+            generalLogger.debug('[ManualLayout] Restoring form data', { reportId, formDataHash, currentFormDataHash })
             restorationRef.current.lastRestoredFormDataHash = formDataHash
             updateFormData(sessionDataObj)
           }
@@ -184,8 +213,7 @@ export const ManualLayout: React.FC<ManualLayoutProps> = ({
       // Always clear restoring flag, even if there's an error
       restorationRef.current.isRestoring = false
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [sessionReportId, reportId])  // Only trigger when reportId changes, not when session object changes
+  }, [sessionReportId, reportId, sessionDataHash, getFormDataHash, session, updateFormData, setResult])
 
   // Panel resize hook
   const { leftPanelWidth, handleResize, isMobile, mobileActivePanel, setMobileActivePanel } =
