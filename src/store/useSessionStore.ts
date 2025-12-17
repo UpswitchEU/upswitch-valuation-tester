@@ -163,6 +163,38 @@ export const useSessionStore = create<SessionStore>((set, get) => ({
         fieldsUpdated: Object.keys(updates).length,
       })
       
+      // ✅ CRITICAL: Update localStorage cache immediately (Cursor/ChatGPT pattern)
+      // This ensures page refresh loads the updated session with all assets
+      try {
+        const { globalSessionCache } = require('../utils/sessionCacheManager')
+        
+        storeLogger.debug('[Session] Starting optimistic cache update', {
+          reportId: state.session.reportId,
+          updateKeys: Object.keys(updates),
+          hasHtmlReportInUpdate: !!updates.htmlReport,
+          hasInfoTabHtmlInUpdate: !!updates.infoTabHtml,
+        })
+        
+        globalSessionCache.set(state.session.reportId, updatedSession)
+        
+        storeLogger.info('[Session] Cache updated optimistically (SUCCESS)', {
+          reportId: state.session.reportId,
+          fieldsUpdated: Object.keys(updates).length,
+          hasHtmlReport: !!updatedSession.htmlReport,
+          htmlReportLength: updatedSession.htmlReport?.length || 0,
+          hasInfoTabHtml: !!updatedSession.infoTabHtml,
+          infoTabHtmlLength: updatedSession.infoTabHtml?.length || 0,
+          hasValuationResult: !!updatedSession.valuationResult,
+          hasSessionData: !!updatedSession.sessionData,
+        })
+      } catch (cacheError) {
+        storeLogger.error('[Session] Failed to update cache optimistically', {
+          reportId: state.session.reportId,
+          error: cacheError instanceof Error ? cacheError.message : String(cacheError),
+          stack: cacheError instanceof Error ? cacheError.stack : undefined,
+        })
+      }
+      
       return {
         ...state,
         session: updatedSession,

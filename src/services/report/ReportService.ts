@@ -17,16 +17,16 @@
  * @module services/report/ReportService
  */
 
-import { backendAPI } from '../backendApi'
-import type { ValuationResponse } from '../../types/valuation'
-import { createContextLogger } from '../../utils/logger'
-import { getErrorMessage } from '../../utils/errors/errorConverter'
 import {
-  ValidationError,
-  NetworkError,
-  NotFoundError,
-  ApplicationError,
+    ApplicationError,
+    NetworkError,
+    NotFoundError,
+    ValidationError,
 } from '../../types/errors'
+import type { ValuationResponse } from '../../types/valuation'
+import { getErrorMessage } from '../../utils/errors/errorConverter'
+import { createContextLogger } from '../../utils/logger'
+import { backendAPI } from '../backendApi'
 
 const logger = createContextLogger('ReportService')
 
@@ -109,6 +109,87 @@ export class ReportService {
         hasInfoTabHtml: !!assets.infoTabHtml,
         duration_ms: duration.toFixed(2),
       })
+
+      // ✅ CRITICAL: Update cache with fresh data (Cursor/ChatGPT pattern)
+      // This ensures page refresh loads complete valuation instantly
+      try {
+        const { sessionService } = await import('../session/SessionService')
+        const { globalSessionCache } = await import('../../utils/sessionCacheManager')
+        
+        logger.info('[ReportService] Starting cache update after report save', {
+          reportId,
+          hasHtmlReport: !!assets.htmlReport,
+          hasInfoTabHtml: !!assets.infoTabHtml,
+        })
+        
+        // Clear cache first to ensure we fetch fresh data from backend
+        globalSessionCache.remove(reportId)
+        logger.debug('[ReportService] Cache cleared, fetching fresh session from backend', { reportId })
+        
+        // Small delay to ensure database write is visible (eventual consistency)
+        await new Promise(resolve => setTimeout(resolve, 100))
+        
+        // Reload session from backend to get complete data
+        const freshSession = await sessionService.loadSession(reportId)
+        
+        if (freshSession) {
+          // Verify the fresh session has the complete data
+          const isComplete = !!(freshSession.htmlReport && freshSession.infoTabHtml)
+          
+          if (!isComplete) {
+            logger.warn('[ReportService] Fresh session is incomplete, will retry', {
+              reportId,
+              hasHtmlReport: !!freshSession.htmlReport,
+              hasInfoTabHtml: !!freshSession.infoTabHtml,
+              hasValuationResult: !!freshSession.valuationResult,
+            })
+            
+            // Retry once after another delay
+            await new Promise(resolve => setTimeout(resolve, 200))
+            const retrySession = await sessionService.loadSession(reportId)
+            
+            if (retrySession && retrySession.htmlReport && retrySession.infoTabHtml) {
+              globalSessionCache.set(reportId, retrySession)
+              logger.info('[ReportService] Cache updated after retry (SUCCESS)', {
+                reportId,
+                hasHtmlReport: !!retrySession.htmlReport,
+                htmlReportLength: retrySession.htmlReport?.length || 0,
+                hasInfoTabHtml: !!retrySession.infoTabHtml,
+                infoTabHtmlLength: retrySession.infoTabHtml?.length || 0,
+                hasValuationResult: !!retrySession.valuationResult,
+                hasSessionData: !!retrySession.sessionData,
+              })
+            } else {
+              logger.error('[ReportService] Cache update failed even after retry - session still incomplete', {
+                reportId,
+                hasHtmlReport: !!retrySession?.htmlReport,
+                hasInfoTabHtml: !!retrySession?.infoTabHtml,
+              })
+            }
+          } else {
+            // Session is complete, cache it
+            globalSessionCache.set(reportId, freshSession)
+            logger.info('[ReportService] Cache updated with fresh valuation data after report save (SUCCESS)', {
+              reportId,
+              hasHtmlReport: !!freshSession.htmlReport,
+              htmlReportLength: freshSession.htmlReport?.length || 0,
+              hasInfoTabHtml: !!freshSession.infoTabHtml,
+              infoTabHtmlLength: freshSession.infoTabHtml?.length || 0,
+              hasValuationResult: !!freshSession.valuationResult,
+              hasSessionData: !!freshSession.sessionData,
+            })
+          }
+        } else {
+          logger.error('[ReportService] Failed to reload session after report save - session is null', { reportId })
+        }
+      } catch (cacheError) {
+        // Don't fail the entire save operation if cache update fails
+        logger.error('[ReportService] Failed to update cache after report save - exception thrown', {
+          reportId,
+          error: getErrorMessage(cacheError),
+          stack: cacheError instanceof Error ? cacheError.stack : undefined,
+        })
+      }
     } catch (error) {
       const duration = performance.now() - startTime
 
