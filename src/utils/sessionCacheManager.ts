@@ -119,8 +119,47 @@ export class SessionCacheManager {
           // Clear some old caches and retry
           this.enforceSizeLimit()
           this.cleanExpired()
-          // Retry with reduced data
-          localStorage.setItem(key, JSON.stringify(cached))
+          // Retry with reduced data - wrap in try-catch to handle persistent failures
+          try {
+            localStorage.setItem(key, JSON.stringify(cached))
+            cacheLogger.info('Cache retry successful after cleanup', { reportId })
+          } catch (retryError: any) {
+            // If retry still fails, the session might be too large even after cleanup
+            // Try to cache a minimal version (just metadata, no large data)
+            cacheLogger.warn('Cache retry failed, attempting minimal cache', {
+              reportId,
+              error: retryError.message,
+            })
+            try {
+              // Create minimal cache with only essential metadata
+              const minimalSession: Partial<ValuationSession> = {
+                reportId: session.reportId,
+                currentView: session.currentView,
+                dataSource: session.dataSource,
+                name: session.name,
+                createdAt: session.createdAt,
+                updatedAt: session.updatedAt,
+                calculatedAt: session.calculatedAt,
+                // Exclude all large fields
+              }
+              const minimalCached: CachedSession = {
+                session: minimalSession as ValuationSession,
+                cachedAt: Date.now(),
+                expiresAt: Date.now() + CACHE_TTL_MS,
+                version: session.updatedAt?.toString() || Date.now().toString(),
+              }
+              localStorage.setItem(key, JSON.stringify(minimalCached))
+              cacheLogger.info('Minimal cache saved successfully', { reportId })
+            } catch (minimalError) {
+              // Even minimal cache failed - give up gracefully
+              cacheLogger.error('Failed to cache session even with minimal data', {
+                reportId,
+                error: minimalError instanceof Error ? minimalError.message : 'Unknown error',
+                note: 'Session will be loaded from backend on next visit',
+              })
+              // Don't throw - caching is optional
+            }
+          }
         } else {
           throw quotaError
         }

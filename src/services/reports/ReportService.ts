@@ -129,6 +129,7 @@ class ReportServiceImpl implements ReportService {
           reportId: report.id || report.report_id,
           currentView: report.flow_type === 'ai-guided' || report.current_view === 'ai-guided' ? 'conversational' : 'manual',
           dataSource: report.flow_type === 'ai-guided' || report.data_source === 'ai-guided' ? 'conversational' : 'manual',
+          name: report.name || undefined, // Custom valuation name
           createdAt: report.created_at ? new Date(report.created_at) : new Date(),
           updatedAt: report.updated_at ? new Date(report.updated_at) : new Date(),
           completedAt: report.completed_at ? new Date(report.completed_at) : undefined,
