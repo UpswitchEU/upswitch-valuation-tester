@@ -150,17 +150,74 @@ export const ManualLayout: React.FC<ManualLayoutProps> = ({
       // Be very strict - only restore if form has NO meaningful data
       if (currentSession.sessionData) {
         const sessionDataObj = currentSession.sessionData as any
+        
+        // ✅ FIX: Enhanced logging to debug form restoration
+        generalLogger.info('[ManualLayout] Checking form restoration', {
+          reportId,
+          hasSessionData: !!currentSession.sessionData,
+          sessionDataKeys: sessionDataObj ? Object.keys(sessionDataObj) : [],
+          companyName: sessionDataObj?.company_name,
+          revenue: sessionDataObj?.revenue,
+          ebitda: sessionDataObj?.ebitda,
+          industry: sessionDataObj?.industry,
+          currentFormCompanyName: currentFormData.company_name,
+          currentFormRevenue: currentFormData.revenue,
+          currentFormEbitda: currentFormData.ebitda,
+          currentFormIndustry: currentFormData.industry,
+        })
+        
         // Check if form is empty - be more strict to avoid overwriting user input
+        // ✅ FIX: Only check critical user-entered fields (ignore defaults like industry='services')
+        // Default values don't indicate user has filled the form
         const formIsEmpty = !currentFormData.company_name && 
                            !currentFormData.revenue && 
                            !currentFormData.ebitda &&
-                           !currentFormData.industry
-        const hasSessionData = sessionDataObj.company_name || sessionDataObj.revenue
+                           // Check if industry is still default value (not user-entered)
+                           (currentFormData.industry === 'services' || !currentFormData.industry)
+        const hasSessionData = sessionDataObj.company_name || sessionDataObj.revenue || sessionDataObj.ebitda
+        
+        generalLogger.info('[ManualLayout] Form restoration check', {
+          reportId,
+          formIsEmpty,
+          hasSessionData,
+          willRestore: hasSessionData && formIsEmpty,
+        })
         
         if (hasSessionData && formIsEmpty) {
-          generalLogger.debug('[ManualLayout] Restoring form data', { reportId })
+          generalLogger.info('[ManualLayout] Restoring form data', { 
+            reportId,
+            fieldsToRestore: Object.keys(sessionDataObj).filter(key => sessionDataObj[key] !== undefined && sessionDataObj[key] !== null && sessionDataObj[key] !== ''),
+          })
           updateFormDataFn(sessionDataObj)
+          
+          // Verify restoration was successful
+          const restoredFormData = useManualFormStore.getState().formData
+          generalLogger.info('[ManualLayout] Form data restored', {
+            reportId,
+            companyName: restoredFormData.company_name,
+            revenue: restoredFormData.revenue,
+            ebitda: restoredFormData.ebitda,
+            industry: restoredFormData.industry,
+          })
+        } else if (hasSessionData && !formIsEmpty) {
+          generalLogger.warn('[ManualLayout] Skipping form restoration - form already has data', {
+            reportId,
+            formHasCompanyName: !!currentFormData.company_name,
+            formHasRevenue: !!currentFormData.revenue,
+            formHasEbitda: !!currentFormData.ebitda,
+            formHasIndustry: !!currentFormData.industry,
+          })
+        } else if (!hasSessionData) {
+          generalLogger.warn('[ManualLayout] Skipping form restoration - no session data', {
+            reportId,
+          })
         }
+      } else {
+        generalLogger.warn('[ManualLayout] No sessionData found for restoration', {
+          reportId,
+          hasSession: !!currentSession,
+          sessionKeys: currentSession ? Object.keys(currentSession) : [],
+        })
       }
 
       // Restore results - CRITICAL FIX: Merge HTML reports from session into result object
@@ -214,6 +271,12 @@ export const ManualLayout: React.FC<ManualLayoutProps> = ({
 
       // Mark this reportId as restored
       restorationRef.current.lastRestoredReportId = reportId
+      
+      // ✅ FIX: Mark session as saved after restoration completes
+      // This ensures "Saved" is shown, not "Auto-saving soon..."
+      // Restoration is loading existing data, so it's already saved
+      useSessionStore.getState().markSaved()
+      generalLogger.info('[ManualLayout] Session marked as saved after restoration', { reportId })
     } finally {
       restorationRef.current.isRestoring = false
     }

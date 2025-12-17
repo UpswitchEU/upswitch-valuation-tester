@@ -101,10 +101,15 @@ export const useSessionStore = create<SessionStore>((set, get) => ({
           throw new Error(`Session not found: ${reportId}`)
         }
         
+        // ✅ FIX: Mark session as saved when loading (existing report is already saved)
+        // This ensures "Saved" is the default state, not "Auto-saving soon..."
         set({ 
           session, 
           isLoading: false,
-          error: null
+          error: null,
+          hasUnsavedChanges: false,
+          lastSaved: session.updatedAt || session.calculatedAt || new Date(),
+          isSaving: false,
         })
         
         storeLogger.info('[Session] Session loaded successfully', {
@@ -114,6 +119,7 @@ export const useSessionStore = create<SessionStore>((set, get) => ({
           hasHtmlReport: !!session.htmlReport,
           hasInfoTabHtml: !!session.infoTabHtml,
           hasValuationResult: !!session.valuationResult,
+          markedAsSaved: true,
         })
       } catch (error) {
         const message = error instanceof Error ? error.message : 'Failed to load session'
@@ -214,6 +220,31 @@ export const useSessionStore = create<SessionStore>((set, get) => ({
         return state
       }
       
+      // ✅ FIX: Check if data actually changed before marking as unsaved
+      // This prevents restoration from triggering "unsaved changes"
+      const currentSessionData = state.session.sessionData || {} as any
+      const dataAny = data as any
+      const dataChanged = Object.keys(data).some(key => {
+        const newValue = dataAny[key]
+        const oldValue = (currentSessionData as any)[key]
+        
+        // Deep comparison for nested objects
+        if (typeof newValue === 'object' && typeof oldValue === 'object' && newValue !== null && oldValue !== null) {
+          return JSON.stringify(newValue) !== JSON.stringify(oldValue)
+        }
+        
+        return newValue !== oldValue
+      })
+      
+      // If data hasn't changed, don't mark as unsaved
+      if (!dataChanged) {
+        storeLogger.debug('[Session] Session data unchanged, skipping update', {
+          reportId: state.session.reportId,
+          fieldsChecked: Object.keys(data).length,
+        })
+        return state
+      }
+      
       const updatedSession = {
         ...state.session,
         sessionData: {
@@ -225,6 +256,7 @@ export const useSessionStore = create<SessionStore>((set, get) => ({
       storeLogger.debug('[Session] Session data updated', {
         reportId: state.session.reportId,
         fieldsUpdated: Object.keys(data).length,
+        dataChanged: true,
       })
       
       return {
