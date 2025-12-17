@@ -21,6 +21,7 @@ interface CachedSession {
   session: ValuationSession
   cachedAt: number
   expiresAt: number
+  version: string  // Cache version based on session.updatedAt for staleness detection
 }
 
 /**
@@ -94,6 +95,7 @@ export class SessionCacheManager {
         session,
         cachedAt: Date.now(),
         expiresAt: Date.now() + CACHE_TTL_MS,
+        version: session.updatedAt?.toString() || Date.now().toString(),  // Track version for staleness detection
       }
 
       const key = this.getCacheKey(reportId)
@@ -102,6 +104,7 @@ export class SessionCacheManager {
       cacheLogger.info('Session cached', {
         reportId,
         expiresIn_hours: CACHE_TTL_MS / (60 * 60 * 1000),
+        version: cached.version,
       })
 
       // Check cache size and clean if needed
@@ -142,9 +145,28 @@ export class SessionCacheManager {
       // Validate and sanitize
       const sanitized = sanitizeSessionData(parsed.session)
 
+      // ✅ CACHE COMPLETENESS CHECK: Detect incomplete/stale caches
+      // If session is incomplete (no HTML reports) but cache is old (>10 min), invalidate it
+      // This prevents stale "empty session" caches from before valuation completion
+      const isComplete = !!(sanitized.htmlReport || sanitized.infoTabHtml)
+      const cacheAge_minutes = Math.floor((Date.now() - parsed.cachedAt) / (60 * 1000))
+      
+      if (!isComplete && cacheAge_minutes > 10) {
+        cacheLogger.info('Invalidating incomplete stale cache', { 
+          reportId, 
+          cacheAge_minutes,
+          hasHtmlReport: !!sanitized.htmlReport,
+          hasInfoTabHtml: !!sanitized.infoTabHtml,
+        })
+        this.delete(reportId)
+        return null
+      }
+
       cacheLogger.info('Session loaded from cache', {
         reportId,
-        cachedAgo_minutes: Math.floor((Date.now() - parsed.cachedAt) / (60 * 1000)),
+        cachedAgo_minutes: cacheAge_minutes,
+        isComplete,
+        version: parsed.version,
       })
 
       return sanitized

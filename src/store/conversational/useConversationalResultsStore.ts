@@ -86,6 +86,28 @@ export const useConversationalResultsStore = create<ConversationalResultsStore>(
           })
         }
 
+        // ✅ OPTIMISTIC: Update session cache immediately for instant refresh UX
+        // This ensures page refresh shows the result without waiting for backend save
+        try {
+          const { useSessionStore } = require('../useSessionStore')
+          const session = useSessionStore.getState().session
+          if (session) {
+            useSessionStore.getState().updateSession({
+              valuationResult: result as any,
+              htmlReport: result.html_report,
+              infoTabHtml: result.info_tab_html,
+            })
+            storeLogger.debug('[Conversational] Session cache updated optimistically', {
+              valuationId: result.valuation_id,
+            })
+          }
+        } catch (error) {
+          // Don't fail if optimistic update fails
+          storeLogger.warn('[Conversational] Failed to update session cache optimistically', {
+            error: error instanceof Error ? error.message : String(error),
+          })
+        }
+
         return {
           ...state,
           result,

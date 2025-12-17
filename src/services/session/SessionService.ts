@@ -83,13 +83,16 @@ export class SessionService {
       const cachedSession = globalSessionCache.get(reportId)
       if (cachedSession) {
         const loadTime = performance.now() - startTime
+        
+        // Calculate cache age for stale-while-revalidate
+        const cacheAge_minutes = cachedSession.updatedAt
+          ? Math.floor((Date.now() - new Date(cachedSession.updatedAt).getTime()) / (60 * 1000))
+          : 0
 
-        logger.info('Session loaded from cache', {
+        logger.info('Session loaded from cache (instant)', {
           reportId,
           loadTime_ms: loadTime.toFixed(2),
-          cacheAge_minutes: cachedSession.updatedAt
-            ? Math.floor((Date.now() - new Date(cachedSession.updatedAt).getTime()) / (60 * 1000))
-            : null,
+          cacheAge_minutes,
         })
 
         // Validate cached session
@@ -107,6 +110,18 @@ export class SessionService {
             globalSessionCache.set(reportId, updatedSession)
             return updatedSession
           }
+        }
+
+        // ✅ STALE-WHILE-REVALIDATE: Revalidate in background if cache is older than 5 minutes
+        // This ensures data freshness while maintaining instant loads
+        if (cacheAge_minutes > 5) {
+          logger.debug('Cache stale, revalidating in background', { reportId, cacheAge_minutes })
+          this.revalidateInBackground(reportId).catch(err => {
+            logger.warn('Background revalidation failed', { 
+              reportId, 
+              error: err instanceof Error ? err.message : String(err)
+            })
+          })
         }
 
         return cachedSession
@@ -553,8 +568,36 @@ export class SessionService {
         })
       }
 
-      // Invalidate cache - force reload on next access
-      globalSessionCache.remove(reportId)
+      // ✅ UPDATE cache with fresh data (Cursor/ChatGPT pattern)
+      // This ensures page refresh loads complete valuation instantly
+      // Instead of invalidating cache, we reload and update it with latest data
+      try {
+        // Clear cache first to ensure we fetch fresh data from backend
+        globalSessionCache.remove(reportId)
+        
+        // Reload session from backend to get complete data
+        const freshSession = await this.loadSession(reportId)
+        
+        if (freshSession) {
+          // Cache the fresh session with all valuation data
+          globalSessionCache.set(reportId, freshSession)
+          
+          logger.info('Cache updated with fresh valuation data', {
+            reportId,
+            hasHtmlReport: !!freshSession.htmlReport,
+            hasInfoTabHtml: !!freshSession.infoTabHtml,
+            hasValuationResult: !!freshSession.valuationResult,
+          })
+        } else {
+          logger.warn('Failed to reload session after save, cache remains cleared', { reportId })
+        }
+      } catch (cacheError) {
+        // Don't fail the entire save operation if cache update fails
+        logger.error('Failed to update cache after save', {
+          reportId,
+          error: getErrorMessage(cacheError),
+        })
+      }
 
       const duration = performance.now() - startTime
 
@@ -608,6 +651,48 @@ export class SessionService {
   clearSessionCache(reportId: string): void {
     globalSessionCache.remove(reportId)
     logger.debug('Session cache cleared', { reportId })
+  }
+
+  /**
+   * Revalidate session cache in background
+   * 
+   * Fetches fresh data from backend and updates cache without blocking UI.
+   * Used for stale-while-revalidate pattern (Cursor/ChatGPT style).
+   *
+   * @param reportId - Report identifier
+   * @private
+   */
+  private async revalidateInBackground(reportId: string): Promise<void> {
+    try {
+      logger.debug('Starting background revalidation', { reportId })
+      
+      // Fetch fresh data from backend
+      const sessionResponse = await backendAPI.getValuationSession(reportId)
+      
+      if (sessionResponse?.session) {
+        // Validate and normalize the fresh session
+        validateSessionData(sessionResponse.session)
+        const normalizedSession = normalizeSessionDates(sessionResponse.session)
+        const mergedSession = mergeSessionFields(normalizedSession)
+        
+        // Update cache with fresh data
+        globalSessionCache.set(reportId, mergedSession)
+        
+        logger.info('Cache revalidated in background', { 
+          reportId,
+          hasHtmlReport: !!mergedSession.htmlReport,
+          hasInfoTabHtml: !!mergedSession.infoTabHtml,
+        })
+      } else {
+        logger.debug('Session not found during revalidation', { reportId })
+      }
+    } catch (error) {
+      // Log error but don't throw - background revalidation failures are non-critical
+      logger.warn('Background revalidation failed', {
+        reportId,
+        error: getErrorMessage(error),
+      })
+    }
   }
 }
 

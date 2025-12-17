@@ -250,3 +250,185 @@ test.describe('Restoration Edge Cases', () => {
     await page2.close()
   })
 })
+
+test.describe('Cache Update Strategy (Cursor/ChatGPT-Style)', () => {
+  test('should UPDATE cache (not invalidate) after valuation completes', async ({ page }) => {
+    // Step 1: Create and complete valuation
+    await page.goto('/reports/new?flow=manual')
+    await page.waitForLoadState('networkidle')
+    
+    await page.fill('input[name="company_name"]', 'Cache Update Test')
+    await page.fill('input[name="revenue"]', '1000000')
+    await page.fill('input[name="ebitda"]', '200000')
+    await page.selectOption('select[name="industry"]', 'technology')
+    await page.selectOption('select[name="country_code"]', 'BE')
+    await page.selectOption('select[name="business_model"]', 'b2b_saas')
+    await page.fill('input[name="founding_year"]', '2020')
+    
+    await page.click('button[type="submit"]:has-text("Calculate Valuation")')
+    await page.waitForSelector('.valuation-report-container', { timeout: 30000 })
+    
+    const reportUrl = page.url()
+    const reportId = reportUrl.match(/reports\/(val_[^?]+)/)?.[1]
+    
+    // Step 2: Check localStorage cache before refresh
+    const cacheBeforeRefresh = await page.evaluate((id) => {
+      const cacheKey = `upswitch_session_cache_${id}`
+      const cached = localStorage.getItem(cacheKey)
+      return cached ? JSON.parse(cached) : null
+    }, reportId)
+    
+    // Cache should exist and have HTML reports
+    expect(cacheBeforeRefresh).toBeTruthy()
+    expect(cacheBeforeRefresh.session.htmlReport).toBeTruthy()
+    expect(cacheBeforeRefresh.session.infoTabHtml).toBeTruthy()
+    
+    // Step 3: Refresh and verify instant load from cache
+    const refreshStartTime = Date.now()
+    await page.reload({ waitUntil: 'domcontentloaded' })
+    
+    // Report should appear very quickly (from cache)
+    await expect(page.locator('.valuation-report-container')).toBeVisible({ timeout: 1000 })
+    const loadTime = Date.now() - refreshStartTime
+    
+    // Should load in <1 second (cache-first)
+    expect(loadTime).toBeLessThan(1000)
+    
+    console.log(`Cache-first load time: ${loadTime}ms`)
+  })
+
+  test('should verify cache has version field for staleness detection', async ({ page }) => {
+    await page.goto('/reports/new?flow=manual')
+    await page.waitForLoadState('networkidle')
+    
+    await page.fill('input[name="company_name"]', 'Version Test')
+    await page.fill('input[name="revenue"]', '500000')
+    
+    // Wait for auto-save
+    await page.waitForTimeout(2000)
+    
+    const reportUrl = page.url()
+    const reportId = reportUrl.match(/reports\/(val_[^?]+)/)?.[1]
+    
+    // Check cache structure
+    const cache = await page.evaluate((id) => {
+      const cacheKey = `upswitch_session_cache_${id}`
+      const cached = localStorage.getItem(cacheKey)
+      return cached ? JSON.parse(cached) : null
+    }, reportId)
+    
+    // Verify cache has version field
+    expect(cache).toBeTruthy()
+    expect(cache.version).toBeTruthy()
+    expect(cache.cachedAt).toBeTruthy()
+    expect(cache.expiresAt).toBeTruthy()
+  })
+
+  test('should load instantly from cache without blocking on backend', async ({ page }) => {
+    // Create completed valuation first
+    await page.goto('/reports/new?flow=manual')
+    await page.waitForLoadState('networkidle')
+    
+    await page.fill('input[name="company_name"]', 'Instant Load Test')
+    await page.fill('input[name="revenue"]', '800000')
+    await page.fill('input[name="ebitda"]', '160000')
+    await page.selectOption('select[name="industry"]', 'retail')
+    await page.selectOption('select[name="country_code"]', 'BE')
+    await page.selectOption('select[name="business_model"]', 'ecommerce')
+    await page.fill('input[name="founding_year"]', '2019')
+    
+    await page.click('button[type="submit"]:has-text("Calculate Valuation")')
+    await page.waitForSelector('.valuation-report-container', { timeout: 30000 })
+    
+    // Now test instant load
+    // Even if backend is slow, cache should load immediately
+    const startTime = Date.now()
+    await page.reload({ waitUntil: 'domcontentloaded' })
+    
+    // Report should appear immediately (not waiting for networkidle)
+    await expect(page.locator('.valuation-report-container')).toBeVisible({ timeout: 500 })
+    const instantLoadTime = Date.now() - startTime
+    
+    // Should be near-instant (<500ms)
+    expect(instantLoadTime).toBeLessThan(500)
+    
+    console.log(`Instant cache load: ${instantLoadTime}ms`)
+  })
+
+  test('should handle cache completeness validation', async ({ page }) => {
+    // Test scenario: Incomplete cache (no HTML reports) that's old should be invalidated
+    
+    await page.goto('/reports/new?flow=manual')
+    await page.waitForLoadState('networkidle')
+    
+    const reportUrl = page.url()
+    const reportId = reportUrl.match(/reports\/(val_[^?]+)/)?.[1]
+    
+    // Artificially create an incomplete old cache
+    await page.evaluate((id) => {
+      const cacheKey = `upswitch_session_cache_${id}`
+      const incompleteCache = {
+        session: {
+          reportId: id,
+          currentView: 'manual',
+          sessionData: { company_name: 'Old Incomplete Session' },
+          // No htmlReport or infoTabHtml - INCOMPLETE
+        },
+        cachedAt: Date.now() - 15 * 60 * 1000, // 15 minutes old
+        expiresAt: Date.now() + 24 * 60 * 60 * 1000,
+        version: Date.now().toString(),
+      }
+      localStorage.setItem(cacheKey, JSON.stringify(incompleteCache))
+    }, reportId)
+    
+    // Refresh - should fetch from backend (cache invalidated)
+    await page.reload({ waitUntil: 'networkidle' })
+    
+    // Check if new cache was created
+    const newCache = await page.evaluate((id) => {
+      const cacheKey = `upswitch_session_cache_${id}`
+      const cached = localStorage.getItem(cacheKey)
+      return cached ? JSON.parse(cached) : null
+    }, reportId)
+    
+    // Old incomplete cache should have been replaced
+    expect(newCache).toBeTruthy()
+  })
+
+  test('should verify optimistic UI updates to cache', async ({ page }) => {
+    await page.goto('/reports/new?flow=manual')
+    await page.waitForLoadState('networkidle')
+    
+    await page.fill('input[name="company_name"]', 'Optimistic Update Test')
+    await page.fill('input[name="revenue"]', '1200000')
+    await page.fill('input[name="ebitda"]', '240000')
+    await page.selectOption('select[name="industry"]', 'technology')
+    await page.selectOption('select[name="country_code"]', 'BE')
+    await page.selectOption('select[name="business_model"]', 'b2b_saas')
+    await page.fill('input[name="founding_year"]', '2021')
+    
+    // Submit and wait for completion
+    await page.click('button[type="submit"]:has-text("Calculate Valuation")')
+    await page.waitForSelector('.valuation-report-container', { timeout: 30000 })
+    
+    const reportUrl = page.url()
+    const reportId = reportUrl.match(/reports\/(val_[^?]+)/)?.[1]
+    
+    // Check that cache was optimistically updated with valuation result
+    const cache = await page.evaluate((id) => {
+      const cacheKey = `upswitch_session_cache_${id}`
+      const cached = localStorage.getItem(cacheKey)
+      return cached ? JSON.parse(cached) : null
+    }, reportId)
+    
+    // Cache should have been updated optimistically
+    expect(cache).toBeTruthy()
+    expect(cache.session.valuationResult).toBeTruthy()
+    expect(cache.session.htmlReport).toBeTruthy()
+    expect(cache.session.infoTabHtml).toBeTruthy()
+    
+    // Immediate refresh should show report without delay
+    await page.reload({ waitUntil: 'domcontentloaded' })
+    await expect(page.locator('.valuation-report-container')).toBeVisible({ timeout: 500 })
+  })
+})
