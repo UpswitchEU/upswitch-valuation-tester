@@ -91,12 +91,19 @@ export const useFormSessionSync = ({ reportId, formData }: UseFormSessionSyncOpt
 
       try {
         // Convert ValuationFormData to Partial<ValuationRequest> for session
+        // ✅ FIX: Include ALL form fields for complete persistence
         const sessionUpdate: Partial<any> = {
           company_name: data.company_name,
           country_code: data.country_code,
           industry: data.industry,
+          subIndustry: data.subIndustry, // ✅ NEW: Include sub-industry field
           business_model: data.business_model,
           founding_year: data.founding_year,
+          // ✅ NEW: Include business details fields
+          business_description: data.business_description,
+          business_highlights: data.business_highlights,
+          reason_for_selling: data.reason_for_selling,
+          city: data.city,
           current_year_data: {
             year: data.current_year_data?.year || new Date().getFullYear(),
             revenue: data.revenue || data.current_year_data?.revenue || 0,
@@ -127,11 +134,26 @@ export const useFormSessionSync = ({ reportId, formData }: UseFormSessionSyncOpt
           }
         })
 
+        // ✅ FIX: Update local store first
         await updateSessionData(sessionUpdate)
-        generalLogger.debug('Synced form data to session', {
-          reportId: currentSession.reportId,
-          fieldsUpdated: Object.keys(sessionUpdate).length,
-        })
+        
+        // ✅ NEW: Persist to backend after updating local store
+        // This ensures form fields are saved even if user refreshes before submitting
+        try {
+          const { saveSession } = useSessionStore.getState()
+          await saveSession()
+          generalLogger.debug('Synced form data to session and persisted to backend', {
+            reportId: currentSession.reportId,
+            fieldsUpdated: Object.keys(sessionUpdate).length,
+          })
+        } catch (saveError) {
+          // Log error but don't throw - local store is updated, backend save can retry
+          generalLogger.warn('Failed to persist form data to backend (will retry on next change)', {
+            reportId: currentSession.reportId,
+            error: saveError instanceof Error ? saveError.message : String(saveError),
+            note: 'Local store updated successfully, backend persistence will retry',
+          })
+        }
       } catch (err) {
         generalLogger.warn('Failed to sync form data to session', { error: err })
       }

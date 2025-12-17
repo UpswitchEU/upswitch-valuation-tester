@@ -178,14 +178,25 @@ export const ManualLayout: React.FC<ManualLayoutProps> = ({
           reportId,
           hasSessionData: !!currentSession.sessionData,
           sessionDataKeys: sessionDataObj ? Object.keys(sessionDataObj) : [],
-          companyName: sessionDataObj?.company_name,
-          revenue: sessionDataObj?.revenue,
-          ebitda: sessionDataObj?.ebitda,
-          industry: sessionDataObj?.industry,
-          currentFormCompanyName: currentFormData.company_name,
-          currentFormRevenue: currentFormData.revenue,
-          currentFormEbitda: currentFormData.ebitda,
-          currentFormIndustry: currentFormData.industry,
+          sessionDataSample: {
+            companyName: sessionDataObj?.company_name,
+            revenue: sessionDataObj?.revenue,
+            ebitda: sessionDataObj?.ebitda,
+            industry: sessionDataObj?.industry,
+            businessDescription: sessionDataObj?.business_description,
+            businessHighlights: sessionDataObj?.business_highlights,
+            reasonForSelling: sessionDataObj?.reason_for_selling,
+            city: sessionDataObj?.city,
+            hasHistoricalData: !!(sessionDataObj?.historical_years_data && Array.isArray(sessionDataObj.historical_years_data) && sessionDataObj.historical_years_data.length > 0),
+            historicalDataCount: sessionDataObj?.historical_years_data?.length || 0,
+            currentYearData: sessionDataObj?.current_year_data,
+          },
+          currentFormSample: {
+            companyName: currentFormData.company_name,
+            revenue: currentFormData.revenue,
+            ebitda: currentFormData.ebitda,
+            industry: currentFormData.industry,
+          },
         })
 
         // Check if form is empty - be more strict to avoid overwriting user input
@@ -235,6 +246,7 @@ export const ManualLayout: React.FC<ManualLayoutProps> = ({
             company_name: sessionDataObj.company_name,
             country_code: sessionDataObj.country_code,
             industry: sessionDataObj.industry,
+            subIndustry: sessionDataObj.subIndustry, // ✅ NEW: Include sub-industry field
             business_model: sessionDataObj.business_model,
             founding_year: sessionDataObj.founding_year,
 
@@ -277,7 +289,9 @@ export const ManualLayout: React.FC<ManualLayoutProps> = ({
             business_context: sessionDataObj.business_context,
           }
 
-          // Remove undefined values
+          // ✅ FIX: Remove undefined values but preserve empty strings and null
+          // Empty strings are valid values (e.g., user cleared a field)
+          // Only remove truly undefined values
           Object.keys(formDataUpdate).forEach((key) => {
             if (formDataUpdate[key] === undefined) {
               delete formDataUpdate[key]
@@ -290,6 +304,15 @@ export const ManualLayout: React.FC<ManualLayoutProps> = ({
             hasRevenue: !!formDataUpdate.revenue,
             hasEbitda: !!formDataUpdate.ebitda,
             hasCurrentYearData: !!formDataUpdate.current_year_data,
+            hasCompanyName: !!formDataUpdate.company_name,
+            companyName: formDataUpdate.company_name,
+            hasBusinessDescription: !!formDataUpdate.business_description,
+            hasBusinessHighlights: !!formDataUpdate.business_highlights,
+            hasReasonForSelling: !!formDataUpdate.reason_for_selling,
+            hasCity: !!formDataUpdate.city,
+            hasHistoricalData: !!(formDataUpdate.historical_years_data && Array.isArray(formDataUpdate.historical_years_data) && formDataUpdate.historical_years_data.length > 0),
+            historicalDataCount: formDataUpdate.historical_years_data?.length || 0,
+            historicalDataYears: formDataUpdate.historical_years_data?.map((h: any) => h.year) || [],
           })
           updateFormDataFn(formDataUpdate)
 
@@ -536,6 +559,7 @@ export const ManualLayout: React.FC<ManualLayoutProps> = ({
         company_name: sessionDataObj.company_name,
         country_code: sessionDataObj.country_code,
         industry: sessionDataObj.industry,
+        subIndustry: sessionDataObj.subIndustry, // ✅ NEW: Include sub-industry field
         business_model: sessionDataObj.business_model,
         founding_year: sessionDataObj.founding_year,
         business_type: sessionDataObj.business_type,
@@ -567,10 +591,29 @@ export const ManualLayout: React.FC<ManualLayoutProps> = ({
         business_context: sessionDataObj.business_context,
       }
 
+      // ✅ FIX: Remove undefined values but preserve empty strings and null
+      // Empty strings are valid values (e.g., user cleared a field)
+      // Only remove truly undefined values
       Object.keys(formDataUpdate).forEach((key) => {
         if (formDataUpdate[key] === undefined) {
           delete formDataUpdate[key]
         }
+      })
+
+      generalLogger.info('[ManualLayout] Restoring form fields from sessionData (reactive)', {
+        reportId,
+        fieldsToRestore: Object.keys(formDataUpdate),
+        hasCompanyName: !!formDataUpdate.company_name,
+        companyName: formDataUpdate.company_name,
+        hasRevenue: !!formDataUpdate.revenue,
+        hasEbitda: !!formDataUpdate.ebitda,
+        hasBusinessDescription: !!formDataUpdate.business_description,
+        hasBusinessHighlights: !!formDataUpdate.business_highlights,
+        hasReasonForSelling: !!formDataUpdate.reason_for_selling,
+        hasCity: !!formDataUpdate.city,
+        hasHistoricalData: !!(formDataUpdate.historical_years_data && Array.isArray(formDataUpdate.historical_years_data) && formDataUpdate.historical_years_data.length > 0),
+        historicalDataCount: formDataUpdate.historical_years_data?.length || 0,
+        historicalDataYears: formDataUpdate.historical_years_data?.map((h: any) => h.year) || [],
       })
 
       updateFormDataFn(formDataUpdate)
@@ -585,10 +628,15 @@ export const ManualLayout: React.FC<ManualLayoutProps> = ({
           companyName: restoredFormData.company_name,
           revenue: restoredFormData.revenue,
           ebitda: restoredFormData.ebitda,
+          hasHistoricalData: !!(restoredFormData.historical_years_data && Array.isArray(restoredFormData.historical_years_data) && restoredFormData.historical_years_data.length > 0),
           restorationMatch: {
             revenue: restoredFormData.revenue === formDataUpdate.revenue,
             ebitda: restoredFormData.ebitda === formDataUpdate.ebitda,
             companyName: restoredFormData.company_name === formDataUpdate.company_name,
+            businessDescription: restoredFormData.business_description === formDataUpdate.business_description,
+            businessHighlights: restoredFormData.business_highlights === formDataUpdate.business_highlights,
+            reasonForSelling: restoredFormData.reason_for_selling === formDataUpdate.reason_for_selling,
+            city: restoredFormData.city === formDataUpdate.city,
           },
         })
       }, 100)

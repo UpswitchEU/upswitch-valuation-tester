@@ -2,10 +2,11 @@
  * Conversation Summary Block Component
  *
  * Displays a summary of collected data when loading an existing conversational report
- * Shows key data points, completion status, and quick actions
+ * Styled as a chat message card matching the dark theme of other chat components
  */
 
-import { CheckCircle2, Clock, TrendingUp } from 'lucide-react'
+import { motion } from 'framer-motion'
+import { CheckCircle2, FileText, TrendingUp } from 'lucide-react'
 import React from 'react'
 import { formatCurrency } from '../../../config/countries'
 
@@ -20,181 +21,163 @@ export interface ConversationSummaryBlockProps {
 
 export const ConversationSummaryBlock: React.FC<ConversationSummaryBlockProps> = ({
   collectedData,
-  completionPercentage = 0,
+  completionPercentage: _completionPercentage,
   calculatedAt,
   valuationResult,
   onContinue,
   onViewReport,
 }) => {
   // Extract key data points
-  const companyName = collectedData?.company_name || 'Your business'
+  const companyName = collectedData?.company_name
   const industry = collectedData?.industry
   const revenue = collectedData?.current_year_data?.revenue || collectedData?.revenue
   const ebitda = collectedData?.current_year_data?.ebitda || collectedData?.ebitda
   const countryCode = collectedData?.country_code || 'BE'
   const businessType = collectedData?.business_type
+  const country = collectedData?.country
+  const foundedYear = collectedData?.founded_year || collectedData?.year_business_commenced
+  const employees = collectedData?.number_of_employees || collectedData?.employees
+  const owners = collectedData?.active_owner_managers || collectedData?.owners
+  const sharesForSale = collectedData?.equity_stake_for_sale || collectedData?.shares_for_sale
 
   // Check if valuation is complete
   const isComplete = !!valuationResult && !!calculatedAt
 
-  // Format date
-  const formatDate = (date: Date | string) => {
-    try {
-      const dateObj = date instanceof Date ? date : new Date(date)
-      return dateObj.toLocaleDateString('en-US', {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit',
-      })
-    } catch {
-      return 'Recently'
-    }
+  // Build list of fields to display
+  const fieldsToDisplay: Array<{ label: string; value: string | number | null | undefined }> = []
+
+  if (companyName && companyName !== 'Your business') {
+    fieldsToDisplay.push({ label: 'Company Name', value: companyName })
+  }
+  if (businessType) {
+    fieldsToDisplay.push({ label: 'Business Type', value: businessType })
+  }
+  if (industry) {
+    fieldsToDisplay.push({ label: 'Industry', value: industry })
+  }
+  if (country) {
+    fieldsToDisplay.push({ label: 'Country', value: country })
+  }
+  if (foundedYear) {
+    fieldsToDisplay.push({ label: 'Founded', value: foundedYear })
+  }
+  if (revenue !== undefined && revenue !== null) {
+    fieldsToDisplay.push({
+      label: 'Revenue',
+      value: formatCurrency(revenue, countryCode),
+    })
+  }
+  if (ebitda !== undefined && ebitda !== null) {
+    fieldsToDisplay.push({
+      label: 'EBITDA',
+      value: formatCurrency(ebitda, countryCode),
+    })
+  }
+  if (employees !== undefined && employees !== null) {
+    fieldsToDisplay.push({ label: 'Employees', value: employees })
+  }
+  if (owners !== undefined && owners !== null) {
+    fieldsToDisplay.push({ label: 'Owners', value: owners })
+  }
+  if (sharesForSale !== undefined && sharesForSale !== null) {
+    fieldsToDisplay.push({ label: 'Shares for Sale', value: `${sharesForSale}%` })
   }
 
   return (
-    <div className="w-full max-w-3xl mx-auto mb-6 bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-200 rounded-lg shadow-sm overflow-hidden">
-      {/* Header */}
-      <div className="px-6 py-4 bg-white/50 border-b border-blue-200">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            {isComplete ? (
-              <CheckCircle2 className="w-6 h-6 text-green-600" />
-            ) : (
-              <Clock className="w-6 h-6 text-blue-600" />
-            )}
-            <div>
-              <h3 className="text-lg font-semibold text-gray-900">
-                {isComplete ? 'Valuation Complete' : 'Session Restored'}
-              </h3>
-              <p className="text-sm text-gray-600">
-                {isComplete
-                  ? `Calculated on ${formatDate(calculatedAt!)}`
-                  : `${completionPercentage}% complete`}
-              </p>
-            </div>
+    <motion.div
+      initial={{ opacity: 0, y: 10, scale: 0.98 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      transition={{ duration: 0.3, ease: 'easeOut' }}
+      className="flex justify-start w-full my-2"
+    >
+      <div className="max-w-[85%] mr-auto w-full">
+        <div className="flex items-start gap-3">
+          {/* Avatar */}
+          <div className="flex-shrink-0 w-8 h-8 bg-white/10 rounded-full flex items-center justify-center border border-white/10 shadow-sm mt-1">
+            <FileText className="w-4 h-4 text-primary-400" />
           </div>
-          {!isComplete && completionPercentage > 0 && (
-            <div className="flex items-center gap-2">
-              <div className="w-32 bg-gray-200 rounded-full h-2 overflow-hidden">
-                <div
-                  className="bg-blue-600 h-full rounded-full transition-all duration-300"
-                  style={{ width: `${completionPercentage}%` }}
-                />
-              </div>
-              <span className="text-sm font-medium text-gray-700">{completionPercentage}%</span>
-            </div>
-          )}
-        </div>
-      </div>
 
-      {/* Collected Data Summary */}
-      <div className="px-6 py-4">
-        <h4 className="text-sm font-semibold text-gray-700 mb-3">Collected Information</h4>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-          {companyName && companyName !== 'Your business' && (
-            <div className="flex items-start gap-2">
-              <div className="w-2 h-2 rounded-full bg-blue-500 mt-1.5" />
-              <div>
-                <p className="text-xs text-gray-600">Company Name</p>
-                <p className="text-sm font-medium text-gray-900">{companyName}</p>
+          <div className="flex flex-col gap-1 w-full">
+            {/* Main Card */}
+            <div className="rounded-2xl rounded-tl-sm overflow-hidden border border-white/10 shadow-lg backdrop-blur-sm bg-zinc-900/40">
+              {/* Header */}
+              <div className="px-5 py-3 bg-gradient-to-r from-primary-900/20 to-transparent border-b border-white/10">
+                <h4 className="text-sm font-semibold text-white">Collected Information</h4>
               </div>
-            </div>
-          )}
 
-          {businessType && (
-            <div className="flex items-start gap-2">
-              <div className="w-2 h-2 rounded-full bg-blue-500 mt-1.5" />
-              <div>
-                <p className="text-xs text-gray-600">Business Type</p>
-                <p className="text-sm font-medium text-gray-900">{businessType}</p>
-              </div>
-            </div>
-          )}
+              {/* Content */}
+              <div className="p-5">
+                {/* Fields Grid */}
+                {fieldsToDisplay.length > 0 && (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4">
+                    {fieldsToDisplay.map((field, index) => (
+                      <div key={index} className="flex items-start gap-2">
+                        <div className="w-1.5 h-1.5 rounded-full bg-primary-400 mt-1.5 flex-shrink-0" />
+                        <div className="min-w-0">
+                          <p className="text-xs text-zinc-400">{field.label}</p>
+                          <p className="text-sm font-medium text-white truncate">
+                            {field.value}
+                          </p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
 
-          {industry && (
-            <div className="flex items-start gap-2">
-              <div className="w-2 h-2 rounded-full bg-blue-500 mt-1.5" />
-              <div>
-                <p className="text-xs text-gray-600">Industry</p>
-                <p className="text-sm font-medium text-gray-900">{industry}</p>
-              </div>
-            </div>
-          )}
+                {/* Valuation Result (if complete) */}
+                {isComplete && valuationResult && (
+                  <div className="mt-4 pt-4 border-t border-white/10">
+                    <div className="flex items-center gap-3 p-3 bg-green-500/10 border border-green-500/20 rounded-lg">
+                      <TrendingUp className="w-5 h-5 text-green-400 flex-shrink-0" />
+                      <div className="min-w-0">
+                        <p className="text-xs text-zinc-400">Estimated Value</p>
+                        <p className="text-lg font-bold text-green-400">
+                          {formatCurrency(
+                            valuationResult?.valuation_summary?.final_valuation ||
+                              valuationResult?.value ||
+                              0,
+                            countryCode
+                          )}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
 
-          {revenue && (
-            <div className="flex items-start gap-2">
-              <div className="w-2 h-2 rounded-full bg-blue-500 mt-1.5" />
-              <div>
-                <p className="text-xs text-gray-600">Revenue</p>
-                <p className="text-sm font-medium text-gray-900">
-                  {formatCurrency(revenue, countryCode)}
-                </p>
-              </div>
-            </div>
-          )}
-
-          {ebitda !== undefined && ebitda !== null && (
-            <div className="flex items-start gap-2">
-              <div className="w-2 h-2 rounded-full bg-blue-500 mt-1.5" />
-              <div>
-                <p className="text-xs text-gray-600">EBITDA</p>
-                <p className="text-sm font-medium text-gray-900">
-                  {formatCurrency(ebitda, countryCode)}
-                </p>
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* Valuation Result (if complete) */}
-        {isComplete && valuationResult && (
-          <div className="mt-4 p-4 bg-green-50 border border-green-200 rounded-lg">
-            <div className="flex items-center gap-3">
-              <TrendingUp className="w-5 h-5 text-green-600" />
-              <div>
-                <p className="text-xs text-gray-600">Estimated Value</p>
-                <p className="text-xl font-bold text-green-700">
-                  {formatCurrency(
-                    valuationResult?.valuation_summary?.final_valuation ||
-                      valuationResult?.value ||
-                      0,
-                    countryCode
-                  )}
-                </p>
+                {/* Footer with message and button */}
+                <div className="mt-4 pt-4 border-t border-white/10">
+                  <div className="flex items-center justify-between gap-4">
+                    <p className="text-sm text-zinc-400 flex-1">
+                      {isComplete
+                        ? 'Your valuation report is ready to view'
+                        : 'Continue the conversation to complete your valuation'}
+                    </p>
+                    <div className="flex items-center gap-2 flex-shrink-0">
+                      {isComplete && onViewReport && (
+                        <button
+                          onClick={onViewReport}
+                          className="px-4 py-2 text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 rounded-lg transition-colors flex items-center gap-2"
+                        >
+                          <CheckCircle2 className="w-4 h-4" />
+                          View Report
+                        </button>
+                      )}
+                      {!isComplete && onContinue && (
+                        <button
+                          onClick={onContinue}
+                          className="px-4 py-2 text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 rounded-lg transition-colors"
+                        >
+                          Continue
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
-        )}
-      </div>
-
-      {/* Actions */}
-      <div className="px-6 py-4 bg-white/50 border-t border-blue-200 flex items-center justify-between">
-        <p className="text-xs text-gray-600">
-          {isComplete
-            ? 'Your valuation report is ready to view'
-            : 'Continue the conversation to complete your valuation'}
-        </p>
-        <div className="flex items-center gap-2">
-          {isComplete && onViewReport && (
-            <button
-              onClick={onViewReport}
-              className="px-4 py-2 text-sm font-medium text-blue-700 bg-blue-100 hover:bg-blue-200 rounded-lg transition-colors"
-            >
-              View Report
-            </button>
-          )}
-          {!isComplete && onContinue && (
-            <button
-              onClick={onContinue}
-              className="px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors"
-            >
-              Continue
-            </button>
-          )}
         </div>
       </div>
-    </div>
+    </motion.div>
   )
 }

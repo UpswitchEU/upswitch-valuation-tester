@@ -47,19 +47,12 @@ interface ValuationReportPageProps {
  * - ?prefilledQuery=Restaurant (existing prefill)
  */
 export default function ValuationReportPage({ params, searchParams }: ValuationReportPageProps) {
+  // FIX: Call ALL hooks BEFORE any conditional throws/returns to comply with React rules of hooks
+  // This ensures the same number of hooks are called on every render
+  
   // Handle both Promise and plain object params (Next.js 14+ compatibility)
-  if (!params) {
-    throw new Error('Params are required')
-  }
-
   const paramsPromise = params instanceof Promise ? params : Promise.resolve(params)
   const resolvedParams = use(paramsPromise)
-
-  const { id } = resolvedParams || { id: '' }
-
-  if (!id) {
-    throw new Error('Report ID is required')
-  }
 
   // Handle searchParams (optional)
   // FIX: Always call use() hook unconditionally to comply with React rules of hooks
@@ -76,10 +69,21 @@ export default function ValuationReportPage({ params, searchParams }: ValuationR
     autoSend?: string
   }
 
+  // Extract values AFTER all hooks have been called
+  const { id } = resolvedParams || { id: '' }
   const mode: 'edit' | 'view' = resolvedSearchParams.mode || 'edit' // Default to edit mode (M&A workflow)
   const versionNumber: number | undefined = resolvedSearchParams.version
     ? parseInt(resolvedSearchParams.version)
     : undefined
+
+  // Validate AFTER all hooks have been called
+  if (!params) {
+    throw new Error('Params are required')
+  }
+
+  if (!id) {
+    throw new Error('Report ID is required')
+  }
 
   return (
     <ErrorBoundary>

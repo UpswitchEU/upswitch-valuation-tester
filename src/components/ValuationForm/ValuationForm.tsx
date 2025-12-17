@@ -115,6 +115,42 @@ export const ValuationForm: React.FC<ValuationFormProps> = ({
   const [historicalInputs, setHistoricalInputs] = useState<{ [key: string]: string }>({})
   const [hasPrefilledOnce, setHasPrefilledOnce] = useState(false)
   const [employeeCountError, setEmployeeCountError] = useState<string | null>(null)
+  const [hasRestoredHistoricalData, setHasRestoredHistoricalData] = useState(false)
+
+  // ✅ FIX: Restore historical data from formData to historicalInputs when formData is restored
+  // This handles the case where historical_years_data is restored from session but historicalInputs is empty
+  useEffect(() => {
+    if (
+      formData.historical_years_data &&
+      Array.isArray(formData.historical_years_data) &&
+      formData.historical_years_data.length > 0 &&
+      !hasRestoredHistoricalData &&
+      Object.keys(historicalInputs).length === 0
+    ) {
+      // Convert historical_years_data array to historicalInputs format
+      // Format: { "2024_revenue": "1000000", "2024_ebitda": "200000", ... }
+      const restoredInputs: { [key: string]: string } = {}
+      
+      formData.historical_years_data.forEach((yearData: { year: number; revenue?: number; ebitda?: number }) => {
+        if (yearData.revenue !== undefined && yearData.revenue !== null) {
+          restoredInputs[`${yearData.year}_revenue`] = yearData.revenue.toString()
+        }
+        if (yearData.ebitda !== undefined && yearData.ebitda !== null) {
+          restoredInputs[`${yearData.year}_ebitda`] = yearData.ebitda.toString()
+        }
+      })
+
+      if (Object.keys(restoredInputs).length > 0) {
+        setHistoricalInputs(restoredInputs)
+        setHasRestoredHistoricalData(true)
+        generalLogger.info('[ValuationForm] Restored historical data to inputs', {
+          reportId,
+          yearsRestored: formData.historical_years_data.length,
+          inputKeys: Object.keys(restoredInputs),
+        })
+      }
+    }
+  }, [formData.historical_years_data, historicalInputs, hasRestoredHistoricalData, reportId])
 
   // Match business type string to business_type_id
   const matchBusinessType = useCallback(

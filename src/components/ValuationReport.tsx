@@ -79,6 +79,7 @@ export const ValuationReport: React.FC<ValuationReportProps> = React.memo(
     }
 
     // Validate report ID and redirect if invalid
+    // FIX: Call all hooks before any conditional returns to comply with React rules of hooks
     React.useEffect(() => {
       if (!reportId || !isValidReportId(reportId)) {
         // Invalid or missing report ID - generate new one
@@ -87,6 +88,7 @@ export const ValuationReport: React.FC<ValuationReportProps> = React.memo(
       }
     }, [reportId, router])
 
+    // Early return AFTER all hooks have been called
     if (!reportId || !isValidReportId(reportId)) {
       return null
     }

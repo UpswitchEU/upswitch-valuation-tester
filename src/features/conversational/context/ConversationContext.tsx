@@ -100,13 +100,28 @@ export const ConversationProvider: React.FC<ConversationProviderProps> = ({
   children,
   initialSessionId,
 }) => {
+  // FIX: Call ALL hooks unconditionally before any effects to comply with React rules of hooks
+  // This ensures the same number of hooks are called on every render
+  
   // Session management state
   const [sessionId, setSessionId] = useState<string>(initialSessionId)
   const [pythonSessionId, setPythonSessionId] = useState<string | null>(null)
   const [isInitialized, setInitialized] = useState<boolean>(false)
   const [isRestored, setRestored] = useState<boolean>(false)
 
+  // Messages state
+  const [messages, setMessages] = useState<Message[]>([])
+
+  // Valuation results state
+  const [valuationResult, setValuationResult] = useState<ValuationResponse | null>(null)
+  const [businessProfile, setBusinessProfile] = useState<BusinessProfile | null>(null)
+
+  // UI state
+  const [isGenerating, setGenerating] = useState<boolean>(false)
+  const [error, setError] = useState<string | null>(null)
+
   // Update sessionId when initialSessionId prop changes (reportId change)
+  // FIX: Moved after all state declarations to ensure all hooks are called before effects
   useEffect(() => {
     if (initialSessionId !== sessionId) {
       chatLogger.info('ConversationProvider: Session ID changed, resetting state', {
@@ -124,17 +139,6 @@ export const ConversationProvider: React.FC<ConversationProviderProps> = ({
       setError(null)
     }
   }, [initialSessionId, sessionId])
-
-  // Messages state
-  const [messages, setMessages] = useState<Message[]>([])
-
-  // Valuation results state
-  const [valuationResult, setValuationResult] = useState<ValuationResponse | null>(null)
-  const [businessProfile, setBusinessProfile] = useState<BusinessProfile | null>(null)
-
-  // UI state
-  const [isGenerating, setGenerating] = useState<boolean>(false)
-  const [error, setError] = useState<string | null>(null)
 
   // Actions
   const actions: ConversationActions = {
