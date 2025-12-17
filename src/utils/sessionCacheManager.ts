@@ -131,16 +131,18 @@ export class SessionCacheManager {
               error: retryError.message,
             })
             try {
-              // Create minimal cache with only essential metadata
+              // Create minimal cache with essential metadata and sessionData (for form restoration)
+              // Exclude large fields: htmlReport, infoTabHtml, valuationResult
               const minimalSession: Partial<ValuationSession> = {
                 reportId: session.reportId,
                 currentView: session.currentView,
                 dataSource: session.dataSource,
                 name: session.name,
+                sessionData: session.sessionData, // ✅ Include sessionData for form field restoration
                 createdAt: session.createdAt,
                 updatedAt: session.updatedAt,
                 calculatedAt: session.calculatedAt,
-                // Exclude all large fields
+                // Exclude large fields: htmlReport, infoTabHtml, valuationResult
               }
               const minimalCached: CachedSession = {
                 session: minimalSession as ValuationSession,

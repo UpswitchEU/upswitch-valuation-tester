@@ -17,6 +17,17 @@ const SW_VERSION = '1.0.4'
 const CACHE_NAME = `upswitch-valuation-v${SW_VERSION}`
 const RUNTIME_CACHE = `upswitch-runtime-v${SW_VERSION}`
 
+// Debug mode: Set to true to enable verbose logging (for debugging only)
+// In production, this should be false to reduce console noise
+const DEBUG_MODE = false
+
+// Helper function for conditional debug logging
+function debugLog(...args) {
+  if (DEBUG_MODE) {
+    console.log(...args)
+  }
+}
+
 console.log(`[ServiceWorker] Version ${SW_VERSION} initializing`)
 
 // Assets to cache on install
@@ -167,18 +178,18 @@ self.addEventListener('fetch', (event) => {
       if (useNetworkFirst) {
         // Network-first strategy for Next.js chunks and dynamic content
         try {
-          console.log(`[ServiceWorker v${SW_VERSION}] Fetching from network (network-first):`, url)
+          debugLog(`[ServiceWorker v${SW_VERSION}] Fetching from network (network-first):`, url)
           const response = await fetch(request)
           
           if (response.ok) {
-            console.log(`[ServiceWorker v${SW_VERSION}] Fetch finished loading:`, request.method, JSON.stringify(url))
+            debugLog(`[ServiceWorker v${SW_VERSION}] Fetch finished loading:`, request.method, JSON.stringify(url))
             return response
           } else {
             // If network fails, try cache
             console.warn(`[ServiceWorker v${SW_VERSION}] Network returned ${response.status}, trying cache:`, url)
             const cachedResponse = await caches.match(request)
             if (cachedResponse) {
-              console.log(`[ServiceWorker v${SW_VERSION}] Serving from cache (fallback):`, url)
+              debugLog(`[ServiceWorker v${SW_VERSION}] Serving from cache (fallback):`, url)
               return cachedResponse
             }
             return response
@@ -188,7 +199,7 @@ self.addEventListener('fetch', (event) => {
           console.warn(`[ServiceWorker v${SW_VERSION}] Network failed, trying cache:`, url, error.message)
           const cachedResponse = await caches.match(request)
           if (cachedResponse) {
-            console.log(`[ServiceWorker v${SW_VERSION}] Serving from cache (fallback):`, url)
+            debugLog(`[ServiceWorker v${SW_VERSION}] Serving from cache (fallback):`, url)
             return cachedResponse
           }
           throw error
@@ -197,18 +208,18 @@ self.addEventListener('fetch', (event) => {
         // Cache-first strategy for static assets
         const cachedResponse = await caches.match(request)
         if (cachedResponse) {
-          console.log(`[ServiceWorker v${SW_VERSION}] Serving from cache:`, url)
+          debugLog(`[ServiceWorker v${SW_VERSION}] Serving from cache:`, url)
           return cachedResponse
         }
 
         // Not in cache, fetch from network
         try {
-          console.log(`[ServiceWorker v${SW_VERSION}] Fetching from network:`, url)
+          debugLog(`[ServiceWorker v${SW_VERSION}] Fetching from network:`, url)
           const response = await fetch(request)
           
-          // Log successful network fetch
+          // Log successful network fetch (only in debug mode)
           if (response.ok) {
-            console.log(`[ServiceWorker v${SW_VERSION}] Fetch finished loading:`, request.method, JSON.stringify(url))
+            debugLog(`[ServiceWorker v${SW_VERSION}] Fetch finished loading:`, request.method, JSON.stringify(url))
           }
           
           // Cache successful static assets

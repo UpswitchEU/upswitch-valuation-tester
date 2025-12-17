@@ -540,15 +540,61 @@ export class RUMManager {
   }
 }
 
-// Export singleton instance
-export const rumManager = new RUMManager({
-  debug: process.env.NODE_ENV === 'development',
-  onWebVitalsMetric: (metric) => {
-    // Send to analytics service (e.g., Google Analytics, Datadog)
-    // analytics.track('web_vitals', { ...metric })
-  },
-  onCustomMetric: (metric) => {
-    // Send to analytics service
-    // analytics.track('custom_metric', { ...metric })
-  },
-})
+/**
+ * No-op RUM Manager for SSR
+ * Prevents hydration mismatches by providing a safe instance during server-side rendering
+ */
+class NoOpRUMManager extends RUMManager {
+  constructor() {
+    // Call parent constructor with disabled config
+    super({ debug: false, sampleRate: 0 })
+  }
+
+  trackCustomMetric(): void {
+    // No-op
+  }
+
+  getMetrics() {
+    return { webVitals: [], custom: [] }
+  }
+
+  export(): string {
+    return JSON.stringify({ webVitals: [], custom: [] }, null, 2)
+  }
+
+  getWebVitalsSummary(): Record<string, { value: number; rating: string }> {
+    return {}
+  }
+}
+
+// Lazy initialization to prevent SSR hydration issues
+// Only instantiate on client side (when window is available)
+let rumManagerInstance: RUMManager | null = null
+
+function getRUMManager(): RUMManager {
+  // Return no-op instance for SSR to prevent hydration mismatches
+  if (typeof window === 'undefined') {
+    return new NoOpRUMManager()
+  }
+  
+  // Lazy initialize on client side
+  if (!rumManagerInstance) {
+    rumManagerInstance = new RUMManager({
+      debug: process.env.NODE_ENV === 'development',
+      onWebVitalsMetric: (metric) => {
+        // Send to analytics service (e.g., Google Analytics, Datadog)
+        // analytics.track('web_vitals', { ...metric })
+      },
+      onCustomMetric: (metric) => {
+        // Send to analytics service
+        // analytics.track('custom_metric', { ...metric })
+      },
+    })
+  }
+  
+  return rumManagerInstance
+}
+
+// Export singleton instance (lazy initialized)
+// This will return a no-op instance during SSR and a real instance on the client
+export const rumManager = getRUMManager()

@@ -11,11 +11,11 @@ import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import { VersionAPI } from '../services/api/version/VersionAPI'
 import type {
-  CreateVersionRequest,
-  UpdateVersionRequest,
-  ValuationVersion,
-  VersionChanges,
-  VersionComparison,
+    CreateVersionRequest,
+    UpdateVersionRequest,
+    ValuationVersion,
+    VersionChanges,
+    VersionComparison,
 } from '../types/ValuationVersion'
 import { createContextLogger } from '../utils/logger'
 
