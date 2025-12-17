@@ -92,11 +92,12 @@ export class SessionService {
         // ✅ VERIFY: Log form data presence in cache for restoration
         const hasSessionData = !!cachedSession.sessionData
         const sessionDataKeys = cachedSession.sessionData ? Object.keys(cachedSession.sessionData) : []
+        const sessionData = cachedSession.sessionData || {} as any
         const hasFormFields = hasSessionData && (
-          cachedSession.sessionData.company_name ||
-          cachedSession.sessionData.revenue ||
-          cachedSession.sessionData.ebitda ||
-          cachedSession.sessionData.current_year_data
+          sessionData.company_name ||
+          (sessionData.current_year_data as any)?.revenue ||
+          (sessionData.current_year_data as any)?.ebitda ||
+          sessionData.current_year_data
         )
         
         logger.info('Session loaded from cache (instant)', {
@@ -228,11 +229,12 @@ export class SessionService {
             // ✅ CRITICAL: Form data (sessionData) is included in cache for instant restoration
             const hasSessionData = !!mergedSession.sessionData
             const sessionDataKeys = mergedSession.sessionData ? Object.keys(mergedSession.sessionData) : []
+            const sessionData = mergedSession.sessionData || {} as any
             const hasFormFields = hasSessionData && (
-              mergedSession.sessionData.company_name ||
-              mergedSession.sessionData.revenue ||
-              mergedSession.sessionData.ebitda ||
-              mergedSession.sessionData.current_year_data
+              sessionData.company_name ||
+              (sessionData.current_year_data as any)?.revenue ||
+              (sessionData.current_year_data as any)?.ebitda ||
+              sessionData.current_year_data
             )
             
             globalSessionCache.set(reportId, mergedSession)

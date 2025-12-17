@@ -241,25 +241,33 @@ export const ValuationToolbar: React.FC<ValuationToolbarProps> = ({
                   </div>
                 </div>
                 {/* Save Status Icon (M&A Workflow) - Minimalist inline indicator */}
-                {getSaveStatusIcon() && (
-                  <Tooltip content={getSaveStatusTooltip()} position="bottom" className="">
-                    {syncError ? (
-                      // Clickable only when there's an error (manual retry)
-                      <button
-                        onClick={handleRetrySave}
-                        className="flex items-center justify-center p-1 rounded hover:bg-zinc-800 transition-colors cursor-pointer"
-                        aria-label="Retry save"
-                      >
-                        {getSaveStatusIcon()}
-                      </button>
-                    ) : (
-                      // Non-clickable for normal states (autosave)
-                      <div className="flex items-center justify-center p-1">
-                        {getSaveStatusIcon()}
-                      </div>
-                    )}
-                  </Tooltip>
-                )}
+                {getSaveStatusIcon() && (() => {
+                  const tooltipContent = getSaveStatusTooltip()
+                  const iconContent = syncError ? (
+                    // Clickable only when there's an error (manual retry)
+                    <button
+                      onClick={handleRetrySave}
+                      className="flex items-center justify-center p-1 rounded hover:bg-zinc-800 transition-colors cursor-pointer"
+                      aria-label="Retry save"
+                    >
+                      {getSaveStatusIcon()}
+                    </button>
+                  ) : (
+                    // Non-clickable for normal states (autosave)
+                    <div className="flex items-center justify-center p-1">
+                      {getSaveStatusIcon()}
+                    </div>
+                  )
+                  
+                  // Only wrap in Tooltip if there's tooltip content (hide for new reports)
+                  return tooltipContent ? (
+                    <Tooltip content={tooltipContent} position="bottom" className="">
+                      {iconContent}
+                    </Tooltip>
+                  ) : (
+                    iconContent
+                  )
+                })()}
               </div>
 
               {/* Center Section - Action Buttons */}

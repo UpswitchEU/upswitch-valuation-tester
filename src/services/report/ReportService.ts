@@ -282,11 +282,12 @@ export class ReportService {
             // This ensures form fields can be restored from localStorage when revisiting
             const hasSessionData = !!freshSession.sessionData
             const sessionDataKeys = freshSession.sessionData ? Object.keys(freshSession.sessionData) : []
+            const sessionData = freshSession.sessionData || {} as any
             const hasFormFields = hasSessionData && (
-              freshSession.sessionData.company_name ||
-              freshSession.sessionData.revenue ||
-              freshSession.sessionData.ebitda ||
-              freshSession.sessionData.current_year_data
+              sessionData.company_name ||
+              (sessionData.current_year_data as any)?.revenue ||
+              (sessionData.current_year_data as any)?.ebitda ||
+              sessionData.current_year_data
             )
             
             if (!hasSessionData) {
