@@ -343,3 +343,4 @@ globalSessionCache.set(reportId, freshSession)  // Update cache → User sees fr
 ---
 
 *Implementation follows best practices from world-class products.*
+

@@ -307,3 +307,4 @@ Frontend (Browser)
 The cache update was in the wrong file (`SessionService.saveCompleteSession` which isn't called). I moved it to the actual code path (`ReportService.saveReportAssets` + `useSessionStore.updateSession`). Now the cache updates via TWO layers (optimistic + guaranteed) ensuring zero empty reports.
 
 **Test with a NEW report for best results!**
+
