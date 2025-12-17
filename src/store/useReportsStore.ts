@@ -103,6 +103,28 @@ export const useReportsStore = create<ReportsStore>((set, get) => ({
       // Delete from backend
       await reportService.deleteReport(reportId)
 
+      // ✅ CRITICAL: Clear localStorage cache AND session store for this report
+      // This ensures the report doesn't reappear after page refresh
+      try {
+        const { globalSessionCache } = await import('../utils/sessionCacheManager')
+        globalSessionCache.remove(reportId)
+        reportsLogger.info('Cache cleared for deleted report', { reportId })
+        
+        // Also clear from session store if it's the active session
+        const { useSessionStore } = await import('./useSessionStore')
+        const currentSession = useSessionStore.getState().session
+        if (currentSession?.reportId === reportId) {
+          useSessionStore.getState().clearSession()
+          reportsLogger.info('Active session cleared for deleted report', { reportId })
+        }
+      } catch (cacheError) {
+        // Don't fail delete if cache clear fails
+        reportsLogger.warn('Failed to clear cache for deleted report', {
+          reportId,
+          error: cacheError instanceof Error ? cacheError.message : String(cacheError),
+        })
+      }
+
       // Remove from local state
       set((state) => ({
         reports: state.reports.filter((r) => r.reportId !== reportId),

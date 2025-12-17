@@ -295,6 +295,19 @@ class ReportServiceImpl implements ReportService {
 
       if (!response.ok) {
         if (response.status === 404) {
+          // ✅ CRITICAL: Even if backend says 404, clear cache to prevent reappearance
+          // This handles race conditions where report was deleted but cache still exists
+          try {
+            const { globalSessionCache } = await import('../../utils/sessionCacheManager')
+            globalSessionCache.remove(reportId)
+            reportLogger.info('Cache cleared for 404 report (treating as deleted)', { reportId })
+          } catch (cacheError) {
+            reportLogger.warn('Failed to clear cache for 404 report', {
+              reportId,
+              error: cacheError instanceof Error ? cacheError.message : String(cacheError),
+            })
+          }
+          
           reportLogger.warn('Report not found (already deleted?)', { reportId })
           return // Gracefully handle already deleted
         }
