@@ -64,15 +64,6 @@ export const FormSubmitSection: React.FC<FormSubmitSectionProps> = ({
     <>
       {/* Submit Button */}
       <div className="pt-6 border-t border-zinc-700">
-        {/* Show missing fields hint when form is invalid */}
-        {!isFormValid && missingFields.length > 0 && (
-          <div className="mb-4 p-3 bg-yellow-600/10 border-l-4 border-yellow-600/30 rounded-r-lg">
-            <p className="text-sm text-yellow-200">
-              Please fill in required fields: <strong>{missingFields.join(', ')}</strong>
-            </p>
-          </div>
-        )}
-
         <button
           type="submit"
           disabled={isSubmitting || !isFormValid}
