@@ -13,6 +13,7 @@ interface CustomBusinessTypeSearchProps {
   loading?: boolean
   label?: string
   className?: string
+  initialQuery?: string // Initial query text to display (e.g., from prefilledQuery)
 }
 
 export const CustomBusinessTypeSearch: React.FC<CustomBusinessTypeSearchProps> = ({
@@ -26,14 +27,16 @@ export const CustomBusinessTypeSearch: React.FC<CustomBusinessTypeSearchProps> =
   loading = false,
   label = 'Business Type',
   className = '',
+  initialQuery,
 }) => {
-  const [query, setQuery] = useState('')
+  const [query, setQuery] = useState(initialQuery || '')
   const [isOpen, setIsOpen] = useState(false)
   const [selectedType, setSelectedType] = useState<BusinessType | null>(null)
   const [highlightedIndex, setHighlightedIndex] = useState(0)
   const wrapperRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
   const dropdownRef = useRef<HTMLDivElement>(null)
+  const initialQuerySetRef = useRef(false) // Track if initialQuery has been set
 
   // Find selected business type when value changes
   useEffect(() => {
@@ -42,12 +45,29 @@ export const CustomBusinessTypeSearch: React.FC<CustomBusinessTypeSearchProps> =
       if (found) {
         setSelectedType(found)
         setQuery(found.title)
+        initialQuerySetRef.current = true // Mark that we've set a value-based query
       }
     } else {
       setSelectedType(null)
-      setQuery('')
+      // Only set initialQuery if we haven't set it before and no value is selected
+      if (!initialQuerySetRef.current && initialQuery && !query) {
+        setQuery(initialQuery)
+        initialQuerySetRef.current = true
+      } else if (!initialQuery && !query) {
+        setQuery('')
+      }
     }
-  }, [value, businessTypes])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [value, businessTypes]) // Only depend on value and businessTypes to prevent loops
+
+  // Set initialQuery once when component mounts or when initialQuery first becomes available
+  useEffect(() => {
+    if (!initialQuerySetRef.current && initialQuery && !value && !query) {
+      setQuery(initialQuery)
+      initialQuerySetRef.current = true
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []) // Only run once on mount
 
   // Filter and rank business types by search query
   const filteredTypes = React.useMemo(() => {

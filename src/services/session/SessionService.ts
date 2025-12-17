@@ -29,7 +29,7 @@ import { getErrorMessage } from '../../utils/errors/errorConverter'
 import { createContextLogger } from '../../utils/logger'
 import { retrySessionOperation } from '../../utils/retryWithBackoff'
 import { globalSessionCache } from '../../utils/sessionCacheManager'
-import { mergeSessionFields, normalizeSessionDates } from '../../utils/sessionHelpers'
+import { mergePrefilledQuery, mergeSessionFields, normalizeSessionDates } from '../../utils/sessionHelpers'
 import { validateSessionData } from '../../utils/sessionValidation'
 import { backendAPI } from '../backendApi'
 
@@ -69,14 +69,15 @@ export class SessionService {
    *
    * @param reportId - Report identifier
    * @param flow - Optional flow type ('manual' | 'conversational') for new session creation
+   * @param prefilledQuery - Optional prefilled query from URL to merge into partialData
    * @returns Session object or null if not found
    */
-  async loadSession(reportId: string, flow?: 'manual' | 'conversational'): Promise<ValuationSession | null> {
+  async loadSession(reportId: string, flow?: 'manual' | 'conversational', prefilledQuery?: string | null): Promise<ValuationSession | null> {
     const startTime = performance.now()
     const ABSOLUTE_TIMEOUT = 12000 // 12 seconds max
 
     try {
-      logger.info('Loading session', { reportId, flow })
+      logger.info('Loading session', { reportId, flow, prefilledQuery })
 
       // CACHE-FIRST: Check localStorage cache BEFORE backend API call
       const cachedSession = globalSessionCache.get(reportId)
@@ -94,6 +95,20 @@ export class SessionService {
         // Validate cached session
         validateSessionData(cachedSession)
 
+        // Merge prefilledQuery if provided
+        if (prefilledQuery) {
+          const updatedPartialData = mergePrefilledQuery(cachedSession.partialData, prefilledQuery)
+          if (updatedPartialData !== cachedSession.partialData) {
+            const updatedSession = {
+              ...cachedSession,
+              partialData: updatedPartialData,
+            }
+            // Update cache with merged prefilledQuery
+            globalSessionCache.set(reportId, updatedSession)
+            return updatedSession
+          }
+        }
+
         return cachedSession
       }
 
@@ -110,11 +125,13 @@ export class SessionService {
               logger.info('Session not found, creating new session', { reportId, flow })
               
               try {
-                // Create minimal session on backend
+                // Create minimal session on backend with prefilledQuery in partialData
+                const partialData = prefilledQuery ? ({ _prefilledQuery: prefilledQuery } as any) : {}
                 const createResponse = await backendAPI.createValuationSession({
                   reportId,
                   currentView: flow || 'manual', // Use provided flow or default to manual
                   sessionData: {},
+                  partialData,
                 })
                 
                 if (!createResponse?.session) {
@@ -125,12 +142,18 @@ export class SessionService {
                 logger.info('New session created successfully', {
                   reportId,
                   currentView: createResponse.session.currentView,
+                  hasPrefilledQuery: !!prefilledQuery,
                 })
                 
                 // Validate and normalize the new session
                 validateSessionData(createResponse.session)
                 const normalizedSession = normalizeSessionDates(createResponse.session)
                 const mergedSession = mergeSessionFields(normalizedSession)
+                
+                // Ensure prefilledQuery is in partialData (merge in case backend didn't preserve it)
+                if (prefilledQuery) {
+                  mergedSession.partialData = mergePrefilledQuery(mergedSession.partialData, prefilledQuery)
+                }
                 
                 // Cache the new session
                 globalSessionCache.set(reportId, mergedSession)
@@ -154,12 +177,18 @@ export class SessionService {
             // Merge top-level fields into sessionData (SINGLE SOURCE OF TRUTH)
             const mergedSession = mergeSessionFields(normalizedSession)
 
+            // Merge prefilledQuery if provided (only if not already present)
+            if (prefilledQuery) {
+              mergedSession.partialData = mergePrefilledQuery(mergedSession.partialData, prefilledQuery)
+            }
+
             // Cache for next time
             globalSessionCache.set(reportId, mergedSession)
 
             logger.info('Session loaded from backend and cached', {
               reportId,
               currentView: mergedSession.currentView,
+              hasPrefilledQuery: !!prefilledQuery,
             })
 
             return mergedSession

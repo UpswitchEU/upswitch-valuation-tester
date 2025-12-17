@@ -66,8 +66,8 @@ export const ValuationSessionManager: React.FC<ValuationSessionManagerProps> = R
     
     // Load session when reportId changes (promise cache prevents duplicates)
     useEffect(() => {
-      generalLogger.info('[SessionManager] Loading session', { reportId, flow: detectedFlow })
-      loadSession(reportId, detectedFlow).catch(err => {
+      generalLogger.info('[SessionManager] Loading session', { reportId, flow: detectedFlow, prefilledQuery })
+      loadSession(reportId, detectedFlow, prefilledQuery).catch(err => {
         generalLogger.error('[SessionManager] Load failed', {
           reportId,
           flow: detectedFlow,
@@ -75,14 +75,14 @@ export const ValuationSessionManager: React.FC<ValuationSessionManagerProps> = R
         })
       })
       // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [reportId, detectedFlow])  // loadSession is stable - don't include in deps
+    }, [reportId, detectedFlow, prefilledQuery])  // loadSession is stable - don't include in deps
     
     // Retry: Clear error and reload
     const handleRetry = useCallback(() => {
-      generalLogger.info('[SessionManager] Retrying load', { reportId, flow: detectedFlow })
-      loadSession(reportId, detectedFlow)
+      generalLogger.info('[SessionManager] Retrying load', { reportId, flow: detectedFlow, prefilledQuery })
+      loadSession(reportId, detectedFlow, prefilledQuery)
       // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [reportId, detectedFlow])  // loadSession is stable - don't include in deps
+    }, [reportId, detectedFlow, prefilledQuery])  // loadSession is stable - don't include in deps
     
     // Start over: Clear and navigate home
     const handleStartOver = useCallback(() => {

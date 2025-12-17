@@ -22,6 +22,7 @@ interface BasicInformationSectionProps {
   businessTypes: BusinessType[]
   businessTypesLoading: boolean
   businessTypesError: string | null
+  prefilledQuery?: string | null // Optional prefilled query from URL
 }
 
 /**
@@ -39,6 +40,7 @@ export const BasicInformationSection: React.FC<BasicInformationSectionProps> = (
   businessTypes,
   businessTypesLoading,
   businessTypesError,
+  prefilledQuery,
 }) => {
   // Track which fields were auto-filled from registry
   const [autoFilledFields, setAutoFilledFields] = useState<string[]>([])
@@ -56,6 +58,7 @@ export const BasicInformationSection: React.FC<BasicInformationSectionProps> = (
           <CustomBusinessTypeSearch
             value={formData.business_type_id}
             businessTypes={businessTypes}
+            initialQuery={prefilledQuery && !formData.business_type_id ? prefilledQuery : undefined}
             onChange={(businessType) => {
               // Log selected business type for debugging
               generalLogger.debug('Business type selected', {

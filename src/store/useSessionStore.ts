@@ -31,7 +31,7 @@ interface SessionStore {
   hasUnsavedChanges: boolean
   
   // Actions
-  loadSession: (reportId: string, flow?: 'manual' | 'conversational') => Promise<void>
+  loadSession: (reportId: string, flow?: 'manual' | 'conversational', prefilledQuery?: string | null) => Promise<void>
   updateSession: (updates: Partial<ValuationSession>) => void
   updateSessionData: (data: Partial<any>) => Promise<void>  // Async for hook compatibility
   saveSession: () => Promise<void>
@@ -69,8 +69,9 @@ export const useSessionStore = create<SessionStore>((set, get) => ({
    * - Atomic state updates
    * - Error handling with clear messages
    * - Auto-creates session if not found (for new reports)
+   * - Merges prefilledQuery into partialData if provided
    */
-  loadSession: async (reportId: string, flow?: 'manual' | 'conversational') => {
+  loadSession: async (reportId: string, flow?: 'manual' | 'conversational', prefilledQuery?: string | null) => {
     const state = get()
     
     // GUARD 1: Already loaded for this reportId
@@ -91,10 +92,10 @@ export const useSessionStore = create<SessionStore>((set, get) => ({
       set({ isLoading: true, error: null })
       
       try {
-        storeLogger.info('[Session] Loading session', { reportId, flow })
+        storeLogger.info('[Session] Loading session', { reportId, flow, prefilledQuery })
         
         // Load from SessionService (handles cache, backend, merging, auto-creation)
-        const session = await sessionService.loadSession(reportId, flow)
+        const session = await sessionService.loadSession(reportId, flow, prefilledQuery)
         
         if (!session) {
           throw new Error(`Session not found: ${reportId}`)

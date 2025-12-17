@@ -13,7 +13,7 @@
  * @module components/ValuationForm/ValuationForm
  */
 
-import React, { useCallback, useEffect, useState } from 'react'
+import React, { useCallback, useEffect, useMemo, useState } from 'react'
 import { useAuth } from '../../hooks/useAuth'
 import { useBusinessTypes } from '../../hooks/useBusinessTypes'
 import { useFormSessionSync } from '../../hooks/useFormSessionSync'
@@ -410,6 +410,13 @@ export const ValuationForm: React.FC<ValuationFormProps> = ({
   // Use form submission hook
   const { handleSubmit, isSubmitting } = useValuationFormSubmission(setEmployeeCountError)
 
+  // Memoize prefilledQuery to prevent render loops
+  // Extract the value first, then memoize based on the actual string value
+  const prefilledQueryValue = (session?.partialData as any)?._prefilledQuery
+  const prefilledQuery = useMemo(() => {
+    return prefilledQueryValue || null
+  }, [prefilledQueryValue]) // Only recompute when the actual string value changes
+
   // Get business types loading/error state
   const { loading: businessTypesLoading, error: businessTypesError } = useBusinessTypes()
 
@@ -452,6 +459,7 @@ export const ValuationForm: React.FC<ValuationFormProps> = ({
         businessTypes={businessTypes}
         businessTypesLoading={businessTypesLoading}
         businessTypesError={businessTypesError}
+        prefilledQuery={prefilledQuery}
       />
 
       <OwnershipStructureSection
