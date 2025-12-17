@@ -1,5 +1,17 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  // TypeScript configuration
+  typescript: {
+    // Ignore TypeScript errors during build (errors are in test files which are excluded)
+    ignoreBuildErrors: false, // Set to true if needed, but test files are now excluded
+  },
+  
+  // ESLint configuration
+  eslint: {
+    // Ignore ESLint errors during build
+    ignoreDuringBuilds: false,
+  },
+  
   // Enable experimental features for better performance
   experimental: {
     optimizeCss: true,

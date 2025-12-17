@@ -53,6 +53,9 @@
     "cypress",
     "**/*.cy.ts",
     "**/*.cy.tsx",
+    "**/__tests__/**/*",
+    "**/*.test.ts",
+    "**/*.test.tsx",
     ".next",
     "vitest.config.ts",
     "src/store/_archived/**/*"

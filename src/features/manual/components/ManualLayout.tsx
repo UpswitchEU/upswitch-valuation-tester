@@ -9,6 +9,7 @@
 
 import React, { Suspense, useEffect, useRef } from 'react'
 import { AssetInspector } from '../../../components/debug/AssetInspector'
+import { FullScreenModal } from '../../../components/FullScreenModal'
 import { ResizableDivider } from '../../../components/ResizableDivider'
 import { InputFieldsSkeleton } from '../../../components/skeletons'
 import { ValuationForm } from '../../../components/ValuationForm'
@@ -462,6 +463,29 @@ export const ManualLayout: React.FC<ManualLayoutProps> = ({
       {isMobile && (
         <MobilePanelSwitcher activePanel={mobileActivePanel} onPanelChange={setMobileActivePanel} />
       )}
+
+      {/* Full Screen Modal */}
+      <FullScreenModal
+        isOpen={isFullScreen}
+        onClose={handleHookCloseFullscreen}
+        title="Valuation - Full Screen"
+      >
+        <ReportPanel
+          reportId={reportId}
+          className="h-full"
+          activeTab={activeTab}
+          onTabChange={(tab) => {
+            handleHookTabChange(tab as 'preview' | 'info' | 'history')
+          }}
+          isCalculating={isCalculating}
+          error={error}
+          result={result}
+          onClearError={() => {
+            const { clearError } = useManualResultsStore.getState()
+            clearError()
+          }}
+        />
+      </FullScreenModal>
 
       {/* Asset Inspector (dev only) */}
       <AssetInspector />
