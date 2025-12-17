@@ -110,12 +110,14 @@ export const ManualLayout: React.FC<ManualLayoutProps> = ({
     lastRestoredResultId: string | null
     lastSeenSessionDataHash: string | null
     isRestoring: boolean
+    lastFormDataHash: string | null // Track last form data hash to detect form sync
   }>({
     lastRestoredReportId: null,
     lastRestoredFormDataHash: null,
     lastRestoredResultId: null,
     lastSeenSessionDataHash: null,
     isRestoring: false,
+    lastFormDataHash: null,
   })
   
   // Helper to create a simple hash of form data for comparison
@@ -126,9 +128,22 @@ export const ManualLayout: React.FC<ManualLayoutProps> = ({
     return key
   }, [])
   
+  // Track last computed hash to prevent unnecessary recalculations
+  const lastSessionDataHashRef = useRef<string | null>(null)
+  
   // Memoize session data hash to prevent unnecessary effect runs
+  // Only update when the hash value actually changes, not just the object reference
   const sessionDataHash = useMemo(() => {
-    return session?.sessionData ? getFormDataHash(session.sessionData as any) : null
+    if (!session?.sessionData) {
+      lastSessionDataHashRef.current = null
+      return null
+    }
+    const hash = getFormDataHash(session.sessionData as any)
+    // Only update if hash actually changed (prevents unnecessary effect runs)
+    if (hash !== lastSessionDataHashRef.current) {
+      lastSessionDataHashRef.current = hash
+    }
+    return lastSessionDataHashRef.current
   }, [session?.sessionData, getFormDataHash])
   
   // Simple restoration: Read directly from session when it changes
@@ -152,11 +167,25 @@ export const ManualLayout: React.FC<ManualLayoutProps> = ({
     const currentFormData = useManualFormStore.getState().formData
     const currentFormDataHash = getFormDataHash(currentFormData)
     
+    // Track form data hash changes to detect when user is actively editing
+    const formDataChanged = currentFormDataHash !== restorationRef.current.lastFormDataHash
+    if (formDataChanged) {
+      restorationRef.current.lastFormDataHash = currentFormDataHash
+    }
+    
+    // Detect if form sync is happening: if session hash matches current form hash,
+    // it means the session was updated by form sync (not external source)
+    const formSyncDetected = sessionDataHash !== null && 
+                             sessionDataHash === currentFormDataHash
+    
     // Check if session data changed from external source (not from form sync)
-    // If session data hash matches current form data hash, it came from form sync → skip
+    // Skip restoration if:
+    // 1. Session hash matches current form hash (form sync case) - most important check
+    // 2. We've already seen this session hash (no actual change)
+    // Only restore if session hash changed AND doesn't match current form (external change)
     const sessionDataChanged = sessionDataHash !== null && 
                                sessionDataHash !== restorationRef.current.lastSeenSessionDataHash &&
-                               sessionDataHash !== currentFormDataHash // Don't restore if it matches current form (form sync case)
+                               !formSyncDetected // Don't restore if it matches current form (form sync case)
 
     // Only restore if reportId changed (new session) OR session data changed from external source
     if (!reportIdChanged && !sessionDataChanged) {
@@ -173,6 +202,7 @@ export const ManualLayout: React.FC<ManualLayoutProps> = ({
       restorationRef.current.lastRestoredFormDataHash = null
       restorationRef.current.lastRestoredResultId = null
       restorationRef.current.lastSeenSessionDataHash = null
+      restorationRef.current.lastFormDataHash = null
     }
 
     // Mark as restoring to prevent re-entry
