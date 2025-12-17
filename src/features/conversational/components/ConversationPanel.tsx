@@ -137,14 +137,27 @@ export const ConversationPanel: React.FC<ConversationPanelProps> = ({
     async (result: ValuationResponse) => {
       chatLogger.info('ConversationPanel: Valuation complete', {
         valuationId: result.valuation_id,
+        hasHtmlReport: !!result.html_report,
+        htmlReportLength: result.html_report?.length || 0,
+        hasInfoTabHtml: !!result.info_tab_html,
+        infoTabHtmlLength: result.info_tab_html?.length || 0,
       })
 
+      // ✅ FIX: Merge HTML reports from store if missing from result
+      // HTML reports might arrive via stream events before valuation_complete
+      const currentResult = useConversationalResultsStore.getState().result
+      const resultWithHtml = {
+        ...result,
+        html_report: result.html_report || currentResult?.html_report,
+        info_tab_html: result.info_tab_html || currentResult?.info_tab_html,
+      }
+
       // Update conversation context
-      actions.setValuationResult(result)
+      actions.setValuationResult(resultWithHtml)
       actions.setGenerating(false)
 
       // Sync to results store (same as manual flow)
-      setResult(result)
+      setResult(resultWithHtml)
 
       // CRITICAL: Save complete session atomically (using unified store)
       // Uses sessionService for consistency across flows
@@ -162,20 +175,20 @@ export const ConversationPanel: React.FC<ConversationPanelProps> = ({
           // - infoTabHtml: Info tab HTML
           await reportService.saveReportAssets(reportId, {
             sessionData: sessionData,  // ✅ NEW: Include collected data
-            valuationResult: result,
-            htmlReport: result.html_report || '',
-            infoTabHtml: result.info_tab_html || '',
+            valuationResult: resultWithHtml,
+            htmlReport: resultWithHtml.html_report || '',
+            infoTabHtml: resultWithHtml.info_tab_html || '',
           })
 
           chatLogger.info('[Conversational] Complete report package saved atomically', {
             reportId,
             hasSessionData: !!sessionData,
             sessionDataKeys: sessionData ? Object.keys(sessionData) : [],
-            hasResult: !!result,
-            hasHtmlReport: !!result.html_report,
-            htmlReportLength: result.html_report?.length || 0,
-            hasInfoTabHtml: !!result.info_tab_html,
-            infoTabHtmlLength: result.info_tab_html?.length || 0,
+            hasResult: !!resultWithHtml,
+            hasHtmlReport: !!resultWithHtml.html_report,
+            htmlReportLength: resultWithHtml.html_report?.length || 0,
+            hasInfoTabHtml: !!resultWithHtml.info_tab_html,
+            infoTabHtmlLength: resultWithHtml.info_tab_html?.length || 0,
           })
 
           sessionStore.markSaved()
