@@ -207,7 +207,7 @@ export const useFormSessionSync = ({ reportId, formData }: UseFormSessionSyncOpt
         // This ensures form fields are saved even if user refreshes before submitting
         try {
           const { saveSession } = useSessionStore.getState()
-          await saveSession()
+          await saveSession('autosave') // ✅ FIX: Mark as autosave (debounced form sync)
           generalLogger.debug('Synced form data to session and persisted to backend', {
             reportId: currentSession.reportId,
             fieldsUpdated: Object.keys(sessionUpdate).length,

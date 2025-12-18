@@ -147,7 +147,7 @@ export function useOptimisticAutosave(reportId: string, options: OptimisticAutos
           // Update session data and save
           const { updateSessionData, saveSession: save } = useSessionStore.getState()
           updateSessionData(changesToSave)
-          await save()
+          await save('autosave') // ✅ FIX: Mark as autosave (debounced optimistic save)
 
           if (!isMountedRef.current) return
 
@@ -317,7 +317,7 @@ export function useOptimisticAutosave(reportId: string, options: OptimisticAutos
       // Update and save session
       const { updateSessionData, saveSession: save } = useSessionStore.getState()
       updateSessionData(changesToSave)
-      await save()
+      await save('autosave') // ✅ FIX: Mark as autosave (force save from optimistic autosave)
 
       if (!isMountedRef.current) return
 

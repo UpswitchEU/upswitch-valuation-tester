@@ -96,18 +96,20 @@ export const CompanyNameInput: React.FC<CompanyNameInputProps> = ({
             // ✅ FIX: Automatically select exact match to show company summary card
             // This ensures the approval component appears when restoring a previously verified company
             // Only auto-select if we don't already have a selected company (avoid overwriting user selection)
+            // ✅ CRITICAL: Don't call onCompanySelect during auto-selection - only call it when user explicitly selects
+            // This prevents form updates that could interfere with typing
             if (match) {
               // Use a small delay to check current state, avoiding stale closure
               setTimeout(() => {
                 setSelectedCompany((current) => {
                   // Only set if not already set (preserves user selection)
                   if (!current) {
-                    generalLogger.debug('[CompanyNameInput] Auto-selected exact match', {
+                    generalLogger.debug('[CompanyNameInput] Auto-selected exact match (silent - no callback)', {
                       company_name: match.company_name,
                       registration_number: match.registration_number,
                     })
-                    // Trigger onCompanySelect callback if provided
-                    onCompanySelect?.(match)
+                    // ✅ FIX: Don't call onCompanySelect here - only call it when user explicitly selects
+                    // This prevents form updates during typing that could cause re-renders and focus loss
                     return match
                   }
                   return current
@@ -194,7 +196,18 @@ export const CompanyNameInput: React.FC<CompanyNameInputProps> = ({
     onChange(newValue)
     setShowSuggestions(true)
     setExactMatch(null) // Clear exact match until search completes
-    setSelectedCompany(null) // Clear selected company when typing
+    
+    // ✅ FIX: Only clear selected company if the new value doesn't match initialSelectedCompany
+    // This preserves restoration state when user is typing the same company name
+    if (initialSelectedCompany) {
+      const matchesInitial = newValue.toLowerCase().trim() === initialSelectedCompany.company_name.toLowerCase().trim()
+      if (!matchesInitial) {
+        setSelectedCompany(null) // Clear selected company only if value changed significantly
+      }
+    } else {
+      setSelectedCompany(null) // Clear selected company when typing (no initial company)
+    }
+    
     setHighlightedIndex(-1) // Reset highlight when typing
   }
 

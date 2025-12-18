@@ -102,6 +102,40 @@ export const ManualLayout: React.FC<ManualLayoutProps> = ({
   // We only need updateFormData inside the restoration effect, accessed via getState()
   const { showToast } = useToast()
 
+  // ✅ NEW: Track unsaved changes to determine if toast should show
+  const hasUnsavedChanges = useSessionStore((state) => state.hasUnsavedChanges)
+  // ✅ FIX: Use a ref to track the last known unsaved changes state
+  // This is updated reactively, and the callback reads it when invoked
+  const lastUnsavedChangesRef = useRef<boolean>(false)
+
+  // ✅ NEW: Update ref when hasUnsavedChanges changes
+  // This ensures we always have the latest state when the callback is invoked
+  useEffect(() => {
+    lastUnsavedChangesRef.current = hasUnsavedChanges
+  }, [hasUnsavedChanges])
+
+  // ✅ NEW: Set up save success callback to show toast only when actual saves happen
+  useEffect(() => {
+    // Set up callback that will be called when saveSession completes
+    // The callback reads the ref value when invoked, ensuring we have the state from before the save
+    useSessionStore.setState({
+      onSaveSuccess: () => {
+        // ✅ FIX: Read ref value when callback is invoked
+        // Since we update the ref reactively, this captures the state from before save started
+        // (The saveSession function sets hasUnsavedChanges to false AFTER save completes,
+        // so the ref will still have the "before save" value when callback is invoked)
+        if (lastUnsavedChangesRef.current) {
+          showToast('Valuation saved successfully', 'success', 3000)
+        }
+      },
+    })
+
+    return () => {
+      // Clean up callback on unmount
+      useSessionStore.setState({ onSaveSuccess: undefined })
+    }
+  }, [showToast])
+
   // Track restoration to prevent loops
   const restorationRef = useRef<{
     lastRestoredReportId: string | null
@@ -868,21 +902,6 @@ export const ManualLayout: React.FC<ManualLayoutProps> = ({
       onComplete(result)
     }
   }, [result, onComplete])
-
-  // Simplified save toast: Subscribe to unified store
-  useEffect(() => {
-    let lastSavedTime: Date | null = null
-
-    const unsubscribe = useSessionStore.subscribe((state) => {
-      // Show toast when save completes
-      if (state.lastSaved && state.lastSaved !== lastSavedTime && !state.isSaving) {
-        lastSavedTime = state.lastSaved
-        showToast('Valuation saved successfully', 'success', 3000)
-      }
-    })
-
-    return unsubscribe
-  }, [showToast])
 
   // ✅ FIX: Get company name from formData (current input) or result (after calculation)
   // This ensures valuation name updates as user types company name

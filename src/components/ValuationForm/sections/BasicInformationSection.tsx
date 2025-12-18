@@ -181,9 +181,9 @@ export const BasicInformationSection: React.FC<BasicInformationSectionProps> = (
 
         {/* Company Name with KBO Registry Check */}
         {/* MOVED AFTER BUSINESS TYPE: Enables context-aware KBO validation */}
-        {/* ✅ FIX: Add key prop to force re-render when company_name changes (ensures KBO search triggers on restoration) */}
+        {/* ✅ FIX: Removed key prop that was causing input to lose focus on every keystroke */}
+        {/* Component handles restoration via initialSelectedCompany and value props */}
         <CompanyNameInput
-          key={`company-name-${formData.company_name || 'empty'}`}
           label="Company Name"
           type="text"
           name="company_name"

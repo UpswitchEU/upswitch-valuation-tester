@@ -30,6 +30,9 @@ interface SessionStore {
   lastSaved: Date | null
   hasUnsavedChanges: boolean
 
+  // ✅ NEW: Callback for save success notifications
+  onSaveSuccess?: () => void
+
   // Actions
   loadSession: (
     reportId: string,
@@ -38,7 +41,7 @@ interface SessionStore {
   ) => Promise<void>
   updateSession: (updates: Partial<ValuationSession>) => void
   updateSessionData: (data: Partial<any>) => Promise<void> // Async for hook compatibility
-  saveSession: () => Promise<void>
+  saveSession: (reason?: 'user' | 'autosave' | 'system') => Promise<void>
   clearSession: () => void
 
   // Helpers
@@ -58,6 +61,7 @@ const loadingPromises = new Map<string, Promise<void>>()
  */
 export const useSessionStore = create<SessionStore>((set, get) => ({
   // Initial state
+  onSaveSuccess: undefined,
   session: null,
   isLoading: false,
   error: null,
@@ -287,8 +291,9 @@ export const useSessionStore = create<SessionStore>((set, get) => ({
 
   /**
    * Save session to backend
+   * @param reason - Reason for save: 'user' (explicit user action), 'autosave' (debounced form sync), 'system' (restoration/system-triggered)
    */
-  saveSession: async () => {
+  saveSession: async (reason: 'user' | 'autosave' | 'system' = 'autosave') => {
     const state = get()
 
     if (!state.session) {
@@ -296,25 +301,43 @@ export const useSessionStore = create<SessionStore>((set, get) => ({
       return
     }
 
+    // ✅ FIX: Capture hasUnsavedChanges BEFORE save starts (for toast callback)
+    // This ensures we know if there were actual changes, even if state changes during save
+    const hadUnsavedChangesBeforeSave = state.hasUnsavedChanges
+
     set({ isSaving: true, error: null })
 
     try {
       storeLogger.info('[Session] Saving session', {
         reportId: state.session.reportId,
+        reason,
+        hadUnsavedChanges: hadUnsavedChangesBeforeSave,
       })
 
       // Save via SessionService
       await sessionService.saveSession(state.session.reportId, state.session.sessionData || {})
 
+      storeLogger.info('[Session] Session saved successfully', {
+        reportId: state.session.reportId,
+        reason,
+        hadUnsavedChanges: hadUnsavedChangesBeforeSave,
+      })
+
+      // ✅ NEW: Trigger save success callback BEFORE updating hasUnsavedChanges
+      // This ensures the callback can read the ref value that still reflects "before save" state
+      // The callback reads the ref, which is updated reactively, so it will have the correct value
+      if (reason !== 'system' && state.onSaveSuccess) {
+        // Call callback - it will read the ref value which should still be true if there were changes
+        state.onSaveSuccess()
+      }
+
+      // ✅ FIX: Update state AFTER callback is invoked
+      // This ensures the ref still has the "before save" value when callback reads it
       set({
         isSaving: false,
         hasUnsavedChanges: false,
         lastSaved: new Date(),
         error: null,
-      })
-
-      storeLogger.info('[Session] Session saved successfully', {
-        reportId: state.session.reportId,
       })
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Failed to save session'
@@ -322,6 +345,7 @@ export const useSessionStore = create<SessionStore>((set, get) => ({
       storeLogger.error('[Session] Save failed', {
         reportId: state.session.reportId,
         error: message,
+        reason,
       })
 
       set({

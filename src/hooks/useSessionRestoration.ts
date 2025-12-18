@@ -151,8 +151,28 @@ export function useSessionRestoration() {
         restoredInfoTabHtml: !!sessionData?.info_tab_html,
       })
 
-      // Show success toast
-      showToast('Report loaded successfully', 'success', 3000)
+      // ✅ FIX: Only show toast if we actually restored meaningful data (not a new empty report)
+      // Check for actual user-entered data or valuation results
+      const hasRestoredData =
+        sessionData &&
+        typeof sessionData === 'object' &&
+        Object.keys(sessionData).length > 0 &&
+        (sessionData.company_name ||
+          sessionData.revenue ||
+          sessionData.ebitda ||
+          sessionData.current_year_data?.revenue ||
+          sessionData.current_year_data?.ebitda ||
+          sessionData.valuation_result ||
+          sessionData.html_report ||
+          sessionData.info_tab_html)
+
+      if (hasRestoredData) {
+        showToast('Report loaded successfully', 'success', 3000)
+      } else {
+        generalLogger.debug('Skipping load toast - no meaningful data restored (new report)', {
+          reportId,
+        })
+      }
     } catch (error) {
       generalLogger.error('Session restoration failed', {
         error: error instanceof Error ? error.message : String(error),
