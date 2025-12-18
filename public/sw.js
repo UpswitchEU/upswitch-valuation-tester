@@ -13,7 +13,7 @@
  */
 
 // Version tracking for debugging (increment on each deploy)
-const SW_VERSION = '1.0.5'
+const SW_VERSION = '1.0.6'
 const CACHE_NAME = `upswitch-valuation-v${SW_VERSION}`
 const RUNTIME_CACHE = `upswitch-runtime-v${SW_VERSION}`
 
@@ -90,18 +90,40 @@ self.addEventListener('activate', (event) => {
   console.log('[ServiceWorker] Activate event')
 
   event.waitUntil(
-    caches.keys().then((cacheNames) => {
-      return Promise.all(
-        cacheNames.map((cacheName) => {
-          // Keep only current version caches
-          // Delete old versioned caches (e.g., upswitch-valuation-v1.0.1 when current is v1.0.2)
-          if (cacheName !== CACHE_NAME && cacheName !== RUNTIME_CACHE) {
-            console.log('[ServiceWorker] Deleting old cache:', cacheName, 'Current:', CACHE_NAME)
-            return caches.delete(cacheName)
+    Promise.all([
+      // Clean up old versioned caches
+      caches.keys().then((cacheNames) => {
+        return Promise.all(
+          cacheNames.map((cacheName) => {
+            // Keep only current version caches
+            // Delete old versioned caches (e.g., upswitch-valuation-v1.0.1 when current is v1.0.2)
+            if (cacheName !== CACHE_NAME && cacheName !== RUNTIME_CACHE) {
+              console.log('[ServiceWorker] Deleting old cache:', cacheName, 'Current:', CACHE_NAME)
+              return caches.delete(cacheName)
+            }
+          })
+        )
+      }),
+      // ✅ FIX: Clean up any cached 404 responses from runtime cache
+      caches.open(RUNTIME_CACHE).then(async (cache) => {
+        const requests = await cache.keys()
+        const deletePromises = []
+        for (const request of requests) {
+          const response = await cache.match(request)
+          if (response && response.status !== 200) {
+            console.log('[ServiceWorker] Removing cached non-200 response:', request.url, response.status)
+            deletePromises.push(cache.delete(request))
           }
-        })
-      )
-    })
+        }
+        if (deletePromises.length > 0) {
+          await Promise.all(deletePromises)
+          console.log(`[ServiceWorker] Cleaned up ${deletePromises.length} non-200 cached responses`)
+        }
+      }).catch((error) => {
+        // Cache might not exist yet, ignore error
+        console.debug('[ServiceWorker] Runtime cache cleanup skipped:', error.message)
+      })
+    ])
   )
 
   // Take control of all clients immediately
@@ -185,20 +207,36 @@ self.addEventListener('fetch', (event) => {
             debugLog(`[ServiceWorker v${SW_VERSION}] Fetch finished loading:`, request.method, JSON.stringify(url))
             return response
           } else {
-            // If network fails, try cache
+            // ✅ FIX: For Next.js chunks, if network returns 404, don't try cache - let browser handle it
+            // This prevents serving stale/broken chunks that don't exist anymore
+            if (url.includes('/_next/static/chunks/')) {
+              console.warn(`[ServiceWorker v${SW_VERSION}] Chunk not found (404), bypassing cache:`, url)
+              return response // Return 404 directly, don't try cache
+            }
+            
+            // For other assets, try cache (but don't serve 404s from cache)
             console.warn(`[ServiceWorker v${SW_VERSION}] Network returned ${response.status}, trying cache:`, url)
             const cachedResponse = await caches.match(request)
-            if (cachedResponse) {
+            // ✅ FIX: Don't serve cached 404 responses - they break the app
+            if (cachedResponse && cachedResponse.status === 200) {
               debugLog(`[ServiceWorker v${SW_VERSION}] Serving from cache (fallback):`, url)
               return cachedResponse
             }
+            // If cached response is 404 or doesn't exist, return the network response
             return response
           }
         } catch (error) {
-          // Network failed, try cache
+          // ✅ FIX: For Next.js chunks, if network fails, don't try cache - let browser handle it
+          if (url.includes('/_next/static/chunks/')) {
+            console.warn(`[ServiceWorker v${SW_VERSION}] Chunk fetch failed, bypassing cache:`, url, error.message)
+            throw error // Let browser handle the error
+          }
+          
+          // Network failed, try cache (but don't serve 404s from cache)
           console.warn(`[ServiceWorker v${SW_VERSION}] Network failed, trying cache:`, url, error.message)
           const cachedResponse = await caches.match(request)
-          if (cachedResponse) {
+          // ✅ FIX: Don't serve cached 404 responses - they break the app
+          if (cachedResponse && cachedResponse.status === 200) {
             debugLog(`[ServiceWorker v${SW_VERSION}] Serving from cache (fallback):`, url)
             return cachedResponse
           }
@@ -207,7 +245,8 @@ self.addEventListener('fetch', (event) => {
       } else {
         // Cache-first strategy for static assets
         const cachedResponse = await caches.match(request)
-        if (cachedResponse) {
+        // ✅ FIX: Don't serve cached 404 responses - they break the app
+        if (cachedResponse && cachedResponse.status === 200) {
           debugLog(`[ServiceWorker v${SW_VERSION}] Serving from cache:`, url)
           return cachedResponse
         }
