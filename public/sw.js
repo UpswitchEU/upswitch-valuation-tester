@@ -193,6 +193,15 @@ self.addEventListener('fetch', (event) => {
   }
 
   const url = request.url
+  
+  // ✅ FIX: Completely bypass service worker for Next.js chunks
+  // This prevents service worker from interfering with missing chunks
+  // Let the browser handle chunks directly - it will show proper errors
+  if (url.includes('/_next/static/chunks/') && url.includes('?dpl=')) {
+    // Don't intercept - let browser handle it naturally
+    return
+  }
+  
   const useNetworkFirst = shouldUseNetworkFirst(url)
 
   event.respondWith(
