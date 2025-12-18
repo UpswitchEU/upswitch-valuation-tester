@@ -144,9 +144,9 @@ export const ValuationToolbar: React.FC<ValuationToolbarProps> = ({
   const handleRetrySave = async () => {
     if (!syncError || !reportId) return
 
-    // Trigger save using unified store
+    // Trigger save using unified store with 'user' reason to show toast
     const { saveSession: save } = useSessionStore.getState()
-    await save()
+    await save('user')
   }
 
   // Use focused hooks for business logic

@@ -10,6 +10,8 @@
 import React, { Suspense, useEffect, useRef } from 'react'
 import { AssetInspector } from '../../../components/debug/AssetInspector'
 import { FullScreenModal } from '../../../components/FullScreenModal'
+import { LoadingState } from '../../../components/LoadingState'
+import { INITIALIZATION_STEPS } from '../../../components/LoadingState.constants'
 import { ResizableDivider } from '../../../components/ResizableDivider'
 import { InputFieldsSkeleton } from '../../../components/skeletons'
 import { ValuationForm } from '../../../components/ValuationForm'
@@ -102,6 +104,38 @@ export const ManualLayout: React.FC<ManualLayoutProps> = ({
   // We only need updateFormData inside the restoration effect, accessed via getState()
   const { showToast } = useToast()
 
+  // ✅ CRITICAL: Loading guards - prevent rendering until session is ready
+  const isLoading = useSessionStore((state) => state.isLoading)
+  const isInitializing = useSessionStore((state) => state.isInitializing)
+  const session = useSessionStore((state) => state.session)
+  const sessionError = useSessionStore((state) => state.error)
+
+  // ✅ FIX: Show loading state until session is loaded and initialized
+  // This prevents the glitch where forms show before data is ready
+  if (isLoading || isInitializing || !session || session.reportId !== reportId) {
+    return <LoadingState steps={INITIALIZATION_STEPS} variant="dark" />
+  }
+
+  // ✅ FIX: Show error state if session failed to load
+  if (sessionError) {
+    return (
+      <div className="flex items-center justify-center h-full min-h-[400px]">
+        <div className="max-w-md mx-auto text-center">
+          <div className="bg-rust-500/20 border border-rust-500/30 rounded-lg p-6">
+            <h3 className="text-lg font-semibold text-rust-400 mb-2">Session Error</h3>
+            <p className="text-rust-300 mb-6">{sessionError}</p>
+            <button
+              onClick={() => window.location.reload()}
+              className="px-6 py-2.5 bg-rust-600 hover:bg-rust-700 text-white rounded-lg transition-colors font-medium"
+            >
+              Reload Page
+            </button>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
   // ✅ NEW: Track unsaved changes to determine if toast should show
   const hasUnsavedChanges = useSessionStore((state) => state.hasUnsavedChanges)
   // ✅ FIX: Use a ref to track the last known unsaved changes state
@@ -116,8 +150,7 @@ export const ManualLayout: React.FC<ManualLayoutProps> = ({
 
   // ✅ NEW: Set up save success callback to show toast only when actual saves happen
   useEffect(() => {
-    // Set up callback that will be called when saveSession completes
-    // The callback reads the ref value when invoked, ensuring we have the state from before the save
+    // Set up callback that will be called when saveSession completes (for 'user' saves only)
     useSessionStore.setState({
       onSaveSuccess: () => {
         // ✅ FIX: Check if we're still initializing (prevents toasts during auto-fill/setup)
@@ -135,11 +168,24 @@ export const ManualLayout: React.FC<ManualLayoutProps> = ({
           showToast('Valuation saved successfully', 'success', 3000)
         }
       },
+      // ✅ NEW: Set up asset save success callback (when valuation assets are saved after CTA click)
+      onAssetSaveSuccess: () => {
+        // ✅ FIX: Check if we're still initializing (prevents toasts during auto-fill/setup)
+        const isInitializing = useSessionStore.getState().isInitializing
+        if (isInitializing) {
+          return
+        }
+        // Show toast when valuation assets are saved (after calculation completes)
+        showToast('Valuation saved successfully', 'success', 3000)
+      },
     })
 
     return () => {
-      // Clean up callback on unmount
-      useSessionStore.setState({ onSaveSuccess: undefined })
+      // Clean up callbacks on unmount
+      useSessionStore.setState({ 
+        onSaveSuccess: undefined,
+        onAssetSaveSuccess: undefined,
+      })
     }
   }, [showToast])
 

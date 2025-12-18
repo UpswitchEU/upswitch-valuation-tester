@@ -174,6 +174,21 @@ export class ReportService {
         timestamp: new Date().toISOString(),
       })
 
+      // ✅ NEW: Trigger asset save success callback (for toast notification)
+      try {
+        const { useSessionStore } = await import('../../store/useSessionStore')
+        const state = useSessionStore.getState()
+        if (state.onAssetSaveSuccess) {
+          state.onAssetSaveSuccess()
+        }
+      } catch (callbackError) {
+        // Don't fail the save if callback fails
+        logger.warn('[ReportService] Failed to trigger asset save success callback', {
+          reportId,
+          error: callbackError instanceof Error ? callbackError.message : String(callbackError),
+        })
+      }
+
       // ✅ CRITICAL: Update cache with fresh data (Cursor/ChatGPT pattern)
       // This ensures page refresh loads complete valuation instantly
       try {

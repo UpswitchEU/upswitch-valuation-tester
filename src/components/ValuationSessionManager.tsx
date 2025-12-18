@@ -56,6 +56,7 @@ export const ValuationSessionManager: React.FC<ValuationSessionManagerProps> = R
     // ROOT CAUSE FIX: Subscribe to specific values, not entire store
     // This component needs session for stage detection, but we can optimize
     const isLoading = useSessionStore((state) => state.isLoading)
+    const isInitializing = useSessionStore((state) => state.isInitializing)
     const error = useSessionStore((state) => state.error)
     const loadSession = useSessionStore((state) => state.loadSession)
     const clearSession = useSessionStore((state) => state.clearSession)
@@ -69,10 +70,9 @@ export const ValuationSessionManager: React.FC<ValuationSessionManagerProps> = R
     const flowParam = searchParams?.get('flow') as 'manual' | 'conversational' | null
     const detectedFlow = flowParam || 'manual'
 
-    // ✅ FIX: Simplified stage calculation to prevent render loops
-    // Show loading only when actively loading AND no session yet
-    // Session validation happens in render logic, not here
-    const stage: Stage = isLoading && !session ? 'loading' : 'data-entry'
+    // ✅ FIX: Show loading until session is loaded AND initialized
+    // This prevents the glitch where forms show before data is ready
+    const stage: Stage = (isLoading || isInitializing || !session || session.reportId !== reportId) ? 'loading' : 'data-entry'
 
     // ✅ FIX: Load session when reportId changes (promise cache prevents duplicates)
     // Add cleanup to prevent state updates after unmount

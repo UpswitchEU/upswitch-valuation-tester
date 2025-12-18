@@ -11,8 +11,8 @@
 
 // Dynamic imports using React.lazy for code splitting (Next.js compatible)
 import React, { lazy, Suspense, useEffect, useMemo } from 'react'
+import { useSessionStore } from '../store/useSessionStore'
 import type { ValuationResponse, ValuationSession } from '../types/valuation'
-import { generalLogger } from '../utils/logger'
 import { LoadingState } from './LoadingState'
 import { INITIALIZATION_STEPS } from './LoadingState.constants'
 
@@ -209,19 +209,11 @@ export const ValuationFlowSelector: React.FC<ValuationFlowSelectorProps> = React
     }
 
     if (stage === 'data-entry') {
-      // ✅ FIX: Simplified loading check - only show loading during initial load
-      // The stage calculation already handles most cases, this is a final safety check
-      if (isLoading && !session) {
-        return <LoadingState steps={INITIALIZATION_STEPS} variant="dark" />
-      }
-
-      // ✅ FIX: Validate session matches reportId before rendering
-      // This prevents rendering stale session data from previous reports
-      if (session && session.reportId !== reportId) {
-        generalLogger.warn('[ValuationFlowSelector] Session mismatch detected, showing loading', {
-          sessionReportId: session.reportId,
-          currentReportId: reportId,
-        })
+      // ✅ FIX: Additional safety checks - ensure session is fully ready
+      // The stage calculation should handle this, but this is a final guard
+      // Check both isLoading and isInitializing to prevent premature rendering
+      const isInitializing = useSessionStore.getState().isInitializing
+      if (isLoading || isInitializing || !session || session.reportId !== reportId) {
         return <LoadingState steps={INITIALIZATION_STEPS} variant="dark" />
       }
 

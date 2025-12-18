@@ -35,6 +35,8 @@ interface SessionStore {
 
   // ✅ NEW: Callback for save success notifications
   onSaveSuccess?: () => void
+  // ✅ NEW: Callback for asset save success notifications (when valuation assets are saved)
+  onAssetSaveSuccess?: () => void
 
   // Actions
   loadSession: (
@@ -66,6 +68,7 @@ const loadingPromises = new Map<string, Promise<void>>()
 export const useSessionStore = create<SessionStore>((set, get) => ({
   // Initial state
   onSaveSuccess: undefined,
+  onAssetSaveSuccess: undefined,
   session: null,
   isLoading: false,
   error: null,
@@ -195,6 +198,8 @@ export const useSessionStore = create<SessionStore>((set, get) => ({
           hasUnsavedChanges: false,
           lastSaved: session.updatedAt || null, // Only set if user explicitly saved
           isSaving: false,
+          // ✅ FIX: Keep isInitializing true - will be set to false by completeInitialization after restoration
+          // This ensures forms don't render until restoration completes
         })
 
         storeLogger.info('[Session] Session loaded successfully', {
@@ -206,6 +211,17 @@ export const useSessionStore = create<SessionStore>((set, get) => ({
           hasValuationResult: !!session.valuationResult,
           markedAsSaved: true,
         })
+
+        // ✅ FIX: Fallback - set isInitializing to false after delay if restoration doesn't complete it
+        // This ensures initialization completes even if restoration doesn't run
+        setTimeout(() => {
+          const currentState = get()
+          // Only set to false if still initializing and session matches (prevents race conditions)
+          if (currentState.isInitializing && currentState.session?.reportId === expectedReportId) {
+            set({ isInitializing: false })
+            storeLogger.debug('[Session] Initialization complete (fallback timeout)', { reportId: expectedReportId })
+          }
+        }, 2000) // 2 second fallback - restoration should complete faster
       } catch (error) {
         const message = error instanceof Error ? error.message : 'Failed to load session'
 
@@ -406,10 +422,9 @@ export const useSessionStore = create<SessionStore>((set, get) => ({
         hadUnsavedChanges: hadUnsavedChangesBeforeSave,
       })
 
-      // ✅ NEW: Trigger save success callback BEFORE updating hasUnsavedChanges
-      // This ensures the callback can read the ref value that still reflects "before save" state
-      // The callback reads the ref, which is updated reactively, so it will have the correct value
-      if (reason !== 'system' && state.onSaveSuccess) {
+      // ✅ FIX: Only trigger callback for 'user' saves (manual CTA clicks), not 'autosave' (form syncs)
+      // This ensures toast only shows when user explicitly saves, not during form interactions
+      if (reason === 'user' && state.onSaveSuccess) {
         // Call callback - it will read the ref value which should still be true if there were changes
         state.onSaveSuccess()
       }
