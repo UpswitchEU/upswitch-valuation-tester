@@ -121,7 +121,7 @@ export class SessionCacheManager {
           this.cleanExpired()
           // Retry with reduced data - wrap in try-catch to handle persistent failures
           try {
-            localStorage.setItem(key, JSON.stringify(cached))
+      localStorage.setItem(key, JSON.stringify(cached))
             cacheLogger.info('Cache retry successful after cleanup', { reportId })
           } catch (retryError: any) {
             // If retry still fails, the session might be too large even after cleanup
@@ -220,12 +220,12 @@ export class SessionCacheManager {
       // This prevents stale "empty session" caches from before valuation completion
       const hasValuationResult = !!sanitized.valuationResult
       const cacheAge_minutes = Math.floor((Date.now() - parsed.cachedAt) / (60 * 1000))
-
+      
       // Note: HTML reports are not cached (too large), so we don't check for them here
       // They will be fetched from backend when needed
       if (!hasValuationResult && cacheAge_minutes > 10) {
         cacheLogger.info('Invalidating incomplete stale cache (no valuation result)', {
-          reportId,
+          reportId, 
           cacheAge_minutes,
           hasValuationResult,
         })

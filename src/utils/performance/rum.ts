@@ -580,16 +580,16 @@ function getRUMManager(): RUMManager {
   // Lazy initialize on client side
   if (!rumManagerInstance) {
     rumManagerInstance = new RUMManager({
-      debug: process.env.NODE_ENV === 'development',
-      onWebVitalsMetric: (metric) => {
-        // Send to analytics service (e.g., Google Analytics, Datadog)
-        // analytics.track('web_vitals', { ...metric })
-      },
-      onCustomMetric: (metric) => {
-        // Send to analytics service
-        // analytics.track('custom_metric', { ...metric })
-      },
-    })
+  debug: process.env.NODE_ENV === 'development',
+  onWebVitalsMetric: (metric) => {
+    // Send to analytics service (e.g., Google Analytics, Datadog)
+    // analytics.track('web_vitals', { ...metric })
+  },
+  onCustomMetric: (metric) => {
+    // Send to analytics service
+    // analytics.track('custom_metric', { ...metric })
+  },
+})
   }
   
   return rumManagerInstance

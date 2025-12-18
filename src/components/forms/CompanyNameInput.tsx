@@ -130,6 +130,14 @@ export const CompanyNameInput: React.FC<CompanyNameInputProps> = ({
   // Trigger search when value changes
   useEffect(() => {
     if (value) {
+      // ✅ FIX: Don't search if company is already selected (prevents redundant API calls)
+      // Only skip if the current value matches the selected company name
+      if (selectedCompany && value.toLowerCase().trim() === selectedCompany.company_name.toLowerCase().trim()) {
+        generalLogger.debug('[CompanyNameInput] Skipping search - company already selected', {
+          company_name: selectedCompany.company_name,
+        })
+        return
+      }
       performSearch(value, countryCode)
     } else {
       setSearchResults([])
@@ -141,7 +149,7 @@ export const CompanyNameInput: React.FC<CompanyNameInputProps> = ({
       setShowSuggestions(false)
       setHighlightedIndex(-1)
     }
-  }, [value, countryCode, performSearch, initialSelectedCompany])
+  }, [value, countryCode, performSearch, initialSelectedCompany, selectedCompany])
 
   // ✅ FIX: When search completes and we have a value, check if it matches initialSelectedCompany
   // This ensures the company summary card shows when restoring a previously verified company
@@ -172,15 +180,20 @@ export const CompanyNameInput: React.FC<CompanyNameInputProps> = ({
     setShowSuggestions(true)
     setExactMatch(null) // Clear exact match until search completes
     
-    // ✅ FIX: Only clear selected company if the new value doesn't match initialSelectedCompany
-    // This preserves restoration state when user is typing the same company name
-    if (initialSelectedCompany) {
+    // ✅ FIX: Clear selected company if user types something different
+    // Check against both selectedCompany and initialSelectedCompany to preserve correct state
+    if (selectedCompany) {
+      const matchesSelected = newValue.toLowerCase().trim() === selectedCompany.company_name.toLowerCase().trim()
+      if (!matchesSelected) {
+        setSelectedCompany(null) // User is changing the selection
+        generalLogger.debug('[CompanyNameInput] Clearing selection - user typing different value')
+      }
+    } else if (initialSelectedCompany) {
       const matchesInitial = newValue.toLowerCase().trim() === initialSelectedCompany.company_name.toLowerCase().trim()
       if (!matchesInitial) {
-        setSelectedCompany(null) // Clear selected company only if value changed significantly
+        // User is typing something different from restored company
+        generalLogger.debug('[CompanyNameInput] User typing different value from restored company')
       }
-    } else {
-      setSelectedCompany(null) // Clear selected company when typing (no initial company)
     }
     
     setHighlightedIndex(-1) // Reset highlight when typing
@@ -206,15 +219,19 @@ export const CompanyNameInput: React.FC<CompanyNameInputProps> = ({
 
   // Handle blur - auto-select exact match if user finished typing
   const handleBlur = useCallback(() => {
-    // If there's an exact match and user hasn't selected anything yet, auto-select it
-    if (exactMatch && !selectedCompany) {
-      generalLogger.info('[CompanyNameInput] Auto-selecting exact match on blur', {
-        company_name: exactMatch.company_name,
-      })
-      setSelectedCompany(exactMatch)
-      onCompanySelect?.(exactMatch)
-      setShowSuggestions(false)
-    } else if (!selectedCompany && searchResults.length === 0 && value) {
+    // ✅ FIX: Use value comparison to avoid race conditions with state updates
+    // Check if current value matches exact match to ensure we're not working with stale state
+    if (exactMatch && value.toLowerCase().trim() === exactMatch.company_name.toLowerCase().trim()) {
+      // Only select if not already selected (check by comparing names)
+      if (!selectedCompany || selectedCompany.company_name !== exactMatch.company_name) {
+        generalLogger.info('[CompanyNameInput] Auto-selecting exact match on blur', {
+          company_name: exactMatch.company_name,
+        })
+        setSelectedCompany(exactMatch)
+        onCompanySelect?.(exactMatch)
+        setShowSuggestions(false)
+      }
+    } else if (searchResults.length === 0 && value) {
       // No match found, hide dropdown
       setShowSuggestions(false)
     }

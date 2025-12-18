@@ -38,7 +38,7 @@ export const useValuationToolbarName = (
   options: UseValuationToolbarNameOptions = {}
 ): UseValuationToolbarNameReturn => {
   const { initialName = 'Valuation test123', companyName, reportId } = options
-
+  
   // ROOT CAUSE FIX: Only subscribe to reportId, not entire session object
   const sessionReportId = useSessionStore((state) => state.session?.reportId)
   const actualReportId = reportId || sessionReportId

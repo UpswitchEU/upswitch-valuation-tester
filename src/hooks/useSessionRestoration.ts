@@ -171,7 +171,7 @@ export function useSessionRestoration() {
 
       if (hasRestoredData && !isInitializing) {
         // Only show toast if there's actual data AND we're not in initialization phase
-        showToast('Report loaded successfully', 'success', 3000)
+      showToast('Report loaded successfully', 'success', 3000)
       } else {
         generalLogger.debug('Skipping load toast', {
           reportId,
