@@ -64,10 +64,11 @@ export const CompanyNameInput: React.FC<CompanyNameInputProps> = ({
     // Create debounced function once
     if (!performSearchRef.current) {
       performSearchRef.current = debounce(async (query: string, country: string) => {
-        if (!query || query.trim().length < 2) {
+        if (!query || query.trim().length < 3) {
           setSearchResults([])
           setExactMatch(null)
           setIsLoading(false)
+          setShowSuggestions(false)
           return
         }
 
@@ -87,49 +88,19 @@ export const CompanyNameInput: React.FC<CompanyNameInputProps> = ({
             const results = response.results
             setSearchResults(results)
 
-            // Check for exact match (case-insensitive)
+            // Check for exact match (for highlighting/display only)
             const match = results.find(
               (r) => r.company_name.toLowerCase() === query.trim().toLowerCase()
             )
             setExactMatch(match || null)
 
-            // ✅ FIX: Automatically accept exact match - select and save KBO data
-            // This ensures the confirmation box appears and data is saved when user types exact company name
-            // Only auto-select if we don't already have a selected company (avoid overwriting user selection)
-            if (match) {
-              // Use a small delay to check current state, avoiding stale closure
-              setTimeout(() => {
-                setSelectedCompany((current) => {
-                  // Only set if not already set (preserves user selection)
-                  if (!current) {
-                    generalLogger.info('[CompanyNameInput] Auto-selected exact match - saving KBO data', {
-                      company_name: match.company_name,
-                      registration_number: match.registration_number,
-                    })
-                    // ✅ FIX: Call onCompanySelect to save KBO data (focus loss issue is now fixed)
-                    // This saves registration data to business_context so restoration works
-                    onCompanySelect?.(match)
-                    return match
-                  }
-                  return current
-                })
-              }, 0)
-            }
-
-            // ✅ FIX: Only show suggestions dropdown if NO exact match found
-            // If exact match exists, hide dropdown (user already accepted the company)
-            if (match) {
-              setShowSuggestions(false)
-              generalLogger.debug('KBO exact match found - hiding dropdown', {
-                query,
-                company_name: match.company_name,
-              })
-            } else if (results.length > 0) {
-              // Show dropdown only when there's no exact match
+            // Show dropdown with results (including exact match)
+            if (results.length > 0) {
               setShowSuggestions(true)
               generalLogger.debug('KBO suggestions ready - showing dropdown', {
                 count: results.length,
                 query,
+                has_exact_match: !!match,
               })
             }
           } else {
@@ -148,7 +119,7 @@ export const CompanyNameInput: React.FC<CompanyNameInputProps> = ({
         } finally {
           setIsLoading(false)
         }
-      }, 500)
+      }, 800) // Increased from 500ms to reduce rate limit errors
     }
   }, [])
 
@@ -233,9 +204,46 @@ export const CompanyNameInput: React.FC<CompanyNameInputProps> = ({
     [onChange, onCompanySelect]
   )
 
+  // Handle blur - auto-select exact match if user finished typing
+  const handleBlur = useCallback(() => {
+    // If there's an exact match and user hasn't selected anything yet, auto-select it
+    if (exactMatch && !selectedCompany) {
+      generalLogger.info('[CompanyNameInput] Auto-selecting exact match on blur', {
+        company_name: exactMatch.company_name,
+      })
+      setSelectedCompany(exactMatch)
+      onCompanySelect?.(exactMatch)
+      setShowSuggestions(false)
+    } else if (!selectedCompany && searchResults.length === 0 && value) {
+      // No match found, hide dropdown
+      setShowSuggestions(false)
+    }
+  }, [exactMatch, selectedCompany, onCompanySelect, searchResults, value])
+
   // Handle keyboard navigation
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLInputElement>) => {
+      // Handle Enter key
+      if (e.key === 'Enter') {
+        e.preventDefault()
+        
+        // If dropdown is showing and item is highlighted, select it
+        if (showSuggestions && highlightedIndex >= 0 && highlightedIndex < searchResults.length) {
+          handleSelectCompany(searchResults[highlightedIndex])
+          return
+        }
+        
+        // If there's an exact match, select it
+        if (exactMatch && !selectedCompany) {
+          handleSelectCompany(exactMatch)
+          return
+        }
+        
+        // Otherwise, just close dropdown
+        setShowSuggestions(false)
+        return
+      }
+
       if (!showSuggestions || searchResults.length === 0) {
         if (e.key === 'ArrowDown' && searchResults.length > 0) {
           setShowSuggestions(true)
@@ -256,12 +264,6 @@ export const CompanyNameInput: React.FC<CompanyNameInputProps> = ({
           e.preventDefault()
           setHighlightedIndex((prev) => (prev - 1 + totalItems) % totalItems)
           break
-        case 'Enter':
-          e.preventDefault()
-          if (highlightedIndex >= 0 && highlightedIndex < totalItems) {
-            handleSelectCompany(searchResults[highlightedIndex])
-          }
-          break
         case 'Escape':
           e.preventDefault()
           setShowSuggestions(false)
@@ -270,7 +272,7 @@ export const CompanyNameInput: React.FC<CompanyNameInputProps> = ({
           break
       }
     },
-    [showSuggestions, searchResults, highlightedIndex, handleSelectCompany]
+    [showSuggestions, searchResults, highlightedIndex, exactMatch, selectedCompany, handleSelectCompany]
   )
 
   // Handle click outside to close suggestions
@@ -580,7 +582,7 @@ export const CompanyNameInput: React.FC<CompanyNameInputProps> = ({
           // Delay closing suggestions to allow click events to register
           setTimeout(() => {
             if (!containerRef.current?.contains(document.activeElement)) {
-              setShowSuggestions(false)
+              handleBlur()
               setHighlightedIndex(-1)
             }
           }, 200)
