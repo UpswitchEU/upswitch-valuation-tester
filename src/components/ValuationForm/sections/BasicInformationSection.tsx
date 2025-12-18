@@ -7,7 +7,7 @@
  * @module components/ValuationForm/sections/BasicInformationSection
  */
 
-import React, { useMemo, useState } from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 import { TARGET_COUNTRIES } from '../../../config/countries'
 import { suggestionService } from '../../../services/businessTypeSuggestionApi'
 import type { BusinessType } from '../../../services/businessTypesApi'
@@ -45,8 +45,12 @@ export const BasicInformationSection: React.FC<BasicInformationSectionProps> = (
 }) => {
   // Track which fields were auto-filled from registry
   const [autoFilledFields, setAutoFilledFields] = useState<string[]>([])
+  
+  // LinkedIn pattern: Form owns selected company state
+  const [selectedCompany, setSelectedCompany] = useState<CompanySearchResult | null>(null)
+  const [isVerifyingCompany, setIsVerifyingCompany] = useState(false)
 
-  // ✅ FIX: Construct initial selected company from stored KBO data if available
+  // Construct initial selected company from stored KBO data if available
   // This allows the company summary card to show when restoring a previously verified company
   const initialSelectedCompany = useMemo<CompanySearchResult | null>(() => {
     if (!formData.company_name) return null
@@ -78,6 +82,145 @@ export const BasicInformationSection: React.FC<BasicInformationSectionProps> = (
 
     return null
   }, [formData.company_name, formData.business_context, formData.country_code])
+
+  // Background verification when restoring saved company
+  useEffect(() => {
+    const verifyRestoredCompany = async () => {
+      if (initialSelectedCompany && !selectedCompany) {
+        // Show company immediately (smooth UX)
+        setSelectedCompany(initialSelectedCompany)
+        
+        // Verify in background
+        setIsVerifyingCompany(true)
+        try {
+          const { registryService } = await import('../../../services/registry/registryService')
+          const response = await registryService.searchCompanies(
+            initialSelectedCompany.company_name,
+            formData.country_code || 'BE',
+            1
+          )
+          
+          if (response.success && response.results?.[0]) {
+            const freshData = response.results[0]
+            
+            // Check if data changed
+            const dataChanged =
+              freshData.registration_number !== initialSelectedCompany.registration_number ||
+              freshData.legal_form !== initialSelectedCompany.legal_form ||
+              freshData.status !== initialSelectedCompany.status ||
+              freshData.address !== initialSelectedCompany.address
+            
+            if (dataChanged) {
+              generalLogger.info('[BasicInfo] KBO data updated since last save', {
+                company_name: freshData.company_name,
+                changes: {
+                  registration: freshData.registration_number !== initialSelectedCompany.registration_number,
+                  legal_form: freshData.legal_form !== initialSelectedCompany.legal_form,
+                  status: freshData.status !== initialSelectedCompany.status,
+                  address: freshData.address !== initialSelectedCompany.address,
+                },
+              })
+              
+              // Update with fresh data
+              setSelectedCompany(freshData)
+            }
+          }
+        } catch (error) {
+          generalLogger.warn('[BasicInfo] Background verification failed, using cached data', {
+            error: error instanceof Error ? error.message : 'Unknown error',
+          })
+          // Keep showing cached data on error
+        } finally {
+          setIsVerifyingCompany(false)
+        }
+      }
+    }
+    
+    verifyRestoredCompany()
+  }, [initialSelectedCompany, formData.country_code])
+
+  // Save company data when selectedCompany changes (simplified approach)
+  useEffect(() => {
+    const saveCompanyData = async () => {
+    if (!selectedCompany) return
+
+    generalLogger.info('[BasicInfo] Saving company data on calculate', {
+      company_name: selectedCompany.company_name,
+      registration_number: selectedCompany.registration_number,
+    })
+
+    const currentBusinessContext = (formData.business_context as any) || {}
+    const updatedBusinessContext = {
+      ...currentBusinessContext,
+      kbo_registration: selectedCompany.registration_number,
+      kbo_registration_number: selectedCompany.registration_number,
+      legal_form: selectedCompany.legal_form,
+      company_id: selectedCompany.company_id,
+      company_address: selectedCompany.address,
+      company_status: selectedCompany.status,
+    }
+
+    const updates: Partial<ValuationFormData> = {
+      business_context: updatedBusinessContext,
+    }
+
+    // Fetch financial data if available
+    if (selectedCompany.company_id && selectedCompany.company_id.length > 3) {
+      try {
+        const { registryService } = await import('../../../services/registry/registryService')
+        const financialData = await registryService.getCompanyFinancials(
+          selectedCompany.company_id,
+          formData.country_code || 'BE'
+        )
+
+        // Auto-fill founding_year if available and not already set
+        if (financialData.founding_year && !formData.founding_year) {
+          updates.founding_year = financialData.founding_year
+        }
+
+        // Auto-fill industry if available and not already set
+        if (
+          financialData.industry_description &&
+          !formData.industry &&
+          !formData.business_type_id
+        ) {
+          updates.industry = financialData.industry_description
+        }
+
+        // Auto-fill number_of_employees if available
+        if (financialData.employees && !formData.number_of_employees) {
+          updates.number_of_employees = financialData.employees
+        }
+
+        // Track auto-filled fields
+        const filledFields: string[] = []
+        if (updates.founding_year) filledFields.push('Founding year')
+        if (updates.industry) filledFields.push('Industry')
+        if (updates.number_of_employees) filledFields.push('Employees')
+
+        if (filledFields.length > 0) {
+          setAutoFilledFields(filledFields)
+          setTimeout(() => setAutoFilledFields([]), 5000)
+          
+          generalLogger.info('[BasicInfo] Auto-filled fields from KBO', {
+            filledFields,
+            company_id: selectedCompany.company_id,
+          })
+        }
+      } catch (error) {
+        generalLogger.warn('[BasicInfo] Failed to fetch financial data', {
+          error: error instanceof Error ? error.message : 'Unknown error',
+        })
+      }
+    }
+
+      updateFormData(updates)
+    }
+
+    if (selectedCompany) {
+      saveCompanyData()
+    }
+  }, [selectedCompany, formData.business_context, formData.founding_year, formData.industry, formData.business_type_id, formData.number_of_employees, formData.country_code, updateFormData])
 
   return (
     <div className="space-y-6">
@@ -181,8 +324,7 @@ export const BasicInformationSection: React.FC<BasicInformationSectionProps> = (
 
         {/* Company Name with KBO Registry Check */}
         {/* MOVED AFTER BUSINESS TYPE: Enables context-aware KBO validation */}
-        {/* ✅ FIX: Removed key prop that was causing input to lose focus on every keystroke */}
-        {/* Component handles restoration via initialSelectedCompany and value props */}
+        {/* LinkedIn pattern: Selection shows preview, save happens on calculate */}
         <CompanyNameInput
           label="Company Name"
           type="text"
@@ -192,95 +334,19 @@ export const BasicInformationSection: React.FC<BasicInformationSectionProps> = (
           onBlur={() => {}}
           placeholder="e.g., Acme GmbH"
           countryCode={formData.country_code || 'BE'}
-          initialSelectedCompany={initialSelectedCompany}
-          required
-          onCompanySelect={async (company) => {
-            generalLogger.info('Company selected from KBO registry', {
-              company_name: company.company_name,
-              registration_number: company.registration_number,
-              company_id: company.company_id,
-            })
-
-            // ✅ FIX: Save full company data to business_context for restoration
-            // This ensures the KBO approval component shows when the report is restored
-            const currentBusinessContext = (formData.business_context as any) || {}
-            const updatedBusinessContext = {
-              ...currentBusinessContext,
-              kbo_registration: company.registration_number,
-              kbo_registration_number: company.registration_number, // Alias for compatibility
-              legal_form: company.legal_form,
-              company_id: company.company_id,
-              company_address: company.address,
-              company_status: company.status,
+          selectedCompany={selectedCompany}
+          onCompanyChange={(company) => {
+            setSelectedCompany(company)
+            if (company) {
+              updateFormData({ company_name: company.company_name })
             }
-
-            // Update company name immediately
-            const updates: Partial<ValuationFormData> = {
-              company_name: company.company_name,
-              business_context: updatedBusinessContext,
-            }
-
-            // Fetch financial data if company_id is available
-            if (company.company_id && company.company_id.length > 3) {
-              try {
-                const { registryService } = await import(
-                  '../../../services/registry/registryService'
-                )
-                const financialData = await registryService.getCompanyFinancials(
-                  company.company_id,
-                  formData.country_code || 'BE'
-                )
-
-                // Auto-fill founding_year if available and not already set
-                if (financialData.founding_year && !formData.founding_year) {
-                  updates.founding_year = financialData.founding_year
-                }
-
-                // Auto-fill industry if available and not already set
-                // Only auto-fill if business type hasn't been selected (to avoid overwriting user choice)
-                if (
-                  financialData.industry_description &&
-                  !formData.industry &&
-                  !formData.business_type_id
-                ) {
-                  updates.industry = financialData.industry_description
-                }
-
-                // Auto-fill number_of_employees if available
-                if (financialData.employees && !formData.number_of_employees) {
-                  updates.number_of_employees = financialData.employees
-                }
-
-                // Track which fields were auto-filled
-                const filledFields: string[] = []
-                if (updates.founding_year) filledFields.push('Founding year')
-                if (updates.industry) filledFields.push('Industry')
-                if (updates.number_of_employees) filledFields.push('Employees')
-
-                if (filledFields.length > 0) {
-                  setAutoFilledFields(filledFields)
-                  // Clear after 5 seconds
-                  setTimeout(() => setAutoFilledFields([]), 5000)
-                }
-
-                generalLogger.info('Auto-filled fields from KBO registry', {
-                  founding_year: updates.founding_year,
-                  industry: updates.industry,
-                  employees: updates.number_of_employees,
-                  company_id: company.company_id,
-                  filledFields,
-                })
-              } catch (error) {
-                generalLogger.debug('Financial data not available for company', {
-                  companyId: company.company_id,
-                  error: error instanceof Error ? error.message : 'Unknown error',
-                })
-                // Continue without financial data - not critical
-              }
-            }
-
-            updateFormData(updates)
           }}
+          onClearCompany={() => {
+            setSelectedCompany(null)
+            updateFormData({ company_name: '' })
+          }}
+          isVerifying={isVerifyingCompany}
+          required
         />
 
         {/* Registry Data Preview - Show auto-filled fields */}

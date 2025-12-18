@@ -2,7 +2,7 @@
  * Company Name Input Component with KBO Search
  *
  * Enhanced input field that performs fuzzy KBO company name search
- * Shows suggestions, match indicators, and company details tooltip
+ * Shows suggestions and company preview card (LinkedIn pattern)
  */
 
 import React, { useCallback, useEffect, useRef, useState } from 'react'
@@ -10,6 +10,7 @@ import { registryService } from '../../services/registry/registryService'
 import type { CompanySearchResult } from '../../services/registry/types'
 import { debounce } from '../../utils/debounce'
 import { generalLogger } from '../../utils/logger'
+import CompanyPreviewCard from './CompanyPreviewCard'
 import type { CustomInputFieldProps } from './CustomInputField'
 import CustomInputField from './CustomInputField'
 
@@ -18,44 +19,29 @@ export interface CompanyNameInputProps
   value: string
   onChange: (value: string) => void
   countryCode?: string
-  onCompanySelect?: (company: CompanySearchResult) => void
-  initialSelectedCompany?: CompanySearchResult | null // ✅ NEW: Allow pre-selected company for restoration
+  selectedCompany?: CompanySearchResult | null  // Controlled from parent
+  onCompanyChange?: (company: CompanySearchResult | null) => void  // Selection change notification
+  onClearCompany?: () => void  // User wants to change company
+  isVerifying?: boolean  // Show verifying state in preview
 }
 
 export const CompanyNameInput: React.FC<CompanyNameInputProps> = ({
   value,
   onChange,
   countryCode = 'BE',
-  onCompanySelect,
-  initialSelectedCompany = null,
+  selectedCompany = null,
+  onCompanyChange,
+  onClearCompany,
+  isVerifying = false,
   ...inputProps
 }) => {
   const [searchResults, setSearchResults] = useState<CompanySearchResult[]>([])
   const [isLoading, setIsLoading] = useState(false)
   const [showSuggestions, setShowSuggestions] = useState(false)
   const [exactMatch, setExactMatch] = useState<CompanySearchResult | null>(null)
-  const [selectedCompany, setSelectedCompany] = useState<CompanySearchResult | null>(
-    initialSelectedCompany
-  )
   const [highlightedIndex, setHighlightedIndex] = useState(-1)
   const containerRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
-
-  // ✅ FIX: Restore selected company when initialSelectedCompany changes (restoration)
-  useEffect(() => {
-    if (initialSelectedCompany) {
-      setSelectedCompany(initialSelectedCompany)
-      setExactMatch(initialSelectedCompany)
-      generalLogger.debug('[CompanyNameInput] Restored selected company from props', {
-        company_name: initialSelectedCompany.company_name,
-        registration_number: initialSelectedCompany.registration_number,
-      })
-    } else if (!value && !initialSelectedCompany) {
-      // Clear selected company if value is cleared and no initial company
-      setSelectedCompany(null)
-      setExactMatch(null)
-    }
-  }, [initialSelectedCompany, value])
 
   // Debounced search function - memoized with useRef to persist across renders
   const performSearchRef = useRef<((query: string, country: string) => void) | null>(null)
@@ -130,8 +116,7 @@ export const CompanyNameInput: React.FC<CompanyNameInputProps> = ({
   // Trigger search when value changes
   useEffect(() => {
     if (value) {
-      // ✅ FIX: Don't search if company is already selected (prevents redundant API calls)
-      // Only skip if the current value matches the selected company name
+      // Don't search if company is already selected (prevents redundant API calls)
       if (selectedCompany && value.toLowerCase().trim() === selectedCompany.company_name.toLowerCase().trim()) {
         generalLogger.debug('[CompanyNameInput] Skipping search - company already selected', {
           company_name: selectedCompany.company_name,
@@ -142,29 +127,10 @@ export const CompanyNameInput: React.FC<CompanyNameInputProps> = ({
     } else {
       setSearchResults([])
       setExactMatch(null)
-      // ✅ FIX: Don't clear selectedCompany if we have initialSelectedCompany (restoration)
-      if (!initialSelectedCompany) {
-        setSelectedCompany(null)
-      }
       setShowSuggestions(false)
       setHighlightedIndex(-1)
     }
-  }, [value, countryCode, performSearch, initialSelectedCompany, selectedCompany])
-
-  // ✅ FIX: When search completes and we have a value, check if it matches initialSelectedCompany
-  // This ensures the company summary card shows when restoring a previously verified company
-  useEffect(() => {
-    if (value && initialSelectedCompany && !selectedCompany) {
-      // Check if the restored value matches the initial selected company
-      if (value.toLowerCase().trim() === initialSelectedCompany.company_name.toLowerCase().trim()) {
-        setSelectedCompany(initialSelectedCompany)
-        setExactMatch(initialSelectedCompany)
-        generalLogger.debug('[CompanyNameInput] Matched restored company name with initial selected company', {
-          company_name: initialSelectedCompany.company_name,
-        })
-      }
-    }
-  }, [value, initialSelectedCompany, selectedCompany])
+  }, [value, countryCode, performSearch, selectedCompany])
 
   // Reset highlighted index when search results change
   useEffect(() => {
@@ -180,19 +146,12 @@ export const CompanyNameInput: React.FC<CompanyNameInputProps> = ({
     setShowSuggestions(true)
     setExactMatch(null) // Clear exact match until search completes
     
-    // ✅ FIX: Clear selected company if user types something different
-    // Check against both selectedCompany and initialSelectedCompany to preserve correct state
+    // Clear selected company if user types something different
     if (selectedCompany) {
       const matchesSelected = newValue.toLowerCase().trim() === selectedCompany.company_name.toLowerCase().trim()
       if (!matchesSelected) {
-        setSelectedCompany(null) // User is changing the selection
+        onCompanyChange?.(null) // Notify parent that selection is cleared
         generalLogger.debug('[CompanyNameInput] Clearing selection - user typing different value')
-      }
-    } else if (initialSelectedCompany) {
-      const matchesInitial = newValue.toLowerCase().trim() === initialSelectedCompany.company_name.toLowerCase().trim()
-      if (!matchesInitial) {
-        // User is typing something different from restored company
-        generalLogger.debug('[CompanyNameInput] User typing different value from restored company')
       }
     }
     
@@ -204,38 +163,17 @@ export const CompanyNameInput: React.FC<CompanyNameInputProps> = ({
     (company: CompanySearchResult) => {
       onChange(company.company_name)
       setExactMatch(company)
-      setSelectedCompany(company)
       setShowSuggestions(false)
       setHighlightedIndex(-1)
-      onCompanySelect?.(company)
+      onCompanyChange?.(company) // Only notify parent, don't save
 
-      generalLogger.info('Company selected from KBO search', {
+      generalLogger.info('[CompanyNameInput] Company selected', {
         company_name: company.company_name,
         registration_number: company.registration_number,
       })
     },
-    [onChange, onCompanySelect]
+    [onChange, onCompanyChange]
   )
-
-  // Handle blur - auto-select exact match if user finished typing
-  const handleBlur = useCallback(() => {
-    // ✅ FIX: Use value comparison to avoid race conditions with state updates
-    // Check if current value matches exact match to ensure we're not working with stale state
-    if (exactMatch && value.toLowerCase().trim() === exactMatch.company_name.toLowerCase().trim()) {
-      // Only select if not already selected (check by comparing names)
-      if (!selectedCompany || selectedCompany.company_name !== exactMatch.company_name) {
-        generalLogger.info('[CompanyNameInput] Auto-selecting exact match on blur', {
-          company_name: exactMatch.company_name,
-        })
-        setSelectedCompany(exactMatch)
-        onCompanySelect?.(exactMatch)
-        setShowSuggestions(false)
-      }
-    } else if (searchResults.length === 0 && value) {
-      // No match found, hide dropdown
-      setShowSuggestions(false)
-    }
-  }, [exactMatch, selectedCompany, onCompanySelect, searchResults, value])
 
   // Handle keyboard navigation
   const handleKeyDown = useCallback(
@@ -367,140 +305,6 @@ export const CompanyNameInput: React.FC<CompanyNameInputProps> = ({
     )
   }
 
-  // Render company summary card (shown after selection)
-  const renderCompanySummary = () => {
-    if (!selectedCompany) return null
-
-    return (
-      <div className="mt-3 p-4 bg-gradient-to-br from-primary-50 to-canvas border border-primary-200 rounded-xl shadow-sm animate-in fade-in slide-in-from-top-2 duration-300">
-        {/* Header with verified badge */}
-        <div className="flex items-start justify-between mb-3">
-          <div className="flex items-center gap-2">
-            <div className="flex-shrink-0 w-8 h-8 bg-primary-500 rounded-full flex items-center justify-center">
-              <svg
-                className="w-5 h-5 text-white"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2.5}
-                  d="M5 13l4 4L19 7"
-                />
-              </svg>
-            </div>
-            <div>
-              <p className="text-xs font-semibold text-primary-700 uppercase tracking-wider">
-                Verified Company
-              </p>
-              <p className="text-sm font-medium text-gray-600">KBO/BCE Belgium</p>
-            </div>
-          </div>
-          <button
-            type="button"
-            onClick={() => {
-              setSelectedCompany(null)
-              setExactMatch(null)
-              onChange('')
-              inputRef.current?.focus()
-            }}
-            className="flex-shrink-0 p-1.5 text-gray-400 hover:text-primary-600 hover:bg-primary-100/50 rounded-lg transition-all duration-200 ease-in-out"
-            aria-label="Clear selection"
-          >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M6 18L18 6M6 6l12 12"
-              />
-            </svg>
-          </button>
-        </div>
-
-        {/* Company details */}
-        <div className="space-y-2">
-          <div>
-            <h4 className="text-lg font-semibold text-gray-900 mb-1">
-              {selectedCompany.company_name}
-            </h4>
-            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm">
-              {selectedCompany.registration_number && (
-                <span className="inline-flex items-center gap-1.5 text-gray-700">
-                  <svg
-                    className="w-4 h-4 text-gray-400"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M7 20l4-16m2 16l4-16M6 9h14M4 15h14"
-                    />
-                  </svg>
-                  <span className="font-mono font-medium">
-                    {selectedCompany.registration_number}
-                  </span>
-                </span>
-              )}
-              {selectedCompany.legal_form && (
-                <>
-                  <span className="text-gray-300">•</span>
-                  <span className="text-gray-600">{selectedCompany.legal_form}</span>
-                </>
-              )}
-              {selectedCompany.status && (
-                <>
-                  <span className="text-gray-300">•</span>
-                  <span
-                    className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
-                      selectedCompany.status.toLowerCase() === 'active'
-                        ? 'bg-primary-100 text-primary-800'
-                        : 'bg-gray-100 text-gray-800'
-                    }`}
-                  >
-                    {selectedCompany.status}
-                  </span>
-                </>
-              )}
-            </div>
-          </div>
-
-          {selectedCompany.address && (
-            <div className="pt-2 border-t border-emerald-200/50">
-              <div className="flex items-start gap-2 text-sm text-gray-600">
-                <svg
-                  className="w-4 h-4 text-gray-400 mt-0.5 flex-shrink-0"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
-                  />
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
-                  />
-                </svg>
-                <span className="leading-relaxed">{selectedCompany.address}</span>
-              </div>
-            </div>
-          )}
-        </div>
-      </div>
-    )
-  }
-
   // Render suggestions dropdown
   const renderSuggestions = () => {
     if (!showSuggestions || searchResults.length === 0 || isLoading || selectedCompany) return null
@@ -574,6 +378,9 @@ export const CompanyNameInput: React.FC<CompanyNameInputProps> = ({
 
   // Determine right icon (loading spinner or checkmark)
   const rightIcon = isLoading ? renderLoadingSpinner() : renderCheckmark()
+  
+  // Read-only when company is selected
+  const isReadOnly = !!selectedCompany
 
   return (
     <div ref={containerRef} className="relative">
@@ -581,6 +388,8 @@ export const CompanyNameInput: React.FC<CompanyNameInputProps> = ({
         {...inputProps}
         value={value}
         onChange={handleChange}
+        disabled={isReadOnly || inputProps.disabled}
+        className={isReadOnly ? 'bg-gray-50 cursor-not-allowed' : inputProps.className}
         aria-expanded={showSuggestions}
         aria-haspopup="listbox"
         aria-controls="company-suggestions-list"
@@ -599,7 +408,7 @@ export const CompanyNameInput: React.FC<CompanyNameInputProps> = ({
           // Delay closing suggestions to allow click events to register
           setTimeout(() => {
             if (!containerRef.current?.contains(document.activeElement)) {
-              handleBlur()
+              setShowSuggestions(false)
               setHighlightedIndex(-1)
             }
           }, 200)
@@ -609,7 +418,18 @@ export const CompanyNameInput: React.FC<CompanyNameInputProps> = ({
         inputRef={inputRef}
       />
       {renderSuggestions()}
-      {renderCompanySummary()}
+      
+      {/* Show preview card when company selected */}
+      {selectedCompany && (
+        <CompanyPreviewCard
+          company={selectedCompany}
+          onClear={() => {
+            onClearCompany?.()
+            inputRef.current?.focus()
+          }}
+          isVerifying={isVerifying}
+        />
+      )}
     </div>
   )
 }
