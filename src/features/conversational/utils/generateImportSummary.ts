@@ -138,13 +138,14 @@ export function generateImportSummaryMessage(
   return {
     type: 'ai',
     role: 'assistant',
-    content,
+    content: '', // Empty content - will be rendered as ConversationSummaryBlock component
     isComplete: true,
     isStreaming: false,
     metadata: {
       session_phase: 'manual_import',
       imported_fields: fields.length,
       is_summary: true,
+      collected_data: sessionData, // Include collected data for inline rendering
     },
   }
 }

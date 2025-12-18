@@ -37,10 +37,10 @@ import { ChatInputForm, MessagesList } from './chat'
 
 // Re-export types for backward compatibility
 export type {
-  CalculateOptionData,
-  CollectedData,
-  StreamingChatProps,
-  ValuationPreviewData,
+    CalculateOptionData,
+    CollectedData,
+    StreamingChatProps,
+    ValuationPreviewData
 } from './StreamingChat.types'
 
 export const StreamingChat: React.FC<import('./StreamingChat.types').StreamingChatProps> = ({
@@ -73,6 +73,8 @@ export const StreamingChat: React.FC<import('./StreamingChat.types').StreamingCh
   isSessionInitialized = false,
   pythonSessionId: pythonSessionIdProp,
   isRestorationComplete = false,
+  onContinueConversation,
+  onViewReport,
 }) => {
   // Get user data from AuthContext
   const { user } = useAuth()
@@ -660,6 +662,8 @@ export const StreamingChat: React.FC<import('./StreamingChat.types').StreamingCh
         onCalculate={onCalculate}
         isCalculating={isCalculating}
         messagesEndRef={useRef<HTMLDivElement>(null)}
+        onContinueConversation={onContinueConversation}
+        onViewReport={onViewReport}
       />
 
       {/* Input Form */}

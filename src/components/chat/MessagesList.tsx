@@ -31,6 +31,8 @@ export interface MessagesListProps {
   onCalculate?: () => void | Promise<void>
   isCalculating?: boolean
   messagesEndRef: React.RefObject<HTMLDivElement>
+  onContinueConversation?: () => void
+  onViewReport?: () => void
 }
 
 /**
@@ -63,6 +65,8 @@ export const MessagesList: React.FC<MessagesListProps> = React.memo(
     onCalculate,
     isCalculating = false,
     messagesEndRef,
+    onContinueConversation,
+    onViewReport,
   }) => {
     return (
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
@@ -71,13 +75,16 @@ export const MessagesList: React.FC<MessagesListProps> = React.memo(
           {messages
             .filter((message) => {
               // CRITICAL FIX: Filter out empty messages to prevent empty bubbles
-              // BUT: Allow messages with special metadata (e.g., confirmation cards)
+              // BUT: Allow messages with special metadata (e.g., confirmation cards, summary)
               // that intentionally have empty content but should still be displayed
               if (message.metadata?.is_business_type_confirmation === true) {
                 return true // Always show business type confirmation cards even with empty content
               }
               if (message.metadata?.is_company_name_confirmation === true) {
                 return true // Always show company name confirmation cards even with empty content
+              }
+              if (message.metadata?.is_summary === true) {
+                return true // Always show summary block even with empty content
               }
               // Only show messages that have actual content (not just whitespace)
               return message.content && message.content.trim().length > 0
@@ -96,6 +103,8 @@ export const MessagesList: React.FC<MessagesListProps> = React.memo(
                 onRetry={onRetry}
                 isTyping={isTyping}
                 isThinking={isThinking}
+                onContinueConversation={onContinueConversation}
+                onViewReport={onViewReport}
               />
             ))}
         </AnimatePresence>

@@ -21,6 +21,8 @@ export interface StreamingChatUIProps {
 // Message lifecycle callbacks
 export interface StreamingChatMessageCallbacks {
   onMessageComplete?: (message: import('../types/message').Message) => void
+  onContinueConversation?: () => void
+  onViewReport?: () => void
 }
 
 // Valuation lifecycle callbacks

@@ -269,6 +269,10 @@ export const ValuationFlowSelector: React.FC<ValuationFlowSelectorProps> = React
     if (prevProps.session?.reportId !== nextProps.session?.reportId) {
       return false // Re-render
     }
+    // ✅ FIX: Re-render if session currentView changes (critical for flow switching)
+    if (prevProps.session?.currentView !== nextProps.session?.currentView) {
+      return false // Re-render
+    }
     // Re-render if error changes
     if (prevProps.error !== nextProps.error) {
       return false // Re-render

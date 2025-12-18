@@ -9,6 +9,7 @@
 
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useState } from 'react'
+import { sessionService } from '../../services'
 import { useSessionStore } from '../../store/useSessionStore'
 import { generalLogger } from '../../utils/logger'
 import { hasMeaningfulSessionData } from '../../utils/sessionDataUtils'
@@ -104,6 +105,25 @@ export const useValuationToolbarFlow = (): UseValuationToolbarFlowReturn => {
       // Update session store first (optimistic update)
       // This immediately updates the UI to show the new flow
       updateSession({ currentView: targetFlow })
+
+      // ✅ FIX: Save currentView to backend BEFORE URL update
+      // This ensures the backend has the new currentView before navigation
+      // If navigation triggers a reload, the backend will have the correct value
+      // Note: We pass currentView explicitly because saveSession only saves sessionData by default
+      try {
+        await sessionService.saveSession(reportId, { currentView: targetFlow } as any)
+        generalLogger.info('[Toolbar] Session saved to backend with new flow', {
+          reportId,
+          newFlow: targetFlow,
+        })
+      } catch (saveError) {
+        generalLogger.error('[Toolbar] Failed to save session during flow switch', {
+          error: saveError instanceof Error ? saveError.message : String(saveError),
+          reportId,
+          targetFlow,
+        })
+        // Continue with URL update even if save fails - optimistic update is already applied
+      }
 
       // Update URL - preserve existing query params (prefilledQuery, autoSend, etc.)
       // This ensures the URL reflects the current flow state

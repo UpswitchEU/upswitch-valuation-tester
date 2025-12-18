@@ -11,6 +11,7 @@ import { motion } from 'framer-motion'
 import { Bot, CheckCircle, Loader2 } from 'lucide-react'
 import React, { useCallback } from 'react'
 import { AI_CONFIG } from '../../config'
+import { ConversationSummaryBlock } from '../../features/conversational/components/ConversationSummaryBlock'
 import type { Message } from '../../types/message'
 import { debugLogger } from '../../utils/debugLogger'
 import { AIHelpCard } from '../AIHelpCard'
@@ -20,9 +21,9 @@ import { CompanyNameConfirmationCard } from '../CompanyNameConfirmationCard'
 import { KBOSuggestionsList } from '../KBOSuggestionsList'
 import { SuggestionChips } from '../SuggestionChips'
 import {
-  type BusinessTypeSuggestion,
-  hasBusinessTypeSuggestions,
-  parseBusinessTypeSuggestions,
+    type BusinessTypeSuggestion,
+    hasBusinessTypeSuggestions,
+    parseBusinessTypeSuggestions,
 } from '../utils/businessTypeParsing'
 import { hasKBOSuggestions, type KBOSuggestion, parseKBOSuggestions } from '../utils/kboParsing'
 import { ValuationReadyCTA } from '../ValuationReadyCTA'
@@ -40,6 +41,8 @@ export interface MessageItemProps {
   onRetry?: (messageId: string) => void | Promise<void>
   isTyping?: boolean
   isThinking?: boolean
+  onContinueConversation?: () => void
+  onViewReport?: () => void
 }
 
 /**
@@ -65,6 +68,8 @@ export const MessageItem = React.memo<MessageItemProps>(
     onRetry,
     isTyping = false,
     isThinking = false,
+    onContinueConversation,
+    onViewReport,
   }) => {
     // Safe metadata access helpers
     const getMetadataValue = useCallback(
@@ -244,6 +249,24 @@ export const MessageItem = React.memo<MessageItemProps>(
           confidence={getMetadataNumber('confidence')}
           timestamp={message.timestamp}
         />
+      )
+    }
+
+    // Check if this is a summary message (import summary from manual flow)
+    const isSummaryMessage = getMetadataValue<boolean>('is_summary') === true
+    const collectedData = getMetadataValue<Record<string, any>>('collected_data')
+
+    if (isSummaryMessage && collectedData) {
+      return (
+        <div className="flex justify-start">
+          <div className="max-w-[85%] mr-auto w-full">
+            <ConversationSummaryBlock
+              collectedData={collectedData}
+              onContinue={onContinueConversation}
+              onViewReport={onViewReport}
+            />
+          </div>
+        </div>
       )
     }
 

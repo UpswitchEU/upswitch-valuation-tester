@@ -12,8 +12,8 @@ import { StreamingChat } from '../../../components/StreamingChat'
 import { reportService, valuationService } from '../../../services'
 import { valuationAuditService } from '../../../services/audit/ValuationAuditService'
 import {
-  useConversationalChatStore,
-  useConversationalResultsStore,
+    useConversationalChatStore,
+    useConversationalResultsStore,
 } from '../../../store/conversational'
 import { useSessionStore } from '../../../store/useSessionStore'
 import { useVersionHistoryStore } from '../../../store/useVersionHistoryStore'
@@ -22,9 +22,9 @@ import type { ValuationResponse } from '../../../types/valuation'
 import { buildValuationRequest } from '../../../utils/buildValuationRequest'
 import { chatLogger } from '../../../utils/logger'
 import {
-  areChangesSignificant,
-  detectVersionChanges,
-  generateAutoLabel,
+    areChangesSignificant,
+    detectVersionChanges,
+    generateAutoLabel,
 } from '../../../utils/versionDiffDetection'
 import { ComponentErrorBoundary } from '../../shared/components/ErrorBoundary'
 import { useConversationActions, useConversationState } from '../context/ConversationContext'
@@ -356,14 +356,20 @@ export const ConversationPanel: React.FC<ConversationPanelProps> = ({
   const valuationResult = useConversationalResultsStore((state) => state.result)
 
   // Determine if we should show summary block
+  // ✅ FIX: Don't show summary block at top if there are messages (component will be inline)
   const showSummaryBlock = useMemo(() => {
-    // Show if we have restored messages AND collected data
-    // ROOT CAUSE FIX: Read session state via getState(), not as subscription
-    const currentSession = useSessionStore.getState().session
+    // Only show at top if NO messages exist (new conversation with data)
+    // If messages exist, the summary will be rendered inline as a message component
     const hasRestoredMessages = restoredMessages && restoredMessages.length > 0
+    if (hasRestoredMessages) {
+      return false // Messages exist - summary will be inline
+    }
+    
+    // Show if we have collected data but no messages yet
+    const currentSession = useSessionStore.getState().session
     const hasCollectedData =
       currentSession?.sessionData && Object.keys(currentSession.sessionData).length > 0
-    return hasRestoredMessages && hasCollectedData && isRestorationComplete
+    return hasCollectedData && isRestorationComplete
   }, [restoredMessages, reportId, isRestorationComplete]) // Depend on reportId instead of session
 
   // Calculate completion percentage
@@ -390,10 +396,16 @@ export const ConversationPanel: React.FC<ConversationPanelProps> = ({
 
   // Handle continue action
   const handleContinue = useCallback(() => {
-    // Scroll to bottom of chat to continue conversation
-    const chatContainer = document.querySelector('[data-chat-container]')
-    if (chatContainer) {
-      chatContainer.scrollTop = chatContainer.scrollHeight
+    // Hide summary block and focus on input
+    // Find and focus the textarea input
+    const textarea = document.querySelector('textarea[placeholder*="Ask about your business"]') as HTMLTextAreaElement
+    if (textarea) {
+      textarea.focus()
+      // Scroll to bottom to show input
+      const chatContainer = document.querySelector('[data-chat-container]')
+      if (chatContainer) {
+        chatContainer.scrollTop = chatContainer.scrollHeight
+      }
     }
   }, [])
 
@@ -587,6 +599,8 @@ export const ConversationPanel: React.FC<ConversationPanelProps> = ({
             isCalculating={isCalculating || state.isGenerating}
             initialMessage={initialMessage}
             autoSend={autoSend}
+            onContinueConversation={handleContinue}
+            onViewReport={valuationResult ? handleViewReport : undefined}
           />
         </div>
       </div>
