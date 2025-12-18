@@ -246,12 +246,29 @@ export const ManualLayout: React.FC<ManualLayoutProps> = ({
         })
 
         if (hasSessionData && formIsEmpty) {
+          // ✅ FIX: Get company_name from result as fallback if not in sessionData
+          // The company_name might be in the valuation result but not yet synced to sessionData
+          const resultCompanyName = result?.company_name
+          const sessionCompanyName = sessionDataObj.company_name
+          const companyNameToRestore = sessionCompanyName !== undefined 
+            ? sessionCompanyName 
+            : resultCompanyName || undefined
+
+          generalLogger.info('[ManualLayout] Company name restoration check', {
+            reportId,
+            sessionCompanyName,
+            resultCompanyName,
+            companyNameToRestore,
+            sessionHasCompanyName: sessionCompanyName !== undefined,
+            resultHasCompanyName: !!resultCompanyName,
+          })
+
           // ✅ FIX: Properly map sessionData to formData format
           // Handle both flat and nested structures (revenue/ebitda might be in current_year_data)
           const formDataUpdate: Partial<any> = {
             // Basic company information
-            // ✅ FIX: Explicitly include company_name even if empty string (preserve user input)
-            company_name: sessionDataObj.company_name !== undefined ? sessionDataObj.company_name : undefined,
+            // ✅ FIX: Use company_name from sessionData or result (fallback)
+            company_name: companyNameToRestore,
             country_code: sessionDataObj.country_code,
             industry: sessionDataObj.industry,
             subIndustry: sessionDataObj.subIndustry, // ✅ NEW: Include sub-industry field
@@ -603,10 +620,28 @@ export const ManualLayout: React.FC<ManualLayoutProps> = ({
 
       // Use the same restoration logic as the main effect
       const { updateFormData: updateFormDataFn } = useManualFormStore.getState()
+      const { result: currentResult } = useManualResultsStore.getState()
+      
+      // ✅ FIX: Get company_name from result as fallback if not in sessionData
+      // The company_name might be in the valuation result but not yet synced to sessionData
+      const resultCompanyName = currentResult?.company_name
+      const sessionCompanyName = sessionDataObj.company_name
+      const companyNameToRestore = sessionCompanyName !== undefined 
+        ? sessionCompanyName 
+        : resultCompanyName || undefined
+
+      generalLogger.info('[ManualLayout] Company name restoration check (reactive)', {
+        reportId,
+        sessionCompanyName,
+        resultCompanyName,
+        companyNameToRestore,
+        sessionHasCompanyName: sessionCompanyName !== undefined,
+        resultHasCompanyName: !!resultCompanyName,
+      })
 
       const formDataUpdate: Partial<any> = {
-        // ✅ FIX: Explicitly include company_name even if empty string (preserve user input)
-        company_name: sessionDataObj.company_name !== undefined ? sessionDataObj.company_name : undefined,
+        // ✅ FIX: Use company_name from sessionData or result (fallback)
+        company_name: companyNameToRestore,
         country_code: sessionDataObj.country_code,
         industry: sessionDataObj.industry,
         subIndustry: sessionDataObj.subIndustry, // ✅ NEW: Include sub-industry field

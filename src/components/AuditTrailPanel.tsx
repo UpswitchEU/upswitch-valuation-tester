@@ -9,9 +9,8 @@
 
 'use client'
 
-import React, { useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useVersionHistoryStore } from '../store/useVersionHistoryStore'
-import { AuditDetailsView } from './AuditDetailsView'
 import { VersionTimeline } from './VersionTimeline'
 
 export interface AuditTrailPanelProps {
@@ -38,8 +37,23 @@ export function AuditTrailPanel({ reportId, className = '' }: AuditTrailPanelPro
 
   const [selectedVersionNumber, setSelectedVersionNumber] = useState<number | null>(null)
 
-  // Get versions for this report
-  const versions = allVersions[reportId] || []
+  // ✅ FIX: Deduplicate versions to prevent duplicates from appearing
+  // Get versions for this report and deduplicate by versionNumber
+  const rawVersions = allVersions[reportId] || []
+  const versionMap = new Map<number, typeof rawVersions[0]>()
+  rawVersions.forEach((version) => {
+    const existing = versionMap.get(version.versionNumber)
+    // Keep the version with the latest createdAt if duplicates exist
+    if (
+      !existing ||
+      (version.createdAt && existing.createdAt && version.createdAt > existing.createdAt)
+    ) {
+      versionMap.set(version.versionNumber, version)
+    }
+  })
+  const versions = Array.from(versionMap.values()).sort(
+    (a, b) => b.versionNumber - a.versionNumber
+  )
   const activeVersion = getActiveVersion(reportId)
 
   // Fetch versions on mount

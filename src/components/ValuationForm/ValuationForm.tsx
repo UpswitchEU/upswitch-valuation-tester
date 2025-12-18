@@ -119,50 +119,58 @@ export const ValuationForm: React.FC<ValuationFormProps> = ({
   const [employeeCountError, setEmployeeCountError] = useState<string | null>(null)
   // ✅ IMPROVED: Restore historical data whenever formData.historical_years_data changes
   // This ensures all years with revenue or EBITDA data are preserved, even if outside display range
-  // Merges with existing historicalInputs to avoid overwriting user edits
+  // Only restores missing data - preserves existing user edits
   useEffect(() => {
+    const historicalYearsData = formData.historical_years_data
     if (
-      formData.historical_years_data &&
-      Array.isArray(formData.historical_years_data) &&
-      formData.historical_years_data.length > 0
+      historicalYearsData &&
+      Array.isArray(historicalYearsData) &&
+      historicalYearsData.length > 0
     ) {
-      // Merge with existing historicalInputs (don't overwrite user edits)
-      const restoredInputs: { [key: string]: string } = { ...historicalInputs }
+      // Get current historicalInputs to check what's already there
+      // Use functional update to avoid stale closure issues
+      setHistoricalInputs((currentInputs) => {
+        const restoredInputs: { [key: string]: string } = { ...currentInputs }
+        let hasNewData = false
       
-      formData.historical_years_data.forEach((yearData: { year: number; revenue?: number; ebitda?: number }) => {
-        // Include revenue if it exists (including 0)
-        if (yearData.revenue !== undefined && yearData.revenue !== null) {
-          restoredInputs[`${yearData.year}_revenue`] = yearData.revenue.toString()
-        }
-        // Include ebitda if it exists (including 0)
-        if (yearData.ebitda !== undefined && yearData.ebitda !== null) {
-          restoredInputs[`${yearData.year}_ebitda`] = yearData.ebitda.toString()
-        }
-      })
-
-      // Only update if we actually restored something new
-      const hasNewData = formData.historical_years_data.some((yearData) => {
-        const revenueKey = `${yearData.year}_revenue`
-        const ebitdaKey = `${yearData.year}_ebitda`
-        return (
-          (yearData.revenue !== undefined && yearData.revenue !== null && 
-           restoredInputs[revenueKey] !== historicalInputs[revenueKey]) ||
-          (yearData.ebitda !== undefined && yearData.ebitda !== null && 
-           restoredInputs[ebitdaKey] !== historicalInputs[ebitdaKey])
-        )
-      })
-
-      if (hasNewData) {
-        setHistoricalInputs(restoredInputs)
-        generalLogger.info('[ValuationForm] Restored historical data to inputs', {
-          reportId,
-          yearsRestored: formData.historical_years_data.length,
-          inputKeys: Object.keys(restoredInputs),
-          years: formData.historical_years_data.map((d) => d.year),
+        historicalYearsData.forEach((yearData: { year: number; revenue?: number; ebitda?: number }) => {
+          const revenueKey = `${yearData.year}_revenue`
+          const ebitdaKey = `${yearData.year}_ebitda`
+          
+          // Only restore revenue if it's missing or empty (preserve user edits)
+          if (yearData.revenue !== undefined && yearData.revenue !== null) {
+            const currentRevenue = currentInputs[revenueKey]
+            if (!currentRevenue || currentRevenue.trim() === '') {
+              restoredInputs[revenueKey] = yearData.revenue.toString()
+              hasNewData = true
+            }
+          }
+          
+          // Only restore ebitda if it's missing or empty (preserve user edits)
+          if (yearData.ebitda !== undefined && yearData.ebitda !== null) {
+            const currentEbitda = currentInputs[ebitdaKey]
+            if (!currentEbitda || currentEbitda.trim() === '') {
+              restoredInputs[ebitdaKey] = yearData.ebitda.toString()
+              hasNewData = true
+            }
+          }
         })
-      }
+
+        if (hasNewData) {
+          generalLogger.info('[ValuationForm] Restored historical data to inputs', {
+            reportId,
+            yearsRestored: historicalYearsData.length,
+            inputKeys: Object.keys(restoredInputs),
+            years: historicalYearsData.map((d) => d.year),
+          })
+          return restoredInputs
+        }
+        
+        // No new data to restore, return current inputs unchanged
+        return currentInputs
+      })
     }
-  }, [formData.historical_years_data, historicalInputs, reportId])
+  }, [formData.historical_years_data, reportId])
 
   // Match business type string to business_type_id
   const matchBusinessType = useCallback(

@@ -1,27 +1,27 @@
 import {
-  AlertCircle,
-  Check,
-  Download,
-  Edit3,
-  Eye,
-  GitBranch,
-  History,
-  Info,
-  Loader2,
-  Maximize,
-  MessageSquare,
-  RefreshCw,
-  Save,
+    AlertCircle,
+    Check,
+    Download,
+    Edit3,
+    Eye,
+    GitBranch,
+    History,
+    Info,
+    Loader2,
+    Maximize,
+    MessageSquare,
+    RefreshCw,
+    Save,
 } from 'lucide-react'
 import React from 'react'
 import {
-  useValuationToolbarAuth,
-  useValuationToolbarDownload,
-  useValuationToolbarFlow,
-  useValuationToolbarFullscreen,
-  useValuationToolbarName,
-  useValuationToolbarRefresh,
-  useValuationToolbarTabs,
+    useValuationToolbarAuth,
+    useValuationToolbarDownload,
+    useValuationToolbarFlow,
+    useValuationToolbarFullscreen,
+    useValuationToolbarName,
+    useValuationToolbarRefresh,
+    useValuationToolbarTabs,
 } from '../hooks/valuationToolbar'
 import { useSessionStore } from '../store/useSessionStore'
 import { useVersionHistoryStore } from '../store/useVersionHistoryStore'
@@ -65,8 +65,27 @@ export const ValuationToolbar: React.FC<ValuationToolbarProps> = ({
     fetchVersions,
   } = useVersionHistoryStore()
 
-  // Use props if provided, otherwise use store
-  const displayVersions = versions || (reportId ? storeVersions[reportId] || [] : [])
+  // ✅ FIX: Deduplicate versions when combining props and store versions
+  // Use props if provided, otherwise use store, but ensure no duplicates
+  const rawDisplayVersions = versions || (reportId ? storeVersions[reportId] || [] : [])
+  
+  // Deduplicate by versionNumber (keep the latest one if duplicates exist)
+  const versionMap = new Map<number, typeof rawDisplayVersions[0]>()
+  rawDisplayVersions.forEach((version) => {
+    const existing = versionMap.get(version.versionNumber)
+    // Keep the version with the latest createdAt or id if duplicates exist
+    if (
+      !existing ||
+      (version.createdAt && existing.createdAt && version.createdAt > existing.createdAt) ||
+      (!version.createdAt && !existing.createdAt && version.id > existing.id)
+    ) {
+      versionMap.set(version.versionNumber, version)
+    }
+  })
+  const displayVersions = Array.from(versionMap.values()).sort(
+    (a, b) => b.versionNumber - a.versionNumber
+  )
+  
   const storeActiveVersion = reportId ? getActiveVersion(reportId) : null
   const displayActiveVersion = activeVersion ?? storeActiveVersion?.versionNumber
 

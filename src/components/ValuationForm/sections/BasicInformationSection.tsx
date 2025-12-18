@@ -7,10 +7,11 @@
  * @module components/ValuationForm/sections/BasicInformationSection
  */
 
-import React, { useState } from 'react'
+import React, { useMemo, useState } from 'react'
 import { TARGET_COUNTRIES } from '../../../config/countries'
 import { suggestionService } from '../../../services/businessTypeSuggestionApi'
 import type { BusinessType } from '../../../services/businessTypesApi'
+import type { CompanySearchResult } from '../../../services/registry/types'
 import type { ValuationFormData } from '../../../types/valuation'
 import { generalLogger } from '../../../utils/logger'
 import { CustomBusinessTypeSearch, CustomDropdown, CustomNumberInputField } from '../../forms'
@@ -44,6 +45,39 @@ export const BasicInformationSection: React.FC<BasicInformationSectionProps> = (
 }) => {
   // Track which fields were auto-filled from registry
   const [autoFilledFields, setAutoFilledFields] = useState<string[]>([])
+
+  // ✅ FIX: Construct initial selected company from stored KBO data if available
+  // This allows the company summary card to show when restoring a previously verified company
+  const initialSelectedCompany = useMemo<CompanySearchResult | null>(() => {
+    if (!formData.company_name) return null
+
+    // Check for KBO data in business_context
+    const businessContext = formData.business_context as any
+    const kboRegistration = businessContext?.kbo_registration || businessContext?.kbo_registration_number
+    const legalForm = businessContext?.legal_form
+    const companyId = businessContext?.company_id
+    const companyAddress = businessContext?.company_address || ''
+    const companyStatus = businessContext?.company_status || 'Active'
+
+    // If we have KBO registration data, construct a CompanySearchResult
+    if (kboRegistration && formData.company_name) {
+      return {
+        company_id: companyId || kboRegistration, // Use stored company_id or fallback to registration number
+        company_name: formData.company_name,
+        result_type: 'COMPANY',
+        registration_number: kboRegistration,
+        country_code: formData.country_code || 'BE',
+        legal_form: legalForm || '',
+        address: companyAddress,
+        status: companyStatus,
+        confidence_score: 1.0,
+        registry_name: 'KBO',
+        registry_url: '',
+      }
+    }
+
+    return null
+  }, [formData.company_name, formData.business_context, formData.country_code])
 
   return (
     <div className="space-y-6">
@@ -158,6 +192,7 @@ export const BasicInformationSection: React.FC<BasicInformationSectionProps> = (
           onBlur={() => {}}
           placeholder="e.g., Acme GmbH"
           countryCode={formData.country_code || 'BE'}
+          initialSelectedCompany={initialSelectedCompany}
           required
           onCompanySelect={async (company) => {
             generalLogger.info('Company selected from KBO registry', {
@@ -166,9 +201,23 @@ export const BasicInformationSection: React.FC<BasicInformationSectionProps> = (
               company_id: company.company_id,
             })
 
+            // ✅ FIX: Save full company data to business_context for restoration
+            // This ensures the KBO approval component shows when the report is restored
+            const currentBusinessContext = (formData.business_context as any) || {}
+            const updatedBusinessContext = {
+              ...currentBusinessContext,
+              kbo_registration: company.registration_number,
+              kbo_registration_number: company.registration_number, // Alias for compatibility
+              legal_form: company.legal_form,
+              company_id: company.company_id,
+              company_address: company.address,
+              company_status: company.status,
+            }
+
             // Update company name immediately
             const updates: Partial<ValuationFormData> = {
               company_name: company.company_name,
+              business_context: updatedBusinessContext,
             }
 
             // Fetch financial data if company_id is available

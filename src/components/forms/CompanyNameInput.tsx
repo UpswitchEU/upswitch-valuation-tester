@@ -19,6 +19,7 @@ export interface CompanyNameInputProps
   onChange: (value: string) => void
   countryCode?: string
   onCompanySelect?: (company: CompanySearchResult) => void
+  initialSelectedCompany?: CompanySearchResult | null // ✅ NEW: Allow pre-selected company for restoration
 }
 
 export const CompanyNameInput: React.FC<CompanyNameInputProps> = ({
@@ -26,16 +27,35 @@ export const CompanyNameInput: React.FC<CompanyNameInputProps> = ({
   onChange,
   countryCode = 'BE',
   onCompanySelect,
+  initialSelectedCompany = null,
   ...inputProps
 }) => {
   const [searchResults, setSearchResults] = useState<CompanySearchResult[]>([])
   const [isLoading, setIsLoading] = useState(false)
   const [showSuggestions, setShowSuggestions] = useState(false)
   const [exactMatch, setExactMatch] = useState<CompanySearchResult | null>(null)
-  const [selectedCompany, setSelectedCompany] = useState<CompanySearchResult | null>(null)
+  const [selectedCompany, setSelectedCompany] = useState<CompanySearchResult | null>(
+    initialSelectedCompany
+  )
   const [highlightedIndex, setHighlightedIndex] = useState(-1)
   const containerRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
+
+  // ✅ FIX: Restore selected company when initialSelectedCompany changes (restoration)
+  useEffect(() => {
+    if (initialSelectedCompany) {
+      setSelectedCompany(initialSelectedCompany)
+      setExactMatch(initialSelectedCompany)
+      generalLogger.debug('[CompanyNameInput] Restored selected company from props', {
+        company_name: initialSelectedCompany.company_name,
+        registration_number: initialSelectedCompany.registration_number,
+      })
+    } else if (!value && !initialSelectedCompany) {
+      // Clear selected company if value is cleared and no initial company
+      setSelectedCompany(null)
+      setExactMatch(null)
+    }
+  }, [initialSelectedCompany, value])
 
   // Debounced search function - memoized with useRef to persist across renders
   const performSearchRef = useRef<((query: string, country: string) => void) | null>(null)
@@ -73,6 +93,28 @@ export const CompanyNameInput: React.FC<CompanyNameInputProps> = ({
             )
             setExactMatch(match || null)
 
+            // ✅ FIX: Automatically select exact match to show company summary card
+            // This ensures the approval component appears when restoring a previously verified company
+            // Only auto-select if we don't already have a selected company (avoid overwriting user selection)
+            if (match) {
+              // Use a small delay to check current state, avoiding stale closure
+              setTimeout(() => {
+                setSelectedCompany((current) => {
+                  // Only set if not already set (preserves user selection)
+                  if (!current) {
+                    generalLogger.debug('[CompanyNameInput] Auto-selected exact match', {
+                      company_name: match.company_name,
+                      registration_number: match.registration_number,
+                    })
+                    // Trigger onCompanySelect callback if provided
+                    onCompanySelect?.(match)
+                    return match
+                  }
+                  return current
+                })
+              }, 0)
+            }
+
             // Show suggestions dropdown if we have results
             // Keep it visible if user is still typing/focused, or was just typing
             if (results.length > 0) {
@@ -81,6 +123,7 @@ export const CompanyNameInput: React.FC<CompanyNameInputProps> = ({
                 count: results.length,
                 query,
                 hasExactMatch: !!match,
+                autoSelected: !!match && !selectedCompany,
               })
             }
           } else {
@@ -114,11 +157,29 @@ export const CompanyNameInput: React.FC<CompanyNameInputProps> = ({
     } else {
       setSearchResults([])
       setExactMatch(null)
-      setSelectedCompany(null)
+      // ✅ FIX: Don't clear selectedCompany if we have initialSelectedCompany (restoration)
+      if (!initialSelectedCompany) {
+        setSelectedCompany(null)
+      }
       setShowSuggestions(false)
       setHighlightedIndex(-1)
     }
-  }, [value, countryCode, performSearch])
+  }, [value, countryCode, performSearch, initialSelectedCompany])
+
+  // ✅ FIX: When search completes and we have a value, check if it matches initialSelectedCompany
+  // This ensures the company summary card shows when restoring a previously verified company
+  useEffect(() => {
+    if (value && initialSelectedCompany && !selectedCompany) {
+      // Check if the restored value matches the initial selected company
+      if (value.toLowerCase().trim() === initialSelectedCompany.company_name.toLowerCase().trim()) {
+        setSelectedCompany(initialSelectedCompany)
+        setExactMatch(initialSelectedCompany)
+        generalLogger.debug('[CompanyNameInput] Matched restored company name with initial selected company', {
+          company_name: initialSelectedCompany.company_name,
+        })
+      }
+    }
+  }, [value, initialSelectedCompany, selectedCompany])
 
   // Reset highlighted index when search results change
   useEffect(() => {
