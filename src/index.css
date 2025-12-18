@@ -224,6 +224,16 @@
   max-width: 100%;
 }
 
+/* Browser Preview: Visual page indicators with flexible heights */
+@media screen {
+  .valuation-report-preview .page {
+    min-height: 297mm;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    margin: 0 auto 40px auto;
+  }
+}
+
+/* PDF Generation: Let browser/WeasyPrint control pagination automatically */
 @media print {
   .valuation-report-preview {
     background: white;
@@ -234,7 +244,8 @@
     box-shadow: none;
     margin: 0;
     width: 100%;
-    page-break-after: always;
+    min-height: auto; /* No height constraints - pagination engine decides */
+    page-break-after: auto; /* Let pagination engine decide */
   }
 }
 
@@ -576,6 +587,55 @@
   margin-bottom: 24pt;
 }
 
+/* Enhanced CSS Fragmentation Rules - Prevent Content Breaking */
+/* Logical blocks should never break mid-content */
+.valuation-report-preview .report-section,
+.valuation-report-preview .table-card,
+.valuation-report-preview .report-callout,
+.valuation-report-preview .stat-card {
+  break-inside: avoid;
+  page-break-inside: avoid;
+}
+
+/* Keep headers with following content - prevent orphaned headers */
+.valuation-report-preview h1,
+.valuation-report-preview h2,
+.valuation-report-preview h3,
+.valuation-report-preview h4 {
+  break-after: avoid;
+  page-break-after: avoid;
+}
+
+/* Major sections (H1) start on new pages in PDF */
+.valuation-report-preview h1[id^="section-"],
+.valuation-report-preview h1[id^="appendix-"] {
+  break-before: page;
+  page-break-before: always;
+}
+
+/* Prevent orphans and widows in paragraphs */
+.valuation-report-preview p {
+  orphans: 3;
+  widows: 3;
+}
+
+/* Tables and rows never break mid-content */
+.valuation-report-preview table,
+.valuation-report-preview .step-table {
+  break-inside: avoid;
+  page-break-inside: avoid;
+}
+
+.valuation-report-preview tr {
+  break-inside: avoid;
+  page-break-inside: avoid;
+}
+
+/* Table headers repeat on new pages */
+.valuation-report-preview thead {
+  display: table-header-group;
+}
+
 /* Classification Banner */
 .valuation-report-preview .classification-banner {
   background-color: #ffffff;
@@ -583,6 +643,7 @@
   padding: 12pt;
   margin: 24pt 0;
   text-align: center;
+  break-inside: avoid;
   page-break-inside: avoid;
 }
 
