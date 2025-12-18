@@ -476,6 +476,12 @@ export const ValuationForm: React.FC<ValuationFormProps> = ({
           } as any)
 
           setHasProcessedPrefilledQuery(true)
+
+          // ✅ NEW: Mark initialization as complete after prefill
+          // This enables toasts for subsequent user actions
+          setTimeout(() => {
+            useSessionStore.getState().completeInitialization()
+          }, 500) // Small delay to ensure any triggered saves complete during init phase
         }
       } else {
         generalLogger.warn('Could not match prefilledQuery to business type', {
@@ -483,7 +489,20 @@ export const ValuationForm: React.FC<ValuationFormProps> = ({
         })
         // Mark as processed even if no match to avoid retrying
         setHasProcessedPrefilledQuery(true)
+
+        // ✅ NEW: Mark initialization as complete even if no match
+        setTimeout(() => {
+          useSessionStore.getState().completeInitialization()
+        }, 500)
       }
+    }
+
+    // ✅ NEW: If no prefilledQuery, mark initialization as complete after business types load
+    if (!prefilledQuery && businessTypes.length > 0 && !hasProcessedPrefilledQuery) {
+      setHasProcessedPrefilledQuery(true)
+      setTimeout(() => {
+        useSessionStore.getState().completeInitialization()
+      }, 500)
     }
   }, [
     reportId,

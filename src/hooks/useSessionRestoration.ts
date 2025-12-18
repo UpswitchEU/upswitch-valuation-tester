@@ -166,11 +166,18 @@ export function useSessionRestoration() {
           sessionData.html_report ||
           sessionData.info_tab_html)
 
-      if (hasRestoredData) {
+      // ✅ FIX: Check if we're in initialization phase (prevents toasts during initial load)
+      const isInitializing = useSessionStore.getState().isInitializing
+
+      if (hasRestoredData && !isInitializing) {
+        // Only show toast if there's actual data AND we're not in initialization phase
         showToast('Report loaded successfully', 'success', 3000)
       } else {
-        generalLogger.debug('Skipping load toast - no meaningful data restored (new report)', {
+        generalLogger.debug('Skipping load toast', {
           reportId,
+          reason: isInitializing ? 'initializing' : 'no meaningful data',
+          hasRestoredData,
+          isInitializing,
         })
       }
     } catch (error) {

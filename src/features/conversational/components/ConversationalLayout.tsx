@@ -129,6 +129,13 @@ const ConversationalLayoutInner: React.FC<ConversationalLayoutProps> = ({
     // The callback reads the ref value when invoked, ensuring we have the state from before the save
     useSessionStore.setState({
       onSaveSuccess: () => {
+        // ✅ FIX: Check if we're still initializing (prevents toasts during auto-fill/setup)
+        const isInitializing = useSessionStore.getState().isInitializing
+        if (isInitializing) {
+          // Skip toast during initialization phase (auto-fill, restoration, etc.)
+          return
+        }
+
         // ✅ FIX: Read ref value when callback is invoked
         // Since we update the ref reactively, this captures the state from before save started
         // (The saveSession function sets hasUnsavedChanges to false AFTER save completes,

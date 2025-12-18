@@ -30,6 +30,9 @@ interface SessionStore {
   lastSaved: Date | null
   hasUnsavedChanges: boolean
 
+  // ✅ NEW: Initialization tracking to suppress toasts during setup
+  isInitializing: boolean
+
   // ✅ NEW: Callback for save success notifications
   onSaveSuccess?: () => void
 
@@ -43,6 +46,7 @@ interface SessionStore {
   updateSessionData: (data: Partial<any>) => Promise<void> // Async for hook compatibility
   saveSession: (reason?: 'user' | 'autosave' | 'system') => Promise<void>
   clearSession: () => void
+  completeInitialization: () => void // ✅ NEW: Mark initialization as complete
 
   // Helpers
   getReportId: () => string | null
@@ -68,6 +72,7 @@ export const useSessionStore = create<SessionStore>((set, get) => ({
   isSaving: false,
   lastSaved: null,
   hasUnsavedChanges: false,
+  isInitializing: true, // ✅ NEW: Start in initializing state
 
   /**
    * Load session from backend/cache
@@ -145,7 +150,7 @@ export const useSessionStore = create<SessionStore>((set, get) => ({
         return
       }
 
-      set({ isLoading: true, error: null })
+      set({ isLoading: true, error: null, isInitializing: true }) // ✅ NEW: Mark as initializing
 
       try {
         storeLogger.info('[Session] Loading session', { reportId: expectedReportId, flow, prefilledQuery })
@@ -452,7 +457,17 @@ export const useSessionStore = create<SessionStore>((set, get) => ({
       error: null,
       lastSaved: null,
       hasUnsavedChanges: false,
+      isInitializing: true, // ✅ NEW: Reset to initializing state
     })
+  },
+
+  /**
+   * Mark initialization as complete
+   * This allows toasts to show for subsequent saves/loads
+   */
+  completeInitialization: () => {
+    set({ isInitializing: false })
+    storeLogger.debug('[Session] Initialization complete - toasts enabled')
   },
 
   /**
