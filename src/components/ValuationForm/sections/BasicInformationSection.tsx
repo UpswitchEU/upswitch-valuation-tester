@@ -139,88 +139,89 @@ export const BasicInformationSection: React.FC<BasicInformationSectionProps> = (
     verifyRestoredCompany()
   }, [initialSelectedCompany, formData.country_code])
 
-  // Save company data when selectedCompany changes (simplified approach)
+  // Save company data when selectedCompany changes
   useEffect(() => {
-    const saveCompanyData = async () => {
     if (!selectedCompany) return
 
-    generalLogger.info('[BasicInfo] Saving company data on calculate', {
-      company_name: selectedCompany.company_name,
-      registration_number: selectedCompany.registration_number,
-    })
+    const saveCompanyData = async () => {
+      generalLogger.info('[BasicInfo] Saving company data', {
+        company_name: selectedCompany.company_name,
+        registration_number: selectedCompany.registration_number,
+      })
 
-    const currentBusinessContext = (formData.business_context as any) || {}
-    const updatedBusinessContext = {
-      ...currentBusinessContext,
-      kbo_registration: selectedCompany.registration_number,
-      kbo_registration_number: selectedCompany.registration_number,
-      legal_form: selectedCompany.legal_form,
-      company_id: selectedCompany.company_id,
-      company_address: selectedCompany.address,
-      company_status: selectedCompany.status,
-    }
+      // Get current form data snapshot to avoid stale closures
+      const currentFormData = formData
+      const currentBusinessContext = (currentFormData.business_context as any) || {}
+      const updatedBusinessContext = {
+        ...currentBusinessContext,
+        kbo_registration: selectedCompany.registration_number,
+        kbo_registration_number: selectedCompany.registration_number,
+        legal_form: selectedCompany.legal_form,
+        company_id: selectedCompany.company_id,
+        company_address: selectedCompany.address,
+        company_status: selectedCompany.status,
+      }
 
-    const updates: Partial<ValuationFormData> = {
-      business_context: updatedBusinessContext,
-    }
+      const updates: Partial<ValuationFormData> = {
+        business_context: updatedBusinessContext,
+      }
 
-    // Fetch financial data if available
-    if (selectedCompany.company_id && selectedCompany.company_id.length > 3) {
-      try {
-        const { registryService } = await import('../../../services/registry/registryService')
-        const financialData = await registryService.getCompanyFinancials(
-          selectedCompany.company_id,
-          formData.country_code || 'BE'
-        )
+      // Fetch financial data if available
+      if (selectedCompany.company_id && selectedCompany.company_id.length > 3) {
+        try {
+          const { registryService } = await import('../../../services/registry/registryService')
+          const financialData = await registryService.getCompanyFinancials(
+            selectedCompany.company_id,
+            currentFormData.country_code || 'BE'
+          )
 
-        // Auto-fill founding_year if available and not already set
-        if (financialData.founding_year && !formData.founding_year) {
-          updates.founding_year = financialData.founding_year
-        }
+          // Auto-fill founding_year if available and not already set
+          if (financialData.founding_year && !currentFormData.founding_year) {
+            updates.founding_year = financialData.founding_year
+          }
 
-        // Auto-fill industry if available and not already set
-        if (
-          financialData.industry_description &&
-          !formData.industry &&
-          !formData.business_type_id
-        ) {
-          updates.industry = financialData.industry_description
-        }
+          // Auto-fill industry if available and not already set
+          if (
+            financialData.industry_description &&
+            !currentFormData.industry &&
+            !currentFormData.business_type_id
+          ) {
+            updates.industry = financialData.industry_description
+          }
 
-        // Auto-fill number_of_employees if available
-        if (financialData.employees && !formData.number_of_employees) {
-          updates.number_of_employees = financialData.employees
-        }
+          // Auto-fill number_of_employees if available
+          if (financialData.employees && !currentFormData.number_of_employees) {
+            updates.number_of_employees = financialData.employees
+          }
 
-        // Track auto-filled fields
-        const filledFields: string[] = []
-        if (updates.founding_year) filledFields.push('Founding year')
-        if (updates.industry) filledFields.push('Industry')
-        if (updates.number_of_employees) filledFields.push('Employees')
+          // Track auto-filled fields
+          const filledFields: string[] = []
+          if (updates.founding_year) filledFields.push('Founding year')
+          if (updates.industry) filledFields.push('Industry')
+          if (updates.number_of_employees) filledFields.push('Employees')
 
-        if (filledFields.length > 0) {
-          setAutoFilledFields(filledFields)
-          setTimeout(() => setAutoFilledFields([]), 5000)
-          
-          generalLogger.info('[BasicInfo] Auto-filled fields from KBO', {
-            filledFields,
-            company_id: selectedCompany.company_id,
+          if (filledFields.length > 0) {
+            setAutoFilledFields(filledFields)
+            setTimeout(() => setAutoFilledFields([]), 5000)
+
+            generalLogger.info('[BasicInfo] Auto-filled fields from KBO', {
+              filledFields,
+              company_id: selectedCompany.company_id,
+            })
+          }
+        } catch (error) {
+          generalLogger.warn('[BasicInfo] Failed to fetch financial data', {
+            error: error instanceof Error ? error.message : 'Unknown error',
           })
         }
-      } catch (error) {
-        generalLogger.warn('[BasicInfo] Failed to fetch financial data', {
-          error: error instanceof Error ? error.message : 'Unknown error',
-        })
       }
-    }
 
       updateFormData(updates)
     }
 
-    if (selectedCompany) {
-      saveCompanyData()
-    }
-  }, [selectedCompany, formData.business_context, formData.founding_year, formData.industry, formData.business_type_id, formData.number_of_employees, formData.country_code, updateFormData])
+    saveCompanyData()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedCompany])
 
   return (
     <div className="space-y-6">

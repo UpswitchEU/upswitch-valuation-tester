@@ -1,4 +1,5 @@
 export { default as CompanyNameInput } from './CompanyNameInput'
+export { default as CompanyPreviewCard } from './CompanyPreviewCard'
 export { CustomBusinessTypeSearch } from './CustomBusinessTypeSearch'
 export { default as CustomDropdown } from './CustomDropdown'
 export { default as CustomInputField } from './CustomInputField'
