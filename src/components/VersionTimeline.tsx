@@ -58,16 +58,29 @@ export function VersionTimeline({
   }
 
   // ✅ FIX: Deduplicate versions by versionNumber to prevent duplicates
-  // Use a Map to ensure unique versions by versionNumber (keep the latest one if duplicates exist)
-  const versionMap = new Map<number, ValuationVersion>()
+  // First deduplicate by id (exact duplicates), then by versionNumber
+  const idMap = new Map<string, ValuationVersion>()
   versions.forEach((version) => {
+    if (!idMap.has(version.id)) {
+      idMap.set(version.id, version)
+    }
+  })
+  const uniqueByIdVersions = Array.from(idMap.values())
+  
+  // Then deduplicate by versionNumber (keep latest createdAt)
+  const versionMap = new Map<number, ValuationVersion>()
+  uniqueByIdVersions.forEach((version) => {
     const existing = versionMap.get(version.versionNumber)
-    // Keep the version with the latest createdAt or id if duplicates exist
-    if (
-      !existing ||
-      (version.createdAt && existing.createdAt && version.createdAt > existing.createdAt)
-    ) {
+    if (!existing) {
       versionMap.set(version.versionNumber, version)
+    } else {
+      const versionCreatedAt = version.createdAt ? new Date(version.createdAt).getTime() : 0
+      const existingCreatedAt = existing.createdAt ? new Date(existing.createdAt).getTime() : 0
+      
+      if (versionCreatedAt > existingCreatedAt) {
+        versionMap.set(version.versionNumber, version)
+      }
+      // If timestamps are equal or both missing, keep the existing one (first encountered)
     }
   })
 
