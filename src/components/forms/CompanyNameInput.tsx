@@ -389,7 +389,6 @@ export const CompanyNameInput: React.FC<CompanyNameInputProps> = ({
         value={value}
         onChange={handleChange}
         disabled={isReadOnly || inputProps.disabled}
-        className={isReadOnly ? 'bg-gray-50 cursor-not-allowed' : inputProps.className}
         aria-expanded={showSuggestions}
         aria-haspopup="listbox"
         aria-controls="company-suggestions-list"
