@@ -30,6 +30,7 @@ interface ValuationSessionManagerProps {
   children: (props: {
     session: ValuationSession | null
     stage: Stage
+    isLoading: boolean
     error: string | null
     showOutOfCreditsModal: boolean
     onCloseModal: () => void
@@ -68,23 +69,47 @@ export const ValuationSessionManager: React.FC<ValuationSessionManagerProps> = R
     const flowParam = searchParams?.get('flow') as 'manual' | 'conversational' | null
     const detectedFlow = flowParam || 'manual'
 
-    // Dynamic stage based on loading state
+    // ✅ FIX: Simplified stage calculation to prevent render loops
+    // Show loading only when actively loading AND no session yet
+    // Session validation happens in render logic, not here
     const stage: Stage = isLoading && !session ? 'loading' : 'data-entry'
 
-    // Load session when reportId changes (promise cache prevents duplicates)
+    // ✅ FIX: Load session when reportId changes (promise cache prevents duplicates)
+    // Add cleanup to prevent state updates after unmount
     useEffect(() => {
+      let isMounted = true
+
       generalLogger.info('[SessionManager] Loading session', {
         reportId,
         flow: detectedFlow,
         prefilledQuery,
       })
-      loadSession(reportId, detectedFlow, prefilledQuery).catch((err) => {
-        generalLogger.error('[SessionManager] Load failed', {
-          reportId,
-          flow: detectedFlow,
-          error: err.message,
+
+      loadSession(reportId, detectedFlow, prefilledQuery)
+        .then(() => {
+          if (!isMounted) {
+            generalLogger.debug('[SessionManager] Load completed after unmount, ignoring', {
+              reportId,
+            })
+          }
         })
-      })
+        .catch((err) => {
+          if (!isMounted) {
+            generalLogger.debug('[SessionManager] Load failed after unmount, ignoring', {
+              reportId,
+            })
+            return
+          }
+          generalLogger.error('[SessionManager] Load failed', {
+            reportId,
+            flow: detectedFlow,
+            error: err.message,
+          })
+        })
+
+      return () => {
+        isMounted = false
+      }
       // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [reportId, detectedFlow, prefilledQuery]) // loadSession is stable - don't include in deps
 
@@ -106,10 +131,11 @@ export const ValuationSessionManager: React.FC<ValuationSessionManagerProps> = R
       router.push('/')
     }, [reportId, clearSession, router])
 
-    // Simplified render: Optimistic UI (no loading screen)
+    // ✅ FIX: Pass isLoading to children so they can prevent UI from rendering during initial load
     return children({
       session,
       stage,
+      isLoading,
       error,
       showOutOfCreditsModal: false, // TODO: Re-implement if needed
       onCloseModal: () => {}, // No-op

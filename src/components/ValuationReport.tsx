@@ -106,6 +106,7 @@ export const ValuationReport: React.FC<ValuationReportProps> = React.memo(
             {({
               session,
               stage,
+              isLoading,
               error,
               showOutOfCreditsModal,
               onCloseModal,
@@ -117,6 +118,7 @@ export const ValuationReport: React.FC<ValuationReportProps> = React.memo(
               <ValuationFlowSelector
                 session={session}
                 stage={stage}
+                isLoading={isLoading}
                 error={error}
                 prefilledQuery={prefilledQuery}
                 autoSend={autoSend}

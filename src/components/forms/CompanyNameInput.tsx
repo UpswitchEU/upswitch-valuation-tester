@@ -93,23 +93,22 @@ export const CompanyNameInput: React.FC<CompanyNameInputProps> = ({
             )
             setExactMatch(match || null)
 
-            // ✅ FIX: Automatically select exact match to show company summary card
-            // This ensures the approval component appears when restoring a previously verified company
+            // ✅ FIX: Automatically accept exact match - select and save KBO data
+            // This ensures the confirmation box appears and data is saved when user types exact company name
             // Only auto-select if we don't already have a selected company (avoid overwriting user selection)
-            // ✅ CRITICAL: Don't call onCompanySelect during auto-selection - only call it when user explicitly selects
-            // This prevents form updates that could interfere with typing
             if (match) {
               // Use a small delay to check current state, avoiding stale closure
               setTimeout(() => {
                 setSelectedCompany((current) => {
                   // Only set if not already set (preserves user selection)
                   if (!current) {
-                    generalLogger.debug('[CompanyNameInput] Auto-selected exact match (silent - no callback)', {
+                    generalLogger.info('[CompanyNameInput] Auto-selected exact match - saving KBO data', {
                       company_name: match.company_name,
                       registration_number: match.registration_number,
                     })
-                    // ✅ FIX: Don't call onCompanySelect here - only call it when user explicitly selects
-                    // This prevents form updates during typing that could cause re-renders and focus loss
+                    // ✅ FIX: Call onCompanySelect to save KBO data (focus loss issue is now fixed)
+                    // This saves registration data to business_context so restoration works
+                    onCompanySelect?.(match)
                     return match
                   }
                   return current
@@ -117,15 +116,20 @@ export const CompanyNameInput: React.FC<CompanyNameInputProps> = ({
               }, 0)
             }
 
-            // Show suggestions dropdown if we have results
-            // Keep it visible if user is still typing/focused, or was just typing
-            if (results.length > 0) {
+            // ✅ FIX: Only show suggestions dropdown if NO exact match found
+            // If exact match exists, hide dropdown (user already accepted the company)
+            if (match) {
+              setShowSuggestions(false)
+              generalLogger.debug('KBO exact match found - hiding dropdown', {
+                query,
+                company_name: match.company_name,
+              })
+            } else if (results.length > 0) {
+              // Show dropdown only when there's no exact match
               setShowSuggestions(true)
-              generalLogger.debug('KBO suggestions ready', {
+              generalLogger.debug('KBO suggestions ready - showing dropdown', {
                 count: results.length,
                 query,
-                hasExactMatch: !!match,
-                autoSelected: !!match && !selectedCompany,
               })
             }
           } else {

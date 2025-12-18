@@ -12,6 +12,7 @@
 // Dynamic imports using React.lazy for code splitting (Next.js compatible)
 import React, { lazy, Suspense, useEffect, useMemo } from 'react'
 import type { ValuationResponse, ValuationSession } from '../types/valuation'
+import { generalLogger } from '../utils/logger'
 import { LoadingState } from './LoadingState'
 import { INITIALIZATION_STEPS } from './LoadingState.constants'
 
@@ -28,6 +29,8 @@ interface ValuationFlowSelectorProps {
   session: ValuationSession | null
   /** Current UI stage determining what to render */
   stage: Stage
+  /** Whether session is currently loading */
+  isLoading: boolean
   /** Error message if session initialization failed */
   error: string | null
   /** Prefilled query for conversational flow */
@@ -130,6 +133,7 @@ export const ValuationFlowSelector: React.FC<ValuationFlowSelectorProps> = React
   ({
     session,
     stage,
+    isLoading,
     error,
     prefilledQuery,
     autoSend,
@@ -205,13 +209,27 @@ export const ValuationFlowSelector: React.FC<ValuationFlowSelectorProps> = React
     }
 
     if (stage === 'data-entry') {
-      // ⚠️ OPTIMISTIC RENDERING: Render UI immediately even if session not loaded yet
-      // Session will load asynchronously and UI will update reactively via Zustand subscriptions
-      // Use reportId from props (always available) for optimistic rendering
+      // ✅ FIX: Simplified loading check - only show loading during initial load
+      // The stage calculation already handles most cases, this is a final safety check
+      if (isLoading && !session) {
+        return <LoadingState steps={INITIALIZATION_STEPS} variant="dark" />
+      }
+
+      // ✅ FIX: Validate session matches reportId before rendering
+      // This prevents rendering stale session data from previous reports
+      if (session && session.reportId !== reportId) {
+        generalLogger.warn('[ValuationFlowSelector] Session mismatch detected, showing loading', {
+          sessionReportId: session.reportId,
+          currentReportId: reportId,
+        })
+        return <LoadingState steps={INITIALIZATION_STEPS} variant="dark" />
+      }
+
+      // Use reportId from props (always available) or validated session
       const effectiveReportId = session?.reportId || reportId
 
-      // Determine flow type optimistically - use session if available, otherwise infer from URL
-      const optimisticFlowType =
+      // Determine flow type - use session if available and validated, otherwise infer from URL
+      const flowType =
         session?.currentView === 'manual'
           ? 'manual'
           : session?.currentView === 'conversational'
@@ -229,7 +247,7 @@ export const ValuationFlowSelector: React.FC<ValuationFlowSelectorProps> = React
             <Suspense fallback={<LoadingState steps={INITIALIZATION_STEPS} variant="dark" />}>
               <ValuationFlow
                 reportId={effectiveReportId}
-                flowType={optimisticFlowType}
+                flowType={flowType}
                 onComplete={onComplete}
                 initialQuery={prefilledQuery}
                 autoSend={autoSend}

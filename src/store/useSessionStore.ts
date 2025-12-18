@@ -86,31 +86,98 @@ export const useSessionStore = create<SessionStore>((set, get) => ({
   ) => {
     const state = get()
 
-    // GUARD 1: Already loaded for this reportId
-    if (state.session?.reportId === reportId && !state.error) {
+    // ✅ FIX: GUARD 1: Already loaded for this reportId (verify exact match)
+    // This prevents unnecessary reloads and ensures session matches reportId
+    if (state.session?.reportId === reportId && !state.error && !state.isLoading) {
       storeLogger.debug('[Session] Already loaded, skipping', { reportId })
       return
     }
 
-    // GUARD 2: Already loading (promise cache)
-    if (loadingPromises.has(reportId)) {
-      storeLogger.debug('[Session] Already loading, reusing promise', { reportId })
-      await loadingPromises.get(reportId)
-      return
+    // ✅ FIX: GUARD 2: Clear stale session if reportId doesn't match
+    // This prevents race conditions where old session data shows during new load
+    if (state.session && state.session.reportId !== reportId) {
+      storeLogger.debug('[Session] Clearing stale session before loading new one', {
+        oldReportId: state.session.reportId,
+        newReportId: reportId,
+      })
+      set({ session: null, error: null })
     }
 
-    // Create load promise
+    // ✅ FIX: GUARD 3: Already loading (promise cache) - reuse existing promise
+    // This prevents concurrent loads for the same reportId
+    if (loadingPromises.has(reportId)) {
+      storeLogger.debug('[Session] Already loading, reusing promise', { reportId })
+      try {
+        await loadingPromises.get(reportId)
+        // ✅ FIX: Verify loaded session matches reportId after promise resolves
+        // This handles race conditions where promise resolves with wrong session
+        const finalState = get()
+        if (finalState.session?.reportId === reportId) {
+          return
+        } else {
+          storeLogger.warn('[Session] Promise resolved but session mismatch, reloading', {
+            expectedReportId: reportId,
+            actualReportId: finalState.session?.reportId,
+          })
+          // Fall through to load again
+        }
+      } catch (error) {
+        // If promise rejected, fall through to retry load
+        storeLogger.debug('[Session] Cached promise rejected, retrying load', {
+          reportId,
+          error: error instanceof Error ? error.message : String(error),
+        })
+        // Fall through to load again
+      }
+    }
+
+    // ✅ FIX: Create load promise with reportId validation
+    // Capture reportId at start to detect race conditions
+    const expectedReportId = reportId
     const loadPromise = (async () => {
+      // ✅ FIX: Double-check reportId hasn't changed before setting loading state
+      // This prevents race conditions when reportId changes rapidly
+      const currentState = get()
+      if (currentState.session?.reportId === expectedReportId && !currentState.error) {
+        storeLogger.debug('[Session] ReportId already loaded during promise creation', {
+          reportId: expectedReportId,
+        })
+        return
+      }
+
       set({ isLoading: true, error: null })
 
       try {
-        storeLogger.info('[Session] Loading session', { reportId, flow, prefilledQuery })
+        storeLogger.info('[Session] Loading session', { reportId: expectedReportId, flow, prefilledQuery })
 
         // Load from SessionService (handles cache, backend, merging, auto-creation)
-        const session = await sessionService.loadSession(reportId, flow, prefilledQuery)
+        const session = await sessionService.loadSession(expectedReportId, flow, prefilledQuery)
 
         if (!session) {
-          throw new Error(`Session not found: ${reportId}`)
+          throw new Error(`Session not found: ${expectedReportId}`)
+        }
+
+        // ✅ FIX: Validate session reportId matches expected reportId
+        // This prevents race conditions where wrong session is loaded
+        if (session.reportId !== expectedReportId) {
+          storeLogger.error('[Session] Loaded session reportId mismatch', {
+            expectedReportId,
+            actualReportId: session.reportId,
+          })
+          throw new Error(
+            `Session reportId mismatch: expected ${expectedReportId}, got ${session.reportId}`
+          )
+        }
+
+        // ✅ FIX: Double-check reportId hasn't changed during async load
+        // If reportId changed, don't update state (prevents stale data)
+        const finalState = get()
+        if (finalState.session?.reportId !== expectedReportId && finalState.session) {
+          storeLogger.warn('[Session] ReportId changed during load, discarding result', {
+            expectedReportId,
+            currentReportId: finalState.session.reportId,
+          })
+          return // Don't update state if reportId changed
         }
 
         // ✅ FIX: Only mark as saved if session was explicitly updated (user saved changes)
@@ -138,9 +205,20 @@ export const useSessionStore = create<SessionStore>((set, get) => ({
         const message = error instanceof Error ? error.message : 'Failed to load session'
 
         storeLogger.error('[Session] Load failed', {
-          reportId,
+          reportId: expectedReportId,
           error: message,
         })
+
+        // ✅ FIX: Only update error state if reportId hasn't changed during load
+        // This prevents overwriting state for a different reportId
+        const errorState = get()
+        if (errorState.session?.reportId !== expectedReportId && errorState.session) {
+          storeLogger.warn('[Session] ReportId changed during error, not updating error state', {
+            expectedReportId,
+            currentReportId: errorState.session.reportId,
+          })
+          return // Don't update error state if reportId changed
+        }
 
         set({
           error: message,
