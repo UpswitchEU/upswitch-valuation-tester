@@ -119,11 +119,6 @@ export const useTokenRefresh = (options: RefreshOptions = {}) => {
   const checkAndRefresh = useCallback(async () => {
     try {
       // Make a lightweight auth check
-        
-        // Broadcast session refresh to other tabs via BroadcastChannel
-        const syncManager = getSessionSyncManager();
-        syncManager.broadcastSessionRefresh(window.location.hostname);
-        
       const response = await axios.get(`${API_URL}/api/auth/me`, {
         withCredentials: true,
         timeout: 5000,
@@ -133,6 +128,10 @@ export const useTokenRefresh = (options: RefreshOptions = {}) => {
         // User is authenticated, proactively refresh to extend session
         console.log('✅ Auth check passed, refreshing token to extend session');
         await refreshToken();
+        
+        // Broadcast session refresh to other tabs AFTER successful refresh
+        const syncManager = getSessionSyncManager();
+        syncManager.broadcastSessionRefresh(window.location.hostname);
       }
     } catch (error: any) {
       if (error.response?.status === 401) {
