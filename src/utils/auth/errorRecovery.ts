@@ -183,3 +183,4 @@ export function isAuthError(error: any): boolean {
   const classified = classifyAuthError(error)
   return classified.type === AuthErrorType.AUTH_ERROR
 }
+

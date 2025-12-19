@@ -9,7 +9,18 @@ import React from 'react'
 import { useAuth } from '../contexts/AuthProvider'
 
 export const AuthStatus: React.FC = () => {
-  const { user, isAuthenticated, isLoading, error, cookieHealth } = useAuth()
+  const { user, isAuthenticated, isLoading, error, cookieHealth, refreshAuth } = useAuth()
+  
+  // Manual retry function
+  const handleRetry = async () => {
+    console.log('🔄 [MANUAL RETRY] User clicked retry - checking for cookie...')
+    if (typeof document !== 'undefined') {
+      const hasCookie = document.cookie.includes('upswitch_session')
+      console.log('🔄 [MANUAL RETRY] Cookie present:', hasCookie ? '✅ YES' : '❌ NO')
+      console.log('🔄 [MANUAL RETRY] All cookies:', document.cookie || 'none')
+    }
+    await refreshAuth()
+  }
 
   if (isLoading) {
     return (
@@ -81,13 +92,41 @@ export const AuthStatus: React.FC = () => {
     )
   }
 
-  // Guest mode
+  // Guest mode - Enhanced messaging for cookie detection
   const showCookieBlockingHint = cookieHealth?.blocked || cookieHealth?.needsToken
+  const isSubdomain = typeof window !== 'undefined' && window.location.hostname.includes('valuation.')
   
   return (
     <div className="auth-status auth-status-guest" role="status">
       <div className="auth-status-content">
         <p className="auth-status-message">Continuing as guest</p>
+        {isSubdomain && (
+          <div className="auth-status-hint" style={{ fontSize: '0.875rem', color: '#f59e0b', marginTop: '0.5rem', padding: '0.75rem', backgroundColor: '#fef3c7', borderRadius: '0.375rem', border: '1px solid #fbbf24' }}>
+            <p style={{ marginBottom: '0.5rem', fontWeight: '600' }}>
+              🔍 <strong>Cookie Detection Status:</strong>
+            </p>
+            {typeof document !== 'undefined' && document.cookie.includes('upswitch_session') ? (
+              <p style={{ color: '#059669', marginBottom: '0.5rem' }}>
+                ✅ Cookie detected in browser - checking authentication...
+              </p>
+            ) : (
+              <p style={{ color: '#dc2626', marginBottom: '0.5rem' }}>
+                ❌ No cookie detected - ensure you're logged into{' '}
+                <a 
+                  href="https://upswitch.biz" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  style={{ color: '#3b82f6', textDecoration: 'underline', fontWeight: '600' }}
+                >
+                  upswitch.biz
+                </a>
+              </p>
+            )}
+            <p style={{ fontSize: '0.8125rem', color: '#6b7280', marginTop: '0.5rem' }}>
+              💡 <strong>Tip:</strong> Open browser DevTools (F12) → Console tab to see detailed cookie detection logs
+            </p>
+          </div>
+        )}
         {showCookieBlockingHint ? (
           <div className="auth-status-hint" style={{ fontSize: '0.875rem', color: '#6b7280', marginTop: '0.5rem' }}>
             <p style={{ marginBottom: '0.5rem' }}>
@@ -112,18 +151,38 @@ export const AuthStatus: React.FC = () => {
             )}
           </div>
         ) : (
-          <p className="auth-status-hint" style={{ fontSize: '0.875rem', color: '#6b7280', marginTop: '0.5rem' }}>
-            💡 To access your account: Navigate here from{' '}
-            <a 
-              href="https://upswitch.biz" 
-              target="_blank" 
-              rel="noopener noreferrer"
-              style={{ color: '#3b82f6', textDecoration: 'underline' }}
-            >
-              upswitch.biz
-            </a>
-            {' '}to get automatic authentication
-          </p>
+          <>
+            <p className="auth-status-hint" style={{ fontSize: '0.875rem', color: '#6b7280', marginTop: '0.5rem' }}>
+              💡 To access your account: Navigate here from{' '}
+              <a 
+                href="https://upswitch.biz" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                style={{ color: '#3b82f6', textDecoration: 'underline' }}
+              >
+                upswitch.biz
+              </a>
+              {' '}to get automatic authentication
+            </p>
+            {isSubdomain && (
+              <button
+                onClick={handleRetry}
+                style={{
+                  marginTop: '0.75rem',
+                  padding: '0.5rem 1rem',
+                  backgroundColor: '#3b82f6',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '0.375rem',
+                  cursor: 'pointer',
+                  fontSize: '0.875rem',
+                  fontWeight: '500',
+                }}
+              >
+                🔄 Retry Cookie Check
+              </button>
+            )}
+          </>
         )}
       </div>
     </div>
@@ -167,3 +226,4 @@ export const AuthErrorMessage: React.FC<{ error: string; onRetry?: () => void }>
     </div>
   )
 }
+

@@ -174,3 +174,4 @@ export function destroyAuthCache(): void {
     authCache = null
   }
 }
+

@@ -1,32 +1,17 @@
 /**
- * Auth Store (Zustand) - World-Class Cross-Subdomain Authentication Engine
+ * Auth Store (Zustand)
  * 
  * Single source of truth for authentication state.
  * Uses Zustand's atomic updates and promise caching to prevent race conditions.
  * 
- * Architecture:
- * - Priority 0: Cookie health detection (browser compatibility check)
- * - Priority 1: Cookie authentication (seamless cross-subdomain from upswitch.biz)
- * - Priority 2: Token exchange (fallback when cookies blocked)
- * - Priority 3: Guest mode (always works)
- * 
  * Features:
  * - Atomic state updates (no race conditions via Zustand)
  * - Promise cache prevents concurrent initAuth calls
- * - Async-first operations (non-blocking, smooth UX)
+ * - Async-first operations (non-blocking, smooth)
  * - Cross-tab synchronization via BroadcastChannel
  * - Cookie health monitoring integration
- * - Comprehensive logging for testing and debugging
- * - Background token refresh (proactive, 5min intervals + tab focus)
- * - Error recovery with exponential backoff
  * 
- * Cross-Subdomain Cookie Flow:
- * 1. User logs into upswitch.biz → Cookie set with domain: '.upswitch.biz'
- * 2. User navigates to valuation.upswitch.biz → Cookie automatically sent
- * 3. /api/auth/me validates cookie → User authenticated seamlessly
- * 4. If cookies blocked → Token exchange fallback (Priority 2)
- * 
- * Pattern: Follows useGuestSessionStore promise cache pattern for consistency
+ * Pattern: Follows useGuestSessionStore promise cache pattern
  */
 
 import { create } from 'zustand'
@@ -34,6 +19,7 @@ import { devtools } from 'zustand/middleware'
 import { User } from '../contexts/AuthContextTypes'
 import { backendAPI } from '../services/backendApi'
 import { getAuthCache } from '../utils/auth/authCache'
+import { authFlowLogger } from '../utils/auth/authFlowLogger'
 import { checkCookieHealth, CookieHealthStatus } from '../utils/auth/cookieHealth'
 import { AuthErrorType, classifyAuthError, isRetryableAuthError, RecoveryStrategy } from '../utils/auth/errorRecovery'
 import { getSessionSyncManager } from '../utils/auth/sessionSync'
@@ -333,6 +319,7 @@ export const useAuthStore = create<AuthStore>()(
       /**
        * Check for existing session
        * No deduplication - Zustand handles concurrency via promise cache
+       * Enhanced with comprehensive cookie detection and cross-subdomain logging
        */
       checkSession: async (): Promise<User | null> => {
         const cache = getAuthCache()
@@ -340,66 +327,131 @@ export const useAuthStore = create<AuthStore>()(
         // Check cache first
         const cached = cache.get()
         if (cached && cached.user) {
-          authLogger.debug('✅ Using cached auth result')
+          authLogger.debug('✅ [CheckSession] Using cached auth result', {
+            userId: cached.user.id,
+            email: cached.user.email,
+          })
           get().setUser(cached.user)
           return cached.user
         }
         
-        // Enhanced cookie detection before making request (comprehensive logging for testing)
+        // Enhanced cookie detection before making request
         let cookieDiagnostics: any = {}
+        let subdomain: string | null = null
+        let isSubdomainRequest = false
+        
         if (typeof document !== 'undefined') {
           const allCookies = document.cookie
           const hasUpswitchSession = allCookies.includes('upswitch_session')
           const hostname = window.location.hostname
-          const isSubdomain = hostname.includes('.') && hostname !== 'localhost'
-          const isMainDomain = hostname === 'upswitch.biz'
-          const isValuationSubdomain = hostname === 'valuation.upswitch.biz'
           
-          // Parse cookies to check for upswitch_session specifically
-          const cookiePairs = allCookies.split(';').map(c => c.trim())
-          const upswitchSessionCookie = cookiePairs.find(c => c.startsWith('upswitch_session='))
-          
-          cookieDiagnostics = {
-            documentCookies: allCookies || 'none',
-            hasUpswitchSessionCookie: hasUpswitchSession,
-            upswitchSessionCookieValue: upswitchSessionCookie ? upswitchSessionCookie.substring(0, 50) + '...' : 'not found',
-            currentOrigin: window.location.origin,
-            hostname,
-            isSubdomain,
-            isMainDomain,
-            isValuationSubdomain,
-            apiUrl: API_URL,
-            cookieCount: cookiePairs.length,
-            timestamp: new Date().toISOString(),
+          // Detect subdomain
+          if (hostname.includes('.')) {
+            const parts = hostname.split('.')
+            if (parts.length > 2) {
+              subdomain = parts[0]
+              isSubdomainRequest = true
+            }
           }
           
-          authLogger.info('🍪 [CookieDetection] Comprehensive cookie diagnostics', cookieDiagnostics)
+          // Extract cookie details if present
+          let cookieDetails: any = {}
+          if (hasUpswitchSession) {
+            const cookieMatch = allCookies.match(/upswitch_session=([^;]+)/)
+            if (cookieMatch) {
+              cookieDetails = {
+                cookiePresent: true,
+                cookieLength: cookieMatch[1].length,
+                cookiePrefix: cookieMatch[1].substring(0, 20) + '...',
+              }
+            }
+          }
           
-          // Log specific cross-subdomain cookie detection
-          if (isValuationSubdomain && hasUpswitchSession) {
-            authLogger.info('✅ [CookieDetection] Cross-subdomain cookie detected! Cookie from main domain is accessible', {
+          cookieDiagnostics = {
+            timestamp: new Date().toISOString(),
+            action: 'CHECK_SESSION',
+            currentOrigin: window.location.origin,
+            hostname,
+            subdomain: subdomain || 'main domain',
+            isSubdomainRequest,
+            cookieDetection: {
+              documentCookies: allCookies || 'none',
+              hasUpswitchSessionCookie: hasUpswitchSession,
+              cookieCount: allCookies ? allCookies.split(';').length : 0,
+              ...cookieDetails,
+            },
+            apiUrl: API_URL,
+            crossSubdomainExpected: isSubdomainRequest && hasUpswitchSession,
+          }
+          
+          // CRITICAL: Make cookie detection VERY visible in console
+          console.log('🔍 [COOKIE CHECK] ===========================================')
+          console.log('🔍 [COOKIE CHECK] Checking for cross-subdomain cookie...')
+          console.log('🔍 [COOKIE CHECK] Hostname:', hostname)
+          console.log('🔍 [COOKIE CHECK] Subdomain:', subdomain || 'main domain')
+          console.log('🔍 [COOKIE CHECK] Is Subdomain Request:', isSubdomainRequest)
+          console.log('🔍 [COOKIE CHECK] Cookie Found:', hasUpswitchSession ? '✅ YES' : '❌ NO')
+          console.log('🔍 [COOKIE CHECK] All Cookies:', allCookies || 'none')
+          console.log('🔍 [COOKIE CHECK] ===========================================')
+          
+          authLogger.debug('🍪 [CheckSession] Cookie diagnostics before auth check', JSON.stringify(cookieDiagnostics, null, 2))
+          
+          // Log cross-subdomain cookie detection - VERY VISIBLE
+          if (isSubdomainRequest && hasUpswitchSession) {
+            console.log('✅ [COOKIE DETECTED] Cross-subdomain cookie found!', {
+              subdomain,
               hostname,
-              cookieFound: true,
-              cookieValue: upswitchSessionCookie ? 'present' : 'missing',
+              cookiePresent: true,
+              message: 'Cookie from main domain detected on subdomain - attempting authentication',
             })
-          } else if (isValuationSubdomain && !hasUpswitchSession) {
-            authLogger.warn('⚠️ [CookieDetection] No cookie found on subdomain - will try token exchange', {
+            authLogger.info('🔍 [CheckSession] Cross-subdomain cookie detected', {
+              subdomain,
               hostname,
-              cookieFound: false,
-              reason: 'Cookie may not be shared or user not logged in',
+              cookiePresent: true,
+              message: 'Cookie from main domain detected on subdomain - attempting authentication',
+            })
+          } else if (isSubdomainRequest && !hasUpswitchSession) {
+            console.warn('⚠️ [COOKIE MISSING] Subdomain request but NO cookie detected!', {
+              subdomain,
+              hostname,
+              currentOrigin: window.location.origin,
+              allCookies: allCookies || 'none',
+              possibleReasons: [
+                'Cookie not set on main domain',
+                'Cookie domain mismatch (check .upswitch.biz)',
+                'Browser blocking cross-subdomain cookies',
+                'Cookie expired or cleared',
+              ],
+              troubleshooting: [
+                '1. Check if logged into upswitch.biz',
+                '2. Open DevTools → Application → Cookies → Check for upswitch_session',
+                '3. Verify cookie domain is .upswitch.biz',
+                '4. Check browser privacy settings',
+              ],
+            })
+            authLogger.debug('ℹ️ [CheckSession] Subdomain request but no cookie detected', {
+              subdomain,
+              hostname,
+              possibleReasons: [
+                'Cookie not set on main domain',
+                'Cookie domain mismatch (check .upswitch.biz)',
+                'Browser blocking cross-subdomain cookies',
+              ],
             })
           }
         }
         
         try {
-          authLogger.info('🔍 [AuthFlow] Checking session cookie (Priority 1)', {
+          const requestLog = {
+            timestamp: new Date().toISOString(),
+            action: 'AUTH_REQUEST',
             apiUrl: API_URL,
             endpoint: `${API_URL}/api/auth/me`,
-            credentials: 'include',
             method: 'GET',
-            flowStep: 'cookie-check',
+            credentials: 'include',
             ...cookieDiagnostics,
-          })
+          }
+          authLogger.debug('🔍 [CheckSession] Checking session cookie...', JSON.stringify(requestLog, null, 2))
           
           // No deduplication - Zustand atomic updates handle concurrency
           const response = await authCircuitBreaker.execute(async () => {
@@ -419,26 +471,31 @@ export const useAuthStore = create<AuthStore>()(
                   })
                   clearTimeout(timeoutId)
                   
-                  // Extract cookie-related headers for debugging
                   const responseHeaders = Object.fromEntries(res.headers.entries())
-                  const setCookieHeader = res.headers.get('set-cookie')
-                  const authStatus = res.headers.get('x-auth-status')
-                  const cookieDomain = res.headers.get('x-cookie-domain')
+                  const authStatus = res.headers.get('X-Auth-Status')
+                  const cookieDomain = res.headers.get('X-Cookie-Domain')
+                  const originHeader = res.headers.get('X-Origin')
+                  const subdomainHeader = res.headers.get('X-Subdomain')
                   
-                  authLogger.info('📡 [AuthFlow] Auth check response received', {
+                  authLogger.debug('📡 [CheckSession] Auth check response', {
+                    timestamp: new Date().toISOString(),
                     status: res.status,
                     statusText: res.statusText,
                     ok: res.ok,
                     url: res.url,
-                    authStatus,
-                    cookieDomain,
-                    setCookieHeader: setCookieHeader ? 'present' : 'not set',
-                    responseHeaders: {
-                      'x-auth-status': authStatus,
-                      'x-cookie-domain': cookieDomain,
-                      'content-type': responseHeaders['content-type'],
+                    headers: {
+                      ...responseHeaders,
+                      'X-Auth-Status': authStatus,
+                      'X-Cookie-Domain': cookieDomain,
+                      'X-Origin': originHeader,
+                      'X-Subdomain': subdomainHeader,
                     },
-                    flowStep: 'cookie-check-response',
+                    cookieDiagnostics: {
+                      authStatus,
+                      cookieDomain,
+                      origin: originHeader,
+                      subdomain: subdomainHeader,
+                    },
                   })
                   
                   return res
@@ -465,28 +522,19 @@ export const useAuthStore = create<AuthStore>()(
             )
           })
           
-          // Log response after retry/backoff completes
-          const finalHeaders = Object.fromEntries(response.headers.entries())
-          authLogger.info('📡 [AuthFlow] Final session check response', {
+          authLogger.debug('📡 Session check response:', {
             status: response.status,
             statusText: response.statusText,
             ok: response.ok,
+            headers: Object.fromEntries(response.headers.entries()),
             url: response.url,
-            authStatus: response.headers.get('x-auth-status'),
-            cookieDomain: response.headers.get('x-cookie-domain'),
-            flowStep: 'cookie-check-final',
           })
           
-          // Log cookies after request (may have changed)
           if (typeof document !== 'undefined') {
-            const cookiesAfterRequest = document.cookie
-            const hasCookieAfterRequest = cookiesAfterRequest.includes('upswitch_session')
-            
-            authLogger.info('🍪 [AuthFlow] Cookies after request', {
-              allCookies: cookiesAfterRequest || 'none',
-              hasUpswitchSession: hasCookieAfterRequest,
-              cookieChanged: hasCookieAfterRequest !== cookieDiagnostics.hasUpswitchSessionCookie,
-              flowStep: 'cookie-check-after-request',
+            authLogger.debug('🍪 [CheckSession] Document cookies after response', {
+              allCookies: document.cookie,
+              hasUpswitchSession: document.cookie.includes('upswitch_session'),
+              cookieCount: document.cookie ? document.cookie.split(';').length : 0,
             })
           }
 
@@ -501,28 +549,62 @@ export const useAuthStore = create<AuthStore>()(
             }
             
             if (userData) {
-              authLogger.info('✅ [AuthFlow] Authentication successful via cookie!', {
+              // CRITICAL: Make success VERY visible in console
+              console.log('✅✅✅ [AUTH SUCCESS] ===========================================')
+              console.log('✅✅✅ [AUTH SUCCESS] Authentication successful!')
+              console.log('✅✅✅ [AUTH SUCCESS] User:', userData.email)
+              console.log('✅✅✅ [AUTH SUCCESS] User ID:', userData.id)
+              console.log('✅✅✅ [AUTH SUCCESS] Cross-subdomain:', isSubdomainRequest ? 'YES ✅' : 'NO')
+              console.log('✅✅✅ [AUTH SUCCESS] Cookie was detected:', cookieDiagnostics.cookieDetection.hasUpswitchSessionCookie ? 'YES ✅' : 'NO')
+              console.log('✅✅✅ [AUTH SUCCESS] ===========================================')
+              
+              const successLog = {
+                timestamp: new Date().toISOString(),
+                action: 'AUTH_SUCCESS',
                 userId: userData.id,
                 email: userData.email,
-                name: userData.name,
-                flowPath: 'cookie-seamless',
-                authenticationMethod: 'cross-subdomain-cookie',
-                cookieWorked: true,
-                timestamp: new Date().toISOString(),
-              })
+                origin: cookieDiagnostics.currentOrigin,
+                subdomain: subdomain || 'main',
+                isSubdomainRequest,
+                cookieDetected: cookieDiagnostics.cookieDetection.hasUpswitchSessionCookie,
+                crossSubdomainAuth: isSubdomainRequest && cookieDiagnostics.cookieDetection.hasUpswitchSessionCookie,
+                message: isSubdomainRequest 
+                  ? 'Cross-subdomain cookie authentication successful'
+                  : 'Cookie authentication successful',
+              }
+              authLogger.info('✅ [CheckSession] Existing session found', JSON.stringify(successLog, null, 2))
+              
+              // Log cross-subdomain success prominently
+              if (isSubdomainRequest && cookieDiagnostics.cookieDetection.hasUpswitchSessionCookie) {
+                console.log('🎉🎉🎉 [CROSS-SUBDOMAIN SUCCESS] Cookie from main domain authenticated on subdomain!')
+                authLogger.info('✅ [CheckSession] Cross-subdomain cookie authentication successful', {
+                  subdomain,
+                  userId: userData.id,
+                  email: userData.email,
+                  cookieDomain: response.headers.get('X-Cookie-Domain'),
+                  message: 'Cookie from main domain successfully authenticated on subdomain',
+                })
+              }
+              
               get().setUser(userData)
               return userData
             }
             
-            authLogger.debug('No existing session - response', { data })
+            authLogger.debug('ℹ️ [CheckSession] No existing session - response', { data })
             get().setUser(null)
             return null
           } else if (response.status === 404 || response.status === 401) {
-            authLogger.info('ℹ️ [AuthFlow] No active session (expected for guests)', {
+            const noSessionLog = {
+              timestamp: new Date().toISOString(),
+              action: 'NO_SESSION',
               status: response.status,
-              flowStep: 'cookie-check-no-session',
-              nextStep: 'will-try-token-exchange',
-            })
+              origin: cookieDiagnostics.currentOrigin,
+              subdomain: subdomain || 'main',
+              isSubdomainRequest,
+              cookieDetected: cookieDiagnostics.cookieDetection.hasUpswitchSessionCookie,
+              message: 'No active session (expected for guests)',
+            }
+            authLogger.debug('ℹ️ [CheckSession] No active session (expected for guests)', JSON.stringify(noSessionLog, null, 2))
             get().setUser(null)
             return null
           } else {
@@ -580,19 +662,10 @@ export const useAuthStore = create<AuthStore>()(
             body: JSON.stringify({ token }),
           })
 
-          // Check if cookie was set in response
-          const setCookieHeader = response.headers.get('set-cookie')
-          const authStatus = response.headers.get('x-auth-status')
-          const cookieDomain = response.headers.get('x-cookie-domain')
-          
-          authLogger.info('📡 [AuthFlow] Token exchange response', {
+          authLogger.debug('Token exchange response', {
             status: response.status,
             statusText: response.statusText,
             ok: response.ok,
-            authStatus,
-            cookieDomain,
-            setCookieHeader: setCookieHeader ? 'present (cookie set)' : 'not set',
-            flowStep: 'token-exchange-response',
           })
 
           if (!response.ok) {
@@ -620,36 +693,13 @@ export const useAuthStore = create<AuthStore>()(
           }
 
           const data = await response.json()
-          
+          authLogger.debug('Token exchange response data', { success: data.success })
+
           if (data.success && data.data) {
             const userData = data.data.user || data.data
             get().setUser(userData)
             
-            // Log cookies after token exchange (should have cookie now)
-            if (typeof document !== 'undefined') {
-              const cookiesAfterExchange = document.cookie
-              const hasCookieAfterExchange = cookiesAfterExchange.includes('upswitch_session')
-              
-              authLogger.info('✅ [AuthFlow] Authentication successful via token exchange!', {
-                userId: userData.id,
-                email: userData.email,
-                name: userData.name,
-                flowPath: 'token-exchange',
-                authenticationMethod: 'token-to-cookie',
-                cookieSet: hasCookieAfterExchange,
-                cookiesAfterExchange: cookiesAfterExchange || 'none',
-                timestamp: new Date().toISOString(),
-              })
-            } else {
-              authLogger.info('✅ [AuthFlow] Authentication successful via token exchange!', {
-                userId: userData.id,
-                email: userData.email,
-                name: userData.name,
-                flowPath: 'token-exchange',
-                authenticationMethod: 'token-to-cookie',
-                timestamp: new Date().toISOString(),
-              })
-            }
+            authLogger.info('Authentication successful via token exchange', { email: userData.email })
 
             // Migrate guest session data to authenticated user
             try {
@@ -729,6 +779,32 @@ export const useAuthStore = create<AuthStore>()(
           return state.initializationPromise
         }
         
+        // Generate correlation ID for this auth flow
+        authFlowLogger.setCorrelationId()
+        
+        // Detect subdomain context
+        let subdomain: string | null = null
+        let isSubdomainRequest = false
+        if (typeof window !== 'undefined') {
+          const hostname = window.location.hostname
+          if (hostname.includes('.')) {
+            const parts = hostname.split('.')
+            if (parts.length > 2) {
+              subdomain = parts[0]
+              isSubdomainRequest = true
+            }
+          }
+        }
+        
+        // Log auth flow start
+        authFlowLogger.info({
+          action: 'AUTH_FLOW_START',
+          origin: typeof window !== 'undefined' ? window.location.origin : 'unknown',
+          subdomain: subdomain || 'main domain',
+          isSubdomainRequest,
+          correlationId: authFlowLogger.getCorrelationId(),
+        })
+        
         // Create new initialization promise
         const initPromise = (async () => {
           // Atomic state update
@@ -740,6 +816,11 @@ export const useAuthStore = create<AuthStore>()(
 
           try {
             // PRIORITY 0: Check cookie health
+            authFlowLogger.logStep('COOKIE_HEALTH_CHECK', 0, {
+              origin: typeof window !== 'undefined' ? window.location.origin : 'unknown',
+              subdomain: subdomain || 'main',
+              isSubdomainRequest,
+            })
             authLogger.warn('🔍 [Priority 0] Checking cookie health...')
             let cookieHealth: CookieHealthStatus | null = null
             try {
@@ -764,35 +845,108 @@ export const useAuthStore = create<AuthStore>()(
               })
             }
 
-            // PRIORITY 1: Check for existing session cookie (SEAMLESS CROSS-SUBDOMAIN AUTH)
-            authLogger.info('🔍 [AuthFlow] Priority 1: Checking for existing session cookie...', {
-              flowStep: 'cookie-auth-check',
-              expectedBehavior: 'Cookie from upswitch.biz should be accessible on valuation.upswitch.biz',
-              timestamp: new Date().toISOString(),
-            })
+            // PRIORITY 1: Check for existing session cookie
+            // CRITICAL: Make this VERY visible
+            console.log('🚀 [PRIORITY 1] ===========================================')
+            console.log('🚀 [PRIORITY 1] Starting cookie authentication check...')
+            console.log('🚀 [PRIORITY 1] Origin:', typeof window !== 'undefined' ? window.location.origin : 'unknown')
+            console.log('🚀 [PRIORITY 1] Subdomain:', subdomain || 'main')
+            console.log('🚀 [PRIORITY 1] Is Subdomain:', isSubdomainRequest)
+            console.log('🚀 [PRIORITY 1] Cookie Health:', cookieHealth ? {
+              accessible: cookieHealth.accessible,
+              blocked: cookieHealth.blocked,
+              browser: cookieHealth.browser,
+            } : 'not checked')
+            console.log('🚀 [PRIORITY 1] ===========================================')
             
+            authFlowLogger.logStep('COOKIE_AUTH_CHECK', 1, {
+              origin: typeof window !== 'undefined' ? window.location.origin : 'unknown',
+              subdomain: subdomain || 'main',
+              isSubdomainRequest,
+              cookieHealth: cookieHealth ? {
+                accessible: cookieHealth.accessible,
+                blocked: cookieHealth.blocked,
+                browser: cookieHealth.browser,
+              } : null,
+            })
+            authLogger.warn('🔍 [Priority 1] Checking for existing session cookie...')
             let cookieAuthFailed = false
             let cookieErrorDetails: any = null
             
             try {
+              const startTime = performance.now()
+              console.log('📡 [PRIORITY 1] Calling checkSession() to verify cookie...')
+              
+              // Double-check cookie before making request
+              if (typeof document !== 'undefined') {
+                const cookieCheck = document.cookie.includes('upswitch_session')
+                console.log('📡 [PRIORITY 1] Pre-request cookie check:', cookieCheck ? '✅ Found' : '❌ Not found')
+                console.log('📡 [PRIORITY 1] Document cookies:', document.cookie || 'none')
+              }
+              
               const authenticatedUser = await get().checkSession()
+              const duration = Math.round(performance.now() - startTime)
+              console.log('📡 [PRIORITY 1] checkSession() completed in', duration, 'ms')
+              console.log('📡 [PRIORITY 1] Result:', authenticatedUser ? `✅ User found: ${authenticatedUser.email}` : '❌ No user')
+              
+              // Re-detect subdomain for logging (already detected above, but ensure we have it)
+              if (!subdomain && typeof window !== 'undefined') {
+                const hostname = window.location.hostname
+                if (hostname.includes('.')) {
+                  const parts = hostname.split('.')
+                  if (parts.length > 2) {
+                    subdomain = parts[0]
+                    isSubdomainRequest = true
+                  }
+                }
+              }
 
               if (authenticatedUser) {
-                authLogger.info('🎉 [AuthFlow] ✅ SUCCESS: Authenticated via cookie - seamless cross-subdomain auth!', {
+                // CRITICAL: Make success VERY visible
+                console.log('✅✅✅ [SUCCESS] ===========================================')
+                console.log('✅✅✅ [SUCCESS] COOKIE AUTHENTICATION SUCCESSFUL!')
+                console.log('✅✅✅ [SUCCESS] User:', authenticatedUser.email)
+                console.log('✅✅✅ [SUCCESS] User ID:', authenticatedUser.id)
+                console.log('✅✅✅ [SUCCESS] Duration:', duration, 'ms')
+                console.log('✅✅✅ [SUCCESS] Cross-subdomain:', isSubdomainRequest ? 'YES ✅' : 'NO')
+                console.log('✅✅✅ [SUCCESS] ===========================================')
+                
+                const cookieAuthLog = {
+                  timestamp: new Date().toISOString(),
+                  action: 'COOKIE_AUTH_SUCCESS',
+                  priority: 1,
+                  flowPath: 'cookie',
                   userId: authenticatedUser.id,
                   email: authenticatedUser.email,
-                  name: authenticatedUser.name,
-                  flowPath: 'cookie-seamless',
-                  authenticationMethod: 'cross-subdomain-cookie',
+                  duration: duration,
+                  origin: typeof window !== 'undefined' ? window.location.origin : 'unknown',
+                  subdomain: subdomain || 'main domain',
+                  isSubdomainRequest,
                   cookieHealth: cookieHealth ? {
                     accessible: cookieHealth.accessible,
                     blocked: cookieHealth.blocked,
                     browser: cookieHealth.browser,
-                    reason: cookieHealth.reason,
+                    needsToken: cookieHealth.needsToken,
                   } : null,
-                  success: true,
-                  timestamp: new Date().toISOString(),
-                })
+                  crossSubdomainAuth: isSubdomainRequest,
+                  message: isSubdomainRequest 
+                    ? 'Cross-subdomain cookie authentication successful - seamless!'
+                    : 'Cookie authentication successful - seamless!',
+                }
+                authLogger.warn('✅ [Priority 1] Authenticated via cookie - seamless!', JSON.stringify(cookieAuthLog, null, 2))
+                
+                // Log cross-subdomain success prominently
+                if (isSubdomainRequest) {
+                  console.log('🎉🎉🎉 [CROSS-SUBDOMAIN SUCCESS] Cookie from main domain authenticated on subdomain!')
+                  authLogger.info('🎉 [Priority 1] Cross-subdomain cookie authentication successful', {
+                    subdomain,
+                    userId: authenticatedUser.id,
+                    email: authenticatedUser.email,
+                    duration: duration,
+                    cookieHealth: cookieHealth?.browser,
+                    message: 'Cookie from main domain successfully authenticated on subdomain',
+                  })
+                }
                 
                 // Ensure authenticated user has a guest session
                 const { ensureSession } = useGuestSessionStore.getState()
@@ -812,9 +966,24 @@ export const useAuthStore = create<AuthStore>()(
                 return
               }
               
+              // CRITICAL: Make failure visible
+              console.log('❌ [PRIORITY 1] ===========================================')
+              console.log('❌ [PRIORITY 1] No cookie session found')
+              console.log('❌ [PRIORITY 1] This is expected for guest users')
+              console.log('❌ [PRIORITY 1] Will continue to Priority 2 (token) or Priority 3 (guest)')
+              console.log('❌ [PRIORITY 1] ===========================================')
+              
               authLogger.debug('ℹ️ [Priority 1] No cookie session found (expected for guests)')
               cookieAuthFailed = true
             } catch (cookieError: any) {
+              // CRITICAL: Make error VERY visible
+              console.error('❌❌❌ [PRIORITY 1 ERROR] ===========================================')
+              console.error('❌❌❌ [PRIORITY 1 ERROR] Cookie authentication check FAILED!')
+              console.error('❌❌❌ [PRIORITY 1 ERROR] Error:', cookieError?.message || 'Unknown error')
+              console.error('❌❌❌ [PRIORITY 1 ERROR] Status:', cookieError?.response?.status)
+              console.error('❌❌❌ [PRIORITY 1 ERROR] Will try token exchange or guest mode')
+              console.error('❌❌❌ [PRIORITY 1 ERROR] ===========================================')
+              
               cookieAuthFailed = true
               cookieErrorDetails = cookieError
               const classified = classifyAuthError(cookieError)
@@ -866,22 +1035,14 @@ export const useAuthStore = create<AuthStore>()(
               }
             }
 
-            // PRIORITY 2: Check for token in URL (FALLBACK METHOD)
-            authLogger.info('🔍 [AuthFlow] Priority 2: Checking for token in URL...', {
-              flowStep: 'token-url-check',
-              url: typeof window !== 'undefined' ? window.location.href : 'N/A',
-            })
-            
+            // PRIORITY 2: Check for token in URL
+            authLogger.warn('🔍 [Priority 2] Checking for token in URL...')
             if (typeof window !== 'undefined') {
               const params = new URLSearchParams(window.location.search)
               const token = params.get('token')
 
               if (token) {
-                authLogger.info('✅ [AuthFlow] Token found in URL - exchanging for session cookie', {
-                  tokenLength: token.length,
-                  tokenPrefix: token.substring(0, 20) + '...',
-                  flowStep: 'token-found-in-url',
-                })
+                authLogger.warn('✅ [Priority 2] Token found in URL - exchanging for session')
 
                 // Remove token from URL immediately
                 const newUrl = window.location.pathname + window.location.hash
@@ -890,9 +1051,8 @@ export const useAuthStore = create<AuthStore>()(
                 try {
                   await get().exchangeToken(token)
                   
-                  authLogger.info('🎉 [AuthFlow] ✅ SUCCESS: Token exchange complete - user authenticated!', {
-                    flowPath: 'token-exchange-success',
-                    authenticationMethod: 'token-to-cookie',
+                  authLogger.warn('✅ [Priority 2] Token exchange complete - user authenticated', {
+                    flowPath: 'token',
                     cookieHealth: cookieHealth ? {
                       accessible: cookieHealth.accessible,
                       blocked: cookieHealth.blocked,
@@ -902,7 +1062,6 @@ export const useAuthStore = create<AuthStore>()(
                     } : null,
                     cookieAuthFailed,
                     finalState: 'authenticated',
-                    success: true,
                     timestamp: new Date().toISOString(),
                   })
                   
@@ -940,12 +1099,10 @@ export const useAuthStore = create<AuthStore>()(
               }
             }
 
-            // PRIORITY 3: Continue as guest (ALWAYS WORKS)
-            authLogger.info('🔍 [AuthFlow] Priority 3: Initializing guest session...', {
-              flowStep: 'guest-mode',
-            })
+            // PRIORITY 3: Continue as guest
+            authLogger.warn('🔍 [Priority 3] Initializing guest session...')
             
-            authLogger.info('📊 [AuthFlow] Authentication flow summary', {
+            authLogger.warn('📊 Authentication flow summary', {
               flowPath: 'guest',
               cookieHealth: cookieHealth ? {
                 accessible: cookieHealth.accessible,
@@ -953,14 +1110,11 @@ export const useAuthStore = create<AuthStore>()(
                 needsToken: cookieHealth.needsToken,
                 browser: cookieHealth.browser,
                 reason: cookieHealth.reason,
-                cookieExists: cookieHealth.cookieExists,
               } : null,
               cookieAuthFailed,
               cookieErrorStatus: cookieErrorDetails?.response?.status,
-              cookieErrorType: cookieErrorDetails ? (cookieErrorDetails instanceof Error ? cookieErrorDetails.message : String(cookieErrorDetails)) : null,
               hadTokenInUrl: false,
               finalState: 'guest',
-              success: true,
               timestamp: new Date().toISOString(),
             })
             
@@ -1103,3 +1257,4 @@ export const useAuthStore = create<AuthStore>()(
     { name: 'AuthStore' }
   )
 )
+

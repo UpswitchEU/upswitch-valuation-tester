@@ -29,47 +29,7 @@ interface TokenPayload {
   email: string;
   role: string;
   iat: number;
-  exp: number;
-}
-
-/**
- * Decode JWT token to get expiry time
- */
-function decodeToken(token: string): TokenPayload | null {
-  try {
-    const base64Url = token.split('.')[1];
-    const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-    const jsonPayload = decodeURIComponent(
-      atob(base64)
-        .split('')
-        .map((c) => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
-        .join('')
-    );
-    return JSON.parse(jsonPayload);
-  } catch (error) {
-    console.error('Failed to decode token:', error);
-    return null;
-  }
-}
-
-/**
- * Get token expiry time from cookie (if accessible)
- * Note: HttpOnly cookies can't be read from JavaScript, so we'll use
- * the refresh endpoint response or estimate based on session age
- */
-function getTokenExpiry(): number | null {
-  // Try to get expiry from JWT if we have access to it
-  // For HttpOnly cookies, we'll rely on the refresh endpoint
-  // which will tell us if refresh is needed
-  return null; // Will be determined by API response
-}
-
-/**
- * Calculate time until token expires (in milliseconds)
- */
-function getTimeUntilExpiry(exp: number): number {
-  const now = Math.floor(Date.now() / 1000);
-  return (exp - now) * 1000; // Convert to milliseconds
+  exp?: number;
 }
 
 interface RefreshOptions {
@@ -119,11 +79,6 @@ export const useTokenRefresh = (options: RefreshOptions = {}) => {
       
       if (response.data.success) {
         console.log('✅ Session token refreshed successfully');
-        
-        // Broadcast session refresh to other tabs via BroadcastChannel
-        const syncManager = getSessionSyncManager();
-        syncManager.broadcastSessionRefresh(window.location.hostname);
-        
         onRefreshSuccess?.();
         return true;
       } else {
@@ -159,30 +114,24 @@ export const useTokenRefresh = (options: RefreshOptions = {}) => {
   }, [onRefreshSuccess, onRefreshFailure, onTokenExpired]);
   
   /**
-   * Check if token needs refresh and refresh proactively
-   * Refreshes at 80% of TTL to prevent expiration
+   * Check if token needs refresh
    */
   const checkAndRefresh = useCallback(async () => {
     try {
-      // Make a lightweight auth check to verify session
+      // Make a lightweight auth check
+        
+        // Broadcast session refresh to other tabs via BroadcastChannel
+        const syncManager = getSessionSyncManager();
+        syncManager.broadcastSessionRefresh(window.location.hostname);
+        
       const response = await axios.get(`${API_URL}/api/auth/me`, {
         withCredentials: true,
         timeout: 5000,
       });
       
       if (response.data.success) {
-        // User is authenticated - check if refresh is needed
-        // Since we can't read HttpOnly cookies, we'll proactively refresh
-        // The backend will handle token expiry validation
-        
-        // Check if we should refresh (proactive refresh at 80% of TTL)
-        // We'll refresh every time we check if enough time has passed
-        // This ensures we refresh before expiration
-        
-        console.log('✅ Auth check passed, checking if proactive refresh needed');
-        
-        // Proactively refresh to extend session
-        // The backend will determine if refresh is actually needed
+        // User is authenticated, proactively refresh to extend session
+        console.log('✅ Auth check passed, refreshing token to extend session');
         await refreshToken();
       }
     } catch (error: any) {
@@ -205,45 +154,19 @@ export const useTokenRefresh = (options: RefreshOptions = {}) => {
   
   /**
    * Start token refresh checks
-   * - Checks every 5 minutes for proactive refresh
-   * - Refreshes on visibility change (tab focus)
-   * - Background refresh without blocking UI
    */
   useEffect(() => {
-    console.log('🔐 Starting proactive token refresh checks (interval: 5 minutes)');
+    console.log('🔐 Starting token refresh checks (interval: 1 hour)');
     
     // Initial check after 5 seconds (give app time to initialize)
     const initialTimeout = setTimeout(() => {
       checkAndRefresh();
     }, 5000);
     
-    // Set up periodic checks (every 5 minutes)
+    // Set up periodic checks
     intervalRef.current = setInterval(() => {
       checkAndRefresh();
     }, CHECK_INTERVAL);
-    
-    // Refresh on visibility change (tab focus) - proactive refresh
-    const handleVisibilityChange = () => {
-      if (!document.hidden) {
-        console.log('🔐 Tab focused, proactively checking token refresh');
-        // Small delay to avoid race conditions with other tabs
-        setTimeout(() => {
-          checkAndRefresh();
-        }, 500);
-      }
-    };
-    
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-    
-    // Listen for session refresh events from other tabs via BroadcastChannel
-    const syncManager = getSessionSyncManager();
-    const unsubscribe = syncManager.onSessionSync((message) => {
-      if (message.type === 'SESSION_REFRESHED') {
-        console.log('🔐 Session refreshed in another tab, refreshing here too');
-        // Refresh this tab's session when another tab refreshes
-        checkAndRefresh();
-      }
-    });
     
     // Cleanup
     return () => {
@@ -251,8 +174,6 @@ export const useTokenRefresh = (options: RefreshOptions = {}) => {
         clearInterval(intervalRef.current);
       }
       clearTimeout(initialTimeout);
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
-      unsubscribe(); // Unsubscribe from session sync events
       console.log('🔐 Stopped token refresh checks');
     };
   }, [checkAndRefresh]);

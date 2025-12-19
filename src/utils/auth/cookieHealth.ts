@@ -127,8 +127,24 @@ export async function checkCookieHealth(): Promise<CookieHealthStatus> {
   const browser = detectBrowser()
   const cookieExists = checkCookieExists()
   
-  // Enhanced diagnostics
+  // Detect subdomain
+  let subdomain: string | null = null
+  let isSubdomain = false
+  if (typeof window !== 'undefined') {
+    const hostname = window.location.hostname
+    if (hostname.includes('.')) {
+      const parts = hostname.split('.')
+      if (parts.length > 2) {
+        subdomain = parts[0]
+        isSubdomain = true
+      }
+    }
+  }
+  
+  // Enhanced diagnostics with subdomain detection
   const diagnostics: any = {
+    timestamp: new Date().toISOString(),
+    action: 'COOKIE_HEALTH_CHECK',
     browser: browser.name,
     browserVersion: browser.version,
     isSafari: browser.isSafari,
@@ -138,16 +154,19 @@ export async function checkCookieHealth(): Promise<CookieHealthStatus> {
     supportsThirdPartyCookies: browser.supportsThirdPartyCookies,
     cookieExists,
     currentOrigin: typeof window !== 'undefined' ? window.location.origin : 'unknown',
+    hostname: typeof window !== 'undefined' ? window.location.hostname : 'unknown',
+    subdomain: subdomain || 'main domain',
+    isSubdomain,
     apiUrl: API_URL,
+    crossSubdomainTest: isSubdomain,
   }
   
-  // Check if we're on a subdomain
-  if (typeof window !== 'undefined') {
-    const hostname = window.location.hostname
-    const isSubdomain = hostname.includes('.') && hostname.split('.').length > 2
-    diagnostics.isSubdomain = isSubdomain
-    diagnostics.hostname = hostname
-  }
+  // Log cookie health check start
+  console.log('🔍 [CookieHealth] Starting cookie health check', JSON.stringify({
+    ...diagnostics,
+    cookieDetected: cookieExists,
+    crossSubdomainContext: isSubdomain,
+  }, null, 2))
   
   try {
     // Use GET request instead of HEAD for better compatibility and diagnostics
@@ -177,12 +196,30 @@ export async function checkCookieHealth(): Promise<CookieHealthStatus> {
     // Check response headers for cookie diagnostics
     const authStatus = response.headers.get('X-Auth-Status')
     const cookieDomain = response.headers.get('X-Cookie-Domain')
+    const originHeader = response.headers.get('X-Origin')
+    const subdomainHeader = response.headers.get('X-Subdomain')
+    
     if (authStatus) diagnostics.authStatus = authStatus
     if (cookieDomain) diagnostics.cookieDomain = cookieDomain
+    if (originHeader) diagnostics.originHeader = originHeader
+    if (subdomainHeader) diagnostics.subdomainHeader = subdomainHeader
+    
+    // Log cookie health check result
+    const healthResult = {
+      accessible: response.ok,
+      blocked: response.status === 0,
+      status: response.status,
+      responseTime: diagnostics.responseTime,
+      cookieDomain,
+      authStatus,
+      isSubdomain,
+      subdomain: subdomain || 'main',
+    }
+    console.log('📊 [CookieHealth] Cookie health check result', JSON.stringify(healthResult, null, 2))
     
     // Status 0 typically means network error (CORS blocked, cookie blocked, etc.)
     if (response.status === 0) {
-      return {
+      const blockedResult = {
         accessible: false,
         blocked: true,
         needsToken: true,
@@ -190,12 +227,21 @@ export async function checkCookieHealth(): Promise<CookieHealthStatus> {
         reason: 'Network error - cookies may be blocked (CORS or browser privacy settings)',
         cookieExists,
         diagnostics,
+        crossSubdomainIssue: isSubdomain,
+        troubleshooting: isSubdomain ? [
+          'Check if cookie domain is set to .upswitch.biz',
+          'Verify CORS credentials are enabled',
+          'Check browser privacy settings',
+          'Safari ITP may block cross-subdomain cookies',
+        ] : [],
       }
+      console.warn('⚠️ [CookieHealth] Cookies blocked', JSON.stringify(blockedResult, null, 2))
+      return blockedResult
     }
     
     // 200 OK means cookie is accessible and user is authenticated
     if (response.ok) {
-      return {
+      const successResult = {
         accessible: true,
         blocked: false,
         needsToken: false,
@@ -203,7 +249,13 @@ export async function checkCookieHealth(): Promise<CookieHealthStatus> {
         reason: 'Cookies accessible and user authenticated',
         cookieExists,
         diagnostics,
+        crossSubdomainSuccess: isSubdomain && cookieExists,
+        message: isSubdomain 
+          ? 'Cross-subdomain cookie authentication working'
+          : 'Cookie authentication working',
       }
+      console.log('✅ [CookieHealth] Cookies accessible', JSON.stringify(successResult, null, 2))
+      return successResult
     }
     
     // 401/404 means no session, but cookies work (this is expected for guest users)
@@ -326,3 +378,4 @@ export function getCookieErrorMessage(status: CookieHealthStatus): string | null
   
   return null
 }
+

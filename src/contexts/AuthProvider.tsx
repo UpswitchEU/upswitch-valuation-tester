@@ -1,21 +1,14 @@
 /**
- * Auth Provider (Zustand-based) - World-Class Cross-Subdomain Authentication
+ * Auth Provider (Zustand-based)
  * 
  * Wraps Zustand auth store in React Context for backward compatibility.
  * Provides useAuth hook that accesses Zustand store directly.
  * 
- * Architecture:
+ * Features:
  * - Single source of truth (Zustand store)
  * - Backward compatible API (same useAuth hook)
  * - Cross-tab synchronization via BroadcastChannel
  * - Cookie health monitoring integration
- * - Automatic cookie detection from main domain (upswitch.biz)
- * 
- * Cross-Subdomain Flow:
- * - Cookies from upswitch.biz are automatically accessible on valuation.upswitch.biz
- * - Seamless authentication without user interaction
- * - Token exchange fallback when cookies are blocked
- * - Comprehensive logging for testing and debugging
  */
 
 'use client'
@@ -138,19 +131,41 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   // Initialize authentication on mount
   useEffect(() => {
+    // CRITICAL: Log initialization start - VERY VISIBLE
+    console.log('🚀 [AUTH INIT] ===========================================')
+    console.log('🚀 [AUTH INIT] Starting authentication initialization...')
+    console.log('🚀 [AUTH INIT] Origin:', typeof window !== 'undefined' ? window.location.origin : 'unknown')
+    console.log('🚀 [AUTH INIT] Hostname:', typeof window !== 'undefined' ? window.location.hostname : 'unknown')
+    console.log('🚀 [AUTH INIT] Checking for cookie from main domain...')
+    console.log('🚀 [AUTH INIT] ===========================================')
+    
+    // Immediate cookie check before initAuth
+    if (typeof document !== 'undefined') {
+      const hasCookie = document.cookie.includes('upswitch_session')
+      console.log('🔍 [IMMEDIATE CHECK] Cookie present:', hasCookie ? '✅ YES' : '❌ NO')
+      console.log('🔍 [IMMEDIATE CHECK] All cookies:', document.cookie || 'none')
+    }
+    
     initAuth()
     
     // Start cookie monitoring
     const cookieMonitor = getCookieMonitor({
       onCookieBlocked: (health) => {
+        console.warn('⚠️ [COOKIE MONITOR] Cookies blocked', health)
         authLogger.warn('Cookies blocked', { health })
         setCookieHealth(health)
       },
       onCookieRestored: (health) => {
+        console.log('✅ [COOKIE MONITOR] Cookies restored! Retrying auth...', health)
         authLogger.info('Cookies restored', { health })
         setCookieHealth(health)
         // Retry auth check when cookies are restored (non-blocking)
-        checkSession().catch(() => {
+        console.log('🔄 [COOKIE MONITOR] Retrying authentication check...')
+        checkSession().then((user) => {
+          if (user) {
+            console.log('✅ [COOKIE MONITOR] Authentication successful after cookie restore!')
+          }
+        }).catch(() => {
           // Silent failure - will retry on next check
         })
       },
@@ -225,3 +240,4 @@ export const useAuth = (): AuthContextType => {
   }
   return context
 }
+

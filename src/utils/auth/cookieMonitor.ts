@@ -143,3 +143,4 @@ export function destroyCookieMonitor(): void {
     cookieMonitor = null
   }
 }
+
