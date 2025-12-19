@@ -7,10 +7,18 @@
 
 'use client'
 
-import React, { useCallback, useEffect, useState } from 'react'
+import React, { useCallback, useEffect, useRef, useState } from 'react'
 import { backendAPI } from '../services/backendApi'
 import { useGuestSessionStore } from '../store/useGuestSessionStore'
+import { getAuthCache } from '../utils/auth/authCache'
+import { checkCookieHealth, CookieHealthStatus } from '../utils/auth/cookieHealth'
+import { getCookieMonitor } from '../utils/auth/cookieMonitor'
+import { classifyAuthError, isRetryableAuthError, RecoveryStrategy } from '../utils/auth/errorRecovery'
+import { getSessionSyncManager } from '../utils/auth/sessionSync'
+import { CircuitBreaker } from '../utils/circuitBreaker'
 import { authLogger } from '../utils/logger'
+import { deduplicateRequest } from '../utils/requestDeduplication'
+import { retryWithBackoff } from '../utils/retryWithBackoff'
 import { AuthContext, AuthContextType, User } from './AuthContextTypes'
 
 // =============================================================================
@@ -70,6 +78,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [user, setUser] = useState<User | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [cookieHealth, setCookieHealth] = useState<CookieHealthStatus | null>(null)
+  
+  // Circuit breaker for auth operations
+  const authCircuitBreaker = useRef(
+    new CircuitBreaker({
+      failureThreshold: 5,
+      resetTimeout: 60000, // 1 minute
+      successThreshold: 2,
+      name: 'AuthAPI',
+    })
+  ).current
 
   // Helper to map business_type to industry category if industry is not set
   const getIndustry = useCallback((user: User): string | undefined => {
@@ -183,7 +202,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, [user, getIndustry])
 
   /**
-   * Check for existing session (simplified for subdomain integration)
+   * Check for existing session with retry logic, circuit breaker, caching, and deduplication
    *
    * SILENT BY DEFAULT: This function is called optimistically to check if
    * there's an existing auth session. 401/404 responses are EXPECTED for guest
@@ -192,6 +211,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
    * @returns User data if authenticated, null otherwise
    */
   const checkSession = useCallback(async (): Promise<User | null> => {
+    const cache = getAuthCache()
+    const cacheKey = 'session_check'
+    
+    // Check cache first
+    const cached = cache.get()
+    if (cached && cached.user) {
+      authLogger.debug('✅ Using cached auth result')
+      setUser(cached.user)
+      return cached.user
+    }
+    
     try {
       authLogger.debug('🔍 Checking session cookie...', {
         apiUrl: API_URL,
@@ -199,10 +229,45 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         credentials: 'include',
       })
       
-      const response = await fetch(`${API_URL}/api/auth/me`, {
-        method: 'GET',
-        credentials: 'include', // Send cookies
-        // Don't throw on 404/401 - they're expected for guest users
+      // Deduplicate concurrent requests
+      const response = await deduplicateRequest(cacheKey, async () => {
+        return await authCircuitBreaker.execute(async () => {
+          return await retryWithBackoff(
+            async () => {
+              const controller = new AbortController()
+              const timeoutId = setTimeout(() => controller.abort(), 3000) // 3s timeout
+              
+              try {
+                const res = await fetch(`${API_URL}/api/auth/me`, {
+                  method: 'GET',
+                  credentials: 'include',
+                  signal: controller.signal,
+                })
+                clearTimeout(timeoutId)
+                return res
+              } catch (error: any) {
+                clearTimeout(timeoutId)
+                // Check if error is retryable
+                if (isRetryableAuthError(error)) {
+                  throw error // Retry will handle it
+                }
+                throw error
+              }
+            },
+            {
+              maxRetries: 3,
+              initialDelay: 100,
+              maxDelay: 1000,
+              onRetry: (attempt, error, delay) => {
+                authLogger.debug('Retrying session check', {
+                  attempt,
+                  delay,
+                  error: error.message,
+                })
+              },
+            }
+          )
+        })
       })
       
       authLogger.debug('📡 Session check response:', {
@@ -230,19 +295,29 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           // Check if user data is nested in data.data.user
           userData = data.data.user || data.data
 
-          authLogger.debug('User data fields (data.data)', {
-            id: userData.id,
-            email: userData.email,
-            company_name: userData.company_name,
-            business_type: userData.business_type,
-            industry: userData.industry,
-            founded_year: userData.founded_year,
-            employee_count_range: userData.employee_count_range,
-            country: userData.country,
-          })
-          authLogger.debug('Full user object (data.data)', { userData: data.data })
-          setUser(userData)
-          authLogger.info('Existing session found (data.data)', { userData })
+          if (userData) {
+            authLogger.debug('User data fields (data.data)', {
+              id: userData.id,
+              email: userData.email,
+              company_name: userData.company_name,
+              business_type: userData.business_type,
+              industry: userData.industry,
+              founded_year: userData.founded_year,
+              employee_count_range: userData.employee_count_range,
+              country: userData.country,
+            })
+            authLogger.debug('Full user object (data.data)', { userData: data.data })
+            setUser(userData)
+            
+            // Cache successful auth result
+            cache.set(userData, userData.id)
+            
+            // Broadcast session update
+            const syncManager = getSessionSyncManager()
+            syncManager.broadcastSessionUpdate(window.location.hostname, userData.id)
+            
+            authLogger.info('Existing session found (data.data)', { userData })
+          }
         } else if (data.success && data.user) {
           // Alternative response format
           userData = data.user
@@ -257,6 +332,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             country: data.user.country,
           })
           setUser(data.user)
+          
+          // Cache successful auth result
+          cache.set(data.user, data.user.id)
+          
+          // Broadcast session update
+          const syncManager = getSessionSyncManager()
+          syncManager.broadcastSessionUpdate(window.location.hostname, data.user.id)
+          
           authLogger.info('Existing session found (data.user)', { userData: data.user })
         } else {
           authLogger.debug('No existing session - response', { data })
@@ -271,21 +354,43 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setUser(null)
         return null
       } else {
-        // Unexpected status code - log as warning but continue
-        authLogger.debug('Unexpected session check response', { status: response.status })
+        // Unexpected status code - classify error
+        const error = new Error(`Unexpected status: ${response.status}`)
+        const classified = classifyAuthError(error)
+        
+        if (classified.recoveryStrategy === RecoveryStrategy.CONTINUE_AS_GUEST) {
+          authLogger.debug('Unexpected session check response, continuing as guest', {
+            status: response.status,
+            errorType: classified.type,
+          })
+          setUser(null)
+          return null
+        }
+        
+        throw error
+      }
+    } catch (err) {
+      // Classify error and handle appropriately
+      const classified = classifyAuthError(err)
+      
+      authLogger.debug('Session check failed', {
+        error: err instanceof Error ? err.message : 'Unknown error',
+        errorType: classified.type,
+        retryable: classified.retryable,
+        recoveryStrategy: classified.recoveryStrategy,
+      })
+      
+      // For guest flow, continue silently
+      if (classified.recoveryStrategy === RecoveryStrategy.CONTINUE_AS_GUEST) {
         setUser(null)
         return null
       }
-    } catch (err) {
-      // Network errors or other issues - log as debug, not error
-      // The app should continue to work for guests even if auth check fails
-      authLogger.debug('Session check failed (continuing as guest)', {
-        error: err instanceof Error ? err.message : 'Unknown error',
-      })
+      
+      // For other errors, log but continue as guest
       setUser(null)
       return null
     }
-  }, [])
+  }, [authCircuitBreaker])
 
   /**
    * Exchange subdomain token for session cookie
@@ -437,9 +542,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
    * Priority-based approach for seamless cross-subdomain auth
    *
    * PRIORITY ORDER (Industry Best Practice - Airbnb/Stripe Pattern):
-   * 1. Check for existing cookie (seamless - fastest, no URL manipulation)
-   * 2. Check for token in URL (fallback - for new windows or cookie failures)
-   * 3. Continue as guest (always works)
+   * 1. Check cookie health (fast detection)
+   * 2. Check for existing cookie (seamless - fastest, no URL manipulation)
+   * 3. Check for token in URL (fallback - for new windows or cookie failures)
+   * 4. Continue as guest (always works)
    *
    * This ensures users logged into upswitch.biz are automatically
    * authenticated on valuation.upswitch.biz without requiring a token.
@@ -449,6 +555,29 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setError(null)
 
     try {
+      // PRIORITY 0: Check cookie health (fast path detection)
+      authLogger.info('🔍 [Priority 0] Checking cookie health...')
+      try {
+        const health = await checkCookieHealth()
+        setCookieHealth(health)
+        
+        authLogger.debug('Cookie health check result', {
+          accessible: health.accessible,
+          blocked: health.blocked,
+          needsToken: health.needsToken,
+          browser: health.browser,
+          reason: health.reason,
+        })
+        
+        if (health.blocked && health.needsToken) {
+          authLogger.info('⚠️ [Priority 0] Cookies blocked, will use token fallback')
+        }
+      } catch (healthError) {
+        authLogger.debug('Cookie health check failed, continuing', {
+          error: healthError instanceof Error ? healthError.message : 'Unknown error',
+        })
+      }
+
       // PRIORITY 1: Check for existing session cookie (SEAMLESS AUTH)
       // This is the fastest path and provides the best UX
       // Works when user is already logged into upswitch.biz
@@ -478,10 +607,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         
         authLogger.debug('ℹ️ [Priority 1] No cookie session found (expected for guests)')
       } catch (cookieError) {
-        // Silent failure - cookie auth didn't work, try token
-        authLogger.debug('ℹ️ [Priority 1] Cookie auth check failed, trying token fallback', {
+        // Classify error and handle appropriately
+        const classified = classifyAuthError(cookieError)
+        
+        authLogger.debug('ℹ️ [Priority 1] Cookie auth check failed', {
           error: cookieError instanceof Error ? cookieError.message : 'Unknown error',
+          errorType: classified.type,
+          recoveryStrategy: classified.recoveryStrategy,
         })
+        
+        // If cookies are blocked, skip to token exchange
+        if (classified.recoveryStrategy === RecoveryStrategy.FALLBACK_TO_TOKEN) {
+          authLogger.info('ℹ️ [Priority 1] Cookies blocked, skipping to token exchange')
+        }
       }
 
       // PRIORITY 2: Check for token in URL (FALLBACK AUTH)
@@ -565,7 +703,46 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
    */
   useEffect(() => {
     initAuth()
-  }, [initAuth])
+    
+    // Start cookie monitoring
+    const cookieMonitor = getCookieMonitor({
+      onCookieBlocked: (health) => {
+        authLogger.warn('Cookies blocked', { health })
+        setCookieHealth(health)
+      },
+      onCookieRestored: (health) => {
+        authLogger.info('Cookies restored', { health })
+        setCookieHealth(health)
+        // Retry auth check when cookies are restored
+        checkSession()
+      },
+      onHealthChange: (health) => {
+        setCookieHealth(health)
+      },
+    })
+    cookieMonitor.start()
+    
+    // Set up session synchronization
+    const syncManager = getSessionSyncManager()
+    const unsubscribe = syncManager.onSessionSync((message) => {
+      authLogger.info('Session sync event received', { message })
+      
+      if (message.type === 'SESSION_UPDATED' || message.type === 'SESSION_REFRESHED') {
+        // Refresh auth state when session is updated in another tab
+        checkSession()
+      } else if (message.type === 'SESSION_INVALIDATED') {
+        // Clear user state when session is invalidated
+        setUser(null)
+        const cache = getAuthCache()
+        cache.clear()
+      }
+    })
+    
+    return () => {
+      cookieMonitor.stop()
+      unsubscribe()
+    }
+  }, [initAuth, checkSession])
 
   /**
    * Refresh authentication state
@@ -608,4 +785,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
+}
+
+/**
+ * Hook to use auth context
+ */
+export const useAuth = (): AuthContextType => {
+  const context = React.useContext(AuthContext)
+  if (!context) {
+    throw new Error('useAuth must be used within an AuthProvider')
+  }
+  return context
 }
