@@ -280,7 +280,7 @@ export const useEbitdaNormalizationStore = create<EbitdaNormalizationStore>()(
             adjustments: normalization.adjustments,
             custom_adjustments: normalization.custom_adjustments || [],
             confidence_score: normalization.confidence_score,
-            market_rate_source: normalization.market_rate_source,
+            market_rate_source: normalization.market_rate_source || undefined,
           });
           
           // Update with server response (includes ID, timestamps)

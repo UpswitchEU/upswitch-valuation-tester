@@ -61,7 +61,9 @@ export function formatVersionLabel(version: ValuationVersion): string {
   const hasNormalizedEbitda = version.changeMetadata?.normalized_years && 
     Array.isArray(version.changeMetadata.normalized_years) &&
     version.changeMetadata.normalized_years.length > 0
-  const normalizedYearsCount = hasNormalizedEbitda ? version.changeMetadata.normalized_years.length : 0
+  const normalizedYearsCount = hasNormalizedEbitda && version.changeMetadata?.normalized_years 
+    ? version.changeMetadata.normalized_years.length 
+    : 0
   
   // Add normalization indicator if present
   const normalizationIndicator = hasNormalizedEbitda 

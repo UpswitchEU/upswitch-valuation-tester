@@ -719,11 +719,13 @@ export const ConversationPanel: React.FC<ConversationPanelProps> = ({
   }, [
     sessionId,
     userId,
+    reportId,
     onValuationComplete,
     onValuationStart,
     actions,
     trySetCalculating,
     createVersion,
+    getLatestVersion,
     setResult,
     setCalculating,
   ])
@@ -791,7 +793,6 @@ export const ConversationPanel: React.FC<ConversationPanelProps> = ({
             onClose={handleCloseNormalization}
             year={selectedNormalizationYear}
             sessionId={sessionId}
-            userId={userId}
           />
         )}
       </div>
