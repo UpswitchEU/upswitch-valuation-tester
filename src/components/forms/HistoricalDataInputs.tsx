@@ -1,4 +1,7 @@
 import React from 'react'
+import { useEbitdaNormalizationStore } from '../../store/useEbitdaNormalizationStore'
+import { useSessionStore } from '../../store/useSessionStore'
+import { NormalizedEBITDAField } from '../normalization/NormalizedEBITDAField'
 import { CustomInputField, CustomNumberInputField } from './index'
 
 interface HistoricalDataInputsProps {
@@ -48,6 +51,19 @@ export const HistoricalDataInputs: React.FC<HistoricalDataInputsProps> = ({
   }
 
   const yearsToShow = calculateHistoricalYears()
+  
+  // Get normalization store state
+  const { 
+    openNormalizationModal, 
+    hasNormalization,
+    getNormalizedEbitda,
+    getTotalAdjustments,
+    getAdjustmentCount,
+    getLastUpdated,
+    removeNormalization,
+  } = useEbitdaNormalizationStore()
+  const reportId = useSessionStore((state) => state.session?.reportId)
+  const sessionId = reportId || '' // Use reportId as sessionId
 
   // If no years to show, display a helpful message
   if (yearsToShow.length === 0) {
@@ -66,6 +82,9 @@ export const HistoricalDataInputs: React.FC<HistoricalDataInputsProps> = ({
         const ebitdaKey = `${year}_ebitda`
         const revenue = historicalInputs[revenueKey] || ''
         const ebitda = historicalInputs[ebitdaKey] || ''
+        
+        // Check if this year has normalization
+        const isNormalized = hasNormalization(year)
 
         return (
           <div key={year} className="grid grid-cols-1 @5xl:grid-cols-3 gap-6">
@@ -99,17 +118,36 @@ export const HistoricalDataInputs: React.FC<HistoricalDataInputsProps> = ({
               />
             </div>
             <div>
-              <CustomNumberInputField
-                label="EBITDA (€)"
-                placeholder="e.g., 400,000"
-                value={ebitda}
-                onChange={(e) => updateHistoricalData(year, 'ebitda', e.target.value)}
-                onBlur={onBlur}
-                name={ebitdaKey}
-                step={1000}
-                prefix="€"
-                formatAsCurrency
-              />
+              {isNormalized && sessionId ? (
+                <NormalizedEBITDAField
+                  label="EBITDA (€)"
+                  originalValue={parseFloat(ebitda.replace(/,/g, '')) || 0}
+                  normalizedValue={getNormalizedEbitda(year)}
+                  totalAdjustments={getTotalAdjustments(year)}
+                  adjustmentCount={getAdjustmentCount(year)}
+                  lastUpdated={getLastUpdated(year)}
+                  onEdit={() => {
+                    const reportedEbitda = parseFloat(ebitda.replace(/,/g, '')) || 0
+                    openNormalizationModal(year, reportedEbitda, sessionId)
+                  }}
+                  onRemove={() => {
+                    removeNormalization(sessionId, year)
+                  }}
+                  helpText={`Normalized for year ${year}. Used in valuation calculations.`}
+                />
+              ) : (
+                <CustomNumberInputField
+                  label="EBITDA (€)"
+                  placeholder="e.g., 400,000"
+                  value={ebitda}
+                  onChange={(e) => updateHistoricalData(year, 'ebitda', e.target.value)}
+                  onBlur={onBlur}
+                  name={ebitdaKey}
+                  step={1000}
+                  prefix="€"
+                  formatAsCurrency
+                />
+              )}
             </div>
           </div>
         )
