@@ -75,42 +75,59 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5" />
         {/* Manifest is still referenced here as it's not part of metadata API */}
         <link rel="manifest" href="/manifest.json" />
-        {/* CRITICAL: Immediate cookie check script - runs before React */}
+        {/* CRITICAL: Pre-React cookie check script - runs before React loads */}
         <script
           dangerouslySetInnerHTML={{
             __html: `
               (function() {
-                console.log('🔍🔍🔍 [IMMEDIATE SCRIPT] ===========================================');
-                console.log('🔍🔍🔍 [IMMEDIATE SCRIPT] Cookie check script running IMMEDIATELY');
-                console.log('🔍🔍🔍 [IMMEDIATE SCRIPT] This runs before React loads');
-                console.log('🔍🔍🔍 [IMMEDIATE SCRIPT] Hostname:', window.location.hostname);
-                console.log('🔍🔍🔍 [IMMEDIATE SCRIPT] Origin:', window.location.origin);
+                console.error('🔍🔍🔍 [PRE-REACT] ===========================================');
+                console.error('🔍🔍🔍 [PRE-REACT] PRE-REACT COOKIE CHECK SCRIPT RUNNING');
+                console.error('🔍🔍🔍 [PRE-REACT] This runs BEFORE React loads');
+                console.error('🔍🔍🔍 [PRE-REACT] Timestamp:', new Date().toISOString());
+                console.error('🔍🔍🔍 [PRE-REACT] Hostname:', window.location.hostname);
+                console.error('🔍🔍🔍 [PRE-REACT] Origin:', window.location.origin);
                 
                 const allCookies = document.cookie || 'none';
                 const hasCookie = allCookies.includes('upswitch_session');
                 const cookieMatch = allCookies.match(/upswitch_session=([^;]+)/);
                 
-                console.log('🔍🔍🔍 [IMMEDIATE SCRIPT] Cookie present:', hasCookie ? '✅✅✅ YES!' : '❌❌❌ NO!');
-                console.log('🔍🔍🔍 [IMMEDIATE SCRIPT] All cookies:', allCookies);
+                // Set global flag for React to check
+                window.__COOKIE_CHECK__ = {
+                  hasCookie: hasCookie,
+                  timestamp: new Date().toISOString(),
+                  hostname: window.location.hostname,
+                  origin: window.location.origin,
+                  allCookies: allCookies,
+                  cookieValueLength: cookieMatch ? cookieMatch[1].length : 0
+                };
+                
+                console.error('🔍🔍🔍 [PRE-REACT] Cookie present:', hasCookie ? '✅✅✅ YES!' : '❌❌❌ NO!');
+                console.error('🔍🔍🔍 [PRE-REACT] All cookies:', allCookies);
                 
                 if (cookieMatch) {
-                  console.log('🔍🔍🔍 [IMMEDIATE SCRIPT] Cookie value length:', cookieMatch[1].length);
-                  console.log('🔍🔍🔍 [IMMEDIATE SCRIPT] Cookie prefix:', cookieMatch[1].substring(0, 20) + '...');
+                  console.error('🔍🔍🔍 [PRE-REACT] Cookie value length:', cookieMatch[1].length);
+                  console.error('🔍🔍🔍 [PRE-REACT] Cookie prefix:', cookieMatch[1].substring(0, 20) + '...');
                 }
                 
                 if (window.location.hostname.includes('valuation.')) {
-                  console.log('🔍🔍🔍 [IMMEDIATE SCRIPT] SUBDOMAIN DETECTED: valuation.upswitch.biz');
+                  console.error('🔍🔍🔍 [PRE-REACT] SUBDOMAIN DETECTED: valuation.upswitch.biz');
                   if (!hasCookie) {
-                    console.error('❌❌❌ [IMMEDIATE SCRIPT] CRITICAL: No cookie on subdomain!');
-                    console.error('❌❌❌ [IMMEDIATE SCRIPT] Cookie from main domain is NOT accessible');
-                    console.error('❌❌❌ [IMMEDIATE SCRIPT] Check: DevTools → Application → Cookies');
-                    console.error('❌❌❌ [IMMEDIATE SCRIPT] Expected: upswitch_session with domain .upswitch.biz');
+                    console.error('❌❌❌ [PRE-REACT] CRITICAL: No cookie on subdomain!');
+                    console.error('❌❌❌ [PRE-REACT] Cookie from main domain is NOT accessible');
+                    console.error('❌❌❌ [PRE-REACT] Possible causes:');
+                    console.error('❌❌❌ [PRE-REACT]   1. Cookie not set with domain: .upswitch.biz');
+                    console.error('❌❌❌ [PRE-REACT]   2. Browser blocking cross-subdomain cookies');
+                    console.error('❌❌❌ [PRE-REACT]   3. Cookie expired or cleared');
+                    console.error('❌❌❌ [PRE-REACT]   4. Not logged into upswitch.biz');
+                    console.error('❌❌❌ [PRE-REACT] Action: Check DevTools → Application → Cookies');
+                    console.error('❌❌❌ [PRE-REACT] Expected: upswitch_session with domain .upswitch.biz');
                   } else {
-                    console.log('✅✅✅ [IMMEDIATE SCRIPT] Cookie found on subdomain!');
+                    console.error('✅✅✅ [PRE-REACT] Cookie found on subdomain!');
                   }
                 }
                 
-                console.log('🔍🔍🔍 [IMMEDIATE SCRIPT] ===========================================');
+                console.error('🔍🔍🔍 [PRE-REACT] Global flag set: window.__COOKIE_CHECK__');
+                console.error('🔍🔍🔍 [PRE-REACT] ===========================================');
               })();
             `,
           }}

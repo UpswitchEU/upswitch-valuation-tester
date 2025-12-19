@@ -19,6 +19,7 @@ import { getCookieMonitor } from '../utils/auth/cookieMonitor'
 import { getSessionSyncManager } from '../utils/auth/sessionSync'
 import { authLogger } from '../utils/logger'
 import { AuthContext, AuthContextType, User } from './AuthContextTypes'
+import { initNetworkLogger } from '../utils/auth/networkLogger'
 
 /**
  * Helper to map business_type to industry category
@@ -131,18 +132,32 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   // Initialize authentication on mount
   useEffect(() => {
+    // Initialize network logger first
+    initNetworkLogger()
+    
     // CRITICAL: Force immediate execution and logging
-    console.log('🚀🚀🚀 [AUTH PROVIDER MOUNTED] ===========================================')
-    console.log('🚀🚀🚀 [AUTH PROVIDER MOUNTED] AuthProvider useEffect running!')
-    console.log('🚀🚀🚀 [AUTH PROVIDER MOUNTED] Timestamp:', new Date().toISOString())
+    console.error('🚀🚀🚀 [AUTH PROVIDER MOUNTED] ===========================================')
+    console.error('🚀🚀🚀 [AUTH PROVIDER MOUNTED] AuthProvider useEffect running!')
+    console.error('🚀🚀🚀 [AUTH PROVIDER MOUNTED] Timestamp:', new Date().toISOString())
+    
+    // Check if pre-React script ran
+    if (typeof window !== 'undefined' && (window as any).__COOKIE_CHECK__) {
+      const cookieCheck = (window as any).__COOKIE_CHECK__
+      console.error('✅✅✅ [AUTH PROVIDER] Pre-React script ran successfully')
+      console.error('✅✅✅ [AUTH PROVIDER] Cookie check timestamp:', cookieCheck.timestamp)
+      console.error('✅✅✅ [AUTH PROVIDER] Cookie present:', cookieCheck.hasCookie ? 'YES' : 'NO')
+    } else {
+      console.error('⚠️⚠️⚠️ [AUTH PROVIDER] Pre-React script may not have run!')
+      console.error('⚠️⚠️⚠️ [AUTH PROVIDER] window.__COOKIE_CHECK__ not found')
+    }
     
     // CRITICAL: Log initialization start - VERY VISIBLE
-    console.log('🚀 [AUTH INIT] ===========================================')
-    console.log('🚀 [AUTH INIT] Starting authentication initialization...')
-    console.log('🚀 [AUTH INIT] Origin:', typeof window !== 'undefined' ? window.location.origin : 'unknown')
-    console.log('🚀 [AUTH INIT] Hostname:', typeof window !== 'undefined' ? window.location.hostname : 'unknown')
-    console.log('🚀 [AUTH INIT] Checking for cookie from main domain...')
-    console.log('🚀 [AUTH INIT] ===========================================')
+    console.error('🚀 [AUTH INIT] ===========================================')
+    console.error('🚀 [AUTH INIT] Starting authentication initialization...')
+    console.error('🚀 [AUTH INIT] Origin:', typeof window !== 'undefined' ? window.location.origin : 'unknown')
+    console.error('🚀 [AUTH INIT] Hostname:', typeof window !== 'undefined' ? window.location.hostname : 'unknown')
+    console.error('🚀 [AUTH INIT] Checking for cookie from main domain...')
+    console.error('🚀 [AUTH INIT] ===========================================')
     
     // Immediate cookie check before initAuth - CRITICAL
     if (typeof document !== 'undefined') {
@@ -150,17 +165,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const allCookies = document.cookie
       const cookieMatch = allCookies.match(/upswitch_session=([^;]+)/)
       
-      console.log('🔍🔍🔍 [IMMEDIATE CHECK] ===========================================')
-      console.log('🔍🔍🔍 [IMMEDIATE CHECK] IMMEDIATE COOKIE CHECK ON PAGE LOAD')
-      console.log('🔍🔍🔍 [IMMEDIATE CHECK] Cookie present:', hasCookie ? '✅✅✅ YES!' : '❌❌❌ NO!')
-      console.log('🔍🔍🔍 [IMMEDIATE CHECK] All cookies:', allCookies || 'NONE')
+      console.error('🔍🔍🔍 [IMMEDIATE CHECK] ===========================================')
+      console.error('🔍🔍🔍 [IMMEDIATE CHECK] IMMEDIATE COOKIE CHECK ON PAGE LOAD')
+      console.error('🔍🔍🔍 [IMMEDIATE CHECK] Cookie present:', hasCookie ? '✅✅✅ YES!' : '❌❌❌ NO!')
+      console.error('🔍🔍🔍 [IMMEDIATE CHECK] All cookies:', allCookies || 'NONE')
       if (cookieMatch) {
-        console.log('🔍🔍🔍 [IMMEDIATE CHECK] Cookie value length:', cookieMatch[1].length)
-        console.log('🔍🔍🔍 [IMMEDIATE CHECK] Cookie prefix:', cookieMatch[1].substring(0, 20) + '...')
+        console.error('🔍🔍🔍 [IMMEDIATE CHECK] Cookie value length:', cookieMatch[1].length)
+        console.error('🔍🔍🔍 [IMMEDIATE CHECK] Cookie prefix:', cookieMatch[1].substring(0, 20) + '...')
       }
-      console.log('🔍🔍🔍 [IMMEDIATE CHECK] Hostname:', window.location.hostname)
-      console.log('🔍🔍🔍 [IMMEDIATE CHECK] Is subdomain:', window.location.hostname.includes('valuation.'))
-      console.log('🔍🔍🔍 [IMMEDIATE CHECK] ===========================================')
+      console.error('🔍🔍🔍 [IMMEDIATE CHECK] Hostname:', window.location.hostname)
+      console.error('🔍🔍🔍 [IMMEDIATE CHECK] Is subdomain:', window.location.hostname.includes('valuation.'))
+      console.error('🔍🔍🔍 [IMMEDIATE CHECK] ===========================================')
       
       // If no cookie and we're on subdomain, show critical warning
       if (!hasCookie && window.location.hostname.includes('valuation.')) {
@@ -175,9 +190,41 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     }
     
-    console.log('🚀🚀🚀 [CALLING INIT AUTH] About to call initAuth()...')
-    initAuth()
-    console.log('🚀🚀🚀 [CALLED INIT AUTH] initAuth() called, waiting for result...')
+    // Try-catch around initAuth() call
+    const runAuthInit = async () => {
+      try {
+        console.error('🚀🚀🚀 [CALLING INIT AUTH] About to call initAuth()...')
+        await initAuth()
+        console.error('✅✅✅ [CALLED INIT AUTH] initAuth() completed successfully')
+      } catch (error) {
+        console.error('❌❌❌ [INIT AUTH ERROR] ===========================================')
+        console.error('❌❌❌ [INIT AUTH ERROR] initAuth() failed with error!')
+        console.error('❌❌❌ [INIT AUTH ERROR] Error:', error)
+        console.error('❌❌❌ [INIT AUTH ERROR] Error message:', error instanceof Error ? error.message : 'Unknown error')
+        console.error('❌❌❌ [INIT AUTH ERROR] Error stack:', error instanceof Error ? error.stack : 'N/A')
+        console.error('❌❌❌ [INIT AUTH ERROR] Attempting fallback: calling checkSession() directly...')
+        console.error('❌❌❌ [INIT AUTH ERROR] ===========================================')
+        
+        // Fallback: call checkSession() directly
+        try {
+          const checkSession = useAuthStore.getState().checkSession
+          console.error('🔄 [FALLBACK] Calling checkSession() directly...')
+          const user = await checkSession()
+          if (user) {
+            console.error('✅✅✅ [FALLBACK] SUCCESS! User authenticated via fallback:', user.email)
+            useAuthStore.getState().setUser(user)
+          } else {
+            console.error('❌❌❌ [FALLBACK] No user returned from checkSession()')
+          }
+        } catch (fallbackError) {
+          console.error('❌❌❌ [FALLBACK ERROR] Fallback also failed:', fallbackError)
+          console.error('❌❌❌ [FALLBACK ERROR] Error:', fallbackError instanceof Error ? fallbackError.message : 'Unknown error')
+          useAuthStore.getState().setError('Authentication initialization failed. Please try refreshing the page.')
+        }
+      }
+    }
+    
+    runAuthInit()
     
     // Start cookie monitoring
     const cookieMonitor = getCookieMonitor({

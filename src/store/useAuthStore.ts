@@ -322,13 +322,14 @@ export const useAuthStore = create<AuthStore>()(
        * Enhanced with comprehensive cookie detection and cross-subdomain logging
        */
       checkSession: async (): Promise<User | null> => {
-        // CRITICAL: Log function entry
-        console.log('🔍🔍🔍 [CHECK SESSION] ===========================================')
-        console.log('🔍🔍🔍 [CHECK SESSION] checkSession() called!')
-        console.log('🔍🔍🔍 [CHECK SESSION] Timestamp:', new Date().toISOString())
-        console.log('🔍🔍🔍 [CHECK SESSION] ===========================================')
+        // CRITICAL: Log function entry with console.error for maximum visibility
+        console.error('🔍🔍🔍 [CHECK SESSION] ===========================================')
+        console.error('🔍🔍🔍 [CHECK SESSION] checkSession() called!')
+        console.error('🔍🔍🔍 [CHECK SESSION] Timestamp:', new Date().toISOString())
+        console.error('🔍🔍🔍 [CHECK SESSION] ===========================================')
         
-        const cache = getAuthCache()
+        try {
+          const cache = getAuthCache()
         
         // Check cache first
         const cached = cache.get()
@@ -447,218 +448,230 @@ export const useAuthStore = create<AuthStore>()(
           }
         }
         
-        try {
-          const requestLog = {
-            timestamp: new Date().toISOString(),
-            action: 'AUTH_REQUEST',
-            apiUrl: API_URL,
-            endpoint: `${API_URL}/api/auth/me`,
-            method: 'GET',
-            credentials: 'include',
-            ...cookieDiagnostics,
-          }
-          authLogger.debug('🔍 [CheckSession] Checking session cookie...', JSON.stringify(requestLog, null, 2))
-          
-          // No deduplication - Zustand atomic updates handle concurrency
-          const response = await authCircuitBreaker.execute(async () => {
-            return await retryWithBackoff(
-              async () => {
-                const controller = new AbortController()
-                const timeoutId = setTimeout(() => controller.abort(), 3000)
+        const requestLog = {
+          timestamp: new Date().toISOString(),
+          action: 'AUTH_REQUEST',
+          apiUrl: API_URL,
+          endpoint: `${API_URL}/api/auth/me`,
+          method: 'GET',
+          credentials: 'include',
+          ...cookieDiagnostics,
+        }
+        authLogger.debug('🔍 [CheckSession] Checking session cookie...', JSON.stringify(requestLog, null, 2))
+        
+        // No deduplication - Zustand atomic updates handle concurrency
+        const response = await authCircuitBreaker.execute(async () => {
+          return await retryWithBackoff(
+            async () => {
+              const controller = new AbortController()
+              const timeoutId = setTimeout(() => controller.abort(), 3000)
+              
+              try {
+                const res = await fetch(`${API_URL}/api/auth/me`, {
+                  method: 'GET',
+                  credentials: 'include',
+                  signal: controller.signal,
+                  headers: {
+                    'Accept': 'application/json',
+                  },
+                })
+                clearTimeout(timeoutId)
                 
-                try {
-                  const res = await fetch(`${API_URL}/api/auth/me`, {
-                    method: 'GET',
-                    credentials: 'include',
-                    signal: controller.signal,
-                    headers: {
-                      'Accept': 'application/json',
-                    },
-                  })
-                  clearTimeout(timeoutId)
-                  
-                  const responseHeaders = Object.fromEntries(res.headers.entries())
-                  const authStatus = res.headers.get('X-Auth-Status')
-                  const cookieDomain = res.headers.get('X-Cookie-Domain')
-                  const originHeader = res.headers.get('X-Origin')
-                  const subdomainHeader = res.headers.get('X-Subdomain')
-                  
-                  authLogger.debug('📡 [CheckSession] Auth check response', {
-                    timestamp: new Date().toISOString(),
-                    status: res.status,
-                    statusText: res.statusText,
-                    ok: res.ok,
-                    url: res.url,
-                    headers: {
-                      ...responseHeaders,
-                      'X-Auth-Status': authStatus,
-                      'X-Cookie-Domain': cookieDomain,
-                      'X-Origin': originHeader,
-                      'X-Subdomain': subdomainHeader,
-                    },
-                    cookieDiagnostics: {
-                      authStatus,
-                      cookieDomain,
-                      origin: originHeader,
-                      subdomain: subdomainHeader,
-                    },
-                  })
-                  
-                  return res
-                } catch (error: any) {
-                  clearTimeout(timeoutId)
-                  if (isRetryableAuthError(error)) {
-                    throw error
-                  }
+                const responseHeaders = Object.fromEntries(res.headers.entries())
+                const authStatus = res.headers.get('X-Auth-Status')
+                const cookieDomain = res.headers.get('X-Cookie-Domain')
+                const originHeader = res.headers.get('X-Origin')
+                const subdomainHeader = res.headers.get('X-Subdomain')
+                
+                authLogger.debug('📡 [CheckSession] Auth check response', {
+                  timestamp: new Date().toISOString(),
+                  status: res.status,
+                  statusText: res.statusText,
+                  ok: res.ok,
+                  url: res.url,
+                  headers: {
+                    ...responseHeaders,
+                    'X-Auth-Status': authStatus,
+                    'X-Cookie-Domain': cookieDomain,
+                    'X-Origin': originHeader,
+                    'X-Subdomain': subdomainHeader,
+                  },
+                  cookieDiagnostics: {
+                    authStatus,
+                    cookieDomain,
+                    origin: originHeader,
+                    subdomain: subdomainHeader,
+                  },
+                })
+                
+                return res
+              } catch (error: any) {
+                clearTimeout(timeoutId)
+                if (isRetryableAuthError(error)) {
                   throw error
                 }
-              },
-              {
-                maxRetries: 3,
-                initialDelay: 100,
-                maxDelay: 1000,
-                onRetry: (attempt, error, delay) => {
-                  authLogger.debug('Retrying session check', {
-                    attempt,
-                    delay,
-                    error: error.message,
-                  })
-                },
+                throw error
               }
-            )
-          })
-          
-          authLogger.debug('📡 Session check response:', {
-            status: response.status,
-            statusText: response.statusText,
-            ok: response.ok,
-            headers: Object.fromEntries(response.headers.entries()),
-            url: response.url,
-          })
-          
-          if (typeof document !== 'undefined') {
-            authLogger.debug('🍪 [CheckSession] Document cookies after response', {
-              allCookies: document.cookie,
-              hasUpswitchSession: document.cookie.includes('upswitch_session'),
-              cookieCount: document.cookie ? document.cookie.split(';').length : 0,
-            })
-          }
-
-          // CRITICAL: Log response status immediately
-          console.log('📡📡📡 [CHECK SESSION RESPONSE] ===========================================')
-          console.log('📡📡📡 [CHECK SESSION RESPONSE] Response status:', response.status)
-          console.log('📡📡📡 [CHECK SESSION RESPONSE] Response OK:', response.ok)
-          console.log('📡📡📡 [CHECK SESSION RESPONSE] Response headers:', Object.fromEntries(response.headers.entries()))
-          console.log('📡📡📡 [CHECK SESSION RESPONSE] X-Auth-Status:', response.headers.get('X-Auth-Status'))
-          console.log('📡📡📡 [CHECK SESSION RESPONSE] X-Cookie-Domain:', response.headers.get('X-Cookie-Domain'))
-          console.log('📡📡📡 [CHECK SESSION RESPONSE] ===========================================')
-          
-          if (response.ok) {
-            const data = await response.json()
-            console.log('📡📡📡 [CHECK SESSION] Response data received:', data.success ? 'SUCCESS' : 'FAILURE')
-            
-            let userData: User | null = null
-            if (data.success && data.data) {
-              userData = data.data.user || data.data
-            } else if (data.success && data.user) {
-              userData = data.user
-            }
-            
-            if (userData) {
-              // CRITICAL: Make success VERY visible in console
-              console.log('✅✅✅ [AUTH SUCCESS] ===========================================')
-              console.log('✅✅✅ [AUTH SUCCESS] Authentication successful!')
-              console.log('✅✅✅ [AUTH SUCCESS] User:', userData.email)
-              console.log('✅✅✅ [AUTH SUCCESS] User ID:', userData.id)
-              console.log('✅✅✅ [AUTH SUCCESS] Cross-subdomain:', isSubdomainRequest ? 'YES ✅' : 'NO')
-              console.log('✅✅✅ [AUTH SUCCESS] Cookie was detected:', cookieDiagnostics.cookieDetection.hasUpswitchSessionCookie ? 'YES ✅' : 'NO')
-              console.log('✅✅✅ [AUTH SUCCESS] ===========================================')
-              
-              // Show alert for testing (remove in production)
-              if (typeof window !== 'undefined' && window.location.hostname.includes('valuation.')) {
-                console.log('🎉🎉🎉 [SUCCESS ALERT] Cross-subdomain cookie authentication worked!')
-              }
-              
-              const successLog = {
-                timestamp: new Date().toISOString(),
-                action: 'AUTH_SUCCESS',
-                userId: userData.id,
-                email: userData.email,
-                origin: cookieDiagnostics.currentOrigin,
-                subdomain: subdomain || 'main',
-                isSubdomainRequest,
-                cookieDetected: cookieDiagnostics.cookieDetection.hasUpswitchSessionCookie,
-                crossSubdomainAuth: isSubdomainRequest && cookieDiagnostics.cookieDetection.hasUpswitchSessionCookie,
-                message: isSubdomainRequest 
-                  ? 'Cross-subdomain cookie authentication successful'
-                  : 'Cookie authentication successful',
-              }
-              authLogger.info('✅ [CheckSession] Existing session found', JSON.stringify(successLog, null, 2))
-              
-              // Log cross-subdomain success prominently
-              if (isSubdomainRequest && cookieDiagnostics.cookieDetection.hasUpswitchSessionCookie) {
-                console.log('🎉🎉🎉 [CROSS-SUBDOMAIN SUCCESS] Cookie from main domain authenticated on subdomain!')
-                authLogger.info('✅ [CheckSession] Cross-subdomain cookie authentication successful', {
-                  subdomain,
-                  userId: userData.id,
-                  email: userData.email,
-                  cookieDomain: response.headers.get('X-Cookie-Domain'),
-                  message: 'Cookie from main domain successfully authenticated on subdomain',
+            },
+            {
+              maxRetries: 3,
+              initialDelay: 100,
+              maxDelay: 1000,
+              onRetry: (attempt, error, delay) => {
+                authLogger.debug('Retrying session check', {
+                  attempt,
+                  delay,
+                  error: error.message,
                 })
-              }
-              
-              get().setUser(userData)
-              return userData
+              },
+            }
+          )
+        })
+        
+        authLogger.debug('📡 Session check response:', {
+          status: response.status,
+          statusText: response.statusText,
+          ok: response.ok,
+          headers: Object.fromEntries(response.headers.entries()),
+          url: response.url,
+        })
+        
+        if (typeof document !== 'undefined') {
+          authLogger.debug('🍪 [CheckSession] Document cookies after response', {
+            allCookies: document.cookie,
+            hasUpswitchSession: document.cookie.includes('upswitch_session'),
+            cookieCount: document.cookie ? document.cookie.split(';').length : 0,
+          })
+        }
+
+        // CRITICAL: Log response status immediately
+        console.log('📡📡📡 [CHECK SESSION RESPONSE] ===========================================')
+        console.log('📡📡📡 [CHECK SESSION RESPONSE] Response status:', response.status)
+        console.log('📡📡📡 [CHECK SESSION RESPONSE] Response OK:', response.ok)
+        console.log('📡📡📡 [CHECK SESSION RESPONSE] Response headers:', Object.fromEntries(response.headers.entries()))
+        console.log('📡📡📡 [CHECK SESSION RESPONSE] X-Auth-Status:', response.headers.get('X-Auth-Status'))
+        console.log('📡📡📡 [CHECK SESSION RESPONSE] X-Cookie-Domain:', response.headers.get('X-Cookie-Domain'))
+        console.log('📡📡📡 [CHECK SESSION RESPONSE] ===========================================')
+        
+        if (response.ok) {
+          const data = await response.json()
+          console.log('📡📡📡 [CHECK SESSION] Response data received:', data.success ? 'SUCCESS' : 'FAILURE')
+          
+          let userData: User | null = null
+          if (data.success && data.data) {
+            userData = data.data.user || data.data
+          } else if (data.success && data.user) {
+            userData = data.user
+          }
+          
+          if (userData) {
+            // CRITICAL: Make success VERY visible in console
+            console.log('✅✅✅ [AUTH SUCCESS] ===========================================')
+            console.log('✅✅✅ [AUTH SUCCESS] Authentication successful!')
+            console.log('✅✅✅ [AUTH SUCCESS] User:', userData.email)
+            console.log('✅✅✅ [AUTH SUCCESS] User ID:', userData.id)
+            console.log('✅✅✅ [AUTH SUCCESS] Cross-subdomain:', isSubdomainRequest ? 'YES ✅' : 'NO')
+            console.log('✅✅✅ [AUTH SUCCESS] Cookie was detected:', cookieDiagnostics.cookieDetection.hasUpswitchSessionCookie ? 'YES ✅' : 'NO')
+            console.log('✅✅✅ [AUTH SUCCESS] ===========================================')
+            
+            // Show alert for testing (remove in production)
+            if (typeof window !== 'undefined' && window.location.hostname.includes('valuation.')) {
+              console.log('🎉🎉🎉 [SUCCESS ALERT] Cross-subdomain cookie authentication worked!')
             }
             
-            authLogger.debug('ℹ️ [CheckSession] No existing session - response', { data })
-            get().setUser(null)
-            return null
-          } else if (response.status === 404 || response.status === 401) {
-            // CRITICAL: Log 401/404 with details
-            console.log('❌❌❌ [CHECK SESSION] ===========================================')
-            console.log('❌❌❌ [CHECK SESSION] Response status:', response.status)
-            console.log('❌❌❌ [CHECK SESSION] This means: No active session')
-            console.log('❌❌❌ [CHECK SESSION] Cookie was detected:', cookieDiagnostics.cookieDetection.hasUpswitchSessionCookie ? 'YES ✅' : 'NO ❌')
-            console.log('❌❌❌ [CHECK SESSION] Origin:', cookieDiagnostics.currentOrigin)
-            console.log('❌❌❌ [CHECK SESSION] Subdomain:', subdomain || 'main')
-            if (!cookieDiagnostics.cookieDetection.hasUpswitchSessionCookie && isSubdomainRequest) {
-              console.error('❌❌❌ [CHECK SESSION] CRITICAL: Cookie NOT detected on subdomain!')
-              console.error('❌❌❌ [CHECK SESSION] This is why authentication failed')
-              console.error('❌❌❌ [CHECK SESSION] Cookie must be set with domain: .upswitch.biz')
-            }
-            console.log('❌❌❌ [CHECK SESSION] ===========================================')
-            
-            const noSessionLog = {
+            const successLog = {
               timestamp: new Date().toISOString(),
-              action: 'NO_SESSION',
-              status: response.status,
+              action: 'AUTH_SUCCESS',
+              userId: userData.id,
+              email: userData.email,
               origin: cookieDiagnostics.currentOrigin,
               subdomain: subdomain || 'main',
               isSubdomainRequest,
               cookieDetected: cookieDiagnostics.cookieDetection.hasUpswitchSessionCookie,
-              message: 'No active session (expected for guests)',
+              crossSubdomainAuth: isSubdomainRequest && cookieDiagnostics.cookieDetection.hasUpswitchSessionCookie,
+              message: isSubdomainRequest 
+                ? 'Cross-subdomain cookie authentication successful'
+                : 'Cookie authentication successful',
             }
-            authLogger.debug('ℹ️ [CheckSession] No active session (expected for guests)', JSON.stringify(noSessionLog, null, 2))
+            authLogger.info('✅ [CheckSession] Existing session found', JSON.stringify(successLog, null, 2))
+            
+            // Log cross-subdomain success prominently
+            if (isSubdomainRequest && cookieDiagnostics.cookieDetection.hasUpswitchSessionCookie) {
+              console.log('🎉🎉🎉 [CROSS-SUBDOMAIN SUCCESS] Cookie from main domain authenticated on subdomain!')
+              authLogger.info('✅ [CheckSession] Cross-subdomain cookie authentication successful', {
+                subdomain,
+                userId: userData.id,
+                email: userData.email,
+                cookieDomain: response.headers.get('X-Cookie-Domain'),
+                message: 'Cookie from main domain successfully authenticated on subdomain',
+              })
+            }
+            
+            get().setUser(userData)
+            return userData
+          }
+          
+          authLogger.debug('ℹ️ [CheckSession] No existing session - response', { data })
+          get().setUser(null)
+          return null
+        } else if (response.status === 404 || response.status === 401) {
+          // CRITICAL: Log 401/404 with details
+          console.log('❌❌❌ [CHECK SESSION] ===========================================')
+          console.log('❌❌❌ [CHECK SESSION] Response status:', response.status)
+          console.log('❌❌❌ [CHECK SESSION] This means: No active session')
+          console.log('❌❌❌ [CHECK SESSION] Cookie was detected:', cookieDiagnostics.cookieDetection.hasUpswitchSessionCookie ? 'YES ✅' : 'NO ❌')
+          console.log('❌❌❌ [CHECK SESSION] Origin:', cookieDiagnostics.currentOrigin)
+          console.log('❌❌❌ [CHECK SESSION] Subdomain:', subdomain || 'main')
+          if (!cookieDiagnostics.cookieDetection.hasUpswitchSessionCookie && isSubdomainRequest) {
+            console.error('❌❌❌ [CHECK SESSION] CRITICAL: Cookie NOT detected on subdomain!')
+            console.error('❌❌❌ [CHECK SESSION] This is why authentication failed')
+            console.error('❌❌❌ [CHECK SESSION] Cookie must be set with domain: .upswitch.biz')
+          }
+          console.log('❌❌❌ [CHECK SESSION] ===========================================')
+          
+          const noSessionLog = {
+            timestamp: new Date().toISOString(),
+            action: 'NO_SESSION',
+            status: response.status,
+            origin: cookieDiagnostics.currentOrigin,
+            subdomain: subdomain || 'main',
+            isSubdomainRequest,
+            cookieDetected: cookieDiagnostics.cookieDetection.hasUpswitchSessionCookie,
+            message: 'No active session (expected for guests)',
+          }
+          authLogger.debug('ℹ️ [CheckSession] No active session (expected for guests)', JSON.stringify(noSessionLog, null, 2))
+          get().setUser(null)
+          return null
+        } else {
+          const error = new Error(`Unexpected status: ${response.status}`)
+          const classified = classifyAuthError(error)
+          
+          if (classified.recoveryStrategy === RecoveryStrategy.CONTINUE_AS_GUEST) {
+            authLogger.debug('Unexpected session check response, continuing as guest', {
+              status: response.status,
+              errorType: classified.type,
+            })
             get().setUser(null)
             return null
-          } else {
-            const error = new Error(`Unexpected status: ${response.status}`)
-            const classified = classifyAuthError(error)
-            
-            if (classified.recoveryStrategy === RecoveryStrategy.CONTINUE_AS_GUEST) {
-              authLogger.debug('Unexpected session check response, continuing as guest', {
-                status: response.status,
-                errorType: classified.type,
-              })
-              get().setUser(null)
-              return null
-            }
-            
-            throw error
           }
-        } catch (err) {
+          
+          throw error
+        }
+      } catch (err) {
+          // CRITICAL: Log errors with console.error for maximum visibility
+          console.error('❌❌❌ [CHECK SESSION ERROR] ===========================================')
+          console.error('❌❌❌ [CHECK SESSION ERROR] checkSession() failed with error!')
+          console.error('❌❌❌ [CHECK SESSION ERROR] Error:', err)
+          console.error('❌❌❌ [CHECK SESSION ERROR] Error message:', err instanceof Error ? err.message : 'Unknown error')
+          console.error('❌❌❌ [CHECK SESSION ERROR] Error stack:', err instanceof Error ? err.stack : 'N/A')
+          console.error('❌❌❌ [CHECK SESSION ERROR] Error name:', err instanceof Error ? err.name : 'N/A')
+          
           const classified = classifyAuthError(err)
+          
+          console.error('❌❌❌ [CHECK SESSION ERROR] Error type:', classified.type)
+          console.error('❌❌❌ [CHECK SESSION ERROR] Retryable:', classified.retryable)
+          console.error('❌❌❌ [CHECK SESSION ERROR] Recovery strategy:', classified.recoveryStrategy)
+          console.error('❌❌❌ [CHECK SESSION ERROR] ===========================================')
           
           authLogger.debug('Session check failed', {
             error: err instanceof Error ? err.message : 'Unknown error',
@@ -667,11 +680,17 @@ export const useAuthStore = create<AuthStore>()(
             recoveryStrategy: classified.recoveryStrategy,
           })
           
+          // Always continue as guest on error - don't prevent subsequent attempts
+          // This ensures the app remains functional even if auth fails
           if (classified.recoveryStrategy === RecoveryStrategy.CONTINUE_AS_GUEST) {
+            console.error('🔄 [CHECK SESSION ERROR] Continuing as guest (recoverable error)')
             get().setUser(null)
             return null
           }
           
+          // For non-recoverable errors, still continue as guest but log warning
+          console.error('⚠️⚠️⚠️ [CHECK SESSION ERROR] Non-recoverable error, but continuing as guest')
+          console.error('⚠️⚠️⚠️ [CHECK SESSION ERROR] User can retry authentication manually')
           get().setUser(null)
           return null
         }

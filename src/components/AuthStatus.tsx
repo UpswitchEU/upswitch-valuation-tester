@@ -5,11 +5,15 @@
  * and user-friendly error messages
  */
 
-import React from 'react'
+import React, { useState } from 'react'
 import { useAuth } from '../contexts/AuthProvider'
+import { useAuthStore } from '../store/useAuthStore'
 
 export const AuthStatus: React.FC = () => {
   const { user, isAuthenticated, isLoading, error, cookieHealth, refreshAuth } = useAuth()
+  const checkSession = useAuthStore((state) => state.checkSession)
+  const [manualCheckLoading, setManualCheckLoading] = useState(false)
+  const [manualCheckResult, setManualCheckResult] = useState<string | null>(null)
   
   // Manual retry function
   const handleRetry = async () => {
@@ -20,6 +24,47 @@ export const AuthStatus: React.FC = () => {
       console.log('🔄 [MANUAL RETRY] All cookies:', document.cookie || 'none')
     }
     await refreshAuth()
+  }
+
+  // Manual authentication check - directly calls checkSession() bypassing initAuth()
+  const handleManualAuthCheck = async () => {
+    console.error('🔍🔍🔍 [MANUAL AUTH CHECK] ===========================================')
+    console.error('🔍🔍🔍 [MANUAL AUTH CHECK] User clicked "Check Authentication Now"')
+    console.error('🔍🔍🔍 [MANUAL AUTH CHECK] This bypasses initAuth() and calls checkSession() directly')
+    console.error('🔍🔍🔍 [MANUAL AUTH CHECK] Timestamp:', new Date().toISOString())
+    
+    setManualCheckLoading(true)
+    setManualCheckResult(null)
+    
+    try {
+      // Check cookie first
+      if (typeof document !== 'undefined') {
+        const hasCookie = document.cookie.includes('upswitch_session')
+        console.error('🔍🔍🔍 [MANUAL AUTH CHECK] Cookie present:', hasCookie ? '✅ YES' : '❌ NO')
+        console.error('🔍🔍🔍 [MANUAL AUTH CHECK] All cookies:', document.cookie || 'NONE')
+      }
+      
+      console.error('🔍🔍🔍 [MANUAL AUTH CHECK] Calling checkSession() now...')
+      const authenticatedUser = await checkSession()
+      
+      if (authenticatedUser) {
+        console.error('✅✅✅ [MANUAL AUTH CHECK] SUCCESS! User authenticated:', authenticatedUser.email)
+        setManualCheckResult(`✅ Success! Authenticated as ${authenticatedUser.email}`)
+        // Refresh auth state
+        await refreshAuth()
+      } else {
+        console.error('❌❌❌ [MANUAL AUTH CHECK] No user returned - authentication failed')
+        setManualCheckResult('❌ No active session found. Ensure you are logged into upswitch.biz')
+      }
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Unknown error'
+      console.error('❌❌❌ [MANUAL AUTH CHECK] ERROR:', errorMessage)
+      console.error('❌❌❌ [MANUAL AUTH CHECK] Error stack:', err instanceof Error ? err.stack : 'N/A')
+      setManualCheckResult(`❌ Error: ${errorMessage}`)
+    } finally {
+      setManualCheckLoading(false)
+      console.error('🔍🔍🔍 [MANUAL AUTH CHECK] ===========================================')
+    }
   }
 
   if (isLoading) {
@@ -165,22 +210,52 @@ export const AuthStatus: React.FC = () => {
               {' '}to get automatic authentication
             </p>
             {isSubdomain && (
-              <button
-                onClick={handleRetry}
-                style={{
-                  marginTop: '0.75rem',
-                  padding: '0.5rem 1rem',
-                  backgroundColor: '#3b82f6',
-                  color: 'white',
-                  border: 'none',
-                  borderRadius: '0.375rem',
-                  cursor: 'pointer',
-                  fontSize: '0.875rem',
-                  fontWeight: '500',
-                }}
-              >
-                🔄 Retry Cookie Check
-              </button>
+              <div style={{ marginTop: '0.75rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                <button
+                  onClick={handleManualAuthCheck}
+                  disabled={manualCheckLoading}
+                  style={{
+                    padding: '0.75rem 1.5rem',
+                    backgroundColor: manualCheckLoading ? '#6b7280' : '#10b981',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '0.375rem',
+                    cursor: manualCheckLoading ? 'not-allowed' : 'pointer',
+                    fontSize: '0.9375rem',
+                    fontWeight: '600',
+                    boxShadow: '0 2px 4px rgba(0,0,0,0.2)',
+                  }}
+                >
+                  {manualCheckLoading ? '⏳ Checking...' : '🔍 Check Authentication Now'}
+                </button>
+                {manualCheckResult && (
+                  <p style={{ 
+                    fontSize: '0.875rem', 
+                    color: manualCheckResult.startsWith('✅') ? '#059669' : '#dc2626',
+                    marginTop: '0.5rem',
+                    padding: '0.5rem',
+                    backgroundColor: manualCheckResult.startsWith('✅') ? '#d1fae5' : '#fee2e2',
+                    borderRadius: '0.375rem',
+                  }}>
+                    {manualCheckResult}
+                  </p>
+                )}
+                <button
+                  onClick={handleRetry}
+                  style={{
+                    padding: '0.5rem 1rem',
+                    backgroundColor: '#3b82f6',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '0.375rem',
+                    cursor: 'pointer',
+                    fontSize: '0.875rem',
+                    fontWeight: '500',
+                  }}
+                >
+                  🔄 Retry Cookie Check
+                </button>
+              </div>
             )}
           </>
         )}
