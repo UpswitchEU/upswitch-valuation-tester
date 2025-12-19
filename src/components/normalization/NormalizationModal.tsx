@@ -237,7 +237,7 @@ export const NormalizationModal: React.FC<NormalizationModalProps> = ({
                       
                       {/* Note Input */}
                       <div className="mt-3">
-                        <label className="block text-sm font-medium text-gray-400 mb-1">
+                        <label className="block text-sm font-medium text-slate-ink mb-1">
                           Note (optional)
                         </label>
                         <textarea

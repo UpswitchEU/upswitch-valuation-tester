@@ -355,21 +355,35 @@ export const useEbitdaNormalizationStore = create<EbitdaNormalizationStore>()(
           
           console.log('Normalization loaded successfully', { year });
         } catch (error) {
-          if (error instanceof NormalizationAPIError && error.status === 404) {
-            // Not found is not an error - just no normalization exists
-            console.log('No normalization found for year', { year });
+          set({ isLoading: false });
+          
+          // For 404 or 500 errors, throw so openNormalizationModal can create a template
+          // This allows the UI to work even when backend has issues
+          if (error instanceof NormalizationAPIError) {
+            if (error.status === 404) {
+              // Not found - no normalization exists yet, this is expected
+              console.log('No normalization found for year, will create template', { year });
+            } else {
+              // 500 or other server errors - log but allow UI to continue with template
+              console.warn('Error loading normalization from backend, will create template', { 
+                year, 
+                status: error.status,
+                message: error.message 
+              });
+            }
+            // Throw to allow openNormalizationModal to catch and create template
+            throw error;
           } else {
-            console.error('Error loading normalization', error);
+            // Unknown error - log and throw
+            console.error('Unexpected error loading normalization', error);
             set({
               errors: {
                 ...get().errors,
-                [`load-${year}`]: error instanceof NormalizationAPIError
-                  ? error.message
-                  : 'Failed to load normalization',
+                [`load-${year}`]: 'Failed to load normalization',
               },
             });
+            throw error;
           }
-          set({ isLoading: false });
         }
       },
       
