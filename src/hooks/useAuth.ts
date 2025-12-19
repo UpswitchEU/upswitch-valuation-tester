@@ -4,4 +4,5 @@
  * Re-export from simplified auth module
  */
 
-export { useAuth } from '../lib/auth'
+export { useAuth } from '../lib/auth';
+

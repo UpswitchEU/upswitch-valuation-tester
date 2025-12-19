@@ -44,7 +44,6 @@ export interface AuthContextType {
   isAuthenticated: boolean
   isLoading: boolean
   error: string | null
-  cookieHealth: CookieHealthStatus | null
   refreshAuth: () => Promise<void>
   businessCard: {
     company_name: string

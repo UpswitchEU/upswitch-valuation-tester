@@ -5,7 +5,7 @@
  * upswitch.biz and valuation.upswitch.biz
  */
 
-import { test, expect } from '@playwright/test'
+import { expect, test } from '@playwright/test'
 
 test.describe('Cross-Subdomain Authentication', () => {
   test('should authenticate on subdomain when logged into main domain', async ({ page, context }) => {
@@ -118,3 +118,4 @@ test.describe('Cross-Subdomain Authentication', () => {
     })
   })
 })
+

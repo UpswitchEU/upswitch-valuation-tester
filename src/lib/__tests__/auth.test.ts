@@ -5,7 +5,7 @@
  * Verifies cookie auth, token exchange, and guest flows
  */
 
-import { describe, it, expect, beforeEach, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { useAuthStore } from '../auth'
 
 // Mock fetch globally
@@ -303,3 +303,4 @@ describe('Authentication Module', () => {
     })
   })
 })
+

@@ -18,7 +18,7 @@
 import { create } from 'zustand'
 import { devtools } from 'zustand/middleware'
 import type { User } from '../contexts/AuthContextTypes'
-import { logAuthError, trackAuthSuccess, trackAuthFailure, authMetrics } from './authLogger'
+import { authMetrics, logAuthError, trackAuthFailure, trackAuthSuccess } from './authLogger'
 
 // Backend API URL
 const API_URL =
@@ -265,3 +265,4 @@ export function useAuth() {
     cookieHealth: null, // Removed complexity, always null
   }
 }
+
