@@ -61,39 +61,42 @@ export const useEbitdaNormalizationStore = create<EbitdaNormalizationStore>()(
       errors: {},
       
       // Open modal and initialize normalization for year
+      // OPTIMISTIC UI: Opens modal immediately with template, then loads data asynchronously
       openNormalizationModal: async (year, reportedEbitda, sessionId) => {
         const { normalizations, loadNormalization } = get();
         
-        // If normalization doesn't exist in store, try to load it from backend
+        // OPTIMISTIC: Create template immediately if doesn't exist
         if (!normalizations[year]) {
-          try {
-            // Try to load existing normalization from backend
-            await loadNormalization(sessionId, year);
-            // After loading, set active year to open modal
-            set({ activeYear: year });
-          } catch (error) {
-            // No existing normalization found, create template
-            const template: EbitdaNormalization = {
-              session_id: sessionId,
-              year,
-              reported_ebitda: reportedEbitda,
-              adjustments: [],
-              custom_adjustments: [],
-              total_adjustments: 0,
-              normalized_ebitda: reportedEbitda,
-              confidence_score: 'medium',
-            };
-            
-            set({
-              normalizations: {
-                ...normalizations,
-                [year]: template,
-              },
-              activeYear: year,
+          const template: EbitdaNormalization = {
+            session_id: sessionId,
+            year,
+            reported_ebitda: reportedEbitda,
+            adjustments: [],
+            custom_adjustments: [],
+            total_adjustments: 0,
+            normalized_ebitda: reportedEbitda,
+            confidence_score: 'medium',
+          };
+          
+          set({
+            normalizations: {
+              ...normalizations,
+              [year]: template,
+            },
+            activeYear: year, // Open modal immediately
+          });
+          
+          // Async: Try to load actual data from backend
+          loadNormalization(sessionId, year)
+            .then(() => {
+              // Data loaded successfully - store already updated by loadNormalization
+            })
+            .catch((error) => {
+              // No data found - template is already shown, no action needed
+              console.log(`No existing normalization for ${year}, using template`);
             });
-          }
         } else {
-          // Normalization exists in store, just open modal
+          // Already exists in store, just open modal
           set({ activeYear: year });
         }
       },
