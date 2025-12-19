@@ -161,14 +161,20 @@ export const useAuthStore = create<AuthState>()(
 async function initializeAuth(): Promise<void> {
   const { setLoading, checkSession, exchangeToken, setUser } = useAuthStore.getState()
 
+  // HttpOnly Cookie Explainer
+  console.log('🔐 [Auth] Initializing authentication...')
+  console.log('🔐 [Auth] Note: Auth cookies are HttpOnly and invisible to JavaScript')
+  console.log('🔐 [Auth] The browser automatically sends them in HTTP requests')
+  console.log('🔐 [Auth] Testing backend /api/auth/me to verify authentication...')
+
   // Enhanced logging for cross-subdomain auth debugging
   if (process.env.NODE_ENV === 'development') {
-    console.log('🔐 [Auth] Initializing authentication...', {
+    console.log('🔐 [Auth] Environment:', {
       hostname: window.location.hostname,
       isSubdomain: window.location.hostname.includes('valuation.'),
-      hasCookie: document.cookie.includes('upswitch_session'),
       pathname: window.location.pathname,
     })
+    console.log('🔐 [Auth] Note: document.cookie cannot detect HttpOnly cookies (this is correct for security)')
   }
 
   try {
@@ -177,35 +183,29 @@ async function initializeAuth(): Promise<void> {
     // ========================================================================
     // STEP 1: Cookie-based auth (Primary method, <50ms)
     // ========================================================================
-    const hasCookie = document.cookie.includes('upswitch_session')
-
-    if (hasCookie) {
+    // Note: We always check the session with the backend because HttpOnly cookies
+    // are invisible to JavaScript. The browser automatically sends them in requests.
+    if (process.env.NODE_ENV === 'development') {
+      console.log('🍪 [Auth] Checking session with backend (HttpOnly cookies sent automatically)...')
+    }
+    
+    const user = await checkSession()
+    
+    if (user) {
       if (process.env.NODE_ENV === 'development') {
-        console.log('🍪 [Auth] Cookie detected, checking session...')
+        console.log('✅ [Auth] Cookie session valid', { 
+          userId: user.id, 
+          email: user.email 
+        })
       }
-      
-      const user = await checkSession()
-      
-      if (user) {
-        if (process.env.NODE_ENV === 'development') {
-          console.log('✅ [Auth] Cookie session valid', { 
-            userId: user.id, 
-            email: user.email 
-          })
-        }
-        trackAuthSuccess(user.id, 'cookie')
-        authMetrics.recordSuccess()
-        return
-      }
-      
-      // Cookie exists but session invalid - may need token exchange
-      if (process.env.NODE_ENV === 'development') {
-        console.log('⚠️ [Auth] Cookie exists but session invalid')
-      }
-    } else {
-      if (process.env.NODE_ENV === 'development') {
-        console.log('ℹ️ [Auth] No cookie found on subdomain')
-      }
+      trackAuthSuccess(user.id, 'cookie')
+      authMetrics.recordSuccess()
+      return
+    }
+    
+    // No valid session from cookie - try token exchange
+    if (process.env.NODE_ENV === 'development') {
+      console.log('ℹ️ [Auth] No valid session from cookie, checking for token exchange...')
     }
 
     // ========================================================================

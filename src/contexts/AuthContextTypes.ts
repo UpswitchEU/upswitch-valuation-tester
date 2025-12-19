@@ -1,4 +1,5 @@
 import { createContext } from 'react'
+import { CookieHealthStatus } from '../utils/auth/cookieHealth'
 
 // =============================================================================
 // TYPES
@@ -38,28 +39,12 @@ export interface User {
   company_description?: string
 }
 
-/**
- * Authentication Context Type
- * 
- * Defines the contract for the authentication system.
- * This interface matches the return type of useAuth() hook.
- * 
- * Note: cookieHealth is deprecated and always returns null.
- * The simplified authentication system no longer tracks cookie health status.
- */
 export interface AuthContextType {
-  // User state
   user: User | null
   isAuthenticated: boolean
-  
-  // Loading state (dual aliases for backward compatibility)
-  loading: boolean
   isLoading: boolean
-  
-  // Error state
   error: string | null
-  
-  // Business card (computed from user data)
+  refreshAuth: () => Promise<void>
   businessCard: {
     company_name: string
     industry: string
@@ -68,16 +53,6 @@ export interface AuthContextType {
     country_code: string
     employee_count?: number
   } | null
-  
-  // Authentication actions
-  checkSession: () => Promise<User | null>
-  exchangeToken: (token: string) => Promise<User | null>
-  logout: () => void
-  refreshAuth: () => Promise<void>  // Alias for checkSession
-  
-  // Deprecated: Cookie health tracking removed for simplicity
-  // Always returns null, kept for backward compatibility
-  cookieHealth: null
 }
 
 export const AuthContext = createContext<AuthContextType | undefined>(undefined)
