@@ -75,6 +75,8 @@ export const StreamingChat: React.FC<import('./StreamingChat.types').StreamingCh
   isRestorationComplete = false,
   onContinueConversation,
   onViewReport,
+  onNormalizeEbitda,
+  onRecalculateValuation,
 }) => {
   // Get user data from AuthContext
   const { user } = useAuth()
@@ -664,6 +666,8 @@ export const StreamingChat: React.FC<import('./StreamingChat.types').StreamingCh
         messagesEndRef={useRef<HTMLDivElement>(null)}
         onContinueConversation={onContinueConversation}
         onViewReport={onViewReport}
+        onNormalizeEbitda={onNormalizeEbitda}
+        onRecalculateValuation={onRecalculateValuation}
       />
 
       {/* Input Form */}

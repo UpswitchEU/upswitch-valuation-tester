@@ -29,8 +29,8 @@ export function formatCurrency(value: number | undefined | null): string {
 }
 
 /**
- * Format version dropdown label with valuation values
- * Format: "€2.4M - €3.8M (Ask: €3.4M)" or "Pending calculation"
+ * Format version dropdown label with valuation values and normalization indicator
+ * Format: "€2.4M - €3.8M (Ask: €3.4M) [Normalized]" or "Pending calculation"
  *
  * @param version - Valuation version with optional valuationResult
  * @returns Formatted label for version dropdown
@@ -56,6 +56,17 @@ export function formatVersionLabel(version: ValuationVersion): string {
   const low = formatCurrency(result.equity_value_low)
   const high = formatCurrency(result.equity_value_high)
   const asking = formatCurrency(result.recommended_asking_price)
+  
+  // Check if version has normalized EBITDA
+  const hasNormalizedEbitda = version.changeMetadata?.normalized_years && 
+    Array.isArray(version.changeMetadata.normalized_years) &&
+    version.changeMetadata.normalized_years.length > 0
+  const normalizedYearsCount = hasNormalizedEbitda ? version.changeMetadata.normalized_years.length : 0
+  
+  // Add normalization indicator if present
+  const normalizationIndicator = hasNormalizedEbitda 
+    ? ` [Normalized: ${normalizedYearsCount}yr${normalizedYearsCount > 1 ? 's' : ''}]`
+    : ''
 
-  return `${low} - ${high} (Ask: ${asking})`
+  return `${low} - ${high} (Ask: ${asking})${normalizationIndicator}`
 }

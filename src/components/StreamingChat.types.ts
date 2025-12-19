@@ -23,6 +23,8 @@ export interface StreamingChatMessageCallbacks {
   onMessageComplete?: (message: import('../types/message').Message) => void
   onContinueConversation?: () => void
   onViewReport?: () => void
+  onNormalizeEbitda?: () => void
+  onRecalculateValuation?: () => void
 }
 
 // Valuation lifecycle callbacks

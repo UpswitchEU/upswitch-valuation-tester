@@ -9,9 +9,9 @@
 
 import React from 'react'
 import {
-    getIndustryGuidance,
-    validateEbitdaMargin,
-    validateRevenue,
+  getIndustryGuidance,
+  validateEbitdaMargin,
+  validateRevenue,
 } from '../../../config/industryGuidance'
 import { useEbitdaNormalizationStore } from '../../../store/useEbitdaNormalizationStore'
 import { useSessionStore } from '../../../store/useSessionStore'
@@ -163,27 +163,27 @@ export const FinancialDataSection: React.FC<FinancialDataSectionProps> = ({
 
             return (
               <>
-                <CustomNumberInputField
-                  label="EBITDA (Required)"
-                  placeholder="e.g., 500,000"
-                  value={
-                    formData.ebitda !== undefined && formData.ebitda !== null ? formData.ebitda : ''
-                  }
-                  onChange={(e) => {
-                    const cleanedValue = e.target.value.replace(/,/g, '')
-                    const numValue = parseFloat(cleanedValue)
-                    // Preserve negative values: only set undefined if NaN, not if value is 0 or negative
-                    updateFormData({ ebitda: isNaN(numValue) ? undefined : numValue })
-                  }}
-                  onBlur={() => {}}
-                  name="ebitda"
-                  min={-1000000000} // Allow negative EBITDA
-                  step={1000}
-                  prefix="€"
-                  formatAsCurrency
-                  required
-                  helpText={helpText}
-                />
+              <CustomNumberInputField
+                label="EBITDA (Required)"
+                placeholder="e.g., 500,000"
+                value={
+                  formData.ebitda !== undefined && formData.ebitda !== null ? formData.ebitda : ''
+                }
+                onChange={(e) => {
+                  const cleanedValue = e.target.value.replace(/,/g, '')
+                  const numValue = parseFloat(cleanedValue)
+                  // Preserve negative values: only set undefined if NaN, not if value is 0 or negative
+                  updateFormData({ ebitda: isNaN(numValue) ? undefined : numValue })
+                }}
+                onBlur={() => {}}
+                name="ebitda"
+                min={-1000000000} // Allow negative EBITDA
+                step={1000}
+                prefix="€"
+                formatAsCurrency
+                required
+                helpText={helpText}
+              />
                 
                 {/* EBITDA Normalization Link */}
                 {sessionId && formData.ebitda !== undefined && formData.ebitda !== null && (

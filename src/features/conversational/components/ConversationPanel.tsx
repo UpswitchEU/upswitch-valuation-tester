@@ -7,20 +7,23 @@
  * @module features/conversational/components/ConversationPanel
  */
 
-import React, { useCallback, useMemo } from 'react'
+import React, { useCallback, useMemo, useState } from 'react'
 import { StreamingChat } from '../../../components/StreamingChat'
+import { NormalizationModal } from '../../../components/normalization/NormalizationModal'
 import { reportService, valuationService } from '../../../services'
 import { valuationAuditService } from '../../../services/audit/ValuationAuditService'
 import {
     useConversationalChatStore,
     useConversationalResultsStore,
 } from '../../../store/conversational'
+import { useEbitdaNormalizationStore } from '../../../store/useEbitdaNormalizationStore'
 import { useSessionStore } from '../../../store/useSessionStore'
 import { useVersionHistoryStore } from '../../../store/useVersionHistoryStore'
 import type { Message } from '../../../types/message'
 import type { ValuationResponse } from '../../../types/valuation'
 import { buildValuationRequest } from '../../../utils/buildValuationRequest'
-import { chatLogger } from '../../../utils/logger'
+import { chatLogger, generalLogger } from '../../../utils/logger'
+import { snapshotNormalizationsToVersion } from '../../../utils/normalizationSnapshot'
 import {
     areChangesSignificant,
     detectVersionChanges,
@@ -107,6 +110,10 @@ export const ConversationPanel: React.FC<ConversationPanelProps> = ({
   const state = useConversationState()
   const actions = useConversationActions()
   const { updateCollectedData } = useConversationalChatStore()
+  
+  // Normalization state
+  const [showNormalizationModal, setShowNormalizationModal] = useState(false)
+  const [selectedNormalizationYear, setSelectedNormalizationYear] = useState<number | null>(null)
 
   // Handle data collection - sync to conversational chat store
   const handleDataCollected = useCallback(
@@ -553,6 +560,164 @@ export const ConversationPanel: React.FC<ConversationPanelProps> = ({
     setCalculating,
   ])
 
+  // Handle opening normalization modal
+  const handleOpenNormalization = useCallback(() => {
+    generalLogger.info('[Conversational] Opening normalization modal', { sessionId })
+    
+    // Get session data to extract years
+    const session = useSessionStore.getState().session
+    if (!session?.sessionData) {
+      generalLogger.warn('[Conversational] No session data for normalization')
+      return
+    }
+    
+    const sessionData = session.sessionData as any
+    
+    // Start with current year if available
+    const currentYear = sessionData.current_year_data?.year || new Date().getFullYear()
+    
+    // For now, open modal for current year (multi-year support can be added later)
+    setSelectedNormalizationYear(currentYear)
+    setShowNormalizationModal(true)
+  }, [sessionId])
+
+  // Handle normalization modal close
+  const handleCloseNormalization = useCallback(() => {
+    setShowNormalizationModal(false)
+    setSelectedNormalizationYear(null)
+  }, [])
+
+  // Handle recalculate valuation after normalization
+  const handleRecalculateValuation = useCallback(async () => {
+    try {
+      generalLogger.info('[Conversational] Recalculating valuation with normalization', { sessionId })
+
+      // Get current session data
+      const session = useSessionStore.getState().session
+      if (!session) {
+        generalLogger.error('[Conversational] No session for recalculation')
+        return
+      }
+
+      // Get all normalizations
+      const normalizations = useEbitdaNormalizationStore.getState().normalizations
+      const hasNormalizations = Object.keys(normalizations).length > 0
+      
+      if (!hasNormalizations) {
+        generalLogger.warn('[Conversational] No normalizations to recalculate')
+        return
+      }
+
+      // Mark as generating
+      actions.setGenerating(true)
+      onValuationStart?.()
+      const wasSet = trySetCalculating()
+      
+      if (!wasSet) {
+        generalLogger.warn('[Conversational] Already calculating, skipping recalculate')
+        return
+      }
+
+      // Create new version (reuse existing version control)
+      const newVersion = await createVersion({
+        sessionId,
+        userId,
+        label: 'Normalized EBITDA',
+        isAuto: true,
+        changeMetadata: {
+          normalized_years: Object.keys(normalizations).map(Number),
+          adjustment_count: Object.values(normalizations).reduce(
+            (sum, n) => sum + ((n as any).adjustment_count || 0), 
+            0
+          ),
+        },
+      })
+
+      generalLogger.info('[Conversational] Created new version for normalization', {
+        versionId: newVersion.id,
+        versionNumber: newVersion.version_number,
+      })
+
+      // Snapshot normalizations to version (using shared utility - same as manual flow)
+      await snapshotNormalizationsToVersion(sessionId, newVersion.id)
+
+      generalLogger.info('[Conversational] Normalization snapshots created')
+
+      // Build valuation request with normalized EBITDA
+      const sessionData = session.sessionData as any
+      const formData = {
+        company_name: sessionData.company_name || '',
+        industry: sessionData.industry || '',
+        country_code: sessionData.country_code || 'BE',
+        business_model: sessionData.business_model || '',
+        founding_year: sessionData.founding_year || 0,
+        revenue: sessionData.current_year_data?.revenue || sessionData.revenue || 0,
+        ebitda: sessionData.current_year_data?.ebitda || sessionData.ebitda || 0,
+        current_year_data: {
+          year: sessionData.current_year_data?.year || new Date().getFullYear(),
+          revenue: sessionData.current_year_data?.revenue || sessionData.revenue || 0,
+          ebitda: sessionData.current_year_data?.ebitda || sessionData.ebitda || 0,
+          net_income: sessionData.current_year_data?.net_income || 0,
+          total_assets: sessionData.current_year_data?.total_assets || 0,
+          total_debt: sessionData.current_year_data?.total_debt || 0,
+          cash: sessionData.current_year_data?.cash || 0,
+        },
+        historical_years_data: sessionData.historical_years_data || [],
+        number_of_employees: sessionData.number_of_employees || 0,
+        number_of_owners: sessionData.number_of_owners || 0,
+        recurring_revenue_percentage: sessionData.recurring_revenue_percentage || 0,
+        comparables: sessionData.comparables || [],
+        business_type_id: sessionData.business_type_id || '',
+        business_type: sessionData.business_type || '',
+        shares_for_sale: sessionData.shares_for_sale || 100,
+        business_context: sessionData.business_context || '',
+      } as any
+
+      // Build request (buildValuationRequest will include normalized EBITDA)
+      const request = buildValuationRequest(formData)
+      ;(request as any).dataSource = 'ai-guided'
+
+      // Trigger valuation
+      const result = await valuationService.calculateValuation(request)
+
+      if (result) {
+        // Update results store
+        setResult(result)
+        
+        // Notify parent
+        onValuationComplete?.(result)
+        
+        generalLogger.info('[Conversational] Recalculation complete with normalized EBITDA')
+        
+        // Reset states
+        setCalculating(false)
+        actions.setGenerating(false)
+      } else {
+        throw new Error('Recalculation returned no result')
+      }
+
+    } catch (error) {
+      generalLogger.error('[Conversational] Recalculation failed', { error })
+      actions.setError(
+        error instanceof Error
+          ? `Recalculation failed: ${error.message}`
+          : 'Recalculation failed. Please try again.'
+      )
+      actions.setGenerating(false)
+      setCalculating(false)
+    }
+  }, [
+    sessionId,
+    userId,
+    onValuationComplete,
+    onValuationStart,
+    actions,
+    trySetCalculating,
+    createVersion,
+    setResult,
+    setCalculating,
+  ])
+
   return (
     <ComponentErrorBoundary component="ConversationPanel">
       <div className="flex flex-col h-full">
@@ -560,12 +725,15 @@ export const ConversationPanel: React.FC<ConversationPanelProps> = ({
         {showSummaryBlock && (
           <div className="flex-shrink-0 p-4 overflow-y-auto">
             <ConversationSummaryBlock
+              sessionId={sessionId}
               collectedData={sessionDataForSummary}
               completionPercentage={completionPercentage}
               calculatedAt={completedAtForSummary}
               valuationResult={valuationResult}
               onContinue={handleContinue}
               onViewReport={valuationResult ? handleViewReport : undefined}
+              onNormalizeEbitda={handleOpenNormalization}
+              onRecalculateValuation={handleRecalculateValuation}
             />
           </div>
         )}
@@ -601,8 +769,21 @@ export const ConversationPanel: React.FC<ConversationPanelProps> = ({
             autoSend={autoSend}
             onContinueConversation={handleContinue}
             onViewReport={valuationResult ? handleViewReport : undefined}
+            onNormalizeEbitda={handleOpenNormalization}
+            onRecalculateValuation={handleRecalculateValuation}
           />
         </div>
+        
+        {/* Normalization Modal */}
+        {showNormalizationModal && selectedNormalizationYear && (
+          <NormalizationModal
+            isOpen={showNormalizationModal}
+            onClose={handleCloseNormalization}
+            year={selectedNormalizationYear}
+            sessionId={sessionId}
+            userId={userId}
+          />
+        )}
       </div>
     </ComponentErrorBoundary>
   )

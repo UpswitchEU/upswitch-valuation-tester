@@ -6,17 +6,21 @@
  */
 
 import { motion } from 'framer-motion'
-import { CheckCircle2, FileText, TrendingUp } from 'lucide-react'
-import React from 'react'
+import { CheckCircle2, Edit3, FileText, TrendingUp } from 'lucide-react'
+import React, { useEffect, useState } from 'react'
 import { formatCurrency, getCountryByCode } from '../../../config/countries'
+import { useEbitdaNormalizationStore } from '../../../store/useEbitdaNormalizationStore'
 
 export interface ConversationSummaryBlockProps {
+  sessionId?: string
   collectedData: Record<string, any>
   completionPercentage?: number
   calculatedAt?: Date | string
   valuationResult?: any
   onContinue?: () => void
   onViewReport?: () => void
+  onNormalizeEbitda?: () => void
+  onRecalculateValuation?: () => void
 }
 
 interface HistoricalYearData {
@@ -26,13 +30,39 @@ interface HistoricalYearData {
 }
 
 export const ConversationSummaryBlock: React.FC<ConversationSummaryBlockProps> = ({
+  sessionId,
   collectedData,
   completionPercentage: _completionPercentage,
   calculatedAt,
   valuationResult,
   onContinue,
   onViewReport,
+  onNormalizeEbitda,
+  onRecalculateValuation,
 }) => {
+  // State for normalization tracking
+  const [hasNormalizations, setHasNormalizations] = useState(false)
+  const [normalizedYearsCount, setNormalizedYearsCount] = useState(0)
+  
+  // Fetch normalization status
+  useEffect(() => {
+    if (!sessionId) return
+    
+    const loadNormalizations = async () => {
+      try {
+        await useEbitdaNormalizationStore.getState().loadAllNormalizations(sessionId)
+        const normalizations = useEbitdaNormalizationStore.getState().normalizations
+        const count = Object.keys(normalizations).length
+        setHasNormalizations(count > 0)
+        setNormalizedYearsCount(count)
+      } catch (error) {
+        console.error('Failed to load normalizations:', error)
+      }
+    }
+    
+    loadNormalizations()
+  }, [sessionId])
+  
   // Extract key data points
   // FIX: Use correct field names matching the data structure (country_code, founding_year, number_of_owners)
   const companyName = collectedData?.company_name
@@ -288,13 +318,48 @@ export const ConversationSummaryBlock: React.FC<ConversationSummaryBlockProps> =
 
                 {/* Footer with message and button */}
                 <div className="mt-4 pt-4 border-t border-white/10">
+                  {/* Normalization status badge (if normalized) */}
+                  {hasNormalizations && (
+                    <div className="mb-3 p-2 bg-green-500/10 border border-green-500/20 rounded-lg flex items-center gap-2">
+                      <CheckCircle2 className="w-4 h-4 text-green-400 flex-shrink-0" />
+                      <p className="text-xs text-green-400 font-medium">
+                        EBITDA normalized for {normalizedYearsCount} year{normalizedYearsCount > 1 ? 's' : ''}
+                      </p>
+                    </div>
+                  )}
+                  
                   <div className="flex items-center justify-between gap-4">
                     <p className="text-sm text-zinc-400 flex-1">
-                      {isComplete
+                      {hasNormalizations
+                        ? 'Recalculate valuation with normalized EBITDA'
+                        : isComplete
                         ? 'Your valuation report is ready to view'
                         : 'Continue the conversation to complete your valuation'}
                     </p>
                     <div className="flex items-center gap-2 flex-shrink-0">
+                      {/* Normalize button (only after valuation complete, before normalization) */}
+                      {isComplete && !hasNormalizations && onNormalizeEbitda && (
+                        <button
+                          onClick={onNormalizeEbitda}
+                          className="px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors flex items-center gap-2"
+                        >
+                          <Edit3 className="w-4 h-4" />
+                          Normalize EBITDA
+                        </button>
+                      )}
+                      
+                      {/* Recalculate button (only when normalized) */}
+                      {isComplete && hasNormalizations && onRecalculateValuation && (
+                        <button
+                          onClick={onRecalculateValuation}
+                          className="px-4 py-2 text-sm font-medium text-white bg-green-600 hover:bg-green-700 rounded-lg transition-colors flex items-center gap-2"
+                        >
+                          <TrendingUp className="w-4 h-4" />
+                          Recalculate Valuation
+                        </button>
+                      )}
+                      
+                      {/* Original buttons */}
                       {isComplete && onViewReport && (
                         <button
                           onClick={onViewReport}

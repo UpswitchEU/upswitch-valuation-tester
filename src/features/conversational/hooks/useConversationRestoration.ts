@@ -18,6 +18,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { conversationAPI } from '../../../services/api/conversation/ConversationAPI'
 import { UtilityAPI } from '../../../services/api/utility/UtilityAPI'
+import { useEbitdaNormalizationStore } from '../../../store/useEbitdaNormalizationStore'
 import { useSessionStore } from '../../../store/useSessionStore'
 import type { Message } from '../../../types/message'
 import { CorrelationPrefixes, createCorrelationId } from '../../../utils/correlationId'
@@ -239,6 +240,23 @@ export const useConversationRestoration = (
             messageCount: restoredMessages.length,
             pythonSessionId: extractedPythonSessionId,
           })
+
+          // Load EBITDA normalizations (async, non-blocking)
+          useEbitdaNormalizationStore.getState().loadAllNormalizations(sessionId)
+            .then(() => {
+              const normalizations = useEbitdaNormalizationStore.getState().normalizations
+              chatLogger.info('✅ Normalizations loaded for conversation', {
+                sessionId,
+                count: Object.keys(normalizations).length,
+                years: Object.keys(normalizations),
+              })
+            })
+            .catch((error) => {
+              chatLogger.warn('Failed to load normalizations (non-blocking)', {
+                sessionId,
+                error: error instanceof Error ? error.message : String(error),
+              })
+            })
 
           onRestored?.(restoredMessages, extractedPythonSessionId)
         } else {

@@ -92,8 +92,11 @@ export function buildValuationRequest(
         ? Number(formData.current_year_data.ebitda)
         : 20000
 
+  // Get normalization store state (must be called before checking normalizations)
+  const normalizationStore = useEbitdaNormalizationStore.getState()
+
   // Check if current year EBITDA is normalized
-  const currentYearNormalization = normalizationStore.normalizations[currentYear];
+  const currentYearNormalization = normalizationStore.normalizations[currentYear]
   
   // Build current_year_data with normalization support
   const currentYearData: any = {
@@ -124,9 +127,6 @@ export function buildValuationRequest(
       }),
   }
 
-  // Get normalization store state
-  const normalizationStore = useEbitdaNormalizationStore.getState();
-  
   // Normalize historical data (filter and sort) with normalization support
   const historicalYearsData =
     formData.historical_years_data
@@ -159,9 +159,9 @@ export function buildValuationRequest(
         
         // No normalization, use reported EBITDA
         return {
-          year: Math.min(Math.max(year.year, 2000), 2100),
-          revenue: Math.max(year.revenue || 0, 1),
-          ebitda: Number(year.ebitda),
+        year: Math.min(Math.max(year.year, 2000), 2100),
+        revenue: Math.max(year.revenue || 0, 1),
+        ebitda: Number(year.ebitda),
           ebitda_normalized: false,
         };
       })

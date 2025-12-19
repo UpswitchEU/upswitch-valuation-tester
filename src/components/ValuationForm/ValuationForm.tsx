@@ -573,17 +573,17 @@ export const ValuationForm: React.FC<ValuationFormProps> = ({
     }
     
     // Proceed with normal submission
-    generalLogger.info('Form onSubmit handler called', {
-      hasHandleSubmit: !!handleSubmit,
-      isSubmitting,
+        generalLogger.info('Form onSubmit handler called', {
+          hasHandleSubmit: !!handleSubmit,
+          isSubmitting,
       hasNormalization: hasAnyNormalization,
-    })
-    try {
-      clearAllErrors()
-      await handleSubmit(e)
-    } catch (error) {
-      generalLogger.error('[Manual] Form submission error', { error })
-      // Reset loading state on unexpected error
+        })
+        try {
+          clearAllErrors()
+          await handleSubmit(e)
+        } catch (error) {
+          generalLogger.error('[Manual] Form submission error', { error })
+          // Reset loading state on unexpected error
           const { setCalculating } = useManualResultsStore.getState()
           setCalculating(false)
         }

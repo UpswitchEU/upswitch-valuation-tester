@@ -43,6 +43,8 @@ export interface MessageItemProps {
   isThinking?: boolean
   onContinueConversation?: () => void
   onViewReport?: () => void
+  onNormalizeEbitda?: () => void
+  onRecalculateValuation?: () => void
 }
 
 /**
@@ -70,6 +72,8 @@ export const MessageItem = React.memo<MessageItemProps>(
     isThinking = false,
     onContinueConversation,
     onViewReport,
+    onNormalizeEbitda,
+    onRecalculateValuation,
   }) => {
     // Safe metadata access helpers
     const getMetadataValue = useCallback(
@@ -257,13 +261,19 @@ export const MessageItem = React.memo<MessageItemProps>(
     const collectedData = getMetadataValue<Record<string, any>>('collected_data')
 
     if (isSummaryMessage && collectedData) {
+      // Get sessionId from metadata or other sources
+      const sessionId = getMetadataString('session_id') || undefined
+      
       return (
         <div className="flex justify-start">
           <div className="max-w-[85%] mr-auto w-full">
             <ConversationSummaryBlock
+              sessionId={sessionId}
               collectedData={collectedData}
               onContinue={onContinueConversation}
               onViewReport={onViewReport}
+              onNormalizeEbitda={onNormalizeEbitda}
+              onRecalculateValuation={onRecalculateValuation}
             />
           </div>
         </div>

@@ -49,6 +49,11 @@ export interface ValuationVersion {
   calculationDuration_ms?: number // How long calculation took
   tags?: string[] // User-defined tags (e.g., ["conservative", "q4-2025"])
   notes?: string // User notes for this version
+  changeMetadata?: {
+    normalized_years?: number[] // Years with EBITDA normalization
+    adjustment_count?: number // Total adjustment count
+    [key: string]: any // Allow other metadata
+  }
 }
 
 /**

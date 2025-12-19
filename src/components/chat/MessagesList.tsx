@@ -33,6 +33,8 @@ export interface MessagesListProps {
   messagesEndRef: React.RefObject<HTMLDivElement>
   onContinueConversation?: () => void
   onViewReport?: () => void
+  onNormalizeEbitda?: () => void
+  onRecalculateValuation?: () => void
 }
 
 /**
@@ -67,6 +69,8 @@ export const MessagesList: React.FC<MessagesListProps> = React.memo(
     messagesEndRef,
     onContinueConversation,
     onViewReport,
+    onNormalizeEbitda,
+    onRecalculateValuation,
   }) => {
     return (
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
@@ -105,6 +109,8 @@ export const MessagesList: React.FC<MessagesListProps> = React.memo(
                 isThinking={isThinking}
                 onContinueConversation={onContinueConversation}
                 onViewReport={onViewReport}
+                onNormalizeEbitda={onNormalizeEbitda}
+                onRecalculateValuation={onRecalculateValuation}
               />
             ))}
         </AnimatePresence>

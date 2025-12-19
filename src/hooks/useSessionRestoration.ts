@@ -17,6 +17,7 @@
 
 import { useEffect, useRef } from 'react'
 import { useManualFormStore, useManualResultsStore } from '../store/manual'
+import { useEbitdaNormalizationStore } from '../store/useEbitdaNormalizationStore'
 import { useSessionStore } from '../store/useSessionStore'
 import { useVersionHistoryStore } from '../store/useVersionHistoryStore'
 import { generalLogger } from '../utils/logger'
@@ -48,6 +49,7 @@ export function useSessionRestoration() {
   const { updateFormData } = useManualFormStore()
   const { setResult, setHtmlReport, setInfoTabHtml } = useManualResultsStore()
   const { fetchVersions } = useVersionHistoryStore()
+  const { loadAllNormalizations } = useEbitdaNormalizationStore()
   const { showToast } = useToast()
 
   // Track restored reports using a Set (simple and efficient)
@@ -138,6 +140,24 @@ export function useSessionRestoration() {
         })
         .catch((error) => {
           generalLogger.warn('Failed to fetch versions (non-blocking)', {
+            error: error instanceof Error ? error.message : String(error),
+            reportId,
+          })
+        })
+
+      // STEP 4: Load EBITDA normalizations (async, non-blocking)
+      loadAllNormalizations(reportId)
+        .then(() => {
+          const normalizations = useEbitdaNormalizationStore.getState().normalizations
+          const count = Object.keys(normalizations).length
+          generalLogger.info('EBITDA normalizations loaded', {
+            reportId,
+            count,
+            years: Object.keys(normalizations),
+          })
+        })
+        .catch((error) => {
+          generalLogger.warn('Failed to load normalizations (non-blocking)', {
             error: error instanceof Error ? error.message : String(error),
             reportId,
           })

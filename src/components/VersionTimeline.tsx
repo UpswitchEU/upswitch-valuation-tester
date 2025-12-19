@@ -176,6 +176,12 @@ function VersionTimelineItem({
     ? formatChangesSummary(version.changesSummary, countryCode)
     : []
 
+  // Check if version has normalized EBITDA
+  const hasNormalizedEbitda = version.changeMetadata?.normalized_years && 
+    Array.isArray(version.changeMetadata.normalized_years) &&
+    version.changeMetadata.normalized_years.length > 0
+  const normalizedYearsCount = hasNormalizedEbitda ? version.changeMetadata.normalized_years.length : 0
+
   return (
     <div className="relative transition-all duration-200 rounded-lg bg-harvest-50">
       <div className="p-6 cursor-pointer" onClick={onClick}>
@@ -184,8 +190,14 @@ function VersionTimelineItem({
           {/* Header row */}
           <div className="mb-3">
             <div className="flex-1">
-              <div className="mb-1">
+              <div className="mb-1 flex items-center gap-2">
                 <h3 className="text-lg font-semibold text-gray-900">{version.versionLabel}</h3>
+                {hasNormalizedEbitda && (
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 border border-green-300">
+                    <CheckCircle2 className="w-3 h-3" />
+                    Normalized ({normalizedYearsCount} year{normalizedYearsCount > 1 ? 's' : ''})
+                  </span>
+                )}
               </div>
 
               {/* Metadata row */}
