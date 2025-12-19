@@ -32,6 +32,18 @@ export const UserDropdown: React.FC<UserDropdownProps> = ({ user, onLogout }) =>
   const isOnReportPage = pathname?.startsWith('/reports/') && pathname !== '/reports/new'
   const reportId = session?.reportId || (isOnReportPage ? pathname?.split('/reports/')[1]?.split('?')[0] : null)
 
+  // Debug logging for pathname detection
+  useEffect(() => {
+    if (isOnReportPage) {
+      generalLogger.debug('[UserDropdown] On report page detected', {
+        pathname,
+        isOnReportPage,
+        reportId,
+        sessionReportId: session?.reportId,
+      })
+    }
+  }, [pathname, isOnReportPage, reportId, session?.reportId])
+
   // Calculate dropdown position based on button
   const [dropdownPosition, setDropdownPosition] = useState({ top: 0, right: 0 })
 
@@ -161,10 +173,22 @@ export const UserDropdown: React.FC<UserDropdownProps> = ({ user, onLogout }) =>
    * Checks report state and shows appropriate confirmation modal
    */
   const handleBackToHome = () => {
+    generalLogger.info('[UserDropdown] Back to Home clicked', {
+      pathname,
+      isOnReportPage,
+      reportId,
+      hasSession: !!session,
+    })
+
     setIsOpen(false)
 
     // If not on a report page, just navigate to home
     if (!isOnReportPage || !reportId) {
+      generalLogger.info('[UserDropdown] Not on report page, navigating to home', {
+        pathname,
+        isOnReportPage,
+        reportId,
+      })
       router.push(UrlGeneratorService.root())
       return
     }
@@ -173,6 +197,13 @@ export const UserDropdown: React.FC<UserDropdownProps> = ({ user, onLogout }) =>
     const hasValuationResults =
       !!session?.valuationResult || !!session?.htmlReport || !!session?.infoTabHtml
     const hasMeaningfulData = hasMeaningfulSessionData(session?.sessionData || {}, session)
+
+    generalLogger.info('[UserDropdown] Report state check', {
+      reportId,
+      hasValuationResults,
+      hasMeaningfulData,
+      hasUnsavedChanges,
+    })
 
     // Empty report (no meaningful data, no results) -> Just exit
     if (!hasMeaningfulData && !hasValuationResults) {
@@ -184,6 +215,11 @@ export const UserDropdown: React.FC<UserDropdownProps> = ({ user, onLogout }) =>
     }
 
     // Show confirmation modal for reports with data
+    generalLogger.info('[UserDropdown] Showing exit confirmation modal', {
+      reportId,
+      hasUnsavedChanges,
+      hasValuationResults,
+    })
     setShowExitModal(true)
   }
 
@@ -192,19 +228,25 @@ export const UserDropdown: React.FC<UserDropdownProps> = ({ user, onLogout }) =>
    */
   const handleExitReport = async () => {
     try {
+      generalLogger.info('[UserDropdown] Exiting report', { reportId })
       if (reportId) {
         // Clear session
         clearSession()
         generalLogger.info('[UserDropdown] Session cleared', { reportId })
       }
+      // Close modal first
+      setShowExitModal(false)
       // Navigate to home
-      router.push(UrlGeneratorService.root())
+      const homeUrl = UrlGeneratorService.root()
+      generalLogger.info('[UserDropdown] Navigating to home', { homeUrl })
+      router.push(homeUrl)
     } catch (error) {
       generalLogger.error('[UserDropdown] Error exiting report', {
         reportId,
         error: error instanceof Error ? error.message : String(error),
       })
       // Still navigate even if cleanup fails
+      setShowExitModal(false)
       router.push(UrlGeneratorService.root())
     }
   }
@@ -214,6 +256,7 @@ export const UserDropdown: React.FC<UserDropdownProps> = ({ user, onLogout }) =>
    */
   const handleSaveAndExit = async () => {
     if (!reportId) {
+      generalLogger.warn('[UserDropdown] No reportId, exiting without save', { reportId })
       handleExitReport()
       return
     }
@@ -222,7 +265,7 @@ export const UserDropdown: React.FC<UserDropdownProps> = ({ user, onLogout }) =>
       generalLogger.info('[UserDropdown] Saving report before exit', { reportId })
       // Save session
       await saveSession('user')
-      generalLogger.info('[UserDropdown] Report saved successfully', { reportId })
+      generalLogger.info('[UserDropdown] Report saved successfully, now exiting', { reportId })
       // Exit
       handleExitReport()
     } catch (error) {
@@ -289,7 +332,10 @@ export const UserDropdown: React.FC<UserDropdownProps> = ({ user, onLogout }) =>
             key: 'back-to-home',
             icon: Home,
             label: 'Back to Home',
-            action: handleBackToHome,
+            action: () => {
+              generalLogger.info('[UserDropdown] Back to Home action called from guest menu')
+              handleBackToHome()
+            },
           },
           {
             key: 'divider-home',
@@ -315,7 +361,30 @@ export const UserDropdown: React.FC<UserDropdownProps> = ({ user, onLogout }) =>
     },
   ]
 
+  // Debug: Log menu items when they change
+  useEffect(() => {
+    if (!user) {
+      generalLogger.debug('[UserDropdown] Guest menu items', {
+        isOnReportPage,
+        pathname,
+        menuItemCount: guestMenuItems.length,
+        hasBackToHome: guestMenuItems.some((item) => item.key === 'back-to-home'),
+      })
+    }
+  }, [user, isOnReportPage, pathname, guestMenuItems.length])
+
   const menuItems = user ? authenticatedMenuItems : guestMenuItems
+
+  // Debug: Log which menu items are being used
+  useEffect(() => {
+    generalLogger.debug('[UserDropdown] Menu items updated', {
+      userType: user ? 'authenticated' : 'guest',
+      menuItemCount: menuItems.length,
+      menuItemKeys: menuItems.map((item) => item.key),
+      isOnReportPage,
+      pathname,
+    })
+  }, [user, menuItems.length, isOnReportPage, pathname])
 
   return (
     <div ref={dropdownRef} className="relative" style={{ zIndex: 99999 }}>
@@ -423,6 +492,11 @@ export const UserDropdown: React.FC<UserDropdownProps> = ({ user, onLogout }) =>
                     onClick={(e) => {
                       e.preventDefault()
                       e.stopPropagation()
+                      generalLogger.debug('[UserDropdown] Menu item clicked', {
+                        key: item.key,
+                        label: item.label,
+                        hasAction: !!item.action,
+                      })
                       item.action?.()
                     }}
                     className={`
