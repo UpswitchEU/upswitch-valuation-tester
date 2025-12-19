@@ -275,7 +275,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         statusText: response.statusText,
         ok: response.ok,
         headers: Object.fromEntries(response.headers.entries()),
+        url: response.url,
       })
+      
+      // Log cookie information for debugging
+      if (typeof document !== 'undefined') {
+        authLogger.debug('🍪 Document cookies:', {
+          allCookies: document.cookie,
+          hasUpswitchSession: document.cookie.includes('upswitch_session'),
+        })
+      }
 
       if (response.ok) {
         const data = await response.json()
@@ -582,6 +591,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       // This is the fastest path and provides the best UX
       // Works when user is already logged into upswitch.biz
       authLogger.info('🔍 [Priority 1] Checking for existing session cookie...')
+      let cookieAuthFailed = false
       try {
         const authenticatedUser = await checkSession()
 
@@ -606,7 +616,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
         
         authLogger.debug('ℹ️ [Priority 1] No cookie session found (expected for guests)')
-      } catch (cookieError) {
+        cookieAuthFailed = true
+      } catch (cookieError: any) {
+        cookieAuthFailed = true
         // Classify error and handle appropriately
         const classified = classifyAuthError(cookieError)
         
@@ -614,7 +626,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           error: cookieError instanceof Error ? cookieError.message : 'Unknown error',
           errorType: classified.type,
           recoveryStrategy: classified.recoveryStrategy,
+          responseStatus: cookieError?.response?.status,
+          responseData: cookieError?.response?.data,
         })
+        
+        // Log additional debugging info for cookie issues
+        if (cookieError?.response?.status === 401 || cookieError?.response?.status === 403) {
+          authLogger.warn('⚠️ [Priority 1] Auth check returned 401/403 - cookie may not be shared across subdomains', {
+            status: cookieError.response.status,
+            origin: typeof window !== 'undefined' ? window.location.origin : 'unknown',
+            apiUrl: API_URL,
+            hint: 'If user is logged in on upswitch.biz, they should navigate via the main site to get a token',
+          })
+        }
         
         // If cookies are blocked, skip to token exchange
         if (classified.recoveryStrategy === RecoveryStrategy.FALLBACK_TO_TOKEN) {
@@ -649,6 +673,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
       } else {
         authLogger.debug('ℹ️ [Priority 2] No token in URL')
+        
+        // If cookie auth failed and no token, provide helpful message
+        if (cookieAuthFailed) {
+          authLogger.info('💡 [Priority 2] Tip: Navigate to valuation.upswitch.biz from upswitch.biz to get automatic authentication')
+        }
       }
 
       // PRIORITY 3: Continue as guest (ALWAYS WORKS)
