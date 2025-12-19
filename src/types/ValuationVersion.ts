@@ -54,6 +54,27 @@ export interface ValuationVersion {
     adjustment_count?: number // Total adjustment count
     [key: string]: any // Allow other metadata
   }
+  
+  // Normalization data snapshot
+  normalization_data?: {
+    [year: string]: {
+      reported_ebitda: number // Original EBITDA from financials
+      normalized_ebitda: number // Adjusted EBITDA used in valuation
+      total_adjustments: number // Net adjustment amount
+      adjustments: Array<{
+        category: string // e.g., "owner_compensation_adjustment"
+        amount: number
+        note?: string
+      }>
+      custom_adjustments?: Array<{
+        description: string
+        amount: number
+        note?: string
+      }>
+      confidence_score: string // 'low' | 'medium' | 'high'
+      adjustment_percentage?: number // Adjustment as % of reported EBITDA
+    }
+  } // Immutable snapshot of normalization data at time of version creation
 }
 
 /**
@@ -167,6 +188,9 @@ export interface CreateVersionRequest {
 
   // Changes from current version (auto-detected if not provided)
   changesSummary?: VersionChanges
+  
+  // Normalization data snapshot (captured from store at version creation)
+  normalization_data?: ValuationVersion['normalization_data']
 }
 
 /**
