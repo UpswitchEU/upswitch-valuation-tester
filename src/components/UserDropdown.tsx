@@ -1,6 +1,12 @@
 import { Home, Info, LogOut, Settings, User, UserPlus } from 'lucide-react'
+import { usePathname, useRouter } from 'next/navigation'
 import React, { useEffect, useRef, useState } from 'react'
 import { User as UserType } from '../contexts/AuthContextTypes'
+import UrlGeneratorService from '../services/urlGenerator'
+import { useSessionStore } from '../store/useSessionStore'
+import { generalLogger } from '../utils/logger'
+import { hasMeaningfulSessionData } from '../utils/sessionDataUtils'
+import { ExitReportConfirmationModal } from './modals/ExitReportConfirmationModal'
 
 interface UserDropdownProps {
   user: UserType | null
@@ -8,9 +14,23 @@ interface UserDropdownProps {
 }
 
 export const UserDropdown: React.FC<UserDropdownProps> = ({ user, onLogout }) => {
+  const router = useRouter()
+  const pathname = usePathname()
   const [isOpen, setIsOpen] = useState(false)
+  const [showExitModal, setShowExitModal] = useState(false)
   const dropdownRef = useRef<HTMLDivElement>(null)
   const buttonRef = useRef<HTMLButtonElement>(null) // Track button position
+
+  // Get session state to check report status
+  const session = useSessionStore((state) => state.session)
+  const hasUnsavedChanges = useSessionStore((state) => state.hasUnsavedChanges)
+  const isSaving = useSessionStore((state) => state.isSaving)
+  const saveSession = useSessionStore((state) => state.saveSession)
+  const clearSession = useSessionStore((state) => state.clearSession)
+
+  // Check if we're on a report page
+  const isOnReportPage = pathname?.startsWith('/reports/') && pathname !== '/reports/new'
+  const reportId = session?.reportId || (isOnReportPage ? pathname?.split('/reports/')[1]?.split('?')[0] : null)
 
   // Calculate dropdown position based on button
   const [dropdownPosition, setDropdownPosition] = useState({ top: 0, right: 0 })
@@ -57,6 +77,13 @@ export const UserDropdown: React.FC<UserDropdownProps> = ({ user, onLogout }) =>
 
     return () => {
       document.removeEventListener('keydown', handleEscapeKey)
+    }
+  }, [isOpen])
+
+  // Close exit modal when dropdown closes
+  useEffect(() => {
+    if (!isOpen) {
+      setShowExitModal(false)
     }
   }, [isOpen])
 
@@ -129,14 +156,112 @@ export const UserDropdown: React.FC<UserDropdownProps> = ({ user, onLogout }) =>
     }
   }
 
+  /**
+   * Handle "Back to Home" click
+   * Checks report state and shows appropriate confirmation modal
+   */
+  const handleBackToHome = () => {
+    setIsOpen(false)
+
+    // If not on a report page, just navigate to home
+    if (!isOnReportPage || !reportId) {
+      router.push(UrlGeneratorService.root())
+      return
+    }
+
+    // Check report state
+    const hasValuationResults =
+      !!session?.valuationResult || !!session?.htmlReport || !!session?.infoTabHtml
+    const hasMeaningfulData = hasMeaningfulSessionData(session?.sessionData || {}, session)
+
+    // Empty report (no meaningful data, no results) -> Just exit
+    if (!hasMeaningfulData && !hasValuationResults) {
+      generalLogger.info('[UserDropdown] Empty report detected, exiting without confirmation', {
+        reportId,
+      })
+      handleExitReport()
+      return
+    }
+
+    // Show confirmation modal for reports with data
+    setShowExitModal(true)
+  }
+
+  /**
+   * Exit report without saving
+   */
+  const handleExitReport = async () => {
+    try {
+      if (reportId) {
+        // Clear session
+        clearSession()
+        generalLogger.info('[UserDropdown] Session cleared', { reportId })
+      }
+      // Navigate to home
+      router.push(UrlGeneratorService.root())
+    } catch (error) {
+      generalLogger.error('[UserDropdown] Error exiting report', {
+        reportId,
+        error: error instanceof Error ? error.message : String(error),
+      })
+      // Still navigate even if cleanup fails
+      router.push(UrlGeneratorService.root())
+    }
+  }
+
+  /**
+   * Save report and exit
+   */
+  const handleSaveAndExit = async () => {
+    if (!reportId) {
+      handleExitReport()
+      return
+    }
+
+    try {
+      generalLogger.info('[UserDropdown] Saving report before exit', { reportId })
+      // Save session
+      await saveSession('user')
+      generalLogger.info('[UserDropdown] Report saved successfully', { reportId })
+      // Exit
+      handleExitReport()
+    } catch (error) {
+      generalLogger.error('[UserDropdown] Error saving report before exit', {
+        reportId,
+        error: error instanceof Error ? error.message : String(error),
+      })
+      // Still exit even if save fails
+      handleExitReport()
+    }
+  }
+
+  /**
+   * Close exit modal
+   */
+  const handleCloseExitModal = () => {
+    setShowExitModal(false)
+  }
+
   // Menu items for authenticated users
   const authenticatedMenuItems = [
-    {
-      key: 'back-to-dashboard',
-      icon: Home,
-      label: 'Back to Dashboard',
-      action: handleBackToDashboard,
-    },
+    // Show "Back to Home" when on report page, otherwise "Back to Dashboard"
+    ...(isOnReportPage
+      ? [
+          {
+            key: 'back-to-home',
+            icon: Home,
+            label: 'Back to Home',
+            action: handleBackToHome,
+          },
+        ]
+      : [
+          {
+            key: 'back-to-dashboard',
+            icon: Home,
+            label: 'Back to Dashboard',
+            action: handleBackToDashboard,
+          },
+        ]),
     {
       key: 'account-settings',
       icon: Settings,
@@ -157,6 +282,21 @@ export const UserDropdown: React.FC<UserDropdownProps> = ({ user, onLogout }) =>
 
   // Menu items for guest users
   const guestMenuItems = [
+    // Show "Back to Home" when on report page
+    ...(isOnReportPage
+      ? [
+          {
+            key: 'back-to-home',
+            icon: Home,
+            label: 'Back to Home',
+            action: handleBackToHome,
+          },
+          {
+            key: 'divider-home',
+            isDivider: true,
+          },
+        ]
+      : []),
     {
       key: 'create-account',
       icon: UserPlus,
@@ -312,6 +452,19 @@ export const UserDropdown: React.FC<UserDropdownProps> = ({ user, onLogout }) =>
           </div>
         </>
       )}
+
+      {/* Exit Confirmation Modal */}
+      <ExitReportConfirmationModal
+        isOpen={showExitModal}
+        onClose={handleCloseExitModal}
+        onConfirm={handleExitReport}
+        onSaveAndExit={handleSaveAndExit}
+        hasUnsavedChanges={hasUnsavedChanges}
+        hasValuationResults={
+          !!session?.valuationResult || !!session?.htmlReport || !!session?.infoTabHtml
+        }
+        isSaving={isSaving}
+      />
     </div>
   )
 }
