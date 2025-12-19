@@ -86,6 +86,10 @@ test.describe('Cross-Subdomain Authentication', () => {
     await page.click('button[type="submit"]');
     await expect(page).toHaveURL(/\/(dashboard|home)/, { timeout: 10000 });
     
+    // Get auth cookie before clearing
+    const mainCookies = await page.context().cookies();
+    const mainAuthCookie = mainCookies.find(c => c.name === 'upswitch_session');
+    
     // Clear cookies to simulate cookie not being accessible
     await page.context().clearCookies();
     
