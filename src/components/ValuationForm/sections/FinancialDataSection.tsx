@@ -9,12 +9,15 @@
 
 import React from 'react'
 import {
-  getIndustryGuidance,
-  validateEbitdaMargin,
-  validateRevenue,
+    getIndustryGuidance,
+    validateEbitdaMargin,
+    validateRevenue,
 } from '../../../config/industryGuidance'
+import { useEbitdaNormalizationStore } from '../../../store/useEbitdaNormalizationStore'
+import { useSessionStore } from '../../../store/useSessionStore'
 import type { ValuationFormData } from '../../../types/valuation'
 import { CustomNumberInputField } from '../../forms'
+import { NormalizationModal } from '../../normalization/NormalizationModal'
 
 interface FinancialDataSectionProps {
   formData: ValuationFormData
@@ -27,15 +30,60 @@ interface FinancialDataSectionProps {
  * Renders Financial Data section with:
  * - Revenue (with industry guidance)
  * - EBITDA (with industry guidance)
+ * - EBITDA Normalization links (NEW)
  */
 export const FinancialDataSection: React.FC<FinancialDataSectionProps> = ({
   formData,
   updateFormData,
 }) => {
+  const currentYear = Math.min(new Date().getFullYear(), 2100);
+  const reportId = useSessionStore((state) => state.session?.reportId);
+  const sessionId = reportId; // Use reportId as sessionId
+  
+  const {
+    hasNormalization,
+    getNormalizedEbitda,
+    getTotalAdjustments,
+    openNormalizationModal,
+    removeNormalization,
+    activeYear,
+    closeNormalizationModal,
+  } = useEbitdaNormalizationStore();
+  
+  const formatCurrency = (value: number) => {
+    return new Intl.NumberFormat('en-BE', {
+      style: 'currency',
+      currency: 'EUR',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    }).format(value);
+  };
+  
+  const handleOpenNormalization = (year: number) => {
+    if (!sessionId) {
+      console.error('No session ID available');
+      return;
+    }
+    const ebitdaValue = year === currentYear ? formData.ebitda : 0;
+    if (ebitdaValue === undefined) {
+      console.warn('EBITDA value not set');
+      return;
+    }
+    openNormalizationModal(year, ebitdaValue, sessionId);
+  };
+  
+  const handleRemoveNormalization = async (year: number) => {
+    if (!sessionId) return;
+    try {
+      await removeNormalization(sessionId, year);
+    } catch (error) {
+      console.error('Failed to remove normalization', error);
+    }
+  };
   return (
     <div className="space-y-6">
       <h3 className="text-xl font-semibold text-white mb-6 pb-2 border-b border-white/10 tracking-tight">
-        Current Year Financials ({Math.min(new Date().getFullYear(), 2100)})
+        Current Year Financials ({currentYear})
       </h3>
 
       <div className="grid grid-cols-1 @4xl:grid-cols-2 gap-6">
@@ -114,31 +162,94 @@ export const FinancialDataSection: React.FC<FinancialDataSectionProps> = ({
               .join(' ')
 
             return (
-              <CustomNumberInputField
-                label="EBITDA (Required)"
-                placeholder="e.g., 500,000"
-                value={
-                  formData.ebitda !== undefined && formData.ebitda !== null ? formData.ebitda : ''
-                }
-                onChange={(e) => {
-                  const cleanedValue = e.target.value.replace(/,/g, '')
-                  const numValue = parseFloat(cleanedValue)
-                  // Preserve negative values: only set undefined if NaN, not if value is 0 or negative
-                  updateFormData({ ebitda: isNaN(numValue) ? undefined : numValue })
-                }}
-                onBlur={() => {}}
-                name="ebitda"
-                min={-1000000000} // Allow negative EBITDA
-                step={1000}
-                prefix="€"
-                formatAsCurrency
-                required
-                helpText={helpText}
-              />
+              <>
+                <CustomNumberInputField
+                  label="EBITDA (Required)"
+                  placeholder="e.g., 500,000"
+                  value={
+                    formData.ebitda !== undefined && formData.ebitda !== null ? formData.ebitda : ''
+                  }
+                  onChange={(e) => {
+                    const cleanedValue = e.target.value.replace(/,/g, '')
+                    const numValue = parseFloat(cleanedValue)
+                    // Preserve negative values: only set undefined if NaN, not if value is 0 or negative
+                    updateFormData({ ebitda: isNaN(numValue) ? undefined : numValue })
+                  }}
+                  onBlur={() => {}}
+                  name="ebitda"
+                  min={-1000000000} // Allow negative EBITDA
+                  step={1000}
+                  prefix="€"
+                  formatAsCurrency
+                  required
+                  helpText={helpText}
+                />
+                
+                {/* EBITDA Normalization Link */}
+                {sessionId && formData.ebitda !== undefined && formData.ebitda !== null && (
+                  <div className="mt-3">
+                    {hasNormalization(currentYear) ? (
+                      <div className="bg-green-900/20 border border-green-500/30 rounded-lg p-3">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <div className="text-sm font-medium text-green-400">
+                              ✓ EBITDA Normalized
+                            </div>
+                            <div className="text-xs text-green-300 mt-1">
+                              Adjusted: {formatCurrency(getTotalAdjustments(currentYear))} 
+                              {' → '}
+                              Normalized: {formatCurrency(getNormalizedEbitda(currentYear))}
+                            </div>
+                          </div>
+                          <div className="flex gap-2">
+                            <button
+                              type="button"
+                              onClick={() => handleOpenNormalization(currentYear)}
+                              className="text-sm text-blue-400 hover:text-blue-300 underline"
+                            >
+                              Edit
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleRemoveNormalization(currentYear)}
+                              className="text-sm text-red-400 hover:text-red-300 underline"
+                            >
+                              Remove
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => handleOpenNormalization(currentYear)}
+                        className="text-sm text-blue-400 hover:text-blue-300 flex items-center gap-1"
+                      >
+                        <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                        </svg>
+                        Normalize EBITDA for {currentYear}
+                      </button>
+                    )}
+                  </div>
+                )}
+              </>
             )
           })()}
         </div>
       </div>
+      
+      {/* Normalization Modal */}
+      {sessionId && (
+        <NormalizationModal
+          isOpen={activeYear === currentYear}
+          year={currentYear}
+          sessionId={sessionId}
+          onClose={() => {
+            closeNormalizationModal();
+          }}
+        />
+      )}
     </div>
   )
 }

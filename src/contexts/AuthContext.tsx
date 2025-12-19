@@ -265,135 +265,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, [])
 
   /**
-   * Initialize authentication flow
-   * Checks for token in URL or existing session
-   *
-   * GUEST-FIRST APPROACH:
-   * - Only check auth if there's a token in URL (user coming from upswitch.biz)
-   * - Otherwise, proceed directly as guest (no unnecessary 401 errors)
-   * - This follows SRP: auth checks only when auth is expected
-   */
-  const initAuth = useCallback(async () => {
-    setIsLoading(true)
-    setError(null)
-
-    try {
-      // Check for token in URL parameters FIRST
-      // This is the primary auth flow - user coming from upswitch.biz
-      const params = new URLSearchParams(window.location.search)
-      const token = params.get('token')
-
-      if (token) {
-        authLogger.info('Token found in URL - user coming from upswitch.biz')
-
-        // Remove token from URL immediately to prevent multiple attempts
-        const newUrl = window.location.pathname + window.location.hash
-        window.history.replaceState({}, document.title, newUrl)
-
-        authLogger.info('Exchanging token for authenticated session')
-        try {
-          await exchangeToken(token)
-          authLogger.info('Token exchange complete - user authenticated')
-          setIsLoading(false)
-          return
-        } catch (tokenError) {
-          authLogger.error('Token exchange failed', {
-            error: tokenError instanceof Error ? tokenError.message : 'Unknown error',
-          })
-          // Don't set error state for token exchange failures - continue as guest
-          authLogger.info('Continuing as guest user after token exchange failure')
-        }
-      }
-
-      // NO TOKEN: Check if there might be an existing session cookie (cross-subdomain)
-      // Only do this if:
-      // 1. We don't already have a guest session, OR
-      // 2. This is the first load
-      // This avoids unnecessary 401 errors for established guest users
-      const { getSessionId, initializeSession } = useGuestSessionStore.getState()
-      const existingGuestSession = getSessionId()
-
-      if (!existingGuestSession) {
-        // No guest session yet - check if there's an auth session (silent check)
-        authLogger.debug('No guest session - checking for existing auth cookie')
-        try {
-          await checkSession()
-
-          if (user) {
-            authLogger.info('Existing auth session found via cookie')
-            // Ensure authenticated user has a session (for API tracking consistency)
-            const { ensureSession } = useGuestSessionStore.getState()
-            try {
-              await ensureSession()
-            } catch (sessionError) {
-              // Silent failure - don't block auth flow
-              authLogger.debug('Failed to ensure authenticated session', {
-                error: sessionError instanceof Error ? sessionError.message : 'Unknown error',
-              })
-            }
-            setIsLoading(false)
-            return
-          }
-        } catch (sessionError) {
-          // Silent failure - don't log errors, just continue as guest
-          authLogger.debug('No auth session found, proceeding as guest')
-        }
-
-        // No guest session and no auth session - initialize guest session
-        // Use Zustand store for atomic initialization (prevents race conditions)
-        authLogger.info('Initializing guest session via Zustand store')
-        try {
-          const sessionId = await initializeSession()
-          authLogger.info('Guest session initialized', {
-            session_id: sessionId ? sessionId.substring(0, 15) + '...' : null,
-          })
-        } catch (guestError) {
-          authLogger.warn('Failed to initialize guest session', {
-            error: guestError instanceof Error ? guestError.message : 'Unknown error',
-          })
-          // Continue anyway - guest session is not critical
-        }
-      } else {
-        // Existing guest session found - verify it's still valid (optimized, won't call backend if expires in >1 hour)
-        authLogger.info('Existing guest session found - verifying validity', {
-          guestSessionId: existingGuestSession.substring(0, 15) + '...',
-        })
-        try {
-          // This will return immediately if session expires in >1 hour (trusts localStorage)
-          // Only calls backend if session is close to expiration
-          // Uses Zustand store for atomic operations
-          const sessionId = await initializeSession()
-          authLogger.debug('Guest session verified', {
-            session_id: sessionId ? sessionId.substring(0, 15) + '...' : null,
-          })
-        } catch (guestError) {
-          authLogger.warn('Failed to verify guest session, will create new one on next request', {
-            error: guestError instanceof Error ? guestError.message : 'Unknown error',
-          })
-          // Continue anyway - session will be recreated on next API call if needed
-        }
-      }
-    } catch (err) {
-      authLogger.error('Auth initialization error', {
-        error: err instanceof Error ? err.message : 'Unknown error',
-      })
-      setError('Failed to initialize authentication')
-    } finally {
-      setIsLoading(false)
-    }
-  }, [checkSession, user])
-
-  /**
-   * Initialize authentication on mount
-   */
-  useEffect(() => {
-    initAuth()
-  }, [initAuth])
-
-  /**
    * Exchange subdomain token for session cookie
+   * Wrapped in useCallback to prevent stale closures in initAuth
    */
-  const exchangeToken = async (token: string) => {
+  const exchangeToken = useCallback(async (token: string) => {
     try {
       authLogger.debug('Attempting token exchange', {
         apiUrl: API_URL,
@@ -532,7 +407,142 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       // Don't set error state - let the app continue as guest
       throw err
     }
-  }
+  }, []) // Empty deps: setUser is stable, API_URL is constant
+
+  /**
+   * Initialize authentication flow
+   * Priority-based approach for seamless cross-subdomain auth
+   *
+   * PRIORITY ORDER (Industry Best Practice - Airbnb/Stripe Pattern):
+   * 1. Check for existing cookie (seamless - fastest, no URL manipulation)
+   * 2. Check for token in URL (fallback - for new windows or cookie failures)
+   * 3. Continue as guest (always works)
+   *
+   * This ensures users logged into upswitch.biz are automatically
+   * authenticated on valuation.upswitch.biz without requiring a token.
+   */
+  const initAuth = useCallback(async () => {
+    setIsLoading(true)
+    setError(null)
+
+    try {
+      // PRIORITY 1: Check for existing session cookie (SEAMLESS AUTH)
+      // This is the fastest path and provides the best UX
+      // Works when user is already logged into upswitch.biz
+      authLogger.info('🔍 [Priority 1] Checking for existing session cookie...')
+      try {
+        await checkSession()
+
+        if (user) {
+          authLogger.info('✅ [Priority 1] Authenticated via cookie - seamless!', {
+            userId: user.id,
+            email: user.email,
+          })
+          
+          // Ensure authenticated user has a guest session (for API tracking consistency)
+          const { ensureSession } = useGuestSessionStore.getState()
+          try {
+            await ensureSession()
+          } catch (sessionError) {
+            // Silent failure - don't block auth flow
+            authLogger.debug('Failed to ensure authenticated session', {
+              error: sessionError instanceof Error ? sessionError.message : 'Unknown error',
+            })
+          }
+          setIsLoading(false)
+          return
+        }
+        
+        authLogger.debug('ℹ️ [Priority 1] No cookie session found (expected for guests)')
+      } catch (cookieError) {
+        // Silent failure - cookie auth didn't work, try token
+        authLogger.debug('ℹ️ [Priority 1] Cookie auth check failed, trying token fallback', {
+          error: cookieError instanceof Error ? cookieError.message : 'Unknown error',
+        })
+      }
+
+      // PRIORITY 2: Check for token in URL (FALLBACK AUTH)
+      // Used when user clicks link from upswitch.biz or cookie auth fails
+      authLogger.info('🔍 [Priority 2] Checking for token in URL...')
+      const params = new URLSearchParams(window.location.search)
+      const token = params.get('token')
+
+      if (token) {
+        authLogger.info('✅ [Priority 2] Token found in URL - exchanging for session')
+
+        // Remove token from URL immediately to prevent multiple attempts
+        const newUrl = window.location.pathname + window.location.hash
+        window.history.replaceState({}, document.title, newUrl)
+
+        try {
+          await exchangeToken(token)
+          authLogger.info('✅ [Priority 2] Token exchange complete - user authenticated')
+          setIsLoading(false)
+          return
+        } catch (tokenError) {
+          authLogger.error('❌ [Priority 2] Token exchange failed', {
+            error: tokenError instanceof Error ? tokenError.message : 'Unknown error',
+          })
+          // Don't set error state for token exchange failures - continue as guest
+          authLogger.info('ℹ️ [Priority 2] Continuing as guest after token exchange failure')
+        }
+      } else {
+        authLogger.debug('ℹ️ [Priority 2] No token in URL')
+      }
+
+      // PRIORITY 3: Continue as guest (ALWAYS WORKS)
+      authLogger.info('🔍 [Priority 3] Initializing guest session...')
+      const { getSessionId, initializeSession } = useGuestSessionStore.getState()
+      const existingGuestSession = getSessionId()
+
+      if (!existingGuestSession) {
+        // No guest session - initialize new one
+        authLogger.info('ℹ️ [Priority 3] Creating new guest session')
+        try {
+          const sessionId = await initializeSession()
+          authLogger.info('✅ [Priority 3] Guest session initialized', {
+            session_id: sessionId ? sessionId.substring(0, 15) + '...' : null,
+          })
+        } catch (guestError) {
+          authLogger.warn('⚠️ [Priority 3] Failed to initialize guest session', {
+            error: guestError instanceof Error ? guestError.message : 'Unknown error',
+          })
+          // Continue anyway - guest session is not critical
+        }
+      } else {
+        // Existing guest session - verify validity
+        authLogger.info('✅ [Priority 3] Using existing guest session', {
+          guestSessionId: existingGuestSession.substring(0, 15) + '...',
+        })
+        try {
+          // This will return immediately if session expires in >1 hour (trusts localStorage)
+          const sessionId = await initializeSession()
+          authLogger.debug('✅ [Priority 3] Guest session verified', {
+            session_id: sessionId ? sessionId.substring(0, 15) + '...' : null,
+          })
+        } catch (guestError) {
+          authLogger.warn('⚠️ [Priority 3] Failed to verify guest session', {
+            error: guestError instanceof Error ? guestError.message : 'Unknown error',
+          })
+          // Continue anyway - session will be recreated on next API call if needed
+        }
+      }
+    } catch (err) {
+      authLogger.error('❌ Auth initialization error', {
+        error: err instanceof Error ? err.message : 'Unknown error',
+      })
+      setError('Failed to initialize authentication')
+    } finally {
+      setIsLoading(false)
+    }
+  }, [checkSession, user, exchangeToken]) // Fixed: Added exchangeToken to dependencies
+
+  /**
+   * Initialize authentication on mount
+   */
+  useEffect(() => {
+    initAuth()
+  }, [initAuth])
 
   /**
    * Refresh authentication state

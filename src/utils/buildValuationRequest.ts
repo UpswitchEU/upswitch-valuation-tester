@@ -7,6 +7,7 @@
  * @module utils/buildValuationRequest
  */
 
+import { useEbitdaNormalizationStore } from '../store/useEbitdaNormalizationStore'
 import type { DataResponse } from '../types/data-collection'
 import type { ValuationFormData, ValuationRequest } from '../types/valuation'
 import { convertDataResponsesToFormData } from './dataCollectionUtils'
@@ -91,11 +92,24 @@ export function buildValuationRequest(
         ? Number(formData.current_year_data.ebitda)
         : 20000
 
-  // Build current_year_data
-  const currentYearData = {
+  // Check if current year EBITDA is normalized
+  const currentYearNormalization = normalizationStore.normalizations[currentYear];
+  
+  // Build current_year_data with normalization support
+  const currentYearData: any = {
     year: currentYear,
     revenue: revenue,
-    ebitda: ebitda,
+    ebitda: currentYearNormalization ? currentYearNormalization.normalized_ebitda : ebitda,
+    ...(currentYearNormalization && {
+      ebitda_normalized: true,
+      ebitda_normalization_metadata: {
+        reported_ebitda: currentYearNormalization.reported_ebitda,
+        total_adjustments: currentYearNormalization.total_adjustments,
+        adjustment_count: currentYearNormalization.adjustments.length + (currentYearNormalization.custom_adjustments?.length || 0),
+        confidence_score: currentYearNormalization.confidence_score,
+        has_custom_adjustments: (currentYearNormalization.custom_adjustments?.length || 0) > 0,
+      },
+    }),
     ...(formData.current_year_data?.total_assets &&
       formData.current_year_data.total_assets >= 0 && {
         total_assets: Number(formData.current_year_data.total_assets),
@@ -110,7 +124,10 @@ export function buildValuationRequest(
       }),
   }
 
-  // Normalize historical data (filter and sort)
+  // Get normalization store state
+  const normalizationStore = useEbitdaNormalizationStore.getState();
+  
+  // Normalize historical data (filter and sort) with normalization support
   const historicalYearsData =
     formData.historical_years_data
       ?.filter(
@@ -120,11 +137,34 @@ export function buildValuationRequest(
           year.year >= 2000 &&
           year.year <= 2100
       )
-      .map((year) => ({
-        year: Math.min(Math.max(year.year, 2000), 2100),
-        revenue: Math.max(year.revenue || 0, 1),
-        ebitda: Number(year.ebitda),
-      }))
+      .map((year) => {
+        const normalization = normalizationStore.normalizations[year.year];
+        
+        // If normalization exists, use normalized EBITDA
+        if (normalization) {
+          return {
+            year: Math.min(Math.max(year.year, 2000), 2100),
+            revenue: Math.max(year.revenue || 0, 1),
+            ebitda: normalization.normalized_ebitda,
+            ebitda_normalized: true,
+            ebitda_normalization_metadata: {
+              reported_ebitda: normalization.reported_ebitda,
+              total_adjustments: normalization.total_adjustments,
+              adjustment_count: normalization.adjustments.length + (normalization.custom_adjustments?.length || 0),
+              confidence_score: normalization.confidence_score,
+              has_custom_adjustments: (normalization.custom_adjustments?.length || 0) > 0,
+            },
+          };
+        }
+        
+        // No normalization, use reported EBITDA
+        return {
+          year: Math.min(Math.max(year.year, 2000), 2100),
+          revenue: Math.max(year.revenue || 0, 1),
+          ebitda: Number(year.ebitda),
+          ebitda_normalized: false,
+        };
+      })
       .sort((a, b) => a.year - b.year) || []
 
   // Normalize recurring revenue percentage (0.0-1.0)

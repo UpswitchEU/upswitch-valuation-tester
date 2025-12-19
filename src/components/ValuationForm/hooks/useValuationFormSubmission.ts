@@ -10,21 +10,74 @@
 import { useCallback } from 'react'
 import { reportService, sessionService, valuationService } from '../../../services'
 import { valuationAuditService } from '../../../services/audit/ValuationAuditService'
+import { normalizationService } from '../../../services/ebitdaNormalizationService'
 import { useManualFormStore, useManualResultsStore } from '../../../store/manual'
 import { useSessionStore } from '../../../store/useSessionStore'
 import { useVersionHistoryStore } from '../../../store/useVersionHistoryStore'
 import { buildValuationRequest } from '../../../utils/buildValuationRequest'
 import { generalLogger } from '../../../utils/logger'
 import {
-  areChangesSignificant,
-  detectVersionChanges,
-  generateAutoLabel,
+    areChangesSignificant,
+    detectVersionChanges,
+    generateAutoLabel,
 } from '../../../utils/versionDiffDetection'
 
 interface UseValuationFormSubmissionReturn {
   handleSubmit: (e: React.FormEvent) => Promise<void>
   isSubmitting: boolean
   validationError: string | null
+}
+
+/**
+ * Snapshot draft normalizations to a specific version
+ * Creates immutable copies of draft normalizations linked to the version
+ */
+async function snapshotNormalizationsToVersion(
+  sessionId: string,
+  versionId: string
+): Promise<void> {
+  try {
+    // Get all draft normalizations (version_id = null) for this session
+    const drafts = await normalizationService.getAllNormalizations(sessionId);
+    
+    if (!drafts || drafts.length === 0) {
+      generalLogger.info('No draft normalizations to snapshot', { sessionId, versionId });
+      return;
+    }
+    
+    generalLogger.info('Snapshotting normalizations to version', {
+      sessionId,
+      versionId,
+      draftCount: drafts.length,
+    });
+    
+    // Create snapshot for each draft
+    for (const draft of drafts) {
+      await normalizationService.saveNormalization({
+        session_id: sessionId,
+        version_id: versionId,
+        year: draft.year,
+        reported_ebitda: draft.reported_ebitda,
+        adjustments: draft.adjustments,
+        custom_adjustments: draft.custom_adjustments || [],
+        confidence_score: draft.confidence_score,
+        market_rate_source: draft.market_rate_source || undefined,
+      });
+    }
+    
+    generalLogger.info('Normalization snapshots created successfully', {
+      sessionId,
+      versionId,
+      count: drafts.length,
+    });
+  } catch (error) {
+    generalLogger.error('Failed to snapshot normalizations', {
+      sessionId,
+      versionId,
+      error: error instanceof Error ? error.message : String(error),
+    });
+    // Don't throw - normalization snapshot failure shouldn't fail the valuation
+  }
 }
 
 /**
@@ -344,6 +397,9 @@ export const useValuationFormSubmission = (
                   versionNumber: newVersion.versionNumber,
                   versionLabel: newVersion.versionLabel,
                 })
+                
+                // Snapshot draft normalizations to this version
+                await snapshotNormalizationsToVersion(reportId, newVersion.id)
 
                 // Log regeneration to audit trail
                 valuationAuditService.logRegeneration(
@@ -372,6 +428,9 @@ export const useValuationFormSubmission = (
                   versionNumber: firstVersion.versionNumber,
                   versionLabel: firstVersion.versionLabel,
                 })
+                
+                // Snapshot draft normalizations to this version
+                await snapshotNormalizationsToVersion(reportId, firstVersion.id)
 
                 // ✅ FIX: Don't refetch versions immediately - version is already in local state
                 // Versions will be synced when version history panel opens or on next mount

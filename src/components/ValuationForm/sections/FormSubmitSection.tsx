@@ -8,6 +8,7 @@
  */
 
 import React, { useEffect } from 'react'
+import { useEbitdaNormalizationStore } from '../../../store/useEbitdaNormalizationStore'
 import type { ValuationFormData } from '../../../types/valuation'
 
 interface FormSubmitSectionProps {
@@ -31,6 +32,14 @@ export const FormSubmitSection: React.FC<FormSubmitSectionProps> = ({
   formData,
   isRegenerationMode = false,
 }) => {
+  const currentYear = Math.min(new Date().getFullYear(), 2100);
+  const { hasNormalization } = useEbitdaNormalizationStore();
+  
+  // Check if any normalizations exist
+  const hasAnyNormalization = hasNormalization(currentYear) || 
+    hasNormalization(currentYear - 1) || 
+    hasNormalization(currentYear - 2);
+  
   const isFormValid =
     formData.revenue && formData.ebitda && formData.industry && formData.country_code
 
@@ -40,6 +49,17 @@ export const FormSubmitSection: React.FC<FormSubmitSectionProps> = ({
   if (!formData.ebitda) missingFields.push('EBITDA')
   if (!formData.industry) missingFields.push('Industry')
   if (!formData.country_code) missingFields.push('Country')
+  
+  // Determine button text based on context
+  const getButtonText = () => {
+    if (hasAnyNormalization) {
+      return 'Calculate Valuation with Normalization';
+    }
+    if (isRegenerationMode) {
+      return 'Regenerate Valuation';
+    }
+    return 'Calculate Valuation';
+  };
 
   // Debug: Log form validation state
   useEffect(() => {
@@ -109,7 +129,7 @@ export const FormSubmitSection: React.FC<FormSubmitSectionProps> = ({
             </>
           ) : (
             <>
-              <span>{isRegenerationMode ? 'Regenerate Valuation' : 'Calculate Valuation'}</span>
+              <span>{getButtonText()}</span>
               <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path
                   strokeLinecap="round"
