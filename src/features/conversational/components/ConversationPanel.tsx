@@ -618,31 +618,6 @@ export const ConversationPanel: React.FC<ConversationPanelProps> = ({
         return
       }
 
-      // Create new version (reuse existing version control)
-      const newVersion = await createVersion({
-        sessionId,
-        userId,
-        label: 'Normalized EBITDA',
-        isAuto: true,
-        changeMetadata: {
-          normalized_years: Object.keys(normalizations).map(Number),
-          adjustment_count: Object.values(normalizations).reduce(
-            (sum, n) => sum + ((n as any).adjustment_count || 0), 
-            0
-          ),
-        },
-      })
-
-      generalLogger.info('[Conversational] Created new version for normalization', {
-        versionId: newVersion.id,
-        versionNumber: newVersion.version_number,
-      })
-
-      // Snapshot normalizations to version (using shared utility - same as manual flow)
-      await snapshotNormalizationsToVersion(sessionId, newVersion.id)
-
-      generalLogger.info('[Conversational] Normalization snapshots created')
-
       // Build valuation request with normalized EBITDA
       const sessionData = session.sessionData as any
       const formData = {
@@ -681,6 +656,41 @@ export const ConversationPanel: React.FC<ConversationPanelProps> = ({
       const result = await valuationService.calculateValuation(request)
 
       if (result) {
+        // Get previous version for change detection
+        if (!reportId) {
+          throw new Error('Report ID is required for version creation')
+        }
+        
+        const previousVersion = getLatestVersion(reportId)
+        
+        // Detect changes if previous version exists
+        const changes = previousVersion 
+          ? detectVersionChanges(previousVersion.formData, formData)
+          : { totalChanges: 0, significantChanges: [] }
+
+        // Create new version with normalized EBITDA metadata
+        const newVersion = await createVersion({
+          reportId,
+          formData,
+          valuationResult: result,
+          htmlReport: result.html_report || undefined,
+          infoTabHtml: result.info_tab_html || undefined,
+          changesSummary: changes,
+          versionLabel: previousVersion 
+            ? generateAutoLabel(previousVersion.versionNumber + 1, changes)
+            : 'v1 - Normalized EBITDA',
+        })
+
+        generalLogger.info('[Conversational] Created new version for normalization', {
+          versionId: newVersion.id,
+          versionNumber: newVersion.versionNumber,
+        })
+
+        // Snapshot normalizations to version (using shared utility - same as manual flow)
+        await snapshotNormalizationsToVersion(sessionId, newVersion.id)
+
+        generalLogger.info('[Conversational] Normalization snapshots created')
+
         // Update results store
         setResult(result)
         

@@ -573,21 +573,35 @@ export const ValuationForm: React.FC<ValuationFormProps> = ({
     }
     
     // Proceed with normal submission
-        generalLogger.info('Form onSubmit handler called', {
-          hasHandleSubmit: !!handleSubmit,
-          isSubmitting,
+    generalLogger.info('Form onSubmit handler called', {
+      hasHandleSubmit: !!handleSubmit,
+      isSubmitting,
       hasNormalization: hasAnyNormalization,
-        })
-        try {
-          clearAllErrors()
-          await handleSubmit(e)
-        } catch (error) {
-          generalLogger.error('[Manual] Form submission error', { error })
-          // Reset loading state on unexpected error
-          const { setCalculating } = useManualResultsStore.getState()
-          setCalculating(false)
-        }
-      }}
+    });
+    try {
+      clearAllErrors();
+      await handleSubmit(e);
+    } catch (error) {
+      generalLogger.error('[Manual] Form submission error', { error });
+      // Reset loading state on unexpected error
+      const { setCalculating } = useManualResultsStore.getState();
+      setCalculating(false);
+    }
+  }, [hasAnyNormalization, showNormalizationConfirmation, handleSubmit, isSubmitting, clearAllErrors]);
+
+  // Handle confirmation of normalization
+  const handleConfirmNormalization = useCallback(async () => {
+    if (pendingSubmitEvent) {
+      setShowNormalizationConfirmation(false);
+      await handleFormSubmit(pendingSubmitEvent);
+      setPendingSubmitEvent(null);
+    }
+  }, [pendingSubmitEvent, handleFormSubmit]);
+
+  return (
+    <>
+    <form
+      onSubmit={handleFormSubmit}
       className="space-y-12 @container"
     >
       <BasicInformationSection

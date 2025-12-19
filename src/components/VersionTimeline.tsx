@@ -9,7 +9,7 @@
 
 'use client'
 
-import { ArrowDown, ArrowUp, Calendar, Minus } from 'lucide-react'
+import { ArrowDown, ArrowUp, Calendar, CheckCircle2, Minus } from 'lucide-react'
 import { formatCurrency } from '../config/countries'
 import type { ValuationVersion } from '../types/ValuationVersion'
 import { formatChangesSummary } from '../utils/versionDiffDetection'
@@ -180,7 +180,9 @@ function VersionTimelineItem({
   const hasNormalizedEbitda = version.changeMetadata?.normalized_years && 
     Array.isArray(version.changeMetadata.normalized_years) &&
     version.changeMetadata.normalized_years.length > 0
-  const normalizedYearsCount = hasNormalizedEbitda ? version.changeMetadata.normalized_years.length : 0
+  const normalizedYearsCount = hasNormalizedEbitda && version.changeMetadata?.normalized_years 
+    ? version.changeMetadata.normalized_years.length 
+    : 0
 
   return (
     <div className="relative transition-all duration-200 rounded-lg bg-harvest-50">
