@@ -189,17 +189,32 @@ export const NormalizationModal: React.FC<NormalizationModalProps> = ({
                           
                           {/* Expandable details */}
                           {isExpanded && (
-                            <div className="mt-3 p-3 bg-zinc-800 rounded-lg text-sm space-y-2">
+                            <div className="mt-3 p-4 bg-white rounded-lg border border-stone-200 text-sm space-y-3">
                               <div>
-                                <p className="text-gray-300">{categoryDef.detailedDescription}</p>
+                                <p className="text-slate-ink leading-relaxed">{categoryDef.detailedDescription}</p>
                               </div>
                               <div>
-                                <p className="font-medium text-gray-300">Examples:</p>
-                                <ul className="list-disc list-inside text-gray-400 mt-1 space-y-1">
+                                <p className="font-semibold text-slate-ink mb-2">Examples:</p>
+                                <ul className="list-disc list-inside text-gray-700 space-y-1.5 ml-1">
                                   {categoryDef.examples.map((example, idx) => (
-                                    <li key={idx}>{example}</li>
+                                    <li key={idx} className="leading-relaxed">{example}</li>
                                   ))}
                                 </ul>
+                              </div>
+                              
+                              {/* Visual Guidance in Learn More */}
+                              <div className="pt-2 border-t border-stone-200">
+                                <p className="font-semibold text-slate-ink mb-2">When to adjust:</p>
+                                <div className="space-y-2">
+                                  <div className="flex items-start gap-2">
+                                    <span className="text-moss-600 font-semibold flex-shrink-0">+ Add:</span>
+                                    <span className="text-gray-700">{categoryDef.visualGuidance.positiveScenario}</span>
+                                  </div>
+                                  <div className="flex items-start gap-2">
+                                    <span className="text-rust-600 font-semibold flex-shrink-0">− Subtract:</span>
+                                    <span className="text-gray-700">{categoryDef.visualGuidance.negativeScenario}</span>
+                                  </div>
+                                </div>
                               </div>
                             </div>
                           )}

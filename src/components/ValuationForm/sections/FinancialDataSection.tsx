@@ -18,6 +18,7 @@ import { useSessionStore } from '../../../store/useSessionStore'
 import type { ValuationFormData } from '../../../types/valuation'
 import { CustomNumberInputField } from '../../forms'
 import { NormalizationModal } from '../../normalization/NormalizationModal'
+import { NormalizedEBITDAField } from '../../normalization/NormalizedEBITDAField'
 
 interface FinancialDataSectionProps {
   formData: ValuationFormData
@@ -44,20 +45,13 @@ export const FinancialDataSection: React.FC<FinancialDataSectionProps> = ({
     hasNormalization,
     getNormalizedEbitda,
     getTotalAdjustments,
+    getAdjustmentCount,
+    getLastUpdated,
     openNormalizationModal,
     removeNormalization,
     activeYear,
     closeNormalizationModal,
   } = useEbitdaNormalizationStore();
-  
-  const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('en-BE', {
-      style: 'currency',
-      currency: 'EUR',
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    }).format(value);
-  };
   
   const handleOpenNormalization = async (year: number) => {
     if (!sessionId) {
@@ -163,75 +157,59 @@ export const FinancialDataSection: React.FC<FinancialDataSectionProps> = ({
 
             return (
               <>
-              <CustomNumberInputField
-                label="EBITDA (Required)"
-                placeholder="e.g., 500,000"
-                value={
-                  formData.ebitda !== undefined && formData.ebitda !== null ? formData.ebitda : ''
-                }
-                onChange={(e) => {
-                  const cleanedValue = e.target.value.replace(/,/g, '')
-                  const numValue = parseFloat(cleanedValue)
-                  // Preserve negative values: only set undefined if NaN, not if value is 0 or negative
-                  updateFormData({ ebitda: isNaN(numValue) ? undefined : numValue })
-                }}
-                onBlur={() => {}}
-                name="ebitda"
-                min={-1000000000} // Allow negative EBITDA
-                step={1000}
-                prefix="€"
-                formatAsCurrency
-                required
-                helpText={helpText}
-              />
-                
-                {/* EBITDA Normalization Link */}
-                {sessionId && formData.ebitda !== undefined && formData.ebitda !== null && (
-                  <div className="mt-3">
-                    {hasNormalization(currentYear) ? (
-                      <div className="bg-moss-50/20 border border-moss-300/30 rounded-lg p-3">
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <div className="text-sm font-medium text-moss-400">
-                              ✓ EBITDA Normalized
-                            </div>
-                            <div className="text-xs text-moss-300 mt-1">
-                              Adjusted: {formatCurrency(getTotalAdjustments(currentYear))} 
-                              {' → '}
-                              Normalized: {formatCurrency(getNormalizedEbitda(currentYear))}
-                            </div>
-                          </div>
-                          <div className="flex gap-2">
-                            <button
-                              type="button"
-                              onClick={() => handleOpenNormalization(currentYear)}
-                              className="text-sm text-river-500 hover:text-river-400 underline"
-                            >
-                              Edit
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => handleRemoveNormalization(currentYear)}
-                              className="text-sm text-rust-500 hover:text-rust-400 underline"
-                            >
-                              Remove
-                            </button>
-                          </div>
-                        </div>
+                {/* Conditional rendering: Normalized field vs Normal field */}
+                {hasNormalization(currentYear) && sessionId && formData.ebitda !== undefined && formData.ebitda !== null ? (
+                  <NormalizedEBITDAField
+                    label="EBITDA (Required)"
+                    originalValue={formData.ebitda}
+                    normalizedValue={getNormalizedEbitda(currentYear)}
+                    totalAdjustments={getTotalAdjustments(currentYear)}
+                    adjustmentCount={getAdjustmentCount(currentYear)}
+                    lastUpdated={getLastUpdated(currentYear)}
+                    onEdit={() => handleOpenNormalization(currentYear)}
+                    onRemove={() => handleRemoveNormalization(currentYear)}
+                    helpText={helpText}
+                  />
+                ) : (
+                  <>
+                    <CustomNumberInputField
+                      label="EBITDA (Required)"
+                      placeholder="e.g., 500,000"
+                      value={
+                        formData.ebitda !== undefined && formData.ebitda !== null ? formData.ebitda : ''
+                      }
+                      onChange={(e) => {
+                        const cleanedValue = e.target.value.replace(/,/g, '')
+                        const numValue = parseFloat(cleanedValue)
+                        // Preserve negative values: only set undefined if NaN, not if value is 0 or negative
+                        updateFormData({ ebitda: isNaN(numValue) ? undefined : numValue })
+                      }}
+                      onBlur={() => {}}
+                      name="ebitda"
+                      min={-1000000000} // Allow negative EBITDA
+                      step={1000}
+                      prefix="€"
+                      formatAsCurrency
+                      required
+                      helpText={helpText}
+                    />
+                    
+                    {/* EBITDA Normalization Link */}
+                    {sessionId && formData.ebitda !== undefined && formData.ebitda !== null && (
+                      <div className="mt-3">
+                        <button
+                          type="button"
+                          onClick={() => handleOpenNormalization(currentYear)}
+                          className="text-sm text-river-500 hover:text-river-400 flex items-center gap-1"
+                        >
+                          <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                          </svg>
+                          Normalize EBITDA for {currentYear}
+                        </button>
                       </div>
-                    ) : (
-                      <button
-                        type="button"
-                        onClick={() => handleOpenNormalization(currentYear)}
-                        className="text-sm text-river-500 hover:text-river-400 flex items-center gap-1"
-                      >
-                        <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                        </svg>
-                        Normalize EBITDA for {currentYear}
-                      </button>
                     )}
-                  </div>
+                  </>
                 )}
               </>
             )

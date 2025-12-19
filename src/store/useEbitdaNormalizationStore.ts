@@ -45,6 +45,8 @@ interface EbitdaNormalizationStore {
   getNormalizedEbitda: (year: number) => number;
   hasNormalization: (year: number) => boolean;
   getAdjustmentPercentage: (year: number) => number;
+  getAdjustmentCount: (year: number) => number;
+  getLastUpdated: (year: number) => Date;
 }
 
 export const useEbitdaNormalizationStore = create<EbitdaNormalizationStore>()(
@@ -573,6 +575,22 @@ export const useEbitdaNormalizationStore = create<EbitdaNormalizationStore>()(
           return 0;
         }
         return (normalization.total_adjustments / normalization.reported_ebitda) * 100;
+      },
+      
+      // Computed: Get count of active adjustments
+      getAdjustmentCount: (year) => {
+        const normalization = get().normalizations[year];
+        if (!normalization) return 0;
+        const standardCount = normalization.adjustments.filter(a => a.amount !== 0).length;
+        const customCount = normalization.custom_adjustments?.length || 0;
+        return standardCount + customCount;
+      },
+      
+      // Computed: Get last updated timestamp
+      getLastUpdated: (year) => {
+        const normalization = get().normalizations[year];
+        const timestamp = normalization?.updated_at || normalization?.created_at;
+        return timestamp ? new Date(timestamp) : new Date();
       },
     }),
     {
