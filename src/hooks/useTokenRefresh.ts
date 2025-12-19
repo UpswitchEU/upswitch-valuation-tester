@@ -20,7 +20,7 @@ import { getSessionSyncManager } from '../utils/auth/sessionSync';
 const API_URL =
   process.env.NEXT_PUBLIC_BACKEND_URL ||
   process.env.NEXT_PUBLIC_API_BASE_URL ||
-  'https://web-production-8d00b.up.railway.app';
+  'https://api.upswitch.biz';
 const CHECK_INTERVAL = 5 * 60 * 1000; // Check every 5 minutes (more frequent for proactive refresh)
 const REFRESH_THRESHOLD = 0.8; // Refresh at 80% of TTL (proactive)
 

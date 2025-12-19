@@ -24,7 +24,7 @@ export const MinimalHeader: React.FC = () => {
       const backendUrl =
         process.env.NEXT_PUBLIC_BACKEND_URL ||
         process.env.NEXT_PUBLIC_API_BASE_URL ||
-        'https://web-production-8d00b.up.railway.app'
+        'https://api.upswitch.biz'
 
       // Call backend logout endpoint
       const response = await fetch(`${backendUrl}/api/auth/logout`, {

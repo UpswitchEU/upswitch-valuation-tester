@@ -14,7 +14,7 @@ import {
 const API_BASE_URL = 
   process.env.NEXT_PUBLIC_BACKEND_URL ||
   process.env.NEXT_PUBLIC_API_BASE_URL ||
-  'https://web-production-8d00b.up.railway.app';
+  'https://api.upswitch.biz';
 
 /**
  * API Error with structured response

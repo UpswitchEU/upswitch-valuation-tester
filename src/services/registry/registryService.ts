@@ -34,7 +34,7 @@ export class RegistryService {
       config?.baseURL ||
       process.env.NEXT_PUBLIC_BACKEND_URL ||
       process.env.NEXT_PUBLIC_API_BASE_URL ||
-      'https://web-production-8d00b.up.railway.app'
+      'https://api.upswitch.biz'
     this.timeout = config?.timeout || 10000
     this.cache = new RegistryCache(config?.maxCacheSize, config?.cacheTTL)
     this.pendingRequests = new Map()
