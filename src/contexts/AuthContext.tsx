@@ -565,7 +565,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     try {
       // PRIORITY 0: Check cookie health (fast path detection)
-      authLogger.info('🔍 [Priority 0] Checking cookie health...')
+      authLogger.warn('🔍 [Priority 0] Checking cookie health...')
       try {
         const health = await checkCookieHealth()
         setCookieHealth(health)
@@ -590,7 +590,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       // PRIORITY 1: Check for existing session cookie (SEAMLESS AUTH)
       // This is the fastest path and provides the best UX
       // Works when user is already logged into upswitch.biz
-      authLogger.info('🔍 [Priority 1] Checking for existing session cookie...')
+      authLogger.warn('🔍 [Priority 1] Checking for existing session cookie...')
       let cookieAuthFailed = false
       let cookieErrorDetails: any = null
       
@@ -598,7 +598,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         const authenticatedUser = await checkSession()
 
         if (authenticatedUser) {
-          authLogger.info('✅ [Priority 1] Authenticated via cookie - seamless!', {
+          authLogger.warn('✅ [Priority 1] Authenticated via cookie - seamless!', {
             userId: authenticatedUser.id,
             email: authenticatedUser.email,
           })
@@ -640,6 +640,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             origin: typeof window !== 'undefined' ? window.location.origin : 'unknown',
             apiUrl: API_URL,
             hint: 'If user is logged in on upswitch.biz, they should navigate via the main site to get a token',
+            documentCookies: typeof document !== 'undefined' ? document.cookie : 'N/A',
+            hasUpswitchSessionCookie: typeof document !== 'undefined' ? document.cookie.includes('upswitch_session') : false,
           })
         }
         
@@ -651,12 +653,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       // PRIORITY 2: Check for token in URL (FALLBACK AUTH)
       // Used when user clicks link from upswitch.biz or cookie auth fails
-      authLogger.info('🔍 [Priority 2] Checking for token in URL...')
+      authLogger.warn('🔍 [Priority 2] Checking for token in URL...')
       const params = new URLSearchParams(window.location.search)
       const token = params.get('token')
 
       if (token) {
-        authLogger.info('✅ [Priority 2] Token found in URL - exchanging for session')
+        authLogger.warn('✅ [Priority 2] Token found in URL - exchanging for session')
 
         // Remove token from URL immediately to prevent multiple attempts
         const newUrl = window.location.pathname + window.location.hash
@@ -664,7 +666,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
         try {
           await exchangeToken(token)
-          authLogger.info('✅ [Priority 2] Token exchange complete - user authenticated')
+          authLogger.warn('✅ [Priority 2] Token exchange complete - user authenticated')
           setIsLoading(false)
           return
         } catch (tokenError) {
@@ -698,7 +700,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
 
       // PRIORITY 3: Continue as guest (ALWAYS WORKS)
-      authLogger.info('🔍 [Priority 3] Initializing guest session...')
+      authLogger.warn('🔍 [Priority 3] Initializing guest session...')
       const { getSessionId, initializeSession } = useGuestSessionStore.getState()
       const existingGuestSession = getSessionId()
 
