@@ -149,7 +149,16 @@ const ResultsComponent: React.FC<ResultsComponentProps> = ({ result }) => {
 
   return (
     <div className="h-full overflow-y-auto valuation-report-preview">
-      <div className="accountant-view-report" dangerouslySetInnerHTML={{ __html: sanitizedHtml }} />
+      {/* 
+        CRITICAL FIX: Wrap content in .final-report to match backend's <body class="final-report">
+        The backend template uses <body class="final-report"> as the root container for all styles.
+        When DOMPurify sanitizes the HTML, it strips the <body> tag but preserves the <style> block.
+        All CSS selectors (e.g., .final-report .page, .final-report h1) require this wrapper to work.
+        Without it, the entire report loses its styling because the selectors don't match any elements.
+      */}
+      <div className="final-report">
+        <div className="accountant-view-report" dangerouslySetInnerHTML={{ __html: sanitizedHtml }} />
+      </div>
     </div>
   )
 }

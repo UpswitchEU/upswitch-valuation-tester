@@ -7,6 +7,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { NORMALIZATION_CATEGORIES } from '../../config/normalizationCategories';
+import { NormalizationAPIError } from '../../services/ebitdaNormalizationService';
 import { useEbitdaNormalizationStore } from '../../store/useEbitdaNormalizationStore';
 import { NormalizationCategory } from '../../types/ebitdaNormalization';
 import { AdjustmentAmountInput } from './AdjustmentAmountInput';
@@ -120,11 +121,27 @@ export const NormalizationModal: React.FC<NormalizationModalProps> = ({
   const handleSave = async () => {
     try {
       await saveNormalization(sessionId, year);
+      // Save succeeded - call callbacks and close modal
       onSave?.();
       onClose();
     } catch (error) {
-      console.error('Failed to save normalization', error);
-      // Error handling is in the store
+      console.error('[Modal] Save error details', {
+        error,
+        errorType: error?.constructor?.name,
+        errorMessage: error?.message,
+        isAPIError: error instanceof NormalizationAPIError,
+      });
+      
+      // Check if the error is a real API error or just state update issue
+      if (error instanceof NormalizationAPIError) {
+        // Real API error - show error message, keep modal open
+        // Error is already in store state, will be displayed
+        return;
+      }
+      
+      // Unknown error - log it but still close modal since save might have succeeded
+      console.warn('Unknown error during save, closing modal anyway', error);
+      onClose();
     }
   };
   

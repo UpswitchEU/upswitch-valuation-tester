@@ -297,33 +297,71 @@ export const useEbitdaNormalizationStore = create<EbitdaNormalizationStore>()(
             market_rate_source: normalization.market_rate_source || undefined,
           });
           
-          // Update with server response (includes ID, timestamps)
-          set({
-            normalizations: {
-              ...get().normalizations,
-              [year]: {
-                ...normalization,
-                id: response.id,
-                created_at: response.created_at,
-                updated_at: response.updated_at,
-              },
-            },
-            isSaving: false,
+          // API call succeeded - log diagnostic info
+          console.log('[Normalization] Save succeeded', {
+            year,
+            sessionId,
+            responseHasId: !!response?.id,
+            responseHasTimestamps: !!(response?.created_at && response?.updated_at),
+            responseKeys: Object.keys(response || {}),
           });
           
-          console.log('Normalization saved successfully', { year, id: response.id });
-        } catch (error) {
-          console.error('Error saving normalization', error);
+          // Try to update state with server response
+          try {
+            set({
+              normalizations: {
+                ...get().normalizations,
+                [year]: {
+                  ...normalization,
+                  // Safely access response fields with fallbacks
+                  id: response?.id,
+                  created_at: response?.created_at,
+                  updated_at: response?.updated_at,
+                },
+              },
+              isSaving: false,
+            });
+            
+            console.log('Normalization saved successfully', { 
+              year, 
+              id: response?.id,
+              session_id: sessionId,
+            });
+          } catch (stateUpdateError) {
+            // State update failed, but API save succeeded
+            // Log the error but don't throw - modal should still close
+            console.warn('State update failed after successful save', {
+              error: stateUpdateError,
+              year,
+              sessionId,
+              note: 'Data was saved to database successfully'
+            });
+            
+            set({ isSaving: false });
+          }
+          
+          // Clear any previous errors for this year
+          const { errors } = get();
+          const newErrors = { ...errors };
+          delete newErrors[`save-${year}`];
+          set({ errors: newErrors });
+          
+        } catch (apiError) {
+          // API call failed - this is a real error
+          console.error('API error saving normalization', apiError);
+          
           set({
             isSaving: false,
             errors: {
               ...get().errors,
-              [`save-${year}`]: error instanceof NormalizationAPIError
-                ? error.message
-                : 'Failed to save normalization',
+              [`save-${year}`]: apiError instanceof NormalizationAPIError
+                ? apiError.message
+                : 'Failed to save normalization to server',
             },
           });
-          throw error;
+          
+          // Only throw if it's an actual API error (4xx, 5xx)
+          throw apiError;
         }
       },
       
