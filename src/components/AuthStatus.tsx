@@ -59,6 +59,18 @@ export const AuthStatus: React.FC = () => {
     <div className="auth-status auth-status-guest" role="status">
       <div className="auth-status-content">
         <p className="auth-status-message">Continuing as guest</p>
+        <p className="auth-status-hint" style={{ fontSize: '0.875rem', color: '#6b7280', marginTop: '0.5rem' }}>
+          💡 To access your account: Navigate here from{' '}
+          <a 
+            href="https://upswitch.biz" 
+            target="_blank" 
+            rel="noopener noreferrer"
+            style={{ color: '#3b82f6', textDecoration: 'underline' }}
+          >
+            upswitch.biz
+          </a>
+          {' '}to get automatic authentication
+        </p>
       </div>
     </div>
   )

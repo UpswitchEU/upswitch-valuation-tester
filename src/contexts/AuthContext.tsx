@@ -592,6 +592,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       // Works when user is already logged into upswitch.biz
       authLogger.info('🔍 [Priority 1] Checking for existing session cookie...')
       let cookieAuthFailed = false
+      let cookieErrorDetails: any = null
+      
       try {
         const authenticatedUser = await checkSession()
 
@@ -619,6 +621,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         cookieAuthFailed = true
       } catch (cookieError: any) {
         cookieAuthFailed = true
+        cookieErrorDetails = cookieError
         // Classify error and handle appropriately
         const classified = classifyAuthError(cookieError)
         
@@ -677,6 +680,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         // If cookie auth failed and no token, provide helpful message
         if (cookieAuthFailed) {
           authLogger.info('💡 [Priority 2] Tip: Navigate to valuation.upswitch.biz from upswitch.biz to get automatic authentication')
+          
+          // Log detailed debugging info for troubleshooting
+          authLogger.debug('🔍 [Priority 2] Cookie auth debugging info', {
+            cookieError: cookieErrorDetails ? {
+              message: cookieErrorDetails instanceof Error ? cookieErrorDetails.message : String(cookieErrorDetails),
+              status: cookieErrorDetails?.response?.status,
+              statusText: cookieErrorDetails?.response?.statusText,
+            } : null,
+            documentCookies: typeof document !== 'undefined' ? document.cookie : 'N/A',
+            hasUpswitchSessionCookie: typeof document !== 'undefined' ? document.cookie.includes('upswitch_session') : false,
+            currentOrigin: typeof window !== 'undefined' ? window.location.origin : 'unknown',
+            apiUrl: API_URL,
+            recommendation: 'To authenticate: 1) Go to upswitch.biz, 2) Click link to valuation tool, 3) Token will be auto-generated',
+          })
         }
       }
 
