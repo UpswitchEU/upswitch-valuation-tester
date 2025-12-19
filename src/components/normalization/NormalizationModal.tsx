@@ -229,20 +229,6 @@ export const NormalizationModal: React.FC<NormalizationModalProps> = ({
                         </div>
                       </div>
                       
-                      {/* Visual Guidance Card */}
-                      <div className="mt-3 p-3 bg-river-50 rounded-lg border border-river-200 text-xs">
-                        <div className="space-y-2">
-                          <div className="flex items-start gap-2">
-                            <span className="text-moss-600 font-semibold flex-shrink-0">+ Add:</span>
-                            <span className="text-gray-700">{categoryDef.visualGuidance.positiveScenario}</span>
-                          </div>
-                          <div className="flex items-start gap-2">
-                            <span className="text-rust-600 font-semibold flex-shrink-0">− Subtract:</span>
-                            <span className="text-gray-700">{categoryDef.visualGuidance.negativeScenario}</span>
-                          </div>
-                        </div>
-                      </div>
-                      
                       {/* Amount Input */}
                       <div className="mt-4">
                         <AdjustmentAmountInput

@@ -343,8 +343,14 @@ export const BasicInformationSection: React.FC<BasicInformationSectionProps> = (
             }
           }}
           onClearCompany={() => {
+            // Clear selected company but keep the current input value
+            // This allows user to edit/change the name without losing what they typed
             setSelectedCompany(null)
-            updateFormData({ company_name: '' })
+            // Don't clear company_name - let user edit the existing value
+            generalLogger.info('[BasicInfo] Clearing company selection', {
+              previous_company: selectedCompany?.company_name,
+              keeping_input_value: formData.company_name,
+            })
           }}
           isVerifying={isVerifyingCompany}
           required

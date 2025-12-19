@@ -146,13 +146,14 @@ export const CompanyNameInput: React.FC<CompanyNameInputProps> = ({
     setShowSuggestions(true)
     setExactMatch(null) // Clear exact match until search completes
     
-    // Clear selected company if user types something different
+    // ALWAYS clear selected company when user types (even if it matches)
+    // This ensures clean slate for new search
     if (selectedCompany) {
-      const matchesSelected = newValue.toLowerCase().trim() === selectedCompany.company_name.toLowerCase().trim()
-      if (!matchesSelected) {
-        onCompanyChange?.(null) // Notify parent that selection is cleared
-        generalLogger.debug('[CompanyNameInput] Clearing selection - user typing different value')
-      }
+      onCompanyChange?.(null) // Notify parent that selection is cleared
+      generalLogger.debug('[CompanyNameInput] Clearing selection - user is typing', {
+        previous: selectedCompany.company_name,
+        new_value: newValue,
+      })
     }
     
     setHighlightedIndex(-1) // Reset highlight when typing
