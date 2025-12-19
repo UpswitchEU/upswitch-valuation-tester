@@ -178,6 +178,15 @@ function shouldCache(url, response) {
   return isStaticAsset || isRootOrManifest
 }
 
+// CRITICAL: Auth endpoints that must NEVER be cached
+const AUTH_ENDPOINTS = [
+  '/api/auth/me',
+  '/api/auth/login',
+  '/api/auth/logout',
+  '/api/auth/exchange-token',
+  '/api/auth/register'
+]
+
 // Fetch event - network first for dynamic content, cache first for static assets
 self.addEventListener('fetch', (event) => {
   const { request } = event
@@ -193,6 +202,18 @@ self.addEventListener('fetch', (event) => {
   }
 
   const url = request.url
+  
+  // CRITICAL: ALWAYS bypass service worker for auth endpoints
+  // Never cache authentication requests - they must always be fresh
+  try {
+    const parsedUrl = new URL(url)
+    if (AUTH_ENDPOINTS.some(endpoint => parsedUrl.pathname.includes(endpoint))) {
+      console.log('[ServiceWorker] Bypassing SW for auth endpoint:', parsedUrl.pathname)
+      return // Let browser handle directly
+    }
+  } catch (e) {
+    // Invalid URL, continue with normal flow
+  }
   
   // ✅ FIX: Completely bypass service worker for Next.js chunks
   // This prevents service worker from interfering with missing chunks

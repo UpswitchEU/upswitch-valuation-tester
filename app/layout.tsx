@@ -75,17 +75,58 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5" />
         {/* Manifest is still referenced here as it's not part of metadata API */}
         <link rel="manifest" href="/manifest.json" />
+        {/* CRITICAL: Force Service Worker update check and cache clear */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              (function() {
+                if ('serviceWorker' in navigator) {
+                  // Force update check
+                  navigator.serviceWorker.getRegistration().then(function(reg) {
+                    if (reg) {
+                      console.log('[SW Force Update] Checking for updates...')
+                      reg.update()
+                    }
+                  }).catch(function(err) {
+                    console.error('[SW Force Update] Error:', err)
+                  })
+                  
+                  // Clear all caches to ensure fresh content
+                  caches.keys().then(function(names) {
+                    console.log('[Cache Clear] Found caches:', names)
+                    return Promise.all(
+                      names.map(function(name) {
+                        console.log('[Cache Clear] Deleting cache:', name)
+                        return caches.delete(name)
+                      })
+                    )
+                  }).then(function() {
+                    console.log('[Cache Clear] All caches cleared')
+                  }).catch(function(err) {
+                    console.error('[Cache Clear] Error:', err)
+                  })
+                }
+              })();
+            `,
+          }}
+        />
         {/* CRITICAL: Pre-React cookie check script - runs before React loads */}
         <script
           dangerouslySetInnerHTML={{
             __html: `
               (function() {
+                // CRITICAL: Use console.error for maximum visibility - these logs MUST appear
                 console.error('🔍🔍🔍 [PRE-REACT] ===========================================');
                 console.error('🔍🔍🔍 [PRE-REACT] PRE-REACT COOKIE CHECK SCRIPT RUNNING');
                 console.error('🔍🔍🔍 [PRE-REACT] This runs BEFORE React loads');
                 console.error('🔍🔍🔍 [PRE-REACT] Timestamp:', new Date().toISOString());
                 console.error('🔍🔍🔍 [PRE-REACT] Hostname:', window.location.hostname);
                 console.error('🔍🔍🔍 [PRE-REACT] Origin:', window.location.origin);
+                
+                // Also log to console.log as backup
+                console.log('🔍🔍🔍 [PRE-REACT] ===========================================');
+                console.log('🔍🔍🔍 [PRE-REACT] PRE-REACT COOKIE CHECK SCRIPT RUNNING');
+                console.log('🔍🔍🔍 [PRE-REACT] This runs BEFORE React loads');
                 
                 const allCookies = document.cookie || 'none';
                 const hasCookie = allCookies.includes('upswitch_session');
@@ -128,6 +169,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 
                 console.error('🔍🔍🔍 [PRE-REACT] Global flag set: window.__COOKIE_CHECK__');
                 console.error('🔍🔍🔍 [PRE-REACT] ===========================================');
+                
+                // Also log to console.log as backup
+                console.log('🔍🔍🔍 [PRE-REACT] Global flag set: window.__COOKIE_CHECK__');
+                console.log('🔍🔍🔍 [PRE-REACT] ===========================================');
               })();
             `,
           }}
