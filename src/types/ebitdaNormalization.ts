@@ -129,4 +129,9 @@ export interface NormalizationCategoryDefinition {
   };
   confidenceFactors?: string[];
   helpText?: string;
+  adjustmentDirection: 'add' | 'subtract' | 'both';
+  visualGuidance: {
+    positiveScenario: string;
+    negativeScenario: string;
+  };
 }

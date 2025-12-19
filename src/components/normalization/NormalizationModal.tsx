@@ -9,6 +9,7 @@ import React, { useEffect, useState } from 'react';
 import { NORMALIZATION_CATEGORIES } from '../../config/normalizationCategories';
 import { useEbitdaNormalizationStore } from '../../store/useEbitdaNormalizationStore';
 import { NormalizationCategory } from '../../types/ebitdaNormalization';
+import { AdjustmentAmountInput } from './AdjustmentAmountInput';
 import { NormalizationPreview } from './NormalizationPreview';
 
 interface NormalizationModalProps {
@@ -213,25 +214,29 @@ export const NormalizationModal: React.FC<NormalizationModalProps> = ({
                         </div>
                       </div>
                       
+                      {/* Visual Guidance Card */}
+                      <div className="mt-3 p-3 bg-river-50 rounded-lg border border-river-200 text-xs">
+                        <div className="space-y-2">
+                          <div className="flex items-start gap-2">
+                            <span className="text-moss-600 font-semibold flex-shrink-0">+ Add:</span>
+                            <span className="text-gray-700">{categoryDef.visualGuidance.positiveScenario}</span>
+                          </div>
+                          <div className="flex items-start gap-2">
+                            <span className="text-rust-600 font-semibold flex-shrink-0">− Subtract:</span>
+                            <span className="text-gray-700">{categoryDef.visualGuidance.negativeScenario}</span>
+                          </div>
+                        </div>
+                      </div>
+                      
                       {/* Amount Input */}
                       <div className="mt-4">
-                        <div className="relative">
-                          <span className="absolute left-4 top-1/2 -translate-y-1/2 text-stone-500 text-sm font-medium">€</span>
-                          <input
-                            type="text"
-                            inputMode="numeric"
-                            pattern="-?[0-9]*"
-                            value={amount}
-                            onChange={(e) => handleAmountChange(categoryDef.id, e.target.value)}
-                            className="w-full h-14 px-4 pt-6 pb-2 pl-8 text-base text-slate-ink bg-white border border-gray-200 rounded-xl transition-all duration-200 hover:border-primary-300 focus:border-primary-600 focus:ring-2 focus:ring-primary-500/20 focus:outline-none placeholder:text-stone-300"
-                            placeholder="0"
-                          />
-                          <label className="absolute left-4 top-2 text-xs text-stone-500 font-medium pointer-events-none">
-                            Adjustment Amount
-                          </label>
-                        </div>
+                        <AdjustmentAmountInput
+                          category={categoryDef}
+                          value={parseFloat(amount) || 0}
+                          onChange={(newValue) => handleAmountChange(categoryDef.id, String(newValue))}
+                        />
                         <p className="text-xs text-stone-500 mt-1">
-                          Enter positive for additions, negative for reductions
+                          {categoryDef.helpText}
                         </p>
                       </div>
                       
@@ -300,7 +305,7 @@ export const NormalizationModal: React.FC<NormalizationModalProps> = ({
                               className="w-full h-14 px-4 pt-6 pb-2 pl-8 text-base text-slate-ink bg-white border border-gray-200 rounded-xl transition-all duration-200 hover:border-primary-300 focus:border-primary-600 focus:ring-2 focus:ring-primary-500/20 focus:outline-none placeholder:text-stone-300"
                               placeholder="0"
                             />
-                            <label className="absolute left-4 top-2 text-xs text-stone-500 font-medium pointer-events-none">
+                            <label className="absolute left-8 top-2 text-xs text-stone-500 font-medium pointer-events-none">
                               Amount (€)
                             </label>
                           </div>
@@ -344,6 +349,8 @@ export const NormalizationModal: React.FC<NormalizationModalProps> = ({
                   totalAdjustments={getTotalAdjustments(year)}
                   normalizedEbitda={getNormalizedEbitda(year)}
                   year={year}
+                  adjustments={normalization.adjustments}
+                  customAdjustments={normalization.custom_adjustments}
                 />
               </div>
             </div>

@@ -6,12 +6,15 @@
  */
 
 import React from 'react';
+import { CustomAdjustment, NormalizationAdjustment } from '../../types/ebitdaNormalization';
 
 interface NormalizationPreviewProps {
   reportedEbitda: number;
   totalAdjustments: number;
   normalizedEbitda: number;
   year: number;
+  adjustments?: NormalizationAdjustment[];
+  customAdjustments?: CustomAdjustment[];
 }
 
 export const NormalizationPreview: React.FC<NormalizationPreviewProps> = ({
@@ -19,6 +22,8 @@ export const NormalizationPreview: React.FC<NormalizationPreviewProps> = ({
   totalAdjustments,
   normalizedEbitda,
   year,
+  adjustments = [],
+  customAdjustments = [],
 }) => {
   const adjustmentPercentage = reportedEbitda !== 0
     ? ((totalAdjustments / reportedEbitda) * 100).toFixed(1)
@@ -32,6 +37,16 @@ export const NormalizationPreview: React.FC<NormalizationPreviewProps> = ({
       maximumFractionDigits: 0,
     }).format(value);
   };
+  
+  // Calculate totals by type
+  const allAdjustments = [
+    ...adjustments.map(a => a.amount),
+    ...customAdjustments.map(c => c.amount),
+  ];
+  
+  const positiveTotal = allAdjustments.filter(a => a > 0).reduce((sum, a) => sum + a, 0);
+  const negativeTotal = allAdjustments.filter(a => a < 0).reduce((sum, a) => sum + a, 0);
+  const adjustmentCount = allAdjustments.filter(a => a !== 0).length;
   
   return (
     <div className="sticky top-0 bg-canvas rounded-lg border border-stone-200 p-6 shadow-sm">
@@ -53,18 +68,56 @@ export const NormalizationPreview: React.FC<NormalizationPreviewProps> = ({
         </div>
       </div>
       
-      {/* Total Adjustments */}
-      <div className="mb-4 pb-4 border-b border-stone-200">
-        <div className="text-sm text-gray-600 mb-1">Total Adjustments</div>
-        <div className={`text-2xl font-bold ${
-          totalAdjustments > 0 ? 'text-moss-600' : totalAdjustments < 0 ? 'text-rust-600' : 'text-slate-ink'
-        }`}>
-          {totalAdjustments > 0 ? '+' : ''}{formatCurrency(totalAdjustments)}
+      {/* Adjustments Breakdown */}
+      {adjustmentCount > 0 && (
+        <div className="mb-4 pb-4 border-b border-stone-200">
+          <div className="text-sm text-gray-600 mb-2">Adjustments Breakdown</div>
+          {positiveTotal > 0 && (
+            <div className="flex justify-between items-center mb-1">
+              <span className="text-sm text-gray-600">Add-backs:</span>
+              <span className="text-sm font-semibold text-moss-600">
+                +{formatCurrency(positiveTotal)}
+              </span>
+            </div>
+          )}
+          {negativeTotal < 0 && (
+            <div className="flex justify-between items-center mb-1">
+              <span className="text-sm text-gray-600">Reductions:</span>
+              <span className="text-sm font-semibold text-rust-600">
+                {formatCurrency(negativeTotal)}
+              </span>
+            </div>
+          )}
+          <div className="mt-2 pt-2 border-t border-stone-200">
+            <div className="flex justify-between items-center">
+              <span className="text-sm font-medium text-gray-700">Net Adjustment:</span>
+              <span className={`text-base font-bold ${
+                totalAdjustments > 0 ? 'text-moss-600' : totalAdjustments < 0 ? 'text-rust-600' : 'text-slate-ink'
+              }`}>
+                {totalAdjustments > 0 ? '+' : ''}{formatCurrency(totalAdjustments)}
+              </span>
+            </div>
+            <div className="text-xs text-gray-600 mt-1">
+              {adjustmentCount} active adjustment{adjustmentCount !== 1 ? 's' : ''}
+            </div>
+          </div>
         </div>
-        <div className="text-xs text-gray-600 mt-1">
-          {totalAdjustments > 0 ? `+${adjustmentPercentage}%` : `${adjustmentPercentage}%`} of reported EBITDA
+      )}
+      
+      {/* Total Adjustments (if no breakdown) */}
+      {adjustmentCount === 0 && (
+        <div className="mb-4 pb-4 border-b border-stone-200">
+          <div className="text-sm text-gray-600 mb-1">Total Adjustments</div>
+          <div className={`text-2xl font-bold ${
+            totalAdjustments > 0 ? 'text-moss-600' : totalAdjustments < 0 ? 'text-rust-600' : 'text-slate-ink'
+          }`}>
+            {totalAdjustments > 0 ? '+' : ''}{formatCurrency(totalAdjustments)}
+          </div>
+          <div className="text-xs text-gray-600 mt-1">
+            No adjustments yet
+          </div>
         </div>
-      </div>
+      )}
       
       {/* Normalized EBITDA */}
       <div className="mb-4 pb-4 border-b border-stone-200">
