@@ -104,6 +104,19 @@ export const NormalizationModal: React.FC<NormalizationModalProps> = ({
     });
   };
   
+  const handleRemoveAdjustment = (categoryId: string) => {
+    // Clear the adjustment by setting it to 0
+    updateAdjustment(year, categoryId as NormalizationCategory, 0, '');
+    setLocalAdjustments(prev => ({
+      ...prev,
+      [categoryId]: { amount: '', note: '' },
+    }));
+  };
+  
+  const handleRemoveCustomAdjustment = (id: string) => {
+    removeCustomAdjustment(year, id);
+  };
+  
   const handleSave = async () => {
     try {
       await saveNormalization(sessionId, year);
@@ -352,6 +365,8 @@ export const NormalizationModal: React.FC<NormalizationModalProps> = ({
                   year={year}
                   adjustments={normalization.adjustments}
                   customAdjustments={normalization.custom_adjustments}
+                  onRemoveAdjustment={handleRemoveAdjustment}
+                  onRemoveCustomAdjustment={handleRemoveCustomAdjustment}
                 />
               </div>
             </div>

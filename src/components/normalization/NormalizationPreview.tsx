@@ -6,6 +6,7 @@
  */
 
 import React from 'react';
+import { NORMALIZATION_CATEGORIES } from '../../config/normalizationCategories';
 import { CustomAdjustment, NormalizationAdjustment } from '../../types/ebitdaNormalization';
 
 interface NormalizationPreviewProps {
@@ -15,6 +16,8 @@ interface NormalizationPreviewProps {
   year: number;
   adjustments?: NormalizationAdjustment[];
   customAdjustments?: CustomAdjustment[];
+  onRemoveAdjustment?: (categoryId: string) => void;
+  onRemoveCustomAdjustment?: (id: string) => void;
 }
 
 export const NormalizationPreview: React.FC<NormalizationPreviewProps> = ({
@@ -24,6 +27,8 @@ export const NormalizationPreview: React.FC<NormalizationPreviewProps> = ({
   year,
   adjustments = [],
   customAdjustments = [],
+  onRemoveAdjustment,
+  onRemoveCustomAdjustment,
 }) => {
   const adjustmentPercentage = reportedEbitda !== 0
     ? ((totalAdjustments / reportedEbitda) * 100).toFixed(1)
@@ -68,27 +73,87 @@ export const NormalizationPreview: React.FC<NormalizationPreviewProps> = ({
         </div>
       </div>
       
-      {/* Adjustments Breakdown */}
+      {/* Active Adjustments List */}
       {adjustmentCount > 0 && (
         <div className="mb-4 pb-4 border-b border-stone-200">
-          <div className="text-sm text-gray-600 mb-2">Adjustments Breakdown</div>
-          {positiveTotal > 0 && (
-            <div className="flex justify-between items-center mb-1">
-              <span className="text-sm text-gray-600">Add-backs:</span>
-              <span className="text-sm font-semibold text-moss-600">
-                +{formatCurrency(positiveTotal)}
-              </span>
-            </div>
-          )}
-          {negativeTotal < 0 && (
-            <div className="flex justify-between items-center mb-1">
-              <span className="text-sm text-gray-600">Reductions:</span>
-              <span className="text-sm font-semibold text-rust-600">
-                {formatCurrency(negativeTotal)}
-              </span>
-            </div>
-          )}
-          <div className="mt-2 pt-2 border-t border-stone-200">
+          <div className="text-sm font-medium text-gray-700 mb-3">Active Adjustments</div>
+          <div className="space-y-2 max-h-60 overflow-y-auto">
+            {/* Standard adjustments */}
+            {adjustments
+              .filter(adj => adj.amount !== 0)
+              .map((adj) => {
+                const category = NORMALIZATION_CATEGORIES.find(c => c.id === adj.category);
+                return (
+                  <div key={adj.category} className="flex items-center justify-between gap-2 p-2 bg-white rounded-lg border border-stone-200">
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-slate-ink truncate">
+                        {category?.label || adj.category}
+                      </p>
+                      {adj.note && (
+                        <p className="text-xs text-gray-500 truncate mt-0.5">{adj.note}</p>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className={`text-sm font-semibold whitespace-nowrap ${
+                        adj.amount > 0 ? 'text-moss-600' : 'text-rust-600'
+                      }`}>
+                        {adj.amount > 0 ? '+' : ''}{formatCurrency(adj.amount)}
+                      </span>
+                      {onRemoveAdjustment && (
+                        <button
+                          type="button"
+                          onClick={() => onRemoveAdjustment(adj.category)}
+                          className="p-1 text-gray-400 hover:text-rust-600 transition-colors"
+                          title="Remove adjustment"
+                        >
+                          <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                          </svg>
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            
+            {/* Custom adjustments */}
+            {customAdjustments
+              .filter(adj => adj.amount !== 0 && adj.id)
+              .map((adj) => (
+                <div key={adj.id} className="flex items-center justify-between gap-2 p-2 bg-white rounded-lg border border-stone-200">
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-slate-ink truncate">
+                      {adj.description}
+                    </p>
+                    {adj.note && (
+                      <p className="text-xs text-gray-500 truncate mt-0.5">{adj.note}</p>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className={`text-sm font-semibold whitespace-nowrap ${
+                      adj.amount > 0 ? 'text-moss-600' : 'text-rust-600'
+                    }`}>
+                      {adj.amount > 0 ? '+' : ''}{formatCurrency(adj.amount)}
+                    </span>
+                    {onRemoveCustomAdjustment && adj.id && (
+                      <button
+                        type="button"
+                        onClick={() => onRemoveCustomAdjustment(adj.id!)}
+                        className="p-1 text-gray-400 hover:text-rust-600 transition-colors"
+                        title="Remove adjustment"
+                      >
+                        <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                      </button>
+                    )}
+                  </div>
+                </div>
+              ))}
+          </div>
+          
+          {/* Summary */}
+          <div className="mt-3 pt-3 border-t border-stone-200">
             <div className="flex justify-between items-center">
               <span className="text-sm font-medium text-gray-700">Net Adjustment:</span>
               <span className={`text-base font-bold ${

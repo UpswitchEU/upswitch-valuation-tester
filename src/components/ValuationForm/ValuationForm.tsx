@@ -139,8 +139,8 @@ export const ValuationForm: React.FC<ValuationFormProps> = ({
           const revenueKey = `${yearData.year}_revenue`
           const ebitdaKey = `${yearData.year}_ebitda`
           
-          // Only restore revenue if it's missing or empty (preserve user edits)
-          if (yearData.revenue !== undefined && yearData.revenue !== null) {
+          // Only restore revenue if it has a truthy value (not 0, not null, not undefined)
+          if (yearData.revenue) {
             const currentRevenue = currentInputs[revenueKey]
             if (!currentRevenue || currentRevenue.trim() === '') {
               restoredInputs[revenueKey] = yearData.revenue.toString()
@@ -148,8 +148,8 @@ export const ValuationForm: React.FC<ValuationFormProps> = ({
             }
           }
           
-          // Only restore ebitda if it's missing or empty (preserve user edits)
-          if (yearData.ebitda !== undefined && yearData.ebitda !== null) {
+          // Only restore ebitda if it has a truthy value (not 0, not null, not undefined)
+          if (yearData.ebitda) {
             const currentEbitda = currentInputs[ebitdaKey]
             if (!currentEbitda || currentEbitda.trim() === '') {
               restoredInputs[ebitdaKey] = yearData.ebitda.toString()

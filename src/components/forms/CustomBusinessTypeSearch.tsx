@@ -375,11 +375,11 @@ export const CustomBusinessTypeSearch: React.FC<CustomBusinessTypeSearchProps> =
 
       {/* Selected type info */}
       {selectedType && !isOpen && (
-        <div className="mt-2 relative overflow-hidden rounded-xl bg-gradient-to-br from-primary-50 via-canvas to-primary-50/50 border border-primary-200/60 shadow-sm">
+        <div className="mt-2 relative overflow-hidden rounded-xl bg-gradient-to-br from-primary-50 to-canvas border border-primary-200 rounded-xl shadow-sm animate-in fade-in slide-in-from-top-2 duration-300">
           <div className="p-4">
             <div className="flex items-start gap-3">
               {/* Icon badge */}
-              <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-gradient-to-br from-river-600 to-river-800 flex items-center justify-center shadow-sm shadow-river-900/20 text-white">
+              <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-gradient-to-br from-primary-600 to-primary-500 flex items-center justify-center shadow-sm shadow-river-900/20 text-white">
                 <span className="text-xl drop-shadow-sm">{selectedType.icon}</span>
               </div>
 
