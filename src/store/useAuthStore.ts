@@ -322,6 +322,12 @@ export const useAuthStore = create<AuthStore>()(
        * Enhanced with comprehensive cookie detection and cross-subdomain logging
        */
       checkSession: async (): Promise<User | null> => {
+        // CRITICAL: Log function entry
+        console.log('🔍🔍🔍 [CHECK SESSION] ===========================================')
+        console.log('🔍🔍🔍 [CHECK SESSION] checkSession() called!')
+        console.log('🔍🔍🔍 [CHECK SESSION] Timestamp:', new Date().toISOString())
+        console.log('🔍🔍🔍 [CHECK SESSION] ===========================================')
+        
         const cache = getAuthCache()
         
         // Check cache first
@@ -538,8 +544,18 @@ export const useAuthStore = create<AuthStore>()(
             })
           }
 
+          // CRITICAL: Log response status immediately
+          console.log('📡📡📡 [CHECK SESSION RESPONSE] ===========================================')
+          console.log('📡📡📡 [CHECK SESSION RESPONSE] Response status:', response.status)
+          console.log('📡📡📡 [CHECK SESSION RESPONSE] Response OK:', response.ok)
+          console.log('📡📡📡 [CHECK SESSION RESPONSE] Response headers:', Object.fromEntries(response.headers.entries()))
+          console.log('📡📡📡 [CHECK SESSION RESPONSE] X-Auth-Status:', response.headers.get('X-Auth-Status'))
+          console.log('📡📡📡 [CHECK SESSION RESPONSE] X-Cookie-Domain:', response.headers.get('X-Cookie-Domain'))
+          console.log('📡📡📡 [CHECK SESSION RESPONSE] ===========================================')
+          
           if (response.ok) {
             const data = await response.json()
+            console.log('📡📡📡 [CHECK SESSION] Response data received:', data.success ? 'SUCCESS' : 'FAILURE')
             
             let userData: User | null = null
             if (data.success && data.data) {
@@ -557,6 +573,11 @@ export const useAuthStore = create<AuthStore>()(
               console.log('✅✅✅ [AUTH SUCCESS] Cross-subdomain:', isSubdomainRequest ? 'YES ✅' : 'NO')
               console.log('✅✅✅ [AUTH SUCCESS] Cookie was detected:', cookieDiagnostics.cookieDetection.hasUpswitchSessionCookie ? 'YES ✅' : 'NO')
               console.log('✅✅✅ [AUTH SUCCESS] ===========================================')
+              
+              // Show alert for testing (remove in production)
+              if (typeof window !== 'undefined' && window.location.hostname.includes('valuation.')) {
+                console.log('🎉🎉🎉 [SUCCESS ALERT] Cross-subdomain cookie authentication worked!')
+              }
               
               const successLog = {
                 timestamp: new Date().toISOString(),
@@ -594,6 +615,20 @@ export const useAuthStore = create<AuthStore>()(
             get().setUser(null)
             return null
           } else if (response.status === 404 || response.status === 401) {
+            // CRITICAL: Log 401/404 with details
+            console.log('❌❌❌ [CHECK SESSION] ===========================================')
+            console.log('❌❌❌ [CHECK SESSION] Response status:', response.status)
+            console.log('❌❌❌ [CHECK SESSION] This means: No active session')
+            console.log('❌❌❌ [CHECK SESSION] Cookie was detected:', cookieDiagnostics.cookieDetection.hasUpswitchSessionCookie ? 'YES ✅' : 'NO ❌')
+            console.log('❌❌❌ [CHECK SESSION] Origin:', cookieDiagnostics.currentOrigin)
+            console.log('❌❌❌ [CHECK SESSION] Subdomain:', subdomain || 'main')
+            if (!cookieDiagnostics.cookieDetection.hasUpswitchSessionCookie && isSubdomainRequest) {
+              console.error('❌❌❌ [CHECK SESSION] CRITICAL: Cookie NOT detected on subdomain!')
+              console.error('❌❌❌ [CHECK SESSION] This is why authentication failed')
+              console.error('❌❌❌ [CHECK SESSION] Cookie must be set with domain: .upswitch.biz')
+            }
+            console.log('❌❌❌ [CHECK SESSION] ===========================================')
+            
             const noSessionLog = {
               timestamp: new Date().toISOString(),
               action: 'NO_SESSION',
@@ -771,10 +806,17 @@ export const useAuthStore = create<AuthStore>()(
        * Promise cache pattern prevents concurrent calls
        */
       initAuth: async (): Promise<void> => {
+        // CRITICAL: Force log immediately - use console.log directly
+        console.log('🚀🚀🚀 [INIT AUTH CALLED] ===========================================')
+        console.log('🚀🚀🚀 [INIT AUTH CALLED] initAuth() function called!')
+        console.log('🚀🚀🚀 [INIT AUTH CALLED] Timestamp:', new Date().toISOString())
+        console.log('🚀🚀🚀 [INIT AUTH CALLED] ===========================================')
+        
         const state = get()
         
         // If already initializing, return existing promise (promise cache pattern)
         if (state.initializationPromise) {
+          console.log('⏸️ [INIT AUTH] Already running, waiting for completion...')
           authLogger.debug('⏸️ [InitAuth] Already running, waiting for completion...')
           return state.initializationPromise
         }
@@ -787,14 +829,20 @@ export const useAuthStore = create<AuthStore>()(
         let isSubdomainRequest = false
         if (typeof window !== 'undefined') {
           const hostname = window.location.hostname
+          console.log('🔍 [INIT AUTH] Hostname:', hostname)
           if (hostname.includes('.')) {
             const parts = hostname.split('.')
+            console.log('🔍 [INIT AUTH] Hostname parts:', parts)
             if (parts.length > 2) {
               subdomain = parts[0]
               isSubdomainRequest = true
+              console.log('🔍 [INIT AUTH] Subdomain detected:', subdomain)
             }
           }
         }
+        
+        console.log('🔍 [INIT AUTH] Subdomain:', subdomain || 'main domain')
+        console.log('🔍 [INIT AUTH] Is Subdomain Request:', isSubdomainRequest)
         
         // Log auth flow start
         authFlowLogger.info({
@@ -805,8 +853,12 @@ export const useAuthStore = create<AuthStore>()(
           correlationId: authFlowLogger.getCorrelationId(),
         })
         
+        console.log('📝 [INIT AUTH] Auth flow started, correlation ID:', authFlowLogger.getCorrelationId())
+        
         // Create new initialization promise
         const initPromise = (async () => {
+          console.log('🔄 [INIT AUTH] Creating initialization promise...')
+          
           // Atomic state update
           set((state) => ({
             ...state,
@@ -816,6 +868,10 @@ export const useAuthStore = create<AuthStore>()(
 
           try {
             // PRIORITY 0: Check cookie health
+            console.log('🔍 [PRIORITY 0] ===========================================')
+            console.log('🔍 [PRIORITY 0] Starting Priority 0: Cookie Health Check')
+            console.log('🔍 [PRIORITY 0] ===========================================')
+            
             authFlowLogger.logStep('COOKIE_HEALTH_CHECK', 0, {
               origin: typeof window !== 'undefined' ? window.location.origin : 'unknown',
               subdomain: subdomain || 'main',
@@ -847,17 +903,32 @@ export const useAuthStore = create<AuthStore>()(
 
             // PRIORITY 1: Check for existing session cookie
             // CRITICAL: Make this VERY visible
-            console.log('🚀 [PRIORITY 1] ===========================================')
-            console.log('🚀 [PRIORITY 1] Starting cookie authentication check...')
-            console.log('🚀 [PRIORITY 1] Origin:', typeof window !== 'undefined' ? window.location.origin : 'unknown')
-            console.log('🚀 [PRIORITY 1] Subdomain:', subdomain || 'main')
-            console.log('🚀 [PRIORITY 1] Is Subdomain:', isSubdomainRequest)
-            console.log('🚀 [PRIORITY 1] Cookie Health:', cookieHealth ? {
+            console.log('🚀🚀🚀 [PRIORITY 1] ===========================================')
+            console.log('🚀🚀🚀 [PRIORITY 1] STARTING PRIORITY 1: COOKIE AUTHENTICATION CHECK')
+            console.log('🚀🚀🚀 [PRIORITY 1] This is the CRITICAL step for cross-subdomain auth!')
+            console.log('🚀🚀🚀 [PRIORITY 1] Origin:', typeof window !== 'undefined' ? window.location.origin : 'unknown')
+            console.log('🚀🚀🚀 [PRIORITY 1] Subdomain:', subdomain || 'main')
+            console.log('🚀🚀🚀 [PRIORITY 1] Is Subdomain:', isSubdomainRequest)
+            console.log('🚀🚀🚀 [PRIORITY 1] Cookie Health:', cookieHealth ? {
               accessible: cookieHealth.accessible,
               blocked: cookieHealth.blocked,
               browser: cookieHealth.browser,
             } : 'not checked')
-            console.log('🚀 [PRIORITY 1] ===========================================')
+            
+            // CRITICAL: Check cookie IMMEDIATELY before API call
+            if (typeof document !== 'undefined') {
+              const cookieCheck = document.cookie.includes('upswitch_session')
+              console.log('🚀🚀🚀 [PRIORITY 1] IMMEDIATE COOKIE CHECK:', cookieCheck ? '✅✅✅ FOUND!' : '❌❌❌ NOT FOUND!')
+              console.log('🚀🚀🚀 [PRIORITY 1] All cookies:', document.cookie || 'NONE')
+              if (!cookieCheck && isSubdomainRequest) {
+                console.error('❌❌❌ [PRIORITY 1] CRITICAL: No cookie detected on subdomain!')
+                console.error('❌❌❌ [PRIORITY 1] This means cookie from main domain is not accessible')
+                console.error('❌❌❌ [PRIORITY 1] Check: DevTools → Application → Cookies → upswitch_session')
+                console.error('❌❌❌ [PRIORITY 1] Cookie domain should be: .upswitch.biz')
+              }
+            }
+            
+            console.log('🚀🚀🚀 [PRIORITY 1] ===========================================')
             
             authFlowLogger.logStep('COOKIE_AUTH_CHECK', 1, {
               origin: typeof window !== 'undefined' ? window.location.origin : 'unknown',
@@ -875,19 +946,15 @@ export const useAuthStore = create<AuthStore>()(
             
             try {
               const startTime = performance.now()
-              console.log('📡 [PRIORITY 1] Calling checkSession() to verify cookie...')
-              
-              // Double-check cookie before making request
-              if (typeof document !== 'undefined') {
-                const cookieCheck = document.cookie.includes('upswitch_session')
-                console.log('📡 [PRIORITY 1] Pre-request cookie check:', cookieCheck ? '✅ Found' : '❌ Not found')
-                console.log('📡 [PRIORITY 1] Document cookies:', document.cookie || 'none')
-              }
+              console.log('📡📡📡 [PRIORITY 1] Calling checkSession() NOW to verify cookie...')
+              console.log('📡📡📡 [PRIORITY 1] API URL:', API_URL)
+              console.log('📡📡📡 [PRIORITY 1] Endpoint:', `${API_URL}/api/auth/me`)
+              console.log('📡📡📡 [PRIORITY 1] Credentials: include')
               
               const authenticatedUser = await get().checkSession()
               const duration = Math.round(performance.now() - startTime)
-              console.log('📡 [PRIORITY 1] checkSession() completed in', duration, 'ms')
-              console.log('📡 [PRIORITY 1] Result:', authenticatedUser ? `✅ User found: ${authenticatedUser.email}` : '❌ No user')
+              console.log('📡📡📡 [PRIORITY 1] checkSession() completed in', duration, 'ms')
+              console.log('📡📡📡 [PRIORITY 1] Result:', authenticatedUser ? `✅✅✅ USER FOUND: ${authenticatedUser.email}` : '❌❌❌ NO USER')
               
               // Re-detect subdomain for logging (already detected above, but ensure we have it)
               if (!subdomain && typeof window !== 'undefined') {

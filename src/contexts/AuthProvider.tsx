@@ -131,6 +131,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   // Initialize authentication on mount
   useEffect(() => {
+    // CRITICAL: Force immediate execution and logging
+    console.log('🚀🚀🚀 [AUTH PROVIDER MOUNTED] ===========================================')
+    console.log('🚀🚀🚀 [AUTH PROVIDER MOUNTED] AuthProvider useEffect running!')
+    console.log('🚀🚀🚀 [AUTH PROVIDER MOUNTED] Timestamp:', new Date().toISOString())
+    
     // CRITICAL: Log initialization start - VERY VISIBLE
     console.log('🚀 [AUTH INIT] ===========================================')
     console.log('🚀 [AUTH INIT] Starting authentication initialization...')
@@ -139,14 +144,40 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     console.log('🚀 [AUTH INIT] Checking for cookie from main domain...')
     console.log('🚀 [AUTH INIT] ===========================================')
     
-    // Immediate cookie check before initAuth
+    // Immediate cookie check before initAuth - CRITICAL
     if (typeof document !== 'undefined') {
       const hasCookie = document.cookie.includes('upswitch_session')
-      console.log('🔍 [IMMEDIATE CHECK] Cookie present:', hasCookie ? '✅ YES' : '❌ NO')
-      console.log('🔍 [IMMEDIATE CHECK] All cookies:', document.cookie || 'none')
+      const allCookies = document.cookie
+      const cookieMatch = allCookies.match(/upswitch_session=([^;]+)/)
+      
+      console.log('🔍🔍🔍 [IMMEDIATE CHECK] ===========================================')
+      console.log('🔍🔍🔍 [IMMEDIATE CHECK] IMMEDIATE COOKIE CHECK ON PAGE LOAD')
+      console.log('🔍🔍🔍 [IMMEDIATE CHECK] Cookie present:', hasCookie ? '✅✅✅ YES!' : '❌❌❌ NO!')
+      console.log('🔍🔍🔍 [IMMEDIATE CHECK] All cookies:', allCookies || 'NONE')
+      if (cookieMatch) {
+        console.log('🔍🔍🔍 [IMMEDIATE CHECK] Cookie value length:', cookieMatch[1].length)
+        console.log('🔍🔍🔍 [IMMEDIATE CHECK] Cookie prefix:', cookieMatch[1].substring(0, 20) + '...')
+      }
+      console.log('🔍🔍🔍 [IMMEDIATE CHECK] Hostname:', window.location.hostname)
+      console.log('🔍🔍🔍 [IMMEDIATE CHECK] Is subdomain:', window.location.hostname.includes('valuation.'))
+      console.log('🔍🔍🔍 [IMMEDIATE CHECK] ===========================================')
+      
+      // If no cookie and we're on subdomain, show critical warning
+      if (!hasCookie && window.location.hostname.includes('valuation.')) {
+        console.error('❌❌❌ [CRITICAL] NO COOKIE DETECTED ON SUBDOMAIN!')
+        console.error('❌❌❌ [CRITICAL] This means cookie from main domain is NOT accessible')
+        console.error('❌❌❌ [CRITICAL] Possible causes:')
+        console.error('❌❌❌ [CRITICAL]   1. Cookie not set with domain: .upswitch.biz')
+        console.error('❌❌❌ [CRITICAL]   2. Browser blocking cross-subdomain cookies')
+        console.error('❌❌❌ [CRITICAL]   3. Cookie expired or cleared')
+        console.error('❌❌❌ [CRITICAL]   4. Not logged into upswitch.biz')
+        console.error('❌❌❌ [CRITICAL] Action: Check DevTools → Application → Cookies')
+      }
     }
     
+    console.log('🚀🚀🚀 [CALLING INIT AUTH] About to call initAuth()...')
     initAuth()
+    console.log('🚀🚀🚀 [CALLED INIT AUTH] initAuth() called, waiting for result...')
     
     // Start cookie monitoring
     const cookieMonitor = getCookieMonitor({
