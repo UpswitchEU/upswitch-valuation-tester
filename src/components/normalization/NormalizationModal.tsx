@@ -125,10 +125,12 @@ export const NormalizationModal: React.FC<NormalizationModalProps> = ({
       onSave?.();
       onClose();
     } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      const errorType = error instanceof Error ? error.constructor.name : typeof error;
       console.error('[Modal] Save error details', {
         error,
-        errorType: error?.constructor?.name,
-        errorMessage: error?.message,
+        errorType,
+        errorMessage,
         isAPIError: error instanceof NormalizationAPIError,
       });
       
