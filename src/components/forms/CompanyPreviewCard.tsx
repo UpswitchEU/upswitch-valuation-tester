@@ -156,3 +156,4 @@ export const CompanyPreviewCard: React.FC<CompanyPreviewCardProps> = ({
 }
 
 export default CompanyPreviewCard
+
