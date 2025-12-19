@@ -188,13 +188,28 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
    * SILENT BY DEFAULT: This function is called optimistically to check if
    * there's an existing auth session. 401/404 responses are EXPECTED for guest
    * users and should not be treated as errors.
+   * 
+   * @returns User data if authenticated, null otherwise
    */
-  const checkSession = useCallback(async () => {
+  const checkSession = useCallback(async (): Promise<User | null> => {
     try {
+      authLogger.debug('🔍 Checking session cookie...', {
+        apiUrl: API_URL,
+        endpoint: `${API_URL}/api/auth/me`,
+        credentials: 'include',
+      })
+      
       const response = await fetch(`${API_URL}/api/auth/me`, {
         method: 'GET',
         credentials: 'include', // Send cookies
         // Don't throw on 404/401 - they're expected for guest users
+      })
+      
+      authLogger.debug('📡 Session check response:', {
+        status: response.status,
+        statusText: response.statusText,
+        ok: response.ok,
+        headers: Object.fromEntries(response.headers.entries()),
       })
 
       if (response.ok) {
@@ -209,9 +224,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           userKeys: data.user ? Object.keys(data.user) : [],
         })
 
+        let userData: User | null = null
+
         if (data.success && data.data) {
           // Check if user data is nested in data.data.user
-          const userData = data.data.user || data.data
+          userData = data.data.user || data.data
 
           authLogger.debug('User data fields (data.data)', {
             id: userData.id,
@@ -228,6 +245,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           authLogger.info('Existing session found (data.data)', { userData })
         } else if (data.success && data.user) {
           // Alternative response format
+          userData = data.user
           authLogger.debug('User data fields (data.user)', {
             id: data.user.id,
             email: data.user.email,
@@ -244,15 +262,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           authLogger.debug('No existing session - response', { data })
           setUser(null)
         }
+        
+        return userData
       } else if (response.status === 404 || response.status === 401) {
         // EXPECTED: No session exists (guest user or not authenticated)
         // This is NOT an error - it's the normal guest flow
         authLogger.debug('No active session (expected for guests)')
         setUser(null)
+        return null
       } else {
         // Unexpected status code - log as warning but continue
         authLogger.debug('Unexpected session check response', { status: response.status })
         setUser(null)
+        return null
       }
     } catch (err) {
       // Network errors or other issues - log as debug, not error
@@ -261,6 +283,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         error: err instanceof Error ? err.message : 'Unknown error',
       })
       setUser(null)
+      return null
     }
   }, [])
 
@@ -431,12 +454,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       // Works when user is already logged into upswitch.biz
       authLogger.info('🔍 [Priority 1] Checking for existing session cookie...')
       try {
-        await checkSession()
+        const authenticatedUser = await checkSession()
 
-        if (user) {
+        if (authenticatedUser) {
           authLogger.info('✅ [Priority 1] Authenticated via cookie - seamless!', {
-            userId: user.id,
-            email: user.email,
+            userId: authenticatedUser.id,
+            email: authenticatedUser.email,
           })
           
           // Ensure authenticated user has a guest session (for API tracking consistency)
@@ -535,7 +558,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } finally {
       setIsLoading(false)
     }
-  }, [checkSession, user, exchangeToken]) // Fixed: Added exchangeToken to dependencies
+  }, [checkSession, exchangeToken]) // Fixed: Removed user dependency, using return value from checkSession
 
   /**
    * Initialize authentication on mount
