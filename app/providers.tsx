@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, Component, ReactNode } from 'react'
+import { Component, ReactNode, useEffect } from 'react'
 import { AuthProvider } from '../src/contexts/AuthProvider'
 import { ToastProvider } from '../src/hooks/useToast'
 import { registerServiceWorker } from '../src/utils/serviceWorkerRegistration'

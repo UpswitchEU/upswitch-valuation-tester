@@ -16,10 +16,10 @@
 import React, { useEffect, useMemo } from 'react'
 import { useAuthStore } from '../store/useAuthStore'
 import { getCookieMonitor } from '../utils/auth/cookieMonitor'
+import { initNetworkLogger } from '../utils/auth/networkLogger'
 import { getSessionSyncManager } from '../utils/auth/sessionSync'
 import { authLogger } from '../utils/logger'
 import { AuthContext, AuthContextType, User } from './AuthContextTypes'
-import { initNetworkLogger } from '../utils/auth/networkLogger'
 
 /**
  * Helper to map business_type to industry category
