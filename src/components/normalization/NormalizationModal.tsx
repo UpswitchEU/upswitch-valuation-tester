@@ -62,16 +62,19 @@ export const NormalizationModal: React.FC<NormalizationModalProps> = ({
   if (!isOpen || !normalization) return null;
   
   const handleAmountChange = (category: NormalizationCategory, value: string) => {
+    // Remove commas and parse
+    const cleanedValue = value.replace(/,/g, '');
+    
     setLocalAdjustments(prev => ({
       ...prev,
       [category]: {
-        amount: value,
+        amount: cleanedValue, // Store cleaned value for display
         note: prev[category]?.note || '',
       },
     }));
     
     // Update store with parsed value
-    const numValue = parseFloat(value) || 0;
+    const numValue = parseFloat(cleanedValue) || 0;
     updateAdjustment(year, category, numValue, localAdjustments[category]?.note);
   };
   
@@ -130,21 +133,21 @@ export const NormalizationModal: React.FC<NormalizationModalProps> = ({
       
       {/* Modal */}
       <div className="fixed inset-0 flex items-center justify-center p-4">
-        <div className="relative bg-white rounded-lg shadow-xl max-w-7xl w-full max-h-[90vh] overflow-hidden flex flex-col">
+        <div className="relative bg-zinc-900 rounded-lg shadow-xl border border-zinc-800 max-w-7xl w-full max-h-[90vh] overflow-hidden flex flex-col">
           {/* Header */}
-          <div className="px-6 py-4 border-b border-gray-200">
+          <div className="px-6 py-4 border-b border-white/10">
             <div className="flex items-center justify-between">
               <div>
-                <h2 className="text-2xl font-bold text-gray-900">
+                <h2 className="text-2xl font-bold text-white">
                   Normalize EBITDA for {year}
                 </h2>
-                <p className="text-sm text-gray-600 mt-1">
+                <p className="text-sm text-gray-400 mt-1">
                   Adjust reported EBITDA to reflect true earning power
                 </p>
               </div>
               <button
                 onClick={onClose}
-                className="text-gray-400 hover:text-gray-600 transition-colors"
+                className="text-gray-400 hover:text-gray-300 transition-colors"
               >
                 <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -154,10 +157,10 @@ export const NormalizationModal: React.FC<NormalizationModalProps> = ({
           </div>
           
           {/* Content */}
-          <div className="flex-1 overflow-hidden">
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 p-6 h-full overflow-y-auto">
-              {/* Left: Categories */}
-              <div className="lg:col-span-2 space-y-4">
+          <div className="flex-1 overflow-hidden flex flex-col">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 p-6 flex-1 min-h-0">
+              {/* Left: Categories - Scrollable */}
+              <div className="lg:col-span-2 space-y-4 overflow-y-auto overflow-x-hidden pr-2 min-h-0">
                 {NORMALIZATION_CATEGORIES.map((categoryDef) => {
                   const isExpanded = expandedCategories.has(categoryDef.id);
                   const localValue = localAdjustments[categoryDef.id];
@@ -165,15 +168,15 @@ export const NormalizationModal: React.FC<NormalizationModalProps> = ({
                   const note = localValue?.note || '';
                   
                   return (
-                    <div key={categoryDef.id} className="bg-white border border-gray-200 rounded-lg p-4">
+                    <div key={categoryDef.id} className="bg-white border border-stone-200 rounded-lg p-4">
                       {/* Category Header */}
                       <div className="flex items-start justify-between">
                         <div className="flex-1">
                           <div className="flex items-center gap-2">
-                            <h4 className="font-semibold text-gray-900">{categoryDef.label}</h4>
+                            <h4 className="font-semibold text-slate-ink">{categoryDef.label}</h4>
                             <button
                               type="button"
-                              className="text-gray-400 hover:text-gray-600"
+                              className="text-stone-400 hover:text-stone-600"
                               title={categoryDef.description}
                             >
                               <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 20 20">
@@ -181,17 +184,17 @@ export const NormalizationModal: React.FC<NormalizationModalProps> = ({
                               </svg>
                             </button>
                           </div>
-                          <p className="text-sm text-gray-600 mt-1">{categoryDef.description}</p>
+                          <p className="text-sm text-stone-500 mt-1">{categoryDef.description}</p>
                           
                           {/* Expandable details */}
                           {isExpanded && (
-                            <div className="mt-3 p-3 bg-gray-50 rounded-lg text-sm space-y-2">
+                            <div className="mt-3 p-3 bg-zinc-800 rounded-lg text-sm space-y-2">
                               <div>
-                                <p className="text-gray-700">{categoryDef.detailedDescription}</p>
+                                <p className="text-gray-300">{categoryDef.detailedDescription}</p>
                               </div>
                               <div>
-                                <p className="font-medium text-gray-900">Examples:</p>
-                                <ul className="list-disc list-inside text-gray-600 mt-1 space-y-1">
+                                <p className="font-medium text-gray-300">Examples:</p>
+                                <ul className="list-disc list-inside text-gray-400 mt-1 space-y-1">
                                   {categoryDef.examples.map((example, idx) => (
                                     <li key={idx}>{example}</li>
                                   ))}
@@ -203,7 +206,7 @@ export const NormalizationModal: React.FC<NormalizationModalProps> = ({
                           <button
                             type="button"
                             onClick={() => toggleCategory(categoryDef.id)}
-                            className="text-sm text-blue-600 hover:text-blue-700 mt-2"
+                            className="text-sm text-primary-500 hover:text-primary-400 mt-2"
                           >
                             {isExpanded ? 'Show less' : 'Learn more'}
                           </button>
@@ -212,34 +215,36 @@ export const NormalizationModal: React.FC<NormalizationModalProps> = ({
                       
                       {/* Amount Input */}
                       <div className="mt-4">
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                          Adjustment Amount
-                        </label>
                         <div className="relative">
-                          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">€</span>
+                          <span className="absolute left-4 top-1/2 -translate-y-1/2 text-stone-500 text-sm font-medium">€</span>
                           <input
-                            type="number"
+                            type="text"
+                            inputMode="numeric"
+                            pattern="-?[0-9]*"
                             value={amount}
                             onChange={(e) => handleAmountChange(categoryDef.id, e.target.value)}
-                            className="w-full pl-8 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            className="w-full h-14 px-4 pt-6 pb-2 pl-8 text-base text-slate-ink bg-white border border-gray-200 rounded-xl transition-all duration-200 hover:border-primary-300 focus:border-primary-600 focus:ring-2 focus:ring-primary-500/20 focus:outline-none placeholder:text-stone-300"
                             placeholder="0"
                           />
+                          <label className="absolute left-4 top-2 text-xs text-stone-500 font-medium pointer-events-none">
+                            Adjustment Amount
+                          </label>
                         </div>
-                        <p className="text-xs text-gray-500 mt-1">
+                        <p className="text-xs text-stone-500 mt-1">
                           Enter positive for additions, negative for reductions
                         </p>
                       </div>
                       
                       {/* Note Input */}
                       <div className="mt-3">
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                        <label className="block text-sm font-medium text-gray-400 mb-1">
                           Note (optional)
                         </label>
                         <textarea
                           value={note}
                           onChange={(e) => handleNoteChange(categoryDef.id, e.target.value)}
                           rows={2}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+                          className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 resize-none bg-white text-slate-ink"
                           placeholder="Add context or rationale for this adjustment..."
                         />
                       </div>
@@ -248,28 +253,28 @@ export const NormalizationModal: React.FC<NormalizationModalProps> = ({
                 })}
                 
                 {/* Custom Adjustments Section */}
-                <div className="mt-6 pt-6 border-t-2 border-gray-300">
-                  <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                <div className="mt-6 pt-6 border-t-2 border-white/10">
+                  <h3 className="text-lg font-semibold text-white mb-4">
                     Custom Adjustments
                   </h3>
-                  <p className="text-sm text-gray-600 mb-4">
+                  <p className="text-sm text-gray-400 mb-4">
                     Add your own adjustments with custom descriptions for business-specific normalizations
                   </p>
                   
                   {(normalization.custom_adjustments || []).map((custom) => (
-                    <div key={custom.id} className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-3">
+                    <div key={custom.id} className="bg-accent-50 border border-accent-200 rounded-lg p-4 mb-3">
                       <div className="flex items-start justify-between mb-3">
                         <input
                           type="text"
                           value={custom.description}
                           onChange={(e) => updateCustomAdjustment(year, custom.id!, e.target.value, custom.amount, custom.note)}
                           placeholder="Enter adjustment description (e.g., 'Seasonal adjustment for Q4')"
-                          className="flex-1 mr-2 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          className="flex-1 mr-2 px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 bg-white text-slate-ink"
                         />
                         <button
                           type="button"
                           onClick={() => removeCustomAdjustment(year, custom.id!)}
-                          className="text-red-600 hover:text-red-700 p-2"
+                          className="text-rust-600 hover:text-rust-700 p-2"
                           title="Remove custom adjustment"
                         >
                           <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -280,25 +285,40 @@ export const NormalizationModal: React.FC<NormalizationModalProps> = ({
                       
                       <div className="grid grid-cols-2 gap-3">
                         <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">Amount (€)</label>
-                          <input
-                            type="number"
-                            value={custom.amount || 0}
-                            onChange={(e) => updateCustomAdjustment(year, custom.id!, custom.description, parseFloat(e.target.value) || 0, custom.note)}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                            placeholder="0"
-                          />
-                          <p className="text-xs text-gray-500 mt-1">Positive adds, negative reduces</p>
+                          <div className="relative">
+                            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-stone-500 text-sm font-medium">€</span>
+                            <input
+                              type="text"
+                              inputMode="numeric"
+                              pattern="-?[0-9]*"
+                              value={custom.amount?.toString() || '0'}
+                              onChange={(e) => {
+                                const cleanedValue = e.target.value.replace(/,/g, '');
+                                const numValue = parseFloat(cleanedValue) || 0;
+                                updateCustomAdjustment(year, custom.id!, custom.description, numValue, custom.note);
+                              }}
+                              className="w-full h-14 px-4 pt-6 pb-2 pl-8 text-base text-slate-ink bg-white border border-gray-200 rounded-xl transition-all duration-200 hover:border-primary-300 focus:border-primary-600 focus:ring-2 focus:ring-primary-500/20 focus:outline-none placeholder:text-stone-300"
+                              placeholder="0"
+                            />
+                            <label className="absolute left-4 top-2 text-xs text-stone-500 font-medium pointer-events-none">
+                              Amount (€)
+                            </label>
+                          </div>
+                          <p className="text-xs text-stone-500 mt-1">Positive adds, negative reduces</p>
                         </div>
                         <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">Note (optional)</label>
-                          <input
-                            type="text"
-                            value={custom.note || ''}
-                            onChange={(e) => updateCustomAdjustment(year, custom.id!, custom.description, custom.amount, e.target.value)}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                            placeholder="Additional context..."
-                          />
+                          <div className="relative">
+                            <input
+                              type="text"
+                              value={custom.note || ''}
+                              onChange={(e) => updateCustomAdjustment(year, custom.id!, custom.description, custom.amount, e.target.value)}
+                              className="w-full h-14 px-4 pt-6 pb-2 text-base text-slate-ink bg-white border border-gray-200 rounded-xl transition-all duration-200 hover:border-primary-300 focus:border-primary-600 focus:ring-2 focus:ring-primary-500/20 focus:outline-none placeholder:text-stone-300"
+                              placeholder="Additional context..."
+                            />
+                            <label className="absolute left-4 top-2 text-xs text-stone-500 font-medium pointer-events-none">
+                              Note (optional)
+                            </label>
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -307,7 +327,7 @@ export const NormalizationModal: React.FC<NormalizationModalProps> = ({
                   <button
                     type="button"
                     onClick={() => addCustomAdjustment(year)}
-                    className="w-full py-3 border-2 border-dashed border-gray-300 rounded-lg text-gray-600 hover:border-blue-500 hover:text-blue-600 hover:bg-blue-50 transition-colors flex items-center justify-center gap-2"
+                    className="w-full py-3 border-2 border-dashed border-zinc-700 rounded-lg text-gray-400 hover:border-primary-500 hover:text-primary-300 hover:bg-zinc-800 transition-colors flex items-center justify-center gap-2"
                   >
                     <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
@@ -323,7 +343,6 @@ export const NormalizationModal: React.FC<NormalizationModalProps> = ({
                   reportedEbitda={normalization.reported_ebitda}
                   totalAdjustments={getTotalAdjustments(year)}
                   normalizedEbitda={getNormalizedEbitda(year)}
-                  confidenceScore={normalization.confidence_score}
                   year={year}
                 />
               </div>
@@ -331,12 +350,12 @@ export const NormalizationModal: React.FC<NormalizationModalProps> = ({
           </div>
           
           {/* Footer */}
-          <div className="px-6 py-4 border-t border-gray-200 bg-gray-50">
+          <div className="px-6 py-4 border-t border-white/10 bg-zinc-800">
             <div className="flex items-center justify-between">
-              <div className="text-sm text-gray-600">
+              <div className="text-sm text-gray-400">
                 {normalization.adjustments.length + (normalization.custom_adjustments?.length || 0)} active adjustment{(normalization.adjustments.length + (normalization.custom_adjustments?.length || 0)) !== 1 ? 's' : ''}
                 {(normalization.custom_adjustments?.length || 0) > 0 && (
-                  <span className="ml-2 text-blue-600">
+                  <span className="ml-2 text-primary-400">
                     ({normalization.custom_adjustments?.length} custom)
                   </span>
                 )}
@@ -345,7 +364,7 @@ export const NormalizationModal: React.FC<NormalizationModalProps> = ({
                 <button
                   type="button"
                   onClick={onClose}
-                  className="px-4 py-2 text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                  className="px-4 py-2 text-gray-300 bg-zinc-700 border border-zinc-600 rounded-lg hover:bg-zinc-600 transition-colors"
                 >
                   Cancel
                 </button>
@@ -353,7 +372,7 @@ export const NormalizationModal: React.FC<NormalizationModalProps> = ({
                   type="button"
                   onClick={handleSave}
                   disabled={isSaving}
-                  className="px-6 py-2 text-white bg-blue-600 rounded-lg hover:bg-blue-700 disabled:bg-blue-300 disabled:cursor-not-allowed transition-colors"
+                  className="px-6 py-2 text-white bg-primary-600 rounded-lg hover:bg-primary-700 disabled:bg-primary-300 disabled:cursor-not-allowed transition-colors font-medium"
                 >
                   {isSaving ? 'Saving...' : 'Save Normalization'}
                 </button>

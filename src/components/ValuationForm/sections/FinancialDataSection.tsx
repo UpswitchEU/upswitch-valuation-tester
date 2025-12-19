@@ -9,9 +9,9 @@
 
 import React from 'react'
 import {
-  getIndustryGuidance,
-  validateEbitdaMargin,
-  validateRevenue,
+    getIndustryGuidance,
+    validateEbitdaMargin,
+    validateRevenue,
 } from '../../../config/industryGuidance'
 import { useEbitdaNormalizationStore } from '../../../store/useEbitdaNormalizationStore'
 import { useSessionStore } from '../../../store/useSessionStore'
@@ -59,7 +59,7 @@ export const FinancialDataSection: React.FC<FinancialDataSectionProps> = ({
     }).format(value);
   };
   
-  const handleOpenNormalization = (year: number) => {
+  const handleOpenNormalization = async (year: number) => {
     if (!sessionId) {
       console.error('No session ID available');
       return;
@@ -69,7 +69,7 @@ export const FinancialDataSection: React.FC<FinancialDataSectionProps> = ({
       console.warn('EBITDA value not set');
       return;
     }
-    openNormalizationModal(year, ebitdaValue, sessionId);
+    await openNormalizationModal(year, ebitdaValue, sessionId);
   };
   
   const handleRemoveNormalization = async (year: number) => {
@@ -189,13 +189,13 @@ export const FinancialDataSection: React.FC<FinancialDataSectionProps> = ({
                 {sessionId && formData.ebitda !== undefined && formData.ebitda !== null && (
                   <div className="mt-3">
                     {hasNormalization(currentYear) ? (
-                      <div className="bg-green-900/20 border border-green-500/30 rounded-lg p-3">
+                      <div className="bg-moss-50/20 border border-moss-300/30 rounded-lg p-3">
                         <div className="flex items-center justify-between">
                           <div>
-                            <div className="text-sm font-medium text-green-400">
+                            <div className="text-sm font-medium text-moss-400">
                               ✓ EBITDA Normalized
                             </div>
-                            <div className="text-xs text-green-300 mt-1">
+                            <div className="text-xs text-moss-300 mt-1">
                               Adjusted: {formatCurrency(getTotalAdjustments(currentYear))} 
                               {' → '}
                               Normalized: {formatCurrency(getNormalizedEbitda(currentYear))}
@@ -205,14 +205,14 @@ export const FinancialDataSection: React.FC<FinancialDataSectionProps> = ({
                             <button
                               type="button"
                               onClick={() => handleOpenNormalization(currentYear)}
-                              className="text-sm text-blue-400 hover:text-blue-300 underline"
+                              className="text-sm text-river-500 hover:text-river-400 underline"
                             >
                               Edit
                             </button>
                             <button
                               type="button"
                               onClick={() => handleRemoveNormalization(currentYear)}
-                              className="text-sm text-red-400 hover:text-red-300 underline"
+                              className="text-sm text-rust-500 hover:text-rust-400 underline"
                             >
                               Remove
                             </button>
@@ -223,7 +223,7 @@ export const FinancialDataSection: React.FC<FinancialDataSectionProps> = ({
                       <button
                         type="button"
                         onClick={() => handleOpenNormalization(currentYear)}
-                        className="text-sm text-blue-400 hover:text-blue-300 flex items-center gap-1"
+                        className="text-sm text-river-500 hover:text-river-400 flex items-center gap-1"
                       >
                         <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />

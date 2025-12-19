@@ -27,7 +27,7 @@ interface EbitdaNormalizationStore {
   errors: Record<string, string>; // Error messages keyed by context
   
   // Actions
-  openNormalizationModal: (year: number, reportedEbitda: number, sessionId: string) => void;
+  openNormalizationModal: (year: number, reportedEbitda: number, sessionId: string) => Promise<void>;
   closeNormalizationModal: () => void;
   updateAdjustment: (year: number, category: NormalizationCategory, amount: number, note?: string) => void;
   addCustomAdjustment: (year: number, description?: string, amount?: number, note?: string) => void;
@@ -59,30 +59,39 @@ export const useEbitdaNormalizationStore = create<EbitdaNormalizationStore>()(
       errors: {},
       
       // Open modal and initialize normalization for year
-      openNormalizationModal: (year, reportedEbitda, sessionId) => {
-        const { normalizations } = get();
+      openNormalizationModal: async (year, reportedEbitda, sessionId) => {
+        const { normalizations, loadNormalization } = get();
         
-        // If normalization doesn't exist for this year, create template
+        // If normalization doesn't exist in store, try to load it from backend
         if (!normalizations[year]) {
-          const template: EbitdaNormalization = {
-            session_id: sessionId,
-            year,
-            reported_ebitda: reportedEbitda,
-            adjustments: [],
-            custom_adjustments: [],
-            total_adjustments: 0,
-            normalized_ebitda: reportedEbitda,
-            confidence_score: 'medium',
-          };
-          
-          set({
-            normalizations: {
-              ...normalizations,
-              [year]: template,
-            },
-            activeYear: year,
-          });
+          try {
+            // Try to load existing normalization from backend
+            await loadNormalization(sessionId, year);
+            // After loading, set active year to open modal
+            set({ activeYear: year });
+          } catch (error) {
+            // No existing normalization found, create template
+            const template: EbitdaNormalization = {
+              session_id: sessionId,
+              year,
+              reported_ebitda: reportedEbitda,
+              adjustments: [],
+              custom_adjustments: [],
+              total_adjustments: 0,
+              normalized_ebitda: reportedEbitda,
+              confidence_score: 'medium',
+            };
+            
+            set({
+              normalizations: {
+                ...normalizations,
+                [year]: template,
+              },
+              activeYear: year,
+            });
+          }
         } else {
+          // Normalization exists in store, just open modal
           set({ activeYear: year });
         }
       },

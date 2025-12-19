@@ -11,7 +11,10 @@ import {
     MarketRatesResponse
 } from '../types/ebitdaNormalization';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:4000';
+const API_BASE_URL = 
+  process.env.NEXT_PUBLIC_BACKEND_URL ||
+  process.env.NEXT_PUBLIC_API_BASE_URL ||
+  'https://web-production-8d00b.up.railway.app';
 
 /**
  * API Error with structured response
