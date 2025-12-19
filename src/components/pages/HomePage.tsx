@@ -1,9 +1,9 @@
 'use client'
 
 import { useRouter } from 'next/navigation'
-import React, { useContext, useEffect, useRef, useState } from 'react'
-import { AuthContext } from '../../contexts/AuthContextTypes'
+import React, { useEffect, useRef, useState } from 'react'
 import { RecentReportsSection } from '../../features/reports'
+import { useAuth } from '../../hooks/useAuth'
 import { useSessionInitialization } from '../../hooks/useSessionInitialization'
 import { type BusinessCardData, businessCardService } from '../../services/businessCard'
 import UrlGeneratorService from '../../services/urlGenerator'
@@ -16,8 +16,7 @@ import { VideoBackground } from '../VideoBackground'
 
 export const HomePage: React.FC = () => {
   const router = useRouter()
-  const authContext = useContext(AuthContext)
-  const user = authContext?.user
+  const { user } = useAuth()
   const [query, setQuery] = useState('')
   const [mode, setMode] = useState<'manual' | 'conversational'>('manual')
   const [businessCardData, setBusinessCardData] = useState<BusinessCardData | null>(null)

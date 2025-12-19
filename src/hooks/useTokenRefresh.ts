@@ -15,6 +15,7 @@
 
 import axios from 'axios';
 import { useCallback, useEffect, useRef } from 'react';
+import { getSessionSyncManager } from '../utils/auth/sessionSync';
 
 const API_URL =
   process.env.NEXT_PUBLIC_BACKEND_URL ||
@@ -118,6 +119,11 @@ export const useTokenRefresh = (options: RefreshOptions = {}) => {
       
       if (response.data.success) {
         console.log('✅ Session token refreshed successfully');
+        
+        // Broadcast session refresh to other tabs via BroadcastChannel
+        const syncManager = getSessionSyncManager();
+        syncManager.broadcastSessionRefresh(window.location.hostname);
+        
         onRefreshSuccess?.();
         return true;
       } else {
@@ -216,15 +222,28 @@ export const useTokenRefresh = (options: RefreshOptions = {}) => {
       checkAndRefresh();
     }, CHECK_INTERVAL);
     
-    // Refresh on visibility change (tab focus)
+    // Refresh on visibility change (tab focus) - proactive refresh
     const handleVisibilityChange = () => {
       if (!document.hidden) {
-        console.log('🔐 Tab focused, checking token refresh');
-        checkAndRefresh();
+        console.log('🔐 Tab focused, proactively checking token refresh');
+        // Small delay to avoid race conditions with other tabs
+        setTimeout(() => {
+          checkAndRefresh();
+        }, 500);
       }
     };
     
     document.addEventListener('visibilitychange', handleVisibilityChange);
+    
+    // Listen for session refresh events from other tabs via BroadcastChannel
+    const syncManager = getSessionSyncManager();
+    const unsubscribe = syncManager.onSessionSync((message) => {
+      if (message.type === 'SESSION_REFRESHED') {
+        console.log('🔐 Session refreshed in another tab, refreshing here too');
+        // Refresh this tab's session when another tab refreshes
+        checkAndRefresh();
+      }
+    });
     
     // Cleanup
     return () => {
@@ -233,6 +252,7 @@ export const useTokenRefresh = (options: RefreshOptions = {}) => {
       }
       clearTimeout(initialTimeout);
       document.removeEventListener('visibilitychange', handleVisibilityChange);
+      unsubscribe(); // Unsubscribe from session sync events
       console.log('🔐 Stopped token refresh checks');
     };
   }, [checkAndRefresh]);

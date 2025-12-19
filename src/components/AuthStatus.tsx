@@ -6,10 +6,10 @@
  */
 
 import React from 'react'
-import { useAuth } from '../contexts/AuthContext'
+import { useAuth } from '../contexts/AuthProvider'
 
 export const AuthStatus: React.FC = () => {
-  const { user, isAuthenticated, isLoading, error } = useAuth()
+  const { user, isAuthenticated, isLoading, error, cookieHealth } = useAuth()
 
   if (isLoading) {
     return (
@@ -24,15 +24,42 @@ export const AuthStatus: React.FC = () => {
   }
 
   if (error) {
+    // Check if error is related to cookie blocking
+    const isCookieBlocked = error.includes('Cookies are blocked') || 
+                           cookieHealth?.blocked ||
+                           cookieHealth?.needsToken
+    
     return (
       <div className="auth-status auth-status-error" role="alert">
         <div className="auth-status-icon error">⚠️</div>
         <div className="auth-status-content">
           <p className="auth-status-message">{error}</p>
+          {isCookieBlocked && (
+            <div className="auth-status-hint" style={{ fontSize: '0.875rem', color: '#6b7280', marginTop: '0.5rem' }}>
+              <p style={{ marginBottom: '0.5rem' }}>
+                <strong>Solution:</strong> Navigate to{' '}
+                <a 
+                  href="https://upswitch.biz" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  style={{ color: '#3b82f6', textDecoration: 'underline' }}
+                >
+                  upswitch.biz
+                </a>
+                {' '}and click the link to this tool. This will automatically authenticate you.
+              </p>
+              {cookieHealth?.browser === 'Safari' && (
+                <p style={{ fontSize: '0.8125rem', color: '#9ca3af', marginTop: '0.25rem' }}>
+                  💡 Safari blocks cross-subdomain cookies. Using the link from upswitch.biz will use token authentication instead.
+                </p>
+              )}
+            </div>
+          )}
           <button
             className="auth-status-retry"
             onClick={() => window.location.reload()}
             aria-label="Retry authentication"
+            style={{ marginTop: '0.5rem' }}
           >
             Retry
           </button>
@@ -55,22 +82,49 @@ export const AuthStatus: React.FC = () => {
   }
 
   // Guest mode
+  const showCookieBlockingHint = cookieHealth?.blocked || cookieHealth?.needsToken
+  
   return (
     <div className="auth-status auth-status-guest" role="status">
       <div className="auth-status-content">
         <p className="auth-status-message">Continuing as guest</p>
-        <p className="auth-status-hint" style={{ fontSize: '0.875rem', color: '#6b7280', marginTop: '0.5rem' }}>
-          💡 To access your account: Navigate here from{' '}
-          <a 
-            href="https://upswitch.biz" 
-            target="_blank" 
-            rel="noopener noreferrer"
-            style={{ color: '#3b82f6', textDecoration: 'underline' }}
-          >
-            upswitch.biz
-          </a>
-          {' '}to get automatic authentication
-        </p>
+        {showCookieBlockingHint ? (
+          <div className="auth-status-hint" style={{ fontSize: '0.875rem', color: '#6b7280', marginTop: '0.5rem' }}>
+            <p style={{ marginBottom: '0.5rem' }}>
+              ⚠️ Cookies are blocked by your browser ({cookieHealth?.browser || 'unknown'}).
+            </p>
+            <p>
+              💡 <strong>To authenticate:</strong> Navigate here from{' '}
+              <a 
+                href="https://upswitch.biz" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                style={{ color: '#3b82f6', textDecoration: 'underline' }}
+              >
+                upswitch.biz
+              </a>
+              {' '}to get automatic token-based authentication.
+            </p>
+            {cookieHealth?.reason && (
+              <p style={{ fontSize: '0.8125rem', color: '#9ca3af', marginTop: '0.25rem', fontStyle: 'italic' }}>
+                {cookieHealth.reason}
+              </p>
+            )}
+          </div>
+        ) : (
+          <p className="auth-status-hint" style={{ fontSize: '0.875rem', color: '#6b7280', marginTop: '0.5rem' }}>
+            💡 To access your account: Navigate here from{' '}
+            <a 
+              href="https://upswitch.biz" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              style={{ color: '#3b82f6', textDecoration: 'underline' }}
+            >
+              upswitch.biz
+            </a>
+            {' '}to get automatic authentication
+          </p>
+        )}
       </div>
     </div>
   )

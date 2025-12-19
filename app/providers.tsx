@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect } from 'react'
-import { AuthProvider } from '../src/contexts/AuthContext'
+import { AuthProvider } from '../src/contexts/AuthProvider'
 import { ToastProvider } from '../src/hooks/useToast'
 import { registerServiceWorker } from '../src/utils/serviceWorkerRegistration'
 // RUM is auto-initialized on import - no need to import rumManager

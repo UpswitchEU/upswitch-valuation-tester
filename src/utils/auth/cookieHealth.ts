@@ -17,6 +17,32 @@ export interface CookieHealthStatus {
   browser: string
   reason?: string
   cookieExists?: boolean
+  diagnostics?: {
+    browser: string
+    browserVersion: string
+    isSafari: boolean
+    isChrome: boolean
+    isFirefox: boolean
+    isEdge: boolean
+    supportsThirdPartyCookies: boolean
+    cookieExists: boolean
+    currentOrigin: string
+    apiUrl: string
+    isSubdomain?: boolean
+    hostname?: string
+    responseTime?: number
+    status?: number
+    statusText?: string
+    ok?: boolean
+    authStatus?: string
+    cookieDomain?: string
+    error?: {
+      name: string
+      message: string
+      isTimeout: boolean
+      isNetworkError: boolean
+    }
+  }
 }
 
 export interface BrowserInfo {
@@ -92,25 +118,67 @@ export function checkCookieExists(cookieName: string = 'upswitch_session'): bool
 }
 
 /**
- * Fast cookie health check (< 100ms timeout)
- * Uses HEAD request to minimize bandwidth
+ * Enhanced cookie health check with comprehensive diagnostics
+ * Tests actual cookie accessibility with API call
+ * Detects Safari ITP and third-party cookie blocking
+ * Returns actionable browser-specific diagnostics
  */
 export async function checkCookieHealth(): Promise<CookieHealthStatus> {
   const browser = detectBrowser()
   const cookieExists = checkCookieExists()
   
+  // Enhanced diagnostics
+  const diagnostics: any = {
+    browser: browser.name,
+    browserVersion: browser.version,
+    isSafari: browser.isSafari,
+    isChrome: browser.isChrome,
+    isFirefox: browser.isFirefox,
+    isEdge: browser.isEdge,
+    supportsThirdPartyCookies: browser.supportsThirdPartyCookies,
+    cookieExists,
+    currentOrigin: typeof window !== 'undefined' ? window.location.origin : 'unknown',
+    apiUrl: API_URL,
+  }
+  
+  // Check if we're on a subdomain
+  if (typeof window !== 'undefined') {
+    const hostname = window.location.hostname
+    const isSubdomain = hostname.includes('.') && hostname.split('.').length > 2
+    diagnostics.isSubdomain = isSubdomain
+    diagnostics.hostname = hostname
+  }
+  
   try {
-    // Fast health check with short timeout
+    // Use GET request instead of HEAD for better compatibility and diagnostics
+    // Some servers don't handle HEAD requests properly for auth endpoints
     const controller = new AbortController()
-    const timeoutId = setTimeout(() => controller.abort(), 100)
+    const timeoutId = setTimeout(() => controller.abort(), 2000) // 2s timeout for health check
+    
+    const startTime = performance.now()
     
     const response = await fetch(`${API_URL}/api/auth/me`, {
-      method: 'HEAD', // Lightweight check
-      credentials: 'include',
+      method: 'GET',
+      credentials: 'include', // CRITICAL: Must include credentials for cross-subdomain cookies
       signal: controller.signal,
+      headers: {
+        'Accept': 'application/json',
+      },
     })
     
     clearTimeout(timeoutId)
+    const duration = performance.now() - startTime
+    
+    diagnostics.responseTime = Math.round(duration)
+    diagnostics.status = response.status
+    diagnostics.statusText = response.statusText
+    diagnostics.ok = response.ok
+    
+    // Check response headers for cookie diagnostics
+    const authStatus = response.headers.get('X-Auth-Status')
+    const cookieDomain = response.headers.get('X-Cookie-Domain')
+    if (authStatus) diagnostics.authStatus = authStatus
+    if (cookieDomain) diagnostics.cookieDomain = cookieDomain
     
     // Status 0 typically means network error (CORS blocked, cookie blocked, etc.)
     if (response.status === 0) {
@@ -119,31 +187,41 @@ export async function checkCookieHealth(): Promise<CookieHealthStatus> {
         blocked: true,
         needsToken: true,
         browser: browser.name,
-        reason: 'Network error - cookies may be blocked',
+        reason: 'Network error - cookies may be blocked (CORS or browser privacy settings)',
         cookieExists,
+        diagnostics,
       }
     }
     
-    // 200 OK means cookie is accessible
+    // 200 OK means cookie is accessible and user is authenticated
     if (response.ok) {
       return {
         accessible: true,
         blocked: false,
         needsToken: false,
         browser: browser.name,
+        reason: 'Cookies accessible and user authenticated',
         cookieExists,
+        diagnostics,
       }
     }
     
-    // 401/404 means no session, but cookies work
+    // 401/404 means no session, but cookies work (this is expected for guest users)
     if (response.status === 401 || response.status === 404) {
+      // Check if this might be a cookie blocking issue
+      // If we're on a subdomain and got 401, it could mean cookies aren't being sent
+      const mightBeBlocked = diagnostics.isSubdomain && !cookieExists && browser.isSafari
+      
       return {
-        accessible: true,
+        accessible: true, // Cookies work, just no session
         blocked: false,
         needsToken: false,
         browser: browser.name,
-        reason: 'No active session',
+        reason: mightBeBlocked 
+          ? 'No active session - cookies may not be shared across subdomains (Safari ITP?)'
+          : 'No active session (expected for guest users)',
         cookieExists,
+        diagnostics,
       }
     }
     
@@ -153,23 +231,37 @@ export async function checkCookieHealth(): Promise<CookieHealthStatus> {
       blocked: false,
       needsToken: true,
       browser: browser.name,
-      reason: `Unexpected status: ${response.status}`,
+      reason: `Unexpected status: ${response.status} ${response.statusText}`,
       cookieExists,
+      diagnostics,
     }
   } catch (error: any) {
     // Network errors, timeouts, or CORS issues
     const isTimeout = error.name === 'AbortError'
     const isNetworkError = error.message?.includes('Failed to fetch') || 
                           error.message?.includes('NetworkError') ||
-                          error.message?.includes('Network request failed')
+                          error.message?.includes('Network request failed') ||
+                          error.message?.includes('CORS')
     
     let reason = 'Unknown error'
     if (isTimeout) {
-      reason = 'Request timeout - cookies may be blocked'
+      reason = 'Request timeout - cookies may be blocked or server unreachable'
     } else if (isNetworkError) {
-      reason = 'Network error - cookies may be blocked by browser privacy settings'
+      // Check if it's likely a CORS issue
+      const isCorsIssue = error.message?.includes('CORS') || 
+                         (diagnostics.isSubdomain && browser.isSafari)
+      reason = isCorsIssue
+        ? 'CORS error - cookies may be blocked by browser privacy settings (Safari ITP, Firefox ETP)'
+        : 'Network error - cookies may be blocked by browser privacy settings'
     } else {
       reason = error.message || 'Unknown error'
+    }
+    
+    diagnostics.error = {
+      name: error.name,
+      message: error.message,
+      isTimeout,
+      isNetworkError,
     }
     
     return {
@@ -179,6 +271,7 @@ export async function checkCookieHealth(): Promise<CookieHealthStatus> {
       browser: browser.name,
       reason,
       cookieExists,
+      diagnostics,
     }
   }
 }

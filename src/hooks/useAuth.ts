@@ -1,16 +1,13 @@
-import { useContext, useEffect } from 'react'
-import { AuthContext } from '../contexts/AuthContextTypes'
+import { useEffect } from 'react'
+import { useAuth as useAuthFromProvider } from '../contexts/AuthProvider'
 import { authLogger } from '../utils/logger'
 
 /**
  * Hook to access authentication context
+ * Re-exported from AuthProvider for backward compatibility
  */
 export const useAuth = () => {
-  const context = useContext(AuthContext)
-  if (!context) {
-    throw new Error('useAuth must be used within AuthProvider')
-  }
-  return context
+  return useAuthFromProvider()
 }
 
 /**

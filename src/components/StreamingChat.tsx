@@ -78,7 +78,7 @@ export const StreamingChat: React.FC<import('./StreamingChat.types').StreamingCh
   onNormalizeEbitda,
   onRecalculateValuation,
 }) => {
-  // Get user data from AuthContext
+  // Get user data from auth store
   const { user } = useAuth()
 
   // Track Python-generated session ID separately from client session ID
