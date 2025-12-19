@@ -161,35 +161,125 @@ export const useAuthStore = create<AuthState>()(
 async function initializeAuth(): Promise<void> {
   const { setLoading, checkSession, exchangeToken, setUser } = useAuthStore.getState()
 
+  // Enhanced logging for cross-subdomain auth debugging
+  if (process.env.NODE_ENV === 'development') {
+    console.log('🔐 [Auth] Initializing authentication...', {
+      hostname: window.location.hostname,
+      isSubdomain: window.location.hostname.includes('valuation.'),
+      hasCookie: document.cookie.includes('upswitch_session'),
+      pathname: window.location.pathname,
+    })
+  }
+
   try {
     setLoading(true)
 
-    // 1. Check for cookie (fast path)
+    // ========================================================================
+    // STEP 1: Cookie-based auth (Primary method, <50ms)
+    // ========================================================================
     const hasCookie = document.cookie.includes('upswitch_session')
 
     if (hasCookie) {
-      await checkSession()
-      return
+      if (process.env.NODE_ENV === 'development') {
+        console.log('🍪 [Auth] Cookie detected, checking session...')
+      }
+      
+      const user = await checkSession()
+      
+      if (user) {
+        if (process.env.NODE_ENV === 'development') {
+          console.log('✅ [Auth] Cookie session valid', { 
+            userId: user.id, 
+            email: user.email 
+          })
+        }
+        trackAuthSuccess(user.id, 'cookie')
+        authMetrics.recordSuccess()
+        return
+      }
+      
+      // Cookie exists but session invalid - may need token exchange
+      if (process.env.NODE_ENV === 'development') {
+        console.log('⚠️ [Auth] Cookie exists but session invalid')
+      }
+    } else {
+      if (process.env.NODE_ENV === 'development') {
+        console.log('ℹ️ [Auth] No cookie found on subdomain')
+      }
     }
 
-    // 2. Check for token in URL
+    // ========================================================================
+    // STEP 2: Token exchange (Subdomain auth handoff, <200ms)
+    // ========================================================================
     const params = new URLSearchParams(window.location.search)
     const token = params.get('token')
 
     if (token) {
-      await exchangeToken(token)
-      // Clean URL after token exchange
+      if (process.env.NODE_ENV === 'development') {
+        console.log('🎟️ [Auth] Token detected in URL, exchanging...', {
+          tokenLength: token.length,
+          tokenPrefix: token.substring(0, 10) + '...',
+        })
+      }
+      
+      try {
+        const user = await exchangeToken(token)
+        
+        if (user) {
+          if (process.env.NODE_ENV === 'development') {
+            console.log('✅ [Auth] Token exchange successful', { 
+              userId: user.id, 
+              email: user.email 
+            })
+          }
+          trackAuthSuccess(user.id, 'token')
+          authMetrics.recordSuccess()
+        }
+      } catch (tokenError) {
+        console.error('[Auth] Token exchange failed:', tokenError)
+        trackAuthFailure(
+          tokenError instanceof Error ? tokenError.message : 'Token exchange failed',
+          { method: 'token-exchange' }
+        )
+        authMetrics.recordFailure()
+      }
+      
+      // Clean URL after token exchange (success or failure)
       const url = new URL(window.location.href)
       url.searchParams.delete('token')
       window.history.replaceState({}, '', url.toString())
+      
+      if (process.env.NODE_ENV === 'development') {
+        console.log('🧹 [Auth] Token removed from URL')
+      }
+      
       return
     }
 
-    // 3. Guest mode (no cookie, no token)
+    // ========================================================================
+    // STEP 3: Guest mode (Still functional!)
+    // ========================================================================
+    if (process.env.NODE_ENV === 'development') {
+      console.log('👤 [Auth] No authentication found, entering guest mode')
+    }
+    
     setUser(null)
+    authMetrics.recordSuccess() // Guest mode is a valid state
+    
   } catch (error) {
     console.error('[Auth] Initialization failed:', error)
+    logAuthError('Auth initialization failed', {
+      error: error instanceof Error ? error.message : 'Unknown error',
+    })
+    trackAuthFailure(
+      error instanceof Error ? error.message : 'Initialization failed',
+      { method: 'init' }
+    )
+    authMetrics.recordFailure()
+    
     setUser(null) // Continue as guest on error
+  } finally {
+    setLoading(false)
   }
 }
 
