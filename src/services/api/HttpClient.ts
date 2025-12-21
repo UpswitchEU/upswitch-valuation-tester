@@ -56,7 +56,26 @@ export class HttpClient {
     // Request interceptor for guest session tracking
     this.client.interceptors.request.use(
       async (config: InternalAxiosRequestConfig) => {
-        // Use Zustand store for atomic session access
+        // CRITICAL: Check if user is authenticated first
+        // Only send guest_session_id for non-authenticated users
+        try {
+          const { useAuthStore } = await import('../../lib/auth')
+          const user = useAuthStore.getState().user
+          
+          // If user is authenticated, DO NOT send guest_session_id
+          // Backend will use user_id from HttpOnly cookie
+          if (user) {
+            apiLogger.debug('User authenticated, skipping guest session tracking', {
+              userId: user.id.substring(0, 8) + '...',
+            })
+            return config
+          }
+        } catch (authError) {
+          // If auth check fails, continue with guest session logic
+          apiLogger.warn('Failed to check auth state, continuing with guest session logic', { error: authError })
+        }
+
+        // User is NOT authenticated - use guest session tracking
         const { getSessionId, ensureSession } = useGuestSessionStore.getState()
 
         // Check synchronously first (Zustand store syncs with localStorage)
@@ -92,6 +111,11 @@ export class HttpClient {
             // Also add to headers for backward compatibility (if backend supports it)
             config.headers = config.headers || {}
             config.headers['x-guest-session-id'] = sessionId
+            
+            apiLogger.debug('Guest session ID added to request', {
+              guestSessionId: sessionId.substring(0, 15) + '...',
+              method: config.method,
+            })
           } catch (error) {
             apiLogger.warn('Failed to add guest session to request', { error })
             // Don't block request if session tracking fails

@@ -89,6 +89,36 @@ export const useAuthStore = create<AuthState>()(
               get().setUser(user)
               trackAuthSuccess(user.id, 'cookie')
               authMetrics.recordSuccess()
+              
+              // CRITICAL: Check if we need to migrate guest data
+              // This handles case where user navigates directly to subdomain while already logged in
+              try {
+                const { useGuestSessionStore } = await import('../store/useGuestSessionStore')
+                const { getSessionId, clearSession } = useGuestSessionStore.getState()
+                const guestSessionId = getSessionId()
+                
+                if (guestSessionId) {
+                  console.log('🔄 [Auth] Found guest session with active user, migrating...', {
+                    guestSessionId: guestSessionId.substring(0, 15) + '...',
+                    userId: user.id.substring(0, 8) + '...',
+                  })
+                  
+                  const { backendAPI } = await import('../services/backendApi')
+                  const migrationResult = await backendAPI.migrateGuestData(guestSessionId)
+                  
+                  console.log('✅ [Auth] Guest data migrated', {
+                    migratedReports: migrationResult.migratedReports,
+                    migratedSessions: migrationResult.migratedSessions,
+                  })
+                  
+                  clearSession()
+                  console.log('🧹 [Auth] Guest session cleared')
+                }
+              } catch (migrationError) {
+                // Non-fatal - don't block authentication
+                console.warn('⚠️ [Auth] Guest migration check failed (non-fatal):', migrationError)
+              }
+              
               return user
             }
           }
@@ -234,6 +264,42 @@ async function initializeAuth(): Promise<void> {
           }
           trackAuthSuccess(user.id, 'token')
           authMetrics.recordSuccess()
+          
+          // CRITICAL: Migrate guest data to authenticated user
+          try {
+            const { useGuestSessionStore } = await import('../store/useGuestSessionStore')
+            const { getSessionId, clearSession } = useGuestSessionStore.getState()
+            const guestSessionId = getSessionId()
+            
+            if (guestSessionId) {
+              console.log('🔄 [Auth] Migrating guest data to user account...', {
+                guestSessionId: guestSessionId.substring(0, 15) + '...',
+                userId: user.id.substring(0, 8) + '...',
+              })
+              
+              // Call migration API
+              const { backendAPI } = await import('../services/backendApi')
+              const migrationResult = await backendAPI.migrateGuestData(guestSessionId)
+              
+              console.log('✅ [Auth] Guest migration complete', {
+                migratedReports: migrationResult.migratedReports,
+                migratedSessions: migrationResult.migratedSessions,
+              })
+              
+              // Clear guest session so future requests use user_id from cookie
+              clearSession()
+              console.log('🧹 [Auth] Guest session cleared')
+              
+              // Refresh reports list to show migrated reports
+              const { useReportsStore } = await import('../store/useReportsStore')
+              useReportsStore.getState().fetchReports(user.id)
+            } else {
+              console.log('ℹ️ [Auth] No guest session to migrate')
+            }
+          } catch (migrationError) {
+            // Log but don't fail login - migration is non-critical
+            console.warn('⚠️ [Auth] Guest migration failed (non-fatal):', migrationError)
+          }
         }
       } catch (tokenError) {
         console.error('[Auth] Token exchange failed:', tokenError)
