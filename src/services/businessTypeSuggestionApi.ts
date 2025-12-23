@@ -25,7 +25,7 @@ class BusinessTypeSuggestionService {
 
   constructor() {
     // Use the main backend API
-    this.baseUrl = 'https://web-production-8d00b.up.railway.app'
+    this.baseUrl = 'https://api.upswitch.app'
 
     this.api = axios.create({
       baseURL: `${this.baseUrl}/api/business-types`,

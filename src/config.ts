@@ -5,7 +5,7 @@ export const API_CONFIG = {
   baseURL:
     env.VITE_VALUATION_ENGINE_URL ||
     env.VITE_VALUATION_API_URL ||
-    'https://web-production-8d00b.up.railway.app',
+    'https://api.valuations.upswitch.app',
   timeout: 30000,
   streaming: {
     enabled: process.env.NEXT_PUBLIC_ENABLE_STREAMING === 'true' || true,

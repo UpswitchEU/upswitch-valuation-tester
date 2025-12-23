@@ -131,7 +131,7 @@ export const UserDropdown: React.FC<UserDropdownProps> = ({ user, onLogout }) =>
       window.parent.postMessage({ type: 'OPEN_SIGNUP' }, '*')
     } else {
       // Fallback: open in same window
-      window.open('https://upswitch.biz/signup', '_blank')
+      window.open('https://upswitch.app/signup', '_blank')
     }
   }
 
@@ -142,7 +142,7 @@ export const UserDropdown: React.FC<UserDropdownProps> = ({ user, onLogout }) =>
       window.parent.postMessage({ type: 'NAVIGATE_TO_DASHBOARD' }, '*')
     } else {
       // Fallback: open in same window
-      window.open('https://upswitch.biz/my-business', '_blank')
+      window.open('https://upswitch.app/my-business', '_blank')
     }
   }
 
@@ -153,7 +153,7 @@ export const UserDropdown: React.FC<UserDropdownProps> = ({ user, onLogout }) =>
       window.parent.postMessage({ type: 'NAVIGATE_TO_SETTINGS' }, '*')
     } else {
       // Fallback: open in same window
-      window.open('https://upswitch.biz/users/profile', '_blank')
+      window.open('https://upswitch.app/users/profile', '_blank')
     }
   }
 
@@ -164,7 +164,7 @@ export const UserDropdown: React.FC<UserDropdownProps> = ({ user, onLogout }) =>
       window.parent.postMessage({ type: 'NAVIGATE_TO_VALUATION' }, '*')
     } else {
       // Fallback: open in same window
-      window.open('https://upswitch.biz/valuation', '_blank')
+      window.open('https://upswitch.app/valuation', '_blank')
     }
   }
 

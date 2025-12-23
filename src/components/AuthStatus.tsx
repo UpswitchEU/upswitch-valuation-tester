@@ -30,7 +30,7 @@ export const AuthStatus: React.FC = () => {
         <div className="auth-status-content">
           <p className="auth-status-message">Unable to verify authentication</p>
           <button
-            onClick={() => window.location.href = 'https://upswitch.biz'}
+            onClick={() => window.location.href = 'https://upswitch.app'}
             style={{
               marginTop: '0.75rem',
               padding: '0.5rem 1rem',
@@ -43,7 +43,7 @@ export const AuthStatus: React.FC = () => {
               fontWeight: '500',
             }}
           >
-            Log in at upswitch.biz
+            Log in at upswitch.app
           </button>
         </div>
       </div>
@@ -70,12 +70,12 @@ export const AuthStatus: React.FC = () => {
         <p className="auth-status-message">Continuing as guest</p>
         <p className="auth-status-hint" style={{ fontSize: '0.875rem', color: '#6b7280', marginTop: '0.5rem' }}>
           💡 <a 
-            href="https://upswitch.biz" 
+            href="https://upswitch.app" 
             target="_blank" 
             rel="noopener noreferrer"
             style={{ color: '#3b82f6', textDecoration: 'underline' }}
           >
-            Log in at upswitch.biz
+            Log in at upswitch.app
           </a>
           {' '}for full access
         </p>

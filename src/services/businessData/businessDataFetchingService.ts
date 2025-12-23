@@ -18,7 +18,7 @@ export class BusinessDataFetchingService {
     this.backendUrl =
       process.env.NEXT_PUBLIC_BACKEND_URL ||
       process.env.NEXT_PUBLIC_API_BASE_URL ||
-      'https://api.upswitch.biz'
+      'https://api.upswitch.app'
   }
 
   /**
@@ -71,7 +71,7 @@ export class BusinessDataFetchingService {
       const backendUrl =
         process.env.NEXT_PUBLIC_BACKEND_URL ||
         process.env.NEXT_PUBLIC_API_BASE_URL ||
-        'https://api.upswitch.biz'
+        'https://api.upswitch.app'
 
       const response = await fetch(`${backendUrl}/api/v1/analyze`, {
         method: 'POST',

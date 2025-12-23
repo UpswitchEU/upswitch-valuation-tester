@@ -24,7 +24,7 @@ import { authMetrics, logAuthError, trackAuthFailure, trackAuthSuccess } from '.
 const API_URL =
   process.env.NEXT_PUBLIC_BACKEND_URL ||
   process.env.NEXT_PUBLIC_API_BASE_URL ||
-  'https://api.upswitch.biz'
+  'https://api.upswitch.app'
 
 /**
  * Auth state interface

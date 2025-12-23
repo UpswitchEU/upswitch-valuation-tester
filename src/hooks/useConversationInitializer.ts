@@ -167,7 +167,7 @@ export const useConversationInitializer = (
         const API_BASE_URL =
           process.env.NEXT_PUBLIC_BACKEND_URL ||
           process.env.NEXT_PUBLIC_API_URL ||
-          'https://api.upswitch.biz'
+          'https://api.upswitch.app'
 
         // Add timeout handling
         const timeoutId = setTimeout(() => {

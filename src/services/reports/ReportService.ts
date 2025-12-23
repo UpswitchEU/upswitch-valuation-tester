@@ -67,7 +67,7 @@ class ReportServiceImpl implements ReportService {
       const baseURL =
         process.env.NEXT_PUBLIC_BACKEND_URL ||
         process.env.NEXT_PUBLIC_API_BASE_URL ||
-        'https://api.upswitch.biz'
+        'https://api.upswitch.app'
       const url = `${baseURL}/api/reports?limit=${limit}&offset=${offset}`
 
       // Get guest session ID if user is a guest
@@ -273,7 +273,7 @@ class ReportServiceImpl implements ReportService {
       const baseURL =
         process.env.NEXT_PUBLIC_BACKEND_URL ||
         process.env.NEXT_PUBLIC_API_BASE_URL ||
-        'https://api.upswitch.biz'
+        'https://api.upswitch.app'
       const url = `${baseURL}/api/reports/${reportId}`
 
       // Get guest session ID header for guest users

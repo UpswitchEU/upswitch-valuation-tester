@@ -1,8 +1,8 @@
 {
-  "name": "upswitch-valuation-tester",
+  "name": "venus",
   "private": true,
   "version": "1.0.0",
-  "description": "Delphi - UpSwitch Valuation Tester Interface - The Oracle's wisdom for business insights",
+  "description": "Venus - UpSwitch Valuation Calculator Frontend - The Oracle's wisdom for business insights",
   "type": "module",
   "scripts": {
     "dev": "next dev --port 3001",
@@ -80,6 +80,14 @@
   ],
   "author": "Upswitch Team",
   "license": "UNLICENSED",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/UpswitchEU/venus.git"
+  },
+  "bugs": {
+    "url": "https://github.com/UpswitchEU/venus/issues"
+  },
+  "homepage": "https://www.upswitch.com",
   "resolutions": {
     "@types/react": "^18.2.0",
     "@types/react-dom": "^18.2.0"

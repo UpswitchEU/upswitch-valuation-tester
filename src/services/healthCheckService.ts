@@ -157,7 +157,7 @@ class HealthCheckService {
     const pythonEngineUrl =
       process.env.NEXT_PUBLIC_VALUATION_ENGINE_URL ||
       process.env.NEXT_PUBLIC_VALUATION_API_URL ||
-      'https://upswitch-valuation-engine-production.up.railway.app'
+      'https://api.valuations.upswitch.app'
 
     const endpoints = {
       valuation_engine: `${pythonEngineUrl}/api/health`,

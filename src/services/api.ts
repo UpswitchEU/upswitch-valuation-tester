@@ -30,7 +30,7 @@ class ValuationAPI {
       baseURL:
         process.env.NEXT_PUBLIC_BACKEND_URL ||
         process.env.NEXT_PUBLIC_API_BASE_URL ||
-        'https://api.upswitch.biz',
+        'https://api.upswitch.app',
       timeout: 90000, // 90 seconds - allows for Python processing (60-70s) + buffer
       headers: {
         'Content-Type': 'application/json',

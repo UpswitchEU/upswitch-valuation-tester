@@ -38,7 +38,7 @@ export class HttpClient {
         baseURL ||
         env.VITE_BACKEND_URL ||
         env.VITE_API_BASE_URL ||
-        'https://web-production-8d00b.up.railway.app',
+        'https://api.upswitch.app',
       timeout: defaultTimeout,
       headers: {
         'Content-Type': 'application/json',
