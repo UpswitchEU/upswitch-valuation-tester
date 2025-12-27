@@ -69,20 +69,20 @@ export const useTokenRefresh = (options: RefreshOptions = {}) => {
       console.log('🔄 Attempting to refresh session token...');
       
       const response = await axios.post(
-        `${API_URL}/api/auth/refresh`,
+        `${API_URL}/api/v2/auth/refresh`,
         {},
         {
-          withCredentials: true, // Important: Include cookies
+          withCredentials: true, // Important: Include cookies (refresh token)
           timeout: 10000, // 10 second timeout
         }
       );
       
-      if (response.data.success) {
+      if (response.data && response.data.user) {
         console.log('✅ Session token refreshed successfully');
         onRefreshSuccess?.();
         return true;
       } else {
-        throw new Error('Token refresh failed: ' + response.data.error);
+        throw new Error('Token refresh failed: Invalid response');
       }
     } catch (error: any) {
       console.error('❌ Token refresh failed:', error);
@@ -118,16 +118,10 @@ export const useTokenRefresh = (options: RefreshOptions = {}) => {
    */
   const checkAndRefresh = useCallback(async () => {
     try {
-      // Make a lightweight auth check
-      const response = await axios.get(`${API_URL}/api/auth/me`, {
-        withCredentials: true,
-        timeout: 5000,
-      });
-      
-      if (response.data.success) {
-        // User is authenticated, proactively refresh to extend session
-        console.log('✅ Auth check passed, refreshing token to extend session');
-        await refreshToken();
+      // Proactively refresh access token before it expires
+      // Access tokens expire in 15 minutes, so we refresh every 10 minutes
+      console.log('🔄 Proactive token refresh check...');
+      await refreshToken();
         
         // Broadcast session refresh to other tabs AFTER successful refresh
         const syncManager = getSessionSyncManager();
@@ -201,19 +195,19 @@ export const useManualTokenRefresh = () => {
     
     try {
       const response = await axios.post(
-        `${API_URL}/api/auth/refresh`,
+        `${API_URL}/api/v2/auth/refresh`,
         {},
         {
-          withCredentials: true,
+          withCredentials: true, // Include refresh token cookie
           timeout: 10000,
         }
       );
       
-      if (response.data.success) {
+      if (response.data && response.data.user) {
         console.log('✅ Manual token refresh successful');
         return true;
       } else {
-        throw new Error('Token refresh failed');
+        throw new Error('Token refresh failed: Invalid response');
       }
     } catch (error) {
       console.error('❌ Manual token refresh failed:', error);
